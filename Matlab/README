@@ -29,7 +29,7 @@ Similarly, there's "setup.matlab" which creates
 
 Usage
 -----
-See ArchiveData.m for a description of the various
+See ArchiveData.txt for a description of the various
 ways to call the new ArchiveData() routine.
 Also refer to the XML-RPC specification in the 
 main ChannelArchiver manual,

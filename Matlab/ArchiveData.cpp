@@ -3,7 +3,7 @@
 // Interfaces the Channel Archiver's Network Data Server
 // to Matlab and GNU Octave.
 //
-// See ArchiveData.m for usage, Makefile for compilation.
+// See ArchiveData.txt for usage, Makefile for compilation.
 //
 // Yes, this code is very ugly, but so far there didn't seem
 // any use on further modularization because it's nothing
@@ -16,7 +16,7 @@
 // You might have guessed that.
 
 // Debug messages?
-#define DEBUG
+#undef DEBUG
 
 // -----------------------------------------------------------------------
 // Generic Stuff
@@ -116,7 +116,7 @@ static bool value_callback(void *arg,
     return true;
 }
 
-DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
+DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.txt")
 {
     size_t i, num;
     octave_value_list retval;
@@ -158,8 +158,13 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
         if (client.getInfo(version, description, how_strings,
                            stat_strings, sevr_infos))
         {
+            num = how_strings.size();
+            string_vector hows(num);
+            for (i=0; i<num; ++i)
+                hows[i] = how_strings[i].c_str();
             retval.append(octave_value((double)version));
             retval.append(octave_value(description.c_str()));
+            retval.append(octave_value(hows));
         }
         else
             error("'%s' failed\n", cmd.c_str());
@@ -424,6 +429,16 @@ void mexFunction(int nresult, mxArray *result[],
             if (nresult > 1)
                 result[1] = mxCreateStringFromNChars(description.c_str(),
                                                      description.length());
+            if (nresult > 2)
+            {
+                num = how_strings.size();
+                result[2] = mxCreateCellMatrix(num, 1);
+                for (i=0; i<num; ++i)
+                    mxSetCell(result[2], i,
+                              mxCreateStringFromNChars(
+                                  how_strings[i].c_str(),
+                                  how_strings[i].length()));            
+            }
         }
         else
             mexErrMsgIdAndTxt("ArchiveData", "'%s' failed\n", cmd);

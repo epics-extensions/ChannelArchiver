@@ -3,39 +3,33 @@
 eval('is_matlab=length(matlabroot)>0;', 'is_matlab=0;')
 
 url='http://bogart/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
-key=3;
 
-disp('Server Info:');
-[ver, desc]=ArchiveData(url, 'info')
+ml_arch_info(url);
+[ver, desc, hows]=ml_arch_info(url);
 
-disp('List available archives:')
-[keys,names,paths]=ArchiveData(url, 'archives')
-% With Matlab, use
-% celldisp(paths)
-% to see the contents
+ml_arch_archives(url);
+[keys,names,paths]=ml_arch_archives(url);
 
 names={ 'Test_HPRF:Kly1:Pwr_Fwd_Out', 'Test_HPRF:SSA1:Pwr_Fwd_Out' }
-ml_arch_names(url, key, 'IOC')
-ml_arch_names(url, key, names{1})
+key=3;
+ml_arch_names(url, key, 'IOC');
+ml_arch_names(url, key, names{1});
+ml_arch_get(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20),...
+            1, 20);
+ml_arch_get(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20),...
+            3, 20);
 
-
-disp('Get Values:');
+% Getting 2 PVs at once,....
 [data,data2]=ArchiveData(url, 'values', 4, {'DoublePV','EnumPV'}, ...
                          datenum(2004,3,5), now, 100);
 for i=1:size(data,2)
   disp(sprintf('%s.%06d %g', ...
                datestr(data(1,i)), round(data(2,i)*1e6), data(3,i)))
 end
-dates=data(1,:);
-values=data(3,:);
-if is_matlab==1
-   eval('plot(dates, values); datetick(''x'', 0);');
-else
-   [Y,M,D,h,m,s] = datevec(dates(i));
-   day=floor(dates(1));
-   xlabel(sprintf('Time on %02d/%02d/%04d [24h]', M, D, Y))
-   plot(dates-day, values, '-@;DoublePV;')
-end
+
+ml_arch_plot(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20), 3, 50);
+
+
 
 
 % Only Matlab:

@@ -1,5 +1,6 @@
 
 cat >> ~/.octaverc <<END
+global is_matlab
 eval('is_matlab=length(matlabroot)>0;', 'is_matlab=0;')
 path("$EPICS_EXTENSIONS/src/ChannelArchiver/Matlab/util",path);
 path("$EPICS_EXTENSIONS/src/ChannelArchiver/Matlab/MatComp",path);

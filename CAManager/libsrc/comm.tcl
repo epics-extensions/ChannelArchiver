@@ -21,7 +21,11 @@ proc camComm::CheckRunning {i rvar} {
 
   set start [clock seconds]
   if [catch {set sock [socket [camMisc::arcGet $i host] [camMisc::arcGet $i port]]}] {
-    condSet $rvar "NO"
+    if {[file exists [file join [file dirname [camMisc::arcGet $i cfg]] BLOCKED]]} {
+      condSet $rvar "BLOCKED"
+    } else {
+      condSet $rvar "NO"
+    }
     return
   }
   lappend ::Socks $sock

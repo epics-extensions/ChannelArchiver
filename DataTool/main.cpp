@@ -26,7 +26,7 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
     if (verbose)
         printf("Opened directory file '%s'\n", dir_name.c_str());
 
-    if (!index.create(index_name.c_str()))
+    if (!index.open(index_name.c_str(), false))
     {
         fprintf(stderr, "Cannot create index '%s'\n",
                 index_name.c_str());
@@ -111,9 +111,9 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
     if (!dir.open(dir_name, true))
         return;
     
-    char name[CHANNEL_NAME_LENGTH];
+    stdString name;
     key_AU_Iterator *aus;
-    bool ok = names->getFirst(name);
+    bool ok = names->getFirst(&name);
     key_Object key;
     interval iv, key_iv;
     epicsTime start_time, end_time;
@@ -122,14 +122,14 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
     while (ok)
     {
         if (verbose)
-            printf("Channel '%s':\n", name);
-        if (!index.getEntireIndexedInterval(name, &iv))
+            printf("Channel '%s':\n", name.c_str());
+        if (!index.getEntireIndexedInterval(name.c_str(), &iv))
         {
-            fprintf(stderr, "Cannot get interval for channel '%s'\n", name);
+            fprintf(stderr, "Cannot get interval for channel '%s'\n", name.c_str());
         }       
         else
         {
-            aus = index.getKeyAUIterator(name);
+            aus = index.getKeyAUIterator(name.c_str());
             // Get first and last data buffer from RTree
             if (aus)
             {
@@ -186,10 +186,10 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
             else
             {
                 fprintf(stderr, "Cannot get AU iterator for channel '%s'\n",
-                        name);
+                        name.c_str());
             }   
         }
-        ok = names->getNext(name);
+        ok = names->getNext(&name);
     }
     delete names;
 }
@@ -210,18 +210,19 @@ void dump_index(const stdString &index_name)
                 index_name.c_str());
         return;
     }
-    char name[CHANNEL_NAME_LENGTH];
+    stdString name;
     key_AU_Iterator *aus;
-    bool ok = names->getFirst(name);
+    bool ok = names->getFirst(&name);
     key_Object key;
     interval iv, key_iv;
     stdString start, end;
     while (ok)
     {
-        printf("Channel '%s':\n", name);
-        if (!index.getEntireIndexedInterval(name, &iv))
+        printf("Channel '%s':\n", name.c_str());
+        if (!index.getEntireIndexedInterval(name.c_str(), &iv))
         {
-            fprintf(stderr, "Cannot get interval for channel '%s'\n", name);
+            fprintf(stderr, "Cannot get interval for channel '%s'\n",
+                    name.c_str());
         }       
         else
         {
@@ -229,7 +230,7 @@ void dump_index(const stdString &index_name)
              epicsTime2string(iv.getEnd(), end);    
              printf("Total: %s - %s\n",
                     start.c_str(), end.c_str());
-            aus = index.getKeyAUIterator(name);
+            aus = index.getKeyAUIterator(name.c_str());
             if (aus)
             {
                 bool have_au = aus->getFirst(iv, &key, &key_iv);
@@ -245,7 +246,7 @@ void dump_index(const stdString &index_name)
                 delete aus;
             }
         }
-        ok = names->getNext(name);
+        ok = names->getNext(&name);
     }
     delete names;
 }

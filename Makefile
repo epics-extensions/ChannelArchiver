@@ -13,6 +13,5 @@ DIRS += XMLRPCServer
 
 DIRS += Manager
 DIRS += Export
-DIRS += CGIExport
 
 include $(TOP)/configure/RULES_DIRS

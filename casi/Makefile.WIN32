@@ -17,7 +17,7 @@ SWIG      = d:\sys\swig1.1\swig -c++
 
 # Includes/links for EPICS extensions, base
 # Note: these are relative to e.g. the tcl/O.WIN32 directory!
-BASE=../../../../../../base
+BASE=s:/cs/Epics/R3.13.3/base
 INCLUDES = -I../.. -I../../../../../include -I$(BASE)/include -I$(BASE)/include/os/$(HOST_ARCH) -I$(BASE)/src/ca
 LIBS  = ../../../../../lib/WIN32/ChanArchIOObj.lib ../../../../../lib/WIN32/ToolsObj.lib $(BASE)/lib/WIN32/ca.lib  $(BASE)/lib/WIN32/db.lib $(BASE)/lib/WIN32/Com.lib ws2_32.lib
 

@@ -17,7 +17,7 @@
 #include <fstream>
 #include "osiTimeHelper.h"
 
-using namespace std;
+USE_STD_NAMESPACE
 USING_NAMESPACE_TOOLS
 
 static const char *start_file = "cgi_body_start.txt";

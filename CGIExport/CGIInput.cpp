@@ -6,7 +6,7 @@
 
 #include "CGIInput.h"
 
-using namespace std;
+USE_STD_NAMESPACE
 
 #ifdef WIN32
 #define strcasecmp strcmpi

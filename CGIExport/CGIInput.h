@@ -6,8 +6,10 @@
 #include "CGIDemangler.h"
 #include <iostream>
 
+#ifdef USE_NAMESPACE_STD
 using std::istream;
 using std::ostream;
+#endif
 USING_NAMESPACE_TOOLS
 
 class CGIInput : public CGIDemangler

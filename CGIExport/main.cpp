@@ -31,7 +31,7 @@
 #include <unistd.h>
 #endif
 
-using namespace std;
+USE_STD_NAMESPACE
 USING_NAMESPACE_CHANARCH
 
 stdString GNUPlot = GNUPLOT_PROGRAM;

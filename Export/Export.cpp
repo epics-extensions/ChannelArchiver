@@ -6,7 +6,7 @@
 #include "GNUPlotExporter.h"
 #include "ArgParser.h"
 
-using namespace std;
+USE_STD_NAMESPACE
 USING_NAMESPACE_CHANARCH
 
 int main (int argc, const char *argv[])

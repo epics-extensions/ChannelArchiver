@@ -45,13 +45,11 @@ not the original scan period of the underlying
 base iterator
 <PRE>
 double getPeriod () const;
-</PRE>
-<LI>
-Get interpolated <A HREF="Value.htm#Main">Value</A> for an arbitrary time stamp.
+
+* Get interpolated <A HREF="Value.htm#Main">Value</A> for an arbitrary time stamp.
 <BR>
 Use <I>++</I> or <I>-- operators</I> to get the next/prev.
 Value at a period of <I>deltaT</I>.
-<PRE>
 const ValueI * interpolate (const osiTime &time);
 </PRE>
 </UL>

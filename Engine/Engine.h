@@ -37,6 +37,19 @@
 // Locks state & values of one channel.
 // Almost all of the Channel's methods require a Guard with this mutex.
 //
+// Overview of what's using which locks:
+//
+//                          Process    Write    CA value  Engine's
+//                          (0..5sec)  to disk  callback  HTTPd
+// HTTPServer::client_list                                  X
+// Engine::mutex               X          X       X(2)      X
+// ArchiveChannel::mutex       X*(1)      X*       X        X(3)
+//
+// 1: Only when 'scanning' instead of using CA monitors
+// 2: Only when channel is configured to disable/enable groups
+// 3: Only when querying channel details. Not used for '/' URL.
+// X*: Locks more than one channel
+//
 // The following situations created a deadlock:
 //
 // 1) Main thread was in Engine::process,
@@ -151,6 +164,11 @@ public:
     /// Engine Info: Started, where, info about writes
     const epicsTime &getStartTime() const { return start_time; }
     const stdString &getIndexName() const { return index_name;  }
+    double getProcessDelayAvg(Guard &engine_guard) const
+    {
+        engine_guard.check(mutex);
+        return process_delay_avg;
+    }
     double getWriteDuration(Guard &engine_guard) const
     {
         engine_guard.check(mutex);
@@ -200,6 +218,7 @@ private:
 
     double          write_period;   // period between writes to archive file
     int             buffer_reserve; // 2-> alloc. buffs for 2x expected data
+    double          process_delay_avg; // Average delay in process()
     double          write_duration; // Average seconds per 'write'
     unsigned long   write_count;    // Average number of values written.
     epicsTime       next_write_time;// when to write again

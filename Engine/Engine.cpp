@@ -63,6 +63,9 @@ Engine::Engine(const stdString &index_name)
     disconnect_on_disable = false;
     write_period = 30;
     buffer_reserve = 3;
+    process_delay_avg = 0.0;
+    write_duration = 0.0;
+    write_count = 0;
     next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
     future_secs = 6*60*60;
 
@@ -418,10 +421,18 @@ bool Engine::process()
     if (do_wait)
     {
         if (write_delay < scan_delay)
+        {
+            process_delay_avg = 0.99*process_delay_avg + 0.01*write_delay;
             epicsThreadSleep(write_delay);
+        }
         else
+        {
+            process_delay_avg = 0.99*process_delay_avg + 0.01*scan_delay;
             epicsThreadSleep(scan_delay);
+        }
     }
+    else
+        process_delay_avg = 0.99*process_delay_avg;
     return true;
 }
 

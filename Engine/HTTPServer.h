@@ -74,6 +74,13 @@ public:
 
     bool isShuttingDown() const
     {   return go == false; }    
+
+    void UpdateClientDuration(double runtime)
+    {
+        client_list_mutex.lock();
+        client_duration = 0.99*client_duration + 0.01*runtime;
+        client_list_mutex.unlock();
+    }
     
 private:
     HTTPServer(SOCKET socket);
@@ -81,6 +88,7 @@ private:
     bool                                  go;
     SOCKET                                socket;
     size_t                                total_clients;
+    double                                client_duration; // seconds; averaged
     epicsMutex                            client_list_mutex;
     stdList<class HTTPClientConnection *> clients;
     // returns # of clients that are still active

@@ -47,13 +47,6 @@ HTMLPage::HTMLPage(SOCKET socket, const char *title, int refresh)
 	line("<BODY BGCOLOR=#A7ADC6 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>");
 	line("<FONT FACE=\"Helvetica, Arial\">");
 	line("<BLOCKQUOTE>");
-#if 0
-	line("<TABLE BORDER=3>");
-	line("<TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>");
-	line(title);
-	line("</FONT></TD></TR>");
-	line("</TABLE>");
-#endif
     line("<H1>");
     line(title);
     line("</H1>");
@@ -141,7 +134,7 @@ void HTMLPage::openTable(size_t colspan, const char *column, ...)
 		{
 			char buf[80];
 			sprintf(buf, "<TH COLSPAN=%d BGCOLOR=#000000><FONT COLOR=#FFFFFF>",
-                    colspan);
+                    (int)colspan);
 			out(buf);
 		}
 		else

@@ -46,16 +46,37 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path)
                    ", built " __DATE__ ", " __TIME__, 0);
     if (theEngine)
     {
-        Guard engine_guard(theEngine->mutex);
-        page.tableLine("Description", theEngine->getDescription().c_str(), 0);
+        const char *desc, *index;
+        size_t num_channels, num_connected;
+        epicsTime startTime, nextWrite;
+        double proc_dly, write_duration, write_period, get_threshhold;
+        unsigned long write_count;
+        bool is_writing, disconn;
+        {
+            
+            Guard engine_guard(theEngine->mutex);
+            desc = theEngine->getDescription().c_str();
+            startTime = theEngine->getStartTime();
+            index = theEngine->getIndexName().c_str();
+            num_channels = theEngine->getChannels(engine_guard).size();
+            num_connected = theEngine->getNumConnected(engine_guard);
+            proc_dly = theEngine->getProcessDelayAvg(engine_guard);
+            write_count = theEngine->getWriteCount(engine_guard);
+            write_duration = theEngine->getWriteDuration(engine_guard);
+            nextWrite = theEngine->getNextWriteTime(engine_guard);
+            is_writing = theEngine->isWriting();
+            write_period = theEngine->getWritePeriod();
+            get_threshhold = theEngine->getGetThreshold();
+            disconn = theEngine->disconnectOnDisable(engine_guard);
+        }
         
-        epicsTime2string(theEngine->getStartTime(), s);
+        page.tableLine("Description", desc, 0);
+        
+        epicsTime2string(startTime, s);
         page.tableLine("Started", s.c_str(), 0);
         
-        page.tableLine("Archive Index", theEngine->getIndexName().c_str(), 0);
+        page.tableLine("Archive Index", index, 0);
 
-        size_t num_channels = theEngine->getChannels(engine_guard).size();
-        size_t num_connected = theEngine->getNumConnected(engine_guard);
         cvtUlongToString(num_channels, line);
         page.tableLine("Channels", line, 0);
 
@@ -69,31 +90,31 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path)
         getcwd(dir, sizeof line);                 
         page.tableLine("Directory ", line, 0);
 #endif
-        sprintf(line, "%lu", theEngine->getWriteCount(engine_guard));
+        sprintf(line, "%.3f sec", proc_dly);
+        page.tableLine("Avg. Proc. Delay", line, 0);
+
+        sprintf(line, "%lu", write_count);
         page.tableLine("Write Count", line, 0);
 
-        sprintf(line, "%.3f sec", theEngine->getWriteDuration(engine_guard));
+        sprintf(line, "%.3f sec", write_duration);
         page.tableLine("Write Duration", line, 0);
 
-        epicsTime2string(theEngine->getNextWriteTime(engine_guard), s);
+        epicsTime2string(nextWrite, s);
         page.tableLine("Next write time", s.c_str(), 0);
         
         page.tableLine("Currently writing",
-                       (const char *)
-                       (theEngine->isWriting() ? "Yes" : "No"), 0);
+                       (const char *) (is_writing ? "Yes" : "No"), 0);
         
-        sprintf(line, "%.1f sec", theEngine->getWritePeriod());
+        sprintf(line, "%.1f sec", write_period);
         page.tableLine("Write Period", line, 0);
 
         sprintf(line, "%lu MB", DataWriter::file_size_limit/1024/1024);
         page.tableLine("File Size Limit", line, 0);
         
-        sprintf(line, "%.1f sec", theEngine->getGetThreshold());
+        sprintf(line, "%.1f sec", get_threshhold);
         page.tableLine("Get Threshold", line, 0);
 
-        page.tableLine("Disconn. on disable",
-                       (theEngine->disconnectOnDisable(engine_guard) ?
-                        "Yes" : "No"), 0);
+        page.tableLine("Disconn. on disable", (disconn ? "Yes" : "No"), 0);
     }
     else
         page.tableLine("No Engine runnig!?", 0);

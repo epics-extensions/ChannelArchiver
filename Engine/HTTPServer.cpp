@@ -205,6 +205,8 @@ void HTTPServer::serverinfo(SOCKET socket)
     HTMLPage page(socket, "Server Info");    
     HTTPClientConnection *  client;
     stdList<HTTPClientConnection *>::iterator ci;
+    char line[100];
+    
     page.openTable(1, "Client Number", 1, "Status", 1, "Age [secs]", 0);
     char num[20], age[50];
     const char *status;
@@ -215,10 +217,13 @@ void HTTPServer::serverinfo(SOCKET socket)
         client = *ci;
         sprintf(num, "%d", client->getNum());
         status = (client->isDone() ? "done" : "running");
-        sprintf(age, "%f", now - client->getBirthTime());
+        sprintf(age, "%.6f", now - client->getBirthTime());
         page.tableLine(num, status, age, 0);
     }
     page.closeTable();
+    sprintf(line, "Average client runtime: %.6f seconds",
+            client_duration);
+    page.line(line);
 }
 
 // HTTPClientConnection -----------------------------------------
@@ -254,6 +259,7 @@ HTTPClientConnection::~HTTPClientConnection()
 
 void HTTPClientConnection::run()
 {
+    double runtime;
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     stdString local_info, peer_info;
     GetSocketInfo(socket, local_info, peer_info);
@@ -283,7 +289,8 @@ void HTTPClientConnection::run()
             LOG_MSG("HTTPClientConnection %d stopped; server's ending\n",num);
             break;
         }
-        if ((epicsTime::getCurrent() - birthtime) > HTTPD_CLIENT_TIMEOUT)
+        runtime = epicsTime::getCurrent() - birthtime;
+        if (runtime > HTTPD_CLIENT_TIMEOUT)
         {
             LOG_MSG("HTTPClientConnection %d timing out\n", num);
             break;
@@ -297,6 +304,8 @@ void HTTPClientConnection::run()
     shutdown(socket, 2);
 #endif
     epicsSocketDestroy(socket);
+    runtime = epicsTime::getCurrent() - birthtime;
+    server->UpdateClientDuration(runtime);
     done = true;
 }
 

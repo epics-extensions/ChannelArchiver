@@ -6,7 +6,7 @@
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c $opt_s);
+use vars qw($opt_d $opt_h $opt_c $opt_s $opt_r);
 use Cwd;
 use File::Path;
 use Getopt::Std;
@@ -16,6 +16,7 @@ use archiveconfig;
 
 # Globals, Defaults
 my ($config_name);
+my ($dtd_root)    = "/arch";
 my ($index_dtd)   = "/arch/indexconfig.dtd";
 my ($daemon_dtd)  = "/arch/ArchiveDaemon.dtd";
 my ($engine_dtd)  = "/arch/engineconfig.dtd";
@@ -30,9 +31,10 @@ sub usage()
     print("\n");
     print("Options:\n");
     print(" -h          : help\n");
-    print(" -c <config> : Use given config file instead of $config_name\n");
+    print(" -c <config> : Use given config file\n");
     print(" -s <system> : Handle only the given system daemon, not whole config file\n");
     print("               (Regular expression for daemon name)\n");
+    print(" -r <root>   : Use given root for DTD files instead of $dtd_root\n");
     print(" -d          : debug\n");
 }
 
@@ -183,7 +185,7 @@ sub create_stuff()
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("dhc:s:") ||  $opt_h)
+if (!getopts("dhc:s:r:") ||  $opt_h)
 {
     usage();
     exit(0);
@@ -196,6 +198,10 @@ if (length($opt_c) <= 0)
 }
 
 $config_name = $opt_c;
+$dtd_root    = $opt_r if (length($opt_r) > 0);
+$index_dtd   = "$dtd_root/indexconfig.dtd";
+$daemon_dtd  = "$dtd_root/ArchiveDaemon.dtd";
+$engine_dtd  = "$dtd_root/engineconfig.dtd";
 
 @daemons = parse_config_file($config_name, $opt_d);
 dump_config(\@daemons) if ($opt_d);

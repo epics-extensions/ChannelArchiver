@@ -299,8 +299,8 @@ static void channelInfoLine(HTMLPage &page, const ChannelInfo *channel)
     else
     {
         bool empty = true;
-        disabling.reserve(da_bits.size() * 4);
-        for (size_t i=0; i<da_bits.size(); ++i)
+        disabling.reserve(da_bits.capacity() * 4);
+        for (size_t i=0; i<da_bits.capacity(); ++i)
         {
             if (da_bits[i])
             {

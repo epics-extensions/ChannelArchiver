@@ -8,8 +8,8 @@
 #include <MemoryBuffer.h>
 #include "ArchiveTypes.h"
 
-// Non-CA events to the archiver;
-// some are archived - some are directives.
+/// Non-CA events to the archiver;
+/// some are archived - some are directives.
 enum
 {
     ARCH_NO_VALUE           = 0x0f00,
@@ -35,7 +35,7 @@ enum
 class RawValue
 {
 public:
-    /// Type for accessing the raw data and its common fields
+    /// Type for accessing the raw data and its common fields.
     /// (status, severity, time) w/o compiler warnings.
     /// Had to pick one of the dbr_time_xxx
     typedef dbr_time_double Data;
@@ -69,6 +69,13 @@ public:
     /// Does the severity represent one of the special ARCH_xxx values
     /// that does not carry any value
     static bool isInfo(const Data *value);
+
+    /// Check the value to see if it's zero
+
+    /// For numerics, that's obvious: value==0. Enums are treated like integers,
+    /// strings are 'zero' if emptry (zero length).
+    /// Arrays are not really handled, we only consider the first element.
+    static bool isZero(DbrType type, const Data *value);
     
     /// Set status and severity
     static void setStatus(Data *value, short status, short severity);

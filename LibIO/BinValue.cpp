@@ -88,26 +88,27 @@ void BinRawValue::write (DbrType type, DbrCount count, size_t size, const Type *
 //////////////////////////////////////////////////////////////////////
 
 // Create a value suitable for the given DbrType
-BinValue *BinValue::create (DbrType type, DbrCount count)
+BinValue *BinValue::create(DbrType type, DbrCount count)
 {
     switch (type)
     {
     case DBR_TIME_FLOAT:
-        return new BinValueDbrFloat (count);
+        return new BinValueDbrFloat(count);
     case DBR_TIME_DOUBLE:
-        return new BinValueDbrDouble (count);
+        return new BinValueDbrDouble(count);
     case DBR_TIME_ENUM:
-        return new BinValueDbrEnum (count);
+        return new BinValueDbrEnum(count);
     case DBR_TIME_SHORT:
-        return new BinValueDbrShort (count);
+        return new BinValueDbrShort(count);
     case DBR_TIME_LONG:
-        return new BinValueDbrLong (count);
+        return new BinValueDbrLong(count);
     case DBR_TIME_STRING:
-        return new BinValueDbrString (count);
+        return new BinValueDbrString(count);
     case DBR_TIME_CHAR:
-        return new BinValueDbrChar (count);
+        return new BinValueDbrChar(count);
         default:
-        LOG_MSG ("BinValue::create (" << type << ", " << count << "): Unsupported\n");
+        LOG_MSG("BinValue::create (" << type << ", " << count
+                << "): Unsupported\n");
         return 0;
     }
 
@@ -164,42 +165,44 @@ void BinValue::show(std::ostream &o) const
 // BinValueDbrShort
 //////////////////////////////////////////////////////////////////////
 
-#define IMPLEMENT_getDouble(CLASS,TIMETYPE,DATATYPE)                                \
-double CLASS::getDouble (DbrCount index) const                                      \
-{                                                                                   \
-    if (index >= getCount ())                                                       \
-        throwDetailedArchiveException (Invalid, "Invalid index");                   \
-    const DATATYPE *data = & (reinterpret_cast<const TIMETYPE *>(_value))->value;   \
-    return (double)data[index];                                                     \
+#define IMPLEMENT_getDouble(CLASS,TIMETYPE,DATATYPE)                         \
+double CLASS::getDouble(DbrCount index) const                                \
+{                                                                            \
+    if (index >= getCount())                                                 \
+        throwDetailedArchiveException(Invalid, "Invalid index");             \
+    const DATATYPE *data =                                                   \
+        & (reinterpret_cast<const TIMETYPE *>(_value))->value;               \
+    return (double)data[index];                                              \
 }
 
-#define IMPLEMENT_setDouble(CLASS,TIMETYPE,DATATYPE)                                \
-void CLASS::setDouble (double value, DbrCount index)                                \
-{                                                                                   \
-    if (index >= getCount ())                                                       \
-        throwDetailedArchiveException (Invalid, "Invalid index");                   \
-    DATATYPE    *data = & (reinterpret_cast<TIMETYPE *>(_value))->value;            \
-    data[index] = (DATATYPE) value;                                                 \
+#define IMPLEMENT_setDouble(CLASS,TIMETYPE,DATATYPE)                         \
+void CLASS::setDouble(double value, DbrCount index)                          \
+{                                                                            \
+    if (index >= getCount())                                                 \
+        throwDetailedArchiveException(Invalid, "Invalid index");             \
+    DATATYPE    *data = & (reinterpret_cast<TIMETYPE *>(_value))->value;     \
+    data[index] = (DATATYPE) value;                                          \
 }
 
-#define IMPLEMENT_NUMERIC_getValue(CLASS,TIMETYPE,DATATYPE)                         \
-void CLASS::getValue (stdString &result) const                                      \
-{                                                                                   \
-    if (! _ctrl_info)                                                               \
-        throwDetailedArchiveException (Invalid, "CtrlInfo not set");                \
-    const DATATYPE *data = & (reinterpret_cast<const TIMETYPE *>(_value))->value;   \
-    _ctrl_info->formatDouble ((double)data[0], result);                             \
-    if (getCount() > 1)                                                             \
-    {                                                                               \
-        result.reserve (getCount() * (result.length() + 3));                        \
-        stdString another;                                                          \
-        for (size_t i = 1; i<getCount(); ++i)                                       \
-        {                                                                           \
-            _ctrl_info->formatDouble ((double)data[i], another);                    \
-            result += ", ";                                                         \
-            result += another;                                                      \
-        }                                                                           \
-    }                                                                               \
+#define IMPLEMENT_NUMERIC_getValue(CLASS,TIMETYPE,DATATYPE)                  \
+void CLASS::getValue(stdString &result) const                                \
+{                                                                            \
+    if (! _ctrl_info)                                                        \
+        throwDetailedArchiveException(Invalid, "CtrlInfo not set");          \
+    const DATATYPE *data =                                                   \
+                    & (reinterpret_cast<const TIMETYPE *>(_value))->value;   \
+    _ctrl_info->formatDouble ((double)data[0], result);                      \
+    if (getCount() > 1)                                                      \
+    {                                                                        \
+        result.reserve(getCount() * (result.length() + 3));                  \
+        stdString another;                                                   \
+        for (size_t i = 1; i<getCount(); ++i)                                \
+        {                                                                    \
+            _ctrl_info->formatDouble((double)data[i], another);              \
+            result += ", ";                                                  \
+            result += another;                                               \
+        }                                                                    \
+    }                                                                        \
 }                       
 
 IMPLEMENT_getDouble(BinValueDbrShort,dbr_time_short,dbr_short_t)

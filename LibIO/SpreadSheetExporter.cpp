@@ -23,7 +23,7 @@ inline double fabs(double x)
 static osiTime findOldestValue(ValueIteratorI *values[], size_t num)
 {
     size_t i;
-    osiTime first;
+    osiTime first, t;
     for (i=0; i<num; ++i) // get first valid time
     {
         if (values[i]->isValid())
@@ -34,9 +34,12 @@ static osiTime findOldestValue(ValueIteratorI *values[], size_t num)
     }
     for (++i; i<num; ++i) // see if anything is older
     {
-        if (values[i]->isValid() &&
-            first > values[i]->getValue()->getTime())
-            first = values[i]->getValue()->getTime();
+        if (values[i]->isValid())
+        {
+            t = values[i]->getValue()->getTime();
+            if (first > t)
+                first = t;
+        }
     }
 
     return first;

@@ -11,6 +11,9 @@
 
 #include "Exporter.h"
 #include "ArchiveException.h"
+#ifndef USE_CPP_STREAMS
+#include <cvtFast.h>
+#endif
 
 Exporter::Exporter(ArchiveI *archive)
 {
@@ -74,6 +77,12 @@ void Exporter::printValue(std::ostream *out,
     // skip values which are Archiver specials
     size_t ai;
     stdString txt;
+#ifndef USE_CPP_STREAMS
+    char buf[100];
+    unsigned short precision;
+    buf[0] = '\t';
+#endif
+    
     if (v->isInfo())
     {
         for (ai=0; ai<v->getCount(); ++ai)
@@ -95,19 +104,29 @@ void Exporter::printValue(std::ostream *out,
         }
         else
         {
+#ifdef USE_CPP_STREAMS
             long o_flags = out->flags();
             long o_prec = out->precision();
-            for (ai=0; ai<v->getCount(); ++ai)
+            if (info && info->getPrecision() > 0)
             {
-                if (info && info->getPrecision() > 0)
-                {
-                    out->flags(std::ios::fixed);
-                    out->precision(info->getPrecision());
-                }
-                *out << '\t' << v->getDouble(ai);
+                out->flags(std::ios::fixed);
+                out->precision(info->getPrecision());
             }
+            for (ai=0; ai<v->getCount(); ++ai)
+                *out << '\t' << v->getDouble(ai);
             out->flags(o_flags);
             out->precision(o_prec);
+#else
+            if (info && info->getPrecision() > 0)
+                precision = info->getPrecision();
+            else
+                precision = 6;
+            for (ai=0; ai<v->getCount(); ++ai)
+            {
+                cvtDoubleToString(v->getDouble(ai), buf+1, precision);
+                *out << buf;
+            }
+#endif
         }
     }
 

@@ -96,7 +96,7 @@ public:
     /// Try to locate entry with given name.
     DirectoryFileIterator find(const stdString &name);
 
-    /// Add new DirecotryEntry with given name.
+    /// Add new DirectoryEntry with given name.
 
     /// Entry will be empty, i.e. point to no data file.
     ///

@@ -34,22 +34,23 @@ static ostream & operator << (ostream &o, const chid &chid)
       << ca_element_count(chid) << "\n";
     o << "\thost: " << ca_host_name(chid) << "\n";
     o << "\tuser ptr: " << ca_puser(chid) << "\n";
+    o << "\tca state: ";
     switch (ca_state(chid))
     {
     case cs_never_conn:
-        o << "\tcs_never_conn: valid chid, IOC not found\n";
+        o << "cs_never_conn: valid chid, IOC not found\n";
         break;
     case cs_prev_conn:
-        o << "\tcs_prev_conn   valid chid, IOC was found, but unavailable\n";
+        o << "cs_prev_conn   valid chid, IOC was found, but unavailable\n";
         break;
     case cs_conn:
-        o << "\tcs_conn:       valid chid, IOC was found, still available\n";
+        o << "cs_conn:       valid chid, IOC was found, still available\n";
         break;
     case cs_closed:
-        o << "\tcs_closed:     invalid chid\n";
+        o << "cs_closed:     invalid chid\n";
         break;
     default:
-        o << "\t<undefined ca_state: " << ca_state(chid) << ">\n";
+        o << ca_state(chid) << " (undefined)\n";
     }
 
     return o;
@@ -104,7 +105,13 @@ ChannelInfo::~ChannelInfo ()
 
 void ChannelInfo::setPeriod (double sample)
 {
-    LOG_ASSERT (sample > 0.0);
+    if (sample <= 0.0)
+    {
+        LOG_MSG (osiTime::getCurrent() << ", " << _name
+                 << ": setPeriod called with " << sample << ", changed to 30 secs\n");
+        sample = 30.0;
+    }
+
     _period = sample;
     checkRingBuffer ();
 }
@@ -357,8 +364,12 @@ void ChannelInfo::caControlHandler (struct event_handler_args arg)
 void ChannelInfo::caEventHandler (struct event_handler_args arg)
 {
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
-    LOG_ASSERT (me);
-    LOG_ASSERT (me->_new_value);
+    if (!me || !me->_new_value)
+    {
+        LOG_MSG (osiTime::getCurrent() << ", " << ca_name(arg.chid)
+                 << ": caEventHandler called without ChannelInfo\n");
+        return;
+    }
 
     me->_new_value->copyIn (reinterpret_cast<const RawValueI::Type *>(arg.dbr));
     //LOG_MSG (me->getName () << " : CA monitor      "
@@ -444,7 +455,8 @@ void ChannelInfo::addToRingBuffer (const ValueI *value)
 {
     if (! value)
     {
-        LOG_ASSERT (value);
+        LOG_MSG (osiTime::getCurrent() << ", " << _name
+                 << ": addToRingBuffer called without value\n");
         return;
     }
 
@@ -474,7 +486,8 @@ void ChannelInfo::addEvent (dbr_short_t status, dbr_short_t severity,
 
     if (!_tmp_value)
     {
-        LOG_ASSERT (_tmp_value);
+        LOG_MSG (osiTime::getCurrent() << ", " << _name << ", IOC " << ca_host_name(_chid)
+                 << " : Cannot add event because data type is unknown\n");
         return;
     }
 
@@ -509,7 +522,12 @@ inline void ChannelInfo::handleNewScannedValue ()
     osiTime stamp = _new_value->getTime ();
     size_t repeat_count;
 
-    LOG_ASSERT (_previous_value);
+    if (!_previous_value)
+    {
+        LOG_MSG (osiTime::getCurrent() << ", " << _name
+                 << ": handleNewScannedValue called without _previous_value\n");
+        return;
+    }
 
     LOG_NSV ("handleNewScannedValue: got " << *_new_value);
 
@@ -623,27 +641,30 @@ void ChannelInfo::handleNewValue ()
         return;
     }
 
+    if ((stamp > now) &&
+        (double(stamp) - double(now) > theEngine->getIgnoredFutureSecs()))
+    {
+        LOG_MSG (now << ", " << _name << ", IOC " << ca_host_name(_chid)
+                 << " : Futuristic time stamp\n\t"
+                << *_new_value << "\n");
+        _new_value_set = false;
+        return;
+    }
+    
     _new_value_set = true;
 
-    if (stamp > _last_buffer_time)
+    if (stamp > _last_buffer_time) // Don't go back in time
     {
-        if (isDisabled ())  // Ignore while disabled
+        if (isDisabled())  // Ignore while disabled
             return;
-
         if (_monitored) // save all monitors
         {
-            addToRingBuffer (_new_value);
-            _expected_next_time = roundTimeUp (stamp, _period);
+            addToRingBuffer(_new_value);
+            _expected_next_time = roundTimeUp(stamp, _period);
         }
         else
-            handleNewScannedValue ();
+            handleNewScannedValue();
     }
-#if 0
-    // historic time stamp: cannot use
-    if (stamp < _last_buffer_time)
-        LOG_MSG (now << ", " << _name << ": Outdated value" << *_value << "\n");
-#endif
-
     handleDisabling ();
 }
 

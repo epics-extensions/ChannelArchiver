@@ -203,9 +203,11 @@ DataFile *DataWriter::createNewDataFile(size_t headroom)
             return datafile;
         if (datafile->is_new_file)
         {
-            LOG_MSG ("DataWriter(%s): "
-                     "Cannot create a new data file within file size limit\n",
-                     channel_name.c_str());
+            LOG_MSG ("Warning: %s: "
+                     "Cannot create a new data file within file size limit\n"
+                     "type %d, count %d, %d samples, file limit: %d bytes.\n",
+                     channel_name.c_str(),
+                     dbr_type, dbr_count, next_buffer_size, file_size_limit);
             return datafile; // Use anyway
         }
         ++serial;
@@ -252,7 +254,7 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
         if (! header->datafile->getSize(file_size))
             return false;
         headroom = header->datafile->getHeaderSize(dbr_type, dbr_count,
-                                                     next_buffer_size);
+                                                   next_buffer_size);
         if (new_ctrl_info)
             headroom += ctrl_info.getSize();
         if (file_size+headroom > file_size_limit) // Yes: reached max. size.

@@ -71,6 +71,11 @@ DataFile *DataFile::reference(const stdString &dirname,
                     (for_write?'W':'R'), file->ref_count);
 #endif
             file->reference();
+            // When it was put in the cache, it might
+            // have been a new file.
+            // But now it's one that already existed,
+            // so reset is_new_file:
+            file->is_new_file = false;
             return file;
         }
         ++i;

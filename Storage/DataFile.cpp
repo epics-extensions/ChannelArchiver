@@ -34,7 +34,6 @@ DataFile::DataFile(const stdString &dirname,
     this->basename = basename;
     this->filename = filename;
     file = 0;
-    reopen();
     ref_count = 1;
 #ifdef LOG_DATAFILE
     LOG_MSG("DataFile %s (%c) opened\n",
@@ -77,8 +76,13 @@ DataFile *DataFile::reference(const stdString &dirname,
         ++i;
     }
     file = new DataFile(dirname, basename, filename, for_write);
-    open_data_files.push_back(file);
-    return file;
+    if (file->reopen())
+    {
+        open_data_files.push_back(file);
+        return file;
+    }
+    delete file;
+    return 0;
 }
 
 // Add reference to current DataFile

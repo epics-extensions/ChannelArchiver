@@ -62,12 +62,7 @@ const RawValue::Data *RawDataReader::find(
     // Get the buffer for that data block
     if (!getHeader(index.getDirectory(),
                    datablock.data_filename, datablock.data_offset))
-    {
-        LOG_MSG("RawDataReader %s: Cannot read '%s' @ 0x%X\n",
-                channel_name.c_str(),
-                datablock.data_filename.c_str(), datablock.data_offset);
         return 0;
-    }
     if (start)
         return findSample(*start);
     else
@@ -158,11 +153,7 @@ bool RawDataReader::getHeader(const stdString &dirname,
     else // Look relative to the index's directory
         datafile = DataFile::reference(dirname, basename, false);
     if (!datafile)
-    {
-        LOG_MSG("RawDataReader(%s) cannot open data file %s\n",
-                channel_name.c_str(), basename.c_str());
         goto no_header;
-    }
     new_header = datafile->getHeader(offset);
     datafile->release(); // now ref'ed by new_header
     if (!new_header)

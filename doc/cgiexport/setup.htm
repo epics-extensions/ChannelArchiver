@@ -14,29 +14,41 @@
   Like any other CGI tool, the CGIExport tool for the Channel Archiver
   is a plug-in for a web server.
   This means you have to have a running web server and you need to
-  know how to configure it. In here I can only provide examples on
-  how to configure some web servers (Apache web server, MS Internet
-  Information Server/MS Personal Web Server).<br>
+  know how to configure it. Usually this includes need for the root password
+  (Unix) or Administrator priviledge (Win32).<br>
+  In here I can only provide examples on how to configure some web
+  servers (Apache web server, MS Internet Information Server/MS
+  Personal Web Server).<br>
   If you don't understand the examples or happen to use a different
   server, please consider consulting the manual for your web server
   first.<br>
   For any useful application of this CGI plugin you also have
-  to generate web pages. Some knowledge of HTML and CGI is required.
+  to generate web pages. Some knowledge of HTML and CGI is required:
+  You have to understand HTML and how the web server turns a given
+  URL into the name of an HTML file or CGI program on the disk.
+  Being able to press the "Underline" button in visual HTML editors
+  like Frontpage might not be sufficent if you have no idea what the
+  produced HTML stands for.
 
   <h3>Access to the archive: Users, permissions, paths</h3>
   The CGI Tool has to have access to the data files, either directly
   or via NFS, SAMBA, whatever.<br>
   Note that the web server runs any CGI program as a low-priviliged
-  user (e.g. 'nobody' on Unix).
-  To verify archive access, switch user to this user and try to
+  user. On Unix, that's usually 'nobody'. On Win32, it might be
+  'IUSR_xxx' for "Internet User on host xxx". I assume 'nobody'.
+  <br>
+  To verify archive access, become that user and try to
   access the data via e.g. the command-line ArchiveExport tool.
-  (On unix: "su" to become root, then "su - nobody" to logon as just
-  that).<br>
+  On Unix, try "su" to become root, then "su - nobody" to logon as just
+  that. Note the '-' in "su - ...." which makes you run through the
+  full login sequence.<br>
   A special problem: The 'nobody' user might not have PATH,
   LD_LIBRARY_PATH etc. configured, so it helps to build the CGIExport
   tool without using shared libraries to simplify matters.
   Or copy the shared libraries into the directory where the CGIExport
   executable resides (this is what I do for the Win32 DLLs).
+  Or configure the web server to set LD_LIBRARY_PATH before executing
+  CGI scripts (possible for the Apache web server, shown below).
 
   <h3>GNU Plot</h3>
   For the plotting to work, you need GNU Plot. The path to GNU Plot
@@ -58,8 +70,6 @@
 	This Test directory is prepared such that these files contain
 	links to additional web pages, explaining the use of the
         CGIExport tool to users.<br>
-	<u>For now that is the &quot;Manual&quot;
-	on how to use the CGI tool.</u>
     <li>..../Tests/cgi<br>
         The executable CGI tool must be copied in here as
 	<b>CGIExport.cgi</b>.<br>
@@ -68,10 +78,11 @@
 	The WWW server must allow &quot;execute&quot; access to
 	this directory.<br>
 	(For Win32, the files Com.dll, db.dll and ca.dll
-	from your EPICS/base/bin/WIN32 also have to be copied in here.)
+	from your EPICS/base/bin/WIN32 also have to be copied into here.)
     <li>..../Tests/cgi/tmp<br>
         In here, the CGI tool creates temporary files, so you must
-        create this directory.
+        create this directory. And the CGI program has to be able to
+	create files in here. Remember that it's running as 'nobody'.
   </ul>
   Make sure that the WWW server as well as CGI programs launched by it
   (usually running as &quot;nobody&quot;) have access to those parts
@@ -91,14 +102,18 @@
   host&gt;/archive/cgi/Hi.pl&quot;</a>, e.g.
   <a href="http://localhost/archive/cgi/Hi.pl">&quot;http://localhost/archive/cgi/Hi.pl&quot;</a>
   to verify that
-  <ul>
-    <li>Your web server is running at all</li>
+  <ol>
+    <li>Your web server is running at all
     <li>You managed to configure it correctly in order to execute the
         perl-CGI scripts
-  </ul>
+  </ol>
+
+  Try <a href="http://localhost/archive/cgi/env.pl">
+  &quot;http://localhost/archive/cgi/env.pl&quot;</a>
+  to see under what environment the CGI tools run.<br>
   The next step is to test if you can execute the CGIExport tool:<br>
   Try &quot;<a href="http://localhost/archive/cgi/CGIExport.cgi">
-  http://&lt;your host&gt;/archive/cgi/CGIExport.cgi&quot;</a>.<br>
+  http://localhost/archive/cgi/CGIExport.cgi</a>.<br>
   You should see some HTML page, no error message.
 
   <h2>Usage</h2>
@@ -108,6 +123,15 @@
   host&gt;/archive/cgi/CGIExport.cgi?COMMAND=HELP&quot;</a><br>
   the CGIExport Tool will display the commands and parameters that
   it understands.<br>
+  You will see that the CGI parameter "DIRECTORY" defines the
+  archiver directory file, often called "freq_directory".
+  According to the CGI specification, this means that you can 
+  either prepare an HTML form with a "DIRECTORY" field to pass
+  that parameter or define an HTML link to
+  "http://your_host/archive/cgi/CGIExport.cgi?DIRECTORY=%2Fsome%2Fdir%2Ffreq_directory"<br>
+  Note how a directory file of "/some/dir/freq_directory" gets
+  transliterated, replacing '/' by the ASCII hex code %2F according to
+  the CGI specification.<br>
   The example web page <i>ChannelArchiver/CGIExport/Tests/Default.htm</i>
   shows some links that call the tool with a specific archive
   directory, channel list, commands etc.<br>
@@ -120,16 +144,23 @@
   <h2>Troubleshooting</h2>
   Ideas on what to test:
   <ul>
+    <li>Web Server: Is it running at all? Try "netstat -a"
+        and check if anyone is listening on TCP port 80.
     <li>Web Server: Can you access the web pages, e.g. the
-        &quot;Default.htm&quot; file?
+        &quot;Default.htm&quot; file? If not, check how the
+	web server maps "virtual directories" to disk files.
     <li>Web Server: Can you access the CGI directory, i.e. read it and
         are the files executed as  programs?
+    <li>If the perl scripts respond OK, try the env.pl program.
+        This is not required, you don't need perl for the CGIExport
+        program, but the env.pl script can help with debugging
+	the settings for the "nobody" user.
     <li>If the perl scripts respond OK but CGIExport.cgi doesn't: Can
-        you execute it as &quot;nobody&quot;? Are shared libraries
-        missing which happen to be in your path as USER=&lt;you&gt;
-        but not when you are USER=&lt;the web
+        you execute it as &quot;nobody&quot; from the command line?
+	Are shared libraries missing which happen to be in your path
+        as USER=&lt;you&gt; but not when you are USER=&lt;the web
         server=nobody&gt;?
-    <li>Can the cgi tool (or the pseudo-user that runs it) access the
+    <li>Can the cgi tool (that is: the pseudo-user that runs it) access the
         data files?
     <li>Can the cgi tool create the temporary files needed for the
         plots?
@@ -207,16 +238,18 @@
   AddHandler perl-script .pl
   AddHandler cgi-script .cgi
 
+  # Note that we set LD_LIBRARY_PATH!
   &lt;Directory /home/Kay/Epics/extensions/src/ChannelArchiver/CGIExport/Tests/cgi&gt;
+  SetEnv LD_LIBRARY_PATH /cs/epics/R3.13.3/base/lib/Linux
   PerlHandler Apache::Registry
   PerlSendHeader On
   Options +ExecCGI
   &lt;/Directory&gt; 
 </pre>
 
-  Start/stop on Linux:<br>
+  Start/stop on an older Linux:<br>
   /etc/rc.d/apache {start|stop|status|restart|reload}
-  <p>On RedHat6.x:<br>
+  <p>From RedHat6.x on:<br>
   /etc/rc.d/init.d/httpd {start|stop|status|restart|reload}
   <p>Error Log:<br>
   cat /var/log/httpd.error_log

@@ -62,7 +62,8 @@ int main(int argc, const char *argv[])
                               "description for HTTP display");
     CmdArgString log         (parser, "log", "<filename>", "write logfile");
     CmdArgFlag   nocfg       (parser, "nocfg", "disable online configuration");
-    parser.setHeader ("Version " VERSION_TXT ", " EPICS_VERSION_STRING
+    parser.setHeader ("ArchiveEngine Version " VERSION_TXT ", "
+                      EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n");
     port.set (EngineServer::_port); // default
 

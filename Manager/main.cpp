@@ -25,13 +25,15 @@
 #pragma warning (disable: 4786)
 #endif
 
+#include <signal.h>
+#include <epicsVersion.h>
+#include <ArgParser.h>
+#include <Filename.h>
+#include <epicsTimeHelper.h>
 #include "../ArchiverConfig.h"
 #include "BinArchive.h"
-#include "ArgParser.h"
 #include "BinValueIterator.h"
-#include <signal.h>
 #include "ExpandingValueIteratorI.h"
-#include "Filename.h"
 #include "ascii.h"
 #include "DirectoryFile.h"
 
@@ -70,7 +72,7 @@ void list_channels(const stdString &archive_name, const stdString &pattern)
 // iterated version.
 // start == end == 0 will list all values.
 void list_values(const stdString &archive_name, const stdString &channel_name,
-                 const osiTime &start, const osiTime &end, int repeat_floor)
+                 const epicsTime &start, const epicsTime &end, int repeat_floor)
 {
     Archive         archive(new ARCHIVE_TYPE(archive_name));
     ChannelIterator channel(archive);
@@ -100,7 +102,7 @@ void list_values(const stdString &archive_name, const stdString &channel_name,
 }
 
 void dump(const stdString &archive_name, const stdString &channel_pattern,
-          const osiTime &start, const osiTime &end, int repeat_floor)
+          const epicsTime &start, const epicsTime &end, int repeat_floor)
 {
     Archive         archive(new ARCHIVE_TYPE(archive_name));
     ChannelIterator channel(archive);
@@ -132,7 +134,7 @@ void show_info(const stdString &archive_name, const stdString &pattern)
     Archive         archive(new ARCHIVE_TYPE(archive_name));
     ChannelIterator channel(archive);
     size_t channel_count = 0;
-    osiTime start, end, time;
+    epicsTime start, end, time;
     stdString s, e;
 
     for (archive.findChannelByPattern(pattern, channel); channel; ++channel)
@@ -147,12 +149,12 @@ void show_info(const stdString &archive_name, const stdString &pattern)
             end = time;
         if (pattern.empty())
             continue;
-        osiTime2string(channel->getFirstTime(), s);
-        osiTime2string(channel->getLastTime(), e);
+        epicsTime2string(channel->getFirstTime(), s);
+        epicsTime2string(channel->getLastTime(), e);
         printf("%s\t%s\t%s\n", s.c_str(), e.c_str(), channel->getName());
     }
-    osiTime2string(start, s);
-    osiTime2string(end, e);
+    epicsTime2string(start, s);
+    epicsTime2string(end, e);
     printf("Channel count : %d\n", channel_count);
     printf("First sample  : %s\n", s.c_str());
     printf("Last  sample  : %s\n", e.c_str());
@@ -167,8 +169,8 @@ void show_channel_info(const stdString &archive_name,
     
     if (archive.findChannelByName(channel_name, channel))
     {
-        osiTime2string(channel->getFirstTime(), s);
-        osiTime2string(channel->getLastTime(), e);
+        epicsTime2string(channel->getFirstTime(), s);
+        epicsTime2string(channel->getLastTime(), e);
         printf("start: %s\n", s.c_str());
         printf("end  : %s\n", e.c_str());
     }
@@ -178,7 +180,7 @@ void show_channel_info(const stdString &archive_name,
 
 void seek_time(const stdString &archive_name,
                const stdString &channel_name,
-               const osiTime &start)
+               const epicsTime &start)
 {
     Archive         archive(new ARCHIVE_TYPE(archive_name));
     ChannelIterator channel(archive);
@@ -196,7 +198,7 @@ void seek_time(const stdString &archive_name,
     if (value)
     {
         stdString s;
-        osiTime2string(value->getTime(), s);
+        epicsTime2string(value->getTime(), s);
         printf("Found: %s\n", s.c_str());
     }
     else
@@ -213,14 +215,14 @@ void seek_time(const stdString &archive_name,
 // (this makes the code more complicated to read...)
 void do_export(const stdString &archive_name, 
                const stdString &channel_pattern,
-               const osiTime &start, const osiTime &end,
+               const epicsTime &start, const epicsTime &end,
                const stdString &new_dir_name,
                size_t repeat_limit,
                size_t repeat_floor,
                size_t days_per_file)
 {
     size_t i, chunk, chunk_count=0, val_count=0;
-    osiTime next_file_time, last_stamp;
+    epicsTime next_file_time, last_stamp;
 
     Archive old_archive(new BinArchive(archive_name));
     BinArchive *new_archiveI = new BinArchive(new_dir_name, true);
@@ -267,8 +269,8 @@ void do_export(const stdString &archive_name,
                 if (isValidTime(start)  &&  last_stamp > start)
                 {
                     stdString l, s;
-                    osiTime2string(last_stamp, l);
-                    osiTime2string(start, s);
+                    epicsTime2string(last_stamp, l);
+                    epicsTime2string(start, s);
                     printf("Error:\n"
                            "Archive '%s' does already contain\n"
                            "values for channel '%s'\n"
@@ -416,8 +418,8 @@ void compare(const stdString &archive_name, const stdString &target_name)
 // Test ExpandingValueIteratorI
 void expand(const stdString &archive_name,
             const stdString &channel_name,
-            const osiTime &start,
-            const osiTime &end)
+            const epicsTime &start,
+            const epicsTime &end)
 {
     Archive         archive(new ARCHIVE_TYPE(archive_name));
     ChannelIterator channel(archive);
@@ -445,7 +447,7 @@ void expand(const stdString &archive_name,
 
 // Interpolation Test
 void interpolate(const stdString &directory, const stdString &channel_name,
-                 const osiTime &start, const osiTime &end,
+                 const epicsTime &start, const epicsTime &end,
                  double interpol)
 {
 #if 0
@@ -504,11 +506,11 @@ void headers(const stdString &directory, const stdString &channel_name)
                bvi->getHeader().getOffset());
         printf("Prev    : '%s' @ 0x%lX\n",
                bvi->getHeader()->getPrevFile(), bvi->getHeader()->getPrev());
-        osiTime2string(bvi->getHeader()->getBeginTime(), t);
+        epicsTime2string(bvi->getHeader()->getBeginTime(), t);
         printf("Time    : %s\n", t.c_str());
-        osiTime2string(bvi->getHeader()->getEndTime(), t);
+        epicsTime2string(bvi->getHeader()->getEndTime(), t);
         printf("...     : %s\n", t.c_str());
-        osiTime2string(bvi->getHeader()->getNextTime(), t);
+        epicsTime2string(bvi->getHeader()->getNextTime(), t);
         printf("New File: %s\n", t.c_str());
 
         printf("Samples : %ld\n", bvi->getHeader()->getNumSamples());
@@ -529,7 +531,7 @@ void headers(const stdString &directory, const stdString &channel_name)
     while (run && bvi->nextBuffer());
 }
 
-void test(const stdString &directory, const osiTime &start, const osiTime &end)
+void test(const stdString &directory, const epicsTime &start, const epicsTime &end)
 {
     Archive archive (new ARCHIVE_TYPE(directory));
     ChannelIterator channel(archive);
@@ -545,7 +547,7 @@ void test(const stdString &directory, const osiTime &start, const osiTime &end)
         ++channels;
         channel->getValueAfterTime(start, value);
         chan_errors = 0;
-        osiTime last;
+        epicsTime last;
         try
         {
             while (run && value &&
@@ -556,7 +558,7 @@ void test(const stdString &directory, const osiTime &start, const osiTime &end)
                     if (value->getTime() < last)
                     {
                         printf("\n'%s' back in time\n", channel->getName());
-                        osiTime2string(last, t);
+                        epicsTime2string(last, t);
                         printf("%s   is followed by:\n", t.c_str());
                         value->show(stdout);
                         printf("\n");
@@ -619,7 +621,7 @@ void delete_name(const stdString &archive_name, const stdString &channel_name)
     DirectoryFile dir(archive_name, true /* for write */);
     if (dir.remove(channel_name))
     {
-        printf("Removed '%s' from directory file\n", channel_name.c_str());
+        printf("Removed '%s' from index file\n", channel_name.c_str());
     }
     else
     {
@@ -633,24 +635,25 @@ void delete_name(const stdString &archive_name, const stdString &channel_name)
 // usually empty in "useful" versions of the ArchiveManager
 void experiment(const stdString &archive_name,
                 const stdString &channel_name,
-                const osiTime &start)
+                const epicsTime &start)
 {
 }
 #endif
 
 int main(int argc, const char *argv[])
 {
-    initOsiHelpers();
+    initEpicsTimeHelper();
 
     CmdArgParser parser(argc, argv);
-    parser.setHeader("Archive Manager version " VERSION_TXT
-                     ", built " __DATE__ "\n\n"
+    parser.setHeader("Archive Manager version " VERSION_TXT ", "
+                     EPICS_VERSION_STRING
+                      ", built " __DATE__ ", " __TIME__ "\n\n"
                      "You should not run the this tool on a live archive\n"
                      "Stop the ArchiveEngine before operating on an archive.\n"
                      "Create backups in case this tool damages your archive.\n"
                      "\n"
                      );
-    parser.setArgumentsInfo("<archive>");
+    parser.setArgumentsInfo("<archive index file>");
 
     CmdArgFlag   do_show_info   (parser, "info", "Show archive information");
     CmdArgFlag   do_test        (parser, "test", "Test archive for errors");
@@ -669,7 +672,7 @@ int main(int argc, const char *argv[])
     CmdArgString compare_target (parser, "Compare", "<target archive>", "Compare with target archive");
     CmdArgFlag   do_seek_test   (parser, "Seek", "Seek test (use with -start)");
     CmdArgString rename_channel (parser, "Rename", "<new name>", "Rename channel name, requires -c for old channel");
-    CmdArgString delete_channel (parser, "DELETE", "<channel>", "Delete channel from directory file");
+    CmdArgString delete_channel (parser, "DELETE", "<channel>", "Delete channel from index file");
 #ifdef EXPERIMENT
     CmdArgFlag   do_experiment  (parser, "Experiment", "Perform experiment (temporary option)");
 #endif
@@ -684,9 +687,9 @@ int main(int argc, const char *argv[])
     }
     stdString archive_name = parser.getArgument(0);
 
-    osiTime start, end;
-    string2osiTime(start_text, start);
-    string2osiTime(end_text, end);
+    epicsTime start, end;
+    string2epicsTime(start_text, start);
+    string2epicsTime(end_text, end);
 
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);

@@ -81,7 +81,7 @@ static void output_info(const CtrlInfoI *info)
 
 void output_ascii(const stdString &archive_name,
                   const stdString &channel_name,
-                  const osiTime &start, const osiTime &end)
+                  const epicsTime &start, const epicsTime &end)
 {
     Archive         archive(new ARCHIVE_TYPE(archive_name));
     ChannelIterator channel(archive);
@@ -102,7 +102,7 @@ void output_ascii(const stdString &archive_name,
 
     CtrlInfoI   info;
     double period=-1;
-    osiTime last_time = nullTime;
+    epicsTime last_time = nullTime;
     while (value && (!isValidTime(end)  ||  value->getTime() < end))
     {
         if (period != value.getPeriod())
@@ -150,7 +150,7 @@ private:
 
     double _period;
     ValueI *_value;
-    osiTime _last_time;
+    epicsTime _last_time;
     CtrlInfoI _info;
     bool _new_ctrl_info;
     size_t  _buffer_alloc;
@@ -345,8 +345,8 @@ bool ArchiveParser::handleValue(ChannelIterator &channel)
 
     // Time:
     stdString text = line.substr(0, valtab);
-    osiTime time;
-    if (! string2osiTime(text, time))
+    epicsTime time;
+    if (! string2epicsTime(text, time))
     {
         printf("Line %d: invalid time '%s'\n", getLineNo(), text.c_str());
         return false;

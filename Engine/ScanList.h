@@ -13,7 +13,7 @@
 #include <epicsTime.h>
 #include "ArchiveChannel.h"
 
-/// \ingroup Engine
+/// \addtogroup Engine
 /// \@{
 
 /// List of channels to scan for one period.
@@ -27,6 +27,11 @@ public:
     
     void scan();
 
+    bool empty()
+    {   return channels.empty(); }
+
+    void dump();
+    
     double                 period;    // Scan period in seconds
     epicsTime              next_scan; // Next time this list is due
 private:
@@ -60,6 +65,8 @@ public:
     /// When should scan() be called ?
     const epicsTime &getDueTime() const
     {   return  next_list_scan; }
+
+    void dump();
 
 private:
     bool is_due_at_all;

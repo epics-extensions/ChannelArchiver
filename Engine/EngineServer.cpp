@@ -421,7 +421,11 @@ static void addChannel(HTTPClientConnection *connection,
     theEngine->attachToCAContext(guard);
     if (theEngine->addChannel(guard, group, channel_name, period,
                                disabling, monitored))
-        page.line("</I> was added to");
+    {
+        page.line("</I> was added");
+        EngineConfig config;
+        config.write(guard, theEngine);
+    }
     else
         page.line("</I> could not be added");
     page.out(" to group <I>");

@@ -153,6 +153,8 @@ private:
     // Bookkeeping and value checking stuff, used between ArchiveChannel
     // and SampleMechanism
     epicsTime last_stamp_in_archive; // for back-in-time checks
+
+    bool isGoodTimestamp(const epicsTime &stamp, const epicsTime &now);
 };
 
 inline const stdString &ArchiveChannel::getName() const

@@ -50,6 +50,14 @@ void SinglePeriodScanList::scan()
     }
 }
 
+void SinglePeriodScanList::dump()
+{
+    stdList<ArchiveChannel *>::iterator ci;
+    printf("Scan List %g sec\n", period);
+    for (ci = channels.begin(); ci != channels.end(); ++ci)
+        printf("'%s'\n", (*ci)->getName().c_str());
+}
+
 ScanList::ScanList()
 {
     is_due_at_all = false;
@@ -70,7 +78,8 @@ void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
 {
     stdList<SinglePeriodScanList *>::iterator li;
     SinglePeriodScanList *period_list;
-
+    double period = channel->getPeriod(guard);
+    
     // Check it the channel is already on some
     // list where it needs to be removed
     removeChannel(channel);
@@ -78,7 +87,7 @@ void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
     // Find a scan list with suitable period
     for (li = period_lists.begin(); li != period_lists.end(); ++li)
     {
-        if ((*li)->period == channel->getPeriod(guard))
+        if ((*li)->period == period)
         {
             period_list = *li; // found one!
             break;
@@ -111,10 +120,15 @@ void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
 
 void ScanList::removeChannel(ArchiveChannel *channel)
 {
-    stdList<SinglePeriodScanList *>::iterator li;
-    for (li = period_lists.begin(); li != period_lists.end(); ++li)
+    stdList<SinglePeriodScanList *>::iterator li = period_lists.begin();
+    while (li != period_lists.end())
+    {
         (*li)->remove(channel);
-    
+        if ((*li)->empty())
+            li = period_lists.erase(li);
+        else
+            ++li;
+    }
 }
 
 // Scan all channels that are due at/after deadline
@@ -156,6 +170,13 @@ void ScanList::scan(const epicsTime &deadline)
     next_list_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
     LOG_MSG("->Whole ScanList due %s\n", buf);
 #endif
+}
+
+void ScanList::dump()
+{
+    stdList<SinglePeriodScanList *>::iterator li;
+    for (li = period_lists.begin(); li != period_lists.end(); ++li)
+        (*li)->dump();
 }
 
 // EOF ScanList.cpp

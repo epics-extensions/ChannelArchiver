@@ -220,7 +220,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     Guard guard(channel->mutex);
     SampleMechanism *mechanism;
     
-    // For existing channels: minimize period, maximize monitor feature
+    // For existing channels: maximize monitor feature, minimize period
     if (monitored)
         mechanism = new SampleMechanismMonitored(channel);
     else

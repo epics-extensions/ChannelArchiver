@@ -21,7 +21,7 @@
 
 class ArchiveChannel;
 
-/// \ingroup Engine
+/// \addtogroup Engine
 /// \@{
 
 /// Base class for all sampling mechanisms.
@@ -58,15 +58,17 @@ public:
     /// which in turn is either invoked
     /// - from a CA monitor that the SampleMechanism initiated
     /// - from a CA callback initiated by the Engine's ScanList
-    virtual void handleValue(Guard &guard, const epicsTime &now,
+    ///
+    /// When called, the channel is enabled and the value's stamp is good.
+    /// While disabled, values are copied to pending_value.
+    /// handleValue needs to update last_stamp_in_archive.
+    virtual void handleValue(Guard &guard,
+                             const epicsTime &now,
+                             const epicsTime &stamp,
                              const RawValue::Data *value) = 0;
 
 protected:
     ArchiveChannel *channel;
-
-    // Check for 0 or too futuristic time stamps
-    // Need to provide 'now' for the future test 
-    bool isGoodTimestamp(const epicsTime &stamp, const epicsTime &now);
 };
 
 /// A SampleMechanism that stores each CA event (monitor).
@@ -83,7 +85,7 @@ public:
     bool isScanning() const;
     void handleConnectionChange(Guard &guard);
     void handleValue(Guard &guard, const epicsTime &now,
-                     const RawValue::Data *value);
+                     const epicsTime &stamp, const RawValue::Data *value);
 private:
     bool   have_subscribed;
     evid   ev_id;
@@ -99,7 +101,7 @@ public:
     bool isScanning() const;
     void handleConnectionChange(Guard &guard);
     void handleValue(Guard &guard, const epicsTime &now,
-                     const RawValue::Data *value);
+                     const epicsTime &stamp, const RawValue::Data *value);
 private:
     bool is_on_scanlist;
     // flushRepeats();

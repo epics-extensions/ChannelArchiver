@@ -40,12 +40,26 @@ ArchiveChannel::~ArchiveChannel()
 void ArchiveChannel::setMechanism(Guard &guard, SampleMechanism *mechanism)
 {
     guard.check(mutex);
+    bool was_connected = connected;
     if (this->mechanism)
+    {
+        if (was_connected)
+        {
+            connected = false;
+            this->mechanism->handleConnectionChange(guard);
+        }
         delete this->mechanism;
+    }
     this->mechanism = mechanism;
+    if (was_connected)
+    {
+        connected = true;
+        mechanism->handleConnectionChange(guard);
+    }
 }
 
-void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard, double period)
+void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard,
+                               double period)
 {
     guard.check(mutex);
     this->period = period;
@@ -243,7 +257,13 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
         me->connection_time = epicsTime::getCurrent();
         me->pending_value_set = false;
         if (was_connected  &&  me->mechanism)
+        {
             me->mechanism->handleConnectionChange(guard);
+            // Tell groups that we are disconnected
+            stdList<GroupInfo *>::iterator g;
+            for (g=me->groups.begin(); g!=me->groups.end(); ++g)
+                -- (*g)->num_connected;
+        }
     }    
 }
 
@@ -346,17 +366,18 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
                  ca_element_count(arg.chid));
         me->connected = true;
         if (was_connected == false   &&   me->mechanism)
+        {
             me->mechanism->handleConnectionChange(guard);
+            // Tell groups that we are connected
+            stdList<GroupInfo *>::iterator g;
+            for (g=me->groups.begin(); g!=me->groups.end(); ++g)
+                ++ (*g)->num_connected;
+        }
     }
     else
     {
         LOG_MSG("%s: ERROR, control_callback info request failed\n",
                 me->name.c_str());
-        me->connection_time = epicsTime::getCurrent();
-        me->connected = false;
-        me->pending_value_set = false;
-        if (was_connected == true   &&   me->mechanism)
-            me->mechanism->handleConnectionChange(guard);
     }
 }
 
@@ -366,8 +387,23 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
     epicsTime now = epicsTime::getCurrent();
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
     Guard guard(me->mutex);
-    if (me->mechanism)
-        me->mechanism->handleValue(guard, now, value);
+    if (me->isDisabled(guard))
+    {
+        if (me->pending_value)
+        {   // park the value for write ASAP after being re-enabled
+            RawValue::copy(me->dbr_time_type, me->nelements,
+                           me->pending_value, value);
+            me->pending_value_set = true;
+        }
+    }
+    else
+    {
+        epicsTime stamp = RawValue::getTime(value);
+        if (!me->isGoodTimestamp(stamp, now))
+            return;
+        if (me->mechanism)
+            me->mechanism->handleValue(guard, now, stamp, value);
+    }
     me->handleDisabling(guard, value);
 }
 
@@ -428,3 +464,37 @@ void ArchiveChannel::addEvent(Guard &guard,
         RawValue::setTime(value, event_time);
     }
 }
+
+bool ArchiveChannel::isGoodTimestamp(const epicsTime &stamp,
+                                     const epicsTime &now)
+{
+    if (! isValidTime(stamp))
+    {
+        stdString t;
+        epicsTime2string(stamp, t);
+        LOG_MSG("'%s': Invalid/null time stamp %s\n",
+                getName().c_str(), t.c_str());
+        return false;
+    }
+    double future = stamp - now;
+    if (future > theEngine->getIgnoredFutureSecs())
+    {
+        stdString t;
+        epicsTime2string(stamp, t);
+        LOG_MSG("'%s': Ignoring futuristic time stamp %s\n",
+                getName().c_str(), t.c_str());
+        return false;
+    }
+    if (isValidTime(last_stamp_in_archive) &&
+        stamp < last_stamp_in_archive)
+    {
+        stdString stamp_txt;
+        epicsTime2string(stamp, stamp_txt);
+        LOG_MSG("'%s': received back-in-time stamp %s\n",
+                getName().c_str(), stamp_txt.c_str());
+        return false;
+    }
+    
+    return true;
+}
+

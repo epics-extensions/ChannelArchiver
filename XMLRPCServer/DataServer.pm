@@ -3,12 +3,14 @@ package DataServer;
 use English;
 use Time::Local;
 use Frontier::Client;
+use Data::Dumper;
 require Exporter;
 
 @ISA    = qw(Exporter);
 @EXPORT = qw(time2string
 	     string2time
-             show_values);
+             show_values
+	     show_values_as_sheet);
 
 BEGIN
 {
@@ -95,6 +97,74 @@ sub show_values($)
 	    $stat = stat2string($value->{stat});
 	    $sevr = sevr2string($value->{sevr});
 	    print("$time @{$value->{value}} $stat $sevr\n");
+	}
+    }
+}
+
+sub show_values_as_sheet($)
+{
+    my ($results) = @ARG;
+    my (%meta, $result, $stat, $sevr, $channels, $vals, $c, $i);
+    $channels = $#{$results} + 1;
+    return if ($channels <= 0);
+    $vals = $#{$results->[0]->{values}} + 1;
+    # Dumping the meta information as a spreadsheet comment
+    foreach $result ( @{$results} )
+    {
+	print("# Channel '$result->{name}':\n");
+	%meta = %{$result->{meta}};
+	if ($meta{type} == 1)
+	{
+	    print("# Display : $meta{disp_low} ... $meta{disp_high}\n");
+	    print("# Alarms  : $meta{alarm_low} ... $meta{alarm_high}\n");
+	    print("# Warnings: $meta{warn_low} ... $meta{warn_high}\n");
+	    print("# Units   : '$meta{units}', Precision: $meta{prec}\n");
+	}
+	elsif ($meta{type} == 0)
+	{   # Didn't test this case
+	    foreach $state ( @{$meta{states}} )
+	    {
+		print("# State: '$state'\n");
+	    }
+	}
+	print("# Type: $result->{type}, element count $result->{count}.\n");
+    }
+    # Header: "Time" & channel names
+    print("# Time\t");
+    for ($c=0; $c<$channels; ++$c)
+    {
+	if ($results->[$c]->{meta}->{type} == 1)
+	{
+	    print("$results->[$c]->{name}\t[$results->[$c]->{meta}->{units}]\t");
+	}
+	else
+	{
+	    print("$results->[$c]->{name}\t\t");
+	}
+    }
+    print("\n");
+    # Spreadsheet cells
+    for ($v=0; $v<$vals; ++$v)
+    {
+	for ($c=0; $c<$channels; ++$c)
+	{
+	    if ($c == 0)
+	    {
+		print(time2string($results->[$c]->{values}->[$v]->{secs},
+				  $results->[$c]->{values}->[$v]->{nano}),
+		      "\t");
+	    }
+	    $stat = stat2string($results->[$c]->{values}->[$v]->{stat});
+	    $sevr = sevr2string($results->[$c]->{values}->[$v]->{sevr});
+	    print("@{$results->[$c]->{values}->[$v]->{value}}\t$stat $sevr");
+	    if ($c == $channels-1)
+	    {
+		print("\n");
+	    }
+	    else
+	    {
+		print("\t");
+	    }
 	}
     }
 }

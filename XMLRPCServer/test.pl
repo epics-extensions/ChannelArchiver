@@ -66,5 +66,13 @@ $how = 1;
 # otherwise perl will turn it into a sequence of names:
 $results = $server->call('archiver.values', $key, \@names,
 			 $start, $startnano, $end, $endnano, $count, $how);
-show_values($results);
+if ($how == 1)
+{
+    show_values_as_sheet($results);
+}
+else
+{
+    show_values($results);
+}
+
 

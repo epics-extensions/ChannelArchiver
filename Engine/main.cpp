@@ -104,27 +104,17 @@ int main(int argc, const char *argv[])
     if (! lock_file.Lock (argv[0]))
         return -1;
 
-    try
-    {
         Engine::create(index_name);
         if (! description.get().empty())
             theEngine->setDescription(description);
         run = theEngine->config_file.load(config_name);
         if (run)
             theEngine->config_file.save();
-    }
-    catch (GenericException &e)
-    {
-        LOG_MSG("Cannot start archive engine:%s\n", e.what());
-        return -1;
-    }
 
 #ifdef ENGINE_DEBUG
     LOG_MSG("ChannelArchiver thread 0x%08X entering main loop\n",
             epicsThreadGetIdSelf());
 #endif
-    try
-    {
         // Main loop
 #ifdef HAVE_SIGACTION
         struct sigaction action;
@@ -148,11 +138,6 @@ int main(int argc, const char *argv[])
         {
             theEngine->process();
         }
-    }
-    catch (GenericException &e)
-    {
-        LOG_MSG("Exception caugh in main loop:\n%s\n", e.what());
-    }
 
     // If engine is not shut down properly (ca_task_exit !),
     // the MS VC debugger will freak out

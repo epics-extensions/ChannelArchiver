@@ -353,8 +353,6 @@ bool HTTPClientConnection::analyzeInput()
     
     stdString path = _input_line[0].substr(4, pos-5);
     stdString protocol = _input_line[0].substr(pos+5);
-    try
-    {
         // Linear search ?!
         // Hash or map lookup isn't straightforward
         // because path has to be cut for parameters first...
@@ -386,12 +384,6 @@ bool HTTPClientConnection::analyzeInput()
             }
         }
         pathError(path);
-    }
-    catch (GenericException &e)
-    {
-        LOG_MSG("HTTPClientConnection: Error in PathHandler for '%s':\n%s\n",
-                path.c_str(), e.what());
-    }
     return true;
 }
 

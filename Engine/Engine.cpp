@@ -15,9 +15,8 @@
 #include "epicsTimeHelper.h"
 #include "ArchiveException.h"
 #include "MsgLogger.h"
-// rtree
-#include "archiver_index.h"
 // Storage
+#include "IndexFile.h"
 #include "DirectoryFile.h"
 #include "DataFile.h"
 // Engine

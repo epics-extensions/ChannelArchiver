@@ -36,10 +36,6 @@ private:
 	BinArchive				*_archive;
 	DirectoryFileIterator	_dir;
 	RegularExpression		*_regex;
-
-	// Used in lockBuffer/addBuffer/addValue/releaseBuffer
-	// to keep reference to last header
-	DataHeaderIterator		*_append_buffer;
 };
 
 inline BinArchive *BinChannelIterator::getArchive ()

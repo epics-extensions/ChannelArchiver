@@ -8,7 +8,6 @@ void BinChannelIterator::init ()
 {
     _archive = 0;
     _regex = 0;
-    _append_buffer = 0;
     _dir.getChannel()->setChannelIterator (this);
 }
 
@@ -19,7 +18,6 @@ BinChannelIterator::BinChannelIterator ()
 
 BinChannelIterator & BinChannelIterator::operator = (const BinChannelIterator &rhs)
 {
-    // check _append_buffer !!
     _archive = rhs._archive;
     _dir = rhs._dir;
     _dir.getChannel()->setChannelIterator (this);
@@ -53,11 +51,6 @@ void BinChannelIterator::clear ()
         _regex->release ();
         _regex = 0;
     }
-    if (_append_buffer)
-    {
-        delete _append_buffer;
-        _append_buffer = 0;
-    }
     _archive = 0;
     _dir.getChannel()->setChannelIterator (0);
 }
@@ -79,8 +72,6 @@ ChannelI *BinChannelIterator::getChannel ()
 
 bool BinChannelIterator::next ()
 {
-    if (_append_buffer)
-        throwDetailedArchiveException (Invalid, "Open append-buffer");
     do
         _dir.next ();
     while (_dir.isValid() && _regex &&

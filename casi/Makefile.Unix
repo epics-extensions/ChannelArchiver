@@ -25,7 +25,7 @@ CC = g++
 # C compiler flags
 # -GX: support exceptions
 # RedHat 6.1
-CFLAGS = -g -fPIC -D_X86_ $(INCLUDES) -D$(HOST_ARCH)
+CFLAGS = -O -g -fPIC -D_X86_ $(INCLUDES) -D$(HOST_ARCH)
 # Solaris @ LANL
 #CFLAGS = $(INCLUDES)
 
@@ -61,6 +61,23 @@ PY_FLAGS =
 #PERL_LIB=
 # RedHat7
 PERL_INC=-I/usr/lib/perl5/5.6.0/i386-linux/CORE
+
+OS_VER_MAJ=0
+OS_VER_MIN=0
+ifeq ($(HOST_ARCH),hp700)
+OS_VER_MAJ=$(shell uname -r | cut -d. -f2)
+OS_VER_MIN=$(shell uname -r | cut -d. -f3)
+endif
+ifeq ($(HOST_ARCH),Linux)
+OS_VER_MAJ=$(shell uname -r | cut -d. -f1)
+OS_VER_MIN=$(shell uname -r | cut -d. -f2)
+endif
+ifeq ($(HOST_ARCH),solaris)
+# first digit is always 5 for solaris
+OS_VER_MAJ=$(shell uname -r | cut -d. -f2)
+endif
+
+CFLAGS += -DOS_VER_MAJ=$(OS_VER_MAJ) -DOS_VER_MIN=$(OS_VER_MIN)
 
 all::	tcl python perl
 

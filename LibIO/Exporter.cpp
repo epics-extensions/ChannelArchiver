@@ -126,7 +126,8 @@ void Exporter::printValue (ostream *out, const osiTime &time, const ValueI *v)
 	{
 		const CtrlInfoI *info = v->getCtrlInfo ();
 
-		if (info && info->getType() == CtrlInfoI::Enumerated)
+		if (v->getType() == DBR_TIME_STRING  ||
+			(info && info->getType() == CtrlInfoI::Enumerated))
 		{
 			v->getValue (txt);
 			*out << '\t' << txt;

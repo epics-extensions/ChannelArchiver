@@ -7,8 +7,6 @@
 #include <BinChannelIterator.h>
 #include <MultiArchive.h>
 #include <ArchiveException.h>
-USE_STD_NAMESPACE
-USING_NAMESPACE_CHANARCH
 #include "archive.h"
 #include "channel.h"
 #include "value.h"
@@ -27,7 +25,7 @@ static const char *osi2txt (const osiTime &osi)
      osiTime2vals (osi, year, month, day, hour, min, sec, nano);
 
      sprintf (txt, "%4d/%02d/%02d %02d:%02d:%02d.%09d",
-	      year, month, day, hour, min, sec, nano);
+          year, month, day, hour, min, sec, nano);
      return txt;
 }
 
@@ -36,20 +34,20 @@ static const char *osi2txt (const osiTime &osi)
 //
 static bool text2osi (const char *text, osiTime &osi)
 {
-	int     year, month, day, hour, minute;
-	double  second;
+    int     year, month, day, hour, minute;
+    double  second;
 
-	if (sscanf (text, "%04d/%02d/%02d %02d:%02d:%lf",
-		&year, &month, &day,
-		&hour, &minute, &second)  != 6)
-		return false;
+    if (sscanf (text, "%04d/%02d/%02d %02d:%02d:%lf",
+        &year, &month, &day,
+        &hour, &minute, &second)  != 6)
+        return false;
 
-	int secs = (int) second;
-	unsigned long nano = (unsigned long) ((second - secs) * 1000000000L);
+    int secs = (int) second;
+    unsigned long nano = (unsigned long) ((second - secs) * 1000000000L);
 
-	vals2osiTime (year, month, day, hour, minute, secs, nano, osi);
+    vals2osiTime (year, month, day, hour, minute, secs, nano, osi);
 
-	return true;
+    return true;
 }
 
 // ----------------------------------------------------------------
@@ -57,35 +55,35 @@ static bool text2osi (const char *text, osiTime &osi)
 
 archive::archive ()
 {
-	_name = "<undefined>";
-	_archiveI = 0;
+    _name = "<undefined>";
+    _archiveI = 0;
 }
 
 archive::~archive ()
 {
-//	cout << "TRACE: ~archive(" << _name << ")\n";
-	if (_archiveI)
-		delete _archiveI;
+//  cout << "TRACE: ~archive(" << _name << ")\n";
+    if (_archiveI)
+        delete _archiveI;
 }
 
 bool archive::open (const char *name)
 {
-	_name = name;
+    _name = name;
 
-	if (_archiveI)
-		delete _archiveI;
+    if (_archiveI)
+        delete _archiveI;
 
-	try
-	{
-		_archiveI = new MultiArchive (_name);
-	}
-	catch (ArchiveException &e)
-	{
-		_name = "<error: cannot open>";
-		return false;
-	}
+    try
+    {
+        _archiveI = new MultiArchive (_name);
+    }
+    catch (ArchiveException &e)
+    {
+        _name = "<error: cannot open>";
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
 bool archive::findChannelByName (const char *name, channel &c)
@@ -93,10 +91,10 @@ bool archive::findChannelByName (const char *name, channel &c)
     if (! _archiveI)
         return false;
     
-	if (c._iter == 0)
-		c.setIter (_archiveI);
+    if (c._iter == 0)
+        c.setIter (_archiveI);
 
-	return _archiveI->findChannelByName (name, c._iter);
+    return _archiveI->findChannelByName (name, c._iter);
 }
 
 bool archive::findChannelByPattern (const char *pattern, channel &c)
@@ -104,10 +102,10 @@ bool archive::findChannelByPattern (const char *pattern, channel &c)
     if (! _archiveI)
         return false;
     
-	if (c._iter == 0)
-		c.setIter (_archiveI);
+    if (c._iter == 0)
+        c.setIter (_archiveI);
 
-	return _archiveI->findChannelByPattern (pattern, c._iter);
+    return _archiveI->findChannelByPattern (pattern, c._iter);
 }
 
 bool archive::findFirstChannel (channel &c)
@@ -115,10 +113,10 @@ bool archive::findFirstChannel (channel &c)
     if (! _archiveI)
         return false;
     
-	if (c._iter == 0)
-		c.setIter (_archiveI);
+    if (c._iter == 0)
+        c.setIter (_archiveI);
 
-	return _archiveI->findFirstChannel (c._iter);
+    return _archiveI->findFirstChannel (c._iter);
 }
 
 const char *archive::name ()
@@ -138,23 +136,23 @@ const char *archive::name ()
 
 bool archive::write (const char *name, double hours_per_file)
 {
-	if (_archiveI)
-		delete _archiveI;
+    if (_archiveI)
+        delete _archiveI;
     
-	try
-	{
+    try
+    {
         _name = name;
         BinArchive *arch = new BinArchive (name, true /* for write */);
         arch->setSecsPerFile ((unsigned long) (hours_per_file * 60 * 60));
         _archiveI = arch;
     }
-	catch (ArchiveException &e)
-	{
-		_name = "<error: cannot create/append>";
-		return false;
-	}
+    catch (ArchiveException &e)
+    {
+        _name = "<error: cannot create/append>";
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
 bool archive::addChannel (const char *name, channel &c)
@@ -163,7 +161,7 @@ bool archive::addChannel (const char *name, channel &c)
         return false;
 
     if (c._iter == 0)
-		c.setIter (_archiveI);
+        c.setIter (_archiveI);
     else // check for BinArchive compliance
     {
         if (dynamic_cast<BinChannelIterator *>(c._iter) == 0)
@@ -171,7 +169,7 @@ bool archive::addChannel (const char *name, channel &c)
                                            "no BinArchive");
     }
         
-	return _archiveI->addChannel (name, c._iter);
+    return _archiveI->addChannel (name, c._iter);
 }
 
 const char *archive::nextFileTime (const char *current_time)
@@ -196,135 +194,135 @@ const char *archive::nextFileTime (const char *current_time)
 
 channel::channel ()
 {
-	_iter = 0;
-//	cout << "TRACE: channel()\n";
+    _iter = 0;
+//  cout << "TRACE: channel()\n";
 }
 
 channel::~channel ()
 {
-	setIter (0);
-//	cout << "TRACE: ~channel()\n";
+    setIter (0);
+//  cout << "TRACE: ~channel()\n";
 }
 
 bool channel::valid ()
 {
-	return _archiveI && _iter && _iter->isValid();
+    return _archiveI && _iter && _iter->isValid();
 }
 
 const char *channel::name ()
 {
-	if (valid())
-		return _iter->getChannel()->getName();
+    if (valid())
+        return _iter->getChannel()->getName();
 
-	return "<invalid>";
+    return "<invalid>";
 }
 
 bool channel::next ()
 {
-	if (_iter)
-		return _iter->next ();
+    if (_iter)
+        return _iter->next ();
 
-	return false;
+    return false;
 }
 
 const char *channel::getFirstTime ()
 {
-	if (!valid())
+    if (!valid())
         throwDetailedArchiveException (Invalid,
                                        "getFirstTime called "
                                        "for invalid channel");
-	return osi2txt (_iter->getChannel()->getFirstTime());
+    return osi2txt (_iter->getChannel()->getFirstTime());
 }
 
 const char *channel::getLastTime ()
 {
-	if (!valid())
+    if (!valid())
         throwDetailedArchiveException (Invalid,
                                        "getLastTime called "
                                        "for invalid channel");
 
-	return osi2txt (_iter->getChannel()->getLastTime());
+    return osi2txt (_iter->getChannel()->getLastTime());
 }
 
 // internal helper routine
 bool channel::testValue (value &v)
 {
-	if (!valid())
-	{
-		v.setIter (0);
-		return false;
-	}
+    if (!valid())
+    {
+        v.setIter (0);
+        return false;
+    }
 
-	if (v._iter == 0)
-		v.setIter (_archiveI->newValueIterator());
-	return true;
+    if (v._iter == 0)
+        v.setIter (_archiveI->newValueIterator());
+    return true;
 }
 
 bool channel::getFirstValue (value &v)
 {
-	if (! testValue (v))
+    if (! testValue (v))
         throwDetailedArchiveException (Invalid,
                                        "getFirstValue called "
                                        "for invalid channel");
-	return _iter->getChannel()->getFirstValue (v._iter);
+    return _iter->getChannel()->getFirstValue (v._iter);
 }
 
 bool channel::getLastValue (value &v)
 {
-	if (! testValue (v))
+    if (! testValue (v))
         throwDetailedArchiveException (Invalid,
                                        "getLastValue called "
                                        "for invalid channel");
-	return _iter->getChannel()->getLastValue (v._iter);
+    return _iter->getChannel()->getLastValue (v._iter);
 }
 
 bool channel::getValueAfterTime (const char *time, value &v)
 {
-	if (! testValue (v))
+    if (! testValue (v))
         throwDetailedArchiveException (Invalid,
                                        "getValueAfterTime called "
                                        "for invalid channel");
         
-	osiTime osi;
-	if (! text2osi (time, osi))
-	{
-		v.setIter (0);
-		return false;
-	}
+    osiTime osi;
+    if (! text2osi (time, osi))
+    {
+        v.setIter (0);
+        return false;
+    }
 
-	return _iter->getChannel()->getValueAfterTime (osi, v._iter);
+    return _iter->getChannel()->getValueAfterTime (osi, v._iter);
 }
 
 bool channel::getValueBeforeTime (const char *time, value &v)
 {
-	if (! testValue (v))
+    if (! testValue (v))
         throwDetailedArchiveException (Invalid,
                                        "getValueBeforeTime called "
                                        "for invalid channel");
-	osiTime osi;
-	if (! text2osi (time, osi))
-	{
-		v.setIter (0);
-		return false;
-	}
+    osiTime osi;
+    if (! text2osi (time, osi))
+    {
+        v.setIter (0);
+        return false;
+    }
 
-	return _iter->getChannel()->getValueBeforeTime (osi, v._iter);
+    return _iter->getChannel()->getValueBeforeTime (osi, v._iter);
 }
 
 bool channel::getValueNearTime (const char *time, value &v)
 {
-	if (! testValue (v))
+    if (! testValue (v))
         throwDetailedArchiveException (Invalid,
                                        "getValueNearTime called "
                                        "for invalid channel");
-	osiTime osi;
-	if (! text2osi (time, osi))
-	{
-		v.setIter (0);
-		return false;
-	}
+    osiTime osi;
+    if (! text2osi (time, osi))
+    {
+        v.setIter (0);
+        return false;
+    }
 
-	return _iter->getChannel()->getValueNearTime (osi, v._iter);
+    return _iter->getChannel()->getValueNearTime (osi, v._iter);
 }
 
 int channel::lockBuffer (const value &value)
@@ -332,7 +330,7 @@ int channel::lockBuffer (const value &value)
     if (! valid()  ||  value._iter == 0)
         return 0;
     
-	return _iter->getChannel()->lockBuffer (*value._iter->getValue(),
+    return _iter->getChannel()->lockBuffer (*value._iter->getValue(),
                                             value._iter->getPeriod());
 }
 
@@ -369,14 +367,14 @@ void channel::releaseBuffer ()
 
 void channel::setIter (ArchiveI *archiveI)
 {
-	if (_iter)
-		delete _iter;
+    if (_iter)
+        delete _iter;
 
-	_archiveI = archiveI;
-	if (_archiveI)
-		_iter = _archiveI->newChannelIterator();
-	else
-		_iter = 0;
+    _archiveI = archiveI;
+    if (_archiveI)
+        _iter = _archiveI->newChannelIterator();
+    else
+        _iter = 0;
 }
 
 // ----------------------------------------------------------------
@@ -384,80 +382,91 @@ void channel::setIter (ArchiveI *archiveI)
 
 value::value ()
 {
-	_iter = 0;
-//	cout << "TRACE: value()\n";
+    _iter = 0;
+//  cout << "TRACE: value()\n";
 }
 
 value::~value ()
 {
-	setIter (0);
-//	cout << "TRACE: ~value()\n";
+    setIter (0);
+//  cout << "TRACE: ~value()\n";
 }
 
 bool value::valid ()
 {
-	return _iter && _iter->isValid();
+    return _iter && _iter->isValid();
 }
 
 bool value::isInfo ()
 {
-	if (! valid())
+    if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
-	return _iter->getValue()->isInfo();
+    return _iter->getValue()->isInfo();
 }
 
 const char *value::type ()
 {
-	static char txt[20];
+    static char txt[20];
 
-	if (! valid())
-		return "<invalid>";
+    if (! valid())
+        return "<invalid>";
 
-	DbrType type = _iter->getValue()->getType ();
-	if (type < dbr_text_dim)
-		return dbr_text[type];
+    DbrType type = _iter->getValue()->getType ();
+    if (type < dbr_text_dim)
+        return dbr_text[type];
 
-	sprintf (txt, "unknown: 0x%X", type);
-	return txt;
+    sprintf (txt, "unknown: 0x%X", type);
+    return txt;
 }
 
 int value::count ()
 {
-	if (! valid())
+    if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
-	return _iter->getValue()->getCount();
+    return _iter->getValue()->getCount();
 }
 
 double value::get ()
 {
-	return getidx (0);
+    return getidx (0);
 }
 
 double value::getidx (int index)
 {
-	if (! valid())
+    if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
-	return _iter->getValue()->getDouble(index);
+    return _iter->getValue()->getDouble(index);
 }
 
 const char *value::text ()
 {
-	static stdString value_text; // keep after 'return'
-	if (valid())
-	{
-		_iter->getValue()->getValue(value_text);
-		return value_text.c_str();
-	}
+    static size_t l = 0; // Text has to be kept after return
+    static char *text = 0;
+   
+    stdString value;
+    if (valid())
+    {
+        _iter->getValue()->getValue(value);
+        if (l < value.length())
+        {
+            if (text)
+                free(text);
+            text = (char *) malloc(value.length() + 1);
+            l = value.length() + 1;
+        }
+        memcpy(text, value.c_str(), value.length()+1);
+        return text;
+    }
 
-	return "<invalid>";
+    return "<invalid>";
 }
 
 const char *value::time ()
 {
-	if (! valid())
+    if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
     return osi2txt (_iter->getValue()->getTime());
@@ -465,8 +474,8 @@ const char *value::time ()
 
 const char *value::status ()
 {
-	static stdString text; // keep after 'return'
-	if (!valid())
+    static stdString text; // keep after 'return'
+    if (!valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
     _iter->getValue()->getStatus(text);
@@ -475,18 +484,18 @@ const char *value::status ()
 
 bool value::next ()
 {
-	if (_iter)
-		return _iter->next ();
+    if (_iter)
+        return _iter->next ();
 
-	return false;
+    return false;
 }
 
 bool value::prev ()
 {
-	if (_iter)
-		return _iter->prev ();
+    if (_iter)
+        return _iter->prev ();
 
-	return false;
+    return false;
 }
 
 int value::determineChunk (const char *until)
@@ -504,8 +513,8 @@ int value::determineChunk (const char *until)
 
 void value::setIter (ValueIteratorI *iter)
 {
-	if (_iter)
-		delete _iter;
-	_iter = iter;
+    if (_iter)
+        delete _iter;
+    _iter = iter;
 }
 

@@ -21,9 +21,12 @@ an UnknownError.
 
 /* Includes for compilation of wrapper */
 %{
+/* Perl: The perl header files use list in a very unfortunate
+ *       manner. Existing definition of assert leads to warnings.
+ */
+#undef list
+#undef assert
 #include <MultiArchive.h>
-USE_STD_NAMESPACE
-USING_NAMESPACE_CHANARCH
 #include "archive.h"
 #include "channel.h"
 #include "value.h"

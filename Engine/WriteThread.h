@@ -7,40 +7,40 @@
 //
 // It handles all the Archive writes,
 // it doesn't do any ChannelAccess.
-class WriteThread : public Thread
+class WriteThread : public GenericThread
 {
 public:
-    WriteThread ()
-        : _wait (true) // initially taken
+    WriteThread()
+        : _wait(true) // initially taken
     {
         _go = true;
         _writing = false;
     }
 
     // request this thread to exit ASAP
-    void stop ()
+    void stop()
     {
         _go = false;
-        _wait.give ();
+        _wait.give();
     }
 
-    bool isRunning () const
+    bool isRunning() const
     {   return _go; }
 
-    void write (const osiTime &now)
+    void write(const osiTime &now)
     {
         if (_writing)
         {
-            LOG_MSG ("Warning: WriteThread called while busy\n");
+            LOG_MSG("Warning: WriteThread called while busy\n");
             return;
         }
         
         _now = now;
-        if (! _wait.give ())
-            LOG_MSG ("WriteThread::write: cannot give semaphore\n");
+        if (! _wait.give())
+            LOG_MSG("WriteThread::write: cannot give semaphore\n");
     }
 
-    virtual int run ();
+    virtual int run();
 
 private:
     osiTime         _now;

@@ -20,7 +20,7 @@ LIBS = -L $(EXT)/lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARC
 #LIBS += -ldl  -lsocket -lnsl -lm
 
 # compiler, linker
-CC = g++
+CC = g++ -g
 
 # C compiler flags
 # -GX: support exceptions
@@ -93,9 +93,9 @@ static-tcl::	dirs
 
 perl::	dirs
 	(cd perl/O.$(HOST_ARCH);\
-	 $(SWIG) -perl5 -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i;\
+	 $(SWIG) -perl5 -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i;\
 	 $(CC) -c $(CFLAGS) $(PERL_FLAGS) $(PERL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp;\
-	 $(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(PERL_LIB)  $(LIBS)  -o casic.so)
+	 $(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(PERL_LIB)  $(LIBS)  -o casi.so)
 
 
 clean::

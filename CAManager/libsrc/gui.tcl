@@ -1346,7 +1346,7 @@ proc camGUI::aPrefs {} {
   set ::_oport $::_port
 
   toplevel .prefs
-  wm title .prefs "Prefferences"
+  wm title .prefs "Preferences"
   label .prefs.xxx
 
   set ::TdontCheckAtAll $::dontCheckAtAll

@@ -384,7 +384,6 @@ sub create_HTTPD($)
     bind(HTTP, sockaddr_in($port, INADDR_ANY))
         or die "bind: $!";
     listen(HTTP,SOMAXCONN) or die "listen: $!";
-    $SIG{CHLD} = 'IGNORE';
     print("Server started on port $port\n");
     return \*HTTP;
 }
@@ -603,7 +602,7 @@ sub check_HTTPD($)
 		#print "Found end of request\n";
 		last;
 	    }
-		$num = select($mask=$mask_in, undef, undef, $read_timeout);
+	    $num = select($mask=$mask_in, undef, undef, $read_timeout);
 	}
 	# Respond
 	print CLIENT "HTTP/1.1 200 OK\n";

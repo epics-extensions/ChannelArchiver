@@ -60,7 +60,7 @@ IndexFile *open_index(xmlrpc_env *env, int key)
                                        "Invalid key %d", key);
         return 0;
     } 
-    IndexFile *index = new IndexFile;
+    IndexFile *index = new IndexFile(50);
     if (!index)
     {
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,

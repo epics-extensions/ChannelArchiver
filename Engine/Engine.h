@@ -120,6 +120,7 @@ private:
     struct ca_client_context *ca_context;
     
     epicsTime       _start_time;
+    int             RTreeM;
     stdString       index_name;
     stdString       description;
     bool            is_writing;

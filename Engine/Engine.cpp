@@ -53,6 +53,7 @@ Engine::Engine(const stdString &index_name)
         throwDetailedArchiveException(
             Unsupported, "Cannot run more than one Engine");
     _start_time = epicsTime::getCurrent();
+    RTreeM = 50;
     this->index_name = index_name;
     is_writing = false;
     description = "EPICS Channel Archiver Engine";
@@ -113,7 +114,7 @@ void Engine::shutdown()
     epicsTime now;
     now = epicsTime::getCurrent();
     mutex.lock();
-    IndexFile index;
+    IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
     {
         stdList<ArchiveChannel *>::iterator ch;
@@ -234,14 +235,14 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
     if (new_channel)
     {
         // TODO: Check the locking of the file access
-        IndexFile index;
+        IndexFile index(RTreeM);
         if (index.open(index_name.c_str(), false))
         {   // Is channel already in Archive?
             RTree *tree = index.getTree(channel_name);
             if (tree)
             {
                 RTree::Datablock block;
-                RTree::Node node;
+                RTree::Node node(tree->getM(), true);
                 int idx;
                 if (tree->getLastDatablock(node, idx, block))
                 {   // extract previous knowledge from Archive
@@ -358,7 +359,7 @@ stdString Engine::makeDataFileName()
 void Engine::writeArchive()
 {
     is_writing = true;
-    IndexFile index;
+    IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
     {
         stdList<ArchiveChannel *>::iterator ch;

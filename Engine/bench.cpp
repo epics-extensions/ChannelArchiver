@@ -32,7 +32,7 @@ bool write_samples(const stdString &index_name,
                    const stdString &channel_name,
                    size_t samples)
 {
-    IndexFile index;
+    IndexFile index(50);
     CtrlInfo info;
 
     if (!index.open(index_name.c_str(), false))
@@ -165,7 +165,7 @@ bool old_write_samples(const stdString &index_name,
 size_t read_samples(const stdString &index_name,
                     const stdString &channel_name)
 {
-    IndexFile index;
+    IndexFile index(50);
 
     if (!index.open(index_name.c_str()))
     {

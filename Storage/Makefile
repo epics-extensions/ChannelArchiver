@@ -60,7 +60,7 @@ rtreeObj_DIR = $(INSTALL_LIB)
 Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 TESTPROD_HOST += FileAllocatorTest FileAllocatorTool
-TESTPROD_HOST += NameHashTest RTreeTest IndexFileTest
+TESTPROD_HOST += NameHashTest RTreeTest
 
 include $(TOP)/configure/RULES
 

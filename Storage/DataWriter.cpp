@@ -14,7 +14,7 @@ static stdString makeDataFileName()
     int year, month, day, hour, min, sec;
     unsigned long nano;
     char buffer[80];
-                                                                                    
+    
     epicsTime now = epicsTime::getCurrent();    
     //    if (getSecsPerFile() == SECS_PER_MONTH)
     //{
@@ -37,14 +37,14 @@ DataWriter::DataWriter(DirectoryFile &index,
                        size_t num_samples)
         : index(index), channel_name(channel_name),
           ctrl_info(ctrl_info), dbr_type(dbr_type),
-          dbr_count(dbr_count), period(period)
+          dbr_count(dbr_count), period(period), header(0), available(0)
 {
     DataFile *datafile;
 
+    // Size of next buffer should at least hold num_samples
     calc_next_buffer_size(num_samples);
     raw_value_size = RawValue::getSize(dbr_type, dbr_count);
-    header = 0;
-    available = 0;    
+    // Find or add channel name
     dfi = index.find(channel_name);
     if (!dfi.isValid())
         dfi = index.add(channel_name);
@@ -54,6 +54,7 @@ DataWriter::DataWriter(DirectoryFile &index,
                  channel_name.c_str());
         return;
     }
+    // Find or add appropriate data buffer
     if (!Filename::isValid(dfi.entry.data.last_file))
     {   // - There is no datafile, no buffer
         // Create data file
@@ -70,7 +71,7 @@ DataWriter::DataWriter(DirectoryFile &index,
         FileOffset ctrl_info_offset;
         if (!datafile->addCtrlInfo(ctrl_info, ctrl_info_offset))
         {
-             LOG_MSG ("DataWriter(%s): Cannot add CtrlInfo to data file '%s'\n",
+             LOG_MSG ("DataWriter(%s): Cannot add CtrlInfo to file '%s'\n",
                  channel_name.c_str(), data_file_name.c_str());
              datafile->release();
              return;
@@ -78,17 +79,16 @@ DataWriter::DataWriter(DirectoryFile &index,
         // add first header
         header = datafile->addHeader(dbr_type, dbr_count,
                                      period, next_buffer_size);
+        datafile->release(); // now ref'ed by header
         if (!header)
         {
             LOG_MSG ("DataWriter(%s): Cannot add Header to data file '%s'\n",
                     channel_name.c_str(), data_file_name.c_str());
-           datafile->release();
            return;
         }    
         header->data.ctrl_info_offset = ctrl_info_offset;
         // Upp the buffer size
         calc_next_buffer_size(next_buffer_size);
-        datafile->release(); // now ref'ed by header
         // Will add to index when we release the buffer
     }
     else
@@ -97,7 +97,7 @@ DataWriter::DataWriter(DirectoryFile &index,
                                        dfi.entry.data.last_file, true);
         if (!datafile)
         {
-            LOG_MSG("ArchiveChannel::write(%s) cannot open data file %s\n",
+            LOG_MSG("DataWriter(%s) cannot open data file %s\n",
                     channel_name.c_str(), dfi.entry.data.last_file);
             return;
         } 
@@ -105,26 +105,44 @@ DataWriter::DataWriter(DirectoryFile &index,
         datafile->release(); // now ref'ed by header
         if (!header)
         {
-            LOG_MSG("ArchiveChannel::write(%s): cannot get header %s @ 0x%lX\n",
+            LOG_MSG("DataWriter(%s): cannot get header %s @ 0x%lX\n",
                     channel_name.c_str(),
-                    dfi.entry.data.last_file,
-                    dfi.entry.data.last_offset);
+                    dfi.entry.data.last_file, dfi.entry.data.last_offset);
             return;
         }
-        // TODO: Compare CtrlInfo
-        if (header->data.dbr_type != dbr_type  ||
-            header->data.nelements != dbr_count)
+        // See if anything has changed
+        CtrlInfo prev_ctrl_info;
+        if (!prev_ctrl_info.read(header->datafile,
+                                 header->data.ctrl_info_offset))
         {
-            // TODO: Add new header because type has changed
+            LOG_MSG("DataWriter(%s): header in %s @ 0x%lX"
+                    " has bad CtrlInfo\n",
+                    channel_name.c_str(),
+                    header->datafile->getBasename().c_str(),
+                    header->offset);
+            delete header;
+            header = 0;
+            return;            
+        }
+        if (prev_ctrl_info != ctrl_info)
+        {   // Add new header because info has changed
+            if (!addNewHeader(true))
+                return;
+        }
+        else if (header->data.dbr_type != dbr_type  ||
+                 header->data.nelements != dbr_count)
+        {   // Add new header because type has changed
+            if (!addNewHeader(false))
+                return;
         }
         else
-        {
+        {   // All fine, just check if we're already in bigger league
             size_t capacity = header->capacity();
             if (capacity > num_samples)
                 calc_next_buffer_size(capacity);
-            available = header->available();
         }
-    }
+    }   
+    available = header->available();
 }
     
 DataWriter::~DataWriter()
@@ -140,7 +158,8 @@ DataWriter::~DataWriter()
             if (dfi.entry.data.first_offset == INVALID_OFFSET ||
                 !Filename::isValid(dfi.entry.data.first_file))
             {
-                dfi.entry.setFirst(header->datafile->getBasename(), header->offset);
+                dfi.entry.setFirst(header->datafile->getBasename(),
+                                   header->offset);
                 dfi.entry.data.first_save_time = header->data.begin_time;
             }
             // Always update the index's end
@@ -163,31 +182,9 @@ bool DataWriter::add(const RawValue::Data *data)
         return false;
     if (available <= 0) // though it might be full
     {
-        DataHeader *new_header =
-            header->datafile->addHeader(dbr_type, dbr_count, period,
-                                        next_buffer_size);
-        if (!new_header)
+        if (!addNewHeader(false))
             return false;
-        new_header->data.ctrl_info_offset = header->data.ctrl_info_offset;
-        // Link old header to new one
-        header->set_next(new_header->datafile->getBasename(),
-                         new_header->offset);
-        header->write();
-        // back from new to old
-        new_header->set_prev(header->datafile->getBasename(),
-                             header->offset);        
-        // Update index's start if this was the first header
-        if (dfi.entry.data.first_offset == INVALID_OFFSET ||
-            !Filename::isValid(dfi.entry.data.first_file))
-        {
-            dfi.entry.setFirst(header->datafile->getBasename(), header->offset);
-            dfi.entry.data.first_save_time = header->data.begin_time;
-        }        
-        // Switch to new header
-        delete header;
-        header = new_header;
-        // Upp the buffer size
-        calc_next_buffer_size(next_buffer_size);
+        available = header->available();
     }
     // Add the value
     available -= 1;
@@ -225,5 +222,58 @@ void DataWriter::calc_next_buffer_size(size_t start)
     if (log2 > 12) // maximum: 2^12 = 4096
         log2 = 12;
     next_buffer_size = 1 << log2;
+}
+
+// Helper: Assuming that we have
+// a valid header, we add a new one,
+// because the existing one is full or
+// has the wrong ctrl_info
+//
+// Will write ctrl_info out if new_ctrl_info is set,
+// otherwise the new header points to the existin ctrl_info
+bool DataWriter::addNewHeader(bool new_ctrl_info)
+{
+    LOG_ASSERT(header != 0);
+    FileOffset ctrl_info_offset;
+    if (new_ctrl_info)
+    {
+        if (!header->datafile->addCtrlInfo(ctrl_info, ctrl_info_offset))
+        {
+            LOG_MSG ("DataWriter(%s): Cannot add CtrlInfo to file '%s'\n",
+                     channel_name.c_str(),
+                     header->datafile->getBasename().c_str());
+            return false;
+        }        
+    }
+    else // use existing one
+        ctrl_info_offset = header->data.ctrl_info_offset;
+        
+    DataHeader *new_header =
+        header->datafile->addHeader(dbr_type, dbr_count, period,
+                                    next_buffer_size);
+    if (!new_header)
+        return false;
+    new_header->data.ctrl_info_offset = ctrl_info_offset;
+    // Link old header to new one
+    header->set_next(new_header->datafile->getBasename(),
+                     new_header->offset);
+    header->write();
+    // back from new to old
+    new_header->set_prev(header->datafile->getBasename(),
+                         header->offset);        
+    // Update index's start if this was the first header
+    if (dfi.entry.data.first_offset == INVALID_OFFSET ||
+        !Filename::isValid(dfi.entry.data.first_file))
+    {
+        dfi.entry.setFirst(header->datafile->getBasename(),
+                           header->offset);
+        dfi.entry.data.first_save_time = header->data.begin_time;
+    }        
+    // Switch to new header
+    delete header;
+    header = new_header;
+    // Upp the buffer size
+    calc_next_buffer_size(next_buffer_size);
+    return true;
 }
     

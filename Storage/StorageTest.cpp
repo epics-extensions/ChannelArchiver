@@ -40,7 +40,7 @@ void add(const stdString &index_name)
     ctrl_info.setNumeric(3, "Volt",
                          -10.0, 10.0,
                           -9.0,  9.0,
-                          -8.0,  8.0);
+                          -8.0,  7.0);
     DbrType dbr_type = DBR_TIME_DOUBLE;
     DbrCount dbr_count = 1;
     size_t num_samples = 100;
@@ -56,7 +56,11 @@ void add(const stdString &index_name)
     data->status = 0;
     data->severity = 0;
     writer->add(data);
-
+    
+    RawValue::setTime(data, epicsTime::getCurrent());
+    data->value = 3.15;
+    writer->add(data);
+    
     RawValue::free(data);
     
     delete writer;

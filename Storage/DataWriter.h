@@ -53,4 +53,6 @@ private:
     class DataHeader *header;
     size_t available;
     MemoryBuffer<dbr_time_string> cvt_buffer;
+
+    bool addNewHeader(bool new_ctrl_info);
 };

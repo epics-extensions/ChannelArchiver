@@ -11,6 +11,8 @@
 #include "EngineConfig.h"
 #include "Engine.h"
 
+#undef DEBUG_ENGINECONFIG
+
 static bool parse_double(const stdString &t, double &n)
 {
     const char *s = t.c_str();
@@ -106,7 +108,8 @@ bool EngineConfig::read(Guard &engine_guard, class Engine *engine,
     return true;
 }
 
-static bool add_channel(FUX::Element *group, const GroupInfo *gi, ArchiveChannel *c)
+static bool add_channel(FUX::Element *group,
+                        const GroupInfo *gi, ArchiveChannel *c)
 {
     char buf[100];
     FUX::Element *channel = new FUX::Element(group, "channel");
@@ -127,7 +130,6 @@ static bool add_channel(FUX::Element *group, const GroupInfo *gi, ArchiveChannel
         channel->add(new FUX::Element(channel, "monitor"));
     if (c->getGroupsToDisable(guard).test(gi->getID()))
         channel->add(new FUX::Element(channel, "disable"));
-
     return true;
 }
 
@@ -258,11 +260,12 @@ bool EngineConfig::handle_channel(Guard &engine_guard, Engine *engine,
             disable = true;
         ++els;
     }
-
+#   ifdef DEBUG_ENGINECONFIG
     printf("'%s' - '%s': period %g, %s%s\n",
            group->getName().c_str(), name.c_str(), period,
            (monitor ? "monitor" : "scan"),
            (disable ? ", disable" : ""));
+#   endif
     engine->addChannel(engine_guard, group, name, period, disable, monitor);
     return true;
 }

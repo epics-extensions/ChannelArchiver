@@ -12,14 +12,16 @@ bool name_hash_test()
     FileAllocator fa;
     LOG_ASSERT(fa.attach(f, NameHash::anchor_size));
     NameHash names(fa, 0);
+    stdString ID_txt;
+    ID_txt = "ID";
     LOG_ASSERT(names.init(7));
-    LOG_ASSERT(names.insert("fred", 1));
-    LOG_ASSERT(names.insert("freddy", 2));
-    LOG_ASSERT(names.insert("james", 2));
-    LOG_ASSERT(names.insert("james", 3));
-    LOG_ASSERT(names.insert("James", 4));
+    LOG_ASSERT(names.insert("fred", ID_txt, 1));
+    LOG_ASSERT(names.insert("freddy", ID_txt, 2));
+    LOG_ASSERT(names.insert("james", ID_txt, 2));
+    LOG_ASSERT(names.insert("james", ID_txt, 3));
+    LOG_ASSERT(names.insert("James", ID_txt, 4));
     FileOffset ID;
-    LOG_ASSERT(names.find("freddy", ID));
+    LOG_ASSERT(names.find("freddy", ID_txt, ID));
     LOG_ASSERT(ID == 2);
 
     NameHash::Entry entry;

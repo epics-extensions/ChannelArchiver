@@ -30,8 +30,10 @@ void SinglePeriodScanList::remove(ArchiveChannel *channel)
     {
         if (*ci == channel)
         {
+#           ifdef DEBUG_SCANLIST
             printf("SinglePeriodScanList(%g s): Removed '%s'\n",
                    period, channel->getName().c_str());
+#           endif
             ci = channels.erase(ci);
         }
     }
@@ -79,11 +81,9 @@ void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
     stdList<SinglePeriodScanList *>::iterator li;
     SinglePeriodScanList *period_list;
     double period = channel->getPeriod(guard);
-    
     // Check it the channel is already on some
     // list where it needs to be removed
     removeChannel(channel);
-    
     // Find a scan list with suitable period
     for (li = period_lists.begin(); li != period_lists.end(); ++li)
     {
@@ -105,7 +105,6 @@ void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
     if (next_list_scan == nullTime || next_list_scan > period_list->next_scan)
         next_list_scan = period_list->next_scan;
     is_due_at_all = true;
-
 #   ifdef DEBUG_SCANLIST
     char buf[30];    
     period_list->next_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");

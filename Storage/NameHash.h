@@ -26,14 +26,15 @@ public:
     class Entry
     {
     public:
-        FileOffset next;
-        FileOffset ID;
-        stdString name;
+        stdString  name;  // Channel Name.
+        stdString  ID_txt;// String and numeric ID
+        FileOffset ID;    // (filename and offset to RTree for the channel).
+        FileOffset next;  // Offset to next entry w/ same hash value
 
-        FileOffset offset;
+        FileOffset offset;// Offset of this Entry
         FileOffset getSize() const;
-        bool read(FILE *f);
         bool write(FILE *f) const;
+        bool read(FILE *f);
     };
 
     static const long anchor_size = 8;
@@ -56,10 +57,10 @@ public:
     bool reattach();
 
     /// Insert name w/ ID
-    bool insert(const stdString &name, FileOffset ID);
+    bool insert(const stdString &name, const stdString &ID_txt, FileOffset ID);
 
     /// Locate name and obtain its ID. Returns true on success
-    bool find(const stdString &name, FileOffset &ID);
+    bool find(const stdString &name, stdString &ID_txt, FileOffset &ID);
     
     /// Start iterating over all entries (in table's order).
 
@@ -80,20 +81,15 @@ public:
 
     /// Generate info on table fill ratio and list length
     void showStats(FILE *f);
-    
 private:
     FileAllocator &fa;
-    FileOffset anchor; // Where offset gets deposited in file
-    unsigned long ht_size;  // Hash Table size (entries, not bytes)
+    FileOffset anchor;       // Where offset gets deposited in file
+    unsigned long ht_size;   // Hash Table size (entries, not bytes)
     FileOffset table_offset; // Start of HT in file
-
     bool read_HT_entry(unsigned long hash_value, FileOffset &offset);
     bool write_HT_entry(unsigned long hash_value, FileOffset offset) const;
 };
 
 /// \@}
-
-inline FileOffset NameHash::Entry::getSize() const
-{    return 4 + 4 + 2 + name.length(); }
 
 #endif

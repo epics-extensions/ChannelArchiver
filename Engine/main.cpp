@@ -48,6 +48,7 @@ FILE *logfile = 0;
 static void LoggerPrintRoutine(void *arg, const char *text)
 {
     fputs(text, stdout);
+    fflush(stdout);
     if (logfile)
     {
         fputs(text, logfile);
@@ -109,7 +110,9 @@ int main(int argc, const char *argv[])
         if (! description.get().empty())
             theEngine->setDescription(guard, description);
         EngineConfig config;
+        LOG_MSG("Reading %s\n", config_name.c_str());
         run = config.read(guard, theEngine, config_name);
+        LOG_MSG("Done Reading config.\n");
     }
 #ifdef ENGINE_DEBUG
     LOG_MSG("ChannelArchiver thread 0x%08X entering main loop\n",

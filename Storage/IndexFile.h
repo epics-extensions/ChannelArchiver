@@ -24,8 +24,8 @@
 class IndexFile
 {
 public:
-    // == 'CAI1', Chan. Arch. Index 1
-    static const unsigned long cookie = 0x43414931;
+    // == 'CAI1', Chan. Arch. Index 2
+    static const unsigned long cookie = 0x43414932;
 
     IndexFile(int RTreeM);
 

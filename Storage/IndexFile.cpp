@@ -93,6 +93,7 @@ RTree *IndexFile::addChannel(const stdString &channel)
     RTree *tree = getTree(channel);
     if (tree)
         return tree;
+    stdString tree_filename;
     long tree_anchor;
     if (!(tree_anchor = fa.allocate(RTree::anchor_size)))
     {
@@ -101,7 +102,8 @@ RTree *IndexFile::addChannel(const stdString &channel)
         return false;
     }
     tree = new RTree(fa, tree_anchor);
-    if (tree->init(RTreeM) && names.insert(channel, tree_anchor))
+    if (tree->init(RTreeM) &&
+        names.insert(channel, tree_filename, tree_anchor))
         return tree;
     delete tree;
     return 0;
@@ -109,8 +111,9 @@ RTree *IndexFile::addChannel(const stdString &channel)
 
 RTree *IndexFile::getTree(const stdString &channel)
 {
+    stdString  tree_filename;
     FileOffset tree_anchor;
-    if (!names.find(channel, tree_anchor))
+    if (!names.find(channel, tree_filename, tree_anchor))
         return 0;
     RTree *tree = new RTree(fa, tree_anchor);
     if (tree->reattach())

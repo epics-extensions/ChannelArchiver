@@ -29,6 +29,12 @@ public:
         mutex.unlock();
     }
 
+    //void releaseBriefly()
+    //{
+    //    mutex.unlock();
+    //    mutex.lock();
+    //}
+
     /// Check if the guard is assigned to the correct mutex.
     void check(const epicsMutex &the_one_it_should_be)
     {

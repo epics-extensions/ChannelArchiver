@@ -97,7 +97,7 @@ over those from FileB whenever there is an overlap.
     \begin{tabular}{ll}
      Offset  & Content \\
      \hline
-     0x0000  & 'CAI1' \\
+     0x0000  & 'CAI2' \\
      0x0004  & NameHash anchor: start (0x30), size N \\
      0x000C  & FileAllocator used list: size, start (0x24), end \\
      0x0018  & FileAllocator free list: size, start, end \\
@@ -121,20 +121,23 @@ over those from FileB whenever there is an overlap.
   \end{center}
 \end{table}
 
-\noindent Table~\ref{tab:indexfile} shows the basic layout of an index file.
-The header of the index file contains a 4-ASCII character magic id
-like 'CAI1' for ``Channel Archiver Index Type 1'',
-and the hash table anchor.
-Those 12 bytes constitute ``reserved space'' for the FileAllocator
-class. What follows is start- and end pointers for the FileAllocator's
-list of allocated and available items, because the remaining file space is
-handled by the FileAllocator class.
-The first allocated region is the NameHash, so it's start location
-would be known. Each hash table entry points to the start of channel
-entries that hashed to the repective value, and each channel entry
-contains the anchor for its RTree. Like every file block after the
-``reserved space'', the hash table and each channel entry are preceeded
-by a FileAllcator header.
+\noindent Table~\ref{tab:indexfile} shows the basic layout of an index
+file.  The header of the index file contains a 4-ASCII character magic
+id like 'CAI2' for ``Channel Archiver Index Type 2'', and the hash
+table anchor.  Those 12 bytes constitute ``reserved space'' for the
+FileAllocator class. What follows is start- and end pointers for the
+FileAllocator's list of allocated and available items, because the
+remaining file space is handled by the FileAllocator class.  The first
+allocated region is the NameHash, so it's start location would be
+known. Each hash table entry points to the start of channel entries
+that hashed to the repective value, and each channel entry contains
+the anchor for its RTree.  The ``RTree pointer'' in the Hash Entry is
+actually a file name and an offset. Initially, that file name is
+empty, because all RTrees are in the same index file that contains the
+hash table. Eventually, that index file might get too big, so the file
+format already allows for RTree entries to point to other index files.
+Like every file block after the ``reserved space'', the hash table and
+each channel entry are preceeded by a FileAllcator header.
 
 An RTree entry consists of the pointer to the root node and a number
 of records per node $M$. The RTree nodes are interlinked as shown in

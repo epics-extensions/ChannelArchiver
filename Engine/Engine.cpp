@@ -216,10 +216,8 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     }
     else
         new_channel = false;
-
     Guard guard(channel->mutex);
     SampleMechanism *mechanism;
-    
     // For existing channels: maximize monitor feature, minimize period
     if (monitored)
         mechanism = new SampleMechanismMonitored(channel);
@@ -329,7 +327,7 @@ stdString Engine::makeDataFileName()
 {
     int year, month, day, hour, min, sec;
     unsigned long nano;
-    char buffer[80];                                                                 
+    char buffer[80];
     epicsTime now = epicsTime::getCurrent();
     epicsTime2vals(now, year, month, day, hour, min, sec, nano);
     sprintf(buffer, "%04d%02d%02d-%02d%02d%02d",
@@ -337,10 +335,9 @@ stdString Engine::makeDataFileName()
     return stdString(buffer);
 }
 
-void Engine::writeArchive()
+void Engine::writeArchive(Guard &engine_guard)
 {
     LOG_MSG("Engine: writing\n");
-    Guard engine_guard(mutex);
     is_writing = true;
     IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
@@ -360,6 +357,7 @@ void Engine::writeArchive()
     }
     DataFile::close_all();
     is_writing = false;
+    LOG_MSG("Engine: writing done.\n");
 }
 
 bool Engine::process()
@@ -369,36 +367,41 @@ bool Engine::process()
     // that e.g. determines the max. response time
     // to a shutdown request (via CTRL-C or HTTPD)
     // or a need_CA_flush
-#define MAX_DELAY 1.0
+#define MAX_DELAY 5.0
     // scan, write or wait?
     epicsTime now = epicsTime::getCurrent();
     double scan_delay, write_delay;
     bool do_wait = true;
-    if (scan_list.isDueAtAll())
     {
-        scan_delay = scan_list.getDueTime() - now;
-        if (scan_delay <= 0.0)
+        Guard engine_guard(mutex);
+        if (scan_list.isDueAtAll())
         {
-            scan_list.scan(now);
+            scan_delay = scan_list.getDueTime() - now;
+            if (scan_delay <= 0.0)
+            {
+                scan_list.scan(now);
+                do_wait = false;
+            }
+            if (scan_delay > MAX_DELAY)
+                scan_delay = MAX_DELAY;
+        }
+        else
+            scan_delay = MAX_DELAY; 
+        write_delay = next_write_time - now;            
+        if (write_delay <= 0.0)
+        {
+            writeArchive(engine_guard);
+            next_write_time = roundTimeUp(epicsTime::getCurrent(),
+                                          write_period);
             do_wait = false;
         }
-        if (scan_delay > MAX_DELAY)
-            scan_delay = MAX_DELAY;
+        if (need_CA_flush)
+        {
+            ca_flush_io();
+            need_CA_flush = false;
+        }
     }
-    else
-        scan_delay = MAX_DELAY; 
-    write_delay = next_write_time - now;            
-    if (write_delay <= 0.0)
-    {
-        writeArchive();
-        next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
-        do_wait = false;
-    }
-    if (need_CA_flush)
-    {
-        ca_flush_io();
-        need_CA_flush = false;
-    }
+    // Guard released
     if (do_wait)
     {
         if (write_delay < scan_delay)

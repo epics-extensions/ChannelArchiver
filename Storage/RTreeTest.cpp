@@ -68,6 +68,11 @@ bool fill_test(bool use_index, const char *index_name,
     {
         index.open(index_name, false);
         tree = index.addChannel("test");
+        if (!tree)
+        {
+            fprintf(stderr, "index.addChannel failed\n");
+            return false;
+        }
     }
     else
     {

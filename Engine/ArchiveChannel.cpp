@@ -34,7 +34,7 @@ ArchiveChannel::~ArchiveChannel()
     }
     if (chid_valid)
     {
-        LOG_MSG("'%s': clearing channel\n", name.c_str());
+        LOG_MSG("CA clear channel '%s'\n", name.c_str());
         ca_clear_channel(ch_id);
         chid_valid = false;
     }
@@ -95,6 +95,14 @@ void ArchiveChannel::startCA(Guard &guard)
     guard.check(mutex);
     if (!chid_valid)
     {
+        LOG_MSG("CA create channel '%s'\n", name.c_str());
+	// I have see the first call to ca_create_channel take
+        // about 10 second when the EPICS_CA_ADDR_LIST pointed
+        // to a computer outside of my private office network.
+        // (Similarly, using ssh to get out of the office net
+        //  could sometimes take time, so this is probably outside
+        //  of the control of CA, definetely outside of the control
+        //  of the ArchiverEngine)
         if (ca_create_channel(name.c_str(), connection_handler, this,
                               CA_PRIORITY_ARCHIVE, &ch_id) != ECA_NORMAL)
         {

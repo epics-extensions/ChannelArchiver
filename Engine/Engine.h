@@ -115,7 +115,7 @@ public:
 
 private:
     Engine(const stdString &index_name);
-    void writeArchive();
+    void writeArchive(Guard &engine_guard);
 
     stdList<ArchiveChannel *> channels;// all the channels
     stdList<GroupInfo *> groups;    // scan-groups of channels

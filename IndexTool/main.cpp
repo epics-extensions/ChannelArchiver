@@ -1,6 +1,7 @@
 // System
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 // Base
 #include <epicsVersion.h>
 // Tools
@@ -18,6 +19,14 @@
 
 int verbose;
 
+bool run = true;
+
+static void signal_handler(int sig)
+{
+    run = false;
+    fprintf(stderr, "Exiting on signal %d\n", sig);
+}
+
 bool add_tree_to_master(const stdString &index_name,
                         const stdString &dirname,
                         const stdString &channel,
@@ -32,10 +41,11 @@ bool add_tree_to_master(const stdString &index_name,
     // Xfer data blocks from the end on, going back to the start.
     // Stop when find a block that was already in the master index.
     for (ok = subtree->getLastDatablock(node, idx, block);
-         ok;
+         ok && run;
          ok = subtree->getPrevDatablock(node, idx, block))
     {
-        // Data files in master need full path
+        // Data files in master need a full path
+        // or are written relative to the dir. of the index file
         if (Filename::containsFullPath(block.data_filename))
             datafile = block.data_filename;
         else
@@ -89,11 +99,15 @@ bool parse_config(const stdString &config_name,
 
 bool create_masterindex(int RTreeM,
                         const stdString &config_name,
-                        const stdString &index_name)
+                        const stdString &index_name,
+                        bool reindex)
 {
     stdList<stdString> subarchives;
-    if (!parse_config(config_name, subarchives))
-        return false;
+    if (reindex)
+        subarchives.push_back(config_name);
+    else
+        if (!parse_config(config_name, subarchives))
+            return false;
     IndexFile::NameIterator names;
     IndexFile index(RTreeM), subindex(RTreeM);
     bool ok;
@@ -117,7 +131,7 @@ bool create_masterindex(int RTreeM,
         if (verbose)
             printf("Adding sub-index '%s'\n", sub_name.c_str());
         for (ok = subindex.getFirstChannel(names);
-             ok;
+             ok && run;
              ok = subindex.getNextChannel(names))
         {
             const stdString &channel = names.getName();
@@ -154,30 +168,33 @@ bool create_masterindex(int RTreeM,
 int main(int argc, const char *argv[])
 {
     initEpicsTimeHelper();
+    signal(SIGINT,  signal_handler);
+    signal(SIGTERM, signal_handler);
     CmdArgParser parser(argc, argv);
     parser.setHeader("ArchiveIndexTool version " ARCH_VERSION_TXT ", "
                      EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n"
                      );
-    parser.setArgumentsInfo("<archive list file> <output index>");
-    CmdArgFlag help  (parser, "help", "Show Help");
-    CmdArgInt RTreeM (parser, "M", "<3-100>", "RTree M value");
-    CmdArgInt verbose_flag (parser, "verbose", "<level>", "Show more info");
+    parser.setArgumentsInfo("<archive list file/old index> <output index>");
+    CmdArgFlag help   (parser, "help", "Show Help");
+    CmdArgInt  RTreeM (parser, "M", "<3-100>", "RTree M value");
+    CmdArgFlag reindex(parser, "reindex", "Build new index from old index (no list file)");
+    CmdArgInt  verbose_flag (parser, "verbose", "<level>", "Show more info");
     RTreeM.set(50);
     if (! parser.parse())
         return -1;
     verbose = verbose_flag;
-    if (help)
-    {
-        printf("This tools reads an archive list file,\n");
-        printf("that is a file listing sub-archives,\n");
-        printf("and generates a master index for all of them\n");
-        printf("in the output index\n");
-        return 0;
-    }
-    if (parser.getArguments().size() != 2)
+    if (parser.getArguments().size() != 2  ||  help)
     {
         parser.usage();
+        printf("\nThis tools reads an archive list file, ");
+        printf("that is a file listing sub-archives,\n");
+        printf("and generates a master index for all of them ");
+        printf("in the output index.\n");
+        printf("With the -reindex flag, it creates a new index ");
+        printf("from an existing index\n");
+        printf("(shortcut for creating a list file that contains only ");
+        printf(" that one old index).\n");
         return -1;
     }
 
@@ -186,7 +203,7 @@ int main(int argc, const char *argv[])
         return -1;
     BenchTimer timer;
     if (!create_masterindex(RTreeM, parser.getArgument(0),
-                            parser.getArgument(1)))
+                            parser.getArgument(1), reindex))
     {
         lock_file.Unlock();
         return -1;

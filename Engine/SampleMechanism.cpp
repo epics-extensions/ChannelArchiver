@@ -106,12 +106,16 @@ void SampleMechanismMonitored::handleValue(Guard &guard,
     //RawValue::show(stdout, channel->dbr_time_type,
     //               channel->nelements, value, &channel->ctrl_info);   
 #   endif
-    // Add every monitor to the ring buffer
-    if (channel->isBackInTime(stamp))
-    {
-        if (wasWrittenAfterConnect)
-            return;
-        // This is the first value after a connect: tweak
+    // Add every incoming value to buffer
+    if (! channel->isBackInTime(stamp))
+    {   // Add original sample as is w/o any problems
+        channel->buffer.addRawValue(value);
+        channel->last_stamp_in_archive = stamp;
+    }
+    if (!wasWrittenAfterConnect)
+    {   // First value after a (re-)connect: add w/ host time,
+        // maybe in addition to the previously logged sample w/
+        // orig. time stamp.
         if (!channel->pending_value)
             return; // no temp. storage for tweaking value
         if (channel->isBackInTime(now))
@@ -126,11 +130,9 @@ void SampleMechanismMonitored::handleValue(Guard &guard,
                        channel->pending_value, value);
         RawValue::setTime(channel->pending_value, now);
         channel->buffer.addRawValue(channel->pending_value);
+        channel->last_stamp_in_archive = now;
+        wasWrittenAfterConnect = true;
     }
-    else
-        channel->buffer.addRawValue(value);
-    channel->last_stamp_in_archive = stamp;
-    wasWrittenAfterConnect = true;
 }
 
 // ---------------------------------------------------------------------------

@@ -33,7 +33,7 @@ use Getopt::Std;
 # ----------------------------------------------------------------
 
 # Compare: manual/changes.tex
-my ($version) = "2.1.5";
+my ($version) = "2.1.7";
 
 # Setting this to 1 disables(!) caching and might help with debugging.
 # Default: leave it commented-out.
@@ -1202,7 +1202,7 @@ if (length($index_config) > 0  and -f $index_config)
     $master_index_dtd = $dtd if (length($dtd) > 0);
     read_indexconfig($index_config);
 }  
-$master_index_dtd = $opt_i if (length($opt_i) > 0);
+$master_index_dtd = $opt_i if (defined($opt_i) and length($opt_i) > 0);
 $index_update_minper = $opt_u if (defined($opt_u) and $opt_u > 0);
 add_message("Started");
 print("Read $config_file. Check status via\n");

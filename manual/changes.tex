@@ -8,8 +8,29 @@ New  "versions"  are  marked  by some additional functionality. The
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
-\item From 08/30/2004 on --- to be Version 2.1.6:\\
+\item 10/26/2004 --- Version 2.1.7:\\
+In monitored mode, engine will always try to add two initial
+samples: One with the original time stamp, one with the host
+time stamp. This solves the restart problem:
+
+Assume a setpoint PV is 3 days old. When we start an engine today,
+it'll write that 3-day old value. When we then stop and restart tomorrow
+in a new directory, a "Disconnected" value will be added before shutdown
+and then the same happens in the new directory.
+When now looking at both days, you would get the 3-day old value,
+a disconnect/off value and nothing else.
+
+With this update, you will see one value with the host's time stamp
+each day in addition to the original time stamp, so even when viewed
+via a master-index, one sample per day should be visible.
+
+ArchiveDaemon.pl no longer complains about an undefined "opt\_i",
+thanks to Paul Sichta for pointing this out.
+
+\item 09/07/2004 --- Version 2.1.6:\\
 Added Enable/Disable code to ArchiveDaemon.
+``ListIndex'' bug fixes (sub-index was
+closed even though we're still accessing channels in the index).
 
 \item 08/26/2004 --- Version 2.1.5:\\
 Fixed bug in the engine code: PVs which never change

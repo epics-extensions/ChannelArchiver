@@ -40,10 +40,15 @@ private:
     DbrType dbr_type;
     DbrCount dbr_count;
     size_t raw_value_size;
-    
+
+    // Sets next_buffer_size to at least 'start',
+    // so that buffers get bigger and bigger up to
+    // some limit.
+    void calc_next_buffer_size(size_t start);
+    size_t next_buffer_size;
+
     DirectoryFileIterator dfi;
     class DataHeader *header;
     size_t available;
     MemoryBuffer<dbr_time_string> cvt_buffer;
-
 };

@@ -2,9 +2,11 @@
 #if !defined(_DATAFILE_H_)
 #define _DATAFILE_H_
 
+// System
 #include <stdio.h>
-#include "string2cp.h"
+// Tools
 #include "Filename.h"
+// Storage
 #include "RawValue.h"
 
 /// The DataFile class handles access to the binary data files.
@@ -63,10 +65,13 @@ public:
     class DataHeader *getHeader(FileOffset offset);
 
     /// Add a new DataHeader to the file.
-
+    
     /// \return Alloc'ed header or 0.
-    /// Header needs to be configured and saved.
-    class DataHeader *addHeader();
+    /// The header's data type and buffer size info
+    /// will be initialized.
+    /// Links (dir, prev, next) need to be configured and saved.
+    class DataHeader *addHeader(DbrType dbr_type, DbrCount dbr_count,
+                                size_t num_samples);
 private:
     friend class DataHeader;
     friend class CtrlInfo;
@@ -119,7 +124,7 @@ public:
     /// The header data
     struct DataHeaderData
     {
-        FileOffset      dir_offset;     ///< offset of the directory entry
+        FileOffset      dir_offset;     ///< offset of the old directory entry
         FileOffset      next_offset;    ///< abs. offs. of data header in next buffer
         FileOffset      prev_offset;    ///< abs. offs. of data header in prev buffer
         FileOffset      curr_offset;    ///< rel. offs. from data header to free entry
@@ -152,14 +157,26 @@ public:
     
     /// Returns number of unused samples in buffer
     size_t available();
+
+    /// Returns max. number of values in buffer.
+    size_t capacity();
     
     /// Read (and convert) from offset in current DataFile, updating offset.
     bool read(FileOffset offset);
 
-    /// Convert and write to current offset in current DataFile
+    /// Convert and write to current offset in current DataFile.
     bool write() const;
 
+    /// Read the next data header.
     bool read_next();
+
+    /// Helper to set data.prev_file/offset
+    void set_prev(const stdString &basename, FileOffset offset);
+     
+    /// Helper to set data.next_file/offset
+    void set_next(const stdString &basename, FileOffset offset);
+
+    void show(FILE *f);
 };
 
 #endif // !defined(_DATAFILE_H_)

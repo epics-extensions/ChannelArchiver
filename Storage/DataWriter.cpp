@@ -18,6 +18,7 @@ DataWriter::DataWriter(DirectoryFile &index,
 {
     DataFile *datafile;
 
+    calc_next_buffer_size(num_samples);
     raw_value_size = RawValue::getSize(dbr_type, dbr_count);
     header = 0;
     available = 0;    
@@ -62,7 +63,12 @@ DataWriter::DataWriter(DirectoryFile &index,
             // TODO: Add new header because type has changed
         }
         else
+        {
+            size_t capacity = header->capacity();
+            if (capacity > num_samples)
+                calc_next_buffer_size(capacity);
             available = header->available();
+        }
     }
 }
     
@@ -73,9 +79,20 @@ DataWriter::~DataWriter()
     {
         if (dfi.isValid())
         {
+            header->data.dir_offset = dfi.entry.offset;
+            header->write();
+            if (dfi.entry.data.first_offset == INVALID_OFFSET ||
+                !Filename::isValid(dfi.entry.data.first_file))
+            {   // Update the index's 'first' pointer
+                dfi.entry.setFirst(header->datafile->getBasename(),
+                                   header->offset);
+                dfi.entry.data.first_save_time = header->data.begin_time;
+            }
+            // Always update the index's 'last' pointer
+            dfi.entry.setLast(header->datafile->getBasename(),
+                              header->offset);
             dfi.entry.data.last_save_time = header->data.end_time;
             dfi.save();
-            header->write();
         }
         else
         {
@@ -94,8 +111,22 @@ bool DataWriter::add(const RawValue::Data *data)
         return false;
     if (available <= 0)
     {
-        // TODO: Add header
-        return false;
+        DataHeader *new_header =
+            header->datafile->addHeader(dbr_type, dbr_count,
+                                        next_buffer_size);
+        if (!new_header)
+            return false;
+        // Pointers from old header to new one
+        header->set_next(new_header->datafile->getBasename(),
+                         new_header->offset);
+        header->write();
+        // back from new to old
+        new_header->set_prev(header->datafile->getBasename(),
+                             header->offset);
+        // Switch to new header
+        delete header;
+        header = new_header;
+        calc_next_buffer_size(next_buffer_size);
     }
     available -= 1;
     FileOffset offset = header->offset
@@ -116,3 +147,20 @@ bool DataWriter::add(const RawValue::Data *data)
     // Note: we don't write the header nor dfi!
     return true;
 }
+
+void DataWriter::calc_next_buffer_size(size_t start)
+{
+    // We want the next power of 2:
+    int log2 = 0;
+    while (start > 0)
+    {
+        start >>= 1;
+        ++log2;
+    }
+    if (log2 < 6) // minumum: 2^6 == 64
+        log2 = 6;
+    if (log2 > 12) // maximum: 2^12 = 4096
+        log2 = 12;
+    next_buffer_size = 1 << log2;
+}
+    

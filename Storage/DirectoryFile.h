@@ -1,9 +1,13 @@
 #if !defined(_DIRECTORYFILE_H_)
 #define _DIRECTORYFILE_H_
 
+// System
 #include <stdio.h>
+// Tools
 #include "ToolsConfig.h"
 #include "epicsTimeHelper.h"
+#include "string2cp.h"
+// Storage
 #include "HashTable.h"
 #include "StorageTypes.h"
 
@@ -34,6 +38,9 @@ public:
         char           last_file[FilenameLength];  // filename where the last buffer was saved
         char           first_file[FilenameLength]; // filename where the first buffer was saved
     }  data;
+
+    void setFirst(const stdString &file, FileOffset offset);
+    void setLast(const stdString &file, FileOffset offset);
 
     FileOffset offset; // .. in DirectoryFile where _data was read
     

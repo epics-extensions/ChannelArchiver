@@ -15,6 +15,18 @@ DirectoryFileEntry::DirectoryFileEntry()
 	init();
 }
 
+void DirectoryFileEntry::setFirst(const stdString &file, FileOffset offset)
+{
+    string2cp(data.first_file, file, FilenameLength);
+    data.first_offset = offset;
+}
+
+void DirectoryFileEntry::setLast(const stdString &file, FileOffset offset)
+{
+    string2cp(data.last_file, file, FilenameLength);
+    data.last_offset = offset;
+}
+
 void DirectoryFileEntry::init(const char *name)
 {
 	memset(&data, 0, sizeof(data));
@@ -57,6 +69,7 @@ void DirectoryFileEntry::write(FILE *file, FileOffset offset)
 		fwrite(&copy, DataSize, 1, file) != 1)
 		throwArchiveException(WriteError);
 	this->offset = offset;
+    fflush(file);
 }
 
 //////////////////////////////////////////////////////////////////////

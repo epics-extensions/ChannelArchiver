@@ -7,9 +7,13 @@
 #pragma warning (disable: 4786)
 #endif
 
+// Tools
 #include "Conversions.h"
 #include "MsgLogger.h"
 #include "Filename.h"
+#include "epicsTimeHelper.h"
+#include "string2cp.h"
+// Storage
 #include "DataFile.h"
 
 #define LOG_DATAFILE
@@ -144,6 +148,51 @@ DataHeader *DataFile::getHeader(FileOffset offset)
     return 0;
 }
 
+DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
+                                size_t num_samples)
+{
+    if (fseek(file, 0, SEEK_END) != 0)
+    {
+        LOG_MSG("DataFile::addHeader(%s): Cannot add new header\n",
+                filename.c_str());
+        return 0;
+    }
+    DataHeader *header = new DataHeader(this);
+    if (! header)
+    {
+        LOG_MSG("DataFile::addHeader(%s): Cannot alloc new header\n",
+                filename.c_str());
+        return 0;
+    }
+    header->offset = ftell(file);
+    size_t raw_value_size = RawValue::getSize(dbr_type, dbr_count);
+    header->data.dbr_type = dbr_type;
+    header->data.nelements = dbr_count;
+    header->data.buf_free = num_samples * raw_value_size;
+    header->data.buf_size = header->data.buf_free + sizeof(DataHeader::DataHeaderData);
+    if (!header->write())
+    {
+        LOG_MSG("DataFile::addHeader(%s): Cannot write new header\n",
+                filename.c_str());
+        delete header;
+        return 0;   
+    }
+    // allocate data buffer by writing some marker at the end:
+    long marker = 0xfacefade;
+    FileOffset pos = header->offset
+        + header->data.buf_size - sizeof marker;    
+    if (fseek(file, pos, SEEK_SET) != 0 ||
+        (FileOffset) ftell(file) != pos ||
+        fwrite(&marker, sizeof marker, 1, file) != 1)    
+   {
+        LOG_MSG("DataFile::addHeader(%s): Cannot mark end of new buffer\n",
+                filename.c_str());
+        delete header;
+        return 0;
+    }
+    return header;
+}
+
 DataHeader::DataHeader(DataFile *datafile)
 {
     datafile->reference();
@@ -174,6 +223,15 @@ size_t DataHeader::available()
     size_t val_size = RawValue::getSize(data.dbr_type, data.nelements);
     if (val_size > 0)
         return data.buf_free / val_size;
+    return 0;
+}
+
+size_t DataHeader::capacity()
+{
+    size_t val_size = RawValue::getSize(data.dbr_type, data.nelements);
+    if (val_size > 0)
+        return (data.buf_size - sizeof(DataHeader::DataHeaderData))
+            / val_size;
     return 0;
 }
 
@@ -253,4 +311,42 @@ bool DataHeader::read_next()
         datafile = next;
     }
     return read(data.next_offset);
+}
+
+void DataHeader::set_prev(const stdString &basename, FileOffset offset)
+{
+    string2cp(data.prev_file, basename, FilenameLength);
+    data.prev_offset = offset;
+}
+     
+void DataHeader::set_next(const stdString &basename, FileOffset offset)
+{
+    string2cp(data.next_file, basename, FilenameLength);
+    data.next_offset = offset;
+}
+
+void DataHeader::show(FILE *f)
+{
+    stdString t;
+    fprintf(f, "Buffer  : '%s' @ 0x%lX\n",
+           datafile->basename.c_str(), offset);               
+    fprintf(f, "Prev    : '%s' @ 0x%lX\n",
+            data.prev_file, data.prev_offset);
+    epicsTime2string(data.begin_time, t);
+    fprintf(f, "Time    : %s\n", t.c_str());
+    epicsTime2string(data.end_time, t);
+    fprintf(f, "...     : %s\n", t.c_str());
+    epicsTime2string(data.next_file_time, t);
+    fprintf(f, "New File: %s\n", t.c_str());
+    fprintf(f, "DbrType : %d, %d elements\n",
+            data.dbr_type, data.nelements);
+    fprintf(f, "Samples : %ld\n", data.num_samples);
+    fprintf(f, "Size    : %ld bytes, free: %ld bytes\n",
+            data.buf_size, data.buf_free);
+    fprintf(f, "Curr.   : %ld\n", data.curr_offset);
+    fprintf(f, "Period  : %g\n", data.period);
+    fprintf(f, "CtrlInfo@ 0x%lX\n", data.ctrl_info_offset);
+    fprintf(f, "Next    : '%s' @ 0x%lX\n",
+            data.next_file, data.next_offset);
+    fprintf(f, "\n");
 }

@@ -20,9 +20,7 @@ void header_dump(const stdString &index_name)
         datafile->release();
         while (header && header->isValid())
         {
-            printf("Header '%s' @ 0x%lX\n",
-                   datafile->getBasename().c_str(),
-                   header->offset);
+            header->show(stdout);
             header->read_next();
         }
         delete header;
@@ -36,7 +34,7 @@ void add(const stdString &index_name)
 {
     DataWriter *writer;
 
-    DirectoryFile index(index_name, true);
+    DirectoryFile *index = new DirectoryFile(index_name, true);
     stdString channel_name = "fred";
     CtrlInfo ctrl_info;
     ctrl_info.setNumeric(3, "Volt",
@@ -47,7 +45,7 @@ void add(const stdString &index_name)
     DbrCount dbr_count = 1;
     size_t num_samples = 100;
 
-    writer = new DataWriter(index,
+    writer = new DataWriter(*index,
                             channel_name, ctrl_info,
                             dbr_type, dbr_count, num_samples);
 
@@ -63,6 +61,7 @@ void add(const stdString &index_name)
     
     delete writer;
     DataFile::close_all();
+    delete index;
 }
 
 int main(int argc, const char *argv[])
@@ -72,7 +71,6 @@ int main(int argc, const char *argv[])
     //header_dump(index_name);
 
     add(index_name);
-
 
     return 0;
 }

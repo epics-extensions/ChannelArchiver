@@ -47,7 +47,12 @@ public:
 	// regarded as the same point in time
 	void setTimeRounding (double secs);
 
-	void setLinearInterpolation (double secs);
+	//* Switch on linear interpolation,
+	// generating a value every "secs".
+	// Gaps bigger than "secs * gap" will be
+	// shown as "Archive_Off"
+	// to avoid endless interpolation.
+	void setLinearInterpolation (double secs, size_t gap = 0);
 
 	//* When using filled values,
 	// missing entries (when the value has not changed since the last entry)
@@ -76,6 +81,7 @@ protected:
 	osiTime	_start, _end;
 	double _round_secs;
 	double _linear_interpol_secs;
+	size_t _gap_factor;
 	bool _fill;
 	bool _be_verbose;
 
@@ -118,11 +124,12 @@ inline void Exporter::setTimeRounding (double secs)
 	_linear_interpol_secs = 0.0;
 }
 
-inline void Exporter::setLinearInterpolation (double secs)
+inline void Exporter::setLinearInterpolation (double secs, size_t gap)
 {
 	_fill = false;
 	_round_secs = 0.0;
 	_linear_interpol_secs = secs;
+	_gap_factor = gap;
 }
 
 inline void Exporter::useFilledValues ()

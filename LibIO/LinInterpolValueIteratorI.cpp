@@ -24,6 +24,7 @@ LinInterpolValueIteratorI::LinInterpolValueIteratorI (ValueIteratorI *base, doub
 		throwDetailedArchiveException (Invalid, "Invalid base iterator");
 
 	_deltaT = deltaT;
+	_maxDeltaT = 0;
 	_value = base->getValue()->clone ();
 	_time = roundTime (_value->getTime(), _deltaT);
 }
@@ -131,10 +132,21 @@ const ValueI * LinInterpolValueIteratorI::interpolate (const osiTime &time)
 	// interpol = v0+(v1-v0)*(t-t0)/(t1-t0)
 	// precalc offset, slope?
 	double dT = t1-t0;
-	if (dT != 0)
-		_value->setDouble (v0+(v1-v0)*(double(time)-t0)/dT);
+	if (_maxDeltaT > 0  &&  dT > _maxDeltaT)
+	{
+		_value->setDouble (v0);
+		_value->setStatus (0, ARCH_STOPPED);
+	}
+	else
+	{
+		if (dT != 0)
+			_value->setDouble (v0+(v1-v0)*(double(time)-t0)/dT);
+		else
+			_value->setDouble ((v0+v1)/2); // better idea?
+		_value->setStatus (_base->getValue()->getStat(), _base->getValue()->getSevr());
+	}
 	_value->setTime (time);
-	_value->setStatus (_base->getValue()->getStat(), _base->getValue()->getSevr());
+	_value->setCtrlInfo (_base->getValue()->getCtrlInfo ());
 
 	return _value;
 }

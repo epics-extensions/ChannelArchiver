@@ -102,8 +102,8 @@ void GNUPlotExporter::post_scriptum (const vector<stdString> &channel_names)
 	script << "# Set labels/ticks on x-axis for every xxx seconds:\n";
 
 	double secs = (double(_end) - double(_start)) / 5;
-
-	script << "set xtics " << secs << "\n";
+	if (secs > 0.0)
+		script << "set xtics " << secs << "\n";
 	script << "set grid\n";
 	script << "\n";
 	script << "set key title \"Channels:\"\n";

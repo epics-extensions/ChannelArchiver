@@ -51,6 +51,13 @@ public:
 
 	~LinInterpolValueIteratorI ();
 
+	//* When the original values are further apart in time than <I>maxDeltaT</I>,
+	// ARCH_STOPPED ("Archive_Off") will be assumed.
+	// This prevents seemingly endless interpolation over huge gaps in time.
+	// Default: 0 (continue interpolation)
+	void setMaxDeltaT (double maxDeltaT);
+	double getMaxDeltaT () const;
+
 	// virtuals from ValueIteratorI
 	bool isValid () const;
 	const ValueI * getValue () const;
@@ -74,8 +81,15 @@ private:
 	ValueIteratorI *_base;
 	osiTime _time;
 	double _deltaT;
+	double _maxDeltaT;
 	ValueI *_value;
 };
+
+inline void LinInterpolValueIteratorI::setMaxDeltaT (double maxDeltaT)
+{	_maxDeltaT = maxDeltaT;	}
+
+inline double LinInterpolValueIteratorI::getMaxDeltaT () const
+{	return _maxDeltaT;	}
 
 END_NAMESPACE_CHANARCH
 

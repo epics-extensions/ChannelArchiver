@@ -70,6 +70,7 @@ Exporter::Exporter (ArchiveI *archive, const stdString &filename)
 	_show_status = false;
 	_round_secs = 0.0;
 	_linear_interpol_secs = 0.0;
+	_gap_factor = 0;
 	_fill = false;
 	_be_verbose = false;
 	_time_col_val_format = false;
@@ -196,7 +197,11 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 		channels[i]->getChannel()->getValueAfterTime (_start, base[i]);
 
 		if (_linear_interpol_secs > 0.0)
-			values[i] = new LinInterpolValueIteratorI (base[i], _linear_interpol_secs);
+		{
+			LinInterpolValueIteratorI *interpol = new LinInterpolValueIteratorI (base[i], _linear_interpol_secs);
+			interpol->setMaxDeltaT (_linear_interpol_secs * _gap_factor);
+			values[i] = interpol;
+		}
 		else
 			values[i] = new ExpandingValueIteratorI (base[i]);
 
@@ -268,9 +273,6 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 		}
 		*out << "->" << time << "\n";
 #endif
-
-		
-		
 		++_datacount;
 		// One line: time and all values for that time
 		printTime (out, time);

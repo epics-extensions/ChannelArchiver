@@ -15,13 +15,15 @@
 class GNUPlotExporter : public SpreadSheetExporter
 {
 public:
-	//* Contrary to the simple CLASS Exporter,
-	// <I>filename</I> has to be defined
-	// for GNUPlotExporter because two files are created
-	// and <I>filename</I> is used as a base name. <p> If
-	// <em>reduce</em> is &gt; 0, data reduction will be performed.<br>
-	GNUPlotExporter (Archive &archive, const stdString &filename, int reduce = 0);
-	GNUPlotExporter (ArchiveI *archive, const stdString &filename, int reduce = 0);
+    //* Contrary to the simple CLASS Exporter,
+    // <I>filename</I> has to be defined
+    // for GNUPlotExporter because two files are created
+    // and <I>filename</I> is used as a base name.
+    // reduce: # of buckets to reduce data into, 0 -> don't reduce
+    GNUPlotExporter(Archive &archive, const stdString &filename,
+                     int reduce = 0);
+    GNUPlotExporter(ArchiveI *archive, const stdString &filename,
+                    int reduce = 0);
 
     void exportChannelList(const stdVector<stdString> &channel_names);
 

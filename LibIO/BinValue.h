@@ -9,7 +9,7 @@
 #include <iostream>
 
 //////////////////////////////////////////////////////////////////////
-//CLASS BinRawValue
+//class BinRawValue
 class BinRawValue : public RawValueI 
 {
 public:
@@ -24,6 +24,9 @@ public:
 
 //////////////////////////////////////////////////////////////////////
 //CLASS BinValue
+//
+// Implements the CLASS ValueI interface for the binary data format.
+//
 class BinValue : public ValueI
 {
 public:
@@ -31,7 +34,6 @@ public:
     // will return CLASS BinValueDbrDouble,
     // CLASS BinValueDbrEnum, ...
     static BinValue *create (DbrType type, DbrCount count);
-
 	virtual ~BinValue();
 
     ValueI *clone () const;
@@ -65,7 +67,7 @@ inline void BinValue::write (LowLevelIO &file, FileOffset offset) const
 }
 
 //////////////////////////////////////////////////////////////////////
-//CLASS BinValueDbrShort
+//class BinValueDbrShort
 // Specialization of CLASS BinValue.
 class BinValueDbrShort : public BinValue
 {
@@ -79,7 +81,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////
-//CLASS BinValueDbrLong
+//class BinValueDbrLong
 // Specialization of CLASS BinValue.
 class BinValueDbrLong : public BinValue
 {
@@ -93,7 +95,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////
-//CLASS BinValueDbrDouble
+//class BinValueDbrDouble
 // Specialization of CLASS BinValue.
 class BinValueDbrDouble : public BinValue
 {
@@ -107,7 +109,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////
-//CLASS BinValueDbrFloat
+//class BinValueDbrFloat
 // Specialization of CLASS BinValue.
 class BinValueDbrFloat : public BinValue
 {
@@ -121,7 +123,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////
-//CLASS BinValueDbrEnum
+//class BinValueDbrEnum
 // Specialization of CLASS BinValue.
 class BinValueDbrEnum : public BinValue
 {
@@ -135,7 +137,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////
-//CLASS BinValueDbrString
+//class BinValueDbrString
 // Specialization of CLASS BinValue.
 class BinValueDbrString : public BinValue
 {
@@ -149,7 +151,7 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////
-//CLASS BinValueDbrChar
+//class BinValueDbrChar
 // Specialization of CLASS BinValue.
 class BinValueDbrChar : public BinValue
 {
@@ -163,3 +165,7 @@ public:
 };
 
 #endif // !defined(_VALUE_H_)
+
+
+
+

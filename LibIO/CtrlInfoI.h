@@ -134,7 +134,9 @@ inline CtrlInfoI::Type CtrlInfoI::getType() const
 {	return (CtrlInfoI::Type) (_infobuf.mem()->type);}
 
 inline long CtrlInfoI::getPrecision() const
-{	return _infobuf.mem()->value.analog.prec;	}
+{
+	return (getType() == Numeric) ? _infobuf.mem()->value.analog.prec : 0;
+}
 
 inline const char *CtrlInfoI::getUnits() const
 {
@@ -162,7 +164,8 @@ inline float CtrlInfoI::getLowAlarm() const
 {	return _infobuf.mem()->value.analog.low_alarm; }
 
 inline size_t CtrlInfoI::getNumStates() const
-{	if (getType() == Enumerated)
+{
+	if (getType() == Enumerated)
 		return _infobuf.mem()->value.index.num_states;
 	return 0;
 }

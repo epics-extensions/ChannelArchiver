@@ -40,30 +40,29 @@ static void printTimeAndValue(FILE *f, const osiTime &time,
     {
         for (size_t ai=0; ai<value.getCount(); ++ai)
         {
-	    ::printTime(f, time);
-	    if (value.getCount() > 1) fprintf(f, "\t%d", ai);
+            ::printTime(f, time);
+            if (value.getCount() > 1) fprintf(f, "\t%d", ai);
             if (prec > 0)
                 fprintf(f, "\t%.*f\n", prec, value.getDouble(ai));
             else
                 fprintf(f, "\t%g\n", value.getDouble(ai));
         }
-	if (value.getCount() > 1) fprintf(f, "\n");
+        if (value.getCount() > 1) fprintf(f, "\n");
     }
     else
     {
-       ::printTime(f, time);
+        ::printTime(f, time);
         stdString txt;
         value.getStatus(txt);
         if (prec > 0)
-            fprintf(f, "\t%.*f\t%s\n",
-                    prec, value.getDouble(), txt.c_str());
+            fprintf(f, "\t%.*f\t%s\n", prec, value.getDouble(), txt.c_str());
         else
-            fprintf(f, "\t%g\t%s\n",
-                    value.getDouble(), txt.c_str());
+            fprintf(f, "\t%g\t%s\n", value.getDouble(), txt.c_str());
     }
 }
 
-GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename, int reduce)
+GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename,
+                                 int reduce)
         : SpreadSheetExporter (archive.getI(), filename), _reduce(reduce)
 {
     _make_image = false;
@@ -72,7 +71,8 @@ GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename, in
         throwDetailedArchiveException(Invalid, "empty filename");
 }           
 
-GNUPlotExporter::GNUPlotExporter(ArchiveI *archive, const stdString &filename, int reduce)
+GNUPlotExporter::GNUPlotExporter(ArchiveI *archive, const stdString &filename,
+                                 int reduce)
         : SpreadSheetExporter (archive, filename), _reduce(reduce)
 {
     _make_image = false;
@@ -134,16 +134,18 @@ void GNUPlotExporter::exportChannelList(
         }
         if (! channels->getChannel()->getValueBeforeTime(_start, base) &&
             ! channels->getChannel()->getValueAfterTime(_start, base))
-	   continue; // nothing in time range
-	
-	if (_reduce && isValidTime(_start) && isValidTime(_end) && 
-	    ( base->getValue()->getCount() == 1 )) {
-	   _linear_interpol_secs = (_end.getSec() - _start.getSec()) / _reduce;
-	   value = new BucketingValueIteratorI(base, _linear_interpol_secs);
-	} else {
-	   _reduce = 0;
-	   value = new ExpandingValueIteratorI(base);
-	}
+            continue; // nothing in time range
+        
+        if (_reduce && isValidTime(_start) && isValidTime(_end) && 
+            ( base->getValue()->getCount() == 1 ))
+        {
+            _linear_interpol_secs =
+                (_end.getSec() - _start.getSec()) / _reduce;
+            value = new BucketingValueIteratorI(base, _linear_interpol_secs);
+        } else {
+            _reduce = 0;
+            value = new ExpandingValueIteratorI(base);
+        }
         
         if (value->getValue()->getCount() > 1)
         {
@@ -191,14 +193,14 @@ void GNUPlotExporter::exportChannelList(
                 break;
             if (value->getValue()->isInfo())
             {
-	       if (last_was_data) {
-		  // Output the last valid Value with "event"-timestamp
-		  // -> plot continues to e.g. disconnect-time for channels
-		  // that change seldom
-		  printTimeAndValue(f, time, *last_value);
-	       }
+                if (last_was_data) {
+                    // Output the last valid Value with "event"-timestamp
+                    // -> plot continues to e.g. disconnect-time for channels
+                    // that change seldom
+                    printTimeAndValue(f, time, *last_value);
+                }
                 // Show as comment & empty line -> "gap" in GNUplot graph.
-                // But only one empty line, multiples separate channels!
+                // But only one empty line, multiples divide channels!
                 fprintf(f, "# ");
                 ::printTime(f, time);
                 value->getValue()->getStatus(txt);
@@ -212,8 +214,8 @@ void GNUPlotExporter::exportChannelList(
                 have_anything = true;
                 ++_data_count;
                 printTimeAndValue(f, time, *value->getValue());
-		last_value = value->getValue()->clone();
-		last_value->setCtrlInfo(value->getValue()->getCtrlInfo());
+                last_value = value->getValue()->clone();
+                last_value->setCtrlInfo(value->getValue()->getCtrlInfo());
                 last_was_data = true;
             }
             value->next();
@@ -225,21 +227,21 @@ void GNUPlotExporter::exportChannelList(
             fprintf(f, "# extrapolated onto end time from ");
             ::printTime(f, time);
             fprintf(f, "\n");
-	    osiTime now = osiTime::getCurrent();
-	    if (now > time) // extrapolate until "now"
-	       time = now;
-	    if (_end < time) // but not beyond "_end"
-	       time = _end;
-	    printTimeAndValue(f, time, *last_value);
+            osiTime now = osiTime::getCurrent();
+            if (now > time) // extrapolate until "now"
+                time = now;
+            if (_end < time) // but not beyond "_end"
+                time = _end;
+            printTimeAndValue(f, time, *last_value);
         }
         
         if (have_anything)
             plotted_channels.push_back(channel_desc);
-        // Gap separates channels
+        // Gap divides data from different channels
         fprintf(f, "\n\n\n");
     }
     fclose(f);
-
+    
     // Generate script
     if (_use_pipe)
     {
@@ -252,7 +254,7 @@ void GNUPlotExporter::exportChannelList(
             throwDetailedArchiveException(OpenError, GNUPLOT_PIPE);
     }
     else
-    {	
+    {   
         fopen(script_name.c_str(), "wt");
         if (!f)
             throwDetailedArchiveException(WriteError, script_name);
@@ -276,9 +278,9 @@ void GNUPlotExporter::exportChannelList(
     fprintf(f, "set xdata time\n");
     fprintf(f, "set timefmt \"%%m/%%d/%%Y %%H:%%M:%%S\"\n");
     if (_reduce) {
-       fprintf(f, "set xrange [\""); ::printTime(f, _start);
-       fprintf(f, "\":\""); ::printTime(f, _end);
-       fprintf(f, "\"]\n");
+        fprintf(f, "set xrange [\""); ::printTime(f, _start);
+        fprintf(f, "\":\""); ::printTime(f, _end);
+        fprintf(f, "\"]\n");
     }
 
     if (_is_array)

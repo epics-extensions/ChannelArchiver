@@ -2,7 +2,7 @@
 
 <head>
 <base>
-<title></title>
+<title>ChannelArchiver</title>
 </head>
 
 <body BGCOLOR="#B0B0FF" BACKGROUND="doc/blueback.jpg">
@@ -13,31 +13,52 @@
   <p>This is about the Channel Archiver, short CA.</p>
 
   <h2>Changes</h2>
-  <a href="changes.htm">See seperate doc. for changes, release history.</a>
+  <a href="changes.htm">See separate doc. for changes, release history.</a>
 
   <h2>Files/dirs</h2>
   <dl>
     <dt>../Tools </dt>
     <dd>C++ classes shared by CA and some other code</dd>
+
     <dt><a href="doc/libio/default.htm">LibIO</a> </dt>
-    <dd>I/O library to access CA files: Basic I/O tools for proprietary CA file format as well
-      as generic classes based upon that like SpreadSheetExporter</dd>
+    <dd>I/O library to access CA files:
+        Basic I/O tools for proprietary CA file format as well
+	as generic classes based upon that like
+	SpreadSheetExporter</dd>
+
     <dt><a href="doc/engine/default.htm">Engine</a> </dt>
     <dd>Archiver engine </dd>
+
     <dt><a href="doc/manager/default.htm">Manager</a></dt>
     <dd>Simple command-line tool to test the I/O Lib.</dd>
+
     <dt><a href="doc/cgiexport/index.htm">CGIExport</a> </dt>
-    <dd>CGI-wrapper for the exporter classes, allows plotting via GNUPlot </dd>
-    <dt><a href="doc/atac/default.htm">ATAC</a></dt>
-    <dd>TCL interface to the archive IO library<br>
-        <font color=#FF0000>obsolete: use casi instead, the new SWIG based
-	scripting interface!</font>
+    <dd>CGI-wrapper for the exporter classes, allows plotting via
+        GNUPlot </dd>
+
+    <dt><a href="doc/atac/default.htm">Scripting</a></dt>
+    <dd>A SWIG interface (tcl, python, ...) to the archive IO library<br>
+        <font color=#FF0000>
+	The link still refers to "atac", the tcl-only version.
+	Use the Channel Archiver Scripting Interface "casi" instead!
+	It has a very similar syntax and already provides
+	most of the example scripts for tcl and python.
+	</font>
     </dd>
+
     <dt><a href="doc/winbrowser/index.htm">WinBrowser</a></dt>
-    <dd>Beginning of WIN32 archive browser</dd>
+    <dd>WIN32 archive browser<br>
+        <small>
+	Also available as separate tools:<br>
+	ChannelArchive-aware versions of xarr and StripTool
+	(Chris Larrieu)
+	</small>
+    </dd>
+
     <dt><a href="doc/default.htm">doc</a></dt>
     <dd>Documentation</dd>
   </dl>
+
   <h2>Compilation</h2>
   <h3>Configuration</h3>
   <p>There are some variables to be set in Tools/ToolsConfig.h. Please read further,
@@ -104,12 +125,23 @@
   <p>net_convert.h and osiTime.* are likely causes for compile errors. Otherwise, neither MS
   VC++ nor g++ (egcs-2.91.66) should give any warnings that relate to the ChannelArchiver
   files except for many warning in Tools/gnu_regex.c (only used w/ WIN32). </p>
+
   <h4>net_convert.h</h4>
-  <p>LibIO depends on base/src/ca/net_convert.h and osiTime.*. In principle the
-  functionality of net_convert.h should be exported from base, but maybe not exactly as
-  net_convert.h does it now. Since nobody is actively working on the definition of a
-  network/hostarch-independent data format, I just use net_convert.h as it is (i.e. add
-  base/src/ca to the include path).</p>
+  <p>LibIO depends on base/src/ca/net_convert.h and osiTime.*.
+  Hopefully the functionality of net_convert.h will some day be
+  exported from base.
+  For now I just use net_convert.h as it is
+  by adding base/src/ca to the include path.<br>
+  With some versions of EPICS base this has caused problems for
+  WIN32, Linux and other architectures that require byte-swapping:
+  If you get missing dbr_htond messages from the linker,
+  your net_convert.h and convert.c don't export those functions.<br>
+  Solution:
+  Find where the missing routines are defined in net_convert.h as
+  macros and make sure that they are not disabled,
+  (i.e. moved into convert.c and not exported from there).
+
+  </p>
   <h4>osiTime</h4>
   <p>osiTime.* is a moving target.<br>
   I based LibIO on EPICS/base Version 3.13.1..0 (no typo) but it also compiles with

@@ -147,7 +147,7 @@ DirectoryFileIterator DirectoryFile::add (const stdString &name)
 FileOffset DirectoryFile::readHTEntry (HashTable::HashValue entry) const
 {
     FileOffset offset;
-    long pos = entry * sizeof (FileOffset);
+    FileOffset pos = entry * sizeof (FileOffset);
     
     if (_file.llseek (pos) != pos   ||
         !_file.llread (&offset, sizeof (FileOffset)))
@@ -160,7 +160,7 @@ FileOffset DirectoryFile::readHTEntry (HashTable::HashValue entry) const
 void DirectoryFile::writeHTEntry (HashTable::HashValue entry, FileOffset offset)
 {       // offset is value parm -> safe to convert in place
     FileOffsetToDisk (offset);
-    long pos = entry * sizeof (FileOffset);
+    FileOffset pos = entry * sizeof (FileOffset);
     if (_file.llseek (pos) != pos   ||
         !_file.llwrite (&offset, sizeof (FileOffset)))
         throwArchiveException (WriteError);

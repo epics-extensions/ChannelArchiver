@@ -5,10 +5,13 @@
 
 // System
 #include <stdio.h>
-// XMS Expat
-#include <xmlparse.h>
 // Tools
 #include <ToolsConfig.h>
+
+// Define this one to use the Xerces XML library
+// When undefined, we default to the Expat library.
+// Also check ChannelArchiver/make.cfg for the required link commands
+#define FUX_XERCES
 
 /// \ingroup Tools
 
@@ -20,39 +23,53 @@
 /// - ... or whatever you want.
 ///
 /// In any case, FUX implements XML read
-/// and write support, where the reading
-/// is based on the expat library from
-/// http://www.libexpat.org.
+/// and write support.
+/// The 'read' part is based on XML libraries,
+/// there there's a choice between
+/// - Xerces C++, see http://xml.apache.org/index.html
+/// - Expat, see http://www.libexpat.org.
+/// Since Xerces handles validation and Expat doesn't,
+/// the former should be preferred.
 class FUX
 {
 public:
-    FUX();
+    FUX(); ///< Constructor
 
-    ~FUX();
+    ~FUX(); ///< Destructor
 
     /// One element in the FUX tree.
     class Element
     {
     public:
-        Element(Element *parent,
-                const stdString &name)
-                : parent(parent), name(name)
-        {}
-
-        ~Element();
+        Element(Element *parent, const stdString &name); ///< Constructor
         
+        ~Element(); ///< Destructor
+
+        /// Parent element or 0.
         Element *parent;
-        stdString name, value;
 
-        void addChild(Element *child)
+        /// Name of this element.
+        stdString name;
+
+        /// Value of this element.
+        stdString value;
+
+        /// Add a child to this Element.
+        void add(Element *child)
         {   children.push_back(child); }
+
+        /// Returns the first child of given name or 0.
+        Element *find(const char *name);
         
+        /// List of children.
         stdList<Element *> children;
     };
 
     /// Parse the given XML file into the FUX tree.
 
     /// Returns root of the FUX document or zero.
+    ///
+    ///
     Element *parse(const char *file_name);
 
     /// Dumps the FUX document.
@@ -63,7 +80,11 @@ public:
     /// in the document.
     void dump(FILE *f);
 private:
-    enum State { idle, element };
+#ifdef FUX_XERCES
+    friend class FUXContentHandler;
+    friend class FUXErrorHandler;
+#endif
+    enum State { error, idle, element };
     State state;
 
     Element *root;
@@ -73,7 +94,6 @@ private:
     static void text_handler(void *data, const char *s, int len);
     static void end_tag(void *data, const char *el);
     void dump_element(FILE *f, Element *e, int depth);
-
 };
 
 #endif

@@ -5,10 +5,10 @@ use Time::Local;
 use Frontier::Client;
 
 # Setup URL
-#$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
+$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
 #$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyDataServer.cgi';
 #$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyDataServer1.cgi';
-$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveDataServer1.cgi';
+#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveDataServer1.cgi';
 
 if ($#ARGV == 0)
 {

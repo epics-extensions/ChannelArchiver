@@ -9,8 +9,8 @@ REQUEST="$1";
 export REQUEST_METHOD=POST
 export CONTENT_TYPE=text/xml
 export CONTENT_LENGTH=`wc --bytes <$REQUEST`
-export INDEX=/mnt/bogart_home/snsdoc/RF/HPRF/LANLXmtrData/2003/01xx/index
-cat $REQUEST | O.linux-x86/ArchiveServer
+export SERVERCONFIG=serverconfig.xml
+cat $REQUEST | O.linux-x86/ArchiveDataServer
 
 #cat /tmp/archserver.log
 #rm /tmp/archserver.log

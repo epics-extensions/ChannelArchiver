@@ -86,10 +86,17 @@ configuration files are 100\% perfect.
 
 \section{Installation}
 There are no specific installation procedures for the ArchiveEngine,
-ArchiveExport, and most other Channel Archiver components. The binaries for
-them end up in the standard EPICS extension directories. Their usage
-might require configuration files, the format of which is described as
-part of the tools section in this manual.
+ArchiveExport, and most other Channel Archiver components. The
+binaries for them end up in the standard EPICS extension directories,
+which should therefore be included in the search path. If the archiver
+libraries were build as shared libraries, most Unix systems will
+require the extensions' lib directory be added to the
+LD\_LIBRARY\_PATH. The same applies to other helper libraries like
+Xerces that might be in the form of shared libraries.
+
+The usage of the ArchiveEngine and other archiver tools might require
+configuration files, the format of which is described as part of the
+tools section in this manual.
 
 The ArchiveDataServer requires integration with your web server. The
 process is exemplified in the Data Server chapter starting on page

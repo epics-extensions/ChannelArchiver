@@ -12,6 +12,8 @@
 #define TEST_TIMER
 #define TEST_CA
 #define TEST_BITSET
+#define TEST_FUX
+
 // Nothing should need to be touched from here down
 
 #ifndef TEST_LOG
@@ -37,7 +39,6 @@ stdString addWorld(const stdString &in)
 int findChar(stdString s, char c)
 {
 	stdString::size_type pos = s.find_last_of(c);
-
 	if (pos == s.npos)
         return -1;
 	else
@@ -731,6 +732,30 @@ void test_bitset()
 
 #endif
 
+#ifdef TEST_FUX
+#include "FUX.h"
+void test_fux()
+{
+    printf("\nFUX-based XML Tests\n");
+    printf("------------------------------------------\n");
+    FUX fux;
+    FUX::Element *xml_doc;
+    xml_doc = fux.parse("test.xml");
+    TEST(xml_doc != 0);
+    if (xml_doc == 0)
+        return;
+    fux.dump(stdout);
+    TEST(xml_doc->find("write_period") != 0);
+    TEST(xml_doc->find("group") != 0);
+    TEST(xml_doc->find("channel") == 0);
+    FUX::Element *group = xml_doc->find("group");
+    TEST(group->parent == xml_doc);
+    TEST(group->find("name") != 0);
+    TEST(group->find("channel") != 0);
+    TEST(group->find("quark") == 0);
+}
+#endif
+
 // -----------------------------------------------------------------
 // -----------------------------------------------------------------
 // -----------------------------------------------------------------
@@ -749,6 +774,10 @@ int main ()
 
 #ifdef TEST_AVL
     avl_test();
+#endif
+
+#ifdef TEST_FUX
+    test_fux();
 #endif
     
 #ifdef TEST_TIME

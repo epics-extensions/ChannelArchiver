@@ -8,6 +8,8 @@
 
 bool ServerConfig::read(const char *filename)
 {
+    // We depend on the XML parser to validate.
+    // The asserts are only the ultimate way out.
     FUX fux;
     FUX::Element *arch, *doc = fux.parse(filename);
     if (!doc)
@@ -15,50 +17,22 @@ bool ServerConfig::read(const char *filename)
         LOG_MSG("ServerConfig: Cannot parse '%s'\n", filename);
         return false;
     }
-
-    if (doc->name != "serverconfig")
-    {
-        LOG_MSG("ServerConfig: Got '%s' instead of 'serverconfig'\n",
-                doc->name.c_str());
-        return false;
-    }
+    LOG_ASSERT(doc->name == "serverconfig");
     Entry entry;
-    stdList<FUX::Element *>::const_iterator c;
-    for (c=doc->children.begin(); c!=doc->children.end(); ++c)
+    stdList<FUX::Element *>::const_iterator archs, e;
+    for (archs=doc->children.begin(); archs!=doc->children.end(); ++archs)
     {
-        arch = *c;
-        if (arch->name != "archive")
-        {
-            LOG_MSG("ServerConfig: Got '%s' instead of 'archive'\n",
-                    arch->name.c_str());
-            return false;
-        }
-        stdList<FUX::Element *>::const_iterator e;
-        for (e=arch->children.begin(); e!=arch->children.end(); ++e)
-        {
-            if ((*e)->name == "key")
-                entry.key = atoi((*e)->value.c_str());
-            else if ((*e)->name == "name")
-                entry.name = (*e)->value;
-            else if ((*e)->name == "path")
-                entry.path = (*e)->value;
-
-        }
-        if (entry.key == 0)
-        {
-            LOG_MSG("ServerConfig: Missing archive key\n");
-            return false;
-        }
-        if (entry.name.length() == 0)
-        {
-            LOG_MSG("ServerConfig: Missing archive name\n");
-            return false;
-        }
-        if (entry.path.length() == 0)
-        {
-            LOG_MSG("ServerConfig: Missing archive path\n");
-            return false;
-        }
+        arch = *archs;
+        LOG_ASSERT(arch->name == "archive");
+        e = arch->children.begin();
+        LOG_ASSERT((*e)->name == "key");
+        entry.key = atoi((*e)->value.c_str());
+        ++e;
+        LOG_ASSERT((*e)->name == "name");
+        entry.name = (*e)->value;
+        ++e;
+        LOG_ASSERT((*e)->name == "path");
+        entry.path = (*e)->value;
         config.push_back(entry);
         entry.clear();
     }

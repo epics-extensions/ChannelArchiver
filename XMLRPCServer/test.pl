@@ -3,8 +3,8 @@
 use Frontier::Client;
 
 # Setup URL
-$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
-#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
+#$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
+$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
 $server = Frontier::Client->new(url => $server_url);
 
 # { int32 ver, string desc } = archdat.info()
@@ -69,7 +69,7 @@ sub show_values($)
 
     foreach $result ( @{$results} )
     {
-	print("Result:\n");
+	print("Result for channel '$result->{name}':\n");
 	%meta = %{$result->{meta}};
 	if ($meta{type} == 1)
 	{
@@ -85,6 +85,8 @@ sub show_values($)
 		print("State: '$state'\n");
 	    }
 	}
+
+	print("Type: $result->{type}, element count $result->{count}.\n");
 	
 	foreach $value ( @{$result->{values}} )
 	{

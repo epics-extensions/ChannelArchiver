@@ -7,7 +7,6 @@ Returns version info for whoever cares.
 
 All in here uses ver = 1
 
-
 ** archiver.get_names
 Returns channel names and start/end times.
 Pattern is a regular expression.
@@ -16,7 +15,6 @@ If left empty, all names are returned.
 {string name, int32 start_sec, int32 start_nano,
               int32 end_sec,   int32 end_nano}[] 
             = archiver.get_names(string pattern)
-
 
 Time Stamps:
 Not(!) the raw EPICS time stamps with 1990 epoch,
@@ -31,24 +29,28 @@ result = archiver.get_values(string name[],
 how : 0 - get raw data from archive, starting w/ start,
           up to either ('end' time or max. 'count' samples)
 
-# NEW: Result is an array, one item per requested/returned channel
-Result := { meta, data }[]
+Result := { string name, meta, int32 type, int32 count, values[] }[]
+
+name: The channel name.
+      Result[i].name should match name[i] of the get_values() request,
+      so this is a waste of electrons, but it's sure convenient
+      to have the name in the result, and we're talking XML-RPC,
+      so forget about the electrons.
 
 meta := { int32 type;
           type==0: string states[],
           type==1: disp_high, disp_low, alarm_high, alarm_low,
-                   warn_high, warn_low, prec, units }
-
-data := { int32 type, int32 count, value[] }
+                   warn_high, warn_low, prec, units
+        }
 
 type:  string	0
        enum	1 (XML int32)
        int      2
        double   3
 
-value := { int32 stat, int32 sevr, int32 secs, int32 nano,
-           <type> value([]) }
-
 count == 1 : scalar, value.value is just a value
 count >  1 : array,  value.value is an array
+
+values := { int32 stat, int32 sevr, int32 secs, int32 nano,
+           <type> value([]) }
 

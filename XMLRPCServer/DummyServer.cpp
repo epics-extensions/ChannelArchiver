@@ -108,7 +108,7 @@ xmlrpc_value *get_values(xmlrpc_env *env,
                          void *user)
 {
     xmlrpc_value *names;
-    xmlrpc_value *name_val, *result, *channel, *meta, *values, *value;
+    xmlrpc_value *name_val, *results, *result, *meta, *values, *value;
     xmlrpc_int32 start_sec, start_nano, end_sec, end_nano, count, how;
     xmlrpc_int32 secs, nano;
     xmlrpc_int32 name_count, name_index, name_len, i;
@@ -121,7 +121,7 @@ xmlrpc_value *get_values(xmlrpc_env *env,
                        &count, &how);
     name_count = xmlrpc_array_size(env, names);
     // Build result for each requested channel name
-    result = xmlrpc_build_value(env, STR("()"));
+    results = xmlrpc_build_value(env, STR("()"));
     for (name_index = 0; name_index < name_count; ++name_index)
     {
         // extract name from array (no new ref!)
@@ -146,17 +146,21 @@ xmlrpc_value *get_values(xmlrpc_env *env,
             xmlrpc_array_append_item(env, values, value);
             xmlrpc_DECREF(value);
         }
-        // Assemble channel = { Meta, Values }
-        channel = xmlrpc_build_value(env, STR("{s:V,s:V}"),
-                                     "meta", meta, "values", values);
+        // Assemble channel = { meta, data }
+        result = xmlrpc_build_value(env, STR("{s:s,s:V,s:i,s:i,s:V}"),
+                                    "name", name,
+                                    "meta", meta,
+                                    "type", (xmlrpc_int32) 3,
+                                    "count",(xmlrpc_int32) 1,
+                                    "values", values);
         xmlrpc_DECREF(meta);
         xmlrpc_DECREF(values);
         // Add to result array
-        xmlrpc_array_append_item(env, result, channel);
-        xmlrpc_DECREF(channel);
+        xmlrpc_array_append_item(env, results, result);
+        xmlrpc_DECREF(result);
     }
 
-    return result;
+    return results;
 }
 
 int main(int argc, const char *argv[])

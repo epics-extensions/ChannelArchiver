@@ -67,12 +67,19 @@ public:
 
 private:
     stdString filename;
-    // List of all the sub-archives
-    IndexConfig config;
-    // The sub-index, maybe open to one of the sub-archives
-    IndexFile index;    
-    // Is it currently open?
-    bool is_open;
+    // List of all the sub-archives.
+    // Whenever one is opened because we look
+    // for a channel in one or because we list
+    // all channels, it stays open for performance.
+    // NOTE: If this ever changes, those indices which
+    // returned an RTree * must be kept open until this
+    // ListIndex is removed.
+    typedef struct
+    {
+        stdString name;
+        IndexFile *index;
+    } SubArchInfo;
+    stdList<SubArchInfo> sub_archs;
     // List of all names w/ iterator
     stdList<stdString> names;
     stdList<stdString>::const_iterator current_name;

@@ -7,7 +7,7 @@
 
 #undef DEBUG_LISTINDEX
 
-ListIndex::ListIndex()  :  index(50), is_open(false)
+ListIndex::ListIndex()
 {
 #ifdef DEBUG_LISTINDEX
     printf("new ListIndex\n");
@@ -22,36 +22,57 @@ bool ListIndex::open(const stdString &filename, bool readonly)
                 filename.c_str());
         return false;
     }
-#ifdef DEBUG_LISTINDEX
-    printf("ListIndex::open(%s)\n", filename.c_str());
-#endif
+    IndexConfig config;
+    SubArchInfo info;
+    info.index = 0;
     if (config.parse(filename))
     {
-#ifdef DEBUG_LISTINDEX
         stdList<stdString>::const_iterator subs;
         for (subs  = config.subarchives.begin();
-             subs != config.subarchives.end(); ++subs)            
-            printf("sub '%s'\n", subs->c_str());
-#endif  
-        return true;
+             subs != config.subarchives.end();    ++subs)
+        {      
+            info.name = *subs;
+            sub_archs.push_back(info);
+        }
+    }
+    else
+    {   // Assume a single index, no list of indices.
+        info.name = filename;
+        sub_archs.push_back(info);
     }
 #ifdef DEBUG_LISTINDEX
-    printf("sub '%s'\n", filename.c_str());
+    printf("ListIndex::open(%s)\n", filename.c_str());
+    stdList<SubArchInfo>::const_iterator archs;
+    for (archs  = sub_archs.begin();
+         archs != sub_archs.end();   ++ archs)
+    {
+        printf("sub '%s'\n", archs->name.c_str());
+    }    
 #endif
-    config.subarchives.push_back(filename);
+    this->filename = filename;
     return true;
 }
 
 // Close what's open. OK to call if nothing's open.
 void ListIndex::close()
 {
-    if (!is_open)
-        return;
+    stdList<SubArchInfo>::iterator archs;
+    for (archs  = sub_archs.begin();
+         archs != sub_archs.end();   ++ archs)
+    {
+        if (archs->index)
+        {
+            archs->index->close();
+            delete archs->index;
+            archs->index = 0;
 #ifdef DEBUG_LISTINDEX
-    printf("Closing %s\n", filename.c_str());
+            printf("Closed sub %s\n", archs->name.c_str());
 #endif
-    index.close();
-    is_open = false;
+        }
+    }
+#ifdef DEBUG_LISTINDEX
+    printf("Closed ListIndex %s\n", filename.c_str());
+#endif
     filename.assign(0, 0);
 }
     
@@ -66,43 +87,36 @@ class RTree *ListIndex::getTree(const stdString &channel,
                                 stdString &directory)
 {
     RTree *tree;
-    if (is_open)
-    {   // Try open index first
-        tree = index.getTree(channel, directory);
-        if (tree)
-        {
-#ifdef DEBUG_LISTINDEX
-            printf("Found '%s' in '%s' (already open)\n",
-                   channel.c_str(), filename.c_str());
-#endif
-            return tree;
-        }   
-    }
-    close(); // in case there was an open index...
-    // Find suitable sub-archive
-    stdList<stdString>::const_iterator subs;
-    for (subs  = config.subarchives.begin();
-         subs != config.subarchives.end();
-         ++subs)
+    stdList<SubArchInfo>::iterator archs = sub_archs.begin();
+    while (archs != sub_archs.end())
     {
-#ifdef DEBUG_LISTINDEX
-        printf("Checking '%s' for '%s'\n",
-               subs->c_str(), channel.c_str());
-#endif
-        if (!index.open(*subs, true))
-            continue; // can't open
-        tree = index.getTree(channel, directory);
-        if (tree)
+        if (archs->index == 0)
+        {   // Open individual index file
+            if (!(archs->index = new IndexFile(50)))
+            {                
+                LOG_MSG("ListIndex::getTree out of mem\n");
+                return 0;
+            }
+            if (!archs->index->open(archs->name, true))
+            {   // can't open this one; drop it from list
+                delete archs->index;
+                archs = sub_archs.erase(archs);
+                continue;
+            }
+        }
+        if ((tree = archs->index->getTree(channel, directory)))
         {
 #ifdef DEBUG_LISTINDEX
-            printf("Bingo!\n");
+            printf("Found '%s' in '%s'\n",
+                   channel.c_str(), archs->name.c_str());
 #endif
-            is_open = true;
-            filename = *subs;
             return tree;
         }
-        // Channel not in this one; close & search on
-        index.close();
+#ifdef DEBUG_LISTINDEX
+        printf("Didn't find '%s' in '%s'\n",
+               channel.c_str(), archs->name.c_str());
+#endif
+        ++archs;
     }
     // Channel not found anywhere.
     return 0;
@@ -141,30 +155,37 @@ bool ListIndex::getFirstChannel(NameIterator &iter)
     {
         // Pull all names into AVLTree
         AVLTree<stdString> known_names;
-        bool ok;
-        close(); // in case there was an open index...
-        stdList<stdString>::const_iterator subs;
-        NameIterator sub_names;
-        for (subs  = config.subarchives.begin();
-             subs != config.subarchives.end();
-             ++subs)
+        stdList<SubArchInfo>::iterator archs = sub_archs.begin();
+        while (archs != sub_archs.end())
         {
+            if (archs->index == 0)
+            {   // Open individual index file
+                if (!(archs->index = new IndexFile(50)))
+                {                
+                    LOG_MSG("ListIndex::getFirstChannel out of mem\n");
+                    return 0;
+                }
+                if (!archs->index->open(archs->name, true))
+                {   // can't open this one; drop it from list
+                    delete archs->index;
+                    archs = sub_archs.erase(archs);
+                    continue;
+                }
+            }
 #ifdef DEBUG_LISTINDEX
-            printf("Getting names from '%s'\n", subs->c_str());
+            printf("Getting names from '%s'\n", archs->name.c_str());
 #endif
-            if (!index.open(*subs, true))
-                continue; // can't open
-            ok = index.getFirstChannel(sub_names);
+            NameIterator sub_names;
+            bool ok = archs->index->getFirstChannel(sub_names);
             while (ok)
             {
                 known_names.add(sub_names.getName());
-                ok = index.getNextChannel(sub_names);
+                ok = archs->index->getNextChannel(sub_names);
             }
-            index.close();
+            ++archs;
         }
-        // Copy dump tree into list
 #ifdef DEBUG_LISTINDEX
-        printf("Converling to list\n");
+        printf("Converting to list\n");
 #endif
         known_names.traverse(name_traverser, this);
     }

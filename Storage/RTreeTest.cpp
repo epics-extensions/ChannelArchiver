@@ -255,19 +255,19 @@ void fmt(double d)
 
     puts("Format Test");
     l = RawValue::formatDouble(d, RawValue::DEFAULT, 6, buffer, sizeof(buffer));
-    printf("DEFAULT   : '%s' (%d)\n", buffer, l);
+    printf("DEFAULT   : '%s' (%u)\n", buffer, (unsigned)l);
     if (strlen(buffer) != l)
         printf("LENGTH ERROR!\n");
     l = RawValue::formatDouble(d, RawValue::DECIMAL, 6, buffer, sizeof(buffer));
-    printf("DECIMAL   : '%s' (%d)\n", buffer, l);
+    printf("DECIMAL   : '%s' (%u)\n", buffer, (unsigned)l);
     if (strlen(buffer) != l)
         printf("LENGTH ERROR!\n");
     l = RawValue::formatDouble(d, RawValue::ENGINEERING, 6, buffer, sizeof(buffer));
-    printf("ENGINEERING: '%s' (%d)\n", buffer, l);
+    printf("ENGINEERING: '%s' (%u)\n", buffer, (unsigned)l);
     if (strlen(buffer) != l)
         printf("LENGTH ERROR!\n");
     l = RawValue::formatDouble(d, RawValue::EXPONENTIAL, 6, buffer, sizeof(buffer));
-    printf("EXPONENTIAL: '%s' (%d)\n\n", buffer, l);
+    printf("EXPONENTIAL: '%s' (%u)\n\n", buffer, (unsigned)l);
     if (strlen(buffer) != l)
         printf("LENGTH ERROR!\n");
 }

@@ -6,6 +6,8 @@
 // Index
 #include "FileAllocator.h"
 
+#undef DEBUG_FA
+
 // Layout of the data file:
 //
 // - From the beginning of the file, reserved_space
@@ -27,6 +29,9 @@ FileOffset FileAllocator::file_size_increment = 0;
 
 FileAllocator::FileAllocator()
 {
+#ifdef DEBUG_FA
+    printf("New FileAllocator\n");
+#endif
     f = 0;
 }
 
@@ -34,10 +39,16 @@ FileAllocator::~FileAllocator()
 {
     if (f)
         fprintf(stderr, "FileAllocator wasn't detached\n");
+#ifdef DEBUG_FA
+    printf("Deleted FileAllocator\n");
+#endif
 }    
 
 bool FileAllocator::attach(FILE *f, FileOffset reserved_space)
 {
+#ifdef DEBUG_FA
+    printf("FileAllocator::attach()\n");
+#endif
     LOG_ASSERT(f != 0);
     this->f = f;
     this->reserved_space = reserved_space;
@@ -70,9 +81,19 @@ bool FileAllocator::attach(FILE *f, FileOffset reserved_space)
         read_node(this->reserved_space+list_node_size, &free_head);
 }
 
+FILE *FileAllocator::getFile() const
+{
+    if (!f)
+        fprintf(stderr, "FileAllocator::getFile called while closed\n");
+    return f;
+}
+
 void FileAllocator::detach()
 {
     f = 0;
+#ifdef DEBUG_FA
+    printf("FileAllocator::detach()\n");
+#endif
 }
 
 FileOffset FileAllocator::allocate(FileOffset num_bytes)

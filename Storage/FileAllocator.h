@@ -34,7 +34,7 @@ public:
     bool attach(FILE *f, FileOffset reserved_space);
 
     /// After attaching to a file, this returns the file
-    FILE *getFile() const { return f; }
+    FILE *getFile() const;
     
     /// <B>Must be</B> called before destroying the FileAllocator and closing the file.
     void detach();

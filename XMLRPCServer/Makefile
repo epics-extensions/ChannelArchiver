@@ -14,8 +14,8 @@ DummyDataServer_SRCS += DummyServer.cpp
 ArchiveDataServer_SRCS += ServerConfig main.cpp
 TESTPROD_HOST := DummyDataServer ArchiveDataServer
 
-PROD_LIBS_DEFAULT  := Storage    Tools    ca Com
-PROD_LIBS_WIN32    := StorageObj ToolsObj ca Com
+PROD_LIBS_DEFAULT  := Storage    Tools    $(EPICS_BASE_IOC_LIBS)
+PROD_LIBS_WIN32    := StorageObj ToolsObj ca Com 
 SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
 Storage_DIR    = $(INSTALL_LIB)
 StorageObj_DIR = $(INSTALL_LIB)

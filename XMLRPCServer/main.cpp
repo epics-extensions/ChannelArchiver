@@ -490,9 +490,12 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
 // { int32  ver, string desc } = archiver.info()
 xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
+    extern const char *alarmStatusString[];
+    extern const char *alarmSeverityString[];
 #ifdef LOGFILE
     LOG_MSG("archiver.info\n");
 #endif
+    int i;
     char txt[500];
     const char *config = get_config_name(env);
     if (!config)
@@ -502,13 +505,83 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
 #endif
     sprintf(txt,
             "Channel Archiver Data Server V%d\n"
-            "Config '%s'\n"
-            "Supports how=0 (raw), 1 (spreadsheet), "
-            "2 (interpol/average), 3 (plot-binning)\n",
+            "Config '%s'\n",
             ARCH_VER, config);
-    return xmlrpc_build_value(env, STR("{s:i,s:s}"),
-                              STR("ver"), ARCH_VER,
-                              STR("desc"), STR(txt));
+    xmlrpc_value *how = xmlrpc_build_value(env, STR("(ssss)"),
+                                            STR("raw"),
+                                            STR("spreadsheet"),
+                                            STR("interpol/average"),
+                                            STR("plot-binning")
+                                            );
+    if (!how)
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
+                                       "Cannot create how");
+        return 0;
+    }
+    xmlrpc_value *element, *status = xmlrpc_build_value(env, STR("()"));
+    for (i=0; i<=lastEpicsAlarmCond; ++i)
+    {
+        element = xmlrpc_build_value(env, STR("s"), alarmStatusString[i]);
+        xmlrpc_array_append_item(env, status, element);
+        xmlrpc_DECREF(element);
+    }
+    xmlrpc_value *severity = xmlrpc_build_value(env, STR("()"));
+    for (i=0; i<=lastEpicsAlarmSev; ++i)
+    {
+        element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
+                                     STR("num"), (xmlrpc_int32)i,
+                                     STR("sevr"), alarmSeverityString[i],
+                                     STR("has_value"), (xmlrpc_bool) 1,
+                                     STR("txt_stat"), (xmlrpc_bool) 1);
+        xmlrpc_array_append_item(env, severity, element);
+        xmlrpc_DECREF(element);
+    }
+    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
+                                 STR("num"), (xmlrpc_int32)ARCH_EST_REPEAT,
+                                 STR("sevr"), "Est_Repeat",
+                                 STR("has_value"), (xmlrpc_bool) 0,
+                                 STR("txt_stat"), (xmlrpc_bool) 0);
+    xmlrpc_array_append_item(env, severity, element);
+    xmlrpc_DECREF(element);
+    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
+                                 STR("num"), (xmlrpc_int32)ARCH_REPEAT,
+                                 STR("sevr"), "Repeat",
+                                 STR("has_value"), (xmlrpc_bool) 0,
+                                 STR("txt_stat"), (xmlrpc_bool) 0);
+    xmlrpc_array_append_item(env, severity, element);
+    xmlrpc_DECREF(element);
+    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
+                                 STR("num"), (xmlrpc_int32)ARCH_DISCONNECT,
+                                 STR("sevr"), "Disconnected",
+                                 STR("has_value"), (xmlrpc_bool) 0,
+                                 STR("txt_stat"), (xmlrpc_bool) 1);
+    xmlrpc_array_append_item(env, severity, element);
+    xmlrpc_DECREF(element);
+    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
+                                 STR("num"), (xmlrpc_int32)ARCH_STOPPED,
+                                 STR("sevr"), "Archive_Off",
+                                 STR("has_value"), (xmlrpc_bool) 0,
+                                 STR("txt_stat"), (xmlrpc_bool) 1);
+    xmlrpc_array_append_item(env, severity, element);
+    xmlrpc_DECREF(element);
+    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
+                                 STR("num"), (xmlrpc_int32)ARCH_DISABLED,
+                                 STR("sevr"), "Archive_Disabled",
+                                 STR("has_value"), (xmlrpc_bool) 0,
+                                 STR("txt_stat"), (xmlrpc_bool) 1);
+    xmlrpc_array_append_item(env, severity, element);
+    xmlrpc_DECREF(element);
+    xmlrpc_value *result = xmlrpc_build_value(env, STR("{s:i,s:s,s:V,s:V,s:V}"),
+                                              STR("ver"), ARCH_VER,
+                                              STR("desc"), STR(txt),
+                                              STR("how"), how,
+                                              STR("stat"), status,
+                                              STR("sevr"), severity);
+    xmlrpc_DECREF(severity);
+    xmlrpc_DECREF(status);
+    xmlrpc_DECREF(how);3
+    return result;
 }
 
 // {int32 key, string name, string path}[] = archiver.archives()

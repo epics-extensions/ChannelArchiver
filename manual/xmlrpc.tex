@@ -9,24 +9,127 @@ Users of Java should probably utilize the Java archive data client
 library provided with the ChannelArchiver. Users of other programming
 environments need to refer to the following.
 
-\subsection{archiver.info} % --------------------------------------------
-This call returns version information for 
-whoever cares. It will allow future compatibility
-if clients check for the correct version numbers.
+\subsection{archiver.info} \label{sec:archiver:info} % ------------------- 
+This call returns version information. It will allow future
+compatibility if clients check for the correct version numbers.  In
+addition, it provides hints on how to decode the values served by this
+server.
 
 \begin{lstlisting}[keywordstyle=\sffamily]
-{ int32 ver,  string desc } = archiver.info()
+{ int32             ver,
+  string            desc,
+  string            how[],
+  string            stat[],
+  { int32 num,
+    string sevr,
+    bool has_value,
+    bool txt_stat
+  }                 sevr[]
+ } = archiver.info()
 \end{lstlisting}
 
 \begin{description}
 \item[\sffamily ver:]  Version number. The first released software uses '1'.
 \item[\sffamily desc:] Cute description that one can print.
+\item[\sffamily how:]  Array of strings with a description of the
+                       request methods supported for 'how' in the
+		       archiver.values() call described further below in
+                       section \ref{sec:archiver:values}.
+\item[\sffamily stat:] Array of strings with a description of the
+                       ``status'' part of the values returned by
+                       the archiver.values() call.     
+\item[\sffamily sevr:] Array of structures with a description of the
+                       ``severity'' part of the values returned by
+                       the archiver.values() call.     
 \end{description}
 
-\noindent The result is a structure with a numeric "ver"
-member and a string "desc" member. Implementations
-like perl will return a hash with members "ver"
-and "desc".
+\noindent The result is a structure with a numeric ``ver''
+member, a string ``desc'' member and so on as listed above.
+Implementations like perl will return a hash with members
+``ver'', ``desc'', etc.
+The strings in ``how'' describe the request method for how=0, how=1,
+and so on.
+The strings in ``stat'' describe the enumerated status values, the
+typical result is shown in table \ref{tab:stat}.
+
+The more important information is in the ``sevr'' array.
+It also lists severity numbers (``num'') and their associated string
+representation (``sevr''). In addition to the alarm severities defined
+by the EPICS base software, the archiver uses some special severity
+values which have the ``has\_value'' property set to false. They
+identify situations that have no value because the channel
+was disconnected or the archiver was turned off. Other special
+severities identify repeat counts which are used in the periodic
+scanning modes of the archive engine: If the channel did not change
+for N sample times, a repeat count of N is logged instead of logging
+the same value N times. In that case, the ``txt\_stat'' property is
+set to false because the status (stat) field no longer corresponds to
+a status string from table \ref{tab:stat}. Instead, it provides the
+repeat count N.
+Table \ref{tab:sevr} lists the typical content of the ``sevr'' array,
+table \ref{tab:statsevrexample} presents examples for decoding values
+based on their status and severity information.
+
+\begin{table}[htbp]
+  \begin{center}
+    \sffamily
+    \begin{tabular}[t]{l|l}
+    Array Element & String \\
+    \hline
+      0   & NO\_ALARM   \\
+      1   & READ ALARM   \\
+      2   & WRITE ALARM \\
+      3   & HIHI ALARM  \\
+      4   & HIGH ALARM  \\
+      5   & LOLO ALARM  \\
+      6   & LOW ALARM  \\
+      7   & STATE ALARM  \\
+      \ldots   & \ldots  \\
+      17   & UDF ALARM  \\
+      \ldots   & \ldots  \\
+    \end{tabular}
+    \caption{Alarm Status Values returned in the ``stat'' member of archiver.info()}
+    \label{tab:stat}
+  \end{center}
+\end{table}
+
+\begin{table}[htbp]
+  \begin{center}
+    \sffamily
+    \begin{tabular}[t]{l|l|l|l}
+     num & sevr             & has\_value & txt\_stat \\
+    \hline
+       0 & NO\_ALARM        & true       & true  \\
+       1 & MINOR            & true       & true  \\
+       2 & MAJOR            & true       & true  \\
+       3 & INVALID          & true       & true  \\
+    3968 & Est\_Repeat      & false      & false \\
+    3856 & Repeat           & false      & false \\
+    3904 & Disconnected     & false      & true  \\
+    3872 & Archive\_Off     & false      & true  \\
+    3848 & Archive\_Disabled& false      & true
+    \end{tabular}
+    \caption{Alarm Severity Values returned in the ``sevr'' member of archiver.info()}
+    \label{tab:sevr}
+  \end{center}
+\end{table}
+
+\begin{table}[htbp]
+  \begin{center}
+    \sffamily
+    \begin{tabular}[t]{l|l|l|l}
+    Severity (sevr) & Status (stat) & Value & Example Text \\
+    \hline
+                  0 &            0  &  3.14 & ``3.14'' \\
+                  1 &            6  &  3.14 & ``3.14 MINOR LOW'' \\
+               3856 &            6  &  3.14 & ``3.14 Repeat 6'' \\
+               3904 &            0  &  0    & ``Disconnected'' \\
+    \end{tabular}
+    \caption{Examples for decoding samples returned from the
+    archiver.values() call based on their Status and Severity}
+    \label{tab:statsevrexample}
+  \end{center}
+\end{table}
 
 \subsection{archiver.archives} % --------------------------------------------
 Returns the archives that this data server can access.
@@ -50,8 +153,8 @@ Returns the archives that this data server can access.
                        seldom essential for XML-RPC clients to look at this.
 \end{description}
 
-\noindent The result is an array of structures with a numeric "key"
-member and strings "name" and "path".
+\noindent The result is an array of structures with a numeric ``key''
+member and strings ``name'' and ``path''.
 An example result could be:
 \begin{lstlisting}[keywordstyle=\sffamily]
 { key=1,  name="Vacuum", path="/home/data/vac/index" },
@@ -88,7 +191,7 @@ The archive might actually contain entries \emph{after}
 the reported end time because the index might not
 be up too date on the end times.
 
-\subsection{archiver.values} % -----------------------------------------
+\subsection{archiver.values} \label{sec:archiver:values} % -----------------
 This call returns values from the archive identified by the key for a
 given list of channel names and a common time range.
 
@@ -188,67 +291,8 @@ meta := { int32 type;
 \noindent The values for status and severity match in part those that
 the EPICS IOC databases use. The ArchiveEngine simply receives and
 stores them, they are passed on to the retrieval tools without
-change. For their current definition, refer to the IOC Application
-Developer's Guide~\cite{iocappdev04}. Tables \ref{tab:sevr} and
-\ref{tab:stat} list some common values.  In addition, the archiver
-toolset uses special severity values to indicate a disconnected
-channel or the fact that the ArchiveEngine was shut down. These values
-are listed in table \ref{tab:archsevr}; they can be found ``or-ed''
-together with the ordinary EPICS severity values.
-
-\begin{table}[htbp]
-  \begin{center}
-    \sffamily
-    \begin{tabular}[t]{l|l}
-    Value & Definition \\
-    \hline
-      0   & NO\_ALARM   \\
-      1   & MINOR      \\
-      2   & MAYOR      \\
-      3   & INVALID
-    \end{tabular}
-    \caption{Alarm Severities}
-    \label{tab:sevr}
-  \end{center}
-\end{table}
-
-\begin{table}[htbp]
-  \begin{center}
-    \sffamily
-    \begin{tabular}[t]{l|l}
-    Value & Definition \\
-    \hline
-      0   & NO\_ALARM   \\
-      1   & READ ALARM   \\
-      2   & WRITE ALARM \\
-      3   & HIHI ALARM  \\
-      4   & HIGH ALARM  \\
-      5   & LOLO ALARM  \\
-      6   & LOW ALARM  \\
-      7   & STATE ALARM  \\
-      \ldots   & \ldots  \\
-      17   & UDF ALARM  \\
-      \ldots   & \ldots  \\
-    \end{tabular}
-    \caption{Alarm Status Values}
-    \label{tab:stat}
-  \end{center}
-\end{table}
-
-\begin{table}[htbp]
-  \begin{center}
-    \sffamily
-    \begin{tabular}[t]{l|l|l}
-    Value & Definition                 & Description \\
-    \hline
-    0x0f00 & ARCH\_NO\_VALUE           & Mask for any of the following \\
-    0x0f80 & ARCH\_EST\_REPEAT         & Repeat count \\
-    0x0f40 & ARCH\_DISCONNECT          & Channel is disconnected \\
-    0x0f20 & ARCH\_STOPPED             & ArchiveEngine shut down \\
-    0x0f10 & ARCH\_REPEAT              & Repeat count \\
-    0x0f08 & ARCH\_DISABLED            & Channel is disabled \\
-    \end{tabular}
-    \caption{Channel Archiver Alarm Severities}
-    \label{tab:archsevr}
-  \end{center}
-\end{table}
+change. In addition, the archiver toolset uses special severity values
+to indicate a disconnected channel or the fact that the ArchiveEngine
+was shut down.  For details refer to section \ref{sec:archiver:info}
+and the tables \ref{tab:stat}, \ref{tab:sevr} and
+\ref{tab:statsevrexample}.

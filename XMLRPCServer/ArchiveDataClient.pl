@@ -2,6 +2,20 @@
 #
 # Perl script for testing the Archiver's XML-RPC data server.
 #
+# Every once in a while, this script will report an error ala
+#
+# "not well-formed (invalid token) at line 21, column 2, byte 626
+#  at /usr/lib/perl5/vendor_perl/...
+#     ...5.8.0/i386-linux-thread-multi/XML/Parser.pm line 185"
+#
+# for the archiver.info call.
+# A separate test with a shell script that directly sends the
+# XML-RPC request to the ArchiveDataServer via stdin and compares
+# the output with a known good output couldn't find any discrepancies.
+#
+# So the problem might be in the web server(unlikely) or
+# the Frontier::Client, XML/Parter.pm, ...
+#
 # kasemir@lanl.gov
 
 use English;
@@ -206,6 +220,29 @@ if ($opt_i)
     printf("Archive Data Server V %d\n", $result->{'ver'});
     printf("Description:\n");
     printf("%s", $result->{'desc'});
+    my ($array) = $result->{'how'};
+    my ($i);
+    printf("Supports requests with how = ...\n");
+    for ($i=0; $i<=$#{$array}; ++$i)
+    {
+	printf("%3d: '%s'\n", $i, $array->[$i]);
+    }
+    $array = $result->{'stat'};
+    printf("Alarm Status Strings = ...\n");
+    for ($i=0; $i<=$#{$array}; ++$i)
+    {
+	printf("%3d: '%s'\n", $i, $array->[$i]);
+    }
+    printf("Alarm Severity Strings = ...\n");
+    printf("Num  Severity             Has Value?  Status Text?\n");
+    foreach my $stat ( @{ $result->{'sevr'} } )
+    {
+	printf("%4d %-20s %-5s       %-5s\n",
+	       $stat->{num},
+	       $stat->{sevr},
+	       $stat->{has_value}->value() ? "true" : "false",
+	       $stat->{txt_stat}->value()  ? "true" : "false");
+    }
 }
 elsif ($opt_a)
 {

@@ -161,6 +161,7 @@ my ($daemonization) = 1;
 # 'started'    => '' or start time info of the running engine.
 # 'channels'   => # of channels (only valid if started)
 # 'connected'  => # of _connected_ channels (only valid if started)
+# 'disabled'   => is there a file 'DISABLED.txt' ?
 # 'lockfile'   => is there a file 'archive_active.lck' ?
 my (@config);
 
@@ -479,12 +480,12 @@ sub write_indexconfig($)
             {
 		$diff = (-M $index) - $index_age;
 		$skip = $diff > $index_omit_age;
-		$why = "$diff days older than $master_index";
+		$why  = "$diff days older than $master_index";
             }
 	    else
 	    {
 		$skip = 1;
-		$why = "Doesn't exist (yet?)";
+		$why  = "Doesn't exist (yet?)";
 	    }
 	}
 	print INDEX "\t<!-- skipped: $why\n" if ($skip);
@@ -529,7 +530,9 @@ sub html_stop($)
     print $client "<A HREF=\"/status\">-Status-</A>\n";
     print $client "<A HREF=\"/info\">-Info-</A>  \n";
     print $client time_as_text(time);
-    print $client "\n";
+    print $client "<br>\n";
+    print $client "<I>Note that this page updates only ";
+    print $client "every $engine_check_secper seconds!</I>\n";
     print $client "</BODY>\n";
     print $client "</HTML>\n";
 }
@@ -569,7 +572,8 @@ sub handle_HTTP_main($)
     print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Status</FONT></TH>";
     print $client
 	"<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Restart</FONT></TH>";
-    print $client "</TR>\n";  
+    print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Action</FONT></TH>";
+    print $client "</TR>\n";
     foreach $engine ( @config )
     {
 	print $client "<TR>";
@@ -581,25 +585,37 @@ sub handle_HTTP_main($)
 	{
 	    print $client "<TD ALIGN=CENTER>$engine->{started}</TD>";
 	    $connected = $engine->{connected};
-	    $channels = $engine->{channels};
+	    $channels  = $engine->{channels};
 	    print $client "<TD ALIGN=CENTER>";
 	    print $client "<FONT COLOR=#FF0000>" if ($channels != $connected);
 	    print $client "$connected/$channels channels connected";
 	    print $client "</FONT>" if ($channels != $connected);
+	    if ($engine->{disabled})
+	    {
+		print $client "<br><FONT COLOR=#FF0000>";
+		print $client "Found DISABLED file.";
+		print $client "</FONT>";
+	    }
 	    print $client "</TD>";
 	}
 	else
 	{
-	    print $client "<TD></TD>"; 
+	    print $client "<TD></TD>";
 	    if ($engine->{lockfile})
 	    {
-		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
-		    "Unknown. Found lock file.</FONT></TD>";
+		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" .
+		    "Unknown. Found lock file.</FONT><br>";
+                print $client "(Check again, see if issue persists)</TD>";
+	    }
+	    elsif ($engine->{disabled})
+	    {
+		print $client "<TD ALIGN=CENTER><FONT color=#FFFF00>" .
+		    "Disabled.</FONT></TD>";
 	    }
 	    else
 	    {
-		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
-		    "Not Running.</FONT></TD>";
+		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" .
+		    "Not running.</FONT>";
 	    }
 	}
 	print $client "<TD ALIGN=CENTER>";
@@ -638,6 +654,17 @@ sub handle_HTTP_main($)
 		"<br>Next stop ", time_as_text($engine->{next_stop});
 	}
 	print $client "</TD>";
+	if ($engine->{disabled})
+	{
+	    print $client
+		"<TD><A HREF=\"enable/$engine->{port}\">Enable</A></TD>";
+	}
+	else
+	{
+	    print $client
+		"<TD><A HREF=\"disable/$engine->{port}\">Disable</A></TD>";
+	}
+	
 	print $client "</TR>\n";
     }
     print $client "</TABLE>\n";
@@ -714,6 +741,71 @@ sub handle_HTTP_postal($)
     html_stop($client);
 }
 
+sub handle_HTTP_disable($$)
+{
+    my ($client, $engine_port) = @ARG;
+    my ($engine, $dir);
+    html_start($client, 0);
+    print $client "<H1>Disabling Engines</H1>\n";
+    foreach $engine ( @config )
+    {
+	if ($engine->{port} == $engine_port)
+	{
+	    print $client "<H2>Engine '$engine->{desc}'</H2>\n";
+	    $dir = dirname($engine->{config});
+	    if (open(DISABLED, ">$dir/DISABLED.txt"))
+	    {
+		print DISABLED "Disabled by ArchiveDaemon, ";
+		print DISABLED time_as_text(time);
+		print DISABLED "\n";
+		close(DISABLED);
+		print $client "Created 'DISABLED.txt' in '$dir'.<p>\n";
+		stop_engine($localhost, $engine->{port});
+		$engine->{disabled} = 1;
+		print $client "Stopped via port $engine->{port}.\n";
+		print "Disabled '$engine->{desc}, port $engine->{port}.\n";
+	    }
+	    else
+	    {
+		print $client "ERROR: Cannot create 'DISABLED.txt' in '$dir'.";
+	    }
+	    last;
+	}
+    }
+    html_stop($client);
+}
+
+sub handle_HTTP_enable($$)
+{
+    my ($client, $engine_port) = @ARG;
+    my ($engine, $dir);
+    html_start($client, 0);
+    print $client "<H1>Enabling Engines</H1>\n";
+    foreach $engine ( @config )
+    {
+	if ($engine->{port} == $engine_port)
+	{
+	    print $client "<H2>Engine '$engine->{desc}'</H2>\n";
+	    $dir = dirname($engine->{config});
+	    if (unlink("$dir/DISABLED.txt") == 1)
+	    {
+		$engine->{disabled} = 0;
+		$last_check = 0; # Force immediate check of engines & maybe restart
+		print $client "Removed 'DISABLED.txt' from '$dir'.<p>\n";
+		print $client "Daemon will eventually start the engine ";
+		print $client "at the next check interval.\n";
+		print "Enabled '$engine->{desc}, port $engine->{port}.\n";
+	    }
+	    else
+	    {
+		print $client "ERROR: Cannot find 'DISABLED.txt' in '$dir'.";
+	    }
+	    last;
+	}
+    }
+    html_stop($client);
+}
+
 # Used by check_HTTPD to dispatch requests
 sub handle_HTTP_request($$)
 {
@@ -749,9 +841,21 @@ sub handle_HTTP_request($$)
 	    handle_HTTP_postal($client);
 	    return 0;
 	}
+	elsif ($URL =~ m'/disable/([0-9]+)')
+	{
+	    handle_HTTP_disable($client, $1);
+	    return 1;
+	}
+	elsif ($URL =~ m'/enable/([0-9]+)')
+	{
+	    handle_HTTP_enable($client, $1);
+	    return 1;
+	}
 	else
 	{
-	    print $client "You requested: '<I>" . $URL . "</I>'\n";
+	    print $client "<H1>Unknown URL</H1>\n";
+	    print $client "You requested: '<I>" . $URL . "</I>',\n";
+	    print $client "but this URL is not handled by the ArchiveDaemon.\n";
 	    return 1;
 	}
     }
@@ -931,6 +1035,7 @@ sub check_engines($)
     foreach $engine ( @config )
     {
 	my ($dir) = dirname($engine->{config});
+	$engine->{disabled} = (-f "$dir/DISABLED.txt");
 	$engine->{lockfile} = (-f "$dir/archive_active.lck");
 	($desc, $started, $channels, $connected) =
 	    check_engine($localhost, $engine->{port});
@@ -1030,7 +1135,8 @@ sub start_engines($)
     $index_changed = 0;
     foreach $engine ( @config )
     {
-	next unless ($engine->{next_start} > 0); # not scheduled
+	next if ($engine->{disabled});                # ignore while disabled
+	next unless ($engine->{next_start} > 0);      # not scheduled
 	next unless ($engine->{next_start} <= $now);  # not due, yet.
 	if ($engine->{lockfile})
 	{

@@ -5,6 +5,7 @@
 # (daemons, engines, ...)
 # from tab-delimited configuration file.
 
+use lib '/arch/scripts';
 use English;
 use strict;
 use vars qw($opt_d $opt_h $opt_c $opt_o);

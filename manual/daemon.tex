@@ -241,6 +241,14 @@ engines did in fact already connect to all channels.
 If you are impatient, you can click on the links to the individual
 engines to get a more up-to-date snapshot of each engine's status.
 
+\subsection{Disabling Engines}
+The web interface of the daemon contains a link for each engine that
+disables the engine. This places a file ``\INDEX{DISABLED.txt}'' in
+the engine directory and stops the engine.
+The daemon will not attempt to start engines as long as the ``DISABLED''
+file is found. This is a convenient way for temporarily disabling
+engines without removing them from the daemon's configuration.
+
 \subsection{Stopping and More}
 To stop the ArchiveDaemon, access the ``/stop'' URL of the daemon's
 HTTPD, e.g. ``http://localhost:4610/stop''.  Similar to the

@@ -19,8 +19,8 @@ public:
 	// <I>filename</I> has to be defined
 	// for GNUPlotExporter because two files are created
 	// and <I>filename</I> is used as a base name.
-	GNUPlotExporter (Archive &archive, const stdString &filename);
-	GNUPlotExporter (ArchiveI *archive, const stdString &filename);
+	GNUPlotExporter (Archive &archive, const stdString &filename, int reduce = 0);
+	GNUPlotExporter (ArchiveI *archive, const stdString &filename, int reduce = 0);
 
     void exportChannelList(const stdVector<stdString> &channel_names);
 
@@ -36,6 +36,7 @@ public:
 private:
     bool _make_image;
     bool _use_pipe;
+    int _reduce; // # of buckets to reduce data into, 0 -> don't reduce
 };
 
 #endif //__GNUPLOTEXPORTER_H__

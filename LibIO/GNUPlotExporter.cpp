@@ -7,6 +7,9 @@
 #include "../ArchiverConfig.h"
 #include "ArchiveException.h"
 #include "GNUPlotExporter.h"
+#include "LinInterpolValueIteratorI.h"
+#include "BucketingValueIteratorI.h"
+#include "ExpandingValueIteratorI.h"
 #include "Filename.h"
 #include <fstream>
 
@@ -57,8 +60,8 @@ static void printTimeAndValue(FILE *f, const osiTime &time,
     }
 }
 
-GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename)
-        : SpreadSheetExporter (archive.getI(), filename)
+GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename, int reduce)
+        : SpreadSheetExporter (archive.getI(), filename), _reduce(reduce)
 {
     _make_image = false;
     _use_pipe = false;
@@ -66,8 +69,8 @@ GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename)
         throwDetailedArchiveException(Invalid, "empty filename");
 }           
 
-GNUPlotExporter::GNUPlotExporter(ArchiveI *archive, const stdString &filename)
-        : SpreadSheetExporter (archive, filename)
+GNUPlotExporter::GNUPlotExporter(ArchiveI *archive, const stdString &filename, int reduce)
+        : SpreadSheetExporter (archive, filename), _reduce(reduce)
 {
     _make_image = false;
     _use_pipe = false;
@@ -109,31 +112,40 @@ void GNUPlotExporter::exportChannelList(
     
     stdVector<stdString> plotted_channels;
     stdString channel_desc;
-    Archive         archive(_archive);
-    ChannelIterator channel(archive);
-    ValueIterator   value(archive);
+    ChannelIteratorI *channels = _archive->newChannelIterator();;
+    ValueIteratorI   *base = _archive->newValueIterator();
+    ValueIteratorI   *value = 0;
+    ValueI   *last_value = 0;
+
     osiTime time;
     stdString txt;
+    
     for (size_t i=0; i<num; ++i)
     {
-        if (! archive.findChannelByName(channel_names[i], channel))
+        if (! _archive->findChannelByName(channel_names[i], channels))
         {
-            archive.detach();
             sprintf(info, "Cannot find channel '%s' in archive",
                     channel_names[i].c_str());
             throwDetailedArchiveException (ReadError, info);
             return;
         }
-        if (! channel->getValueBeforeTime(_start, value) &&
-            ! channel->getValueAfterTime(_start, value))
-            continue; // nothing in time range
+        if (! channels->getChannel()->getValueBeforeTime(_start, base) &&
+            ! channels->getChannel()->getValueAfterTime(_start, base))
+	   continue; // nothing in time range
+	
+	if (_reduce && isValidTime(_start) && isValidTime(_end)) {
+	   _linear_interpol_secs = (_end.getSec() - _start.getSec()) / _reduce;
+	   value = new BucketingValueIteratorI(base, _linear_interpol_secs);
+	} else {
+	   _reduce = 0;
+	   value = new ExpandingValueIteratorI(base);
+	}
         
-        if (value->getCount() > 1)
+        if (value->getValue()->getCount() > 1)
         {
             _is_array = true;
             if (num > 1)
             {
-                archive.detach();
                 sprintf(info,
                         "Array channels like '%s' can only be exported "
                         "on their own, "
@@ -144,16 +156,16 @@ void GNUPlotExporter::exportChannelList(
         }
         
         // Header: Channel name [units]
-        if (value->getCtrlInfo() &&
-            value->getCtrlInfo()->getUnits())
+        if (value->getValue()->getCtrlInfo() &&
+            value->getValue()->getCtrlInfo()->getUnits())
         {
-            channel_desc = channel->getName();
+            channel_desc = channels->getChannel()->getName();
             channel_desc += " [";
-            channel_desc += value->getCtrlInfo()->getUnits();
+            channel_desc += value->getValue()->getCtrlInfo()->getUnits();
             channel_desc += "]";
         }
         else
-            channel_desc = channel->getName();
+            channel_desc = channels->getChannel()->getName();
         fprintf(f, "# %s\n", channel_desc.c_str());
         
         // Dump values for this channel. We really want to see
@@ -161,10 +173,10 @@ void GNUPlotExporter::exportChannelList(
         // time stamps to get there.
         bool have_anything = false;
         bool last_was_data = false;
-        while (value)
+        while (value->isValid())
         {
-            time = value->getTime();
-            if (isValidTime(_start) && time < _start) // start hack
+            time = value->getValue()->getTime();
+            if (isValidTime(_start) && (time < _start)) // start hack
             {
                 fprintf(f, "# extrapolated onto start time from ");
                 ::printTime(f, time);
@@ -173,21 +185,19 @@ void GNUPlotExporter::exportChannelList(
             }
             if (isValidTime(_end) && time > _end)
                 break;
-            if (value->isInfo())
+            if (value->getValue()->isInfo())
             {
 	       if (last_was_data) {
 		  // Output the last valid Value with "event"-timestamp
 		  // -> plot continues to e.g. disconnect-time for channels
 		  // that change seldom
-		  --value;
-		  printTimeAndValue(f, time, *value);
-		  ++value;
+		  printTimeAndValue(f, time, *last_value);
 	       }
                 // Show as comment & empty line -> "gap" in GNUplot graph.
                 // But only one empty line, multiples separate channels!
                 fprintf(f, "# ");
                 ::printTime(f, time);
-                value->getStatus(txt);
+                value->getValue()->getStatus(txt);
                 fprintf(f, "\t%s\n", txt.c_str());
                 if (last_was_data)
                     fprintf(f, "\n");
@@ -197,10 +207,12 @@ void GNUPlotExporter::exportChannelList(
             {
                 have_anything = true;
                 ++_data_count;
-                printTimeAndValue(f, time, *value);
+                printTimeAndValue(f, time, *value->getValue());
+		last_value = value->getValue()->clone();
+		last_value->setCtrlInfo(value->getValue()->getCtrlInfo());
                 last_was_data = true;
             }
-            ++value;
+            value->next();
         }
         // time == stamp of last value.
         // If _start was in the future, time==_start.
@@ -209,16 +221,12 @@ void GNUPlotExporter::exportChannelList(
             fprintf(f, "# extrapolated onto end time from ");
             ::printTime(f, time);
             fprintf(f, "\n");
-            --value;
-            if (value)
-            {
-                osiTime now = osiTime::getCurrent();
-                if (now > time) // extrapolate until "now"
-                    time = now;
-                if (_end < time) // but not beyond "_end"
-                    time = _end;
-                printTimeAndValue(f, time, *value);
-            }
+	    osiTime now = osiTime::getCurrent();
+	    if (now > time) // extrapolate until "now"
+	       time = now;
+	    if (_end < time) // but not beyond "_end"
+	       time = _end;
+	    printTimeAndValue(f, time, *last_value);
         }
         
         if (have_anything)
@@ -226,7 +234,6 @@ void GNUPlotExporter::exportChannelList(
         // Gap separates channels
         fprintf(f, "\n\n\n");
     }
-    archive.detach();
     fclose(f);
 
     // Generate script
@@ -264,6 +271,12 @@ void GNUPlotExporter::exportChannelList(
     fprintf(f, "# x-axis is time axis:\n");
     fprintf(f, "set xdata time\n");
     fprintf(f, "set timefmt \"%%m/%%d/%%Y %%H:%%M:%%S\"\n");
+    if (_reduce) {
+       fprintf(f, "set xrange [\""); ::printTime(f, _start);
+       fprintf(f, "\":\""); ::printTime(f, _end);
+       fprintf(f, "\"]\n");
+    }
+
     if (_is_array)
         fprintf(f, "set format x \"%%m/%%d/%%Y, %%H:%%M:%%S\"\n");
     else

@@ -70,11 +70,12 @@ void list_channels(const stdString &archive_name, const stdString &pattern)
 // iterated version.
 // start == end == 0 will list all values.
 void list_values(const stdString &archive_name, const stdString &channel_name,
-                const osiTime &start, const osiTime &end)
+                const osiTime &start, const osiTime &end, int repeat_floor)
 {
     Archive         archive(new ARCHIVE_TYPE(archive_name));
     ChannelIterator channel(archive);
     ValueIterator   value(archive);
+    stdString time_text, stat_text;
 
     if (! archive.findChannelByName(channel_name, channel))
     {
@@ -86,13 +87,16 @@ void list_values(const stdString &archive_name, const stdString &channel_name,
     channel->getValueAfterTime(start, value);
     while (run && value &&(end == nullTime  ||  value->getTime() < end))
     {
-        std::cout << *value << "\n";
+        if ((repeat_floor < 0) ||
+            (value->getSevr() != ARCH_REPEAT && value->getSevr() != ARCH_EST_REPEAT) ||
+            (value->getStat() >= repeat_floor) )
+	   std::cout << *value << "\n";
         ++ value;
     }
 }
 
 void dump(const stdString &archive_name, const stdString &channel_pattern,
-           const osiTime &start, const osiTime &end)
+           const osiTime &start, const osiTime &end, int repeat_floor)
 {
     Archive         archive(new ARCHIVE_TYPE(archive_name));
     ChannelIterator channel(archive);
@@ -105,8 +109,11 @@ void dump(const stdString &archive_name, const stdString &channel_pattern,
         channel->getValueAfterTime(start, value);
         while (run && value && (end == nullTime  ||  value->getTime() < end))
         {
-            std::cout << *value << "\n";
-            ++ value;
+	   if ((repeat_floor < 0) ||
+	       (value->getSevr() != ARCH_REPEAT && value->getSevr() != ARCH_EST_REPEAT) ||
+	       (value->getStat() >= repeat_floor) )
+	      std::cout << *value << "\n";
+	   ++ value;
         }
         ++channel;
     }
@@ -192,6 +199,7 @@ void do_export(const stdString &archive_name,
                const osiTime &start, const osiTime &end,
                const stdString &new_dir_name,
                size_t repeat_limit,
+               size_t repeat_floor,
                size_t days_per_file)
 {
     size_t i, chunk, chunk_count=0, val_count=0;
@@ -284,6 +292,16 @@ void do_export(const stdString &archive_name,
                     {
                         std::cout << *values
                              << "\trepeat count beyond " << repeat_limit
+                             << ", skipped\n";
+                        continue;
+                    }
+                    if (repeat_floor > 0 &&
+                        (values->getSevr() == ARCH_REPEAT ||
+                         values->getSevr() == ARCH_EST_REPEAT) &&
+                        (size_t)values->getStat() <= repeat_floor)
+                    {
+                        std::cout << *values
+                             << "\trepeat count below " << repeat_floor
                              << ", skipped\n";
                         continue;
                     }
@@ -640,6 +658,7 @@ int main(int argc, const char *argv[])
     CmdArgString end_text       (parser, "end", "<time>", "End time (exclusive)");
     CmdArgString export_archive (parser, "xport", "<new archive>", "export data into new archive");
     CmdArgInt    repeat_limit   (parser, "repeat_limit", "<seconds>", "remove 'repeat' entries beyond limit (export)");
+    CmdArgInt    repeat_floor   (parser, "Repeat_floor", "<seconds>", "remove 'repeat' entries below limit (list/dump/export)");
     CmdArgInt    days_per_file  (parser, "FileSize", "<days>", "Days per binary data file (export, binary file format detail)");
     CmdArgString show_headers   (parser, "headers", "<channel>", "show headers for channel");
     CmdArgString ascii_output   (parser, "Output", "<channel>", "output ASCII dump for channel");
@@ -709,7 +728,7 @@ int main(int argc, const char *argv[])
             delete_name(archive_name, delete_channel.get());
         }
         else if (dump_channels.get().length() > 0)
-            dump(archive_name, dump_channels, start, end);
+            dump(archive_name, dump_channels, start, end, repeat_floor.get());
         else if (export_archive.get().length() > 0)
         {
             // Export matching channels, generate pattern for single channel
@@ -725,12 +744,14 @@ int main(int argc, const char *argv[])
                 channel_pattern.set(pattern);
             }
             do_export(archive_name, channel_pattern,
-                      start, end, export_archive, (size_t) repeat_limit.get(), days_per_file.get());
+                      start, end, export_archive, 
+		      (size_t) repeat_limit.get(), (size_t) repeat_floor.get(),
+		      days_per_file.get());
         }
         else if (channel_name.get().empty())
             list_channels(archive_name, channel_pattern);
         else
-            list_values(archive_name, channel_name, start, end);
+            list_values(archive_name, channel_name, start, end, repeat_floor.get());
     }
     catch (GenericException &e)
     {

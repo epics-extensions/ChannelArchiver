@@ -1,0 +1,30 @@
+<html>
+
+<head>
+<title>Threads</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a NAME="Main">Threads</a></h1>
+  <p>The ArchiveEngine uses two threads: <ol>
+    <li>Main thread. </li>
+    <li>Write thread. </li>
+  </ol>
+  <p>On most OSs you will see a single process:</p>
+  <p>On Linux, however, one can see three &quot;processes&quot; like this:</p>
+  <p><img src="threads_engine.gif" width="182" height="56"
+  alt="threads_engine.gif (1753 bytes)" border="1"> </p>
+  <p>This snapshot taken with ktop shows the parent/child relation. When triting a test
+  program with two threads, one can see four &quot;processes&quot;: </p>
+  <p><img src="threads_test.gif" width="95" height="70" alt="threads_test.gif (1495 bytes)"
+  border="1"> </p>
+  <p>This seems to be a feature of Linux: Threads show up a processes.</p>
+  <p>As far as I understand for now this is no error in the Archive Engine. </p>
+  <hr WIDTH="40%" ALIGN="LEFT">
+</blockquote>
+</font>
+</body>
+</html>

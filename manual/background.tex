@@ -25,7 +25,9 @@ servers. For more details on the EPICS time stamps refer to section
 that are older than values which are already in the archive, or stamps
 that are unbelievably far ahead in the future, the ArchiveEngine will log
 a warning message and refuse to store the affected samples.
-This is a common reason for ``Why is there no data in my archive?''
+This is a common reason for ``Why is there no data in my archive?''.
+(There is one more, hard to resolve reason for back-in-time warnings, see
+page \pageref{sec:back-in-timefaq}).
 
 As for the values themselves, the native data type of the channel as
 reported by ChannelAccess is stored. For those familiar with the

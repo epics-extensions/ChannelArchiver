@@ -3,8 +3,7 @@
 The following explains error messages and commonly
 asked questions.
 
-\noindent
-\textbf{Why is there no data in my archive?}\\
+\section{Why is there no data in my archive?}
 The ArchiveEngine should report warning messages whenever the
 connection to a channel goes down or when there is a problem with the
 data. So after a channel was at least once available, there should be
@@ -19,13 +18,18 @@ Can you do that from the computer where you are running
 the ArchiveEngine? Does it work with the environment settings and user
 ID under which you are trying to run the ArchiveEngine?
 
-\noindent
-\textbf{Why do I get \#N/A, why are there missing values in my spreadsheet?}\\
-There are two main reasons for not having any data: There might not
-have been any data available because the respective channel was
-disconnected or the archive engine was off. When you look at the
-status of the channel, those cases might reveil themselves by status
+\section{Why do I get \#N/A, why are there missing values in my spreadsheet?}
+There are several possible reasons for not having any data:
+There might not have been any data available because the respective channel was
+disconnected or the archive engine was off.
+Consequently there is no \emph{value}, and a spreadsheet might show
+\INDEX{'\#N/A'} in the value column. When you look at the
+\emph{status} of the channel, those cases might reveal themselves by status
 values like ``Disconnected'' or ``Archive Off''.
+(The ArchiveExport tool, Java client and other programs usually have a
+``status'' or ``text'' option that you need to use in order to see the
+status. By default, you might only see the value).
+ 
 The ArchiveEngine might also have crashed, not getting a chance to
 write ``Archive Off''. That would be a likely case if no channel has
 data for your time range of interest.
@@ -34,8 +38,7 @@ from the fact that we archive the original time stamps and you are
 trying to look at more than one channel at a time. See the section on
 time stamp correlation on page~\pageref{sec:timestampcorr}.  
 
-\noindent
-\textbf{Back in time?}\\
+\section{Back in time?} \label{sec:back-in-timefaq} 
 The archiver relies on the world going forward in time. When
 retrieving samples from an archive, we expect the time stamps to be
 monotonic and non-decreasing. Time stamps going back in time break the
@@ -45,12 +48,58 @@ CA servers can be mis-configured. The ArchiveEngine attempts to catch
 some of these problems, but all it can do is drop the affected
 samples, there is no recipe for correcting the time stamps.
 
-Bottom line: When you receive time-stamp related warnings, it is too
-late. You need to have the clocks of all CA servers properly configured
+Bottom line: You need to have the clocks of all CA servers properly configured
 (also see page~\pageref{back:in:time}).
+There are other reasons for back-in-time warnings that have no good
+solution:
+\begin{itemize}
+\item When a channel disconnects or when the ArchiveEngine is shut
+  down, the engine will add ``Disconnected'' or ``Archive Off'' values
+  to the archive. Those values will carry the current value of the
+  host's clock, the current time stamp of the computer that is running
+  the engine. The host's clock is rarely perfectly synchronized with
+  the IOC's clocks, so if we had just received a sample from the IOC
+  and the host's clock is only a little late, we'll get a ``back in
+  time'' warning.
 
-\noindent
-\textbf{Found an existing lock file 'archive\_active.lck'}\\
+  To resolve this, the engine will tweak the time of the
+  ``Disconnected'' or ``Archive Off'' values so that they're stamped
+  just after the last sample in the archive.
+
+\item When a channel gets disabled, it really gets disabled because
+  \emph{another} channel in its group, one that was configured as
+  ``disabling'', turned true and thus disabled the whole group.
+  The engine writes a ``Disabled'' value for each disabled channel,
+  and as a time stamp it uses the time stamp of the channel that
+  caused the disable.
+  This will later help you to see exactly when channels were disabled
+  and why because the disabling and the disabled channels will all
+  have the same time stamp.
+
+  A problem arises especially when the disabling channel is from a
+  different IOC. Assume we just received samples for several channels
+  and added them to the archive, and then some splitseconds later the
+  value of the disabling channel arrives, delayed by the network. That
+  disabling time stamp might be a little older than the stamps of the
+  values that we already wrote, so the attempt to add a ``Disabled''
+  value results in back-in-time warnings (which again get resolved by
+  hacking the time stamps).
+
+\item Some channels seldom change. Examples include ``Setpoint''
+  channels which are only modified by operator input. They might stay
+  the same for days or weeks.
+  When an ArchiveEngine stops, it will add an ``Archive Off''
+  event. When it is then re-started, it will receive the current
+  value of a channel, which might older than the
+  ``Archive Off'' event. So the current value causes a back-in-time
+  situation, again resolved by using the last time stamp in the
+  archive instead of the original stamp of the sample.
+\end{itemize}
+
+\noindent In summary, most back-in-time warnings can be ignored as long as the
+clocks of the hosts and IOCs are reasonably in sync.
+
+\section{Found an existing lock file 'archive\_active.lck'}
 When the ArchiveEngine is started, it creates a \INDEX{lock file} in
 the current directory. The lock file is an ordinary text file
 that contains the start time when the engine was launched. When
@@ -75,8 +124,47 @@ is advisable to back them up and run a test before removing the
 lock file and starting another engine.
 \end{enumerate}
 
-\noindent
-\textbf{'ChannelName': Cannot add event because data type is unknown}\\
+\section{Crashes of the ArchiveEngine, ...} \label{sec:crash} 
+Though some care was taken in testing the ArchiveEngine, several
+problems will remain. Before you go all the way to implement a better
+if not perfect ArchiveEngine or other piece of the ChannelArchiver
+yourself, you might want to see if you can reproduce the crash and
+aid in debugging it.
+
+Under Linux, this usally means: Allow the generation of ``core'' files
+and investigate them. With recent Linux distributions, add ``set
+ulimit -c unlimited'' to your login-script. When the ArchiveEngine
+crashes, it should now generate a core dump, often called
+``core.$<$PID$>$'', using the process ID of the crashed process. Then use
+``gdb'' to locate the area of code that caused the crash:
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+    cd /where/the/core/file/is
+    gdb /full/path/to/ArchiveEngine core.12345
+    # Generate a stack trace
+    bt
+    # You should see a stack trace leading up
+    # to the crash, something like
+    # 0   write(....)
+    # 1   printf(....)
+    # 2   MsgLogger(..)
+    # 3   ArchiveChannel::handle_value(...
+    # 4   ...
+
+    # Now you can select some stack frames and see
+    # what is happening in there
+    frame 3
+    list
+    # ... shows the code in
+    #      ArchiveChannel::handle_value(..
+    # that leads up to the crash
+    quit
+\end{lstlisting}
+
+\noindent Please email the result so that we can try to eliminate the
+problem.
+
+\section{'ChannelName': Cannot add event because data type is unknown}
 The ArchiveEngine tried to write an \INDEX{event} to the data
 file. Examples include a ``Disconnected'' or ``Archiver Off''
 event. Even though this event does not have a value, it only
@@ -87,8 +175,7 @@ server, therefore we do not know the value type of the channel
 and thus we cannot allocate a data buffer in which to write this
 special event-type of value.
 
-\noindent
-\textbf{Cannot create a new data file within file size limit}\\
+\section{Cannot create a new data file within file size limit}
 You specified a rather small file size limit (file\_size option in the
 ArchiveEngine configuration), and the currently required buffer size
 for a single channel already exceeds that file size limit.
@@ -99,8 +186,7 @@ One example that could cause this: You try to archive array channels,
 where each individual sample is already quite big, and picked a tiny
 file\_size. 
 
-\noindent
-\textbf{Found an existing lock file 'indextool\_active.lck'}\\
+\section{Found an existing 'indextool\_active.lck' lock file}
 When an ArchiveIndexTool is started, it creates a lock file
 similar to the ArchiveEngine, in the hope of preventing more than
 one Index Tool from modifying a master index at the same time.

@@ -438,12 +438,12 @@ sub handle_HTTP_main($)
 	    if ($engine->{lockfile})
 	    {
 		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
-		    "MISSING BUT LOCKED</FONT></TD><TD></TD>";
+		    "Unknown. Found lock file.</FONT></TD><TD></TD>";
 	    }
 	    else
 	    {
 		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
-		    "Not Running</FONT></TD><TD></TD>";
+		    "Not Running.</FONT></TD><TD></TD>";
 	    }
 	}
 	print $client "</TR>\n";

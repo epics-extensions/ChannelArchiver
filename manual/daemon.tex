@@ -160,6 +160,68 @@ following files will be created:
   uses the year, month and day to build the path name.
 \end{itemize}
 
+\subsection{Daemon's Web Pages}
+The main web page of the ArchiveDaemon's HTTPD looks similar to
+Fig.~\ref{fig:daemon}. You can use any web browser to look at the
+daemon's web pages. The URL follows the format
+\begin{lstlisting}[keywordstyle=\sffamily]
+    http://host:port
+\end{lstlisting}
+\noindent where ``host'' is the name of the computer where the
+ArchiveDaemon is running. More often than not you will use
+``localhost''. ``Port'' is the TCP port that was specified as a
+command-line option to the ArchiveDaemon program, otherwise it
+defaults to 4610. So the default URL will be http://localhost:4610.
+
+The main page lists all the archive engines that this daemon controls
+with their status. The first column also contains links to the
+individual archive engines. The status shows any of the following:
+
+\begin{itemize}
+\item ``N/M channels connected''\\
+      This means the ArchiveEngine is running and responding,
+      telling us that N out of a total of M channels have connected.
+      If not all channels could connect, you might want to follow
+      the link to the individual engine to determine what channels are
+      missing and why: Is an IOC down on purpose? Is an IOC
+      disconnected because of network problems? Does a channel simply
+      not exist, i.e.\ the engine's configuration is wrong?
+\item ``Not Runnnig''\\
+      This means that the respective ArchiveEngine did not respond
+      when we queried it, and there is no ``archive\_active.lck'' lock
+      file. This combination usually means that the engine is really
+      not running (except for the Note below).
+
+      The first step in debugging would be to check the engine's
+      directory for a log file. Does it indicate why the engine could
+      not start? Then check the daemon's log file. It should list the
+      exact command used to start the engine. You can try that
+      manually to check why it didn't work.
+\item ``Unknown. Found lock file''\\
+      This means that the respective ArchiveEngine did not respond
+      when we queried it, but there is an ``archive\_active.lck'' lock
+      file. This could have two reasons. It could mean that the engine
+      is running but it was temporarily unable to respond to the
+      daemon's request. An example would be that the engine is really
+      busy writing and dealing with ChannelAccess, so that its web
+      server had to wait and the daemon timed out. All should be fine
+      again after some time.
+
+      If, on the other hand, the situation persists, it usually means
+      that the engine is hung or has crashed, so that it does not
+      respond and the lock file was left behind.
+      See Crashes on page \pageref{sec:crash}.
+\end{itemize}
+
+\NOTE The daemon queries only every once in a while and leave the
+engines alone for most of the time.
+Especially after startup, all engines will show up as ``Not Running''
+in the daemon's web page while in fact most of them are already
+running. Then you will see many disconnected channels while the
+engines did in fact already connect to all channels. 
+If you are impatient, you can click on the links to the individual
+engines to get a more up-to-date snapshot of each engine's status.
+
 \subsection{Stopping and More}
 To stop the ArchiveDaemon, access the ``/stop'' URL of the daemon's
 HTTPD, e.g. ``http://localhost:4610/stop''.  Similar to the

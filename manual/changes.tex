@@ -7,10 +7,21 @@ New  "versions"  are  marked  by some additional functionality. The
 
 \begin{itemize}
 
-\item In the works --- Version 2.1.2:\\
+\item 06/30/2004 --- Version 2.1.2:\\
 Added tags and channel names to the Data files,
 so that in the future one could try to write
 a rescue tool.
+
+When retrieval uses a "master" index and reaches
+its end, it will try to continue by following
+links of the last data block in the sub-archive.
+This will allow us to get closer to "now" between
+updates of the master index.
+The first attempt to implement this failed because
+of errors in the handling of the path names
+(master index has path to data files, but when
+we follow the links inside the sub-archive's data
+file, those are relative to where the sub-archive resides).
 
 Patch for XML-RPC C/C++ lib.\ allows small numbers.
 DataTools' ``index2dir'' option now actually works.

@@ -7,7 +7,7 @@ CGIDIR=/home/httpd/html/archive/cgi
 
 include Make.ver
 
-SRCZIP=channelarchiver-$(VERSION).$(RELEASE).src.zip
+SRCZIP=channelarchiver-$(VERSION).$(RELEASE).$(PATCH).src.zip
 
 all:
 	$(MAKE) -C ../Tools

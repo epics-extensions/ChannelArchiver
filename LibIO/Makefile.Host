@@ -20,6 +20,7 @@ INC += InfoFilterValueIteratorI.h
 INC += SpreadSheetExporter.h
 INC += DataFile.h
 INC += DirectoryFile.h
+
 INC += BinArchive.h
 INC += BinChannel.h
 INC += BinChannelIterator.h
@@ -27,6 +28,8 @@ INC += BinCtrlInfo.h
 INC += BinTypes.h
 INC += BinValue.h
 INC += BinValueIterator.h
+
+INC += MultiArchive.h
 
 #	Contents of library:
 LIBSRCS += HashTable.cc
@@ -46,6 +49,8 @@ LIBSRCS += BinChannelIterator.cc
 LIBSRCS += BinCtrlInfo.cc
 LIBSRCS += BinValue.cc
 LIBSRCS += BinValueIterator.cc
+
+LIBSRCS += MultiArchive.cc
 
 LIBSRCS += ExpandingValueIteratorI.cc
 LIBSRCS += LinInterpolValueIteratorI.cc

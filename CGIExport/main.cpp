@@ -360,35 +360,29 @@ int main (int argc, const char *argv[], char *envp[])
 
 	CGIInput cgi;
 
-#ifdef _DEBUG
-	// Allow command line arguments that override CGI parms
-	// for testing:
+	// Allow command line arguments that override CGI parms for testing:
 	bool command_line = false;
-	ArgParser parser;
-	if (! parser.parse (argc, argv, "h", "cdp")  ||
-		parser.getFlag(0))
-	{
-		clog << "Usage: " << argv[0] << "[-h] -d <directory> -c <command> -p <pattern>\n";
-		return 1;
-	}
+	CmdArgParser parser (argc, argv);
+	parser.setHeader ("This command is meant to be executed via CGI\n"
+		"For debugging, these options are available:\n\n");
 
-	if (!parser.getParameter (0).empty())
+	CmdArgString directory (parser, "directory", "<archive>", "Specify archive file");
+	CmdArgString command   (parser, "command", "<text>", "Command to execute");
+	if (! parser.parse ())
+		return 1;
+
+	// Trick CGIInput by setting some variables from command line:
+	if (command.get().length() > 0)
 	{
-		cgi.add ("COMMAND", parser.getParameter (0));
+		cgi.add ("COMMAND", command.get());
 		command_line = true;
 	}
-	if (!parser.getParameter (1).empty())
+	if (directory.get().length() > 0)
 	{
-		cgi.add ("DIRECTORY", parser.getParameter (1));
-		command_line = true;
-	}
-	if (!parser.getParameter (2).empty())
-	{
-		cgi.add ("PATTERN", parser.getParameter (2));
+		cgi.add ("DIRECTORY", directory.get());
 		command_line = true;
 	}
 	if (!command_line)
-#endif
 	{
 		if (!cgi.parse (cin, cout))
 		{
@@ -399,6 +393,7 @@ int main (int argc, const char *argv[], char *envp[])
 		}
 	}
 
+	// Configure HTMLPage from CGIInput
 	page._command = cgi.find ("COMMAND");
 	page._directory = cgi.find ("DIRECTORY");
 	page._pattern = cgi.find ("PATTERN");
@@ -415,6 +410,9 @@ int main (int argc, const char *argv[], char *envp[])
 		return 0;
 	}
 
+	// ----------------------------------------------------
+	// Dispatch commands
+	// ----------------------------------------------------
 	if (page._command.empty() || page._command == "HELP")
 	{
 		help (page);

@@ -99,7 +99,7 @@ void HTMLPage::interFace () const
 		cout << _names[i] << "\n";
 	cout << "</TEXTAREA></TD></TR>\n";
 	cout << "<TR><TD>Interpolate:</TD><TD><INPUT TYPE=TEXT NAME=INTERPOL VALUE=\"" << _interpol << "\" SIZE=5 MAXLENGTH=10> secs,   ";
-	cout << "Round:</TD><TD><INPUT TYPE=TEXT NAME=ROUND VALUE=\"" << _round << "\" SIZE=5 MAXLENGTH=10> secs,   ";
+	cout << "Round: <INPUT TYPE=TEXT NAME=ROUND VALUE=\"" << _round << "\" SIZE=5 MAXLENGTH=10> secs,   ";
 	cout << "Fill:<INPUT TYPE=CHECKBOX NAME=FILL";
 	if (_fill)
 		cout << " CHECKED";

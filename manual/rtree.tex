@@ -1,9 +1,8 @@
 \section{Index Files}
-An index file contain a list of all the channels in an archive, and
+An index file contains a list of all the channels in an archive, and
 for each channel it contains information about the data blocks which
 are available in the Data Files of an archive.
-
-\noindent The archiver toolset uses index files for two slightly different
+The archiver toolset uses index files for two slightly different
 purposes:
 \begin{enumerate}
 \item Each ArchiveEngine creates an index for the data files
@@ -22,33 +21,36 @@ purposes:
 
 \noindent Another important difference between sub-archive index files
 and master index files lies in the fact that the sub-archive index
-files only contain the relative path names to their data files.
-A sub-archive index and its data file can therefore be moved to a new
+files only the names to their data files: The sub-archive index
+resides in the same directory as its data files, so a path name is not
+required to get from the index to the data files.
+A sub-archive index and its data file can be moved to a new
 location. As long as the index file and its data files remain
-in one directory, the location of that directory does not matter.
+together in one directory, the location of that directory does not matter.
 
-The master index file on the other hand contains the full path to its
+The master index file on the other hand contains the path names to its
 data files, because different sub-archives can use the same data file
-names within their sub-archive directory and we can only distinguish
+names within their sub-archive directory. We can only distinguish these
 data files by their full path.  Once a master archive index has been
-created, the sub-archives must therefore not be moved. If any of the
-sub-archives gets moved, the master index needs to be recreated.
+created, the sub-archives must therefore not be moved. After
+relocating any of the sub-archives, the master index needs to be recreated.
 
-The channel names are maintained in a hash table and the
-data block information is kept in a modified RTree structure.
-An RTree \cite{guttman84} is a balanced tree taylored for holding
-multidimensional data like rectangles, allowing lookup of
-rectangles via points that fall inside rectangles.
-Sergei Chevtsov extended this concept to handle time ranges.
+Inside the index file, the channel names are maintained in a hash
+table and the data block information is kept in a modified RTree
+structure.  An RTree \cite{guttman84} is a balanced tree taylored for
+holding multidimensional data like rectangles, allowing lookup of
+rectangles via points that fall inside rectangles.  Sergei Chevtsov
+extended this concept to handle time ranges by requiring that the leaf
+node entries are non-overlapping and sorted in time.
 
-Each node in an RTree has several records. How many records there are
-per node is determine by a tunable parameter $M$.
+Each RTree node consists of several records. How many records there are
+per node is determined by a tunable parameter $M$.
 The records in the leave nodes of the tree point to data block
 information (i.e.\ path to a data file and offset inside that data
 file) and the time range that is covered by the data block.
 The records do not overlap, i.e.\ no two records will cover the same
 time range, and the records are sorted in time.
-Since the actual data blocks might overlap for a master index, more
+Since the actual data blocks might overlap (at least for a master index), more
 than one non-overlapping record might refer to the same data block.
 Records in parent nodes reflect the time range covered by all their
 child node records, up to the root node records which hold the total
@@ -56,28 +58,36 @@ time range covered by all the data blocks.
 
 \begin{figure}[htb]
 \begin{center}
-\InsertImage{width=0.6\textwidth}{rtree}
+\InsertImage{width=\textwidth}{indices_a_and_b}
 \end{center}
-\caption{\label{fig:rtree}RTree Demo, refer to text.}
+\caption{\label{fig:indices}RTree Demo, refer to text.}
 \end{figure}
 
-THIS NEEDS TO BE ADJUSTED:
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=\textwidth}{index_ab}
+\end{center}
+\caption{\label{fig:masterindex}RTree Demo, refer to text.}
+\end{figure}
 
-Fig.~\ref{fig:rtree} demonstrates a tree that covers the total
-time range from ``1'' to ``9'' (in the real world, these numbers would
-be much bigger since they represent seconds since some ``Epoch'').
-The letters C, D, ... represent data blocks. To handle a request for a
-time range [3;6], we first determine if that range is covered by the tree
-at all by checking the root's time range. Since that is the case,
-we go down one level, check the subnodes, go down again etc.\ until
-we end up at the data blocks.
-Note that data block ``G'' is listed several times. The reason could
-be that data block ``G'' in fact contains data from ``2'' to ``9''.
-But since other data blocks with a higher priority have data in at least part
-of that same time range and the leaves of the RTree must not overlap,
-the data block G=[2;9] was partitioned into [2;3], [4;5] and [7;9].
-The remaining time ranges like [3;4] happen to be covered by other
-data blocks.
+Fig.~\ref{fig:indices} demonstrates two trees. The one to the left
+covers the total time range from ``1'' to ``7'' (in the real world,
+these numbers would be much bigger since they represent seconds since
+some ``Epoch'').  The data for the time range from e.g.\ ``3'' to
+``4'' can be found in data file ``FileA'' at offset 0x30. To handle a
+request for a time range [3;6], we first determine if that range is
+covered by the tree at all by checking the root's time range. Since
+that is the case, we go down one level, check the subnodes, go down
+again etc.\ until we end up at the data blocks.
+
+Fig.~\ref{fig:masterindex} demonstrates how the two trees from
+Fig.~\ref{fig:indices} would be combined into a Master Index, assuming
+that the tree for FileA resides in directory dir\_a and the data for
+the second sub-archive resides in dir\_b relative to the master index.
+Note how all the data blocks now include a path together with a file
+name. Since the sub-archive for FileA was listed first in the
+configuration of the master index, its data blocks take precedence
+over those from FileB whenever there is an overlap.
 
 \subsection{Implementation Details}
 

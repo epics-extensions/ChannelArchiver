@@ -1,7 +1,6 @@
 // Tools
 #include <MsgLogger.h>
 #include <BinIO.h>
-#include <InsertionSort.h>
 // Index
 #include "RTree.h"
 
@@ -79,6 +78,13 @@ RTree::Record::Record()
     child_or_ID = 0;
 }
 
+void RTree::Record::clear()
+{
+    start = nullTime;
+    end = nullTime;
+    child_or_ID = 0;
+}
+
 bool RTree::Record::write(FILE *f) const
 {
     return writeEpicsTime(f, start) &&
@@ -95,10 +101,7 @@ bool RTree::Record::read(FILE *f)
 
 RTree::Node::Node(int M, bool leaf) : M(M)
 {
-    if (M <= 0)
-    {
-        LOG_ASSERT(M > 0);
-    }
+    LOG_ASSERT(M > 2);
     isLeaf = leaf;
     parent = 0;
     record = new Record[M];
@@ -109,7 +112,7 @@ RTree::Node::Node(int M, bool leaf) : M(M)
 RTree::Node::Node(const Node &rhs)
 {
     M = rhs.M;
-    LOG_ASSERT(M > 0);
+    LOG_ASSERT(M > 2);
     isLeaf = rhs.isLeaf;
     parent = rhs.parent;
     record = new Record[M];
@@ -201,7 +204,11 @@ RTree::RTree(FileAllocator &fa, Offset anchor)
 
 bool RTree::init(int M)
 {
-    LOG_ASSERT(M > 0);
+    if (M <= 2)
+    {
+        LOG_MSG("RTree::init(%d): M should be > 2\n", M);
+        return false;
+    }     
     this->M = M;
     // Create initial Root Node = Empty Leaf
     if (!(root_offset = fa.allocate(NodeSize(M))))
@@ -647,7 +654,7 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
 {
     stdString txt1, txt2;
     YNE       yne;
-    int       i,j;
+    int       i;
     Datablock block, new_block;
     Node      node(M, true);
     LOG_ASSERT(start <= end);
@@ -714,39 +721,19 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
     // Need to insert new block and record at record[i]
     if (!write_new_datablock(data_offset, data_filename, new_block))
         return YNE_Error;
-    Record overflow;
-    if (i<M)
-    {
-        overflow = node.record[M-1]; // From i on, shift all recs right;
-        for (j=M-1; j>i; --j)        // Last record goes into overflow.
-            node.record[j] = node.record[j-1];
-        node.record[i].start = start;
-        node.record[i].end = end;
-        node.record[i].child_or_ID = new_block.offset;
-        if (!write_node(node))
-        {
-            LOG_MSG("RTree::insert cannot write node\n");
-            return YNE_Error;
-        }
-    }
+    Node overflow(M, true);
+    bool caused_overflow, rec_in_overflow;
+    if (!insert_record_into_node(node, i,
+                                 start, end, new_block.offset,
+                                 overflow,
+                                 caused_overflow, rec_in_overflow))
+        return YNE_Error;
+    bool adjusted;
+    if (caused_overflow)
+        adjusted = adjust_tree(node, &overflow);
     else
-    {
-        overflow.start = start;
-        overflow.end = end;
-        overflow.child_or_ID = new_block.offset;
-    }
-    if (overflow.child_or_ID)
-    {   // Did either new entry or shifting result in overflow?
-        Node new_node(M, true);
-        if (!(new_node.offset = fa.allocate(NodeSize(M))))
-        {
-            LOG_MSG("RTree::insert cannot allocate new node\n");
-            return YNE_Error;
-        }
-        new_node.record[0] = overflow;
-        return adjust_tree(node, &new_node) ? YNE_Yes : YNE_Error;
-    }
-    return adjust_tree(node, 0) ? YNE_Yes : YNE_Error;
+        adjusted = adjust_tree(node, 0);
+    return adjusted ? YNE_Yes : YNE_Error;
 }
 
 // Yes  : new block offset/filename was added under node/i.
@@ -853,10 +840,77 @@ bool RTree::choose_leaf(const epicsTime &start, const epicsTime &end,
     return choose_leaf(start, end, node);
 }
 
+// Need to insert new start/end/ID into node's record[idx].
+// If that causes an overflow, use the overflow node.
+// Overflow needs to be initialized:
+// All records 0, isLeaf as it needs to be,
+// but mustn't be allocated, yet: This routine will allocate
+// if overflow gets used.
+// caused_overflow indicates if the overflow Node is used.
+// rec_in_overflow indicates if the new record ended up in overflow.
+// Node gets written, overflow doesn't get written.
+bool RTree::insert_record_into_node(Node &node, int idx,
+                                    const epicsTime &start,
+                                    const epicsTime &end, Offset ID,
+                                    Node &overflow,
+                                    bool &caused_overflow,
+                                    bool &rec_in_overflow)
+{
+    int j;
+    if (idx<M)
+    {
+        rec_in_overflow = false;
+        overflow.record[0] = node.record[M-1]; // With last rec. into overflow,
+        for (j=M-1; j>idx; --j) // shift all recs right from idx on.   
+            node.record[j] = node.record[j-1];
+        node.record[idx].start = start;
+        node.record[idx].end = end;
+        node.record[idx].child_or_ID = ID;
+    }
+    else
+    {
+        rec_in_overflow = true;
+        overflow.record[0].start = start;
+        overflow.record[0].end = end;
+        overflow.record[0].child_or_ID = ID;
+    }
+    caused_overflow = overflow.record[0].child_or_ID != 0;
+    if (caused_overflow)
+    {
+        // Need to split node because of overflow
+        if (!(overflow.offset = fa.allocate(NodeSize(M))))
+        {
+            LOG_MSG("RTree::insert_record_into_node cannot alloc. overflow\n");
+            return false;
+        }
+        // There are M records in node and 1 in overflow.
+        // Shift M/2 from node into overflow so that both are about 1/2 full.
+        // TODO:
+        // Maybe it's better to split 70% / 30% because
+        // the Engine will insert consecutive data, and with the 50/50
+        // split we end up with a half-full tree.
+        int cut = M/2;
+        for (j=cut; j>0; --j) // shift overflow records to make room
+            overflow.record[j] = overflow.record[j-1];
+        for (j=1; j<=cut; ++j)
+        {   // copy from node and clear the copied entries in node
+            overflow.record[j-1] = node.record[M-j];
+            node.record[M-j].clear();
+        }
+        rec_in_overflow = idx >= (M-cut);
+    }
+    if (!write_node(node))
+    {
+        LOG_MSG("RTree::insert_record_into_node cannot write\n");
+        return false;
+    }
+    return true;
+}
+
 // This is the killer routine which keeps the tree balanced
 bool RTree::adjust_tree(Node &node, Node *new_node)
 {
-    int i, j;
+    int i;
     epicsTime start, end;
     Node parent(M, true);
     parent.offset = node.parent;
@@ -917,63 +971,50 @@ bool RTree::adjust_tree(Node &node, Node *new_node)
     new_node->getInterval(start, end);
     for (i=0; i<M; ++i)
         if (parent.record[i].child_or_ID == 0 || end <= parent.record[i].start)
-            break;  // new entry belongs into rec[i]
-    Node new_parent(M, false);
-    if (i<M) // add new node to this parent, maybe causing overflow
-    {
-        new_parent.record[0] = parent.record[M-1]; // Right-shift fr.i on;
-        for (j=M-1; j>i; --j)        // Last rec. goes into new_parent.
-            parent.record[j] = parent.record[j-1];
-        parent.record[i].start = start;
-        parent.record[i].end = end;
-        parent.record[i].child_or_ID = new_node->offset;
-        if (!write_node(parent))
-        {
-            LOG_MSG("RTree::adjust_tree cannot write parent\n");
-            return false;
-        }
+            break;  // new entry belongs into parent.record[i]
+    Node overflow(M, false);    
+    bool caused_overflow, rec_in_overflow;
+    if (!insert_record_into_node(parent, i, start, end, new_node->offset,
+                                 overflow, caused_overflow, rec_in_overflow))
+        return false;
+    if (rec_in_overflow == false)
         new_node->parent = parent.offset;
-        if (!write_node(*new_node))
-        {
-            LOG_MSG("RTree::adjust_tree cannot write new node\n");
-            return false;
-        }
-    }
     else
-    {   // add new node to overflow
-        new_parent.record[0].start = start;
-        new_parent.record[0].end = end;
-        new_parent.record[0].child_or_ID = new_node->offset;
-    }
-    if (new_parent.record[0].child_or_ID == 0)
-        return adjust_tree(parent, 0); // no overflow; go on up.
-    // Either new_node or overflow from parent ended up in new_parent
-    if (!(new_parent.offset = fa.allocate(NodeSize(M))))
+        new_node->parent = overflow.offset;
+    if (!write_node(*new_node))
     {
-        LOG_MSG("RTree::adjust_tree cannot allocate new parent\n");
+        LOG_MSG("RTree::adjust_tree cannot write new node\n");
         return false;
     }
-    if (!write_node(new_parent))
+    if (!caused_overflow)
+        return adjust_tree(parent, 0); // no overflow; go on up.
+    // Either new_node or overflow from parent ended up in overflow
+    if (!write_node(overflow))
     {
         LOG_MSG("RTree::adjust_tree cannot write new parent\n");
         return false;
     }
-    Node new_parent_child_or_ID(M, true);
-    new_parent_child_or_ID.offset = new_parent.record[0].child_or_ID;
-    if (new_parent_child_or_ID.offset == new_node->offset)
-        new_parent_child_or_ID = *new_node;
-    else if (!read_node(new_parent_child_or_ID))
+    // Adjust 'parent' pointers of all children that were moved to overflow
+    Node overflow_child(M, true);
+    for (i=0; i<M; ++i)
     {
-        LOG_MSG("RTree::adjust_tree cannot read new parent's child_or_ID\n");
-        return false;
+        overflow_child.offset = overflow.record[i].child_or_ID;
+        if (overflow_child.offset == 0 ||
+            overflow_child.offset == new_node->offset)
+            continue;
+        if (!read_node(overflow_child))
+        {
+            LOG_MSG("RTree::adjust_tree cannot read parent's child\n");
+            return false;
+        }
+        overflow_child.parent = overflow.offset;
+        if (!write_node(overflow_child))
+        {
+            LOG_MSG("RTree::adjust_tree cannot write new parent's child\n");
+            return false;
+        }
     }
-    new_parent_child_or_ID.parent = new_parent.offset;
-    if (!write_node(new_parent_child_or_ID))
-    {
-        LOG_MSG("RTree::adjust_tree cannot write new parent's child_or_ID\n");
-        return false;
-    }
-    return adjust_tree(parent, &new_parent);
+    return adjust_tree(parent, &overflow);
 }
 
 // Follows Guttman except that we don't care about

@@ -4,7 +4,7 @@
 #include <MsgLogger.h>
 #include <BinIO.h>
 // Index
-#include "RTree.h"
+#include "IndexFile.h"
 
 typedef struct
 {
@@ -33,34 +33,51 @@ static TestData man_data2[] =
 
 static TestData fill_data[] =
 {
-    { "10", "11", "10-11",  1 },
-    {  "7",  "8",   "7-8",  2 }, // insert left
-    { "13", "14", "13-14",  3 }, // insert right
-    { "17", "18", "17-18",  4 }, // overflow right
-    {  "3",  "4",   "3-4",  5 }, // overflow left
-    { "16", "18", "16-18",  6 }, // right part overlaps existing entry
-    { "17", "19", "17-19",  7 }, // left part overlaps existing entry
-    { "13", "14", "13-14(B)",  8 }, // fully hidden under existing record
-    { "11", "16", "11-16",  9 }, // fully overlaps existing entry
-    {  "9", "12",  "9-12", 10 }, // fully overlaps existing entry
-    {  "2", "11",  "2-11", 11 }, // fully overlaps several entries
-    { "20", "22", "20-22", 12 }, // insert right
-    { "19", "20", "19-20", 13 }, // insert between
-    { "18", "23", "18-23", 14 }, // left overlaps 3 records
+    { "20", "21", "20-21",  1 },
+    { "10", "11", "10-11",  2 }, // insert left
+    { "30", "31", "30-31",  3 }, // insert right
+    { "40", "41", "40-41",  4 }, // overflow right
+    { "10", "15", "10-15",  5 }, // left overlaps with existing
+    { "39", "41", "38-41",  6 }, // right overlaps with existing
+    { "26", "27", "26-27",  7 }, // overflow left
+    { "26", "32", "26-32",  8 }, // left overlaps & interleaves 2 exist. recs
+    { "25", "30", "25-30",  9 }, // rigth overlaps 2 exist. recs
+    { "20", "21", "20-21(B)", 10 }, // fully hidden under existing record
+    { "50", "51", "50-51",  11 }, // insert right
+    { "60", "61", "60-61",  12 }, // overflow right
+    { "70", "71", "70-71",  13 }, // insert right
+    { "80", "81", "80-81",  14 }, // overflow right
+    { "90", "91", "90-91",  15 }, // insert right
+    { "95", "96", "95-96",  16 }, // overflow right
+    { "96", "97", "96-97",  17 }, // insert right
+    { "98", "99", "98-99",  18 }, // overflow right
+    { "38", "39", "38-39",  19 }, // insert left in central node
+    { "37", "38", "37-38",  20 }, // overflow left in central node
 };
 
-bool fill_test(const char *index_name,
+bool fill_test(bool use_index, const char *index_name,
                const TestData *data, int num, const char *dotfile)
 {
-    FILE *f = fopen(index_name, "w+b");
+    IndexFile index(3);
+    FILE *f;
+    RTree *tree;
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
     FileAllocator fa;
-    fa.attach(f, RTree::anchor_size);
-    RTree tree(fa, 0);
-    tree.init(3);
+    if (use_index)
+    {
+        index.open(index_name, false);
+        tree = index.addChannel("test");
+    }
+    else
+    {
+        f = fopen(index_name, "w+b");
+        fa.attach(f, RTree::anchor_size);
+        tree = new RTree(fa, 0);
+        tree->init(3);
+    }
     unsigned long nodes, records;
-    if (!tree.selfTest(nodes, records))
+    if (!tree->selfTest(nodes, records))
     {
         fprintf(stderr, "Self test failed\n");
         return false;
@@ -70,18 +87,18 @@ bool fill_test(const char *index_name,
     for (i=0; i<num; ++i)
     {
         if (i==(num-1))
-            tree.makeDot("index0.dot");
+            tree->makeDot("index0.dot");
         string2epicsTime(data[i].start, start);
         string2epicsTime(data[i].end, end);
         stdString filename = data[i].file;
-        if (tree.insertDatablock(start, end, data[i].offset, filename)
+        if (tree->insertDatablock(start, end, data[i].offset, filename)
             != RTree::YNE_Yes)
         {
             fprintf(stderr, "Insert %s..%s: %d failed\n",
                     data[i].start, data[i].end, i+1);
             return false;
         }
-        if (tree.insertDatablock(start, end, data[i].offset, filename)
+        if (tree->insertDatablock(start, end, data[i].offset, filename)
             != RTree::YNE_No)
         {
             fprintf(stderr, "Re-Insert %s..%s: %d failed\n",
@@ -89,26 +106,34 @@ bool fill_test(const char *index_name,
             return false;
         }
         if (i==(num-1))
-            tree.makeDot("index1.dot");
-        if (!tree.selfTest(nodes, records))
+            tree->makeDot("index1.dot");
+        if (!tree->selfTest(nodes, records))
         {
             fprintf(stderr, "Self test failed\n");
             return false;
         }
     }
     printf("%ld nodes, %ld used records, %ld records total (%.1lf %%)\n",
-           nodes, records, nodes*tree.getM(),
-           records*100.0/(nodes*tree.getM()));
-    tree.makeDot(dotfile);
-    if (fa.dump(0))
-        puts("OK: FileAllocator's view of the tree");
+           nodes, records, nodes*tree->getM(),
+           records*100.0/(nodes*tree->getM()));
+    tree->makeDot(dotfile);
+    delete tree;
+    if (use_index)
+    {
+        index.close();
+    }
     else
     {
-        fprintf(stderr, "FileAllocator is unhappy\n");
-        return false;
+        if (fa.dump(0))
+            puts("OK: FileAllocator's view of the tree");
+        else
+        {
+            fprintf(stderr, "FileAllocator is unhappy\n");
+            return false;
+        }
+        fa.detach();
+        fclose(f);
     }
-    fa.detach();
-    fclose(f);
     puts("OK: RTree fill");
     return true;
 }
@@ -145,24 +170,26 @@ bool dump_blocks()
     }
     fa.detach();
     fclose(f);
-    puts("OK: RTree fill");
+    puts("OK: RTree Dump");
     return true;
 }
 
 int main()
 {
     initEpicsTimeHelper();
-    if (!fill_test("index1", man_data1, sizeof(man_data1)/sizeof(TestData),
-                   "man_data1.dot"))
-        return -1;
-    if (!fill_test("index2", man_data2, sizeof(man_data2)/sizeof(TestData),
-                   "man_data2.dot"))
-        return -1;
-    if (!fill_test("test/tree.tst",
+    if (!fill_test(false, "test/tree.tst",
                    fill_data, sizeof(fill_data)/sizeof(TestData),
                    "test/test_data1.dot"))
         return -1;
     if (!dump_blocks())
+        return -1;
+    if (!fill_test(true, "index1",
+                   man_data1, sizeof(man_data1)/sizeof(TestData),
+                   "man_data1.dot"))
+        return -1;
+    if (!fill_test(true, "index2",
+                   man_data2, sizeof(man_data2)/sizeof(TestData),
+                   "man_data2.dot"))
         return -1;
     return 0;
 }

@@ -73,6 +73,7 @@ public:
     {
     public:
         Record();
+        void clear();
         epicsTime  start, end;  // Range
         Offset     child_or_ID; // data block ID for leaf node; 0 if unused
         bool write(FILE *f) const;
@@ -256,6 +257,13 @@ private:
     // Invoke by setting node.offset == root_offset.
     bool choose_leaf(const epicsTime &start, const epicsTime &end, Node &node);
 
+    bool insert_record_into_node(Node &node,
+                                 int idx,
+                                 const epicsTime &start,
+                                 const epicsTime &end,
+                                 Offset ID,
+                                 Node &overflow,
+                                 bool &caused_overflow, bool &rec_in_overflow);
     
     // Adjusts tree from node on upwards (update parents).
     // If new_node!=0, it's added to node's parent,

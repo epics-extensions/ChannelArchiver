@@ -143,7 +143,7 @@ int main(int argc, const char *argv[])
                      );
     parser.setArgumentsInfo("<archive list file> <output index>");
     CmdArgFlag help  (parser, "help", "Show Help");
-    CmdArgInt RTreeM (parser, "M", "<1-100>", "RTree M value");
+    CmdArgInt RTreeM (parser, "M", "<3-100>", "RTree M value");
     CmdArgInt verbose_flag (parser, "verbose", "<level>", "Show more info");
     RTreeM.set(50);
     if (! parser.parse())

@@ -292,7 +292,7 @@ int main(int argc, const char *argv[])
         return -1;    
     }
     // Open index
-    IndexFile index;
+    IndexFile index(50);
     if (!index.open(index_name.c_str()))
     {
         fprintf(stderr, "Cannot open index '%s'\n",

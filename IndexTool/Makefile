@@ -7,6 +7,8 @@ USR_CXXFLAGS += -I ../../Storage -I ../../rtree
 
 SRCS += main.cpp
 
+SCRIPTS_HOST += make_indexconfig.pl
+
 PROD_HOST := ArchiveIndexTool
 PROD_LIBS_DEFAULT := Storage Tools ca Com 
 PROD_LIBS_WIN32 := StorageObj ToolsObj ca Com

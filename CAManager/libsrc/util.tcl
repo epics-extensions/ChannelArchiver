@@ -149,17 +149,21 @@ Puts "util: checkArchivers $args" funcall
   }
 }
 
-proc checkBgManager {fd h} {
-Puts "util: checkBgManager $fd $h" funcall
+proc checkBgManager {h fd token} {
+  Puts "util: checkBgManager $h $fd $token" funcall
+  upvar #0 $token state
   gets $fd line
-  if {[regexp "Server: Channel Archiver bgManager (.*)@(.*):(\[0-9\]*):(.*)" $line \
-	   all ::reply($h,user) ::reply($h,host) ::reply($h,port) ::reply($h,cfg)]} {
-    set ::reply($h) "$::reply($h,host):$::reply($h,port):$::reply($h,cfg)"
+  array set meta $state(meta)
+  if {[regexp "Channel Archiver bgManager (.*)@(.*):(\[0-9\]*):(.*)" $meta(Server) \
+	  all ::reply($h,user) ::reply($h,host) ::reply($h,port) ::reply($h,cfg)]} {
+	    set ::reply($h) "$::reply($h,host):$::reply($h,port):$::reply($h,cfg)"
   }
   if {"$line" == "</html>"} {
     close $fd
     incr ::open -1
+    ::http::cleanup $token
   }
+  return [expr [string length $line] + 1]
 }
 
 proc cfbgmTimeout {fd h} {
@@ -186,16 +190,12 @@ Puts "util: checkForBgManager $force" funcall
   foreach h [lrmdups $hosts] {
     set ::continuewithout($h) 1
     set ret($h) 0
-    if [catch {set sock [socket $h $::_port]}] {
+    if [catch {set hdl [::http::geturl "http://$h:$::_port/" -handler "checkBgManager $h"]}] {
       continue
     }
     set ::reply($h) {}
     incr ::open
     after 3000 "cfbgmTimeout $sock $h"
-    puts $sock "GET / HTTP/1.1\n"
-    flush $sock
-    fconfigure $sock -blocking 0
-    fileevent $sock readable "checkBgManager $sock $h"
   }
   while {$::open > 0} {vwait ::open}
   foreach h [lrmdups $hosts] {
@@ -219,14 +219,19 @@ Puts "util: checkForBgManager $force" funcall
     }
     switch $act {
       start {
-	if {[camGUI::MessageBox warning "Warning!" "CAbgManager not running!" "$msg!" "" {"Continue without" "Start"} .] == "Start"} {
-	  if {[regexp "Windows" $tcl_platform(os)]} {
-	    set tclext .tcl
+	if [camMisc::isLocalhost $h] {
+	  if {[camGUI::MessageBox warning "Warning!" "CAbgManager not running!" "$msg!" "" {"Continue without" "Start"} .] == "Start"} {
+	    if {[regexp "Windows" $tcl_platform(os)]} {
+	      set tclext .tcl
+	    } else {
+	      set tclext ""
+	    }
+	    exec CAbgManager$tclext $camMisc::cfg_file &
 	  } else {
-	    set tclext ""
+	    set ret($h) 1
 	  }
-	  exec CAbgManager$tclext $camMisc::cfg_file &
 	} else {
+	  camGUI::MessageBox warning "Warning!" "CAbgManager not running!" "$msg!" "Please start CAbgManager on $h!" {"Close"} .
 	  set ret($h) 1
 	}
       }
@@ -237,6 +242,7 @@ Puts "util: checkForBgManager $force" funcall
       config {
 	camGUI::MessageBox warning "Warning" "CAbgManager: invalid response!" \
 	    "$msg" "Please reconfigure!" Ok .
+	set ret($h) 1
       }
       default {
       }
@@ -781,6 +787,11 @@ Puts "util: restartArchiver $i" funcall
   set ::nocheck($i) 0
 }
 
+package require http
+
+proc cleanupHttp {tok} {
+  array unset $tok
+}
 
 proc stopArchiver {i {forceStop 0} {action stop}} {
 Puts "util: stopArchiver $i $forceStop $action" funcall
@@ -790,31 +801,15 @@ Puts "util: stopArchiver $i $forceStop $action" funcall
    return 0
   }
   if {$action == "stop"} {
-   Puts "stop \"[camMisc::arcGet $i descr]\"" command
+    Puts "stop \"[camMisc::arcGet $i descr]\"" command
   }
-
-
-package require http
-  set conn [http::geturl "http://[camMisc::arcGet $i host]:[camMisc::arcGet $i port]/stop"]
+  set conn [http::geturl "http://[camMisc::arcGet $i host]:[camMisc::arcGet $i port]/stop" -command cleanupHttp]
   update
-  array unset $conn
   set w [open [camMisc::arcGet $i mstr]/runmsg.txt a+]
 
   puts $w "Stopped by [file tail [file rootname [info script]]] ($::CVS(Version)) @ [clock format [clock seconds]]\n"
   close $w
   return 1
-}
-
-
-proc justread {sock} {
-Puts "util: justread $sock" funcall
-  set data [read $sock]
-  flush $sock
-  if {[eof $sock]} {
-    close $sock
-    if {[set i [lsearch -exact $::socks $sock]] >= 0} { set ::socks [lreplace $::socks $i $i] }
-  }
-  update
 }
 
 proc updateMultiArchives {} {

@@ -113,7 +113,7 @@ void SampleMechanismMonitored::handleValue(Guard &guard,
             return;
         // This is the first value after a connect: tweak
         if (!channel->pending_value)
-            return;
+            return; // no temp. storage for tweaking value
         if (channel->isBackInTime(now))
         {
 #           ifdef DEBUG_SAMPLING
@@ -396,26 +396,21 @@ void SampleMechanismMonitoredGet::handleValue(
     const epicsTime &stamp, const RawValue::Data *value)
 {
     guard.check(channel->mutex);
-    // Incoming monitors trigger processing of this mechanism,
-    // next_sample_time determines when we store another sample.
-    // Pretend for SampleMechanismGet that the value
-    // results from a CA get, so that SampleMechanismGet handles
-    // the repeat counts etc.
-    // For that we have to throttle the incoming CA monitors
+    // Want to use SampleMechanismGet's handling of repeat counts etc.
+    // ==> need to throttle the incoming CA monitors
     // down to the scan rate of this channel.
-    // The stored sample is then the *previous* one, the last one
-    // we received *before* crossing next_sample_time.
-    // Therefore we park values in pending_value until we cross
-    // next_sample_time.
-#   ifdef DEBUG_SAMPLING
-    LOG_MSG("SampleMechanismMonitoredGet:\n");
-    RawValue::show(stdout, channel->dbr_time_type, channel->nelements, value);
-#   endif
-    if (!channel->pending_value)
-    {
-        LOG_MSG("SampleMechanismMonitoredGet: no pend buffer\n");
-        return;
-    }
+    // Next_sample_time determines if we can use the current
+    // monitor of if we should ignore it.
+    // Note that the result is slightly different from scanning:
+    // Scanning every 10 seconds would store the most recent value
+    // every 10 seconds (stamped just before the 10 second slots),
+    // while periods of 10 secs for SampleMechanismMonitoredGet
+    // actually store every value just after the 10 second slots.
+    // Attempts to keep a copy of the last value and then use
+    // the last one before a new time slot starts created
+    // bookkeeping headaches, especially when trying to handle channels
+    // that only have a single value ever during the runtime of the engine.
+    //
     // Data from e.g. a BPM being read at 60 Hz, archived at 10 Hz,
     // should result in data for all BPMs from the same time slice.
     // While one cannot pick the time slice
@@ -423,21 +418,18 @@ void SampleMechanismMonitoredGet::handleValue(
     // the engine will store values from the same time slice,
     // as long as the time stamps of the BPM values match
     // across BPM channels.
-    if (channel->pending_value_set  &&  stamp > next_sample_time)
+#   ifdef DEBUG_SAMPLING
+    LOG_MSG("SampleMechanismMonitoredGet:\n");
+    RawValue::show(stdout, channel->dbr_time_type, channel->nelements, value);
+#   endif
+    if (stamp > next_sample_time)
     {
-#       ifdef DEBUG_SAMPLING
-        LOG_MSG("SampleMechanismMonitoredGet: passed next_sample_time\n");
-#       endif
-        epicsTime pend_stamp = RawValue::getTime(channel->pending_value);
-        SampleMechanismGet::handleValue(guard, now, pend_stamp,
-                                        channel->pending_value);
         next_sample_time = roundTimeUp(stamp, channel->period);
 #       ifdef DEBUG_SAMPLING
         stdString txt;
+        LOG_MSG("SampleMechanismMonitoredGet: passed next_sample_time\n");
         LOG_MSG("next_sample_time=%s\n", epicsTimeTxt(next_sample_time, txt));
 #       endif
+        SampleMechanismGet::handleValue(guard, now, stamp, value);
     }
-    RawValue::copy(channel->dbr_time_type, channel->nelements,
-                   channel->pending_value, value);
-    channel->pending_value_set = true;
 }

@@ -142,11 +142,6 @@ protected:
 /// This implementation of a SampleMechanism behaves similar
 /// to SampleMechanismGet, the periodic sampling, but is
 /// internally using CA monitors instead of 'get' operations.
-///
-/// CA monitors trigger processing of this mechanism. It will
-/// keep all imcoming samples in the 'pending_value' buffer
-/// until it's again time to store a sample, which is then handled
-/// as in SampleMechanismGet.
 class SampleMechanismMonitoredGet : public SampleMechanismGet
 {
 public:

@@ -90,8 +90,8 @@ public:
 private:
     SOCKET              _socket;
     stdVector<stdString>   _input_line;
-    char                _line[200];
-    char                *_dest;
+    char                _line[2048];
+    unsigned int        _dest; // index in line
 
     static PathHandlerList  *_handler;
     static size_t _total;

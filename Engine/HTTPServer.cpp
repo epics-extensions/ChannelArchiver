@@ -82,7 +82,7 @@ HTTPClientConnection::HTTPClientConnection (SOCKET socket)
         : fdReg (socket, fdrRead)
 {
     _socket = socket;
-    _dest = _line;
+    _dest = 0;
     ++_total;
     ++_clients;
 }
@@ -129,12 +129,14 @@ bool HTTPClientConnection::handleInput ()
                 // else: handle EOL now
             case 10:
                 // complete current line
-                *_dest = 0;
+                _line[_dest] = 0;
                 _input_line.push_back (_line);
-                _dest = _line;
+                _dest = 0;
                 break;
             default:
-                *_dest++ = *src;
+	       // avoid writing past end of _line!!!
+	       if (_dest < (sizeof(_line)-1))
+		  _line[_dest++] = *src;
             }
         }
     }

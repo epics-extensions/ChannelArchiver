@@ -94,7 +94,9 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
             continue; // try next line
 
         // Format: <channel> <period> <Monitor> <Disable> ?
-        if (isalpha(*ch))
+        // How does a <channel> name start?
+        // '!' would start an archive engine parameter...
+        if (*ch != '!')
         {   // get channel
             while (*ch  &&  !isspace(*ch))
                 channel += *(ch++);

@@ -157,7 +157,7 @@ my ($daemonization) = 1;
 # 'daily' => undef or "hh:mm" of daily restart
 # 'hourly' => undef or (double) hours between restarts
 # -- adjusted at runtime
-# 'started' => 0 or start time text from running engine.
+# 'started' => '' or start time text from running engine.
 # 'channels' => # of channels (only valid if started)
 # 'connected' => # of _connected_ channels (only valid if started)
 # 'lockfile' => is there a file 'archive_active.lck' ?
@@ -236,7 +236,7 @@ sub read_config($)
 	{
 	    $config[$#config]{hourly} = $engine->{hourly}[0];
 	}
-	$config[$#config]{started} = 0;
+	$config[$#config]{started} = '';
     }
 }
 
@@ -763,8 +763,8 @@ sub check_engine($$)
 	{
 	    $desc = $1;
 	}
-	elsif ($line =~ m'Started</TH>[^0-9]+([0123456789/:. ]+)')
-	{
+	elsif ($line =~ m'Started</TH>.+(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2})')
+	{   #     Compare: Started</TH>... 03/17/2004 18:01:01.208511000
 	    $started = $1;
 	}
 	elsif ($line =~ m'Channels</TH>[^0-9]+([0123456789]+)')
@@ -784,14 +784,18 @@ sub check_restart($$)
 {
     my ($now, $engine) = @ARG;
     my ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$wday,$yday,$isdst);
-    my ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec, $nano);
+    my ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec);
     my ($engine_secs, $restart_secs);
     my ($stopped) = 0;
     
+    print "Checking for restart of engine $engine->{desc}\n";
+    #print "Now    : ", time_as_text($now), "\n";
+    print "Started: $engine->{started}\n";
     ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$wday,$yday,$isdst)
 	= localtime($now);
-    ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec, $nano)
+    ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec)
 	= split '[/ :.]', $engine->{started};
+    print "Parsed as ", (join '-', $e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec), "\n";
     $engine_secs
 	= timelocal($e_sec,$e_min,$e_hour,$e_mday,$e_mon-1,$e_year-1900);
     if (defined($engine->{daily}))
@@ -802,7 +806,7 @@ sub check_restart($$)
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
 	    stop_engine($localhost, $engine->{port});
-	    $engine->{started} = $engine->{lockfile} = 0;
+	    $engine->{started} = $engine->{lockfile} = '';
 	    ++ $stopped;
 	}
     }
@@ -810,12 +814,10 @@ sub check_restart($$)
     {
 	my ($rounding) = int($engine->{hourly} * 60*60);
 	$restart_secs = (int($engine_secs/$rounding)+1) * $rounding;
-	#print "Now    : ", time_as_text($now), "\n";
-	#print "Restart: ", time_as_text($restart_secs), "\n";
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
 	    stop_engine($localhost, $engine->{port});
-	    $engine->{started} = $engine->{lockfile} = 0;
+	    $engine->{started} = $engine->{lockfile} = '';
 	    ++ $stopped;
 	}
     }
@@ -853,7 +855,7 @@ sub check_engines($)
 	}
 	else
 	{
-	    $engine->{started} = 0;
+	    $engine->{started} = '';
 	}
     }
 }

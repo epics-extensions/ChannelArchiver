@@ -141,7 +141,8 @@ int run()
 	for (i=0; i< 32;i++)
 	{
 		//offset 0..9 is used above
-		au = archiver_Unit(key_Object("10.dat", i+10), interval(12 + i, 0, 14 + i, 0), 0);
+        if(i> 10 && i < 15) continue;
+        au = archiver_Unit(key_Object("10.dat", i+10), interval(12 + i, 0, 14 + i, 0), 0);
 		my_Index.addAU("James_Bond", au);
 	}
 	my_Index.dump("tree.txt", "a");
@@ -161,7 +162,7 @@ int run()
 	key_AU_Iterator * kai = my_Index.getKeyAUIterator("James_Bond");
 	if(kai !=0)
 	{
-		bool tmp = kai->getFirst(interval(44,1,0,0), &ko, &lookup_Interval);
+		bool tmp = kai->getFirst(interval(25,1,26,0), &ko, &lookup_Interval);
 		while(tmp)
 		{
 			//epicsTimeStamp start = lookup_Interval.getStart();

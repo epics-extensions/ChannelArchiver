@@ -11,6 +11,7 @@ key_AU_Iterator::key_AU_Iterator(const r_Tree * source)
 
 /*
 *	- Find the first leaf that intersects the desired Interval
+*   - If its start time lies after the search start time, go to the previous leaf
 *	- Get its key AU
 *	If errors occured, return false
 */
@@ -21,16 +22,37 @@ bool key_AU_Iterator::getFirst(const interval& search_Interval, key_Object * res
 		printf("The desired interval for the key AU iterator is not valid\n");
 		return false;
 	}
-	iv = search_Interval;
+    iv = search_Interval;
+    interval first_Search_Interval = iv;
+    epicsTimeStamp eternity = {0,0};
+    first_Search_Interval.setEnd(eternity);
 	index_File = source->getFile();
 	long first_Leaf;
-	if(source->findFirstLeaf(&iv, &first_Leaf) == false) return false;
-	
-	interval initial_Interval;
+	if(source->findFirstLeaf(&first_Search_Interval, &first_Leaf) == false) return false;
+    
 	long first_Address = source->index2address(first_Leaf);
-	if(	!getKey(first_Address, result) ||
-		!checkInterval(first_Address, &initial_Interval)) return false;
+    //at this point checkInterval() is not appropriate because it does the check (duh!)
+    current_Entry.attach(index_File, first_Address);
+    if(current_Entry.readInterval() == false) return false;
 
+    interval initial_Interval = current_Entry.getInterval();
+
+    //look if the previous leaf should be considered
+    if(compareTimeStamps(iv.getStart(), initial_Interval.getStart()) < 0)
+    {
+        current_Entry.attach(index_File, first_Address);
+        long temp;
+        if(current_Entry.readPreviousIndex(&temp) == false) return false;
+        first_Address = source->index2address(temp);
+        current_Entry.attach(index_File, first_Address);
+        if(current_Entry.readInterval() == false) return false;
+        //set the initial interval
+        initial_Interval.setStart(current_Entry.getInterval().getEnd());
+        initial_Interval.setEnd(current_Entry.getInterval().getEnd());        
+    }
+    //get the initial key
+    if(!getKey(first_Address, result)) return false;
+    
 	key_Object temp;
 	interval next_Interval = initial_Interval;
 	long next_Leaf;
@@ -129,8 +151,15 @@ bool key_AU_Iterator::getKey(long leaf_Address, key_Object * result)
 }
 
 //pre condition: the intervals iv and leaf_Interval intersect
+//must handle the possibility of the first interval being the
+//one of an actually previous AU (see also getFirst())
 void key_AU_Iterator::determineLookUpInterval(const interval& retrieved_Interval, interval * lookup_Interval) const
 {
+    if(compareTimeStamps(retrieved_Interval.getStart(), retrieved_Interval.getEnd()) == 0)
+    {
+        *lookup_Interval = retrieved_Interval;
+        return;
+    }
 	if(compareTimeStamps(iv.getStart(), retrieved_Interval.getStart()) >= 0)
 	{
 		lookup_Interval->setStart(iv.getStart());

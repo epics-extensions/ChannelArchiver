@@ -18,49 +18,47 @@ change.
 <LI>
 Name of this channel
 <PRE>
-virtual const char *getName () const = 0;
+virtual const char *getName() const = 0;
 </PRE>
 <LI>
 Time stamp of first value
 <PRE>
-virtual osiTime getFirstTime ()  const = 0;
+virtual osiTime getFirstTime()  const = 0;
 </PRE>
 <LI>
 Time stamp of last value
 <PRE>
-virtual osiTime getLastTime ()   const = 0;
-</PRE>
-<LI>
-Get the above information at once by filling a ChannelIInfo structure
-<PRE>
-virtual void getChannelInfo (ChannelIInfo &info) const;
+virtual osiTime getLastTime()   const = 0;
 </PRE>
 <LI>
 Move <A HREF="ValueIterator.htm#Main">ValueIterator</A> for current Channel
 to first, last, ... value
 <PRE>
-bool getFirstValue (ValueIterator &values);
-bool getLastValue (ValueIterator &values);
-virtual bool getFirstValue (ValueIteratorI *values) = 0;
-virtual bool getLastValue (ValueIteratorI *values) = 0;
+bool getFirstValue(ValueIterator &values);
+bool getLastValue(ValueIterator &values);
+virtual bool getFirstValue(ValueIteratorI *values) = 0;
+virtual bool getLastValue(ValueIteratorI *values) = 0;
 </PRE>
 <LI>
 Get value stamped >= time. time==0 results in call to getFirstValue
 <PRE>
-virtual bool getValueAfterTime (const osiTime &time, ValueIteratorI *values) = 0;
-bool getValueAfterTime (const osiTime &time, ValueIterator &values);
+virtual bool getValueAfterTime(const osiTime &time,
+                                  ValueIteratorI *values) = 0;
+bool getValueAfterTime(const osiTime &time, ValueIterator &values);
 </PRE>
 <LI>
 Get value stamped <= time
 <PRE>
-virtual bool getValueBeforeTime (const osiTime &time, ValueIteratorI *values) = 0;
-bool getValueBeforeTime (const osiTime &time, ValueIterator &values);
+virtual bool getValueBeforeTime(const osiTime &time,
+                                   ValueIteratorI *values) = 0;
+bool getValueBeforeTime(const osiTime &time, ValueIterator &values);
 </PRE>
 <LI>
 Get value stamped near time (whatever's next: before or after time)
 <PRE>
-virtual bool getValueNearTime (const osiTime &time, ValueIteratorI *values) = 0;
-bool getValueNearTime (const osiTime &time, ValueIterator &values);
+virtual bool getValueNearTime(const osiTime &time,
+                                 ValueIteratorI *values) = 0;
+bool getValueNearTime(const osiTime &time, ValueIterator &values);
 </PRE>
 </UL>
 <HR WIDTH=40% ALIGN=LEFT>

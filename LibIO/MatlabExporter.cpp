@@ -137,7 +137,7 @@ void MatlabExporter::exportChannelList(
                 const CtrlInfoI *info = value->getCtrlInfo();
                 if (info && info->getPrecision() > 0)
                 {
-                    out->flags(ios::fixed);
+                    out->flags(std::ios::fixed);
                     out->precision(info->getPrecision());
                 }
                 if (count == 1)

@@ -25,26 +25,35 @@ an ASCII file with the following format:
  # First check the "fast" archive
  /archives/fast/dir
  # Then check the "main" archive
- /archives/main/dir
- # Then check Fred's "xyz" archive
- /home/fred/xyzarchive/dir
+ /archives/main/2001_05/dir
+ /archives/main/2001_04/dir
+ /archives/main/2001_03/dir
+ /archives/main/2001_02/dir
+ /archives/main/2001/dir
 </PRE>
+<P>
+The most recent sub-archive has to be listed first,
+followed by the next one back in time and so on
+to the oldest sub-archive.
 <P>
 This type of archive is read-only!
 <P>
-For now, each individual archive is in the binary data format (<A HREF="BinArchive.htm#Main">BinArchive</A>).
+For now, each individual archive is in the binary data format
+(<A HREF="BinArchive.htm#Main">BinArchive</A>).
 Later, it might be necessary to specify the type together with the name
 for each archive. The master_version will then be incremented.
 <BR>
-If the "master" file is invalid, it is considered an ordinary BinArchive directory file,
-i.e. Tools based on the MultiArchive should work just like BinArchive-based Tools
-when operating on a single archive.
+If the "master" file is invalid, it is considered an ordinary BinArchive
+directory file,
+i.e. Tools based on the MultiArchive should work just like BinArchive-based
+Tools when operating on a single archive.
 <BR>
 <H2>Details</H2>
 No sophisticated merging technique is used.
-<BR>
-The MultiArchive will allow read access to
-the union of the individual channel sets.
+Given a channel and point in time,
+the MultiArchive will try to read this from the
+first archive in the multi archive list,
+then the next archive and so on until it succeeds.
 <BR>
 When combining archives with disjunct channel sets,
 a read request for a channel will yield data

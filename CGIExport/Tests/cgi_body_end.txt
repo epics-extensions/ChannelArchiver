@@ -8,13 +8,17 @@
         time range</li>
     <ul>
         <li><B>Plot</B>: Get simple online plot.
-        <li><B>Spreadsheet</B>: Get a spreadsheet-type text file.
+        <li><B>Spreadsheet</B>: Get a spreadsheet-type text file which
+                                you can save to your disk for further
+                                investigation.
         <li><B>Excel</B>: Same, but with HTTP hints that ask the web
-			 browser to open the file in Excel
+                          browser to directly open the file in Excel,
+                          skipping the save-to-disk. Might not work
+                          for your PC.
         <li><B>Matlab</B>: Get a Matlab command file.
         <li><B>Status</B>: Export the channel status
-	                   (disconnected, ...).
-			   Not supported for all formats.
+                           (disconnected, ...).
+                           Not supported for all formats.
     </ul>
   </ul>
 
@@ -30,12 +34,6 @@
 <p>
 <IMG SRC="../LineSqueeze.gif" WIDTH=582 HEIGHT=21 BORDER=0>
 </p>
-<ADDRESS>
-<P align=left>
-Requests/comments?<br>
-<a href="mailto:kasemir@lanl.gov">E-Mail: Kay-Uwe Kasemir</a>
-</P>
-</ADDRESS>
 
 </BLOCKQUOTE>
 </BODY>

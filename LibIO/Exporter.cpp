@@ -101,7 +101,7 @@ void Exporter::printValue(std::ostream *out,
             {
                 if (info && info->getPrecision() > 0)
                 {
-                    out->flags(ios::fixed);
+                    out->flags(std::ios::fixed);
                     out->precision(info->getPrecision());
                 }
                 *out << '\t' << v->getDouble(ai);

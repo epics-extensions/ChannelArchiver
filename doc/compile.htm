@@ -17,17 +17,16 @@
   Usable are MS Visual C++ and recent versions of g++.
 
   <h2>Configuration</h2>
-  There are some variables to be set in Tools/ToolsConfig.h.
-  <ul>
-    <li>Microsoft Visual C++ 6.0 conforms to CPP_EDITION=3.
-    <li>Recent GNU compilers are usable with CPP_EDITION=2<br>
-        RedHat 6.0-6.2 Linux comes with egcs-2.91.66 ... 2.95
-  </ul>
+  There are some variables to be set in Tools/ToolsConfig.h
+  and ChannelArchiver/ArchiverConfig.h. You have to read those
+  header files in whole and hopefully the comments will
+  help in deciding on the proper settings.<br>
+  
   Unfortunately, C++ object files are rarely recognized by different compilers.
   This means that you have to compile <em>all</em> the C++ code with
   the <em>same compiler.</em>
-  If you use g++ for the ChannelArchiver, the C++ part of EPICS base
-  has to be compiled with the same compiler (some files in base/src/libCom).
+  If you use g++ for the ChannelArchiver, the C++ parts of EPICS base
+  have to be compiled with the same compiler (some files in base/src/libCom).
   Otherwise you'll see link errors like missing "osiTime" classes.
  
   <h2>Make system</h2>
@@ -65,6 +64,7 @@
   where you link the static libraries instead of the shared
   ones. Example: Replace the -lCom arguement with  the full path to
   the static library ala ....../base/lib/Linux/libCom.a.
+  CCGIExport/link.sh is one example that works for me on Linux.
   <h3>WinBrowser</h3>
   For the Winbrowser, only MS Visual C++ project files are included
   because this tool is not portable to Unix.
@@ -130,3 +130,5 @@
 </blockquote>
 </body>
 </html>
+
+

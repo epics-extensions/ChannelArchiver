@@ -14,31 +14,37 @@
   The "patches" are then used to debug those new things.
   
   <ul>
-    <li>07/23/2001<br>
+    <li>07/24/2001<br>
       Patch #3:<br>
        <ul>
+       <li>Redid the documentation:
+           The original docs concentrated on compilation and
+	   installation. Now that has been moved down and
+	   more emphasis it put on usage, closer to a "user manual".
+	   Ben Kruger, a LANL summer student, provided some of the new
+	   pages and paragraphs.
        <li>GNUPlotExporter fixes, second round:
            Given a <em>start</em> and <em>end</em> time stamp, the
            GNUPlot exporter will try to come up with values at those
            exact dates so that online plots look nice. The value
-           preceding start is copied onto the start: OK since we
+           preceding 'start' is copied onto the 'start': OK since we
            archive changes. The previous value is still
-           valid. Similarly, the last value before end is duplicated
-           with end as a time stamp. Or "now", if that's earlier.
+           valid. Similarly, the last value before 'end' is duplicated
+           with 'end' as a time stamp. Or 'now', if that's earlier.
        <li>CGIExport: will swap start/end time if given in wrong order.
        <li>Use of "precision":
            The ArchiveEngine archives the precision.
-	   So originally, the retrieval tools used that precision
+	   The original retrieval tools used that precision
 	   when formatting values.
 	   As it turned out, few of the IOC databases are
-	   configured properly, so most users complained about the
+	   configured properly, so users complained about the
 	   truncated numbers (default is PREC=0, so you saw no
            fractional digits).
-	   The initial fix was to ignore PREC.
-	   But then BESSY actually depended on the PREC-driven
-	   formatting.
-           So now a PREC of zero is ignored, PREC &gt; 0 is acknowledged.
-       <li>Redid the documentation to be more user friendly.
+	   The early fix was to ignore PREC.
+	   But then our BESSY colleagues actually depend on the PREC-driven
+	   formatting and had to put the PREC formatting back in.<br>
+	   As a compromise, a PREC of zero is now ignored,
+	   PREC &gt; 0 is acknowledged.
        </ul>
     <li>07/18/2001<br>
       Patch #2:<br>

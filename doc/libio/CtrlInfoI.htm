@@ -23,46 +23,46 @@ typedef enum
 	Numeric = 1,
 	Enumerated = 2
 }	Type;
-Type getType () const;
+Type getType() const;
 </PRE>
 <LI>
 Read Control Information:
 Numeric precision, units,
 high/low limits for display etc.:
 <PRE>
-long getPrecision () const;
-const char *getUnits () const;
-float getDisplayHigh () const;
-float getDisplayLow () const;
-float getHighAlarm () const;
-float getHighWarning () const;
-float getLowWarning () const;
-float getLowAlarm () const;
+long getPrecision() const;
+const char *getUnits() const;
+float getDisplayHigh() const;
+float getDisplayLow() const;
+float getHighAlarm() const;
+float getHighWarning() const;
+float getLowWarning() const;
+float getLowAlarm() const;
 </PRE>
 <LI>
 Initialize a Numeric CtrlInfo
 (sets Type to Numeric and then sets fields)
 <PRE>
-void setNumeric (long prec, const stdString &units,
+void setNumeric(long prec, const stdString &units,
 				float disp_low, float disp_high,
 				float low_alarm, float low_warn, float high_warn, float high_alarm);
 </PRE>
 <LI>
 Initialize an Enumerated CtrlInfo
 <PRE>
-void setEnumerated (size_t num_states, char *strings[]);
+void setEnumerated(size_t num_states, char *strings[]);
 </PRE>
 <LI>
 Format a double value according to precision<BR>
 Throws Invalid if CtrlInfo is not for Numeric
 <PRE>
-void formatDouble (double value, stdString &result) const;
+void formatDouble(double value, stdString &result) const;
 </PRE>
 <LI>
 Enumerated: state string
 <PRE>
-size_t getNumStates () const;
-void getState (size_t state, stdString &result) const;
+size_t getNumStates() const;
+void getState(size_t state, stdString &result) const;
 </PRE>
 </UL>
 <HR WIDTH=40% ALIGN=LEFT>

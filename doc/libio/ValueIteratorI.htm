@@ -13,10 +13,10 @@ The preferred API is <A HREF="ValueIterator.htm#Main">ValueIterator</A>.
 <LI>
 Virtuals to be implemented by derived classes:
 <PRE>
-virtual bool isValid () const = 0;
-virtual const ValueI * getValue () const = 0;
-virtual bool next () = 0;
-virtual bool prev () = 0;
+virtual bool isValid() const = 0;
+virtual const ValueI * getValue() const = 0;
+virtual bool next() = 0;
+virtual bool prev() = 0;
 </PRE>
 <LI>
 Number of "similar" values that can be read
@@ -26,12 +26,12 @@ Number of "similar" values that can be read
  The result might also not be perfect,
  e.g. a single 8000 chunk could be reported as two 4000-sized chunks etc.)
 <PRE>
-virtual size_t determineChunk (const osiTime &until) = 0;
+virtual size_t determineChunk(const osiTime &until) = 0;
 </PRE>
 <LI>
 Sampling period for current values in secs.
 <PRE>
-virtual double getPeriod () const = 0;
+virtual double getPeriod() const = 0;
 </PRE>
 </UL>
 <HR WIDTH=40% ALIGN=LEFT>

@@ -11,10 +11,10 @@
 #define _NET_IF_H
 #endif
 
+#include "Engine.h"
 #include "ArchiveException.h"
 #include "EngineServer.h"
 #include "HTTPServer.h"
-#include "Engine.h"
 #include "CGIDemangler.h"
 #include "NetTools.h"
 #include <list>
@@ -36,17 +36,13 @@
 using namespace std;
 USING_NAMESPACE_CHANARCH
 
-#ifndef ENGINE_VERSION
-#define ENGINE_VERSION "Test"
-#endif
-
 static void engineinfo (HTTPClientConnection *connection, const stdString &path)
 {
 	HTMLPage page (connection->getSocket(), "Archive Engine");
 
 	page.openTable (2, "Engine Info", 0);
-	page.tableLine ("Name", ENGINE_NAME, 0);
-	page.tableLine ("Version", ENGINE_VERSION ", built " __DATE__, 0);
+	page.tableLine ("Name", "ArchiveEngine", 0);
+	page.tableLine ("Version", VERSION_TXT ", built " __DATE__, 0);
 	page.tableLine ("Description", theEngine->getDescription().c_str(), 0);
 	{
 		strstream line;

@@ -10,8 +10,8 @@ using namespace std;
 USING_NAMESPACE_CHANARCH
 
 
-#define LOG_NSV(stuff)	LOG_MSG(stuff)
-//#define LOG_NSV(stuff)	{}
+//#define LOG_NSV(stuff)	LOG_MSG(stuff)
+#define LOG_NSV(stuff)	{}
 
 // Helper:
 // print chid

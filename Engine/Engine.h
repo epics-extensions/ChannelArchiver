@@ -1,21 +1,24 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
+#include "../ArchiverConfig.h"
 #include <Thread.h>
-#include "Config.h"
 #include "GroupInfo.h"
 #include "ScanList.h"
 #include "Configuration.h"
 #include "BinArchive.h"
 
 BEGIN_NAMESPACE_CHANARCH
-
-// Config:
-//
-// Type of data format to use:
-#define ENGINE_ARCHIVE_TYPE	BinArchive
-
-#define ENGINE_NAME	"ArchiveEngine"
 
 //CLASS Engine
 class Engine

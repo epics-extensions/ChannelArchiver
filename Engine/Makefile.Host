@@ -3,8 +3,6 @@
 include ../../Make.cfg
 include ../../Make.ver
 
-CXXFLAGS += -DENGINE_VERSION=\"$(VERSION).$(RELEASE)\"
-
 SRCS += ChannelInfo.cc
 SRCS += CircularBuffer.cc
 SRCS += Engine.cc

@@ -1,10 +1,12 @@
-# This file is for NMAKE, for building on Win32 with MS Visual C++ (tried 6.0, SP 3)
+# This file is for NMAKE, for building on Win32 with MS Visual C++
+# (tried 6.0, SP 3)
 #
 # This file assumes that the vcvars32 script has been run first,
 # i.e. PATH, INCLUDE, LIB are set for the compiler/linker
 
 
 MODULE    = casi
+HOST_ARCH=WIN32
 
 # SWIG Installation
 SWIG      = c:\sys\swig1.1\swig -c++
@@ -12,27 +14,27 @@ SWIG      = c:\sys\swig1.1\swig -c++
 # Includes/links for EPICS extensions, base
 # Note: these are relative to e.g. the tcl/O.WIN32 directory!
 BASE=../../../../../../base
-INCLUDES = -I../.. -I../../../../../include -I$(BASE)/include
-LIBS = ../../../../../lib/WIN32/ChanArchIOObj.lib ../../../../../lib/WIN32/ToolsObj.lib $(BASE)/lib/WIN32/ca.lib  $(BASE)/lib/WIN32/db.lib $(BASE)/lib/WIN32/Com.lib ws2_32.lib
+INCLUDES = -I../.. -I../../../../../include -I$(BASE)/include -I$(BASE)/include/os/$(HOST_ARCH) -I$(BASE)/src/ca
+LIBS  = ../../../../../lib/WIN32/ChanArchIOObj.lib ../../../../../lib/WIN32/ToolsObj.lib $(BASE)/lib/WIN32/ca.lib  $(BASE)/lib/WIN32/db.lib $(BASE)/lib/WIN32/Com.lib ws2_32.lib
 
 # compiler, linker
 CC = cl -nologo -MD
 
 # C compiler flags
 # -GX: support exceptions
-CFLAGS = -GX -D_X86_ $(INCLUDES)
+# -GR: support RTTI
+CFLAGS = -GX -GR -DWIN32 -D_X86_ $(INCLUDES)
 
 # Tcl settings
-TCL = c:\progra~1\tcl
-TCL_INC = -I$(TCL)\include
-TCL_LIB = $(TCL)\lib\tcl80.lib
+TCL      = c:\progra~1\tcl
+TCL_INC  = -I$(TCL)\include
+TCL_LIB  = $(TCL)\lib\tcl80.lib
 
 # Python settings
-PYTHON       = c:\Progra~1\python
-PY_INC  = -I$(PYTHON)\include
-PY_LIB        = $(PYTHON)\libs\python15.lib
-PY_FLAGS      = /D __WIN32__
-
+PYTHON   = c:\Progra~1\python
+PY_INC   = -I$(PYTHON)\include
+PY_LIB   = $(PYTHON)\libs\python15.lib
+PY_FLAGS = /D __WIN32__
 
 all::	dirs tcl python
 

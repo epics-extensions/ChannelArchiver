@@ -1,9 +1,12 @@
 // main.cpp
+//
+// $Id$
 
 #ifdef WIN32
 #pragma warning (disable: 4786)
 #endif
 
+#include "Config.h"
 #include "GNUPlotExporter.h"
 #include "ArgParser.h"
 #include "HTMLPage.h"
@@ -25,13 +28,6 @@
 using namespace std;
 USING_NAMESPACE_CHANARCH
 
-#ifndef CGIEXPORT_VERSION
-#define CGIEXPORT_VERSION "?.?"
-#endif
-
-#ifndef GNUPLOT_PROGRAM
-#error Define GNUPLOT_PROGRAM
-#endif
 stdString GNUPlot = GNUPLOT_PROGRAM;
 
 void Usage(HTMLPage &page)
@@ -286,6 +282,13 @@ void getNames (const stdString &input_string, vector<stdString> &names)
 
 bool decodeTimes (CGIInput &cgi, osiTime &start, osiTime &end)
 {
+	int year, month, day, hour, min, sec; 
+	unsigned long nano;
+
+	osiTime2vals (osiTime::getCurrent (), year, month, day, hour, min, sec, nano);
+	vals2osiTime (year, month, day, 0, 0, 0, 0, start);
+	vals2osiTime (year, month, day, 23, 59, 59, 0, end);
+
 	if (!cgi.find ("STARTMONTH").empty())
 	{
 		stdString start_txt;
@@ -333,10 +336,11 @@ bool decodeTimes (CGIInput &cgi, osiTime &start, osiTime &end)
 			return false;
 		}
 	}
+
 	return true;
 }
 
-bool export (const stdString &archive_name,
+bool exportFunc (const stdString &archive_name,
 			 const stdString &pattern, const vector<stdString> &names,
 			 const osiTime &start, const osiTime &end,
 			 double round, bool fill, bool status, bool useGNU, const stdString &tempfilebase)
@@ -425,22 +429,8 @@ void getTimeTxt (char *result)
 
 int main (int argc, const char *argv[], char *envp[])
 {
-#ifndef WIN32
-	// Most Web servers launch this program in the cgi
-	// directory which should be under the archive interface directory:
-	//
-	//    ..../MainPage.htm       <- page that starts this program
-	//    ..../cgi/CGIExport.cgi  <- that's us now
-	//    ..../cgi/tmp/.....      <- where we will create our tmp files
-	//
-	// The WIN32/MS web server launches the cgi script
-	// where the web page was, not in the cgi dir.
-	//
-	// To have a common starting point,
-	// we chdir' to the base directory
-	// so that we can build necessary filenames
-	// by adding to the current dir:
-	chdir ("..");
+#ifdef WEB_DIRECTORY
+	chdir (WEB_DIRECTORY);
 #endif
 
 	TheMsgLogger.SetPrintRoutine (PrintRoutine);
@@ -581,7 +571,7 @@ int main (int argc, const char *argv[], char *envp[])
 
 	if (command == "GET")
 	{
-		export (directory, pattern, names, start, end, round, fill, status, false, "");
+		exportFunc (directory, pattern, names, start, end, round, fill, status, false, "");
 		return 0;
 	}
 
@@ -597,12 +587,12 @@ int main (int argc, const char *argv[], char *envp[])
 		char physical[300];
 		char timetext[40];
 		getTimeTxt (timetext);
+#ifdef USE_RELATIVE_PHYSICAL_PATH
 		getcwd (physical, sizeof physical);
-#ifdef WIN32
-		strcat (physical, "\\cgi\\tmp\\");
 #else
-		strcat (physical, "/cgi/tmp/");
+		physical[0] = '\0';
 #endif
+		strcat (physical, PHYSICAL_PATH);
 		strcat (physical, timetext);
 		strcat (physical, "_");
 		strcat (physical, client);
@@ -610,7 +600,7 @@ int main (int argc, const char *argv[], char *envp[])
 		HTMLPage	page;
 		page.start (title);
 		page.header ("Channel Plot", 2);
-		if (! export (directory, pattern, names, start, end, round, false, false, true, physical))
+		if (! exportFunc (directory, pattern, names, start, end, round, true, false, true, physical))
 		{
 			page.header ("Error: No data",3);
 			cout << "There seems to be no data for that channel and time range.\n";
@@ -649,15 +639,18 @@ int main (int argc, const char *argv[], char *envp[])
 			return 0;
 		}
 
-		stdString GNUPlotImage = script_dir + "/tmp/" + timetext + "_" + client +
-							GNUPlotExporter::imageExtension ();
+#		ifdef USE_RELATIVE_URL
+		stdString GNUPlotImage = script_dir;
+#		else
+		stdString GNUPlotImage;
+#		endif
+
+		GNUPlotImage += URL_PATH;
+		GNUPlotImage += timetext;
+		GNUPlotImage += "_";
+		GNUPlotImage += client;
+		GNUPlotImage += GNUPlotExporter::imageExtension ();
 		cout << "<IMG SRC=\"" + GNUPlotImage + "\"</A><P>\n";
-#if 0
-		cout << "<FONT SIZE=1>\n";
-		cout << "(Your browser might have cached an <I>old version</I> of the above image.\n";
-		cout << "Use RELOAD to get the current version, or disable caching for images)\n";
-		cout << "</FONT>\n";
-#endif
 		cout << "<HR>\n";
 		page.interFace (script_path, directory, pattern, names, round, fill, status, start, end);
 
@@ -682,10 +675,8 @@ int main (int argc, const char *argv[], char *envp[])
 		HTMLPage	page;
 		page.start (title);
 		page.header ("Channel Archive CGI Interface", 1);
-		start = osiTime::getCurrent ();
-		end = start;
 		page.interFace (script_path, directory, pattern, names, round,
-			/*fill*/true, /*status*/false, start, end, true);
+			/*fill*/true, /*status*/false, start, end);
 		return 0;
 	}
 

@@ -72,6 +72,8 @@ Engine::Engine(const stdString &directory_file_name)
     if (ca_add_exception_event(caException, 0) != ECA_NORMAL)
         throwDetailedArchiveException(Fail, "ca_add_exception_event");
 
+    _ca_context = ca_current_context();
+    
     engine_server = new EngineServer();
     write_thread.start();
 
@@ -84,6 +86,17 @@ Engine::Engine(const stdString &directory_file_name)
 void Engine::create(const stdString &directory_file_name)
 {
     theEngine = new Engine(directory_file_name);
+}
+
+bool Engine::attachToCAContext()
+{
+    if (ca_attach_context(_ca_context) != ECA_NORMAL)
+    {
+        LOG_MSG("ca_attach_context failed for thread 0x%08X (%s)\n",
+                epicsThreadGetIdSelf(), epicsThreadGetNameSelf());
+        return false;
+    }
+    return true;
 }
 
 void Engine::shutdown()

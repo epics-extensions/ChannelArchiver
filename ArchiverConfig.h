@@ -39,8 +39,9 @@
 // ArchiveEngine
 // ----------------------------------------------------------
 
-#define ENGINE_DEBUG
-#define HTTPD_DEBUG
+// >5: all
+#define ENGINE_DEBUG 4
+#define HTTPD_DEBUG  4
 
 // Config:
 //
@@ -48,16 +49,16 @@
 #define ENGINE_ARCHIVE_TYPE BinArchive
 
 // Show full path to engine config in HTTPD?
-#define SHOW_DIR
+#undef SHOW_DIR
 
 // Use password mechanism
 // (for stopping the engine over the web)
-//#define USE_PASSWD
+#define USE_PASSWD
 
 #define DEFAULT_USER    "engine"
 #define DEFAULT_PASS    "password"   
 
-// Define if sigaction call is available in signal.h
+// Define if sigaction() is available in signal.h
 //
 // On Win32, signal() is good enough.
 // On Unix, this does not work in a multithreaded program,
@@ -65,7 +66,7 @@
 //
 // On solaris I couldn't get it to compile, struct sigaction
 // isn't there.
-// This might be a feature or our local installation, though.
+// This might be a feature of our local installation, though.
 #define HAVE_SIGACTION
 #ifdef WIN32
 #undef HAVE_SIGACTION

@@ -276,7 +276,7 @@ bool HTTPClientConnection::analyzeInput()
     if (_input_line.back().length() > 0)
         return false;
 
-#   ifdef HTTPD_DEBUG
+#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
     LOG_MSG("HTTPClientConnection::analyzeInput\n");
     for (size_t i=0; i<_input_line.size(); ++i)
     {

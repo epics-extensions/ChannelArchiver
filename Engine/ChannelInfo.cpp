@@ -117,7 +117,6 @@ void ChannelInfo::startCaConnection(bool new_channel)
 {
     if (new_channel)
     {
-        // avoid warning for HPUX:
         if (ca_create_channel(_name.c_str(),
                               caLinkConnectionHandler, this,
                               CA_PRIORITY_ARCHIVE, &_chid) != ECA_NORMAL)
@@ -319,7 +318,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
         // size or type might have changed...
         me->setValueType(dbr_type, nelements);
 
-#ifdef ENGINE_DEBUG
+#if defined(ENGINE_DEBUG) && ENGINE_DEBUG > 4
         LOG_MSG("caControlHandler(%s) got CtrlInfo for %s [%d]\n",
                 me->getName().c_str(),
                 dbr_type_to_text(dbr_type), nelements);
@@ -387,7 +386,7 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     }
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
 
-#ifdef ENGINE_DEBUG
+#if defined(ENGINE_DEBUG) && ENGINE_DEBUG>5
     stdString time, val, stat;
     me->_new_value->getTime(time);
     me->_new_value->getValue(val); 
@@ -851,7 +850,7 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
             break;
         }
 
-#ifdef ENGINE_DEBUG
+#if defined(ENGINE_DEBUG) && ENGINE_DEBUG > 5
         stdString time, val, stat;
         _write_value->getTime(time);
         _write_value->getValue(val); 

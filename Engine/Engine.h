@@ -53,6 +53,11 @@ public:
     const stdString &getDescription() const;
     void setDescription(const stdString &description);
 
+    //* Called by other threads (EngineServer)
+    // which need to issue CA calls within the context
+    // of the Engine
+    bool attachToCAContext();
+
     //* Called to inform Engine that it needs
     // to flush CA requests in next process call
     void needCAflush()      {_need_CA_flush = true; }
@@ -110,6 +115,7 @@ private:
 
     epicsMutex      _engine_lock;
 
+    struct ca_client_context *_ca_context;
     bool            _need_CA_flush;
     
     epicsTime       _start_time;

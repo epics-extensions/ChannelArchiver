@@ -489,6 +489,7 @@ static void addChannel(HTTPClientConnection *connection,
     HTMLPage page(connection->getSocket(), "Add Channel");
     page.out("Channel <I>");
     page.out(channel_name);
+    theEngine->attachToCAContext();
     if (theEngine->addChannel(group, channel_name, period,
                                disabling, monitored))
         page.line("</I> was added to");
@@ -540,6 +541,7 @@ static void parseGroup(HTTPClientConnection *connection, const stdString &path)
     page.out(group_name);
 
     theEngine->lock();
+    theEngine->attachToCAContext();
     Configuration *cfg = theEngine->getConfiguration();
     if (cfg->loadGroup(group_name))
     {

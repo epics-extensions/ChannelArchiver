@@ -8,10 +8,12 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-#include "ToolsConfig.h"
+#include <stdarg.h>
+#include <ToolsConfig.h>
+#include <epicsTimeHelper.h>
+#include "../ArchiverConfig.h"
 #include "NetTools.h"
 #include "HTMLPage.h"
-#include <stdarg.h>
 
 bool HTMLPage::_nocfg = false;
 
@@ -65,15 +67,25 @@ HTMLPage::~HTMLPage()
         line("<A HREF=\"/config\">-Config.-</A>  ");
 	line("<BR>");
     
+    char linebuf[100];
 	if (_refresh > 0)
 	{
-        char linebuf[100];
 		sprintf(linebuf, "This page will update every %d seconds...",
                 _refresh);
 		line(linebuf);
 	}
 	else
-		line("(Use <I>Reload</I> from the Browser's menu for updates)");
+    {
+        int year, month, day, hour, min, sec;
+        unsigned long nano;
+        epicsTime2vals(epicsTime::getCurrent(),
+                       year, month, day, hour, min, sec, nano);
+		sprintf(linebuf,
+                "(Status for %02d/%02d/%04d %02d:%02d:%02d. "
+                "Use <I>Reload</I> from the Browser's menu for updates)",
+                month, day, year, hour, min, sec);
+		line(linebuf);
+    }
 	line("</BLOCKQUOTE>");
 	line("</FONT>");
 	line("</BODY>");

@@ -89,7 +89,7 @@ int main(int argc, const char *argv[])
     stdString index_name = parser.getArgument (1);
     if (log.get().length() > 0)
     {
-        logfile = fopen(log.get().c_str(), "at");
+        logfile = fopen(log.get().c_str(), "wt");
         if (! logfile)
         {
             LOG_MSG("Cannot open logfile '%s'\n", log.get().c_str());

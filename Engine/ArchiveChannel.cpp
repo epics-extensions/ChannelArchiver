@@ -8,7 +8,7 @@
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
-#define DEBUG_CHANNEL
+#undef DEBUG_CHANNEL
 
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
 {

@@ -9,6 +9,37 @@
 
 <blockquote>
   <h1>Archive Engine: Operation and Timing</h1>
+  <h2>ChannelAccess</h2>
+  The ArchiveEngine is a ChannelAccess client.
+  It receives values served by a ChannelAccess server.
+  This server might be on an EPICS IOC running the EPICS
+  "database". A record in this database can be configured
+  to scan at a fixed rate or be triggered by external hardware
+  signals.
+  The point is that your data source (record in this example)
+  which is served via ChannelAccess has either a fixed periodic
+  behaviour (scanned at a fixed rate, triggered at a fixed frequency)
+  or it might change at an unpredictable rate.
+  You have to know at least something about the nature of your data
+  source.
+
+  <h2>Fixed Rate Data Sources</h2>
+  If we assume that a record changes every second (1Hz),
+  we might not want to archive every sample because that
+  would be too much data.
+  Instead, we configure the ArchiveEngine to sample this channel
+  every 10 seconds or 30 seconds.
+  While you could configure the ArchiveEngine to sample every
+  .5seconds, this is obviously useless because the data source
+  does not provide new data at this rate.<br>
+  If on the other hand we are interested in every sample, configurung
+  the ArchiveEngine to scan every second is <u>not</u> advisable:
+  Though both the record and the ArchiveEngine would scan every
+  second, the two scans are not synchronized and rather unpredictable
+  things can happen. Instead, the "Monitor" option for the ArchiveEngine
+  with an estimated period between values of 1 second should be used
+  for this case.
+
   <h2>Time Stamps</h2>
   Each ChannelAccess Server provides time-stamped data.
   An IOC for example stamps each sample when the corresponding record
@@ -24,8 +55,7 @@
   <h2>Archived Data</h2>
   <img src="times.gif" width="640" height="480" border="1">
   <br>
-  The above example shows the same value (a knob on a LabVIEW panel),
-  served via different PVs and archived with different methods:
+  The above example shows the same value, archived with different methods:
   <ul>
     <li>The &quot;Monitor&quot; channel archived every change
         (up until there are more changes than anticipated, which
@@ -39,14 +69,18 @@
 	&quot;11.0&quot;, &quot;12.0&quot;, ... seconds.<br>
         Instead, every second the last sample provided by the
 	ChannelAccess Server is written,
-        conserving the original time stamps<br>
-        (which in this case obviously happened to be at 9.9679712,
-	 10.98944 and 11.7605488 seconds)
+        conserving the original time stamps.
+	In this case it happened to be at
+	<pre>
+	  9.9679712 seconds
+	 10.9894400 seconds
+	 11.7605488 seconds...
+	</pre>
   </ul>
 
   <h2>Repeat Counts</h2>
   To save disk space, the ChannelArchiver writes only changes to the disk.
-  For &quot;Monitor&quot; channels, this happens automatically because
+  For &quot;Monitor&quot; channels, this is redundant because
   ChannelAccess does only report changes. For periodically sampled
   channels, special &quot;Repeat Counts&quot;
   are written when a value has not changed.
@@ -66,6 +100,10 @@
   one (usually easy to spot because the nanoseconds are all 0).
   For plotting, on the other hand, you might prefer to expand the
   repeat count into inividual samples.
+
+  <hr>
+  <a href="../default.htm">ChannelArchiver Manual</a>
+
 </blockquote>
 </body>
 </html>

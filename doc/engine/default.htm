@@ -9,31 +9,48 @@
 
 <blockquote>
   <h1>Archive Engine</h1>
-  This ArchiveEngine collects samples via ChannelAccess
-  and stores them.
-  This engine is intended to replace &quot;chan_arch&quot;,
-  the solaris-only prototype implementation.
-  It reads the same configuration files,
-  it should also generate binary-compatible data files.
+  The ArchiveEngine is an EPICS ChannelAccess client. It can save any
+  channel served by any ChannelAccess server. The most common ChannelAccess
+  servers are EPICS IOCs (Input/Output controllers) running the EPICS
+  database.
   <br>
-  The ArchiveEngine is portable, running on Win32 and various
-  Unixes including Linux. Status and configuration are accessible
-  via a built-in HTTP server, so it's not limited to single status
-  GUI per engine, portable and networked.
+  The ArchiveEngine provides two fundametal modes of archiving:
+  Periodically or monitor. With periodic archiving, one sample
+  is taken every second (or 5 seconds or 0.1 seconds...).
+  In monitor mode, each change is archived up to a configurable
+  limit or e.g. 0.1 seconds (faster changes are ignored).
+  <br>
+  The ArchiveEngine is configured with a text file that lists
+  what channels to archive and how. Each given channel
+  can have a different periodic scan rate or be archived in monitor
+  mode (on change).
+  <br>
+  One design target was: Archive 10000 values per second,
+  be it 1000 channels that change at 10Hz each or 10000 channels
+  which change at 1Hz.
+  <br>
+  The ArchiveEngine saves the full information available via
+  ChannelAccess: The value, time stamp and status as well as
+  with control information like units, display and alarm limits, ...
+  <br>
+  The data is written to local disk files.
+  Several <a href="../retrieval/default.htm">retrieval tools</a>
+  allow you to investigate the archived data.
+  <br>
+  While running, status and configuration of the ArchiveEngine
+  are accessible via a built-in web server.
 
   <h2>Usage</h2>
-  Please refer to the following documents concerning
   <ol>
-    <li><a href="times.htm">fundamental operation and timing</a>
-    <li><a HREF="usage.htm">usage, configuration</a>
-    <li><a href="perform.htm">performance</a>
-    <li><a href="Threads.htm">thread internals</a>
+    <li><a href="times.htm">Details on operation and timing</a>
+    <li><a HREF="usage.htm">Configuration, Start and Stop the engine</a>
+    <li><a HREF="webstatus.htm">Online Status and Configuration Display</a>
+    <li><a href="perform.htm">Performance</a>
+    <li><a href="Threads.htm">Thread Internals</a>
   </ol>
 
-  <h2>Some Status-Display Examples</h2>
-  <img src="engine.gif" width="521" height="541">
-  <p>
-  <img src="groupinfo.gif" width="491" height="408">
+  <hr>
+  <a href="../default.htm">ChannelArchiver Manual</a>
 
 </blockquote>
 </body>

@@ -1,0 +1,93 @@
+<html>
+
+<head>
+<title>ArchiveEngine Web Server</title>
+<link REL="STYLESHEET" HREF="../style.css" TYPE="text/css">
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+
+<blockquote>
+  <h1>ArchiveEngine Web Server</h1>
+  The ArchiveEngine has a built-in web server (HTTP server)
+  for status and configuration information.
+  <ul>
+  <li>You can use any web browser (Netscape, Internet Explorer)
+      to access this ArchiveEngine web server.
+  <li>You can do that on the computer where the ArchiveEngine
+      is running as well as from other computers, be it a PC
+      or Macintosh or ... as long as you are on the same network.
+  <li>You do <b>not</b> need a web server like the Apache
+      web server for Unix or the Internet Information Server for Win32
+      to use this. The ArchiveEngine itself acts as a web server.
+  <li>You <b>cannot</b> view archived data with this mechanism.
+      See the documentation on 
+      <a href="../overview/default.htm#retrieval">retrieval</a>, especially the
+      CGIExport tool for web access to archived data.
+  <li>You can not only use this mechanism interactively but also
+      write your own HTTP client programs, elegantly based on the
+      HTTP client libraries that come with perl or python,
+      to explore this web interface.
+  </ul>
+
+  <h2>Usage</h2>
+  <img align=right src="engine.gif" width="459" height="646">
+  You have to know the internet name of the machine that is running
+  the ArchiveEngine as well as the TCP port.
+  If you are on the same machine, use "localhost".
+  The port is configured when you start the ArchiveEngine, it defaults
+  to 4812. Then use any web browser and point it to<br>
+  <code>http://&lt;host where engine is running&gt;:&lt;port&gt;</code><br>
+  e.g. <a href="http://localhost:4812">http://localhost:4812</a>
+  <br>
+  The start page of the ArchiveEngine web server should look
+  similar to the one shown to the right.
+  <br>
+  From there on you can hopefully follow the links except for the
+  following one:
+  
+  <h2>Stop the ArchiveEngine</h2>
+  To avoid accidental stops of the ArchiveEngine, the link
+  to the stop URL is hidden.
+  You have to manually type the special URL
+  <code>.../stop</code>, e.g.
+  <a href="http://localhost:4812/stop">http://localhost:4812/stop</a>
+  into your web browser.<br>
+  In case your ArchiveEngine has been compiled with password
+  protection enabled (has to be done at compile time),
+  you will be prompted for a user-name and password.
+  That name and password are also picked at compile time.<br>
+  In Engine/Tools there is an example tcl script that stops the
+  engine with a user name and password in case you want to stop the engine
+  from within a script and not interactively.
+  <p clear=all>
+  <br clear=all>
+
+  <h2>Online Configuration</h2>
+  <img align=right src="cfgpage.gif" width="431" height="726">
+  This page allows you to add new groups and then add channels
+  to those groups.
+  If you want to change the configuration of a channel,
+  you can do so by adding it again with the new configuration.
+  Note: This only allows you to "upgrade" a channel to a smaller
+  scan period or the "Monitor" mode. You cannot remove channels.
+
+  <A NAME="persist"><h2>Persistent configuration</h2></A>
+  When the configuration is changed via the Web interface (channels
+  added etc.), the original configuration files are <b>not</b> changed.<br>
+  Instead, the engine tries to write a <em>new</em> set of
+  configuration files in a "cfg" subdirectory. You will get <em>cannot
+  write to cfg directory</em> messages if no such directory exists.
+  You can either decide that you are not interested in keeping online
+  changes to the configuration or create a cfg subdirectory.
+  After a shutdown, a
+  system like cvs or edit-and-compare can then be used to merge the
+  online changes as reflected by configuration files in the cgf
+  subdirectory into the original files. (better ideas welcome)
+
+  <hr>
+  <a href="../default.htm">ChannelArchiver Manual</a>
+
+</blockquote>
+</body>
+</html>

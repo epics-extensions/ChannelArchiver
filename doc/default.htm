@@ -2,96 +2,38 @@
 
 <head>
 <base>
-<title>ChannelArchiver</title>
+<title>ChannelArchiver Manual</title>
 <link REL="STYLESHEET" HREF="style.css" TYPE="text/css">
 </head>
 
 <body BACKGROUND="blueback.jpg">
 
 <blockquote>
-  <h1>Channel Archiver</h1>
-  The Channel Archiver is an archiving system for EPICS.
-  It saves the information available via Channel Access,
-  i.e. the time stamp, status and value of individual channels,
-  together with control information (limits, units, ...).
-  This includes all data types available via Channel Access:
-  float, double, int, string, enumerated types,
-  scalars as well as arrays.
-  <p>
-  <img src="components.gif" width=627 height=468><br>
-  
-  <dl>
-    <dt><a href="engine/default.htm">Engine</a> </dt>
-    <dd>Archiver engine, collects data via Channel Access
-        and stores it in disk files.<br>
-    </dd>
-  </dl>
-  There are several options for data retrieval. Since all
-  tools use the archiver I/O library, they currently need
-  access to the data files, be it on a local file system
-  or via NFS or Samba.
-  
-  <dl>
-    <dt><a href="winbrowser/index.htm">WinBrowser</a></dt>
-    <dd>WIN32 archive browser, allows interactive browing
-        or archived data as well as spreadsheet export.
-    </dd>
+  <h1>Channel Archiver Manual</h1>
 
-    <dt>xarr, Striptool</dt>
-    <dd>These tools, developed by Chris Larrieu (JLab),
-        are available with plugins which use this Archiver's LibIO.
-    </dd>
+  Assuming that somebody has already compiled the pieces
+  and installed them for you...
+  <ul>
+  <li><a href="overview/default.htm">Overview</a>
+  <li><a href="engine/default.htm">Engine</a>
+  <li><a href="retrieval/default.htm">Retrieval</a>
+  </ul>
 
-    <dt><a href="cgiexport/index.htm">CGIExport</a> </dt>
-    <dd>CGI plugin for web server,
-        allows spreadsheet-download and simple online
-        plotting (via gnuplot)
-    </dd>
-
-    <dt><a href="casi/default.htm">casi</a></dt>
-    <dd>Based on SWIG, the Channel Archiver Scripting Interface "casi"
-        provides scripting languages (tcl, python, ...) with access 
-	to the archive data.
-	Includes Python-based Cardminer,
-	an archive file management tool.
-    </dd>
-
-    <dt><a href="manager/default.htm">Manager</a></dt>
-    <dd>Command-line tool to test the I/O Lib and manage
-        archive files, to be replaced by cardminer.
-    </dd>
-
-    <dt><a href="libio/default.htm">LibIO</a> </dt>
-    <dd>I/O library to access CA files:
-        Basic I/O tools for proprietary archive data file format as well
-	as generic classes based upon that like
-	SpreadSheetExporter
-    </dd>
-
-    <dt><a href="matlab/default.htm">Matlab</a> </dt>
-    <dd>About the currently available Matlab support.
-    </dd>
-
-    <dt>../Tools </dt>
-    <dd>C++ classes shared by CA and some other code</dd>
-
-  </dl>
-
-  <h2>Latest Changes</h2>
-  The most recent version of the sources as well as the
-  <a href="../changes.htm">"changes" document/release history</a>
-  are available on the Channel Archiver web site unter
-  <a href="http://mesa53.lanl.gov/lansce8/epics/PC">
-  http://lansce.lanl.gov/lansce8/epics/PC</a>.
-
-  <h2>Compilation</h2>
-
-  <a href="compile.htm">See here...</a>
+  This is what you have to know when you get started
+  from scratch or are curious to learn more:
+  <ul>
+  <li><a href="compile.htm">Compilation, setup</a>
+  <li><a href="binarchive/default.htm">Storage Internals</a>
+  <li><a href="libio/default.htm">LibIO, API</a>
+  <li><a href="../changes.htm">Changes</a>
+  <li><a href="http://mesa53.lanl.gov/lansce8/epics/PC">
+      http://mesa53.lanl.gov/lansce8/epics/PC</a>.
+  </ul>
 
   <hr>
 
   <address>
-  <a HREF="mailto:kasemir@lanl.gov"><p>-Kay (kasemir@lanl.gov)</a></p>
+  <a HREF="mailto:kasemir@lanl.gov"><p>Kay (kasemir@lanl.gov)</a></p>
   </address>
 </blockquote>
 </body>

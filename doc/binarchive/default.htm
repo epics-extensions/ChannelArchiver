@@ -9,26 +9,89 @@
 
 <blockquote>
   <h1>Binary Archive Format</h1>
-  <h2>Design Decisions</h2>
+  <h2>Directory File</h2>
+  The ArchiveEngine is started with the name of a directory file.
+  The default is <code>freq_directory</code>. All retrieval tools use
+  the name of this directory file to get at the archived data.
+  Note that in here directory file stands for a file name, not a
+  directory name. The file itself is called a directory file.
+
+  <h2>Data Files</h2>
+  The directory file holds channel names but not archived data.
+  The data is stored in data files. By default, the ArchiveEngine
+  creates one data file per day.
+  You cannot directly use a single the data file but only
+  the combination of all data files and the directory file,
+  the latter is given to the retrieval tools.<br>
+  The ArchiveManager is a tool for maintaining the combination of
+  directory and data files.
+
+  <h1>MultiArchive</h1>
+  If you want to look at more than one archive, you could
+  run the retrieval tools on all the directory files of interest.
+  Alternatively, there is the "MultiArchive" option:
+  Create a text file like this one:
+  <pre>
+  master_version=1
+  # First check the "fast" archive
+  /archives/fast/dir
+  # Then check the "main" archive
+  /archives/main/dir
+  # Then check Fred's "xyz" archive
+  /home/fred/xyzarchive/dir
+  </pre>
+  and pass the name of this file to the retrieval tool instead of
+  an individual directory file.
+  For more details, see the
+  <A HREF="../libio/MultiArchive.htm">MultiArchive description</A>
+  in the LibIO. 
+
+  <h2>Binary Archive Details</h2>
   An easy approach to archiving would be this: For each channel,
   create an ASCII file and append new values to that file. This format
-  is easy to maintain.
-  <p>
-  Problem: The number of open files is quite limited on all operating
-  systems. The archiver would have to open each file, append values,
-  close it and move on to the next channel. This is much too slow!
-  <p>
-  Idea of the ChannelArchiver: All channels are written into a single
-  file. The list of channel names, the first and last position for
-  each channel etc. is kept in a disk-based hash table. Furthermore, a
-  binary format is used to save space and time.
-  <p>
-  The disk-based hash-table is the &quot;directory&quot; file, by
-  default called &quot;freq_directory&quot;.<br>
+  is easy to maintain. Problem: The number of open files is quite
+  limited on all operating systems. The archiver would have to open
+  each file, append values,  close it and move on to the next
+  channel. This is much too slow!
+  <br>
+  Therefore the idea of the ChannelArchiver is to write all channel
+  data into a single file. Since files have a limited size, this is
+  not really practical, so new data files are created, per default one
+  per day. To keep track of the data file and the position of each
+  channels' data in these files, a directory file is used.
+  <br>
+  We assume that adding new values is a common operation. For
+  retrieval, we are most interested in recent values, since they are
+  often requested at e.g. the end of an operational shift or for
+  weekly summaries.
+  Therefore the directory file has pointers to the last data buffer
+  inside the data files for each channel.
+  But we might also want to dump all the data for a channel, beginning
+  with the first sample, which is why the directory file does also
+  hold the pointer to the first data buffer for each channel.
+  <br>
+  To provide quick access to this per-channel information, given the
+  channel name, the channel names are kept in a disk-based hash table,
+  the directory file, per default called <code>freq_directory</code>.
+  In addition to the channel name is contains the the first and last
+  available time stamp and the location of the first and last data
+  buffer for each channel in the date files.
+  <br>
   As for a the data, one file per day (default) is used.<br>
+  Separate buffers are used for control information (limits, units,
+  ...) and the values (time stamp, status, raw value).
+  When a data buffer for a channel is full, a new one is appended.
+  The same control information buffer is referenced unless a portion
+  of the control information has changed.
   A data file will be updated until all the buffers in there are
-  filled. The filename mostly reflects the date of creation, not the
-  time regime of samples therein.
+  filled. If a buffer is full and the threshold for creating a new
+  data file is reached (per default: one day), a new data file is
+  added.
+  Therefore the filename of a data file merely reflects the date of
+  creation, not the time regime of samples therein.
+
+  <img src=binarchive.gif width=778 height=427><br>
+
   <p>
   Advantage: This format allows archiving of up to 10000 values per
   second on a 450 Mhz machine, 100baseT network. Fast retrival to the
@@ -41,7 +104,7 @@
   Under no circumstances must any single data file be removed or
   altered, since this will break the interlinked sequence of samples.
   </font><br>
-  This is not uncommon for database systems, but unfortunately the
+  Note that this is not uncommon for database systems, but unfortunately the
   data management tools for the ChannelArchiver are limited for the
   time being.
 

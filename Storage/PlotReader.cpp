@@ -40,6 +40,8 @@ const RawValue::Data *PlotReader::fill_bin()
     have_initial_final = have_mini_maxi = false;
     if (reader_data == 0)
         return 0;
+    if (delta <= 0.0)
+        return reader.next();
     end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
 #ifdef DEBUG_PLOTREAD
     stdString txt;
@@ -120,6 +122,8 @@ const RawValue::Data *PlotReader::fill_bin()
 
 const RawValue::Data *PlotReader::next()
 {
+    if (delta <= 0.0)
+        return reader.next();
     double span;
     if (state == s_dunno)
         return 0;
@@ -163,16 +167,18 @@ const RawValue::Data *PlotReader::next()
 }
 
 DbrType PlotReader::getType() const
-{   return type; }
+{   return (delta <= 0.0) ? reader.getType() : type; }
     
 DbrCount PlotReader::getCount() const
-{   return count; }
+{   return (delta <= 0.0) ? reader.getCount() : count; }
     
 const CtrlInfo &PlotReader::getInfo() const
-{   return info; }
+{   return (delta <= 0.0) ? reader.getInfo() : info; }
     
 bool PlotReader::changedType()
 {
+    if (delta <= 0.0)
+        return reader.changedType();
     bool changed = type_changed;
     type_changed = false;
     return changed;
@@ -180,6 +186,8 @@ bool PlotReader::changedType()
 
 bool PlotReader::changedInfo()
 {
+    if (delta <= 0.0)
+        return reader.changedInfo();
     bool changed = ctrl_info_changed;
     ctrl_info_changed = false;
     return changed;

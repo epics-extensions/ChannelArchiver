@@ -331,7 +331,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
         values = xmlrpc_build_value(env, STR("()"));
         if (env->fault_occurred)
             goto exit_get_channel_data;
-        data = reader->find(names[i], &start, &end);
+        data = reader->find(names[i], &start);
         if (data == 0)
         {
             meta = encode_ctrl_info(env, 0);

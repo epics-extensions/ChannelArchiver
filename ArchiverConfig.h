@@ -77,6 +77,11 @@
 // since it might invite hackers:
 //#define NO_CGI_DEBUG
 
+#if (!defined(GNUPLOT_PROGRAM) || !defined(GNUPLOT_PIPE)) && defined (GNUPLOT)
+# define GNUPLOT_PROGRAM GNUPLOT
+# define GNUPLOT_PIPE GNUPLOT
+
+#else
 // Where is GNU-Plot?
 // Linux, default for Unix:
 #define GNUPLOT_PROGRAM "/usr/bin/gnuplot"
@@ -101,6 +106,7 @@
 #undef GNUPLOT_PIPE
 #define GNUPLOT_PROGRAM "/opt/apache/htdocs/archive/cgi/gnuplot"
 #define GNUPLOT_PIPE    "/opt/apache/htdocs/archive/cgi/gnuplot"
+#endif
 #endif
 
 // The CGI tool adds cgi_body_start.txt and ..end.txt

@@ -162,7 +162,7 @@ Engine::Engine(const stdString &directory_file_name)
             Unsupported, "Cannot run more than one Engine");
     _start_time = osiTime::getCurrent();
     _directory = directory_file_name;
-
+    _is_writing = false;
     _description = "EPICS Channel Archiver Engine";
     the_one_and_only = false;
 
@@ -355,7 +355,7 @@ ChannelInfo *Engine::findChannel(const stdString &name)
 {
     ChannelInfo *found = 0;
 
-    stdList<ChannelInfo *>::iterator channel = lockChannels().begin();
+    stdList<ChannelInfo *>::iterator channel = getChannels()->begin();
     while (channel != _channels.end())
     {
         if ((*channel)->getName() == name)
@@ -365,7 +365,6 @@ ChannelInfo *Engine::findChannel(const stdString &name)
         }
         ++channel;
     }
-    unlockChannels();
 
     return found;
 }
@@ -494,6 +493,7 @@ void Engine::setSecsPerFile(double secs_per_file)
 // Called by WriteThread as well as Engine on shutdown!
 void Engine::writeArchive()
 {
+    _is_writing = true;
     Archive &archive = lockArchive();
     ChannelIterator channel(archive);
     lockChannels();
@@ -516,6 +516,7 @@ void Engine::writeArchive()
     unlockChannels();
     channel->releaseBuffer();
     unlockArchive();
+    _is_writing = false;
 }
 
 

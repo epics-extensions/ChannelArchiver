@@ -1,4 +1,4 @@
-// --------------------------------------------------------
+// -------------------- -*- c++ -*- -----------------------
 // $Id$
 //
 // Please refer to NOTICE.txt,
@@ -50,7 +50,10 @@ public:
     GroupInfo *findGroup(const stdString &name);
     GroupInfo *addGroup(const stdString &name);
 
-    stdList<ChannelInfo *> &lockChannels();
+    // Get current channel list, locked and unlocked
+    stdList<ChannelInfo *> *getChannels();
+    stdList<ChannelInfo *> *lockChannels();
+    // has to be called after lockChannels
     void unlockChannels();
 
     ChannelInfo *findChannel(const stdString &name);
@@ -75,10 +78,12 @@ public:
     void   setGetThreshold(double get_threshhold);
     double getGetThreshold();
 
-    const osiTime &getStartTime()   { return _start_time; }
-    const stdString &getDirectory() { return _directory;  }
-    const osiTime &getWriteTime()   { return _last_written; }
-
+    // Engine Info: Started, where, info about write thread
+    const osiTime &getStartTime() const   { return _start_time; }
+    const stdString &getDirectory() const { return _directory;  }
+    const osiTime &getWriteTime() const   { return _last_written; }
+    bool isWriting() const                { return _is_writing; }
+    
     // Add channel to ScanList.
     // If result is false,
     // channel has to prepare a monitor.
@@ -98,7 +103,9 @@ private:
     osiTime         _start_time;
     stdString       _directory;
     stdString       _description;
-
+    bool            _is_writing;
+    
+    
     ThreadSemaphore     _channels_lock;
     stdList<ChannelInfo *> _channels;// all the channels
     stdList<GroupInfo *> _groups;    // scan-groups of channels
@@ -134,10 +141,13 @@ inline void Engine::setConfiguration(Configuration *c)
 inline Configuration *Engine::getConfiguration()
 {   return _configuration;  }
 
-inline stdList<ChannelInfo *> &Engine::lockChannels()
+inline stdList<ChannelInfo *> *Engine::getChannels()
+{   return &_channels; }
+
+inline stdList<ChannelInfo *> *Engine::lockChannels()
 {
     _channels_lock.take();
-    return _channels;
+    return &_channels;
 }
 
 inline void Engine::unlockChannels()

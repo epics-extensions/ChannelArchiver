@@ -4,6 +4,11 @@
 #include <Filename.h>
 #include <ctype.h>
 
+ConfigFile::ConfigFile()
+{
+    _config_dir = "cfg";
+}
+
 void ConfigFile::setParameter(const stdString &parameter, char *value)
 {
     if (parameter == "write_freq"  ||  parameter == "write_period")
@@ -60,21 +65,22 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
                  << "): parameter '" << parameter << "' is ignored\n");
 }
 
-bool ConfigFile::getChannel (std::ifstream &in, stdString &channel, double &period, bool &monitor, bool &disable)
+bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
+                            double &period, bool &monitor, bool &disable)
 {
     char line[100];
     char *ch; // current position in line
     stdString parameter;
 
-    channel.assign (0, 0);
+    channel.assign(0, 0);
     while (true)
     {
-        period = theEngine->getDefaultPeriod ();
+        period = theEngine->getDefaultPeriod();
         monitor = false;
         disable = false;
 
-        in.getline (line, sizeof (line));
-        if (in.eof ())
+        in.getline(line, sizeof (line));
+        if (in.eof())
             return false;
         ++_line_no;
 
@@ -144,36 +150,32 @@ bool ConfigFile::getChannel (std::ifstream &in, stdString &channel, double &peri
     return true;
 }
 
-ConfigFile::ConfigFile ()
-{
-    _config_dir = "cfg";
-}
-
-bool ConfigFile::loadGroup (const stdString &group_name)
+bool ConfigFile::loadGroup(const stdString &group_name)
 {
     std::ifstream file;
 
-    file.open (group_name.c_str());
+    file.open(group_name.c_str());
 #   ifdef __HP_aCC
     if (file.fail())
 #   else
-    if (! file.is_open ())
+    if (! file.is_open())
 #   endif
     {
-        LOG_MSG ("Config file '" << group_name << "': cannot open\n");
+        LOG_MSG("Config file '" << group_name << "': cannot open\n");
         return false;
     }
-    file.unsetf (std::ios::binary);
+    file.unsetf(std::ios::binary);
 
     // new archive group?
-    GroupInfo *group = theEngine->findGroup (group_name);
+    GroupInfo *group = theEngine->findGroup(group_name);
     if (! group)
     {
-        group = theEngine->addGroup (group_name);
+        group = theEngine->addGroup(group_name);
         if (! group)
         {
-            file.close ();
-            LOG_MSG ("Config file '" << group_name << "': cannot add to Engine\n");
+            file.close();
+            LOG_MSG("Config file '" << group_name
+                    << "': cannot add to Engine\n");
             return false;
         }
     }
@@ -191,16 +193,16 @@ bool ConfigFile::loadGroup (const stdString &group_name)
     return true;
 }
 
-bool ConfigFile::load (const stdString &config_name)
+bool ConfigFile::load(const stdString &config_name)
 {
     _config_name = config_name;
     return loadGroup (config_name);
 }
 
-bool ConfigFile::saveGroup (const class GroupInfo *group)
+bool ConfigFile::saveGroup(const class GroupInfo *group)
 {
     stdString filename;
-    Filename::build (_config_dir, group->getName(), filename);
+    Filename::build(_config_dir, group->getName(), filename);
     std::ofstream file;
     file.open (filename.c_str());
 #   ifdef __HP_aCC
@@ -209,7 +211,10 @@ bool ConfigFile::saveGroup (const class GroupInfo *group)
     if (! file.is_open())
 #   endif
     {
-        LOG_MSG ("Config file '" << filename << "': cannot create\n");
+        LOG_MSG ("Config file '" << filename << "': cannot create\n"
+                 "(No severe error. Create a '" << _config_dir
+                 << "' subdirectory\n"
+                 " if you want to save updated configuration files).\n");
         return false;
     }
 

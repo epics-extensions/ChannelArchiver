@@ -45,7 +45,7 @@ HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 	line ("<BLOCKQUOTE>");
 
 	line ("<TABLE BORDER=3>");
-	line ("<TR><TD BGCOLOR=#FFFFFF><FONT SIZE=4>");
+	line ("<TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>");
 	line (title);
 	line ("</FONT></TD></TR>");
 	line ("</TABLE>");

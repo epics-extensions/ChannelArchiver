@@ -14,36 +14,46 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>06/21/2001<br>
+      Patch #1:<br>
+       <ul>
+       <li>ArchiveEngine: Exploring possible NFS problems
+           when writing to a disk that is NFS-mounted.
+           Fixed EngineServer, the engine's HTTP server,
+           to run on even if the write thread hangs because
+           of a NFS disconnect. Top-level engine status page
+	   shows if the write thread is writing right now.
+       </ul>
     <li>06/07/2001<br>
       <font color="#0000A0">Version 1.8</font>:<br>
        <ul>
        <li>MultiArchive:<br>
            <ul>
-	   <li>Didn't really handle multiple archives until now.
-	       Hopefully not too many bugs left.
+           <li>Didn't really handle multiple archives until now.
+               Hopefully not too many bugs left.
            <li>No longer investigates all subarchives
-	       unless necessary.<br>
-	       For find-channel and get-value-after-timestamp
-	       this can be skipped -> <font color=red>much faster!</font>
-	       When a list of channels and/or times is requested,
-	       the sub archives are still queried.
-	   </ul>
+               unless necessary.<br>
+               For find-channel and get-value-after-timestamp
+               this can be skipped -> <font color=red>much faster!</font>
+               When a list of channels and/or times is requested,
+               the sub archives are still queried.
+           </ul>
        <li>GNUPlotExporter:<br>
            <ul>
-	   <li>Use two Y-axes if exporting excactly two channels
-	   <li>Can call GNUPlot via pipe, skipping the command-file
-	       generation
+           <li>Use two Y-axes if exporting excactly two channels
+           <li>Can call GNUPlot via pipe, skipping the command-file
+               generation
            <li>Use 'steps' instead of 'linespoints'
            <li>Show units in legend
-	   </ul>
+           </ul>
        <li>CGIExport:<br>
            <ul>
-	   <li>Benefits from new GNUPlotExporter
-	       (cannot use pipe on Win32).
-	   <li>Image is now a HREF link to GNUPlot data.
-	       That's different from the spreadsheet format,
-	       but might still be useful.
-	   </ul>
+           <li>Benefits from new GNUPlotExporter
+               (cannot use pipe on Win32).
+           <li>Image is now a HREF link to GNUPlot data.
+               That's different from the spreadsheet format,
+               but might still be useful.
+           </ul>
        <li>Engine:<br>
            don't write buffers to disk
            at shutdown because this can take too long.
@@ -51,11 +61,11 @@
            the engine will now stop ASAP.
            The archive contains data up to the previous
            write period.<br>
-	   New log messages, Web interface shows total number
-	   of channels and connected channels (suggested by Bob Hall)
+           New log messages, Web interface shows total number
+           of channels and connected channels (suggested by Bob Hall)
        <li>casi:<br>
            Added Bob Hall's python-based archiveBrowser
-	   to the example scripts.
+           to the example scripts.
        </ul>
     <li>04/30/2001<br>
       Patch #6:<br>

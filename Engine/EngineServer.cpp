@@ -41,82 +41,90 @@
 #endif
 #endif
 
-static void engineinfo (HTTPClientConnection *connection,
-                        const stdString &path)
+static void engineinfo(HTTPClientConnection *connection,
+                       const stdString &path)
 {
-    HTMLPage page (connection->getSocket(), "Archive Engine");
+    HTMLPage page(connection->getSocket(), "Archive Engine");
     stdString s;
     char line[100];
     
-    page.openTable (2, "Engine Info", 0);
-    page.tableLine ("Name", "ArchiveEngine", 0);
-    page.tableLine ("Version", VERSION_TXT ", built " __DATE__, 0);
-    page.tableLine ("Description", theEngine->getDescription().c_str(), 0);
+    page.openTable(2, "Engine Info", 0);
+    page.tableLine("Name", "ArchiveEngine", 0);
+    page.tableLine("Version", VERSION_TXT ", built " __DATE__, 0);
+    page.tableLine("Description", theEngine->getDescription().c_str(), 0);
     
-    osiTime2string (theEngine->getStartTime (), s);
-    page.tableLine ("Started", s.c_str(), 0);
+    osiTime2string(theEngine->getStartTime(), s);
+    page.tableLine("Started", s.c_str(), 0);
 
-    page.tableLine ("Archive ", theEngine->getDirectory().c_str(), 0);
+    page.tableLine("Archive ", theEngine->getDirectory().c_str(), 0);
 
+    stdList<ChannelInfo *> *channels = theEngine->getChannels();
+    if (channels)
+    {
+        cvtUlongToString(channels->size(), line);
+        page.tableLine("Channels", line, 0);
+    }
+    else
+        page.tableLine("Channels", "? not available ?", 0);
+    
 #ifdef SHOW_DIR
     char dir[100];
     getcwd (dir, sizeof dir);                 
     page.tableLine ("Directory ", dir, 0);
 #endif
 
-    osiTime2string (theEngine->getWriteTime (), s);
-    page.tableLine ("Last write check", s.c_str(), 0);
+    osiTime2string(theEngine->getWriteTime (), s);
+    page.tableLine("Last write check", s.c_str(), 0);
 
-    unsigned long num = theEngine->lockChannels ().size();
-    theEngine->unlockChannels ();
-    cvtUlongToString (num, line);
-    page.tableLine ("Channels", line, 0);
+    page.tableLine("Currently writing",
+                   (const char *)
+                   (theEngine->isWriting() ? "Yes" : "No"), 0);
 
-    sprintf (line, "%f sec", theEngine->getDefaultPeriod());
-    page.tableLine ("Default Period", line, 0);
+    sprintf(line, "%f sec", theEngine->getDefaultPeriod());
+    page.tableLine("Default Period", line, 0);
 
-    sprintf (line, "%f sec", theEngine->getWritePeriod());
-    page.tableLine ("Write Period", line, 0);
+    sprintf(line, "%f sec", theEngine->getWritePeriod());
+    page.tableLine("Write Period", line, 0);
 
-    sprintf (line, "%f sec", theEngine->getGetThreshold());
-    page.tableLine ("Get Threshold", line, 0);
+    sprintf(line, "%f sec", theEngine->getGetThreshold());
+    page.tableLine("Get Threshold", line, 0);
 
-    cvtUlongToString ((unsigned long) connection->getTotalClientCount(), line);
-    page.tableLine ("Clients (total)", line, 0);
+    cvtUlongToString((unsigned long) connection->getTotalClientCount(), line);
+    page.tableLine("Web Clients (total)", line, 0);
 
-    cvtUlongToString ((unsigned long) connection->getClientCount(), line);
-    page.tableLine ("Clients (current)", line, 0);
+    cvtUlongToString((unsigned long) connection->getClientCount(), line);
+    page.tableLine("Web Clients (current)", line, 0);
 
-    page.closeTable ();
+    page.closeTable();
 }
 
 #ifdef USE_PASSWD
-static void showStopForm (HTMLPage &page)
+static void showStopForm(HTMLPage &page)
 {
-    page.line ("<H3>Stop Engine</H3>");
-    page.line ("<FORM METHOD=\"GET\" ACTION=\"/stop\">");
-    page.line ("<TABLE>");
-    page.line ("<TR><TD>User Name:</TD>");
-    page.line ("<TD><input type=\"text\" name=\"USER\" size=20></TD></TR>");
-    page.line ("<TR><TD>Password:</TD>");
-    page.line ("<TD><input type=\"text\" name=\"PASS\" size=20></TD></TR>");
-    page.line ("<TR><TD></TD><TD><input TYPE=\"submit\" VALUE=\"Stop!\"></TD></TR>");
-    page.line ("</TABLE>");
-    page.line ("</FORM>");
+    page.line("<H3>Stop Engine</H3>");
+    page.line("<FORM METHOD=\"GET\" ACTION=\"/stop\">");
+    page.line("<TABLE>");
+    page.line("<TR><TD>User Name:</TD>");
+    page.line("<TD><input type=\"text\" name=\"USER\" size=20></TD></TR>");
+    page.line("<TR><TD>Password:</TD>");
+    page.line("<TD><input type=\"text\" name=\"PASS\" size=20></TD></TR>");
+    page.line("<TR><TD></TD><TD><input TYPE=\"submit\" VALUE=\"Stop!\"></TD></TR>");
+    page.line("</TABLE>");
+    page.line("</FORM>");
 }
 #endif
 
-static void stop (HTTPClientConnection *connection, const stdString &path)
+static void stop(HTTPClientConnection *connection, const stdString &path)
 {
     SOCKET s = connection->getSocket();
     stdString line, peer;
-    GetSocketPeer (s, peer);
+    GetSocketPeer(s, peer);
     line = "Shutdown initiated via HTTP from ";
     line += peer;
     line += "\n";
-    LOG_MSG (line);
+    LOG_MSG(line);
 
-    HTMLPage page (s, "Archive Engine Stop");
+    HTMLPage page(s, "Archive Engine Stop");
 
 #ifdef USE_PASSWD
     CGIDemangler args;
@@ -146,90 +154,87 @@ static void stop (HTTPClientConnection *connection, const stdString &path)
     run = false;
 }
 
-static void config (HTTPClientConnection *connection, const stdString &path)
+static void config(HTTPClientConnection *connection, const stdString &path)
 {
-    HTMLPage page (connection->getSocket(), "Archive Engine Config.");
+    HTMLPage page(connection->getSocket(), "Archive Engine Config.");
 
 #ifdef USE_PASSWD
-    showStopForm (page);
+    showStopForm(page);
 #endif
 
-    page.line ("<H3>Groups</H3>");
-    page.line ("<UL>");
-    page.line ("<LI><A HREF=\"/groups\">List groups</A><br>");
-    page.line ("<LI><FORM METHOD=\"GET\" ACTION=\"/addgroup\">");
-    page.line ("    Group Name:");
-    page.line ("    <input type=\"text\" name=\"GROUP\" size=20>");
-    page.line ("    <input TYPE=\"submit\" VALUE=\"Add Group\">");
-    page.line ("    </FORM>");
-    page.line ("<LI><FORM METHOD=\"GET\" ACTION=\"/parsegroup\">");
-    page.line ("    Parse Group File:");
-    page.line ("    <input type=\"text\" name=\"GROUP\" size=20>");
-    page.line ("    <input TYPE=\"submit\" VALUE=\"Parse\">");
-    page.line ("    </FORM>");
-    page.line ("</UL>");
+    page.line("<H3>Groups</H3>");
+    page.line("<UL>");
+    page.line("<LI><A HREF=\"/groups\">List groups</A><br>");
+    page.line("<LI><FORM METHOD=\"GET\" ACTION=\"/addgroup\">");
+    page.line("    Group Name:");
+    page.line("    <input type=\"text\" name=\"GROUP\" size=20>");
+    page.line("    <input TYPE=\"submit\" VALUE=\"Add Group\">");
+    page.line("    </FORM>");
+    page.line("<LI><FORM METHOD=\"GET\" ACTION=\"/parsegroup\">");
+    page.line("    Parse Group File:");
+    page.line("    <input type=\"text\" name=\"GROUP\" size=20>");
+    page.line("    <input TYPE=\"submit\" VALUE=\"Parse\">");
+    page.line("    </FORM>");
+    page.line("</UL>");
 
-    page.line ("<H3>Channels</H3>");
-    page.line ("<UL>");
-    page.line ("<LI><A HREF=\"/channels\">List channels</A><br>");
-    page.line ("<LI><BR><FORM METHOD=\"GET\" ACTION=\"/addchannel\">");
-    page.line ("    <TABLE>");
-    page.line ("    <TR><TD>Group Name:</TD>");
-    page.line ("        <TD><input type=\"text\" name=\"GROUP\" size=20></TD></TR>");
-    page.line ("    <TR><TD>Channel Name:</TD>");
-    page.line ("        <TD><input type=\"text\" name=\"CHANNEL\" size=20></TD></TR>");
-    page.line ("    <TR><TD>Period:</TD>");
-    page.line ("        <TD><input type=\"text\" name=\"PERIOD\" size=20></TD></TR>");
-    page.line ("    <TR><TD>Monitored:<input type=\"checkbox\" name=\"MONITOR\" value=1>");
-    page.line ("        <TD></TD></TR>");
-    page.line ("    <TR><TD>Disabling:<input type=\"checkbox\" name=\"DISABLE\" value=1></TD>");
-    page.line ("        <TD><input TYPE=\"submit\" VALUE=\"Add Channel\"></TD></TR>");
-    page.line ("    </TABLE>");
-    page.line ("    </FORM>");
-    page.line ("<LI><BR><FORM METHOD=\"GET\" ACTION=\"/channelgroups\">");
-    page.line ("    <TABLE>");
-    page.line ("    <TR><TD>Channel:</TD>");
-    page.line ("        <TD><input type=\"text\" name=\"CHANNEL\" size=20>");
-    page.line ("            <input TYPE=\"submit\" VALUE=\"Find\"></TD></TR>");
-    page.line ("    </TABLE>");
-    page.line ("    </FORM>");
-    page.line ("</UL>");
+    page.line("<H3>Channels</H3>");
+    page.line("<UL>");
+    page.line("<LI><A HREF=\"/channels\">List channels</A><br>");
+    page.line("<LI><BR><FORM METHOD=\"GET\" ACTION=\"/addchannel\">");
+    page.line("    <TABLE>");
+    page.line("    <TR><TD>Group Name:</TD>");
+    page.line("        <TD><input type=\"text\" name=\"GROUP\" size=20></TD></TR>");
+    page.line("    <TR><TD>Channel Name:</TD>");
+    page.line("        <TD><input type=\"text\" name=\"CHANNEL\" size=20></TD></TR>");
+    page.line("    <TR><TD>Period:</TD>");
+    page.line("        <TD><input type=\"text\" name=\"PERIOD\" size=20></TD></TR>");
+    page.line("    <TR><TD>Monitored:<input type=\"checkbox\" name=\"MONITOR\" value=1>");
+    page.line("        <TD></TD></TR>");
+    page.line("    <TR><TD>Disabling:<input type=\"checkbox\" name=\"DISABLE\" value=1></TD>");
+    page.line("        <TD><input TYPE=\"submit\" VALUE=\"Add Channel\"></TD></TR>");
+    page.line("    </TABLE>");
+    page.line("    </FORM>");
+    page.line("<LI><BR><FORM METHOD=\"GET\" ACTION=\"/channelgroups\">");
+    page.line("    <TABLE>");
+    page.line("    <TR><TD>Channel:</TD>");
+    page.line("        <TD><input type=\"text\" name=\"CHANNEL\" size=20>");
+    page.line("            <input TYPE=\"submit\" VALUE=\"Find\"></TD></TR>");
+    page.line("    </TABLE>");
+    page.line("    </FORM>");
+    page.line("</UL>");
 }
 
-static void channels (HTTPClientConnection *connection, const stdString &path)
+static void channels(HTTPClientConnection *connection, const stdString &path)
 {
-    HTMLPage page (connection->getSocket(), "Channels");
+    HTMLPage page(connection->getSocket(), "Channels");
 
-    stdList<ChannelInfo *> &channels = theEngine->lockChannels ();
-    if (channels.empty ())
+    stdList<ChannelInfo *> *channels = theEngine->getChannels();
+    if (!channels  ||  channels->empty())
     {
-        page.line ("<I>no channels</I>");
-        theEngine->unlockChannels ();
+        page.line("<I>no channels</I>");
         return;
     }
 
-    page.openTable (1, "Name", 1, "Status", 0);
+    page.openTable(1, "Name", 1, "Status", 0);
     stdList<ChannelInfo *>::iterator channel;
     stdString link;
     link.reserve(80);
-    for (channel=channels.begin(); channel!=channels.end(); ++channel)
+    for (channel=channels->begin(); channel!=channels->end(); ++channel)
     {
         link = "<A HREF=\"channel/";
-        link += (*channel)->getName ();
+        link += (*channel)->getName();
         link += "\">";
-        link += (*channel)->getName ();
+        link += (*channel)->getName();
         link += "</A>";
-        
-        page.tableLine (link.c_str(),
-            ((*channel)->isConnected () ?
-                "connected" : "<FONT COLOR=#FF0000>not conn.</FONT>"),
-            0);
+        page.tableLine(link.c_str(),
+                       ((*channel)->isConnected () ?
+                        "connected" : "<FONT COLOR=#FF0000>not conn.</FONT>"),
+                       0);
     }
-    theEngine->unlockChannels ();
-    page.closeTable ();
+    page.closeTable();
 }
 
-static void channelInfoTable (HTMLPage &page)
+static void channelInfoTable(HTMLPage &page)
 {
     page.openTable (1, "Name", 1, "Status", 1, "CA State", 1, "Period [s]",
         1, "Buffer", 1, "Get Mechanism", 1, "Disabling", 0);
@@ -385,7 +390,7 @@ void groups(HTTPClientConnection *connection, const stdString &path)
 
     std::strstream total_channels, total_connected;
     total_channels << total_channel_count << '\0';
-    if (total_channels != total_connected)
+    if (total_channel_count != total_connect_count)
         total_connected << "<FONT COLOR=#FF0000>"
                         << total_connect_count << "</FONT>" << '\0';
     else
@@ -528,45 +533,46 @@ static void parseGroup (HTTPClientConnection *connection, const stdString &path)
         page.line ("</I> could not be added to the engine.<P>");
 }
 
-static void channelGroups (HTTPClientConnection *connection, const stdString &path)
+static void channelGroups (HTTPClientConnection *connection,
+                           const stdString &path)
 {
     CGIDemangler args;
-    args.parse (path.substr(15).c_str());
-    stdString channel_name = args.find ("CHANNEL");
+    args.parse(path.substr(15).c_str());
+    stdString channel_name = args.find("CHANNEL");
 
-    ChannelInfo *channel = theEngine->findChannel (channel_name);
+    ChannelInfo *channel = theEngine->findChannel(channel_name);
     if (! channel)
     {
-        connection->error ("No such channel: " + channel_name);
+        connection->error("No such channel: " + channel_name);
         return;
     }
 
-    HTMLPage page (connection->getSocket(), "Archiver Engine");
-    page.out ("<H1>Group membership for channel ");
-    page.out (channel_name);
-    page.line ("</H1>");
+    HTMLPage page(connection->getSocket(), "Archiver Engine");
+    page.out("<H1>Group membership for channel ");
+    page.out(channel_name);
+    page.line("</H1>");
 
-    const stdList<GroupInfo *> group_list = channel->getGroups ();
+    const stdList<GroupInfo *> group_list = channel->getGroups();
     if (group_list.empty())
     {
-        page.line ("This channel does not belong to any groups.");
+        page.line("This channel does not belong to any groups.");
         return;
     }
 
-    page.openTable (2, "Group", 0);
+    page.openTable(2, "Group", 0);
     stdList<GroupInfo *>::const_iterator group;
     stdString link;
     link.reserve(80);
     for (group=group_list.begin(); group!=group_list.end(); ++group)
     {
         link = "<A HREF=\"/group/";
-        link += (*group)->getName ();
+        link += (*group)->getName();
         link += "\">";
-        link += (*group)->getName ();
+        link += (*group)->getName();
         link += "</A>";
         page.tableLine (link.c_str(), 0);
     }
-    page.closeTable ();
+    page.closeTable();
 }
 
 static PathHandlerList  handlers[] =

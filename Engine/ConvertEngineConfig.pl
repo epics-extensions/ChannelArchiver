@@ -224,8 +224,15 @@ sub dump_xml()
         {
             printf("\t\t<channel><name>$channel</name>");
             printf("<period>$groups{$group}{$channel}{period}</period>");
+
+            if ($groups{$group}{$channel}{monitor}  and
+		$groups{$group}{$channel}{scan})
+	    {
+		die "Channel '$channel' is defined as both monitored and scanned\n";
+	    }
             printf("<monitor/>") if ($groups{$group}{$channel}{monitor});
             printf("<scan/>")    if ($groups{$group}{$channel}{scan});
+
             printf("<disable/>") if ($groups{$group}{$channel}{disable});
             printf("</channel>\n");
         }

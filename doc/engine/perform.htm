@@ -1,0 +1,66 @@
+<html>
+
+<head>
+<title>Archive Engine</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a name="Usage">Archive Engine: Performance</a></h1>
+  <h2>Test: &quot;Up to 10000 values per second&quot;</h2>
+  <p>The ArchiveEngine was started with this configuration file:</p>
+  <pre>  #Archive channels of example CA server (excas)
+  !file_size 10
+  !write_period 10
+  fred 1.0 Monitor
+  freddy 1.0 Monitor
+  janet 0.1 Monitor
+  alan 1.0 Monitor
+  jane0 0.1 Monitor
+  jane1 0.1 Monitor
+  jane2 0.1 Monitor
+  # ... and so on until
+  jane999 0.1 Monitor
+</pre>
+  <p>Those Channels were served by the example CA server, running on a 233Mhz Linux machine,
+  launched as:</p>
+  <pre>excas -c1000</pre>
+  <p>The &quot;jane&quot; channels change at about 10Hz. Together with the other channels,
+  including the array &quot;alan&quot;, this should provide at least 10000 values per
+  second.</p>
+  <p>Both machines were on a 10/100 base T hub, but the Linux box only supports 10baseT.</p>
+  <h2>Observed behaviour</h2>
+  <p>This plot shows the CPU load on a 800MHz PC (Windows NT 4.0) archiving about 10000
+  values per second:</p>
+  <p><img src="cpu_10kpersec.gif" width="343" height="116"
+  alt="cpu_10kpersec.gif (5653 bytes)"></p>
+  <p>While the machine is quite busy archiving, it does still respond to user input. It
+  cannot be used for much else, though: Additional load like launching and using
+  PaintShowPro for creating this CPU-load snapshot can cause delays, resulting in messages<br>
+  &nbsp;&nbsp;&nbsp; &quot;Warning: WriteThread called while busy&quot;<br>
+  More load can lead to &quot;overwrite&quot; errors = data loss and is to be avoided.</p>
+  <p>So one could conclude that archiving rates of 10k values/sec are possible on a
+  dedicated machine, except for the additional problem of ...</p>
+
+  <h2>Channel Access Flow Control</h2>
+  <p>The Archive Engine uses a dedicated write thread to balance the CPU load. It also tries
+  to increase the default TCL buffer size in order to buffer incoming values while the
+  program is busy writing samples to the disk.</p>
+  <p>The current Channel Access library, though, silently implements a flow control
+  mechanism. It is not based on a TCP buffer &quot;high-water-mark&quot; idea, instead it
+  can drop values when the &quot;ca_poll&quot; routine is called succesfully several times,
+  causing it to believe that it might get behind the CA server.</p>
+  <p>Ways to detect losses due to flow control are:<ul>
+    <li>Instrument the CA server code, e.g. on a test IOC, to display
+  dropped value counts.</li>
+    <li>Have an IOC serve 0...10 ramps and compile the engine with CA_STATISTICS defined.</li>
+  </ul>
+  <p>When this was done the result showed occasional flow control losses at 10000 values per
+  second, so the conclusion is that the current engine can archive &quot;close to 10000
+  vps&quot;.</p>
+</blockquote>
+</font>
+</body>
+</html>

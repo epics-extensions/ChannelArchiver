@@ -129,7 +129,7 @@ void FUX::dump_element(FILE *f, Element *e, int depth)
     indent(f, depth);
     if (all_white_text(e->value))
     {
-        if (e->children.size() == 0)
+        if (e->children.empty())
         {
             fprintf(f, "<%s/>\n", e->name.c_str());
             return;
@@ -138,7 +138,7 @@ void FUX::dump_element(FILE *f, Element *e, int depth)
     }
     else
         fprintf(f, "<%s>%s", e->name.c_str(), e->value.c_str());
-    if (e->children.size() > 0)
+    if (!e->children.empty())
     {
         fprintf(f, "\n");
         stdList<Element *>::const_iterator c;

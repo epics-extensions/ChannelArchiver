@@ -155,7 +155,7 @@ void show_info(const stdString &archive_name, const stdString &pattern)
     }
     epicsTime2string(start, s);
     epicsTime2string(end, e);
-    printf("Channel count : %d\n", channel_count);
+    printf("Channel count : %u\n", (unsigned)channel_count);
     printf("First sample  : %s\n", s.c_str());
     printf("Last  sample  : %s\n", e.c_str());
 }
@@ -312,8 +312,8 @@ void do_export(const stdString &archive_name,
                         (size_t)values->getStat() >= repeat_limit)
                     {
                         values->show(stdout);
-                        printf("\trepeat count beyond %d, skipped\n",
-                               repeat_limit);
+                        printf("\trepeat count beyond %u, skipped\n",
+                               (unsigned)repeat_limit);
                         continue;
                     }
                     if (repeat_floor > 0 &&
@@ -322,8 +322,8 @@ void do_export(const stdString &archive_name,
                         (size_t)values->getStat() <= repeat_floor)
                     {
                         values->show(stdout);
-                        printf("\trepeat count below %d, skipped\n",
-                               repeat_floor);
+                        printf("\trepeat count below %u, skipped\n",
+                               (unsigned)repeat_floor);
                         continue;
                     }
                     if (! new_channel->addValue(*values))
@@ -345,7 +345,8 @@ void do_export(const stdString &archive_name,
                     chunk = values.determineChunk(end);
             }
             new_channel->releaseBuffer();
-        printf("\t%d chunks\t%d values\n", chunk_count, val_count);
+        printf("\t%u chunks\t%u values\n",
+               (unsigned)chunk_count, (unsigned)val_count);
     }
 }
 
@@ -563,13 +564,14 @@ void test(const stdString &directory, const epicsTime &start, const epicsTime &e
         if (chan_errors)
         {
             errors += chan_errors;
-            printf("\n'%s' : %d errors\n", channel->getName(), chan_errors);
+            printf("\n'%s' : %u errors\n",
+                   channel->getName(), (unsigned)chan_errors);
         }
         ++channel;
     }
     printf("\n");
-    printf("%d channels\n", channels);
-    printf("%d errors\n", errors);
+    printf("%u channels\n", (unsigned)channels);
+    printf("%u errors\n",   (unsigned)errors);
 }
 
 // Copy one channel name onto another new name

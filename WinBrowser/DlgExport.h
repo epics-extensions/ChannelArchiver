@@ -18,7 +18,8 @@ public:
 	enum
 	{
 		GNUPlot,
-		SpreadSheet
+		SpreadSheet,
+        Matlab
 	};
 	enum
 	{

@@ -68,7 +68,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../Export" /I "../LibIO" /I "../../Tools" /I "../../../../base/include" /I "../../../../base/include/os/Win32" /I "../../../../base/src/ca" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /D "_AFXDLL" /D "EPICS_DLL" /D __STDC__=0 /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../Export" /I "../LibIO" /I "../../Tools" /I "../../../../R3.13.3/base/include" /I "../../../../R3.13.3/base/include/os/Win32" /I "../../../../R3.13.3/base/src/ca" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /D "_AFXDLL" /D "EPICS_DLL" /D __STDC__=0 /FD /GZ /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 ca.lib Com.lib ws2_32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept /libpath:"../../../../base/lib/Win32"
+# ADD LINK32 ca.lib Com.lib ws2_32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept /libpath:"../../../../R3.13.3/base/lib/Win32"
 
 !ENDIF 
 
@@ -197,6 +197,10 @@ SOURCE=..\LibIO\LinInterpolValueIteratorI.cpp
 # Begin Source File
 
 SOURCE=..\..\Tools\LowLevelIO.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MatlabExporter.cpp
 # End Source File
 # Begin Source File
 

@@ -40,6 +40,7 @@
 #define IDC_ROUND                       1030
 #define IDC_SECONDS                     1030
 #define IDC_ADJUST_LIMITS               1031
+#define IDC_MATLAB                      1031
 #define IDC_INTERPOL                    1033
 #define IDC_FILLED                      1034
 #define IDC_RAW                         1035

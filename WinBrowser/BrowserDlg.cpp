@@ -10,6 +10,7 @@
 #include <limits>
 #include "GNUPlotExporter.h"
 #include "SpreadSheetExporter.h"
+#include "MatlabExporter.h"
 #include "MsgBoxF.h"
 #include "DoEvents.h"
 #include "DlgExport.h"
@@ -364,7 +365,7 @@ LRESULT CBrowserDlg::OnUpdateTimes (WPARAM wParam, LPARAM lParam)
 {
 	setStart (osiTime (m_plot._plot->getX0()));
 	setEnd (osiTime (m_plot._plot->getX1()));
-	UpdateData (FALSE);
+	UpdateData(FALSE);
 	return 0;
 }
 
@@ -430,7 +431,7 @@ void CBrowserDlg::UpdateCurves(bool redraw)
 	Limits tlim, ylim;
 	try
 	{
-		Archive archive (new WINBROWSER_ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
+		Archive archive(new WINBROWSER_ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
 		ChannelIterator channel (archive);
 		osiTime start, end;
 		for (size_t i=0; i<curves.size(); ++i)
@@ -453,7 +454,7 @@ void CBrowserDlg::UpdateCurves(bool redraw)
 					TRACE ("%s: Prepend %s ..%s ... ", curves[i].label,
 						start_t.c_str(), end_t.c_str());
 				}
-				ReadCurve (archive, channel, start, end, new_curve, tlim, ylim);
+				ReadCurve(archive, channel, start, end, new_curve, tlim, ylim);
 				TRACE ("-> %d values\n", new_curve.data.size());
 				if (new_curve.data.size() > 0)
 				{
@@ -735,22 +736,25 @@ void CBrowserDlg::OnExport()
 	try
 	{
 		vector<stdString>	channels;
-		if (getChannelList (channels) <= 0)
+		if (getChannelList(channels) <= 0)
 		{
-			MsgBoxF ("There are no channels selected\nnor plotted to be exported!");
+			MsgBoxF("There are no channels selected\nnor plotted to be exported!");
 			return;
 		}
 		CDlgExport	dlg;
-		if (dlg.DoModal () != IDOK)
+		if (dlg.DoModal() != IDOK)
 			return;
 
 		stdString filename = dlg.m_filename;
-		Archive archive (new WINBROWSER_ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
+		ArchiveI *archive = new WINBROWSER_ARCHIVE_TYPE ((LPCTSTR) m_dir_name);
 		Exporter *export;
 		if (dlg.m_format == CDlgExport::SpreadSheet)
-			export = new SpreadSheetExporter (archive, filename);
+			export = new SpreadSheetExporter(archive, filename);
+        else    
+		if (dlg.m_format == CDlgExport::Matlab)
+			export = new MatlabExporter(archive, filename);
 		else
-			export = new GNUPlotExporter (archive, filename);
+			export = new GNUPlotExporter(archive, filename);
 		export->setMaxChannelCount (1000);
 
 		switch (dlg.m_interpol)
@@ -759,24 +763,25 @@ void CBrowserDlg::OnExport()
 			break;
 		case CDlgExport::Linear:
 			if (dlg.m_seconds > 0.0)
-				export->setLinearInterpolation (dlg.m_seconds);
+				export->setLinearInterpolation(dlg.m_seconds);
 			break;
 		case CDlgExport::Fill:
-			export->useFilledValues ();
+			export->useFilledValues();
 			break;
 		}
 
 		osiTime	time;
-		vals2osiTime (m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),
+		vals2osiTime(m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),
 				   m_start_time.GetHour(), m_start_time.GetMinute(), m_start_time.GetSecond(), 0, time);
-		export->setStart (time);
-		vals2osiTime (m_end_date.GetYear(), m_end_date.GetMonth(), m_end_date.GetDay(),
+		export->setStart(time);
+		vals2osiTime(m_end_date.GetYear(), m_end_date.GetMonth(), m_end_date.GetDay(),
 				   m_end_time.GetHour(), m_end_time.GetMinute(), m_end_time.GetSecond(), 0, time);
-		export->setEnd (time);
+		export->setEnd(time);
 
-		export->exportChannelList (channels);
+		export->exportChannelList(channels);
 		delete export;
-		MsgBoxF ("Created %s", filename.c_str());
+        delete archive;
+		MsgBoxF("Created %s", filename.c_str());
 	}
 	catch (ArchiveException &e)
 	{

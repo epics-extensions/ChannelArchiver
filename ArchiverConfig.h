@@ -52,7 +52,7 @@
 #ifdef WIN32
 #undef HAVE_SIGACTION
 #endif
-#ifdef SOLARIS
+#ifdef solaris
 #undef HAVE_SIGACTION
 #endif
 
@@ -84,7 +84,7 @@
 #endif
 
 // LEDA @ LANL
-#ifdef SOLARIS
+#ifdef solaris
 #undef GNUPLOT_PROGRAM
 #define GNUPLOT_PROGRAM "/opt/apache/htdocs/archive/cgi/gnuplot"
 #endif

@@ -12,7 +12,7 @@
 #pragma warning (disable: 4786)
 #endif
 
-#ifdef SOLARIS
+#ifdef solaris
 // silly clash with struct map on Solaris
 // as long as namespaces are not used by egcs C++ library:
 #define _NET_IF_H

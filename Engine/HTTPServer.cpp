@@ -61,12 +61,7 @@ HTTPServer::~HTTPServer()
 void HTTPServer::callBack ()
 {
     struct sockaddr_in  peername;
-#ifdef LINUX
-    socklen_t
-#else
-    int
-#endif
-    len = sizeof peername;
+    socklen_t  len = sizeof peername;
     SOCKET peer = accept (_socket, (struct sockaddr *)&peername, &len);
 
     if (peer != INVALID_SOCKET)

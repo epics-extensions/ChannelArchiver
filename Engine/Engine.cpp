@@ -113,18 +113,11 @@ static void fd_register(void *pfdctx, int fd, int opened)
         // to have some headroom while the engine is busy writing.
         // This doesn't work because CA's "flow control" kicks in anyway
         // since it's based on "is ca_poll called in vain"
-        // instead of "is input buffer getting full above some high-water mark".
+        // instead of "is input buffer getting full above high-water mark".
         //
         // Then there is the system dependency on the type of "len"
         // -> use on known systems only for experimentation
-#       if defined(WIN32)
-#           define SOCK_LEN_T   int
-#       elif defined(Linux)
-#           define SOCK_LEN_T   sock_len_t
-#       endif
-
-#       if defined(SOCK_LEN_T)
-        SOCK_LEN_T len;
+        socklen_t len;
         // Win32-default: 8k
         int bufsize = 0x400000; // 4MB
         while (bufsize > 100)
@@ -135,12 +128,11 @@ static void fd_register(void *pfdctx, int fd, int opened)
                 break;
             bufsize /= 2;
         }
-
+        
         if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF,
                        (char *)&bufsize, &len) == 0)
             LOG_MSG("Adjusted receive buffer to " << bufsize << "\n");
-#       endif
-
+        
         // Just creating a CAfdReg will register it in fdManager:
         CAfdReg *handler = new CAfdReg(fd);
         handler = 0; // to avoid warnings about "not used"

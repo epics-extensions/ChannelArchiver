@@ -25,7 +25,7 @@ CC = g++
 # C compiler flags
 # -GX: support exceptions
 # RedHat 6.1
-CFLAGS = -g -fPIC -D_X86_ $(INCLUDES)
+CFLAGS = -g -fPIC -D_X86_ $(INCLUDES) -D$(HOST_ARCH)
 # Solaris @ LANL
 #CFLAGS = $(INCLUDES)
 

@@ -522,6 +522,37 @@ void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
     _previous_value_set = false;
 }
 
+// To make handleNewValue more readable:
+// _value is set, check if we should disable anything based on it
+inline void ChannelInfo::handleDisabling ()
+{
+    if (_disabling.empty())
+        return;
+
+    bool criteria = _new_value->getDouble() > 0;
+    if (criteria && !_currently_disabling)
+    {
+        _currently_disabling = true;
+        stdList<GroupInfo *>::iterator g;
+        for (g=_groups.begin(); g!=_groups.end(); ++g)
+        {
+            if (isDisabling(*g))
+                (*g)->disable(this);
+        }
+    }
+    else
+    if (!criteria && _currently_disabling)
+    {
+        stdList<GroupInfo *>::iterator g;
+        for (g=_groups.begin(); g!=_groups.end(); ++g)
+        {
+            if (isDisabling(*g))
+                (*g)->enable(this);
+        }
+        _currently_disabling = false;
+    }
+}
+
 // Called from caEventHandler or (SinglePeriod-)ScanList,
 // _new_value is already set
 void ChannelInfo::handleNewValue()
@@ -663,37 +694,6 @@ void ChannelInfo::handleNewScannedValue(osiTime &stamp)
 bool ChannelInfo::isDisabling(const GroupInfo *group) const
 {
     return _disabling[group->getID()];
-}
-
-// To make handleNewValue more readable:
-// _value is set, check if we should disable anything based on it
-inline void ChannelInfo::handleDisabling ()
-{
-    if (_disabling.empty())
-        return;
-
-    bool criteria = _new_value->getDouble() > 0;
-    if (criteria && !_currently_disabling)
-    {
-        _currently_disabling = true;
-        stdList<GroupInfo *>::iterator g;
-        for (g=_groups.begin(); g!=_groups.end(); ++g)
-        {
-            if (isDisabling(*g))
-                (*g)->disable(this);
-        }
-    }
-    else
-    if (!criteria && _currently_disabling)
-    {
-        stdList<GroupInfo *>::iterator g;
-        for (g=_groups.begin(); g!=_groups.end(); ++g)
-        {
-            if (isDisabling(*g))
-                (*g)->enable(this);
-        }
-        _currently_disabling = false;
-    }
 }
 
 // For scanned channels,

@@ -140,6 +140,10 @@ SOURCE=.\BrowserDlg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\LibIO\BucketingValueIteratorI.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\LibIO\ChannelI.cpp
 # End Source File
 # Begin Source File

@@ -15,8 +15,9 @@
   The "patches" are then used to debug those new things.
   
   <ul>
-    <li>10/18/2002<br>
-      Removing C++ streams and replacing them with C-type FILE access.
+    <li>10/24/2002<br>
+      <font color="#0000A0">Version 1.10</font>:<br>
+      Removed use of C++ streams and replaced them with C-type FILE access.
       Just like the not-so-standard std::string and std::list, the C++ stream
       classes have caused problems with every new platform and
       compiler version.
@@ -28,7 +29,7 @@
       cout << 42;
       cout.flags(old_flags);
       cout.precision(old_precision);</pre>
-      gets now replaced by
+      is now replaced by
       <pre>
       printf("%4d", 42);</pre>
     <li>10/08/2002<br>

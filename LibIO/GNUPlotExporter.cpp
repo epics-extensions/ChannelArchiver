@@ -338,8 +338,8 @@ void GNUPlotExporter::exportChannelList(
         fprintf(f, "set ylabel '%s'\n", plotted_channels[0].c_str());
         fprintf(f, "set y2label '%s'\n", plotted_channels[1].c_str());
         fprintf(f, "set y2tics\n");
-        if (_y0 != 0.0  && _y1 != 0.0)
-            fprintf(f, "set y2range [ %g,%g ]\n", _y0, _y1);
+        if (_y0 != 0.0  ||  _y1 != 0.0)
+            fprintf(f, "set y2range [ %g:%g ]\n", _y0, _y1);
         if (_use_logscale)
             fprintf(f, "set logscale y2\n");
     }
@@ -386,9 +386,4 @@ void GNUPlotExporter::exportChannelList(
     else
         fclose(f);
 }
-
-
-
-
-
 

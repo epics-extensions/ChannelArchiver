@@ -11,6 +11,7 @@ background="../blueback.jpg">
 <blockquote>
   <h1>Channel Archive CGI Setup</h1>
   <h2>Prerequisites</h2>
+  <h3>Web Server</h3>
   <p>Like any other CGI tool, the CGIExport tool for the Channel Archiver is a plug-in for a
   web server.</p>
   <p>This means you have to have a running web server and you need to know how to configure
@@ -19,9 +20,15 @@ background="../blueback.jpg">
   server, MS Internet Information Server/MS Personal Web Server).<br>
   If you don't understand the examples or happen to use a different server, please consider
   consulting the manual for your web server first.</p>
+  <h3>Access to the archive</h3>
+  <p>The CGI Tool has to have access to the data files, either directly or via NFS, SAMBA,
+  ???</p>
+  <h3>GNU Plot</h3>
+  <p>For the plotting to work, you need GNU Plot. The path to GNU Plot is hard-coded into
+  the CGIExport tool at compile time.</p>
   <h2>Example Setup</h2>
   <p>The default path names are relative but fixed and have to be similar to the Test
-  directory tree underneath the CGIExport source directory. If you changed the CGIExport
+  directory tree underneath the CGIExport source directory. After you changed the CGIExport
   configuration in &lt;ChannelArchiver&gt;/ArchiverConfig.h, the following might no longer
   work for you:<ul>
     <li>ChannelArchiver/CGIExport/Tests/<br>
@@ -43,8 +50,6 @@ background="../blueback.jpg">
   <p>Make sure that the WWW server as well as CGI programs launched by it (usually running
   as &quot;nobody&quot;) have access to those parts of the file system, especially check <em>write
   access</em> to ...../cgi/tmp !</p>
-  <p>In addition, the path to GNUPlot is hard-coded at compile time (see ArchiverConfig.h).
-  One could consider this a security feature...</p>
   <p>To test the CGI tool, make the Test directory accessible by your WWW server and make
   sure that the cgi subdirectory is executable (see below for MS and Apache specifics).</p>
   <p>There are simple Perl scripts cgi/Hi.pl and cgi/env.pl to debug your WWW setup. <br>
@@ -66,6 +71,22 @@ background="../blueback.jpg">
   look at the example start page.<br>
   When your WWW server setup was successful, you should be able to point your web browser to
   http://localhost/archive/Default.htm and see that initial test page.</p>
+  <h2>Troubleshooting</h2>
+  <p>Ideas on what to test:<ul>
+    <li>Web Server: Can you access the web pages, e.g. the &quot;Default.htm&quot; file?</font><font
+      color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
+    <li>Web Server: Can you access the CGI directory, i.e. read it and are the files executed as
+      programs?</font><font color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
+    <li>If the perl scripts respond OK but CGIExport.cgi doesn't: Can you execute it as
+      &quot;nobody&quot;? Are shared libraries missing which happen to be in your path as
+      USER=&lt;you&gt; but not when you are USER=&lt;the web server=nobody&gt;?</font><font
+      color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
+    <li>Can the cgi tool (or the pseudo-user that runs it) access the data files?</font><font
+      color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
+    <li>Can the cgi tool create the temporary files needed for the plots?</font><font
+      color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
+    <li>Can ... launch GNU Plot?</li>
+  </ul>
   <h2>Microsoft Personal Web Server</h2>
   <ol>
     <li>Export the Test directory as e.g. &quot;/archive&quot;,</li>

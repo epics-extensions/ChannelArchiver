@@ -93,6 +93,7 @@ bool create_masterindex(int RTreeM,
         if (!config.parse(config_name))
             return false;
     IndexFile::NameIterator names;
+    stdString index_directory, sub_directory;
     IndexFile index(RTreeM), subindex(RTreeM);
     bool ok;
     if (!index.open(index_name, false))
@@ -122,22 +123,21 @@ bool create_masterindex(int RTreeM,
             const stdString &channel = names.getName();
             if (verbose > 1)
                 printf("'%s'\n", channel.c_str());
-            AutoPtr<RTree> subtree(subindex.getTree(channel));
+            AutoPtr<RTree> subtree(subindex.getTree(channel, sub_directory));
             if (!subtree)
             {
                 fprintf(stderr, "Cannot get tree for '%s' from '%s'\n",
                         channel.c_str(), sub_name.c_str());
                 continue;
             }
-            AutoPtr<RTree> tree(index.addChannel(channel));
+            AutoPtr<RTree> tree(index.addChannel(channel, index_directory));
             if (!tree)
             {
                 fprintf(stderr, "Cannot add '%s' to '%s'\n",
                         channel.c_str(), index_name.c_str());
                 continue;
             }
-            add_tree_to_master(index_name,
-                               subindex.getDirectory(),
+            add_tree_to_master(index_name, sub_directory,
                                channel, subtree, tree);
         }
         subindex.close();

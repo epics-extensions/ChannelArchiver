@@ -7,7 +7,7 @@
 
 #undef DEBUG_PLOTREAD
 
-PlotReader::PlotReader(IndexFile &index, double delta)
+PlotReader::PlotReader(Index &index, double delta)
         : reader(index), delta(delta)
 {
     type = 0;

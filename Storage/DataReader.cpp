@@ -41,7 +41,7 @@ const char *ReaderFactory::toString(How how, double delta)
     };  
 }
 
-DataReader *ReaderFactory::create(IndexFile &index, How how, double delta)
+DataReader *ReaderFactory::create(Index &index, How how, double delta)
 {
     if (how == Raw  ||  delta <= 0.0)
         return new RawDataReader(index);
@@ -55,7 +55,7 @@ DataReader *ReaderFactory::create(IndexFile &index, How how, double delta)
 }
 
 
-RawDataReader::RawDataReader(IndexFile &index)
+RawDataReader::RawDataReader(Index &index)
         : index(index), tree(0), node(0), rec_idx(0), valid_datablock(false),
           dbr_type(0), dbr_count(0),
           type_changed(false), ctrl_info_changed(false),
@@ -82,7 +82,7 @@ const RawValue::Data *RawDataReader::find(
     this->channel_name = channel_name;
     channel_found = false;
     // Get tree
-    if (!(tree = index.getTree(channel_name)))
+    if (!(tree = index.getTree(channel_name, directory)))
         return 0;
     channel_found = true;
     node = new RTree::Node(tree->getM(), true);
@@ -106,7 +106,7 @@ const RawValue::Data *RawDataReader::find(
     }
 #endif
     // Get the buffer for that data block
-    if (!getHeader(index.getDirectory(),
+    if (!getHeader(directory,
                    datablock.data_filename, datablock.data_offset))
         return 0;
     if (start)
@@ -134,7 +134,7 @@ const RawValue::Data *RawDataReader::next()
                    epicsTimeTxt(node->record[rec_idx].start, s),
                    epicsTimeTxt(node->record[rec_idx].end, e));
 #           endif
-            if (!getHeader(index.getDirectory(),
+            if (!getHeader(directory,
                            datablock.data_filename, datablock.data_offset))
                 return 0;
             if (!findSample(node->record[rec_idx].start))

@@ -3,7 +3,8 @@
 #ifndef __INDEX_FILE_H__
 #define __INDEX_FILE_H__
 
-// Index
+// Storage
+#include <Index.h>
 #include <NameHash.h>
 #include <RTree.h>
 
@@ -21,7 +22,7 @@
 /// Those two items constitute the 'reserved space'
 /// all the remaining space is handled by the FileAllocator.
 /// The ID of each NameHash entry points to an RTree anchor.
-class IndexFile
+class IndexFile : public Index
 {
 public:
     // == 'CAI2', Chan. Arch. Index 2
@@ -45,26 +46,15 @@ public:
     /// tree gets returned.
     ///
     /// Caller must delete the tree pointer.
-    class RTree *addChannel(const stdString &channel);
+    class RTree *addChannel(const stdString &channel,
+                            stdString &directory);
 
     /// Obtain the RTree for a channel.
 
     /// Caller not delete the tree pointer.
     ///
     ///
-    class RTree *getTree(const stdString &channel);
-    
-    /// Used by get_first_channel(), get_next_channel().
-    class NameIterator
-    {
-    public:
-        const stdString &getName() 
-        {    return entry.name; }
-    private:
-        friend class IndexFile;
-        unsigned long hashvalue;
-        NameHash::Entry entry;
-    };
+    class RTree *getTree(const stdString &channel, stdString &directory);
 
     /// Locate NameIterator on first channel.
     bool getFirstChannel(NameIterator &iter);
@@ -73,10 +63,6 @@ public:
 
     /// \pre Successfull call to get_first_channel().
     bool getNextChannel(NameIterator &iter);
-
-    /// Returns directory (path) of this index.
-    const stdString &getDirectory() const
-    {    return dirname; }
 
     void showStats(FILE *f);   
 
@@ -87,10 +73,9 @@ private:
     FILE *f;
     FileAllocator fa;
     NameHash names;
-    stdString filename, dirname;
+    stdString dirname;
 };
 
 /// @}
-
 
 #endif

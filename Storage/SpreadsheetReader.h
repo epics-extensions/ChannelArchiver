@@ -5,7 +5,7 @@
 // Storage
 #include "DataReader.h"
 // Index
-#include "IndexFile.h"
+#include "Index.h"
 
 /// \ingroup Storage
 /// @{
@@ -21,7 +21,7 @@ class SpreadsheetReader
 {
   public:
     /// Create the SpreadsheetReader
-    SpreadsheetReader(IndexFile &index,
+    SpreadsheetReader(Index &index,
                       ReaderFactory::How how = ReaderFactory::Raw,
                       double delta=0.0);
 
@@ -71,7 +71,7 @@ class SpreadsheetReader
     bool next();  
   
 protected:
-    IndexFile          &index;
+    Index              &index;
     ReaderFactory::How how;
     double             delta;
     

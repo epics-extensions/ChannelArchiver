@@ -4,7 +4,7 @@
 #include "DataFile.h"
 #include "SpreadsheetReader.h"
 
-SpreadsheetReader::SpreadsheetReader(IndexFile &index,
+SpreadsheetReader::SpreadsheetReader(Index &index,
                                      ReaderFactory::How how, double delta)
         : index(index), how(how), delta(delta)
 {

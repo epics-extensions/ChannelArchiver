@@ -19,7 +19,6 @@ IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
 
 bool IndexFile::open(const stdString &filename, bool readonly)
 {
-    this->filename = filename;
     Filename::getDirname(filename, dirname);
     bool new_file = false;
     if (readonly)
@@ -87,9 +86,9 @@ void IndexFile::close()
     }   
 }
 
-RTree *IndexFile::addChannel(const stdString &channel)
+RTree *IndexFile::addChannel(const stdString &channel, stdString &directory)
 {
-    RTree *tree = getTree(channel);
+    RTree *tree = getTree(channel, directory);
     if (tree)
         return tree;
     stdString tree_filename;
@@ -103,12 +102,15 @@ RTree *IndexFile::addChannel(const stdString &channel)
     tree = new RTree(fa, tree_anchor);
     if (tree->init(RTreeM) &&
         names.insert(channel, tree_filename, tree_anchor))
+    {
+        directory = dirname;
         return tree;
+    }
     delete tree;
     return 0;
 }
 
-RTree *IndexFile::getTree(const stdString &channel)
+RTree *IndexFile::getTree(const stdString &channel, stdString &directory)
 {
     stdString  tree_filename;
     FileOffset tree_anchor;
@@ -116,7 +118,10 @@ RTree *IndexFile::getTree(const stdString &channel)
         return 0;
     RTree *tree = new RTree(fa, tree_anchor);
     if (tree->reattach())
+    {
+        directory = dirname;
         return tree;
+    }
     delete tree;
     return 0;
 }
@@ -151,12 +156,13 @@ bool IndexFile::check(int level)
     unsigned long channels = 0;
     unsigned long total_nodes=0, total_used_records=0, total_records=0;
     unsigned long nodes, records;
+    stdString dir;
     for (have_name = getFirstChannel(names);
          have_name;
          have_name = getNextChannel(names))
     {
         ++channels;
-        AutoPtr<RTree> tree(getTree(names.getName()));
+        AutoPtr<RTree> tree(getTree(names.getName(), dir));
         if (!tree)
         {
             printf("Cannot get tree for channel '%s'\n",

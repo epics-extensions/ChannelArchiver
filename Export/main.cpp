@@ -10,6 +10,7 @@
 #include <ArgParser.h>
 // Storage
 #include <SpreadsheetReader.h>
+#include <ListIndex.h>
 
 int precision;
 RawValue::NumberFormat format = RawValue::DEFAULT;
@@ -24,7 +25,7 @@ static void add_name2vector(const stdString &name, void *arg)
     names->push_back(name);
 }
 
-void get_names_for_pattern(IndexFile &index,
+void get_names_for_pattern(Index &index,
                            stdVector<stdString> &names,
                            const stdString &pattern)
 {
@@ -40,7 +41,7 @@ void get_names_for_pattern(IndexFile &index,
             return;
         }
     }
-    IndexFile::NameIterator name_iter;
+    Index::NameIterator name_iter;
     if (!index.getFirstChannel(name_iter))
         return; // No names
     // Put all names in binary tree
@@ -58,7 +59,7 @@ void get_names_for_pattern(IndexFile &index,
     channels.traverse(add_name2vector, (void *)&names);
 }
 
-bool list_channels(IndexFile &index, stdVector<stdString> names, bool info)
+bool list_channels(Index &index, stdVector<stdString> names, bool info)
 {
     epicsTime start, end;
     stdString s, e;
@@ -67,7 +68,8 @@ bool list_channels(IndexFile &index, stdVector<stdString> names, bool info)
     {
         if (info)
         {
-            AutoPtr<RTree> tree(index.getTree(names[i]));
+            stdString directory;
+            AutoPtr<RTree> tree(index.getTree(names[i], directory));
             if (!tree)
                 continue;
             tree->getInterval(start, end);
@@ -80,7 +82,7 @@ bool list_channels(IndexFile &index, stdVector<stdString> names, bool info)
     return true;
 }
 
-bool dump_gnuplot(IndexFile &index,
+bool dump_gnuplot(Index &index,
                   stdVector<stdString> names,
                   epicsTime *start, epicsTime *end,
                   ReaderFactory::How how, double delta,
@@ -247,7 +249,7 @@ bool dump_gnuplot(IndexFile &index,
     return true;
 }
 
-bool dump_spreadsheet(IndexFile &index,
+bool dump_spreadsheet(Index &index,
                       stdVector<stdString> names,
                       epicsTime *start, epicsTime *end,
                       bool raw_time,
@@ -454,7 +456,8 @@ int main(int argc, const char *argv[])
         delta = double(linear);
     }
     // Open index
-    IndexFile index(50);
+    //IndexFile index(50);
+    ListIndex index;
     if (!index.open(index_name.c_str()))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
@@ -483,6 +486,10 @@ int main(int argc, const char *argv[])
                                       output) ? 0 : -1;
     }
     index.close();
+    if (end)
+        delete end;
+    if (start)
+        delete start;
  
     return result;
 }

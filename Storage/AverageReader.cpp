@@ -5,7 +5,7 @@
 
 #undef DEBUG_AVGREAD
 
-AverageReader::AverageReader(IndexFile &index, double delta)
+AverageReader::AverageReader(Index &index, double delta)
         : reader(index), delta(delta)
 {
     type = 0;

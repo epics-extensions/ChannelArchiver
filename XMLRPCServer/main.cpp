@@ -15,6 +15,7 @@
 #include <RegularExpression.h>
 #include <BinaryTree.h>
 // Storage
+#include <IndexFile.h>
 #include <SpreadsheetReader.h>
 #include <LinearReader.h>
 #include <PlotReader.h>
@@ -644,6 +645,7 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
         return 0;
     }
     // Open Index
+    stdString directory;
     AutoPtr<IndexFile> index(open_index(env, key));
     if (env->fault_occurred)
     {
@@ -662,7 +664,7 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
         if (regex && !regex->doesMatch(ni.getName()))
             continue; // skip what doesn't match regex
         info.name = ni.getName();
-        AutoPtr<RTree> tree(index->getTree(info.name));
+        AutoPtr<RTree> tree(index->getTree(info.name, directory));
         if (tree)
             tree->getInterval(info.start, info.end);
         else

@@ -5,7 +5,7 @@
 
 #undef DEBUG_LINREAD
 
-LinearReader::LinearReader(IndexFile &index, double delta)
+LinearReader::LinearReader(Index &index, double delta)
         : AverageReader(index, delta)
 {
 }

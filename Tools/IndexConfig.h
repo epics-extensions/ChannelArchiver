@@ -16,6 +16,13 @@
 class IndexConfig
 {
 public:
+    /// Parse the given configuration file.
+
+    /// Since the ListIndex might use this config file
+    /// as well as a "real" binary index file,
+    /// some care is taken in here to assert that
+    /// we're really dealing with a config. file and not
+    /// a binary index file.
     bool parse(const stdString &config_name);
     
     stdList<stdString> subarchives;

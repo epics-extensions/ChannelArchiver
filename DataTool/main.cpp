@@ -39,7 +39,7 @@ void list_names(const stdString &index_name)
     IndexFile index(3);
     IndexFile::NameIterator names;
     epicsTime stime, etime, t0, t1;
-    stdString start, end;
+    stdString directory, start, end;
     bool ok, first =true;
     if (!index.open(index_name))
     {
@@ -51,7 +51,7 @@ void list_names(const stdString &index_name)
          ok;
          ok = index.getNextChannel(names))
     {
-        AutoPtr<RTree> tree(index.getTree(names.getName()));
+        AutoPtr<RTree> tree(index.getTree(names.getName(), directory));
         if (!tree)
         {
             fprintf(stderr, "Cannot get tree for channel '%s'\n",
@@ -105,7 +105,8 @@ void determine_period_and_samples(IndexFile &index,
     // Whatever fails only means that there is no data,
     // so the initial guess remains OK.
     // Otherwise we peek into the last datablock.
-    AutoPtr<RTree> tree(index.getTree(channel));
+    stdString directory;
+    AutoPtr<RTree> tree(index.getTree(channel, directory));
     if (!tree)
         return;
     RTree::Node node(tree->getM(), false);
@@ -114,7 +115,7 @@ void determine_period_and_samples(IndexFile &index,
     if (!tree->getLastDatablock(node, i, block))
         return;
     DataHeader *header;
-    if (!(header = get_dataheader(index.getDirectory(),
+    if (!(header = get_dataheader(directory,
                                   block.data_filename, block.data_offset)))
         return;
     period = header->data.period;
@@ -263,6 +264,7 @@ void convert_dir_index(int RTreeM,
     
     DirectoryFileIterator channels = dir.findFirst();
     IndexFile index(RTreeM);
+    stdString index_directory;
     if (verbose)
         printf("Opened directory file '%s'\n", dir_name.c_str());
     if (!index.open(index_name, false))
@@ -279,7 +281,7 @@ void convert_dir_index(int RTreeM,
                 printf("No values\n");
             continue;
         }
-        AutoPtr<RTree> tree(index.addChannel(channels.entry.data.name));
+        AutoPtr<RTree> tree(index.addChannel(channels.entry.data.name, index_directory));
         if (!tree)
         {
             fprintf(stderr, "Cannot add channel '%s' to index '%s'\n",
@@ -325,6 +327,7 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
 {
     IndexFile::NameIterator names;
     IndexFile index(50);
+    stdString index_directory;
     RTree::Datablock block;
     stdString start_file, end_file;
     FileOffset start_offset, end_offset;
@@ -342,7 +345,7 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
     {
         if (verbose)
             printf("Channel '%s':\n", names.getName().c_str());
-        AutoPtr<const RTree> tree(index.getTree(names.getName()));
+        AutoPtr<const RTree> tree(index.getTree(names.getName(), index_directory));
         if (!tree)
         {
             printf("No RTree for channel '%s'\n", names.getName().c_str());
@@ -369,13 +372,13 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
         // Check by reading first+last buffer & getting times
         bool times_ok = false;
         DataHeader *header;
-        header = get_dataheader(index.getDirectory(),
+        header = get_dataheader(index_directory,
                                 start_file, start_offset);
         if (header)
         {
             start_time = header->data.begin_time;
             delete header;
-            header = get_dataheader(index.getDirectory(),end_file, end_offset);
+            header = get_dataheader(index_directory, end_file, end_offset);
             if (header)
             {
                 end_time = header->data.end_time;
@@ -413,7 +416,8 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
     DataFile *datafile;
     DataHeader *header;
     direct_count = chained_count = 0;
-    AutoPtr<RTree> tree(index.getTree(channel_name));
+    stdString directory;
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
     if (! tree)
         return 0;
     RTree::Datablock block;
@@ -438,7 +442,7 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
                    epicsTimeTxt(node.record[idx].end, end));
         if (verbose > 3)
         {
-            datafile = DataFile::reference(index.getDirectory(),
+            datafile = DataFile::reference(directory,
                                            block.data_filename,
                                            false);
             if (datafile)
@@ -471,7 +475,7 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
                        block.data_filename.c_str(), block.data_offset);
                 if (verbose > 3)
                 {
-                    datafile = DataFile::reference(index.getDirectory(),
+                    datafile = DataFile::reference(directory,
                                                    block.data_filename,
                                                    false);
                     if (datafile)
@@ -546,7 +550,8 @@ void dot_index(const stdString &index_name, const stdString channel_name,
                 index_name.c_str());
         return;
     }
-    AutoPtr<RTree> tree(index.getTree(channel_name));
+    stdString directory;
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
     if (!tree)
     {
         fprintf(stderr, "Cannot find '%s' in index '%s'\n",
@@ -571,7 +576,8 @@ bool seek_time(const stdString &index_name,
     IndexFile index(3);
     if (!index.open(index_name))
         return false;
-    AutoPtr<RTree> tree(index.getTree(channel_name));
+    stdString directory;
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
     if (tree)
     {
         RTree::Datablock block;

@@ -60,6 +60,7 @@ bool fill_test(bool use_index, const char *index_name,
                const TestData *data, int num, const char *dotfile)
 {
     IndexFile index(3);
+    stdString directory;
     FILE *f;
     RTree *tree;
     FileAllocator::minimum_size = 0;
@@ -68,7 +69,7 @@ bool fill_test(bool use_index, const char *index_name,
     if (use_index)
     {
         index.open(index_name, false);
-        tree = index.addChannel("test");
+        tree = index.addChannel("test", directory);
         if (!tree)
         {
             fprintf(stderr, "index.addChannel failed\n");
@@ -198,12 +199,13 @@ bool update_test(const char *index_name,
                  const TestData *data, int num, const char *dotfile)
 {
     IndexFile index(10);
+    stdString directory;
     RTree *tree;
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
     FileAllocator fa;
     index.open(index_name, false);
-    tree = index.addChannel("test");
+    tree = index.addChannel("test", directory);
     if (!tree)
     {
         fprintf(stderr, "index.addChannel failed\n");

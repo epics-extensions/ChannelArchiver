@@ -61,6 +61,7 @@ public:
     
 private:
     IndexFile &index;
+    stdString directory;
     RTree     *tree;
     const stdString &channel_name;
     const CtrlInfo &ctrl_info;

@@ -8,10 +8,10 @@
 // Storage
 #include "CtrlInfo.h"
 #include "RawValue.h"
-// Index
-#include "IndexFile.h"
+#include "Index.h"
+#include "RTree.h"
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
 
 /// Reads data from storage.
@@ -98,14 +98,14 @@ public:
     static const char *toString(How how, double delta);
     
     /// Create a DataReader.
-    static DataReader *create(IndexFile &index, How how, double delta);
+    static DataReader *create(Index &index, How how, double delta);
 };
 
 /// An implementation of the DataReader for the raw data
 class RawDataReader : public DataReader
 {
 public:
-    RawDataReader(IndexFile &index);
+    RawDataReader(Index &index);
     virtual ~RawDataReader();
     virtual const RawValue::Data *find(const stdString &channel_name,
                                        const epicsTime *start);
@@ -116,7 +116,8 @@ public:
     virtual bool changedType();
     virtual bool changedInfo();
 private:
-    IndexFile &index;
+    Index     &index;
+    stdString directory;
     RTree     *tree;
     RTree::Node *node;// used to iterate
     int rec_idx; 

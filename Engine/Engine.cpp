@@ -240,7 +240,8 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
     {   // Is channel already in Archive?
-        AutoPtr<RTree> tree(index.getTree(channel_name));
+        stdString directory;
+        AutoPtr<RTree> tree(index.getTree(channel_name, directory));
         if (tree)
         {
             RTree::Datablock block;
@@ -249,7 +250,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
             if (tree->getLastDatablock(node, idx, block))
             {   // extract previous knowledge from Archive
                 DataFile *datafile =
-                    DataFile::reference(index.getDirectory(),
+                    DataFile::reference(directory,
                                         block.data_filename, false);
                 if (datafile)
                 {

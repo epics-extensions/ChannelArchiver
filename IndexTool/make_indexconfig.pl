@@ -15,6 +15,9 @@ sub usage()
     print("This tool generates a configuration for the ArchiveIndexTool\n");
     print("based on a DTD and a list of index files provided via\n");
     print("the command line.\n");
+    print("The typical use is to create an index config for\n");
+    print("a couple of existing e.g. daily sub-archives like this:\n");
+    print("   make_indexconfig -d /a/b/indexconfig.dtd 2004/*/index >indexconfig.xml\n");
     exit(-1);
 }
 

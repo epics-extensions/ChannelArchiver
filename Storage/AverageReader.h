@@ -17,7 +17,7 @@ class AverageReader : public DataReader
 {
 public:
     /// Create a reader for an index.
-    AverageReader(IndexFile &index, double delta);
+    AverageReader(Index &index, double delta);
     virtual ~AverageReader();
     const RawValue::Data *find(const stdString &channel_name,
                                const epicsTime *start);

@@ -28,7 +28,7 @@ DataWriter::DataWriter(IndexFile &index,
     raw_value_size = RawValue::getSize(dbr_type, dbr_count);
 
     // Find or add appropriate data buffer
-    tree = index.addChannel(channel_name);
+    tree = index.addChannel(channel_name, directory);
     if (!tree)
     {
         LOG_MSG("DataWriter(%s) cannot get Tree\n",
@@ -40,8 +40,8 @@ DataWriter::DataWriter(IndexFile &index,
     int idx;
     if (tree->getLastDatablock(node, idx, block))        
     {   // - There is a data file and buffer
-        if (! (datafile = DataFile::reference(
-                   index.getDirectory(), block.data_filename, true)))
+        if (! (datafile =
+               DataFile::reference(directory, block.data_filename, true)))
         {
             LOG_MSG("DataWriter(%s) cannot open data file %s\n",
                     channel_name.c_str(), block.data_filename.c_str());
@@ -186,7 +186,7 @@ DataFile *DataWriter::createNewDataFile(size_t headroom)
     while (true)
     {
         makeDataFileName(serial, data_file_name);
-        datafile = DataFile::reference(index.getDirectory(),
+        datafile = DataFile::reference(directory,
                                        data_file_name, true);
         if (! datafile)
         {

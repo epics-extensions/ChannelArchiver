@@ -17,7 +17,7 @@ class LinearReader : public AverageReader
 {
 public:
     /// Create a reader for an index.
-    LinearReader(IndexFile &index, double delta);
+    LinearReader(Index &index, double delta);
     const RawValue::Data *find(const stdString &channel_name,
                                const epicsTime *start);
     const RawValue::Data *next();

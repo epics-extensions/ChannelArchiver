@@ -38,7 +38,7 @@ public:
     /// delta == 0 causes it to behave like the RawDataReader.
     ///
     ///
-    PlotReader(IndexFile &index, double delta);
+    PlotReader(Index &index, double delta);
     ~PlotReader();
     const RawValue::Data *find(const stdString &channel_name,
                                const epicsTime *start);

@@ -7,7 +7,8 @@ use Frontier::Client;
 # Setup URL
 #$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
 $server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
-#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
+$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
+$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveServer0.cgi';
 
 if ($#ARGV == 0)
 {
@@ -34,13 +35,16 @@ printf("Archive Data Server V %d,\nDescription '%s'\n",
 #print("Request without pattern:\n");
 #print("==================================================================\n");
 #$results = $server->call('archiver.get_names', "");
+#$count = 0;
 #foreach $result ( @{$results} )
 #{
 #	$name = $result->{name};
 #	$start = time2string($result->{start_sec}, $result->{start_nano});
 #	$end   = time2string($result->{end_sec},   $result->{end_nano});
 #	print("Channel $name, $start - $end\n");
+#	++$count;
 #}
+#print("Altogether $count names\n");
 
 print("==================================================================\n");
 print("Request with pattern:\n");
@@ -71,9 +75,10 @@ $end = time();
 $start = $end - $count;
 
 $start = string2time("01/01/2003 02:04:45.579346999");
+$start = string2time("01/31/2003 02:04:45.579346999");
 $end = string2time("01/31/2003 22:58:05.579346999");
 
-$count = 500;
+$count = 5;
 $how = 0;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:

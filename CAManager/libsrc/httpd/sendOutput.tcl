@@ -16,12 +16,14 @@ proc httpd::sendOutput {fd} {
   puts $fd "</head>"
   puts $fd "<body bgcolor=\"\#aec9d2\">"
   puts $fd "<TABLE BORDER=3>"
-  puts $fd "<TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>"
+  puts $fd "<TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5>"
   puts $fd "Channel Archiver - bgManager"
   puts $fd "</FONT></TD></TR>"
   puts $fd "</TABLE>"
 
-  puts $fd "<p>is running since [time $_starttime]</p>"
+  if {$::debug} {
+    puts $fd "<p>is running since [time $_starttime] (currently $::openSocks open sockets)</p>"
+  }
   puts $fd "<table border=0 cellpadding=5>"
   puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>Configured ArchiveEngines for config <font color=yellow><em>[file tail $camMisc::cfg_file]</em></font> of user <font color=yellow><em>$tcl_platform(user)</em></font> on host <font color=yellow><em>$::_host</em></font></font></th></tr>"
   puts $fd "<tr><th bgcolor=white>ArchiveEngine</th><th bgcolor=white>Port</th><th bgcolor=white>running?</th><th bgcolor=white>run/rerun</th><th bgcolor=white>command</th></tr>"
@@ -114,7 +116,7 @@ proc httpd::sendOutput {fd} {
       } else {
 	# is NOT running
 	puts $fd "<td bgcolor=green align=center>"
-	puts $fd "<a href=\"/start?ind=$i\"><font color=black underline=0><b>START</b></font></a>"
+	puts $fd "<a href=\"/start?ind=$i\"><font color=black><b>START</b></font></a>"
 	puts $fd "</td>"
       }
     }
@@ -124,7 +126,7 @@ proc httpd::sendOutput {fd} {
   }
   puts $fd "<tr><td>&nbsp;</td></tr>"
   puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>"
-  puts $fd "Messages (most recent first)</font>"
+  puts $fd "Messages (most recent first)"
   puts $fd "</font></th></tr>"
   puts $fd "<tr><td colspan=5 align=center>"
   puts $fd "<font color=red>Errors/Warnings</font> / <font color=blue>Starts/Stops</font> / <font color=green>Scheduled jobs</font> / Misc."
@@ -133,7 +135,7 @@ proc httpd::sendOutput {fd} {
     puts $fd "$m<br>"
   }
   puts $fd "<hr>"
-  puts $fd "<em>This page updates every 10 seconds.<br>"
+  puts $fd "<em>This page updates every $::bgUpdateInt seconds.<br>"
   puts $fd "If not, use the reload button of your browser.</em><br>"
   puts $fd "<font color=blue>Last update: [time]</font>"
   puts $fd "</body>"

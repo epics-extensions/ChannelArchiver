@@ -3,20 +3,25 @@
 include ../../Make.cfg
 include ../../Make.ver
 
-SRCS += ChannelInfo.cc
-SRCS += CircularBuffer.cc
-SRCS += Engine.cc
-SRCS += EngineServer.cc
-SRCS += GroupInfo.cc
-SRCS += HTMLPage.cc
-SRCS += LockFile.cc
-SRCS += main.cc
-SRCS += ScanList.cc
-SRCS += WriteThread.cc
-SRCS += HTTPServer.cc
-SRCS += Configuration.cc
-SRCS += ConfigFile.cc
+ArchiveEngine_SRCS += ChannelInfo.cc
+ArchiveEngine_SRCS += CircularBuffer.cc
+ArchiveEngine_SRCS += Engine.cc
+ArchiveEngine_SRCS += EngineServer.cc
+ArchiveEngine_SRCS += GroupInfo.cc
+ArchiveEngine_SRCS += HTMLPage.cc
+ArchiveEngine_SRCS += LockFile.cc
+ArchiveEngine_SRCS += main.cc
+ArchiveEngine_SRCS += ScanList.cc
+ArchiveEngine_SRCS += WriteThread.cc
+ArchiveEngine_SRCS += HTTPServer.cc
+ArchiveEngine_SRCS += Configuration.cc
+ArchiveEngine_SRCS += ConfigFile.cc
 
 PROD := ArchiveEngine
 
+# Only for benchmarking the write routines:
+bench_SRCS := bench.cc
+TESTPROD := bench
+
 include ../../Make.end
+

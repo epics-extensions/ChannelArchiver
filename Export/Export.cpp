@@ -1,73 +1,51 @@
 // Export.cpp
 
+#include "../ArchiverConfig.h"
 #include "BinArchive.h"
+#include "MultiArchive.h"
 #include "GNUPlotExporter.h"
 #include "ArgParser.h"
 
 using namespace std;
 USING_NAMESPACE_CHANARCH
 
-// Global info variables
-const char *prog_name;
-
-void Usage ()
-{
-	cerr << "Usage: " << prog_name << " [flags] <directory file> { channel }\n";
-	cerr << "Flags:\n";
-	cerr << "\t-v            : verbose mode\n";
-	cerr << "\t-g            : generate GNUPlot output\n";
-	cerr << "\t-G            : generate GNUPlot output for gif image\n";
-	cerr << "\t-t            : include text column for status information\n";
-	cerr << "\t-o <filename> : output to file instead of stdout\n";
-	cerr << "\t-m <pattern>  : use channels matching given regular expression pattern\n";
-	cerr << "\t-s <time>     : start time as mm/dd/yy hh:mm:ss[.nano-secs]\n";
-	cerr << "\t-e <time>     : end time (exclusive)\n";
-	cerr << "\t-r <seconds>  : round all time stamps that are within 'seconds'\n";
-	cerr << "\n";
-}
-
 int main (int argc, const char *argv[])
 {
-	prog_name = argv[0];
-	ArgParser parser;
+	CmdArgParser parser (argc, argv);
+	parser.setArgumentsInfo (" <directory file> { channel }");
+	CmdArgFlag   verbose     (parser, "verbose", "Verbose mode");
+	CmdArgFlag   GNUPlot     (parser, "gnuplot", "generate GNUPlot output mode");
+	CmdArgFlag   GIFPlot     (parser, "GIF", "generate GNUPlot output for gif image");
+	CmdArgFlag   status_text (parser, "text", "include text column for status information");
+	CmdArgString output      (parser, "output", "<file>", "output to file instead of stdout");
+	CmdArgString pattern     (parser, "match", "<pattern>", "reg. expr. pattern for channel names");
+	CmdArgString start_time  (parser, "start", "<time>", "start time as mm/dd/yy hh:mm:ss[.nano-secs]pattern");
+	CmdArgString end_time    (parser, "end", "<time>", "end time (exclusive)");
+	CmdArgDouble round       (parser, "round", "<seconds>", "round time stamps if within 'seconds'");
+	CmdArgDouble interpol    (parser, "interpolate", "<seconds>", "interpolate values");
 
-	if (! parser.parse (argc, argv, "vgGt", "mseor"))
-	{
-		Usage ();
+	if (! parser.parse ())
 		return -1;
-	}
 	if (parser.getArguments ().size() < 1)
 	{
-		cerr << "Error: Missing directory file name\n";
-		Usage ();
+		parser.usage ();
 		return -1;
 	}
 
-	bool be_verbose = parser.getFlag (0);
-	bool GNUPlot = parser.getFlag (1);
-	bool GIFPlot = parser.getFlag (2);
-	bool generate_status_text = parser.getFlag (3);
-
-	const stdString &pattern = parser.getParameter(0);
-	const stdString &start_time = parser.getParameter(1);
-	const stdString &end_time = parser.getParameter(2);
-	const stdString &output = parser.getParameter (3);
-	double round = atof (parser.getParameter (4).c_str());
-
 	if (GIFPlot)
-		GNUPlot = true;
-	if (GNUPlot  &&  output.empty())
+		GNUPlot.set (true);
+	if (GNUPlot  &&  output.get().empty())
 	{
 		cerr << "Error:\n";
 		cerr << "For GNUPlot output (-g or -G flag) you must specify\n";
-		cerr << "an output file (-o)\n";
-		Usage ();
+		cerr << "an output file (-o)\n\n";
+		parser.usage ();
 		return -1;
 	}
 
 	try
 	{
-		ArchiveI *archive = new BinArchive (parser.getArgument (0));
+		ArchiveI *archive = new EXPORT_ARCHIVE_TYPE (parser.getArgument (0));
 		Exporter *exporter;
 		
 		if (GNUPlot)
@@ -80,23 +58,24 @@ int main (int argc, const char *argv[])
 		else
 			exporter = new SpreadSheetExporter (archive, output);
 
-		exporter->setVerbose (be_verbose);
+		exporter->setVerbose (verbose);
 
-		if (generate_status_text)
+		if (status_text)
 			exporter->enableStatusText ();
-
-		if (round > 0)
+		if (double(round) > 0)
 			exporter->setTimeRounding (round);
+		if (double(interpol) > 0)
+			exporter->setLinearInterpolation (interpol);
 
 		osiTime time;
 		// start time provided ?
-		if (! start_time.empty())
+		if (! start_time.get().empty())
 		{
 			string2osiTime (start_time, time);
 			exporter->setStart (time);
 		}
 		// end time provided ?
-		if (! end_time.empty())
+		if (! end_time.get().empty())
 		{
 			string2osiTime (end_time, time);
 			exporter->setEnd (time);
@@ -106,15 +85,14 @@ int main (int argc, const char *argv[])
 		if (parser.getArguments ().size() > 1)
 		{	// yes, use it
 			vector<stdString>	channel_names;
-			if (! pattern.empty())
+			if (! pattern.get().empty())
 			{
 				cerr << "Pattern from '-m' switch is ignored\n";
 				cerr << "since a list of channels was also provided\n";
 			}
-			// first argument was directory file name, cut that:
-			channel_names = parser.getArguments ();
-			channel_names.erase (channel_names.begin());
-
+			// first argument was directory file name, skip that:
+			for (size_t i=1; i<parser.getArguments ().size(); ++i)
+				channel_names.push_back (parser.getArgument(i));
 			exporter->exportChannelList (channel_names);
 		}
 		else

@@ -104,7 +104,7 @@ void Exporter::printTime (std::ostream *out, const osiTime &time)
     osiTime2vals (time, year, month, day, hour, min, sec, nano);
 
     *out << std::setw(2) << std::setfill('0') << month << '/'
-         << std::setw(2) << std::setfill('0') << day   << '/'Ex
+         << std::setw(2) << std::setfill('0') << day   << '/'
          << std::setw(2) << std::setfill('0') << year  << ' '
          << std::setw(2) << std::setfill('0') << hour  << ':'
          << std::setw(2) << std::setfill('0') << min   << ':'

@@ -4,18 +4,18 @@ include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
 USR_CXXFLAGS += -I ../../rtree
-SRCS += CircularBuffer.cpp
-SRCS += ArchiveChannel.cpp
-SRCS += SampleMechanism.cpp
-SRCS += ScanList.cpp
-SRCS += GroupInfo.cpp
-SRCS += HTMLPage.cpp
-SRCS += LockFile.cpp
-SRCS += HTTPServer.cpp
-SRCS += ConfigFile.cpp
-SRCS += EngineServer.cpp
-SRCS += Engine.cpp
-SRCS += main.cpp
+ArchiveEngine_SRCS += CircularBuffer.cpp
+ArchiveEngine_SRCS += ArchiveChannel.cpp
+ArchiveEngine_SRCS += SampleMechanism.cpp
+ArchiveEngine_SRCS += ScanList.cpp
+ArchiveEngine_SRCS += GroupInfo.cpp
+ArchiveEngine_SRCS += HTMLPage.cpp
+ArchiveEngine_SRCS += LockFile.cpp
+ArchiveEngine_SRCS += HTTPServer.cpp
+ArchiveEngine_SRCS += ConfigFile.cpp
+ArchiveEngine_SRCS += EngineServer.cpp
+ArchiveEngine_SRCS += Engine.cpp
+ArchiveEngine_SRCS += main.cpp
 PROD_HOST := ArchiveEngine
 PROD_LIBS_DEFAULT := rtree Storage Tools ca Com
 PROD_LIBS_WIN32 := rtreeObj StorageObj ToolsObj ca Com
@@ -28,6 +28,7 @@ Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 
 # Only for benchmarking the read/write routines:
+bench_SRCS := bench.cpp
 TESTPROD_HOST := bench
 
 include $(TOP)/configure/RULES

@@ -127,7 +127,7 @@ size_t read_samples(const stdString &index_name,
         return 0;
     }
     size_t samples = 0;
-    DataReader *reader = new DataReader(index);
+    DataReader *reader = new RawDataReader(index);
     const RawValue::Data *data = reader->find(channel_name, 0, 0);
     while (data)
     {

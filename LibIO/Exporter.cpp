@@ -22,44 +22,26 @@ inline double fabs(double x)
 // Loop over current values and find oldest
 static osiTime findOldestValue(const stdVector<ValueIteratorI *> &values)
 {
+    size_t i;
     osiTime first;
-    for (size_t i=0; i<values.size(); ++i)
+    for (i=0; i<values.size(); ++i) // get first valid time
     {
-        if (! values[i]->isValid())
-            continue;
-        if (first == nullTime  ||  first > values[i]->getValue()->getTime())
+        if (values[i]->isValid())
+        {
+            first = values[i]->getValue()->getTime();
+            break;
+        }
+    }
+    for (++i; i<values.size(); ++i) // see if anything is older
+    {
+        if (values[i]->isValid() &&
+            first > values[i]->getValue()->getTime())
             first = values[i]->getValue()->getTime();
     }
 
     return first;
 }
 
-// Find all values that are stamped 'round' secs
-// after 'start' and return the average of those
-// time stamps.
-static osiTime findRoundedTime(const stdVector<ValueIteratorI *> &values,
-                               double round)
-{
-    const osiTime start = findOldestValue(values);
-    double double_start = double(start);
-    double double_time, middle = 0.0;
-    size_t i, num_in_range = 0;
-
-    for (i=0; i<values.size(); ++i)
-    {
-        if (values[i]->isValid())
-        {
-            double_time = double(values[i]->getValue()->getTime());
-            if (fabs (double_start - double_time) <= round)
-            {
-                middle += double_time;
-                ++num_in_range;
-            }
-        }
-    }
-
-    return num_in_range > 1 ? osiTime (middle / num_in_range) : start;
-}
 
 Exporter::Exporter(ArchiveI *archive)
 {
@@ -77,7 +59,6 @@ void Exporter::init(ArchiveI *archive)
     _archive = archive;
     _undefined_value = "#N/A";
     _show_status = false;
-    _round_secs = 0.0;
     _linear_interpol_secs = 0.0;
     _gap_factor = 0;
     _fill = false;
@@ -117,58 +98,53 @@ void Exporter::printTime(std::ostream *out, const osiTime &time)
     sprintf(buf, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
             month, day, year, hour, min, sec, nano);
     *out << buf;
-#if 0
-    *out << std::setw(2) << std::setfill('0') << month << '/'
-         << std::setw(2) << std::setfill('0') << day   << '/'
-         << std::setw(2) << std::setfill('0') << year  << ' '
-         << std::setw(2) << std::setfill('0') << hour  << ':'
-         << std::setw(2) << std::setfill('0') << min   << ':'
-         << std::setw(2) << std::setfill('0') << sec   << '.'
-         << std::setw(9) << std::setfill('0') << nano;
-#endif
 }
 
-void Exporter::printValue(std::ostream *out, const osiTime &time, const ValueI *v)
+void Exporter::printValue(std::ostream *out,
+                          const osiTime &time, const ValueI *v)
 {
     // skip values which are Archiver specials
     size_t ai;
     stdString txt;
-    if (v->isInfo ())
+    if (v->isInfo())
     {
         for (ai=0; ai<v->getCount(); ++ai)
             *out << '\t' << _undefined_value;
     }
     else
     {
-        const CtrlInfoI *info = v->getCtrlInfo ();
-
+        const CtrlInfoI *info = v->getCtrlInfo();
+        
+        // Format according to precision.
+        // Unfortuately that is usually configured wrongly
+        // and then people complain about not seeing their data...
         if (v->getType() == DBR_TIME_STRING  ||
             (info && info->getType() == CtrlInfoI::Enumerated))
         {
-            v->getValue (txt);
+            v->getValue(txt);
             *out << '\t' << txt;
         }
         else
         {
             if (_is_array && _time_col_val_format)
             {
-                *out << '\t' << 0 << '\t' << v->getDouble (0) << "\n";
+                *out << '\t' << 0 << '\t' << v->getDouble(0) << "\n";
                 for (ai=1; ai<v->getCount(); ++ai)
                 {
-                    printTime (out, time);
-                    *out << '\t' << ai << '\t' << v->getDouble (ai) << "\n";
+                    printTime(out, time);
+                    *out << '\t' << ai << '\t' << v->getDouble(ai) << "\n";
                 }
             }
             else
                 for (ai=0; ai<v->getCount(); ++ai)
-                    *out << '\t' << v->getDouble (ai);
+                    *out << '\t' << v->getDouble(ai);
         }
     }
 
     if (_show_status)
     {
-        v->getStatus (txt);
-        if (txt.empty ())
+        v->getStatus(txt);
+        if (txt.empty())
             *out << "\t ";
         else
             *out << '\t' << txt;
@@ -190,7 +166,8 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
     {
         sprintf(info,
                 "You tried to export %d channels.\n"
-                "For performance reason you are limited to export %d channels at once",
+                "For performance reason you are limited "
+                "to export %d channels at once",
                 channel_names.size(), _max_channel_count);
         throwDetailedArchiveException(Invalid, info);
         return;
@@ -208,7 +185,16 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
             return;
         }
         base[i] = _archive->newValueIterator();
-        channels[i]->getChannel()->getValueAfterTime(_start, base[i]);
+        prev_values[i] = 0;
+
+        if (_fill)
+        {
+            channels[i]->getChannel()->getValueBeforeTime(_start, base[i]);
+            if (base[i]->isValid() &&  ! base[i]->getValue()->isInfo())
+                prev_values[i] = base[i]->getValue()->clone();
+        }
+        else
+            channels[i]->getChannel()->getValueAfterTime(_start, base[i]);
 
         if (_linear_interpol_secs > 0.0)
         {
@@ -220,15 +206,14 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
         else
             values[i] = new ExpandingValueIteratorI(base[i]);
 
-        prev_values[i] = 0;
-
         if (values[i]->isValid() && values[i]->getValue()->getCount() > 1)
         {
             _is_array = true;
             if (num > 1)
             {
                 sprintf(info,
-                        "Array channels like '%s' can only be exported on their own, "
+                        "Array channels like '%s' can only be exported "
+                        "on their own, "
                         "not together with another channel",
                         channel_names[i].c_str());
                 throwDetailedArchiveException(Invalid, info);
@@ -260,8 +245,10 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
         *out << '\t' << channels[i]->getChannel()->getName();
         if (! values[i]->isValid())
             continue;
-        if (values[i]->getValue()->getCtrlInfo()->getType() == CtrlInfoI::Numeric)
-            *out << " [" << values[i]->getValue()->getCtrlInfo()->getUnits() << ']';
+        if (values[i]->getValue()->getCtrlInfo()->getType()
+            == CtrlInfoI::Numeric)
+            *out << " [" << values[i]->getValue()->getCtrlInfo()->getUnits()
+                 << ']';
         // Array columns
         for (ai=1; ai<values[i]->getValue()->getCount(); ++ai)
             *out << "\t[" << ai << ']';
@@ -271,13 +258,7 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
     *out << "\n";
 
     // Find first time stamp
-    osiTime time;
-    if (_round_secs > 0)
-        time = findRoundedTime (values, _round_secs);
-    else
-        time = findOldestValue  (values);
-
-    bool same_time;
+    osiTime time = findOldestValue(values);
     while (time != nullTime && (_end==nullTime  ||  time <= _end))
     {
 #if 0
@@ -296,19 +277,11 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
         printTime(out, time);
         for (i=0; i<num; ++i)
         {
-            if (! values[i]->isValid())
-            {   *out << "\t" << _undefined_value;
-                continue;
-            }
-            v = values[i]->getValue();
-
-            // print all values that match the current time stamp:
-            if (_round_secs > 0)
-                same_time = fabs(double(v->getTime()) - double(time)) <= _round_secs;
-            else
-                same_time = v->getTime() == time;
-            if (same_time)
+            // print all valid values that match the current time stamp:
+            if (values[i]->isValid()  &&
+                (v=values[i]->getValue())->getTime() == time)
             {
+                
                 printValue(out, time, v);
                 if (_fill) // keep copy of this value?
                 {
@@ -328,7 +301,7 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
                 values[i]->next();
             }
             else
-            {
+            {   // no valid value for current time stamp:
                 if (prev_values[i])
                     printValue(out, time, prev_values[i]);
                 else
@@ -337,12 +310,8 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
         }
         *out << "\n";
         // Find time stamp for next line
-        if (_round_secs == 0)
-            time = findOldestValue(values);
-        else
-            time = findRoundedTime(values, _round_secs);
+        time = findOldestValue(values);
     }
-
     post_scriptum(channel_names);
 
     if (out == &file)

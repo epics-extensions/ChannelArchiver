@@ -196,14 +196,15 @@ bool BinChannel::getValueAfterTime (const osiTime &time, ValueIteratorI *arg)
 	return value->isValid();
 }
 
-bool BinChannel::getValueBeforeTime (const osiTime &time, ValueIteratorI *value)
+bool BinChannel::getValueBeforeTime(const osiTime &time, ValueIteratorI *value)
 {
 	LOG_ASSERT (value);
 	if (time == nullTime)
-		return getFirstValue (value);
+		return getFirstValue(value);
 
-	if (! getValueAfterTime (time, value))
-		return getLastValue (value);
+    // Nothing available after time? -> last value is before (or empty)
+	if (! getValueAfterTime(time, value))
+		return getLastValue(value);
 
 	// Find first value on or before "time".
 	while (value->isValid() && value->getValue()->getTime() > time)
@@ -212,7 +213,7 @@ bool BinChannel::getValueBeforeTime (const osiTime &time, ValueIteratorI *value)
 	return value->isValid();
 }
 
-bool BinChannel::getValueNearTime (const osiTime &time, ValueIteratorI *value)
+bool BinChannel::getValueNearTime(const osiTime &time, ValueIteratorI *value)
 {	// not optimal....
 	if (! getValueBeforeTime (time, value))
 		return getValueAfterTime (time, value);

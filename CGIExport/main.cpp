@@ -55,7 +55,6 @@ static void usage(HTMLPage &page)
               << "(used by COMMAND=GET)\n";
 	std::cout << "<LI>STATUS:    Show channel status (disconnected, ...)\n";
 	std::cout << "<LI>INTERPOL:  Use linear Interpolation (seconds)\n";
-	std::cout << "<LI>ROUND:     Strange binning, don't use it\n";
     std::cout << "<LI>FILL:      Step-interpolation, repeat value to fill gaps\n";
     std::cout << "<LI>STARTMONTH, STARTDAY, STARTYEAR, STARTHOUR, STARTMINUTE, STARTSECOND\n";
     std::cout << "<LI>ENDMONTH, ENDDAY, ENDYEAR, ENDHOUR, ENDMINUTE, ENDSECOND\n";
@@ -350,8 +349,6 @@ static bool exportFunc(HTMLPage &page, Format format, const char *temp_file_base
 			exporter->useFilledValues();
 		if (page._status)
 			exporter->enableStatusText(true);
-		if (page._round > 0.0)
-			exporter->setTimeRounding(page._round);
 		if (page._interpol > 0.0)
 			exporter->setLinearInterpolation(page._interpol);
 		if (page._names.empty())
@@ -600,7 +597,6 @@ int main(int argc, const char *argv[], const char *envp[])
 	page._format = cgi.find("FORMAT");
 	page._directory = cgi.find("DIRECTORY");
 	page._pattern = cgi.find("PATTERN");
-	page._round = atof(cgi.find ("ROUND").c_str());
 	page._interpol = atof(cgi.find ("INTERPOL").c_str());
 	page._glob = cgi.find("GLOB").length()>0;
 	page._fill = cgi.find("FILL").length()>0;

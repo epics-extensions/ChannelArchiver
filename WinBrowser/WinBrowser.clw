@@ -13,9 +13,9 @@ Class2=CBrowserDlg
 Class3=CAboutDlg
 
 ResourceCount=4
-Resource1=IDD_ABOUTBOX
+Resource1=IDD_WINBROWSER_DIALOG
 Resource2=IDR_MAINFRAME
-Resource3=IDD_WINBROWSER_DIALOG
+Resource3=IDD_ABOUTBOX
 Class4=CDlgExport
 Resource4=IDD_EXPORT
 

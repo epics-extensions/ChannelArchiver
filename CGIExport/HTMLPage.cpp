@@ -26,7 +26,6 @@ HTMLPage::HTMLPage()
     _glob = true;
     _fill = true;
     _status = false;
-    _round = 0;
     _interpol = 0;
 }
 

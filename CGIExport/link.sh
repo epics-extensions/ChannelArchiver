@@ -20,16 +20,3 @@ echo "Installing as Tests/cgi/CGIExport.cgi"
 cp O.$HOST_ARCH/CGIExport Tests/cgi/CGIExport.cgi
 chmod +x Tests/cgi/CGIExport.cgi
 
-
-
-
-
-
-
-
-
-
-
-
-
-

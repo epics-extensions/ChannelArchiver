@@ -14,6 +14,27 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>04/11/2001<br>
+      Patch #3:<br>
+      These apply to the Exporter classes in LibIO
+      as well as ArchiveExport, WinBrowser and CGIExport:
+       <ul>
+       <li>Removed the "rounding" option from the Exporter
+           as well as CGIExport etc.
+	   because noone (including me) really understood this.
+	   For Matlab, raw data export is best because you can
+	   do interpolation in there,
+	   for the rest filling (staircase) and linear
+	   is what you get.
+       <li>Fixed the exporter's 'fill' option to remove
+           the N/A at the start and end:
+	   When beginning at 1pm and there is no value at 1pm
+	   but a valid one from 12:55, that value will
+	   be filled/repeated into the 1pm time slot.<br>
+	   At the end, channels which are not disconnected
+	   but also have no new value are repeated to show
+	   that the last entry is still valid.
+       </ul>
     <li>04/10/2001<br>
       Patch #2:<br>
        <ul>

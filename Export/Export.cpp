@@ -14,7 +14,6 @@ int main(int argc, const char *argv[])
     CmdArgString start_time (parser, "start", "<time>", "Format: mm/dd/yy hh:mm:ss[.nano-secs]");
     CmdArgString end_time   (parser, "end", "<time>", "(exclusive)");
     CmdArgFlag   fill       (parser, "fill", "fill columns w/ repeated values");
-    CmdArgDouble round      (parser, "round", "<seconds>", "round time stamps within 'seconds'");
     CmdArgDouble interpol   (parser, "interpolate", "<seconds>", "interpolate values");
     CmdArgFlag   verbose    (parser, "verbose", "verbose mode");
     CmdArgFlag   GNUPlot    (parser, "gnuplot", "generate GNUPlot output");
@@ -69,8 +68,6 @@ int main(int argc, const char *argv[])
             exporter->enableStatusText();
         if (bool(fill))
             exporter->useFilledValues();
-        if (double(round) > 0)
-            exporter->setTimeRounding(round);
         if (double(interpol) > 0)
             exporter->setLinearInterpolation(interpol, 100);
 

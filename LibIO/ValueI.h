@@ -144,6 +144,8 @@ public:
     // not the time stamp or status
     bool hasSameValue (const ValueI &rhs) const;
 
+    // Must only be used if hasSameType()==true,
+    // will copy the raw value (value, status, time stamp)
     void copyValue (const ValueI &rhs);
 
     //* Does this Value hold Archiver status information

@@ -39,7 +39,6 @@ public:
     stdString _directory;
     stdString _pattern;
     stdVector<stdString> _names;
-    double _round;
     double _interpol;
     bool _glob;
     bool _fill;

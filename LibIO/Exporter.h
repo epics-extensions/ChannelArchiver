@@ -41,11 +41,6 @@ public:
     void setStart(const osiTime &start);
     void setEnd(const osiTime &end);
 
-    //* When 'secs' is positive,
-    // all timestamps within 'secs' will be
-    // regarded as the same point in time
-    void setTimeRounding(double secs);
-
     //* Switch on linear interpolation,
     // generating a value every "secs".
     // Gaps bigger than "secs * gap" will be
@@ -78,7 +73,6 @@ protected:
     ArchiveI *_archive;
     stdString _filename;
     osiTime _start, _end;
-    double _round_secs;
     double _linear_interpol_secs;
     size_t _gap_factor;
     bool _fill;
@@ -118,17 +112,9 @@ inline void Exporter::setEnd(const osiTime &end)       { _end = end; }
 inline void Exporter::enableStatusText(bool yesno)     { _show_status = yesno; }
 inline size_t Exporter::getDataCount()                 { return _datacount; }
 
-inline void Exporter::setTimeRounding(double secs)
-{
-    _fill = false;
-    _round_secs = secs;
-    _linear_interpol_secs = 0.0;
-}
-
 inline void Exporter::setLinearInterpolation(double secs, size_t gap)
 {
     _fill = false;
-    _round_secs = 0.0;
     _linear_interpol_secs = secs;
     _gap_factor = gap;
 }
@@ -136,7 +122,6 @@ inline void Exporter::setLinearInterpolation(double secs, size_t gap)
 inline void Exporter::useFilledValues()
 {   
     _fill = true;
-    _round_secs = 0.0;
     _linear_interpol_secs = 0.0;
 }
 

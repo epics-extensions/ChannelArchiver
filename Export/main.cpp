@@ -12,6 +12,8 @@
 #include <SpreadsheetReader.h>
 #include <PlotReader.h>
 
+int precision;
+RawValue::NumberFormat format = RawValue::DEFAULT;
 bool verbose;
 
 // "visitor" for BinaryTree of channel names
@@ -142,7 +144,7 @@ bool dump_gnuplot(IndexFile &index,
                 {
                     RawValue::getValueString(
                         val, reader->getType(), reader->getCount(),
-                        value, &reader->getInfo()); 
+                        value, &reader->getInfo(), format, precision); 
                     fprintf(f, "%s\t%s\t%s\n",
                             time.c_str(), val.c_str(), stat.c_str());
                 }
@@ -289,7 +291,7 @@ bool dump_spreadsheet(IndexFile &index,
                 {
                     RawValue::getValueString(
                         val, sheet.getType(i), sheet.getCount(i),
-                        value, &sheet.getCtrlInfo(i));
+                        value, &sheet.getCtrlInfo(i), format, precision);
                     fprintf(f, "\t%s", val.c_str());
                     if (status_text)
                         fprintf(f, "\t%s", stat.c_str());
@@ -333,10 +335,18 @@ int main(int argc, const char *argv[])
                              "interpolate", "<seconds>", "interpolate values");
     CmdArgString output     (parser,
                              "output", "<file>", "output to file");
+
+    CmdArgInt    prec       (parser,
+                             "precision", "<int>", "precision of numbers");
+    CmdArgString format_txt (parser,
+                             "format", "<decimal|engineering|exponential>",
+                             "number format");
     CmdArgFlag   GNUPlot    (parser,
                              "gnuplot", "generate GNUPlot command file");
     CmdArgFlag   image      (parser,
                              "Gnuplot", "generate GNUPlot output for Image");
+    // defaults
+    prec.set(-1);
     if (! parser.parse())
         return -1;
     if (parser.getArguments().size() < 1)
@@ -344,6 +354,18 @@ int main(int argc, const char *argv[])
         parser.usage();
         return -1;
     }
+    precision = prec;
+    if (!strncmp(format_txt.get().c_str(), "d", 1))
+        format = RawValue::DECIMAL;
+    else if (!strncmp(format_txt.get().c_str(), "en", 2))
+        format = RawValue::ENGINEERING;
+    else if (!strncmp(format_txt.get().c_str(), "ex", 2))
+        format = RawValue::EXPONENTIAL;
+    else if (format_txt.get().length() > 0)
+    {
+        fprintf(stderr, "Unknown format string '%s'\n", format_txt.get().c_str());
+        return -1;
+    }   
     verbose = be_verbose;
     // Start/end time
     epicsTime *start = 0, *end = 0;
@@ -393,8 +415,10 @@ int main(int argc, const char *argv[])
         return -1;
     }
     if (verbose)
-        printf("Opened index '%s'\n", index_name.c_str());    
-    if (names.size() == 0 &&
+        printf("Opened index '%s'\n", index_name.c_str());
+    if (do_info  &&  names.size()<=0  &&  pattern.get().length()<=0)
+        do_list.set(); // otherwise it'd be a NOP
+    if (names.size() <= 0 &&
         (do_list  ||  pattern.get().length() > 0))
         get_names_for_pattern(index, names, pattern);
     if (do_info)

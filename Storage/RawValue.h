@@ -120,14 +120,30 @@ public:
     ///
     static bool setDouble(DbrType type, DbrCount count,
                           Data *value, double d);
+
+    /// Used by getValueString
+    enum NumberFormat
+    {
+        DEFAULT,     ///< Decimal or exponential, "%g" format.
+        DECIMAL,     ///< Decimal notation, 0.000.
+        ENGINEERING, ///< Exponential 0.000e000 with exponent = 3*N.
+        EXPONENTIAL  ///< Exponential notation.
+    };
+
+    static size_t formatDouble(double number, NumberFormat format, int prec,
+                               char *buffer, size_t max_len);
     
     /// Convert value to txt, using CtrlInfo if available.
 
     /// This gives only the value. Use getTime() and getStatus()
     /// for time and status.
+    /// format picks the format,
+    /// prec < 0 means: Use precision from CtrlInfo.
     static void getValueString(stdString &txt,
                                DbrType type, DbrCount count, const Data *value,
-                               const class CtrlInfo *info=0);
+                               const class CtrlInfo *info=0,
+                               NumberFormat format = DECIMAL,
+                               int prec = -1);
 
     /// Display value, using CtrlInfo if available.
     static void show(FILE *file,

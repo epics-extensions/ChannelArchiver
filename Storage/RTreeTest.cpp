@@ -3,7 +3,8 @@
 // Tools
 #include <MsgLogger.h>
 #include <BinIO.h>
-// Index
+// Storage
+#include "RawValue.h"
 #include "IndexFile.h"
 
 typedef struct
@@ -179,8 +180,39 @@ bool dump_blocks()
     return true;
 }
 
+#include <assert.h>
+
+void fmt(double d)
+{
+    char buffer[50];
+    size_t l;
+    
+    l = RawValue::formatDouble(d, RawValue::DEFAULT, 6, buffer, sizeof(buffer));
+    printf("DEFAULT   : '%s' (%d)\n", buffer, l);
+    assert(strlen(buffer) == l);
+    l = RawValue::formatDouble(d, RawValue::DECIMAL, 6, buffer, sizeof(buffer));
+    printf("DECIMAL   : '%s' (%d)\n", buffer, l);
+    assert(strlen(buffer) == l);
+    l = RawValue::formatDouble(d, RawValue::ENGINEERING, 6, buffer, sizeof(buffer));
+    printf("ENGINEERING: '%s' (%d)\n", buffer, l);
+    assert(strlen(buffer) == l);
+    l = RawValue::formatDouble(d, RawValue::EXPONENTIAL, 6, buffer, sizeof(buffer));
+    printf("EXPONENTIAL: '%s' (%d)\n\n", buffer, l);
+    assert(strlen(buffer) == l);
+}
+
 int main()
 {
+    fmt(0.0);
+    fmt(-0.321);
+    fmt(1.0e-12);
+    fmt(-1.0e-12);
+    fmt(3.14e-7);
+    fmt(3.14);
+    fmt(3.14e+7);
+    fmt(-3.14e+7);
+    fmt(-0.123456789);
+
     initEpicsTimeHelper();
     if (!fill_test(false, "test/tree.tst",
                    fill_data, sizeof(fill_data)/sizeof(TestData),

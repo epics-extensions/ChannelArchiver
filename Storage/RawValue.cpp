@@ -10,6 +10,7 @@
 
 // System
 #include <stdlib.h>
+#include <math.h>
 // Base
 #include <alarm.h>
 #include <alarmString.h>
@@ -329,15 +330,88 @@ bool RawValue::setDouble(DbrType type, DbrCount count,
     return false;
 }
 
+size_t RawValue::formatDouble(double value, NumberFormat format, int prec,
+                              char *buffer, size_t max_len)
+{
+    double absVal, mantissa;
+    bool minus;
+    int  n, exponent = 0;
+    if (max_len <= 0)
+        return 0;
+    switch (format)
+    {
+        case DEFAULT:
+            return snprintf(buffer, max_len, "%.*g", prec, value);
+        case DECIMAL:
+            return snprintf(buffer, max_len, "%.*f", prec, value);
+        case ENGINEERING:
+            // Mostly stolen from dm2k's updateMonitors.c,
+            // Mark Andersion, Frederick Vong.
+            mantissa = absVal = fabs(value);
+            minus = value < 0.0;
+            if (absVal < 1.0)
+            {
+                if (absVal > 1.0e-307) // MIN double is around 1e-308
+                {
+                    do
+                    {
+                        mantissa *= 1000.0;
+                        exponent -= 3;
+                    }
+                    while (mantissa < 1.0);
+                }
+            }
+            else
+            {   // absVal >= 1.0
+                while (mantissa >= 1000.)
+                {
+                    mantissa *= 0.001; // mult. usually faster than dividing/
+                    exponent += 3;
+                }
+            }
+            if (minus)
+            {
+                *(buffer++) = '-';
+                --max_len;
+            }
+            n = snprintf(buffer, max_len, "%.*f", prec, mantissa);
+            if (n <= 0)
+                return 0;
+            buffer += n;
+            max_len -= n;
+            if (max_len < 5)
+                return 0;
+            *(buffer++) = 'e';
+            if (exponent >= 0)
+                *(buffer++) = '+';	// want e+00 for consistency
+            else
+            {
+                *(buffer++) = '-';
+                exponent = -exponent;
+            }
+            *(buffer++) = '0' + exponent/10;
+            *(buffer++) = '0' + exponent%10;
+            *(buffer++) = '\0';
+            return n+4+(minus?1:0);
+        case EXPONENTIAL:
+            return snprintf(buffer, max_len, "%.*e", prec, value);
+    }
+    return 0;
+}
+
 void RawValue::getValueString(stdString &txt,
                               DbrType type, DbrCount count, const Data *value,
-                              const class CtrlInfo *info)
+                              const class CtrlInfo *info,
+                              NumberFormat format,
+                              int prec)
 {
     int i;
     txt.assign(0,0);
     if (isInfo(value)) // done    
         return;
     char line[100];
+    if (prec < 0  && info)
+        prec = info->getPrecision();
     switch (type)
     {
     case DBR_TIME_STRING:
@@ -400,47 +474,37 @@ void RawValue::getValueString(stdString &txt,
         }
     case DBR_TIME_FLOAT:
         {
-            txt.reserve(6*count);
+            txt.reserve((7+prec)*count);
             dbr_float_t *val = &((dbr_time_float *)value)->value;
             for (i=0; i<count; ++i)
             {
                 if (i==0)
-                    sprintf(line, "%f", (double)*val);
+                    formatDouble(*val, format, prec, line, sizeof(line));
                 else
-                    sprintf(line, "\t%f", (double)*val);
+                {
+                    line[0] = '\t';
+                    formatDouble(*val, format, prec, &line[1], sizeof(line)-1);
+                }
                 txt += line;
                 ++val;
-            }
+            }            
             return;
         }
     case DBR_TIME_DOUBLE:
         {
-            txt.reserve(6*count);
+            txt.reserve((7+prec)*count);
             dbr_double_t *val = &((dbr_time_double *)value)->value;
-            if (info)
+            for (i=0; i<count; ++i)
             {
-                int prec = info->getPrecision();
-                for (i=0; i<count; ++i)
+                if (i==0)
+                    formatDouble(*val, format, prec, line, sizeof(line));
+                else
                 {
-                    if (i==0)
-                        sprintf(line, "%.*f", prec, (double)*val);
-                    else
-                        sprintf(line, "\t%.*f", prec, (double)*val);
-                    txt += line;
-                    ++val;
+                    line[0] = '\t';
+                    formatDouble(*val, format, prec, &line[1], sizeof(line)-1);
                 }
-            }
-            else
-            {
-                for (i=0; i<count; ++i)
-                {
-                    if (i==0)
-                        sprintf(line, "%f", (double)*val);
-                    else
-                        sprintf(line, "\t%f", (double)*val);
-                    txt += line;
-                    ++val;
-                }
+                txt += line;
+                ++val;
             }
             return;
         }

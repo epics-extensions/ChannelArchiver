@@ -21,9 +21,14 @@
   Instead, there is a <a href="Makefile.WIN32">Makefile.WIN32</a> for
   MS Visual C++'s &quot;nmake&quot; and a
   <a href="Makefile.Unix">Makefile.Unix</a> for Unix' gnumake.
-  For what it's worth, <a href="what_I_did.htm">what_I_did.htm</a>
-  lists what I did to get going on a solaris machine where most
-  parts were missing.<br>
+  <p>
+  Check the Makefiles for the possible targets like "perl", "python",
+  ...
+  For each CASI target, the corresponding scripting language
+  has to be installed. In addition, SWIG is needed.
+  The <A HREF="Readme.txt">Readme.txt<A> file shows what I learned
+  about getting those to work.
+  <br>
   In general, this is the suggested procedure:
   <ul>
   <li>First, build the other portions of the ChannelArchiver:<br>
@@ -38,7 +43,7 @@
   <li>Adjust Makefile.xxx to point to the correct path names for EPICS base,
       swig, tcl, python, ...
   <li>Call gnumake/nmake on your makefile, maybe specifying only the targets
-      &quot;tcl&quot; or &quot;python&quot; to skip building what you
+      &quot;perl&quot; or &quot;python&quot; to skip building what you
       don't need.
   </ul>
   SWIG was used to avoid platform dependencies. This also means that
@@ -97,11 +102,12 @@
   set PYTHONPATH=s:\Epics\extensions\src\ChannelArchiver\casi\python\O.WIN32</pre>
   
   <h2>Usage with Perl</h2>
-  So far this is for Linux only, not much else available.
   After building, casi/perl/O.Linux (for Linux) will
   contain a casi.html file. casi/perl/dump.pl shows some very basic
-  usage. LD_LIBRARY_PATH has to be set.
-
+  usage. LD_LIBRARY_PATH has to be set for Linux.
+  <br>
+  To run the example script on Win32, the EPICS base DLLs have to
+  be in the path. The location of the casi.DLL is set in the script.
 
   <h2>Usage with TCL</h2>
   Python (for GUIs or bigger tasks) or Perl (for text crunching)
@@ -125,18 +131,16 @@
   You might have to adjust the code in there to find the location
   of the shared library.
 
-
   <h2>Something completely unrelated:</h2>
   <em>If you have time to spare, go by air.</em>
   <br>
-  I'm writing this on a Delta plane in Atlanta, 9/9/2000, around
-  midnight. I was supposed to go from Cincinatty to Albuqueque
-  but the flight was canceled. Then the replacement flight
-  via Atlanta stopped in the middle of takeof, breaking hard,
-  because some "light" in the copckpit went on and now they
-  are waiting for the maintenance crew to bring a replacement
-  module.
-  If you can read this, all went well in the end.
+  I wrote the initial version of this text on a Delta plane in
+  Atlanta, 9/9/2000, around midnight. I was supposed to go from
+  Cincinatty to Albuqueque but the flight was canceled. Then the
+  replacement flight via Atlanta stopped in the middle of takeof,
+  breaking hard, because some "light" in the copckpit went on and now
+  they we waited for the maintenance crew to bring a replacement
+  module. Finally, another airplane was used. All's well that ends well.
   
 </blockquote>
 </body>

@@ -55,10 +55,24 @@
   is imperative here. The point is that relative to ChannelArchiver
   there are ../Tools and ../../config directories.
   If your setup is different, you will have to change the makefiles.
+  <h3>CGIExport</h3>
+  The CGIExport tool is meant to be called from the web server.
+  <B>IF</B> your EPICS make system is setup to build the EPICS base
+  libraries as shared libraries, this is unfortunate because then
+  LD_LIBRARY_PATH might have to be adjusted so that the web server can
+  find the shared libraries (Com, ca), which is not easy to do in
+  general.
   <br>
+  Alternatively, change the make system to not use shared libraries or
+  watch the make system as it builds CGIExport. Spot the section where
+  it links CGIExport, copy that out and write your own command line
+  where you link the static libraries instead of the shared
+  ones. Example: Replace the -lCom arguement with  the full path to
+  the static library ala ....../base/lib/Linux/libCom.a.
+  <h3>WinBrowser</h3>
   For the Winbrowser, only MS Visual C++ project files are included
   because this tool is not portable to Unix.
-  <br>
+  <h3>CASI</h3>
   For CASI, a Makefile.Win32 and Makefile.Unix is included
   because the EPICS make-system doesn't handle SWIG, tcl and python.
 

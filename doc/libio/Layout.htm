@@ -1,0 +1,145 @@
+<html>
+
+<head>
+<title>Layout</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a name="Main">Library</a> Layout</h1>
+  The following class diagram shows the functional relation of
+  the basic interface classes:
+  <p>
+  <img src="interfaces.gif" width="651" height="428" alt="Interfaces">
+  
+  <p>The example section is probably the most important part of this
+  document for actual usage of the API,
+  but you should read until then to understand what's going on.</p>
+
+  <h2>Goals</h2>
+  <p>Minimal, portable, easy to use. Pick any two.</p>
+  <p>The library classes were designed to encapsulate the <u>minimal</u> but necessary
+  requirements for a generic archive. The API is defined via the interface classes (purely
+  abstract). For actual use, a derived archive like BinArchive, MultiArchive is necessary.</p>
+  <p>The interface classes allow to<ul>
+    <li>Dump all values for all channels:<br>
+        Ask ArchiveI to position a ChannelIteratorI on the first
+        channel,
+        get its first value,
+        iterate over values, then step to next channel
+    </li>
+    <li>Find a channel by name and dump values from ... until in
+        time:<br>
+	Similar, using findChannelByName and not continuing with the next channel.
+    </li>
+    <li>List channel names (maybe only those matching a pattern) and available time ranges for
+      each channel<br>
+      (Note that this is not easy in some storage formats but I'd still like to require it
+      because a browser tool should be able to display this information)</li>
+    <li>For each value, allow access to the value, status, time stamp as strings for easy
+      display as well as access to the raw type, value, time stamp as common to EPICS tools.</li>
+  </ul>
+  <p>They should be <u>portable</u> to other formats, i.e. have as little in the API that's
+  specific to the underlying format as possible. That's why a <em>Factory pattern</em> is
+  used: After creating the specific Archive class like a BinArchive, MultiArchive, ..., the
+  remaining classes are generated from this. Ideally only the abstract interface pointers to
+  &quot;a ValueI&quot; are used, not the underlying &quot;BinValue&quot; or
+  &quot;SDDSValue&quot; or ...</p>
+  <p>They also allow no access to the file names that are actually used, how the values are
+  organized in memory etc. to keep the API portable.</p>
+  <p>To make this easy to use, a generic <em>Iterator pattern</em> is applied: When asking
+  the ArchiveI for a channel, a ChannelIteratorI is returned that points to the current
+  Channel. When asking a ChannelI for a value after time x, a ValueIteratorI is provided
+  that can then be positioned on the next or previous value.</p>
+  <p>There is no call &quot;get all channel names&quot;. Nothing is said about the order of
+  channels when iterating over them. This would be format specific and is really not
+  necesary:<br>
+  A shell tool doesn't care, a GUI tool will usually put the channel names one by one in a
+  list box, and for most OS this listbox has a built-in &quot;alphabetic order&quot; option.</p>
+  <p>The ValueI does allow access to the raw dbr_time_xxx values and control information and
+  also provides helpers for GUI tools, i.e. string representations and Double values for
+  plotting.</p>
+
+  <h2>Examples</h2>
+  <p>Examples of using these basic interfaces:</p>
+  <p>List all channel names, dump all values:</p>
+  <p></font><small><font face="Courier">
+  ArchiveI *archive = new BinArchive (&quot;/home/me/tests/freq_directory&quot;);<br>
+  ChannelIteratorI *channels = archive-&gt;newChannelIterator();<br>
+  ValueIteratorI *values = archive-&gt;newValueIterator();<br>
+  stdString tim, val, sta;<br>
+  <br>
+  archive-&gt;findFirstChannel (channels);<br>
+  while (channels-&gt;isValid())<br>
+  {<br>
+  &nbsp;&nbsp;&nbsp; cout &lt;&lt; channels-&gt;getChannel()-&gt;getName() &lt;&lt;
+  &quot;:\n&quot;;<br>
+  &nbsp;&nbsp;&nbsp; channels-&gt;getChannel()-&gt;getFirstValue (values);<br>
+  &nbsp;&nbsp;&nbsp; while (values-&gt;isValid())<br>
+  &nbsp;&nbsp;&nbsp; {<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; values-&gt;getValue ()-&gt;getValue (val);<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; values-&gt;getValue ()-&gt;getTime (tim);<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; values-&gt;getValue ()-&gt;getStatus (sta);<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout &lt;&lt; tim &lt;&lt; &quot;\t&quot;
+  &lt;&lt; val &lt;&lt; &quot;\t&quot; &lt;&lt; sta &lt;&lt; &quot;\n&quot;;<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; values-&gt;next();<br>
+  &nbsp;&nbsp;&nbsp; }<br>
+  &nbsp;&nbsp;&nbsp; channels-&gt;next();<br>
+  }<br>
+  delete values;<br>
+  delete channels;<br>
+  delete archive;</font></small><font FACE="Comic Sans MS,Arial, Helvetica"></p>
+  <p>Please note that only the first line needs changes when switching from a BinArchive to
+  e.g. a MultiArchive. The pointer handling looks awkward, though. This is why &quot;<em>Smart
+  Pointer</em>&quot; classes Archive, ChannelIterator and ValueIterator (without the
+  trainling &quot;I&quot;) were introduced. Most important, they<ul>
+    <li>wrap the interface class pointers, automatically calling &quot;delete&quot;</li>
+    <li>overload the bool cast with a isValid() call</li>
+    <li>overload the ++, -- operators with next/prev calls</li>
+    <li>overload the *, -&gt; operators to access the Channel/Value of the iterator.</li>
+  </ul>
+  <p>Using those, the above code looks like this:</p>
+  <p></font><font face="Courier"><small>Archive
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; archive (new BinArchive
+  (&quot;/home/me/tests/freq_directory&quot;));<br>
+  ChannelIterator channels (archive);<br>
+  ValueIterator&nbsp;&nbsp; values (archive);<br>
+  <br>
+  for (archive.findFirstChannel (channels);&nbsp; channels;&nbsp; ++channels)<br>
+  {<br>
+  &nbsp;&nbsp;&nbsp; cout &lt;&lt; channels-&gt;getName() &lt;&lt; &quot;:\n&quot;;<br>
+  &nbsp;&nbsp;&nbsp; for (channels-&gt;getFirstValue (values);&nbsp; values; ++values)<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout *values;</small><br>
+  <small>}</small></font><font FACE="Comic Sans MS,Arial, Helvetica"></p>
+  <p><a href="index.htm">The mode detailed description of the individual methods </a>has
+  some more examples. It is generated from the header files and contains those portions of
+  the API that are considered to remain as opposed to helper functions that might change.</p>
+
+  <h2>Support for new Formats</h2>
+  <p>To keep this API, support for new formats has to be derived from the interface classes.
+  A new XX format (RDB, a specific SDDS layout, ...) has to implement<ul>
+    <li>XXArchive</li>
+    <li>XXChannelIterator, XXChannel</li>
+    <li>XXValueIterator, XXValue</li>
+    <li>probably: XXCtrlInfo</li>
+  </ul>
+  <p>This is not a one afternoon task, but it will allow all archiver other tools to work
+  with the new format.</p>
+  <p>Hopefully the API is minimal enough to make it possible within reasonable time.</p>
+  <p>If it is for example impossible to iterate over channel names in the XX format, the
+  routines XXArchive::findChannelByPattern, findFirstChannel and XXChannelIterator::next
+  could invalidate the ChannelIterator and return false.</p>
+  <p>If you believe that some other methods required by the interface classes are not
+  necessary and are convincing in doing so, we might consider removing them.</p>
+  <p>&nbsp;</p>
+  <p>&nbsp;</p>
+</blockquote>
+</font>
+</body>
+</html>
+
+
+
+

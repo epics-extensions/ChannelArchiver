@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- DTD for the ArchiveEngine Configuration           -->
-<!-- Note that we do not allow empty configurations:   -->
-<!-- Each config. must contain at least one group,     -->
-<!-- and each group must cintain at least one channel. -->
-<!ELEMENT engineconfig ((write_period|get_threshold|file_size|ignored_future|buffer_reserve)*,group+)>
+<!-- DTD for the ArchiveEngine Configuration         -->
+<!-- Note that we do not allow empty configurations: -->
+<!-- Each config. must contain at least one group,   -->
+<!-- and each group must contain at least 1 channel. -->
+<!ELEMENT engineconfig ((write_period|get_threshold|
+                         file_size|ignored_future|
+                         buffer_reserve)*, group+)>
 <!ELEMENT group (name,channel+)>
 <!ELEMENT channel (name,period,(scan|monitor),disable?)>
 <!ELEMENT write_period (#PCDATA)><!-- int "seconds" -->

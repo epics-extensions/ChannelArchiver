@@ -289,7 +289,7 @@ void run_test(const stdString &index_name)
         fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
         return;
     }
-    LinearReader reader(index, 10);
+    LinearReader reader(index, 0.001);
     const RawValue::Data *data = reader.find("fred", 0, 0);
     while (data)
     {

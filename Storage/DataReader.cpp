@@ -14,7 +14,9 @@ DataReader::~DataReader()
 
 
 RawDataReader::RawDataReader(archiver_Index &index)
-        : index(index), au_iter(0), valid_datablock(false), data(0), header(0)
+        : index(index), au_iter(0), valid_datablock(false),
+          type_changed(false), ctrl_info_changed(false),
+          data(0), header(0)
 {}
 
 RawDataReader::~RawDataReader()
@@ -94,8 +96,6 @@ const RawValue::Data *RawDataReader::find(
         return 0;
     }
     const RawValue::Data *found = findSample(valid_interval.getStart());
-    type_changed = false;
-    ctrl_info_changed = false;
     return found;
 }
 

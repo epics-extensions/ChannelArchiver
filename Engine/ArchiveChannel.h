@@ -71,6 +71,9 @@ public:
 
     /// Enable this channel
     void enable(const epicsTime &when);
+
+    /// Write current buffer content to archive
+    void write(class Archive &archive, class ChannelIterator &channel);
     
 private:
     stdString       name;

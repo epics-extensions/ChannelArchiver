@@ -46,7 +46,7 @@ Engine::Engine(const stdString &directory_file_name)
             Unsupported, "Cannot run more than one Engine");
     _start_time = epicsTime::getCurrent();
     _directory = directory_file_name;
-    _is_writing = false;
+    is_writing = false;
     _description = "EPICS Channel Archiver Engine";
     the_one_and_only = false;
 
@@ -325,18 +325,16 @@ void Engine::setSecsPerFile(double secs_per_file)
 
 void Engine::writeArchive()
 {
-#ifdef
-    _is_writing = true;
+    is_writing = true;
     ChannelIterator channel(*_archive);
     try
     {
-        stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
-        while (channel_info != _channels.end())
+        stdList<ArchiveChannel *>::iterator ch;
+        for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
-            (*channel_info)->lock();
-            (*channel_info)->write(*_archive, channel);
-            (*channel_info)->unlock();
-            ++channel_info;
+            (*ch)->mutex.lock();
+            (*ch)->write(*_archive, channel);
+            (*ch)->mutex.unlock();
         }
     }
     catch (ArchiveException &e)
@@ -344,8 +342,7 @@ void Engine::writeArchive()
         LOG_MSG("Engine::writeArchive caught %s\n", e.what());
     }
     channel->releaseBuffer();
-    _is_writing = false;
-#endif
+    is_writing = false;
 }
 
 bool Engine::process()

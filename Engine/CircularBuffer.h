@@ -12,21 +12,12 @@
 /// Circular buffer:
 /// Each ArchiveChannel has one to buffer the incoming values
 /// of type dbr_time_xxx until they are written to the disk.
-///
-/// The CircularBuffer provides a lock to allow usage across
-/// threads (CA callbacks insert values, main engine thread removes
-/// them when writing to disk).
-/// But: the CircularBuffer does not take the lock itself, the caller
-/// needs to handle this. 
 class CircularBuffer
 {
 public:
     CircularBuffer();
     ~CircularBuffer();
-
-    /// Threads should use this to lock/unlock
-    epicsMutex      mutex;
-    
+ 
     /// Allocate buffer for num*(type,count) values.
     void allocate(DbrType type, DbrCount count, size_t num);
 

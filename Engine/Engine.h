@@ -102,7 +102,7 @@ public:
     const epicsTime &getStartTime() const { return _start_time; }
     const stdString &getDirectory() const { return _directory;  }
     const epicsTime &getNextWriteTime() const { return _next_write_time; }
-    bool isWriting() const                { return _is_writing; }
+    bool isWriting() const                { return is_writing; }
     
     /// Add channel to ScanList.
     /// If result is false,
@@ -121,7 +121,7 @@ private:
     epicsTime       _start_time;
     stdString       _directory;
     stdString       _description;
-    bool            _is_writing;
+    bool            is_writing;
     
     double          _get_threshhold;
     ScanList        _scan_list;      // list of scanned, not monitored channels

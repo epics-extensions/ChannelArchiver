@@ -1,4 +1,10 @@
 #include "epicsTimeHelper.h"
+
+// TODO: Use RawValue, Index & Datafile instead of full LibIO
+#include "ArchiveException.h"
+#include "ArchiveI.h"
+#include "BinValue.h"
+
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
@@ -97,7 +103,66 @@ void ArchiveChannel::enable(const epicsTime &when)
         pending_value_set = false;
     }
 }
-    
+
+void ArchiveChannel::write(Archive &archive, ChannelIterator &channel)
+{
+    try
+    {
+        size_t count = buffer.getCount();
+        if (count <= 0)
+            return;
+        if (! archive.findChannelByName(name, channel))
+        {
+            LOG_MSG ("ArchiveChannel::write: Cannot find '%s'\n",
+                     name.c_str());
+            return;
+        }
+        
+        BinValue *write_value = BinValue::create(dbr_time_type, nelements);
+        write_value->setCtrlInfo(&ctrl_info);
+        const RawValue::Data *raw = buffer.removeRawValue();
+        size_t avail = channel->lockBuffer(*write_value, period);
+        while (raw)
+        {
+            write_value->copyIn(raw);
+            if (avail <= 0) // no buffer at all or buffer full
+            {
+                channel->addBuffer(*write_value, period, 100);
+                avail = 100;
+                //            if (_vals_per_buffer < MAX_VALS_PER_BUF)
+                //    _vals_per_buffer *= BUF_GROWTH_RATE;
+            }
+            if (! channel->addValue(*write_value))
+            {
+                LOG_MSG("Fatal: cannot add values in writeArchive '%s'\n",
+                        name.c_str());
+                break;
+            }
+            
+#if defined(ENGINE_DEBUG) && ENGINE_DEBUG > 5
+            stdString time, val, stat;
+            _write_value->getTime(time);
+            _write_value->getValue(val); 
+            _write_value->getStatus(stat);
+            LOG_MSG("write thread 0x%08X: %s %s %s %s\n",
+                    epicsThreadGetIdSelf(), channel->getName(),
+                    time.c_str(), val.c_str(), stat.c_str());
+#endif        
+            if (--count <= 0)
+                break;
+            --avail;
+            raw = buffer.removeRawValue();
+        }
+        buffer.resetOverwrites();
+        delete write_value;
+    }
+    catch (ArchiveException &e)
+    {
+        LOG_MSG("ArchiveChannel::write caught %s\n", e.what());
+    }   
+}
+
+
 // CA callback for connects and disconnects
 void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 {

@@ -12,12 +12,12 @@
 #define __MULTICHANNELITERATORI_H__
 
 #include "ChannelIteratorI.h"
+#include "MultiChannel.h"
+#include "MultiArchive.h"
 
 BEGIN_NAMESPACE_CHANARCH
 
-class MultiArchive;
-class ArchiveI;
-class ChannelIteratorI;
+class MultiValueIterator;
 
 //CLASS MultiChannelIterator
 // A CLASS ChannelIteratorI implementation for a CLASS MultiArchive
@@ -32,17 +32,29 @@ public:
 	virtual bool next ();
 
 	// ---------------------------------------
-	// To be called by MultiArchive only:
+	// To be called by MultiArchive:
 	void clear ();
-	void position (ArchiveI *archive, ChannelIteratorI *channel_iterator);
+	void position (size_t index, ArchiveI *archive, ChannelIteratorI *channel_iterator);
+
+	// To be called by MultiChannel:
+	const ChannelInfo &getChannelInfo () const;
+
+	// To be called by MultiValueIterator:
+	bool getValueAfterTime (const osiTime &time, MultiValueIterator &value_iterator);
+	bool getNextValue (MultiValueIterator &value_iterator);
+	bool getPrevValue (MultiValueIterator &value_iterator);
 
 private:
 	bool _is_valid;
 	const MultiArchive *_multi_archive;	// MultiArchive this iterator operates on
 	size_t _channel_index;				// Index of channel in that archive
-	ArchiveI *_base_archive;
-	ChannelIteratorI *_base_channel_iterator;
+	ArchiveI *_base_archive;			// If valid, this is the actual archive...
+	ChannelIteratorI *_base_channel_iterator; // and channeliterator for the current channel
+	MultiChannel _channel;				// The current Channel (use only if _is_valid)
 };
+
+inline const ChannelInfo &MultiChannelIterator::getChannelInfo () const
+{	return _multi_archive->getChannelInfo (_channel_index);	}
 
 END_NAMESPACE_CHANARCH
 

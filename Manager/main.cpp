@@ -503,15 +503,19 @@ void test (const stdString &directory, const osiTime &start, const osiTime &end)
 void do_experiment (const stdString &archive_name)
 {
 	Archive archive (new MultiArchive (archive_name));
-	ChannelIterator	channel (archive);
+	ChannelIterator	channels (archive);
+	ValueIterator	values (archive);
 
-	cout << "List channels via ChannelIterator:\n";
-
-	archive.findFirstChannel (channel);
-	while (run && channel)
+	archive.findFirstChannel (channels);
+	for (/**/;  run && channels;  ++channels)
 	{
-		cout << channel->getName() << endl;
-		++ channel;
+		cout << channels->getName() << endl;
+		cout << "Start: " << channels->getFirstTime() << endl;
+		cout << "End:   " << channels->getLastTime() << endl;
+
+		channels->getFirstValue (values);
+		for (/**/;  run && values;  ++values)
+			cout << *values << endl;
 	}
 }
 

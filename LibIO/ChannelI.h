@@ -1,9 +1,27 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __CHANNELI_H__
 #define __CHANNELI_H__
 
 #include "ValueIteratorI.h"
 
 BEGIN_NAMESPACE_CHANARCH
+
+class ChannelInfo
+{
+public:
+	stdString	_name;			// name of the channel
+	osiTime		_first_time;	// Time stamp of first value
+	osiTime		_last_time;		// Time stamp of last value
+};
 
 //////////////////////////////////////////////////////////////////////
 //CLASS ChannelI
@@ -22,14 +40,14 @@ public:
 	//* Name of this channel
 	virtual const char *getName () const = 0;
 
-	//* Time when Channel was added to archive.
-	virtual osiTime getCreateTime () const = 0;
-
-	//* Time when first value was written.
+	//* Time stamp of first value
 	virtual osiTime getFirstTime ()  const = 0;
 
-	//* Time when last value was written.
+	//* Time stamp of last value
 	virtual osiTime getLastTime ()   const = 0;
+
+	//* Get the above information at once by filling a ChannelInfo structure
+	virtual void getChannelInfo (ChannelInfo &info) const;
 
 	//* Move CLASS ValueIterator for current Channel
 	// to first, last, ... value

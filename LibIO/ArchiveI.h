@@ -27,10 +27,25 @@ BEGIN_NAMESPACE_CHANARCH
 // a pointer to one from a factory class that
 // implements the actual routines.
 // <P>
-// For the original, binary data format, CLASS BinArchive handles this.
+// <UL>
+// <LI>CLASS BinArchive handles access to the original, binary data format.
+// <LI>CLASS MultiArchive allows simultaneous read-access to multiple archives
+// </UL>
 // <P>
 // Client programs might prefer to use the "smart pointer" CLASS Archive
 // instead of the raw ArchiveI interface pointer.
+// <P>
+// <H2>Multiple, Simultaneous Access</H2>
+// The ChannelArchiver API is not thread-safe,
+// additional semaphores are needed for multi-threaded access.
+//
+// Within a single thread, multiple archives can be used.
+// For each CLASS Archive, more than one CLASS ChannelIterator can be obtained.
+// For each ChannelIterator, a single CLASS ValueIterator can be used.
+// This allows to read multiple channels from many archives at once.
+// To access values for the <I>same</I> channel from different points in time,
+// multiple ChannelIterators (each set to the same channel) must be used.
+//
 class ArchiveI
 {
 public:

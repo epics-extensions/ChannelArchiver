@@ -1,3 +1,13 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __VALUEITERATORI_H__
 #define __VALUEITERATORI_H__
 
@@ -20,7 +30,11 @@ public:
 	virtual bool prev () = 0;
 
 	//* Number of "similar" values that can be read
-	//  as one chunk in a block operation:
+	//  as one chunk in a block operation.
+	// (This call might go away when a MemoryArchive & network request
+	//  mechanism is implemented. Let me know if you depend on this call.
+	//  The result might also not be perfect,
+	//  e.g. a single 8000 chunk could be reported as two 4000-sized chunks etc.)
 	virtual size_t determineChunk (const osiTime &until) = 0;
 
 	//* Sampling period for current values in secs.
@@ -67,6 +81,7 @@ public:
 	~ValueIterator ();
 
 	void attach (ValueIteratorI *iter);
+	void detach ();
 
 	//* Check if iterator is at valid position
 	operator bool () const;
@@ -108,8 +123,18 @@ inline ValueIterator::~ValueIterator ()
 
 inline void ValueIterator::attach (ValueIteratorI *iter)
 {
-	delete _ptr;
+	if (_ptr)
+		delete _ptr;
 	_ptr = iter;
+}
+
+inline void ValueIterator::detach ()
+{
+	if (_ptr)
+	{
+		delete _ptr;
+		_ptr = 0;
+	}
 }
 
 inline ValueIterator::operator bool () const

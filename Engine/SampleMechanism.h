@@ -83,12 +83,13 @@ protected:
 
 /// This implementation of a SampleMechanism subscribes
 /// to a channel (CA monitor) and stores every incoming value.
-/// A configurable max_period determines the ring buffer size.
+/// The period of the channel is used as an estimate for the
+/// time between samples, determining the ring buffer size.
 class SampleMechanismMonitored : public SampleMechanism
 {
 public:
     SampleMechanismMonitored(class ArchiveChannel *channel);
-    virtual void destroy(Guard &engine_guard, Guard &guard);
+    void destroy(Guard &engine_guard, Guard &guard);
     stdString getDescription(Guard &guard) const;
     bool isScanning() const;
     void handleConnectionChange(Guard &engine_guard, Guard &guard);
@@ -108,6 +109,9 @@ private:
 /// If the value matches the previous sample, it is not written
 /// again. Only after the value changes, a value that indicates
 /// the repeat count gets written.
+///
+/// The Engine's ScanList is used to trigger the periodic 'get'
+/// requests.
 class SampleMechanismGet : public SampleMechanism
 {
 public:
@@ -118,13 +122,13 @@ public:
     /// the appearance of the ArchiveEngine being dead.
     static size_t max_repeat_count;
     SampleMechanismGet(class ArchiveChannel *channel);
-    virtual void destroy(Guard &engine_guard, Guard &guard);
+    void destroy(Guard &engine_guard, Guard &guard);
     stdString getDescription(Guard &guard) const;
     bool isScanning() const;
     void handleConnectionChange(Guard &engine_guard, Guard &guard);
     void handleValue(Guard &guard, const epicsTime &now,
                      const epicsTime &stamp, const RawValue::Data *value);
-private:
+protected:
     bool is_on_scanlist; // Registered w/ Engine's Scanlist?
     // Handling of repeats:
     bool previous_value_set; // previous_value valid?
@@ -132,6 +136,31 @@ private:
     size_t repeat_count; // repeat count for the previous value
     // Write the previous value because we're disconnected or got a new value
     void flushPreviousValue(const epicsTime &stamp);
+};
+
+/// A SampleMechanism that samples based on CA monitors.
+
+/// This implementation of a SampleMechanism behaves similar
+/// to SampleMechanismGet, the periodic sampling, but is
+/// internally using CA monitors instead of 'get' operations.
+///
+/// CA monitors trigger processing of this mechanism. It will
+/// keep all imcoming samples in the 'pending_value' buffer
+/// until it's again time to store a sample, which is then handled
+/// as in SampleMechanismGet.
+class SampleMechanismMonitoredGet : public SampleMechanismGet
+{
+public:
+    SampleMechanismMonitoredGet(class ArchiveChannel *channel);
+    void destroy(Guard &engine_guard, Guard &guard);
+    stdString getDescription(Guard &guard) const;
+    void handleConnectionChange(Guard &engine_guard, Guard &guard);
+    void handleValue(Guard &guard, const epicsTime &now,
+                     const epicsTime &stamp, const RawValue::Data *value);
+private:
+    bool   have_subscribed;
+    evid   ev_id;
+    epicsTime next_sample_time;
 };
 
 /// \@}

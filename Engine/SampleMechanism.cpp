@@ -277,20 +277,104 @@ void SampleMechanismGet::flushPreviousValue(const epicsTime &stamp)
     repeat_count = 0;
 }
 
-#if 0
-void SampleMechanismGetViaMonitor::handleValue(Guard &guard,
-                                               const epicsTime &now,
-                                               const epicsTime &stamp,
-                                               const RawValue::Data *value)
+SampleMechanismMonitoredGet::SampleMechanismMonitoredGet(
+    ArchiveChannel *channel)
+        : SampleMechanismGet(channel)
 {
-    LOG_MSG("SampleMechanismGetViaMonitor::handleValue %s\n",
-            channel->getName().c_str());
-
-    if (now > next_time_due)
-    {    
-        channel->buffer.addRawValue(value);
-        channel->last_stamp_in_archive = stamp;
-        next_time_due = now + period; // round this one!
-    }
+    have_subscribed = false;
 }
-#endif
+
+void SampleMechanismMonitoredGet::destroy(Guard &engine_guard, Guard &guard)
+{
+    if (have_subscribed)
+    {
+#       ifdef DEBUG_SAMPLING
+        LOG_MSG("'%s': Unsubscribing\n", channel->getName().c_str());
+#       endif
+        ca_clear_subscription(ev_id);
+    }
+    SampleMechanismGet::destroy(engine_guard, guard);
+}
+
+stdString SampleMechanismMonitoredGet::getDescription(Guard &guard) const
+{
+    char desc[100];
+    sprintf(desc, "Get via monitor, %g sec period", channel->getPeriod(guard));
+    return stdString(desc);
+}
+
+void SampleMechanismMonitoredGet::handleConnectionChange(Guard &engine_guard,
+                                                         Guard &guard)
+{
+    if (channel->isConnected(guard))
+    {
+        LOG_MSG("%s: fully connected\n", channel->getName().c_str());
+        if (!have_subscribed)
+        {
+            int status = ca_create_subscription(
+                channel->dbr_time_type, channel->nelements, channel->ch_id,
+                DBE_LOG | DBE_ALARM,
+                ArchiveChannel::value_callback, channel, &ev_id);
+            if (status != ECA_NORMAL)
+            {
+                LOG_MSG("'%s' ca_create_subscription failed: %s\n",
+                        channel->getName().c_str(), ca_message(status));
+                return;
+            }
+            theEngine->need_CA_flush = true;
+            have_subscribed = true;
+            LOG_MSG("%s: subscribed to CA\n", channel->getName().c_str());
+       }
+        // CA should automatically send an initial monitor.
+        if (previous_value)
+            RawValue::free(previous_value);
+        previous_value = RawValue::allocate(channel->dbr_time_type,
+                                            channel->nelements, 1);
+        previous_value_set = false;
+    }
+    else
+    {
+        LOG_MSG("%s: disconnected\n", channel->getName().c_str());
+        flushPreviousValue(channel->connection_time);
+        // Add a 'disconnected' value.
+        channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
+        wasWrittenAfterConnect = false;
+    }   
+}
+
+void SampleMechanismMonitoredGet::handleValue(
+    Guard &guard, const epicsTime &now,
+    const epicsTime &stamp, const RawValue::Data *value)
+{
+    // Pretend to SampleMechanismGet that this is the result of a CA get.
+    // For that we have to throttle the incoming CA monitors
+    // down to the scan rate of this channel.
+    // Incoming monitors trigger processing of this mechanism,
+    // next_sample_time determines when we store another sample.
+    // The stored sample is then the *previous* one, the last one
+    // we received *before* crossing next_sample_time.
+    LOG_MSG("SampleMechanismMonitoredGet:\n");
+    RawValue::show(stdout, channel->dbr_time_type, channel->nelements, value);
+    if (!channel->pending_value)
+    {
+        LOG_MSG("SampleMechanismMonitoredGet: no pend buffer\n");
+        return;
+    }
+    // TODO: Use now or stamp for next_sample_time comparison?
+    // now: matches what we do in SampleMechanismGet
+    // stamp: originates from better clock (in theory)
+    if (channel->pending_value_set  &&  stamp > next_sample_time)
+    {
+        LOG_MSG("SampleMechanismMonitoredGet: passed next_sample_time\n");
+        epicsTime pend_stamp = RawValue::getTime(channel->pending_value);
+        SampleMechanismGet::handleValue(guard, now, pend_stamp,
+                                        channel->pending_value);
+        next_sample_time = roundTimeUp(pend_stamp, channel->period);
+
+        stdString txt;
+        LOG_MSG("next_sample_time=%s\n", epicsTimeTxt(next_sample_time, txt));
+    }
+    RawValue::copy(channel->dbr_time_type, channel->nelements,
+                   channel->pending_value, value);
+    channel->pending_value_set = true;
+}

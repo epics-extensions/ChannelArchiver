@@ -2,6 +2,8 @@
 
 include ../../Make.cfg
 
+USR_CXXFLAGS += -I ../../LibIO
+
 SRCS += Export.cpp
 
 PROD := ArchiveExport

@@ -1,0 +1,31 @@
+#	Makefile.Host -*- makefile -*-
+
+include ../../Make.cfg
+
+
+INC += StorageTypes.h
+INC += HashTable.h
+INC += CtrlInfo.h
+INC += RawValue.h
+INC += DirectoryFile.h
+INC += DataFile.h
+
+# Contents of library
+LIBSRCS += HashTable.cpp
+LIBSRCS += CtrlInfo.cpp
+LIBSRCS += RawValue.cpp
+LIBSRCS += DirectoryFile.cpp
+LIBSRCS += DataFile.cpp
+
+# Library to build
+LIBRARY := Storage
+
+# Build "ToolsTest" but don't install it
+PROD_LIBS_DEFAULT := Storage Tools ca Com
+PROD_LIBS_WIN32 := StorageObj ToolsObj ca Com
+Storage_DIR = $(INSTALL_LIB)
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
+TESTPROD += StorageTest
+
+include ../../Make.end

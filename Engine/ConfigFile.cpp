@@ -1,6 +1,10 @@
+// Std
 #include <ctype.h>
+// Tools
 #include <ASCIIParser.h>
 #include <Filename.h>
+#include <MsgLogger.h>
+// Engine
 #include "Engine.h"
 #include "ConfigFile.h"
 

@@ -15,7 +15,6 @@
 #include "GroupInfo.h"
 #include "ScanList.h"
 #include "ConfigFile.h"
-#include "BinArchive.h"
 
 /// Engine is the main class of the ArchiveEngine program,
 /// the one that contains the lists of all the ArchiveChannel
@@ -26,7 +25,7 @@ public:
     /// The Engine is a Singleton,
     /// createable only by calling this method
     /// and from then on accessible via global Engine *theEngine
-    static void create(const stdString &directory_file_name);
+    static void create(const stdString &index_name);
     void shutdown();
 
     ConfigFile config_file;
@@ -78,9 +77,9 @@ public:
     double getDefaultPeriod();
     int    getBufferReserve() const;
     void   setBufferReserve(int reserve);
-    void   setSecsPerFile(double secs_per_file);
     double getSecsPerFile() const;
-
+    void   setSecsPerFile(double s);
+    
     /// Determine the suggested buffer size for a value
     /// with given scan period based on how often we write
     /// and the buffer reserve
@@ -96,7 +95,7 @@ public:
 
     /// Engine Info: Started, where, info about writes
     const epicsTime &getStartTime() const { return _start_time; }
-    const stdString &getDirectory() const { return directory;  }
+    const stdString &getIndexName() const { return index_name;  }
     const epicsTime &getNextWriteTime() const { return _next_write_time; }
     bool isWriting() const                { return is_writing; }
     
@@ -105,17 +104,15 @@ public:
     /// channel has to prepare a monitor.
     bool addToScanList(ArchiveChannel *channel);
 
-    ValueI *newValue(DbrType type, DbrCount count);
-
     void writeArchive();
 
 private:
-    Engine(const stdString &directory_file_name);
+    Engine(const stdString &index_name);
 
     struct ca_client_context *ca_context;
     
     epicsTime       _start_time;
-    stdString       directory;
+    stdString       index_name;
     stdString       description;
     bool            is_writing;
     
@@ -126,10 +123,8 @@ private:
     double          _default_period; // default if not specified by Channel
     int             _buffer_reserve; // 2-> alloc. buffs for 2x expected data
     epicsTime       _next_write_time;// when to write again
-    unsigned long   _secs_per_file;  // roughly: data file period
+    double          _secs_per_file;  // roughly: data file period
     double          _future_secs;    // now+_future_secs is considered wrong
-
-    Archive         *_archive;
 
 #ifdef USE_PASSWD
     stdString       _user, _pass;
@@ -157,6 +152,9 @@ inline int Engine::getBufferReserve() const
 inline double Engine::getSecsPerFile() const
 {   return _secs_per_file; }
 
+inline void Engine::setSecsPerFile(double s)
+{   _secs_per_file = s; }
+
 inline double Engine::getIgnoredFutureSecs() const
 {   return _future_secs; }
 
@@ -174,9 +172,6 @@ inline size_t Engine::suggestedBufferSize(double period)
 		num = 3;
     return num;
 }
-
-inline ValueI *Engine::newValue(DbrType type, DbrCount count)
-{   return _archive->newValue(type, count); }
 
 #endif //__ENGINE_H__
  

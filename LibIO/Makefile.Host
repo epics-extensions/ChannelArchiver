@@ -2,43 +2,13 @@
 
 include ../../Make.cfg
 
-#	includes to install from this subproject
-INC += ArchiverConfig.h
-INC += ArchiveTypes.h
-INC += ArchiveException.h
-INC += ArchiveI.h
-INC += ChannelI.h
-INC += ChannelIteratorI.h
-INC += CtrlInfo.h
-INC += RawValue.h
-INC += ValueI.h
-INC += ValueIteratorI.h
-INC += HashTable.h
-INC += ExpandingValueIteratorI.h
-INC += LinInterpolValueIteratorI.h
-#INC += BucketingValueIteratorI.h
-INC += Exporter.h
-INC += GNUPlotExporter.h
-INC += MatlabExporter.h
-INC += InfoFilterValueIteratorI.h
-INC += SpreadSheetExporter.h
-INC += DataFile.h
-INC += DirectoryFile.h
-
-INC += BinArchive.h
-INC += BinChannel.h
-INC += BinChannelIterator.h
-INC += BinValue.h
-INC += BinValueIterator.h
-
-INC += MultiArchive.h
-INC += MultiChannelIterator.h
-INC += MultiChannel.h
-INC += MultiValueIterator.h
+# Note that none of the includes get installed
+# because this library is deprecated.
+# Tools that still use it need to fetch the includes
+# from this directory, not the install-include.
 
 #	Contents of library:
 LIBSRCS += HashTable.cpp
-LIBSRCS += ArchiveException.cpp
 LIBSRCS += ArchiveI.cpp
 LIBSRCS += ChannelI.cpp
 LIBSRCS += ChannelIteratorI.cpp

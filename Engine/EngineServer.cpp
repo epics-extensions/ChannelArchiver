@@ -18,10 +18,14 @@
 #define _NET_IF_H
 #endif
 
+// Base
 #include <cvtFast.h>
-#include <CGIDemangler.h>
-#include <NetTools.h>
-#include <epicsTimeHelper.h>
+// Tools
+#include "CGIDemangler.h"
+#include "NetTools.h"
+#include "epicsTimeHelper.h"
+#include "MsgLogger.h"
+// Engine
 #include "Engine.h"
 #include "ArchiveException.h"
 #include "EngineServer.h"

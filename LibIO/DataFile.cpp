@@ -11,6 +11,7 @@
 #include "ArchiveException.h"
 #include "MsgLogger.h"
 #include "Filename.h"
+#include "Conversions.h"
 
 //#define LOG_DATAFILE
 

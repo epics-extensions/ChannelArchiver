@@ -43,6 +43,7 @@ USR_CXXFLAGS_WIN32   = -GX -DWIN32
 #	includes to install from this subproject
 INC += ToolsConfig.h 
 INC += stdString.h 
+INC += string2cp.h
 INC += ArgParser.h
 INC += ASCIIParser.h
 INC += ArrayTools.h
@@ -59,6 +60,9 @@ INC += NetTools.h
 INC += BinaryTree.h
 INC += epicsTimeHelper.h       
 INC += VectorHelper.h       
+INC += ArchiveException.h
+INC += ArchiverConfig.h
+INC += Conversions.h
 
 #	Contents of library:
 LIBSRCS += stdString.cpp
@@ -73,6 +77,7 @@ LIBSRCS += NetTools.cpp
 LIBSRCS += MemoryPool.cpp
 LIBSRCS += epicsTimeHelper.cpp
 LIBSRCS += MsgLogger.cpp
+LIBSRCS += ArchiveException.cpp
 
 #	on WIN32 only...
 LIBSRCS_WIN32   := gnu_regex.c

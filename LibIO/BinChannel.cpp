@@ -1,11 +1,14 @@
+#include <math.h>
+#include "ArchiveException.h"
+#include "Filename.h"
+#include "epicsTimeHelper.h"
+#include "Conversions.h"
 #include "BinArchive.h"
 #include "BinChannel.h"
 #include "BinChannelIterator.h"
 #include "BinValueIterator.h"
 #include "DirectoryFile.h"
 #include "DataFile.h"
-#include "ArchiveException.h"
-#include "epicsTimeHelper.h"
 
 BinChannel::BinChannel()
 {
@@ -104,7 +107,8 @@ bool BinChannel::getFirstValue(ValueIteratorI *arg)
 {
 	BinValueIterator *value = dynamic_cast <BinValueIterator *> (arg);
 
-	if (getArchive() && isValidFilename(getFirstFile()))
+	if (getArchive() &&
+        Filename::isValidFilename(getFirstFile()))
 	{
 		stdString full_name;
 		getArchive()->makeFullFileName(getFirstFile(), full_name);
@@ -119,7 +123,8 @@ bool BinChannel::getLastValue(ValueIteratorI *arg)
 {
 	BinValueIterator *value = dynamic_cast <BinValueIterator *> (arg);
 
-	if (getArchive() && isValidFilename(getLastFile()))
+	if (getArchive() &&
+        Filename::isValidFilename(getLastFile()))
 	{
 		stdString full_name;
 		getArchive()->makeFullFileName(getLastFile(), full_name);
@@ -152,7 +157,8 @@ bool BinChannel::getValueAfterTime(const epicsTime &time, ValueIteratorI *arg)
 	stdString full_name;
 
 	// Find data header that brackens 'time':
-	if (from_start < from_end  &&  isValidFilename(getFirstFile()) )
+	if (from_start < from_end  &&
+        Filename::isValidFilename(getFirstFile()) )
 	{	// start at beginning of archive:
 		getArchive()->makeFullFileName(getFirstFile(), full_name);
 		try
@@ -239,7 +245,8 @@ bool BinChannel::getValueNearTime(const epicsTime &time, ValueIteratorI *value)
 size_t BinChannel::lockBuffer(const ValueI &value, double period)
 {
 	// add value to last buffer
-	if (!getArchive()  ||  ! isValidFilename(getLastFile()))
+	if (!getArchive()  ||
+        ! Filename::isValidFilename(getLastFile()))
 		return 0;
 
 	stdString last_file_name;
@@ -308,7 +315,7 @@ void BinChannel::addBuffer(const ValueI &value_arg, double period,
 	// Add to DataFile
     // add value to last buffer
 	DataHeaderIterator *prev = 0;
-	if (isValidFilename (getLastFile ()))
+	if (Filename::isValidFilename (getLastFile ()))
 	{
 		stdString last_file_name;
 		getArchive ()->makeFullFileName (getLastFile (), last_file_name);
@@ -332,7 +339,7 @@ void BinChannel::addBuffer(const ValueI &value_arg, double period,
 	delete prev;
 
 	// update DirectoryFile (note again that dir_entry holds this BinChannel)
-	if (! isValidFilename (getFirstFile ()))
+	if (! Filename::isValidFilename (getFirstFile ()))
 	{
 		setFirstFile (_append_buffer->getBasename ());
 		setFirstOffset (_append_buffer->getOffset ());

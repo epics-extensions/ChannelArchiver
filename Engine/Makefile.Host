@@ -22,18 +22,18 @@ ArchiveEngine_SRCS += main.cpp
 #SCRIPTS += Tools/startEngine
 
 PROD := ArchiveEngine
-PROD_LIBS_DEFAULT := ChanArchIO Tools ca Com
-PROD_LIBS_WIN32 := ChanArchIOObj ToolsObj ca Com
+PROD_LIBS_DEFAULT := Storage Tools ca Com
+PROD_LIBS_WIN32 := StorageObj ToolsObj ca Com
 SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
 
-ChanArchIO_DIR = $(INSTALL_LIB)
-ChanArchIOObj_DIR = $(INSTALL_LIB)
+Storage_DIR = $(INSTALL_LIB)
+StorageObj_DIR = $(INSTALL_LIB)
 Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 
 # Only for benchmarking the write routines:
-bench_SRCS := bench.cpp
-TESTPROD := bench
+#bench_SRCS := bench.cpp
+#TESTPROD := bench
 
 include ../../Make.end
 

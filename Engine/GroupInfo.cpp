@@ -1,5 +1,8 @@
 // GroupInfo.cpp
 
+// Tools
+#include "MsgLogger.h"
+// Engine
 #include "GroupInfo.h"
 #include "ArchiveChannel.h"
 

@@ -3,6 +3,8 @@
 include ../../Make.cfg
 include ../../Make.ver
 
+USR_CXXFLAGS += -I ../../LibIO
+
 SRCS += CGIInput.cpp
 SRCS += HTMLPage.cpp
 SRCS += main.cpp

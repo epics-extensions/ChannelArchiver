@@ -4,7 +4,6 @@
 #include <math.h> // MSVisC has HUGE_VAL in here?!
 #include <MemoryBuffer.h>
 #include "ArchiveException.h"
-#include "ArchiveTypes.h"
 #include "BinValue.h"
 
 // Create a value suitable for the given DbrType

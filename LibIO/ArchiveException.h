@@ -11,8 +11,8 @@
 #ifndef __ARCHIVEEXCEPTION_H__
 #define __ARCHIVEEXCEPTION_H__
 
-#include "ArchiveTypes.h"
-#include<stdio.h>
+#include <stdio.h>
+#include "GenericException.h"
 
 //CLASS ArchiveException
 // Special Exception for ChanArch classes.

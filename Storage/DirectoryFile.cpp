@@ -1,13 +1,63 @@
 // DirectoryFile.cpp
 //////////////////////////////////////////////////////////////////////
 
+#include "ArchiveException.h"
 #include "MsgLogger.h"
 #include "Filename.h"
 #include "Conversions.h"
 #include "DirectoryFile.h"
-#include "ArchiveException.h"
 
 //#define LOG_DIRFILE
+
+DirectoryFileEntry::DirectoryFileEntry()
+{
+    LOG_ASSERT(sizeof(data) == DataSize);
+	init();
+}
+
+void DirectoryFileEntry::init(const char *name)
+{
+	memset(&data, 0, sizeof(data));
+	if (name)
+	{
+		strncpy(data.name, name, ChannelNameLength);
+		data.name[ChannelNameLength-1] = '\0';
+	}
+	else
+		data.name[0] = '\0';
+}
+
+void DirectoryFileEntry::read(FILE *file, FileOffset offset)
+{
+	if (fseek(file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(file) != offset  ||
+		fread(&data, DataSize, 1, file) != 1)
+		throwArchiveException(ReadError);
+	FileOffsetFromDisk(data.next_entry_offset);
+	FileOffsetFromDisk(data.last_offset);
+	FileOffsetFromDisk(data.first_offset);
+	epicsTimeStampFromDisk(data.create_time);
+	epicsTimeStampFromDisk(data.first_save_time);
+	epicsTimeStampFromDisk(data.last_save_time);
+	this->offset = offset;
+}
+
+void DirectoryFileEntry::write(FILE *file, FileOffset offset)
+{
+	Data copy = data;
+
+	FileOffsetToDisk(copy.next_entry_offset);
+	FileOffsetToDisk(copy.last_offset);
+	FileOffsetToDisk(copy.first_offset);
+	epicsTimeStampToDisk(copy.create_time);
+	epicsTimeStampToDisk(copy.first_save_time);
+	epicsTimeStampToDisk(copy.last_save_time);
+	if (fseek(file, offset, SEEK_SET) != 0  ||
+        (FileOffset) ftell(file) != offset  ||
+		fwrite(&copy, DataSize, 1, file) != 1)
+		throwArchiveException(WriteError);
+	this->offset = offset;
+}
 
 //////////////////////////////////////////////////////////////////////
 // DirectoryFile
@@ -47,7 +97,7 @@ DirectoryFile::DirectoryFile(const stdString &filename, bool for_write)
     
     // Check if file size = HT + N full entries
     FileOffset rest = (_next_free_entry - FirstEntryOffset)
-        % BinChannel::getDataSize();
+        % DirectoryFileEntry::DataSize;
     if (rest)
         LOG_MSG("Suspicious directory file %s has a 'tail' of %d Bytes\n",
                 filename.c_str(), rest);
@@ -87,12 +137,12 @@ DirectoryFileIterator DirectoryFile::find(const stdString &name)
     FileOffset offset = readHTEntry(i._hash);
     while (offset != INVALID_OFFSET)
     {
-        i.getChannel()->read(_file, offset);
-        if (name == i.getChannel()->getName())
+        i.entry.read(_file, offset);
+        if (name == i.entry.data.name)
             return i;
-        offset = i.getChannel()->getNextEntryOffset();
+        offset = i.entry.data.next_entry_offset;
     }
-    i.getChannel()->clear();
+    i.entry.clear();
     
     return i;
 }
@@ -106,7 +156,6 @@ DirectoryFileIterator DirectoryFile::find(const stdString &name)
 DirectoryFileIterator DirectoryFile::add(const stdString &name)
 {
     DirectoryFileIterator i(this);
-	BinChannel *channel = i.getChannel();
     const char *cname = name.c_str();
 
     i._hash = HashTable::Hash(cname);
@@ -119,24 +168,24 @@ DirectoryFileIterator DirectoryFile::add(const stdString &name)
         FileOffset next = offset;
         while (next != INVALID_OFFSET)
         {
-            channel->read(_file, next);
-            if (name == channel->getName()) // already there?
+            i.entry.read(_file, next);
+            if (name == i.entry.data.name) // already there?
                 return i;
-            next = channel->getNextEntryOffset();
+            next = i.entry.data.next_entry_offset;
         }
-        // i._entry: last entry in chain.
+        // i.entry: last entry in chain.
         // make that one point to new entry:
-        channel->setNextEntryOffset(_next_free_entry);
-        channel->write(_file, channel->getOffset());
+        i.entry.data.next_entry_offset = _next_free_entry;
+        i.entry.write(_file, i.entry.offset);
     }
 
     // Last entry points now to _next_free_entry.
     // Create the new entry there:
-    channel->init(cname);
-    channel->setNextEntryOffset(INVALID_OFFSET);
-    channel->write(_file, _next_free_entry);
+    i.entry.init(cname);
+    i.entry.data.next_entry_offset = INVALID_OFFSET;
+    i.entry.write(_file, _next_free_entry);
     fflush(_file);
-    _next_free_entry += channel->getDataSize();
+    _next_free_entry += DirectoryFileEntry::DataSize;
     
     return i;
 }
@@ -146,36 +195,35 @@ DirectoryFileIterator DirectoryFile::add(const stdString &name)
 bool DirectoryFile::remove(const stdString &name)
 {
     DirectoryFileIterator i(this);
-	BinChannel *channel = i.getChannel();
     HashTable::HashValue hash = HashTable::Hash(name.c_str());
     FileOffset prev=0, offset = readHTEntry(hash);
 
     // Follow the channel chain that hashes to this value:
     while (offset != INVALID_OFFSET)
     {
-        channel->read(_file, offset);
-        if (name == channel->getName())
+        i.entry.read(_file, offset);
+        if (name == i.entry.data.name)
         {
             // unlink this entry from list of names that share 'hash'
             if (prev == 0) // first entry in list?
             {
                 // Make hash table point to the next channel,
                 // skipping this one
-                writeHTEntry(hash, channel->getNextEntryOffset());
+                writeHTEntry(hash, i.entry.data.next_entry_offset);
                 return true;
             }
             else
             {
                 // Make previous entry skip this one
-                offset = channel->getNextEntryOffset();
-                channel->read(_file, prev);
-                channel->setNextEntryOffset(offset);
-                channel->write(_file, prev);
+                offset = i.entry.data.next_entry_offset;
+                i.entry.read(_file, prev);
+                i.entry.data.next_entry_offset = offset;
+                i.entry.write(_file, prev);
                 return true;
             }
         }
         prev = offset;
-        offset = channel->getNextEntryOffset();
+        offset = i.entry.data.next_entry_offset;
     }
     return false;
 }
@@ -211,7 +259,7 @@ void DirectoryFileIterator::clear()
 {
     _dir = 0;
     _hash = HashTable::HashTableSize;
-    _entry.clear();
+    entry.clear();
 }
 
 DirectoryFileIterator::DirectoryFileIterator()
@@ -231,28 +279,19 @@ DirectoryFileIterator::DirectoryFileIterator(const DirectoryFileIterator &dir)
     *this = dir;
 }
 
-DirectoryFileIterator & DirectoryFileIterator::operator = (const DirectoryFileIterator &rhs)
-{
-    // Right now, this is actually what the default copy op. would do:
-    _dir = rhs._dir;
-    _entry = rhs._entry;
-    _hash = rhs._hash;
-    return *this;
-}
-
 bool DirectoryFileIterator::next()
 {
     if (_hash >= HashTable::HashTableSize ||
-        _entry.getOffset() == INVALID_OFFSET ||
+        entry.offset == INVALID_OFFSET ||
         _dir == 0)
         return false;
     
     // Have a current entry.
     // Ask it for pointer to next entry:
-    FileOffset next = _entry.getNextEntryOffset();
+    FileOffset next = entry.data.next_entry_offset;
     if (next != INVALID_OFFSET)
     {
-        _entry.read(_dir->_file, next);
+        entry.read(_dir->_file, next);
         return isValid();
     }
     // End of entries that relate to current _hash value,
@@ -263,7 +302,7 @@ bool DirectoryFileIterator::next()
 // Search HT for the first non-empty entry:
 bool DirectoryFileIterator::findValidEntry(HashTable::HashValue start)
 {
-    _entry.clear();
+    entry.clear();
     if (!_dir)
         return false;
     
@@ -276,7 +315,7 @@ bool DirectoryFileIterator::findValidEntry(HashTable::HashValue start)
         // If valid, read that entry
         if (tmp != INVALID_OFFSET)
         {
-            _entry.read(_dir->_file, tmp);
+            entry.read(_dir->_file, tmp);
             return isValid();
         }
     }
@@ -286,6 +325,6 @@ bool DirectoryFileIterator::findValidEntry(HashTable::HashValue start)
 void DirectoryFileIterator::save()
 {
     if (_dir)
-        _entry.write(_dir->_file, _entry.getOffset());
+        entry.write(_dir->_file, entry.offset);
 }
 

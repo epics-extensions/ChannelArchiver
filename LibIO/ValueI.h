@@ -3,9 +3,9 @@
 #if !defined(_VALUEI_H_)
 #define _VALUEI_H_
 
-#include"ArchiveTypes.h"
-#include"CtrlInfo.h"
-#include"RawValue.h"
+#include "MsgLogger.h"
+#include "CtrlInfo.h"
+#include "RawValue.h"
 
 //////////////////////////////////////////////////////////////////////
 //CLASS ValueI

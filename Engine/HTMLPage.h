@@ -10,7 +10,7 @@
 
 #ifndef __HTMLPAGE_H__
 #define __HTMLPAGE_H__
-#include "ArchiveTypes.h"
+
 #ifdef solaris
 // Hack around clash of struct map in inet headers with std::map
 #define map xxxMapxxx

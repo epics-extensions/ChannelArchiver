@@ -8,14 +8,17 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-#include <ToolsConfig.h>
+// Base
 #include <cadef.h>
-#include <fdManager.h>
-#include <epicsTimeHelper.h>
+// Tools
+#include "ToolsConfig.h"
+#include "epicsTimeHelper.h"
 #include "ArchiveException.h"
+#include "MsgLogger.h"
+// Storage
 #include "DirectoryFile.h"
-#include "BinChannel.h"
-#include "BinValueIterator.h"
+#include "DataFile.h"
+// Engine
 #include "Engine.h"
 #include "EngineServer.h"
 
@@ -31,7 +34,8 @@ static void caException(struct exception_handler_args args)
     else
         pName = "?";
 
-    LOG_MSG("CA Exception %s - with request chan=%s op=%d type=%s count=%d:\n%s", 
+    LOG_MSG("CA Exception %s - with request "
+            "chan=%s op=%d type=%s count=%d:\n%s", 
             args.ctx, pName, args.op, dbr_type_to_text(args.type), args.count,
             ca_message(args.stat));
 }
@@ -40,7 +44,7 @@ static void caException(struct exception_handler_args args)
 // Engine
 // --------------------------------------------------------------------------
 
-Engine::Engine(const stdString &directory_file_name)
+Engine::Engine(const stdString &index_name)
 {
     static bool the_one_and_only = true;
 
@@ -48,7 +52,7 @@ Engine::Engine(const stdString &directory_file_name)
         throwDetailedArchiveException(
             Unsupported, "Cannot run more than one Engine");
     _start_time = epicsTime::getCurrent();
-    directory = directory_file_name;
+    this->index_name = index_name;
     is_writing = false;
     description = "EPICS Channel Archiver Engine";
     the_one_and_only = false;
@@ -58,11 +62,8 @@ Engine::Engine(const stdString &directory_file_name)
     _default_period = 1.0;
     _buffer_reserve = 3;
     _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
-    _secs_per_file = BinArchive::SECS_PER_DAY;
+    _secs_per_file = 60*60*24; // One day
     _future_secs = 6*60*60;
-    _archive = new Archive(
-        new ENGINE_ARCHIVE_TYPE(directory_file_name, true /* for write */));
-    setSecsPerFile(_secs_per_file);
 
     // Initialize CA library for multi-treaded use
     if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL)
@@ -82,9 +83,9 @@ Engine::Engine(const stdString &directory_file_name)
 #endif   
 }
 
-void Engine::create(const stdString &directory_file_name)
+void Engine::create(const stdString &index_name)
 {
-    theEngine = new Engine(directory_file_name);
+    theEngine = new Engine(index_name);
 }
 
 bool Engine::attachToCAContext()
@@ -110,6 +111,7 @@ void Engine::shutdown()
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now;
     now = epicsTime::getCurrent();
+#ifdef TODO
     mutex.lock();
     ChannelIterator channel(*_archive);
     try
@@ -131,7 +133,7 @@ void Engine::shutdown()
     mutex.unlock();
     LOG_MSG("Closing archive\n");
     delete _archive;
-
+#endif
     LOG_MSG("Removing memory for channels and groups\n");
     while (! channels.empty())
     {
@@ -197,7 +199,8 @@ ArchiveChannel *Engine::findChannel(const stdString &name)
 
 ArchiveChannel *Engine::addChannel(GroupInfo *group,
                                    const stdString &channel_name,
-                                   double period, bool disabling, bool monitored)
+                                   double period, bool disabling,
+                                   bool monitored)
 {
     ArchiveChannel *channel = findChannel(channel_name);
     bool new_channel;
@@ -230,30 +233,43 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
 
     if (new_channel)
     {
+        // TODO: Check the locking of the file access
         try
         {
-            DirectoryFile index(directory, true);     
+            DirectoryFile index(index_name, true);     
             // Is channel already in Archive?
             DirectoryFileIterator dfi = index.find(channel_name);            
             if (dfi.isValid())
             {   // extract previous knowledge from Archive
-                BinValueIterator vi;
-                dfi.getChannel()->getLastValue(&vi);
-                if (vi.isValid())
+                DataFile *datafile =
+                    DataFile::reference(index.getDirname(),
+                                        dfi.entry.data.last_file, false);
+                if (datafile)
                 {
-                    const ValueI *last_value = vi.getValue();
-                    epicsTime last_stamp = last_value->getTime();
-                    channel->init(last_value->getType(),
-                                  last_value->getCount(),
-                                  last_value->getCtrlInfo(),
-                                  &last_stamp);
-
-                    stdString stamp;
-                    epicsTime2string(last_stamp, stamp);
-                    LOG_MSG("'%s' could be initialized from storage.\n"
-                            "Last Stamp: %s\n",
-                            channel_name.c_str(),
-                            stamp.c_str());
+                    DataHeaderIterator *dhi =
+                        datafile->getHeader(dfi.entry.data.last_offset);
+                    if (dhi)
+                    {
+                        epicsTime last_stamp(dhi->header.end_time);
+                        CtrlInfo ctrlinfo;
+                        ctrlinfo.read(datafile->file, dhi->header.ctrl_info_offset);
+                        channel->init(dhi->header.dbr_type,
+                                      dhi->header.nelements,
+                                      &ctrlinfo,
+                                      &last_stamp);
+                        stdString stamp;
+                        epicsTime2string(last_stamp, stamp);
+                        LOG_MSG("'%s' could be initialized from storage.\n"
+                                "Data file '%s' @ 0x%lX\n"
+                                "Last Stamp: %s\n",
+                                channel_name.c_str(),
+                                dfi.entry.data.last_file,
+                                dfi.entry.data.last_offset,
+                                stamp.c_str());
+                        delete dhi;
+                    }
+                    datafile->release();
+                    DataFile::close_all();
                 }
             }
             else
@@ -317,17 +333,10 @@ void Engine::setBufferReserve(int reserve)
     config_file.save();
 }
 
-void Engine::setSecsPerFile(double secs_per_file)
-{
-    _secs_per_file = (unsigned long) secs_per_file;
-    BinArchive *binarch = dynamic_cast<BinArchive *>(_archive->getI());
-    if (binarch)
-        binarch->setSecsPerFile(_secs_per_file);
-}
-
 void Engine::writeArchive()
 {
     is_writing = true;
+#ifdef TODO
     ChannelIterator channel(*_archive);
     try
     {
@@ -344,6 +353,7 @@ void Engine::writeArchive()
         LOG_MSG("Engine::writeArchive caught %s\n", e.what());
     }
     channel->releaseBuffer();
+#endif
     is_writing = false;
 }
 

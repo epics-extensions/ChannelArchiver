@@ -3,6 +3,8 @@
 include ../../Make.cfg
 include ../../Make.ver
 
+USR_CXXFLAGS += -I ../../LibIO
+
 SRCS += ascii.cpp
 SRCS += main.cpp
 

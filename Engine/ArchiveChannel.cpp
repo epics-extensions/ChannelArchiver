@@ -1,10 +1,7 @@
+// Tools
 #include "epicsTimeHelper.h"
-
-// TODO: Use RawValue, Index & Datafile instead of full LibIO
-#include "ArchiveException.h"
-#include "ArchiveI.h"
-#include "BinValue.h"
-
+#include "MsgLogger.h"
+//Engine
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
@@ -127,6 +124,7 @@ void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
 
 void ArchiveChannel::write(Archive &archive, ChannelIterator &channel)
 {
+    #ifdef TODO
     try
     {
         size_t count = buffer.getCount();
@@ -181,6 +179,7 @@ void ArchiveChannel::write(Archive &archive, ChannelIterator &channel)
     {
         LOG_MSG("ArchiveChannel::write caught %s\n", e.what());
     }   
+#endif
 }
 
 

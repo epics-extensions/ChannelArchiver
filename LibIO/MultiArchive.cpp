@@ -8,6 +8,7 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+#include <math.h>
 #include "MultiArchive.h"
 #include "MultiChannelIterator.h"
 #include "MultiValueIterator.h"

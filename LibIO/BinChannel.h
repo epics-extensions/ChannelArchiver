@@ -1,8 +1,9 @@
 #ifndef __BINCHANNEL_H__
 #define __BINCHANNEL_H__
 
-#include "ArchiveTypes.h"
+#include "string2cp.h"
 #include "ChannelI.h"
+
 
 class BinChannel : public ChannelI
 {

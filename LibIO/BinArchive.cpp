@@ -121,7 +121,7 @@ void BinArchive::calcNextFileTime (const epicsTime &time, epicsTime &next_file_t
 
 bool BinArchive::makeFullFileName (const stdString &basename, stdString &full_name)
 {
-    if (! isValidFilename (basename))
+    if (! Filename::isValidFilename (basename))
         return false;
     LOG_ASSERT (_dir);
     Filename::build (_dir->getDirname(), basename, full_name);

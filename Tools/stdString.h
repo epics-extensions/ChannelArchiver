@@ -47,7 +47,7 @@ public:
 	/// compare >  0: this >  rhs<br>
 	/// compare == 0: this == rhs
 	int compare(const stdString &rhs) const;
-	bool operator == (const stdString &rhs) const;
+	bool operator == (const stdString &rhs) const;    
 	bool operator != (const stdString &rhs) const;
 	bool operator < (const stdString &rhs) const;
 	bool operator > (const stdString &rhs) const;

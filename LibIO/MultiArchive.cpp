@@ -22,7 +22,8 @@ BEGIN_NAMESPACE_CHANARCH
 // Open a MultiArchive for the given master file
 MultiArchive::MultiArchive (const stdString &master_file)
 {
-	parseMasterFile (master_file);
+	if (! parseMasterFile (master_file))
+		throwDetailedArchiveException (OpenError, master_file);
 }
 
 ChannelIteratorI *MultiArchive::newChannelIterator () const

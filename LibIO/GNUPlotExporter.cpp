@@ -175,6 +175,14 @@ void GNUPlotExporter::exportChannelList(
                 break;
             if (value->isInfo())
             {
+	       if (last_was_data) {
+		  // Output the last valid Value with "event"-timestamp
+		  // -> plot continues to e.g. disconnect-time for channels
+		  // that change seldom
+		  --value;
+		  printTimeAndValue(f, time, *value);
+		  ++value;
+	       }
                 // Show as comment & empty line -> "gap" in GNUplot graph.
                 // But only one empty line, multiples separate channels!
                 fprintf(f, "# ");
@@ -233,7 +241,7 @@ void GNUPlotExporter::exportChannelList(
             throwDetailedArchiveException(OpenError, GNUPLOT_PIPE);
     }
     else
-    {
+    {	
         fopen(script_name.c_str(), "wt");
         if (!f)
             throwDetailedArchiveException(WriteError, script_name);

@@ -197,6 +197,12 @@ const RawValue::Data *RawDataReader::next()
         return 0;
     }
     // If we still have an RTree entry: Are we within bounds?
+
+    // TODO: Handle this case:
+    // Master only knows about e.g. 10 samples in last block
+    // Meanwhile, there are 30 samples.
+    // This code will set val_idx = last and try the _next_ block,
+    // even though it should continue in the current block.
     if (valid_datablock  &&
         RawValue::getTime(data) > node->record[rec_idx].end)
     {

@@ -34,7 +34,7 @@
 
 // Use password mechanism
 // (for stopping the engine over the web)
-#define USE_PASSWD
+//#define USE_PASSWD
 
 #define DEFAULT_USER    "engine"
 #define DEFAULT_PASS    "password"   

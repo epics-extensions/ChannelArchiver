@@ -10,7 +10,7 @@
 #include <CtrlInfo.h>
 #include <RawValue.h>
 // Local
-#include "DataServer.h"
+#include "ArchiveDataServer.h"
 
 /// \ingroup DataServer
 /// Interface class to the Archiver's network data server.

@@ -1,6 +1,6 @@
 // -*- c++ -*-
 
-// DataServer.h
+// ArchiveDataServer.h
 
 // XML-RPC
 #include <xmlrpc.h>

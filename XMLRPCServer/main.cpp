@@ -17,7 +17,7 @@
 #include <LinearReader.h>
 #include <PlotReader.h>
 // XMLRPCServer
-#include "DataServer.h"
+#include "ArchiveDataServer.h"
 #include "ServerConfig.h"
 
 // If defined, the server writes log messages into

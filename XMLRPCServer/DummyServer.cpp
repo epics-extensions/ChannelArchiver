@@ -7,7 +7,7 @@
 // Tools
 #include "RegularExpression.h"
 // XMLRPCServer
-#include "DataServer.h"
+#include "ArchiveDataServer.h"
 
 static const char *names[] =
 {

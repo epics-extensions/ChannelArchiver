@@ -1,4 +1,4 @@
-#include "DataServer.h"
+#include "ArchiveDataServer.h"
 
 // epicsTime -> time_t-type of seconds & nanoseconds
 void epicsTime2pieces(const epicsTime &t,

@@ -9,6 +9,7 @@ USR_CXXFLAGS += -I ../../Storage
 
 # Library to build
 INC += ArchiveDataClient.h
+INC += ArchiveDataServer.h
 LIB_SRCS += DataServer.cpp
 LIB_SRCS += ArchiveDataClient.cpp
 LIBRARY_HOST := DataServer

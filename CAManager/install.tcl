@@ -70,6 +70,9 @@ set libfiles {}
 foreach file [glob -nocomplain libsrc/*.tcl] {
   lappend libfiles $file
 }
+foreach file [glob -nocomplain libsrc/plugins/*.tcl] {
+  lappend libfiles $file
+}
 incr ::prog [llength $libfiles]
 
 if {[regexp "Windows" $tcl_platform(os)]} {

@@ -31,7 +31,7 @@ proc updateMultiArchive {arch} {
   set myN $::n
   incr ::n
   set wh [open $arch.$myN w]
-  puts $wh "master_version=$::master_version"
+  puts $wh "master_version=$::multiVersion"
   foreach i [camMisc::arcIdx] {
     if {[camMisc::arcGet $i multi] == $arch} {
       set archive "[file dirname [camMisc::arcGet $i cfg]]/[file tail [camMisc::arcGet $i archive]]"
@@ -42,7 +42,7 @@ proc updateMultiArchive {arch} {
       }
       if {[file dirname [camMisc::arcGet $i archive]] == "."} {
 	set ts ""
-	if {$::master_version == 2} {
+	if {$::multiVersion == 2} {
 	  lassign [getTimes $archive $i] starttime stoptime
 	  if {"$starttime" != "0"} {
 	    set ts "$starttime $stoptime "

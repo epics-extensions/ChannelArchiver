@@ -1,5 +1,3 @@
-set ::master_version 2
-
 set ::mutex 0
 
 proc semTake {} {
@@ -57,6 +55,7 @@ proc runArchiver {i {forceRun 0}} {
     return
   }
 
+  file delete -force $ROOT/archive_active.lck
   if {[file exists $ROOT/archive_active.lck]} {
     if {![info exists ::wasError($i)] || ($::wasError($i) != 2)} {
       Puts "Lockfile for \"$descr\" exists - Archiver already running! (or terminated abnormally?)" error
@@ -153,7 +152,7 @@ proc runArchiver {i {forceRun 0}} {
 
   # Now edit the master-files accordingly
   set master_dir $ROOT/[file tail $archive]
-  set master_txt "master_version=$::master_version"
+  set master_txt "master_version=$::multiVersion"
 
   if {[file exists $master_dir] && ("[file dirname $archive]" != ".")} { 
     regsub -all "\r" [read_file $master_dir] "" master_txt
@@ -168,10 +167,10 @@ proc runArchiver {i {forceRun 0}} {
   }
 
   if {"[file dirname $archive]" != "."} {
-    if {"[lindex $md 0]" == "master_version=$::master_version"} {
+    if {"[lindex $md 0]" == "master_version=$::multiVersion"} {
       if {[lsearch -regex $md ".*$ROOT/$archive"] < 0} {
 	set ts ""
-	if {$::master_version == 2} {
+	if {$::multiVersion == 2} {
 	  if {$starttime == 0} {
 	    lassign [getTimes $ROOT/$archive] starttime stoptime
 	    if {"$starttime" != "0"} {

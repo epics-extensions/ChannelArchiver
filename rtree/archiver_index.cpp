@@ -16,7 +16,8 @@ archiver_Index::~archiver_Index()
 bool archiver_Index::open(const char * file_Path, bool read_Only)
 {
 	if(file_Path == 0) return false;
-	f = fopen(file_Path, "r+b");
+	if(read_Only) f = fopen(file_Path, "rb");
+    else f = fopen(file_Path, "r+b");
 	if(f==0) 
 	{
 		printf("Could not open the file %s\n", file_Path);
@@ -181,14 +182,14 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 			delete ai;
 			return false;
 		}
-		if(global_Priority > -1)	au.setPriority(global_Priority);
+		if(other.getGlobalPriority() > -1)	au.setPriority(other.getGlobalPriority());
 		//we know its unique
 		if(addAU(channel_Name, au) == false) 
 		{
 			delete ai;
 			return false;
 		}
-		result = ai->getNextAUAddress(&au_Address);
+      	result = ai->getNextAUAddress(&au_Address);
 	}
 	delete ai;
 	return false;

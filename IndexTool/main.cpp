@@ -13,14 +13,13 @@
 //result must already be allocated 
 void  readLine(FILE * f, char * result)
 {
-    char s;
     int i = 0;
-    while(s!='\n' || s==EOF)
+    do
     {
-        s = getc(f);
-        result[i] = s;
+        result[i] = getc(f);
         i++;
     }
+    while(result[i-1]!='\n' &&  result[i-1] != EOF);
     result[i-1] = 0;      //zero termination
 }
 
@@ -36,7 +35,6 @@ int main(int argc, const char *argv[])
     parser.setArgumentsInfo("<archive list file> <output index>");
     CmdArgFlag help  (parser, "help", "Show Help");
     CmdArgFlag verbose (parser, "verbose", "Show more info");
-    CmdArgFlag redo  (parser, "redo", "Rebuild index from scratch");
     if (! parser.parse())
         return -1;
 
@@ -47,9 +45,8 @@ int main(int argc, const char *argv[])
         printf("and generates a master index for all of them\n");
         printf("in the output index\n");
         printf("\n");
-        printf("When invoked with the 'redo' option,\n");
-        printf("the output index is created from scratch.\n");
-        printf("Otherwise (default), a fast update is attempted\n");
+        printf("When the master index file already exists,\n");
+        printf("a fast update is attempted\n");
         return 0;
     }
     if (parser.getArguments().size() != 2)
@@ -70,24 +67,33 @@ int main(int argc, const char *argv[])
     char channel_Name[CHANNEL_NAME_LENGTH];
     int priority;
     bool result;
+    bool only_New_Data = true;
     archiver_Index ai;
     archiver_Index master_Index;
     FILE * f  = fopen(output_name.c_str(), "r+b");
     //at this point the R tree parameters can be set for user's needs
-    if(f == 0)  master_Index.create(output_name.c_str());
-    else master_Index.open(output_name.c_str(), false);
-    fclose(f);
+    if(f == 0)
+        {
+            master_Index.create(output_name.c_str());
+            only_New_Data = false;
+        }
+    else
+        {
+            master_Index.open(output_name.c_str(), false);
+            fclose(f);
+        }
 
     f = fopen(archive_list_name.c_str(), "r+t");
-    while(!feof(f))
+    while(true)
     {
         readLine(f, line);
+        if(feof(f)) break;
         switch(sscanf(line, "%s %d", path, &priority))
         {
             case 2:
                 ai.setGlobalPriority(priority);
             case 1:
-                ai.open(path, false);
+                ai.open(path);
                 break;
             default:
                 printf("The configuration file is corrupt\n");
@@ -100,13 +106,14 @@ int main(int argc, const char *argv[])
         {
             if(verbose)
             {
-                printf("Processing channel %s in the index file %s\n", channel_Name, path);
+                printf("Processing channel %s from the index file %s\n", channel_Name, path);
             }
-            if(master_Index.addDataFromAnotherIndex(channel_Name, ai, !redo) == false)
-                {
-                    delete cni;
-                    return 0;
-                }
+            if(master_Index.addDataFromAnotherIndex(channel_Name, ai, only_New_Data ) == false)
+            {
+                delete cni;
+                return 0;
+            };
+            if(verbose) printf("%s processed\n\n", channel_Name);
             result = cni->getNext(channel_Name);
         }
         delete cni;

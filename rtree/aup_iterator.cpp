@@ -19,7 +19,11 @@ bool aup_Iterator::getFirstAUAddress(const interval& i, long * result)
 	iv = i;	
 	long first_Leaf;
 	if(r->findFirstLeaf(&iv, &first_Leaf) == false) return false;
-	if(first_Leaf < 0) return true;
+	if(first_Leaf < 0)
+	{
+		*result = -1;
+		return true;
+	}
 	current_Leaf_Address = r->index2address(first_Leaf);
 	return getKeyAUAddressOfTheCurrentLeaf(result);
 }
@@ -44,7 +48,11 @@ bool aup_Iterator::getNextAUAddress(long * result)
 		entry.attach(r->getFile(), current_Leaf_Address);
 		long next_Index;
 		if(entry.readNextIndex(&next_Index) == false) return false;
-		if(next_Index < 0) return true;
+		if(next_Index < 0)
+		{
+			*result = -1;
+			return true;
+		}
 		current_Leaf_Address = r->index2address(next_Index);
 		return getKeyAUAddressOfTheCurrentLeaf(result);
 	}

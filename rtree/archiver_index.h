@@ -25,6 +25,7 @@ public:
 	*	@param value is read from the master index configuration file
 	*/
 	void setGlobalPriority(short value)	{global_Priority = value;}
+    short getGlobalPriority()            {return global_Priority;}
 
 	/**
 	*	Open the file with the specified path and check, if it is a valid index file

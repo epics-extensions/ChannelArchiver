@@ -4,6 +4,7 @@ include Make.ver
 
 all:
 	$(MAKE) -C Tools
+	$(MAKE) -C rtree
 	$(MAKE) -C StorageLib
 	$(MAKE) -C LibIO
 	$(MAKE) -C DataTool
@@ -14,6 +15,8 @@ all:
 
 clean:
 	@$(MAKE) -C Tools clean
+	@$(MAKE) -C rtree clean
+	@$(MAKE) -C StorageLib clean
 	@$(MAKE) -C LibIO clean
 	@$(MAKE) -C DataTool clean
 	@$(MAKE) -C Manager clean

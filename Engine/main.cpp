@@ -137,19 +137,11 @@ int main(int argc, const char *argv[])
         signal(SIGINT, signal_handler);
         signal(SIGTERM, signal_handler);
 #endif
-
         LOG_MSG("\n------------------------------------------\n"
                 "Engine Running.\n"
                 "Stop via web browser at http://localhost:%d/stop\n"
                 "------------------------------------------\n",
                 EngineServer::_port);
-#ifdef SAMPLE_TEST
-        ArchiveChannel *ac = new ArchiveChannel("fred", 5.0, new SampleMechanismMonitored());
-
-        ac->startCA();
-
-#endif
-
         while (run)
         {
             theEngine->process();

@@ -1,17 +1,19 @@
 #include "Configuration.h"
 
-Configuration::~Configuration ()
-{ }
+Configuration::~Configuration()
+{}
 
-bool Configuration::save ()
+bool Configuration::save()
 {	return false; }
 
-bool Configuration::saveEngine ()
+bool Configuration::saveEngine()
 {	return save ();	}
 
-bool Configuration::saveChannel (const class ChannelInfo *channel)
+bool Configuration::saveChannel(const class ArchiveChannel *channel)
 {	return save ();	}
 
-bool Configuration::saveGroup (const class GroupInfo *group)
+bool Configuration::saveGroup(const class GroupInfo *group)
 {	return save ();	}
+
+// That was easy, wasn't it?
 

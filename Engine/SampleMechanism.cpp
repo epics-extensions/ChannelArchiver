@@ -64,7 +64,7 @@ void SampleMechanismMonitored::handleConnectionChange()
                         channel->name.c_str(), ca_message(status));
                 return;
             }
-            theEngine->needCAflush();
+            theEngine->need_CA_flush = true;
         }
     }
     else

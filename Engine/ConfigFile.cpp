@@ -5,7 +5,7 @@
 
 ConfigFile::ConfigFile()
 {
-    _config_dir = "cfg";
+    config_dir = "cfg";
 }
 
 void ConfigFile::setParameter(const ASCIIParser &parser,
@@ -22,7 +22,7 @@ void ConfigFile::setParameter(const ASCIIParser &parser,
         if (num <= 0)
         {
             LOG_MSG("Config file '%s'(line %d): invalid period %s\n",
-                    _file_name.c_str(), parser.getLineNo(), value);
+                    file_name.c_str(), parser.getLineNo(), value);
             return;
         }
         theEngine->setDefaultPeriod(num);
@@ -33,13 +33,13 @@ void ConfigFile::setParameter(const ASCIIParser &parser,
         if (num <= 0)
         {
             LOG_MSG("Config file '%s'(line %d): invalid buffer_reserve %s\n",
-                    _file_name.c_str(), parser.getLineNo());
+                    file_name.c_str(), parser.getLineNo());
             return;
         }
         theEngine->setBufferReserve(num);
     }
     else if (parameter == "get_threshold")
-        theEngine->setGetThreshold (atof(value));
+        theEngine->setGetThreshold(atof(value));
     else if (parameter == "file_size")// arg: hours per file, i.e. 24
         theEngine->setSecsPerFile(atoi(value) * 3600);
     else if (parameter == "ignored_future") // arg: hours
@@ -48,7 +48,7 @@ void ConfigFile::setParameter(const ASCIIParser &parser,
         if (num < 0)
         {
             LOG_MSG("Config file '%s'(line %d): invalid hour specific. %s\n",
-                    _file_name.c_str(), parser.getLineNo(), value);
+                    file_name.c_str(), parser.getLineNo(), value);
             return;
         }
         theEngine->setIgnoredFutureSecs(num*60*60);
@@ -57,7 +57,7 @@ void ConfigFile::setParameter(const ASCIIParser &parser,
         loadGroup(value);
     else
         LOG_MSG("Config file '%s'(line %d): parameter '%s' is ignored\n",
-                _file_name.c_str(), parser.getLineNo(), parameter.c_str());
+                file_name.c_str(), parser.getLineNo(), parameter.c_str());
 }
 
 // This one checks e.g. channel name characters
@@ -97,7 +97,7 @@ bool ConfigFile::getChannel(ASCIIParser &parser, stdString &channel,
                 {
                     LOG_MSG("Config file '%s'(line %d): "
                             "suspicious channel name\n",
-                            _file_name.c_str(), parser.getLineNo());
+                            file_name.c_str(), parser.getLineNo());
                     return false;
                 }
                 channel += *(ch++);
@@ -177,7 +177,7 @@ bool ConfigFile::loadGroup(const stdString &group_name)
         }
     }
 
-    _file_name = group_name;
+    file_name = group_name;
     stdString channel_name;
     double period;
     bool monitor, disable;
@@ -189,21 +189,22 @@ bool ConfigFile::loadGroup(const stdString &group_name)
 
 bool ConfigFile::load(const stdString &config_name)
 {
-    _config_name = config_name;
+    this->config_name = config_name;
     return loadGroup (config_name);
 }
 
 bool ConfigFile::saveGroup(const class GroupInfo *group)
 {
+#ifdef TODO
     stdString filename;
-    Filename::build(_config_dir, group->getName(), filename);
+    Filename::build(config_dir, group->getName(), filename);
     FILE *f = fopen(filename.c_str(), "wt");
     if (! f)
     {
         LOG_MSG("Config file '%s': cannot create\n"
                 "(No severe error. Create a '%s' subdirectory\n"
                 " if you want to save updated configuration files).\n",
-                filename.c_str(), _config_dir.c_str());
+                filename.c_str(), config_dir.c_str());
         return false;
     }
     
@@ -220,7 +221,7 @@ bool ConfigFile::saveGroup(const class GroupInfo *group)
     fprintf(f, "!buffer_reserve\t%d", theEngine->getBufferReserve());
     fprintf(f, "\n");
 
-    if (group->getName() == _config_name)
+    if (group->getName() == config_name)
     {
         const stdList<GroupInfo *> & groups = theEngine->getGroups ();
         stdList<GroupInfo *>::const_iterator g;
@@ -245,12 +246,13 @@ bool ConfigFile::saveGroup(const class GroupInfo *group)
     fprintf(f, "# EOF\n\n");
 
     fclose(f);
+#endif
     return true;
 }
  
 bool ConfigFile::save()
 {
-    const stdList<GroupInfo *> & groups = theEngine->getGroups ();
+    const stdList<GroupInfo *> & groups = theEngine->groups;
     stdList<GroupInfo *>::const_iterator group;
     
     for (group=groups.begin(); group!=groups.end(); ++group)

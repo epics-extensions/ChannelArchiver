@@ -70,7 +70,7 @@ Engine::Engine(const stdString &directory_file_name)
     if (ca_add_exception_event(caException, 0) != ECA_NORMAL)
         throwDetailedArchiveException(Fail, "ca_add_exception_event");
 
-    _ca_context = ca_current_context();
+    ca_context = ca_current_context();
     
     engine_server = new EngineServer();
 
@@ -87,7 +87,7 @@ void Engine::create(const stdString &directory_file_name)
 
 bool Engine::attachToCAContext()
 {
-    if (ca_attach_context(_ca_context) != ECA_NORMAL)
+    if (ca_attach_context(ca_context) != ECA_NORMAL)
     {
         LOG_MSG("ca_attach_context failed for thread 0x%08X (%s)\n",
                 epicsThreadGetIdSelf(), epicsThreadGetNameSelf());
@@ -110,7 +110,8 @@ void Engine::shutdown()
     epicsTime now;
     now = epicsTime::getCurrent();
 
-    _engine_lock.lock();
+#ifdef TODO
+    mutex.lock();
     ChannelIterator channel(*_archive);
     try
     {
@@ -126,8 +127,9 @@ void Engine::shutdown()
         LOG_MSG("Engine::shutdown caught %s\n", e.what());
     }
     channel->releaseBuffer();
-    _engine_lock.unlock();
-
+    mutex.unlock();
+#endif
+    
     LOG_MSG("Engine shut down.\n");
     theEngine = 0;
     delete this;
@@ -136,16 +138,15 @@ void Engine::shutdown()
 Engine::~Engine()
 {
     delete _archive;
-
-    while (! _channels.empty())
+    while (! channels.empty())
     {
-        delete _channels.back();
-        _channels.pop_back();
+        delete channels.back();
+        channels.pop_back();
     }
-    while (! _groups.empty())
+    while (! groups.empty())
     {
-        delete _groups.back();
-        _groups.pop_back();
+        delete groups.back();
+        groups.pop_back();
     }
 }
 
@@ -158,18 +159,14 @@ bool Engine::checkUser(const stdString &user, const stdString &pass)
 
 GroupInfo *Engine::findGroup(const stdString &name)
 {
-    GroupInfo *found = 0;
-    stdList<GroupInfo *>::iterator group = _groups.begin();
-    while (group != _groups.end())
+    stdList<GroupInfo *>::iterator group = groups.begin();
+    while (group != groups.end())
     {
         if ((*group)->getName() == name)
-        {
-            found = *group;
-            break;
-        }
+            return *group;
         ++group;
     }
-    return found;
+    return 0;
 }
 
 GroupInfo *Engine::addGroup(const stdString &name)
@@ -179,51 +176,44 @@ GroupInfo *Engine::addGroup(const stdString &name)
     GroupInfo *group = findGroup(name);
     if (!group)
     {
-        group = new GroupInfo();
-        group->setName(name);
-        _groups.push_back(group);
+        group = new GroupInfo(name);
+        groups.push_back(group);
     }
     if (_configuration)
         _configuration->saveGroup(group);
-
     return group;
 }
 
-ChannelInfo *Engine::findChannel(const stdString &name)
+ArchiveChannel *Engine::findChannel(const stdString &name)
 {
-    ChannelInfo *found = 0;
-
-    stdList<ChannelInfo *>::iterator channel = _channels.begin();
-    while (channel != _channels.end())
+    stdList<ArchiveChannel *>::iterator channel = channels.begin();
+    while (channel != channels.end())
     {
         if ((*channel)->getName() == name)
-        {
-            found = *channel;
-            break;
-        }
+            return *channel;
         ++channel;
     }
-
-    return found;
+    return 0;
 }
 
-ChannelInfo *Engine::addChannel(GroupInfo *group,
-                                const stdString &channel_name,
-                                double period, bool disabling, bool monitored)
+ArchiveChannel *Engine::addChannel(GroupInfo *group,
+                                   const stdString &channel_name,
+                                   double period, bool disabling, bool monitored)
 {
-    ChannelInfo *channel_info = findChannel(channel_name);
+    ArchiveChannel *channel = findChannel(channel_name);
     bool new_channel;
 
-    if (!channel_info)
+    if (!channel)
     {
-        channel_info = new ChannelInfo();
-        channel_info->lock();
-        channel_info->setName(channel_name);
-        _channels.push_back(channel_info);
+        channel = new ArchiveChannel(channel_name, period,
+                                     new SampleMechanismMonitored());
+        channel->mutex.lock();
+        channels.push_back(channel);
         new_channel = true;
     }
     else
     {
+#ifdef TODO
         channel_info->lock();
         // For existing channels: minimize period, maximize monitor feature
         if (channel_info->isMonitored())
@@ -232,12 +222,14 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
             period = channel_info->getPeriod();
         channel_info->resetBuffers();
         new_channel = false;
+ 
+#endif
     }
-    group->addChannel(channel_info);
-    channel_info->addToGroup(group, disabling);
-    channel_info->setMonitored(monitored);
-    channel_info->setPeriod(period);
 
+    group->addChannel(channel);
+    channel->addToGroup(group, disabling);
+
+#ifdef TODO
     if (new_channel)
     {
         try
@@ -267,11 +259,11 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
     }
     if (_configuration)
         _configuration->saveChannel(channel_info);
-    
-    channel_info->startCaConnection(new_channel);
-    channel_info->unlock();
+#endif
+    channel->startCA();
+    channel->mutex.unlock();
 
-    return channel_info;
+    return channel;
 }
 
 void Engine::setWritePeriod(double period)
@@ -279,6 +271,7 @@ void Engine::setWritePeriod(double period)
     _write_period = period;
     _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
 
+#ifdef TODO
     stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
     while (channel_info != _channels.end())
     {
@@ -290,6 +283,7 @@ void Engine::setWritePeriod(double period)
 
     if (_configuration)
         _configuration->saveEngine();
+#endif
 }
 
 void Engine::setDescription(const stdString &description)
@@ -332,6 +326,7 @@ void Engine::setSecsPerFile(double secs_per_file)
 
 void Engine::writeArchive()
 {
+#ifdef TODO
     _is_writing = true;
     ChannelIterator channel(*_archive);
     try
@@ -351,6 +346,7 @@ void Engine::writeArchive()
     }
     channel->releaseBuffer();
     _is_writing = false;
+#endif
 }
 
 bool Engine::process()
@@ -383,10 +379,10 @@ bool Engine::process()
         _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
         do_wait = false;
     }
-    if (_need_CA_flush)
+    if (need_CA_flush)
     {
         ca_flush_io();
-        _need_CA_flush = false;
+        need_CA_flush = false;
     }
     if (do_wait)
     {

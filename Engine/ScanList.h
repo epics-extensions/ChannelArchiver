@@ -11,7 +11,7 @@
 #ifndef __SCANLIST_H__
 #define __SCANLIST_H__
 #include <epicsTime.h>
-#include "ChannelInfo.h"
+#include "ArchiveChannel.h"
 
 class SinglePeriodScanList
 {
@@ -19,9 +19,9 @@ public:
     SinglePeriodScanList(double period);
     void scan();
 
-    double                 _period;    // Scan period in seconds
-    epicsTime              _next_scan; // Next time this list is due
-    stdList<ChannelInfo *> _channels;
+    double                 period;    // Scan period in seconds
+    epicsTime              next_scan; // Next time this list is due
+    stdList<class ArchiveChannel *> channels;
 };
 
 class ScanList
@@ -32,23 +32,30 @@ public:
 
     // Add a channel to a ScanList.
     // channel->getPeriod() must be valid
-    void addChannel(ChannelInfo *channel);
+    void addChannel(class ArchiveChannel *channel);
 
     // Scan all channels that are due at/after deadline
     void scan(const epicsTime &deadline);
 
     // Does the scan list contain anyting?
     bool isDueAtAll()
-    {   return _is_due_at_all; }
+    {   return is_due_at_all; }
     
     // When should scan() be called ?
     const epicsTime &getDueTime() const
-    {   return  _next_list_scan; }
+    {   return  next_list_scan; }
 
 private:
-    bool _is_due_at_all;
-    stdList<SinglePeriodScanList *> _period_lists;
-    epicsTime                       _next_list_scan;
+    bool is_due_at_all;
+    stdList<SinglePeriodScanList *> period_lists;
+    epicsTime                       next_list_scan;
 };
 
 #endif //__SCANLIST_H__
+
+
+
+
+
+
+

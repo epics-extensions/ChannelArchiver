@@ -24,6 +24,26 @@ ArchiveChannel::~ArchiveChannel()
     }
 }
 
+void ArchiveChannel::addToGroup(GroupInfo *group, bool disabling)
+{
+    // bit in _disabling indicates if we could disable that group
+    groups_to_disable.grow(group->getID() + 1);
+    groups_to_disable.set(group->getID(), disabling);
+    
+    // Is Channel already in group?
+    stdList<GroupInfo *>::iterator i;
+    for (i=groups.begin(); i!=groups.end(); ++i)
+        if (*i == group)
+            return;
+    
+    groups.push_back(group);
+    // If channel is added and it's already connected,
+    // the whole connection shebang will be skipped
+    // -> tell group we're connected right away:
+    if (connected)
+        ++group->num_connected;
+}
+    
 void ArchiveChannel::startCA()
 {
     if (!chid_valid)
@@ -44,7 +64,7 @@ void ArchiveChannel::startCA()
         // re-get control information
         // TODO
     }
-    theEngine->needCAflush();
+    theEngine->need_CA_flush = true;
 }
 
 
@@ -71,7 +91,7 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
                     "caLinkConnectionHandler: %s",
                     me->name.c_str(), ca_message (status));
         }
-        theEngine->needCAflush();
+        theEngine->need_CA_flush = true;
     }
     else
     {
@@ -177,9 +197,10 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
     me->mutex.unlock();
 }
 
+// called by SampleMechanism, mutex is locked.
 void ArchiveChannel::handleDisabling(const RawValue::Data *value)
 {
-    if (disabling.empty())
+    if (groups_to_disable.empty())
         return;
 
     // We disable if the channel is non-zero
@@ -190,7 +211,7 @@ void ArchiveChannel::handleDisabling(const RawValue::Data *value)
         stdList<GroupInfo *>::iterator g;
         for (g=groups.begin(); g!=groups.end(); ++g)
         {
-            if (disabling.test((*g)->getID()))
+            if (groups_to_disable.test((*g)->getID()))
                 (*g)->disable(this);
         }
     }
@@ -199,7 +220,7 @@ void ArchiveChannel::handleDisabling(const RawValue::Data *value)
         stdList<GroupInfo *>::iterator g;
         for (g=groups.begin(); g!=groups.end(); ++g)
         {
-            if (disabling.test((*g)->getID()))
+            if (groups_to_disable.test((*g)->getID()))
                 (*g)->enable(this);
         }
         currently_disabling = false;

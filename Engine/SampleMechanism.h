@@ -25,7 +25,7 @@ class SampleMechanism
 public:
     friend class ArchiveChannel;
     virtual ~SampleMechanism();
-    virtual stdString description() = 0;
+    virtual stdString getDescription() const = 0;
 
     /// Invoked for connection changes
     virtual void handleConnectionChange() = 0;
@@ -45,8 +45,8 @@ class SampleMechanismMonitored : public SampleMechanism
 public:
     SampleMechanismMonitored();
     ~SampleMechanismMonitored();
-    virtual stdString description();
-    virtual void handleConnectionChange();
+    stdString getDescription() const;
+    void handleConnectionChange();
 private:
     bool   have_subscribed;
     evid   ev_id;

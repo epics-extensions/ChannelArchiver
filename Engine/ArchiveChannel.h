@@ -27,7 +27,10 @@ class ArchiveChannel
 public:
     friend class SampleMechanism;
     friend class SampleMechanismMonitored;
-    ArchiveChannel(const stdString &name, double period, SampleMechanism *mechanism);
+    friend class GroupInfo;
+    
+    ArchiveChannel(const stdString &name,
+                   double period, SampleMechanism *mechanism);
     ~ArchiveChannel();
     
     /// mutex between CA, HTTPD, Engine.
@@ -36,7 +39,16 @@ public:
     /// Exception: The CA callbacks.
     epicsMutex mutex;
 
-    const stdString &getName();
+    const stdString &getName() const;
+
+    double getPeriod() const;
+
+    /// A channel belongs to at least one group,
+    /// and might disable some of the groups to which it belongs
+    stdList<class GroupInfo *> groups;
+
+    /// Add a channel to a group & keep track of disabling
+    void addToGroup(class GroupInfo *group, bool disabling);
     
     /// Get the current sample mechanism (never NULL)
     const SampleMechanism *getMechanism() const;
@@ -45,6 +57,15 @@ public:
     /// Can be called repeatedly, e.g. after changing the
     /// SampleMechanism or to toggle a re-get of the control information
     void startCA();
+
+    /// Is the CA connection currently good?
+    bool isConnected() const;
+
+    /// A set bit indicates a group that this channel disables.
+    const BitSet &getGroupsToDisable() const;
+
+    /// Is this channel disabled?
+    bool isDisabled() const;
     
 private:
     stdString       name;
@@ -69,26 +90,43 @@ private:
     CircularBuffer  buffer;
     // ---
     
-    // Channel belongs to at least one group,
-    // and might disable some of the groups to which it belongs
-    stdList<class GroupInfo *> groups;
-    bool disabled; // are we in a group that's disabled?
-    BitSet disabling; // could this channel disable any groups?
-    bool currently_disabling; // is this channel currently disabling any groups?
+    /// The mechanism: This or another channel of one of the groups
+    /// to which this channel belongs might diable a group.
+    /// The group then comes back and disables all its channels.
+    bool disabled;
+    BitSet groups_to_disable; // Bit is set -> we disable that group
+    bool currently_disabling; // is this channel currently disabling its groups?
     void handleDisabling(const RawValue::Data *value);
-
     
     // Bookkeeping and value checking stuff, used between ArchiveChannel
     // and SampleMechanism
     epicsTime last_stamp_in_archive; // for back-in-time checks
 };
 
-inline const stdString &ArchiveChannel::getName()
+inline const stdString &ArchiveChannel::getName() const
 {   return name; }    
+
+inline double ArchiveChannel::getPeriod() const
+{   return period; }    
     
 inline const SampleMechanism *ArchiveChannel::getMechanism() const
 {   return mechanism; }
 
+inline bool ArchiveChannel::isConnected() const
+{   return connected; }
+
+inline const BitSet &ArchiveChannel::getGroupsToDisable() const
+{   return groups_to_disable; }
+
+inline bool ArchiveChannel::isDisabled() const
+{   return disabled; }
+
 #endif
+
+
+
+
+
+
 
 

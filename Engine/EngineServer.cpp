@@ -52,7 +52,7 @@ static void engineinfo(HTTPClientConnection *connection,
 
     if (theEngine)
     {
-        theEngine->lock();
+        theEngine->mutex.lock();
         
         page.tableLine("Description", theEngine->getDescription().c_str(), 0);
         
@@ -61,8 +61,7 @@ static void engineinfo(HTTPClientConnection *connection,
         
         page.tableLine("Archive ", theEngine->getDirectory().c_str(), 0);
         
-        const stdList<ChannelInfo *> &channels = theEngine->getChannels();
-        cvtUlongToString(channels.size(), line);
+        cvtUlongToString(theEngine->channels.size(), line);
         page.tableLine("Channels", line, 0);
         
 #ifdef SHOW_DIR
@@ -86,7 +85,7 @@ static void engineinfo(HTTPClientConnection *connection,
         
         sprintf(line, "%f sec", theEngine->getGetThreshold());
         page.tableLine("Get Threshold", line, 0); 
-        theEngine->unlock();
+        theEngine->mutex.unlock();
     }
     else
     {
@@ -219,16 +218,12 @@ static void config(HTTPClientConnection *connection, const stdString &path)
 static void channels(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Channels");
-
-    theEngine->lock();
-    
-    const stdList<ChannelInfo *> &channels = theEngine->getChannels();
-
+    theEngine->mutex.lock();
     page.openTable(1, "Name", 1, "Status", 0);
-    stdList<ChannelInfo *>::const_iterator channel;
+    stdList<ArchiveChannel *>::const_iterator channel;
     stdString link;
     link.reserve(80);
-    for (channel=channels.begin(); channel != channels.end(); ++channel)
+    for (channel=theEngine->channels.begin(); channel != theEngine->channels.end(); ++channel)
     {
         link = "<A HREF=\"channel/";
         link += (*channel)->getName();
@@ -237,99 +232,61 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
         link += "</A>";
         page.tableLine(link.c_str(),
                        ((*channel)->isConnected() ?
-                        "connected" : "<FONT COLOR=#FF0000>not conn.</FONT>"),
+                        "connected" : "<FONT COLOR=#FF0000>disconnected</FONT>"),
                        0);
     }
-    theEngine->unlock();
+    theEngine->mutex.unlock();
     page.closeTable();
 }
 
 static void channelInfoTable(HTMLPage &page)
 {
-    page.openTable(1, "Name", 1, "Status", 1, "CA State", 1, "Period [s]",
-                   1, "Buffer", 1, "Get Mechanism", 1, "Disabling", 0);
+    page.openTable(1, "Name",
+                   1, "CA State",
+                   1, "Mechanism",
+                   1, "Disabling",
+                   1, "State",
+                   0);
 }
 
-static void channelInfoLine(HTMLPage &page, const ChannelInfo *channel)
+static void channelInfoLine(HTMLPage &page, const ArchiveChannel *channel)
 {
-    stdString status, stamp, ca_state;
-
-    status.reserve(150);
-    if (channel->isDisabled())
-        status = "disabled";
-    else if (channel->isMonitored())
-        status = "monitored";
-    else status = "scanned";
-    status += "<BR>last: ";
-    epicsTime2string(channel->getLastArchiveStamp(), stamp);
-    status += stamp;
-    status += "<BR>next: ";
-    epicsTime2string(channel->getExpectedNextTime(), stamp);
-    status += stamp;
-    
-    ca_state.reserve(150);
-    if (channel->isConnected())
-        ca_state = "connected";
-    else
-        ca_state = "<FONT COLOR=#FF0000>NOT CONNECTED</FONT>";
-    ca_state += "<BR>(";
-    epicsTime2string(channel->getConnectTime(), stamp);
-    ca_state += stamp;
-    ca_state += ")";
-    ca_state += "<BR>";
-    ca_state += channel->getHost();
-
-    char period[50], bufsize[50];
-    sprintf(period, "%f", (double)channel->getPeriod());
-    sprintf(bufsize, "%d", (int)channel->getValsPerBuffer());
-
-    const char *get_mechanism;
-    switch (channel->getMechanism())
-    {
-        case ChannelInfo::use_monitor:  get_mechanism = "monitor"; break;
-        case ChannelInfo::use_get:      get_mechanism = "get"; break;
-        default:                        get_mechanism = "none";
-    }
-
-    stdString disabling;
-    char num[10];
-    const BitSet &da_bits = channel->getDisabling();
-    if (da_bits.empty())
-        disabling = "-";
-    else
-    {
-        bool empty = true;
-        disabling.reserve(da_bits.capacity() * 4);
-        for (size_t i=0; i<da_bits.capacity(); ++i)
-        {
-            if (da_bits[i])
-            {
-                if (empty)
-                {
-                    sprintf(num, "%d", i);
-                    empty = false;
-                }
-                else
-                    sprintf(num, ", %d", i);
-                disabling += num;
-            }
-        }
-    }
-    
     stdString channel_link; // link to group list for this channel
     channel_link = "<A HREF=\"/channelgroups?CHANNEL=";
     channel_link += channel->getName();
     channel_link += "\">";
     channel_link += channel->getName();
     channel_link += "</A>";
+    
+    stdString disabling;
+    char num[10];
+    const BitSet &bits = channel->getGroupsToDisable();
+    if (bits.empty())
+        disabling = "-";
+    else
+    {
+        bool at_least_one = false;
+        disabling.reserve(bits.capacity() * 4);
+        for (size_t i=0; i<bits.capacity(); ++i)
+            if (bits.test(i))
+            {
+                if (at_least_one)
+                    disabling += ", ";
+                sprintf(num, "%d", i);
+                disabling += num;
+            }
+    }
+    
     page.tableLine(
         channel_link.c_str(),
-        status.c_str(),
-        ca_state.c_str(),
-        period,
-        bufsize,
-        get_mechanism,
+        (channel->isConnected() ? 
+         "connected" :
+         "<FONT COLOR=#FF0000>NOT CONNECTED</FONT>"),
+        channel->getMechanism()->getDescription().c_str(),
         disabling.c_str(),
+        (channel->isDisabled() ?
+         "<FONT COLOR=#FFFF00>disabled</FONT>" :
+         "enabled"),
         0);
 }
 
@@ -338,9 +295,9 @@ static void channelInfo(HTTPClientConnection *connection,
 {
     stdString channel_name = path.substr(9);
 
-    theEngine->lock();
-    ChannelInfo *channel = theEngine->findChannel(channel_name);
-    theEngine->unlock();
+    theEngine->mutex.lock();
+    ArchiveChannel *channel = theEngine->findChannel(channel_name);
+    theEngine->mutex.unlock();
     if (! channel)
     {
         connection->error("No such channel: " + channel_name);
@@ -350,20 +307,19 @@ static void channelInfo(HTTPClientConnection *connection,
     HTMLPage page(connection->getSocket(), "Channel Info", 30);
 
     channelInfoTable(page);
-    channel->lock();
+    channel->mutex.lock();
     channelInfoLine(page, channel);
-    channel->unlock();
+    channel->mutex.unlock();
     page.closeTable();
 }
 
 void groups(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Groups");
-    theEngine->lock();
-    const stdList<GroupInfo *> &group_list = theEngine->getGroups();
-    if (group_list.empty())
+    theEngine->mutex.lock();
+    if (theEngine->groups.empty())
     {
-        theEngine->unlock();
+        theEngine->mutex.unlock();
         page.line("<I>no groups</I>");
         return;
     }
@@ -376,7 +332,7 @@ void groups(HTTPClientConnection *connection, const stdString &path)
     name.reserve(80);
     page.openTable(1, "Name", 1, "ID", 1, "Enabled", 1, "Channels",
                    1, "Connected", 0);
-    for (group=group_list.begin(); group!=group_list.end(); ++group)
+    for (group=theEngine->groups.begin(); group!=theEngine->groups.end(); ++group)
     {
         name = "<A HREF=\"group/";
         name += (*group)->getName();
@@ -385,7 +341,7 @@ void groups(HTTPClientConnection *connection, const stdString &path)
         name += "</A>";
         sprintf(id, "%d", (*group)->getID());
         channel_count = (*group)->getChannels().size();
-        connect_count = (*group)->getConnectedChannels();
+        connect_count = (*group)->num_connected;
         total_channel_count += channel_count;
         total_connect_count += connect_count;
         sprintf(channels, "%d", channel_count);
@@ -400,7 +356,7 @@ void groups(HTTPClientConnection *connection, const stdString &path)
                         channels, connected, 0);
     }
 
-    theEngine->unlock();
+    theEngine->mutex.unlock();
     
     sprintf(channels, "%d", total_channel_count);
     if (total_channel_count != total_connect_count)
@@ -415,11 +371,11 @@ void groups(HTTPClientConnection *connection, const stdString &path)
 static void groupInfo(HTTPClientConnection *connection, const stdString &path)
 {
     const stdString group_name = path.substr(7);
-    theEngine->lock();
+    theEngine->mutex.lock();
     const GroupInfo *group = theEngine->findGroup(group_name);
     if (! group)
     {
-        theEngine->unlock();
+        theEngine->mutex.unlock();
         connection->error("No such group: " + group_name);
         return;
     }
@@ -433,10 +389,9 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     page.tableLine("ID", id, 0);
     page.closeTable();
 
-    const stdList<ChannelInfo *>& channels = group->getChannels();
-    if (channels.empty())
+    if (theEngine->channels.empty())
     {
-        theEngine->unlock();
+        theEngine->mutex.unlock();
         page.line("no channels");
         return;
     }
@@ -445,14 +400,14 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     page.line("<H2>Channels:</H2>");
 
     channelInfoTable(page);
-    stdList<ChannelInfo *>::const_iterator channel;
-    for (channel = channels.begin(); channel != channels.end(); ++channel)
+    stdList<ArchiveChannel *>::const_iterator channel;
+    for (channel = theEngine->channels.begin(); channel != theEngine->channels.end(); ++channel)
     {
-        (*channel)->lock();
+        (*channel)->mutex.lock();
         channelInfoLine(page, *channel);
-        (*channel)->unlock();
+        (*channel)->mutex.unlock();
     }
-    theEngine->unlock();
+    theEngine->mutex.unlock();
     page.closeTable();
 }
 
@@ -469,11 +424,11 @@ static void addChannel(HTTPClientConnection *connection,
         connection->error("Channel and group names must not be empty");
         return;
     }
-    theEngine->lock();
+    theEngine->mutex.lock();
     GroupInfo *group = theEngine->findGroup(group_name);
     if (!group)
     {
-        theEngine->unlock();
+        theEngine->mutex.unlock();
         stdString msg = "Cannot find group " + group_name;
         connection->error(msg);
         return;
@@ -500,7 +455,7 @@ static void addChannel(HTTPClientConnection *connection,
         page.line("</I> was added to");
     else
         page.line("</I> could not be added");
-    theEngine->unlock();
+    theEngine->mutex.unlock();
     page.out(" to group <I>");
     page.out(group_name);
     page.line("</I>.");
@@ -521,12 +476,12 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
     page.line("<H1>Groups</H1>");
     page.out("Group <I>");
     page.out(group_name);
-    theEngine->lock();
+    theEngine->mutex.lock();
     if (theEngine->addGroup(group_name))
         page.line("</I> was added to the engine.");
     else
         page.line("</I> could not be added to the engine.");
-    theEngine->unlock();
+    theEngine->mutex.unlock();
 }
 
 static void parseGroup(HTTPClientConnection *connection, const stdString &path)
@@ -545,7 +500,7 @@ static void parseGroup(HTTPClientConnection *connection, const stdString &path)
     page.out("Group <I>");
     page.out(group_name);
 
-    theEngine->lock();
+    theEngine->mutex.lock();
     theEngine->attachToCAContext();
     Configuration *cfg = theEngine->getConfiguration();
     if (cfg->loadGroup(group_name))
@@ -555,7 +510,7 @@ static void parseGroup(HTTPClientConnection *connection, const stdString &path)
     }
     else
         page.line("</I> could not be added to the engine.<P>");
-    theEngine->unlock();
+    theEngine->mutex.unlock();
 }
 
 static void channelGroups(HTTPClientConnection *connection, const stdString &path)
@@ -564,11 +519,11 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
     args.parse(path.substr(15).c_str());
     stdString channel_name = args.find("CHANNEL");
 
-    theEngine->lock();
-    ChannelInfo *channel = theEngine->findChannel(channel_name);
+    theEngine->mutex.lock();
+    ArchiveChannel *channel = theEngine->findChannel(channel_name);
     if (! channel)
     {
-        theEngine->unlock();
+        theEngine->mutex.unlock();
         connection->error("No such channel: " + channel_name);
         return;
     }
@@ -578,13 +533,12 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
     page.out(channel_name);
     page.line("</H1>");
 
-    channel->lock();
-    const stdList<GroupInfo *> group_list = channel->getGroups();
+    channel->mutex.lock();
     page.openTable(2, "Group", 0);
     stdList<GroupInfo *>::const_iterator group;
     stdString link;
     link.reserve(80);
-    for (group=group_list.begin(); group!=group_list.end(); ++group)
+    for (group=channel->groups.begin(); group!=channel->groups.end(); ++group)
     {
         link = "<A HREF=\"/group/";
         link += (*group)->getName();
@@ -593,8 +547,8 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
         link += "</A>";
         page.tableLine(link.c_str(), 0);
     }
-    channel->unlock();
-    theEngine->unlock();
+    channel->mutex.unlock();
+    theEngine->mutex.unlock();
     page.closeTable();
 }
 

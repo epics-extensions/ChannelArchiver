@@ -1,16 +1,62 @@
 // GroupInfo.cpp
 
 #include "GroupInfo.h"
+#include "ArchiveChannel.h"
 
-size_t GroupInfo::_next_ID = 0;
+size_t GroupInfo::next_ID = 0;
 
-GroupInfo::GroupInfo ()
+GroupInfo::GroupInfo (const stdString &name)
 {
-	_disabled = 0;
-	_ID = _next_ID++;
-	_num_connected = 0;
+    this->name = name;
+	ID = next_ID++;
+	num_connected = 0;
+	disable_count = 0;
 }
 
+void GroupInfo::addChannel(ArchiveChannel *channel)
+{
+	// Is Channel already in group?
+	stdList<ArchiveChannel *>::iterator i;
+	for (i=members.begin(); i!=members.end(); ++i)
+		if (*i == channel)
+			return;
+	members.push_back(channel);
+}
+
+// called by ArchiveChannel while channel is locked
+void GroupInfo::disable(ArchiveChannel *cause)
+{
+	LOG_MSG("'%s' disables group '%s'\n",
+            cause->getName().c_str(), name.c_str());
+	++disable_count;
+	if (disable_count != 1) // Was already disabled?
+		return;
+
+	stdList<ArchiveChannel *>::iterator i;
+	for (i=members.begin(); i!=members.end(); ++i)
+		(*i)->disabled = true;
+}
+
+// called by ArchiveChannel while channel is locked
+void GroupInfo::enable(ArchiveChannel *cause)
+{
+	LOG_MSG("'%s' enables group '%s'\n",
+            cause->getName().c_str(), name.c_str());
+	if (disable_count <= 0)
+	{
+		LOG_MSG("Group %d is not disabled, ERROR!\n", name.c_str());
+		return;
+	}
+	--disable_count;
+	if (disable_count > 0) // Still disabled?
+		return;
+
+	stdList<ArchiveChannel *>::iterator i;
+	for (i=members.begin(); i!=members.end(); ++i)
+		(*i)->disabled = false;
+}
+
+#if 0
 GroupInfo::GroupInfo (const GroupInfo &rhs)
 {
 	_ID = rhs._ID;
@@ -19,46 +65,4 @@ GroupInfo::GroupInfo (const GroupInfo &rhs)
 	_members = rhs._members;
 	_disabled = rhs._disabled;
 }
-
-// Add channel to this group.
-// When added again, nothing will happen...
-void GroupInfo::addChannel (ChannelInfo *channel)
-{
-	// Is Channel already in group?
-	stdList<ChannelInfo *>::iterator i;
-	for (i=_members.begin(); i!=_members.end(); ++i)
-		if (*i == channel)
-			return;
-	_members.push_back (channel);
-}
-
-void GroupInfo::disable (ChannelInfo *cause)
-{
-	LOG_MSG ("'%s' disables group '%s'\n",
-             cause->getName().c_str(), _name.c_str());
-	++_disabled;
-	if (_disabled != 1) // Was already disabled?
-		return;
-
-	stdList<ChannelInfo *>::iterator i;
-	for (i=_members.begin(); i!=_members.end(); ++i)
-		(*i)->disable (cause);
-}
-
-void GroupInfo::enable (ChannelInfo *cause)
-{
-	LOG_MSG ("'%s' enables group '%s'\n",
-             cause->getName().c_str(), _name.c_str());
-	if (_disabled <= 0)
-	{
-		LOG_MSG ("Group %d is not disabled, ERROR!\n", _name.c_str());
-		return;
-	}
-	--_disabled;
-	if (_disabled > 0) // Still disabled?
-		return;
-
-	stdList<ChannelInfo *>::iterator i;
-	for (i=_members.begin(); i!=_members.end(); ++i)
-		(*i)->enable (cause);
-}
+#endif

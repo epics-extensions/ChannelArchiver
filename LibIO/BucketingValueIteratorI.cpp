@@ -74,8 +74,10 @@ bool BucketingValueIteratorI::iterate ( int dir )
       case S_VALUES:
 	 v = _base->getValue()->getDouble();
 	 (dir == D_FWD) ? _last = v : _first = v;
-	 _max = max( _max, v );
-	 _min = min( _min, v );
+     if (v > _max)
+         _max = v;
+     if (v < _min)
+         _min = v;
 	 _status = _base->getValue()->getStat();
 	 _sevr = _base->getValue()->getSevr();
 	 _ctrlinfo = _base->getValue()->getCtrlInfo();

@@ -138,7 +138,9 @@ private:
     CircularBuffer  buffer;
     // In case we are e.g. disabled, we park incoming values
     // here so that we can write the last one right after
-    // being re-enabled
+    // being re-enabled.
+    // In case we are enabled, SampleMechanism::handleValue()
+    // might use this for temporary tweaks.
     bool            pending_value_set;
     RawValue::Data *pending_value;
     // ---    

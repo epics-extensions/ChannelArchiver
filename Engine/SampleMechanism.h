@@ -74,6 +74,7 @@ public:
 
 protected:
     ArchiveChannel *channel;
+    bool wasWrittenAfterConnect;
 };
 
 /// A SampleMechanism that stores each CA event (monitor).

@@ -9,7 +9,7 @@
 #define DEBUG_SAMPLING
 
 SampleMechanism::SampleMechanism(class ArchiveChannel *channel)
-        : channel(channel)
+        : channel(channel), wasWrittenAfterConnect(false)
 {}
 
 SampleMechanism::~SampleMechanism()
@@ -73,6 +73,7 @@ void SampleMechanismMonitored::handleConnectionChange(Guard &guard)
         LOG_MSG("%s: disconnected\n", channel->getName().c_str());
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
+        wasWrittenAfterConnect = false;
     }
 }
 
@@ -90,9 +91,21 @@ void SampleMechanismMonitored::handleValue(Guard &guard,
     //               channel->nelements, value, &channel->ctrl_info);   
     // Add every monitor to the ring buffer
     if (channel->isBackInTime(stamp))
-        return;
-    channel->buffer.addRawValue(value);
+    {
+        if (wasWrittenAfterConnect)
+            return;
+        // This is the first value after a connect: tweak
+        if (!channel->pending_value)
+            return;
+        RawValue::copy(channel->dbr_time_type, channel->nelements,
+                       channel->pending_value, value);
+        RawValue::setTime(channel->pending_value, now);
+        channel->buffer.addRawValue(channel->pending_value);
+    }
+    else
+        channel->buffer.addRawValue(value);
     channel->last_stamp_in_archive = stamp;
+    wasWrittenAfterConnect = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,6 +168,7 @@ void SampleMechanismGet::handleConnectionChange(Guard &guard)
         flushPreviousValue(channel->connection_time);
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
+        wasWrittenAfterConnect = false;
     }
 }
 
@@ -167,6 +181,18 @@ void SampleMechanismGet::handleValue(Guard &guard,
     LOG_MSG("SampleMechanismGet::handleValue %s\n",
             channel->getName().c_str());
 #   endif
+    if (!wasWrittenAfterConnect)
+    {
+        RawValue::copy(channel->dbr_time_type, channel->nelements,
+                       previous_value, value);
+        if (channel->isBackInTime(stamp))
+            RawValue::setTime(previous_value, now);
+        channel->buffer.addRawValue(previous_value);
+        previous_value_set = true;
+        channel->last_stamp_in_archive = stamp;
+        wasWrittenAfterConnect = true;
+        return;
+    }
     if (previous_value_set)
     {
         if (RawValue::hasSameValue(channel->dbr_time_type,

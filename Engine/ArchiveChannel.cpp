@@ -28,7 +28,10 @@ ArchiveChannel::~ArchiveChannel()
         delete mechanism;
     mechanism = 0;
     if (pending_value)
+    {
         RawValue::free(pending_value);
+        pending_value = 0;
+    }
     if (chid_valid)
     {
         LOG_MSG("'%s': clearing channel\n", name.c_str());

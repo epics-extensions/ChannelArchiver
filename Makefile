@@ -27,14 +27,25 @@ clean:
 	@$(MAKE) -C Engine clean
 
 cleanCGITest:
-	@-rm CGIExport/Tests/cgi/tmp/*
-	@-rm CGIExport/Tests/cgi/CGIExport.cgi
+	@-rm -f CGIExport/Tests/cgi/tmp/*
+	@-rm -f CGIExport/Tests/cgi/CGIExport.cgi
 
 
 new:	clean all
 
 zip:	cleanCGITest
-	(cd ..;rm $(SRCZIP);zip -r $(SRCZIP) Tools ChannelArchiver -x \*/O.\* \*/Debug/\* \*/CVS/\*)
+	(cd /tmp; \
+	 rm -rf /tmp/Tools;\
+	 rm -rf /tmp/ChannelArchiver;\
+         cvs -d :ext:kasemir@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot\
+	    export -r Tools-$(VERSION)-$(RELEASE)-$(PATCH) \
+	    -d Tools epics/supTop/extensions/1.1/src/Tools;\
+         cvs -d :ext:kasemir@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot\
+	    export -r ChannelArchiver-$(VERSION)-$(RELEASE)-$(PATCH) \
+	    -d ChannelArchiver epics/supTop/extensions/1.1/src/ChannelArchiver;\
+	 rm $(SRCZIP);\
+	 zip -r $(SRCZIP) Tools ChannelArchiver\
+	)  
 
 install:
 	$(INSTAPP) ../../bin/$(HOST_ARCH)/ArchiveExport$(EXE) $(INSTALLDIR)

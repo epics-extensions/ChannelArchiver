@@ -1,0 +1,43 @@
+#	Makefile.Host -*- makefile -*-
+
+include ../../Make.cfg
+
+#INC +=
+
+# Contents of library
+LIBSRCS += archiver_index.cpp
+LIBSRCS += archiver_unit.cpp
+LIBSRCS += array_list.cpp
+LIBSRCS += au_list.cpp
+LIBSRCS += au_pointer.cpp
+LIBSRCS += au_pointer_list.cpp
+LIBSRCS += aup_iterator.cpp
+LIBSRCS += bin_io.cpp
+LIBSRCS += channel_name_iterator.cpp
+LIBSRCS += cntu.cpp
+LIBSRCS += cntu_address_iterator.cpp
+LIBSRCS += cntu_table.cpp
+LIBSRCS += file_allocator.cpp
+LIBSRCS += interval.cpp
+LIBSRCS += key_au_iterator.cpp
+LIBSRCS += key_object.cpp
+LIBSRCS += my_epics_time.cpp
+LIBSRCS += r_entry.cpp
+LIBSRCS += r_tree.cpp
+LIBSRCS += r_tree_free_space_manager.cpp
+LIBSRCS += r_tree_root.cpp
+
+# Library to build
+LIBRARY := rtree
+
+TESTPROD += file_allocator_test archiver_index_test
+
+# Build "ToolsTest" but don't install it
+PROD_LIBS_DEFAULT := rtree
+PROD_LIBS_WIN32 := rtreeObj
+rtree_DIR = $(INSTALL_LIB)
+#Tools_DIR = $(INSTALL_LIB)
+#ToolsObj_DIR = $(INSTALL_LIB)
+#TESTPROD += StorageTest
+
+include ../../Make.end

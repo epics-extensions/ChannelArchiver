@@ -146,6 +146,7 @@ proc camGUI::entrybox {w label labelside var args} {
 
 proc camGUI::checkJob {} {
   after [expr $::checkInt * 1000] camGUI::checkJob
+  after 1 checkForBgManager
   if {$::dontCheckAtAll} return
   set ::busyIndicator "@"
   for {set row 0} {$row < [llength [camMisc::arcIdx]]} {incr row} {
@@ -161,6 +162,7 @@ proc camGUI::checkJob {} {
 
 
 proc camGUI::aCheck {w} {
+  after 1 {checkForBgManager 1}
   if {[regexp (\[0-9\]*), [$w cursel] all row] && 
       ($row < [llength [camMisc::arcIdx]])} {
     after 1 camComm::CheckRunning $row camGUI::aEngines($row,$::iRun)
@@ -379,19 +381,50 @@ array set suggested {
   }
 }
 
+
+proc camGUI::checkentry {val Descr descr w tl {absFn 0}} {
+  if {[regexp "^<.*>$" $val]} {
+    MessageBox error "Invalid $Descr" \
+	"Hmmm!" \
+	"You can imagine a better $Descr than that,\ndon\'t you?" \
+	"Please enter a proper $descr!" Sure $tl
+    focus $w
+    catch {$w selection range 0 end}
+    return 1
+  }
+  if {"$descr" == "filename"} {
+    set fnchars "\[^/<>\]+"
+    set re "^"
+    if {$absFn} {append re "/"}
+    append re "($fnchars/)*$fnchars"
+    append re "$"
+    if {![regexp $re $val]} {
+      MessageBox error "Invalid $Descr" \
+	  "Invalid $Descr" \
+	  "The $descr you entered for $Descr is not a valid filename!" \
+	  "Please enter a proper $descr!" Sure $tl
+      focus $w
+      catch {$w selection range 0 end}
+      return 1
+    }
+  }
+  return 0
+}
+
 proc camGUI::aEdit {w} {
   global var
   regexp (\[0-9\]*), [$w cursel] all row
   set tl .t$row
   if {![catch {raise $tl}]} return
 
-  foreach param {host port descr cfg cfgc archive log start timespec multi} {
+  foreach param {host port descr cfg cfgc cvs rmlock archive log start timespec multi} {
     set var($row,$param) [camMisc::arcGet $row $param]
   }
 
   toplevel $tl
   label $tl.xxx
   wm title $tl "Archiver properties"
+  wm protocol $tl WM_DELETE_WINDOW "after 1 [list set var($row,close) 0]"
   set lf [TitleFrame $tl.f -text "Archiver properties" -side left -font [$tl.xxx cget -font]]
   set f [$lf getframe]
   frame $f.h -bd 0
@@ -408,31 +441,40 @@ proc camGUI::aEdit {w} {
   spinbox $f.h.port "Port:" left var($row,port) {1 65535 1} {} -side right -fill x
   $f.h.port.e configure -width 5 -helptext "A portnumber for the\narchiver's web-interface\nKeep in mind, that there mustn't\nbe any collisions!"
   entrybox $f.de Description: top var($row,descr)
-  $f.de.e configure -helptext "A description for the Archiver.\nThe Archiver's web-interface will have this description as well."
+  set ww(descr) $f.de.e
+  $ww(descr) configure -helptext "A description for the Archiver.\nThe Archiver's web-interface will have this description as well."
   frame $f.c -bd 0
-  entrybox $f.c.cfg "Configuration-file: (absolute pathname)" top var($row,cfg) -expand t
-  $f.c.cfg.e configure -helptext "The full pathname of the\nmain configuration file\nfor this Archiver."
+  entrybox $f.c.cfg "Configuration-file: (absolute pathname)" \
+      top var($row,cfg) -expand t
+  set ww(cfg) $f.c.cfg.e
+  $ww(cfg) configure -helptext "The full pathname of the\nmain configuration file\nfor this Archiver."
   button  $f.c.fs -text "..." -padx 0 -pady 0 -width 2 -bd 1 -command "
       set fn \[camGUI::getCfgFile $tl $row\]
       if {\"\$fn\" != \"\"} {set var($row,cfg) \$fn}"
+
   checkbutton $f.olcfgc -text "disable configuration changes via Archiver's web interface" \
       -variable var($row,cfgc) -onvalue 1 -offvalue 0
+  checkbutton $f.olcvs -text "check configuration changes into CVS (if avail.)" \
+      -variable var($row,cvs) -onvalue 1 -offvalue 0 -anchor w
+  checkbutton $f.rmlock -text "force remove of bogus lockfile" \
+      -variable var($row,rmlock) -onvalue 1 -offvalue 0 -anchor w
 
   foreach k [camMisc::arcIdx] {
     lappend af [camMisc::arcGet $k archive]
   }
   combobox $f.af "Archive-file: (rel. to path of Configuration file)" top \
       var($row,archive) {} -side top -fill x
-  $f.af.e configure -helptext "The filename of the archive file.\nShould not be an absolute pathname (starting with /).\nNever put more than one archive in a single directory!\nDirectories will be created.\nSubject to %-expansion.\n$::percentDoc"
+  set ww(archive) $f.af.e
+  $ww(archive) configure -helptext "The filename of the archive file.\nShould not be an absolute pathname (starting with /).\nNever put more than one archive in a single directory!\nDirectories will be created.\nSubject to %-expansion.\n$::percentDoc"
   set ::arcsel($row) $f.af.e
 
   set ma [list [file dirname [file dirname $var($row,cfg)]]/directory]
   foreach k [camMisc::arcIdx] {
     lappend ma [camMisc::arcGet $k multi]
   }
-  combobox $f.ma "Multi-Archive file: (absolute path)" top \
+  combobox $f.ma "Multi-Archive file: (absolute path, may be empty)" top \
       var($row,multi) $ma -side top -fill x
-  $f.ma.e configure -helptext "The Filename of a Multi-Archive file,\nthese archives should be appended to."
+  $f.ma.e configure -helptext "The Filename of an additional (external) Multi-Archive file,\nthese archives should be appended to.\n\nNOTE:\nIf \"Archive-file\" is a directory containing '%', a Multi-Archive\nin the main-directory of the archiver is automatically created!"
 
   set ll {log log/%Y/%m/%d/%H%M%S}
   foreach k [camMisc::arcIdx] {
@@ -440,8 +482,12 @@ proc camGUI::aEdit {w} {
   }
   combobox $f.lf "Log-file: (rel. to path of Configuration file)" top \
       var($row,log) $ll -side top -fill x
-  $f.lf.e configure -helptext "The filename of the Archiver's log file.\nShould not be an absolute pathname (starting with /).\nDirectories will be created.\nSubject to %-expansion.\n$::percentDoc"
-
+  set ww(log) $f.lf.e
+  $ww(log) configure -helptext "The filename of the Archiver's log file.\nShould not be an absolute pathname (starting with /).\nDirectories will be created.\nSubject to %-expansion.\n$::percentDoc"
+###
+  set of $f
+  set tf [TitleFrame $f.sched -text Schedule -font [$f.c.fs cget -font]]
+  set f [$tf getframe]
   if {$::debug} {
     combobox $f.run Run/Rerun: left var($row,start) \
 	{NO minute hour day week month timerange always}
@@ -450,6 +496,7 @@ proc camGUI::aEdit {w} {
 	{NO hour day week month timerange always}
   }
   $f.run.e configure -helptext "A schedule of how this Archiver should be started/restarted.\nDirectories are changed/created on each restart."
+
   proc showpage($row) {args} "$f.nb raise \$::var($row,start); $::arcsel($row) configure -values \[lindex \$::suggested(\$::var($row,start)) 0\]"
   trace variable var($row,start) w camGUI::showpage($row)
   $f.run.e configure -editable 0 \
@@ -550,24 +597,28 @@ proc camGUI::aEdit {w} {
   iwidgets::timeentry $page.t.t -format military -seconds off
   set ft $page
 
-  pack $page.f.l $page.f.d $page.f.t -fill x
-  pack $page.t.l $page.t.d $page.t.t -fill x
-  pack $page.f $page.t -side left -fill both
+  pack $page.f.t $page.f.d $page.f.l -side right -fill x
+  pack $page.t.t $page.t.d $page.t.l -side right -fill x
+  pack $page.f $page.t -side top -fill both
   pack $page -side top
 
   set page [$f.nb add always]
   $f.nb compute_size
 
+  pack $f.run -side top -padx 4 -pady 4
+  pack $f.nb -side top -fill x -padx 4 -pady 4
+  set sch $f
+  set f $of
+  ###
+
   pack $f.h.hf -side left -fill x
   pack $f.h.port -side right -fill x
   pack $f.c.cfg -side left -fill x -expand t
   pack $f.c.fs -side bottom
-  pack $f.h $f.de $f.c $f.olcfgc $f.af $f.ma $f.lf -fill x -padx 4 -pady 4
-  pack $f.run -side top -padx 4 -pady 4
-  pack $f.nb -side top -fill x -padx 4 -pady 4
+  pack $f.h $f.de $f.c $tf $f.olcfgc $f.olcvs $f.rmlock $f.af $f.ma $f.lf -fill x -padx 4 -pady 4
   pack $lf -side top -fill both -expand t -padx 4 -pady 4
 
-  $f.nb raise $var($row,start)
+  $sch.nb raise $var($row,start)
   
   switch $var($row,start) {
     timerange {
@@ -599,6 +650,8 @@ proc camGUI::aEdit {w} {
     $f.ma.e configure -state disabled
     $f.lf.e configure -state disabled
     $f.olcfgc configure -state disabled
+    $f.olcvs configure -state disabled
+    $f.rmlock configure -state disabled
   }
 
   while {1} {
@@ -650,11 +703,11 @@ proc camGUI::aEdit {w} {
 	set t [clock scan "[$ft.t.d get] [$ft.t.t get]"]
 	if {$f > $t} {
 	  MessageBox error "Timespec Error" \
-	      "\"From:\" is after \"To:\" !!!\nPlease review and change dates!" Ok $tl
+	      "\"From:\" is after \"To:\" !!!" "Please review and change dates!" "" Ok $tl
 	  continue
 	} elseif {[expr $t - $f] < 60} {
 	  MessageBox error "Timespec Error" \
-	      "\"From:\" is too close to \"To:\" !!!\nPlease review and change dates!" Ok $tl
+	      "\"From:\" is too close to \"To:\" !!!" "Please review and change dates!" "" Ok $tl
 	  continue
 	} else {
 	  set var($row,timespec) "[$ft.f.d get] [$ft.f.t get] - [$ft.t.d get] [$ft.t.t get]"
@@ -664,13 +717,18 @@ proc camGUI::aEdit {w} {
 	set var($row,timespec) "-"
       }
     }
+
+    if {[checkentry $var($row,descr) Description description $ww(descr) $tl]} continue
+    if {[checkentry $var($row,cfg) Configuration-Filename filename $ww(cfg) $tl 1]} continue
+    if {[checkentry $var($row,archive) Archive-Filename filename $ww(archive) $tl]} continue
+    if {[checkentry $var($row,log) Log-Filename filename $ww(log) $tl]} continue
     break
   }
   trace vdelete var($row,start) w camGUI::showpage($row)
   destroy $tl
   if {$var($row,close) == 0} {setButtons $w; return 0}
   
-  foreach param {host port descr cfg cfgc archive log start timespec multi} {
+  foreach param {host port descr cfg cvs cfgc rmlock archive log start timespec multi} {
     camMisc::arcSet $row $param $var($row,$param)
   }
   set camGUI::aEngines($row,$::iHost) $var($row,host)
@@ -1290,7 +1348,7 @@ proc camGUI::aNew {w} {
   camMisc::arcSet $row host $camGUI::aEngines($row,$::iHost)
   camMisc::arcSet $row port $camGUI::aEngines($row,$::iPort)
   camMisc::arcSet $row descr $camGUI::aEngines($row,$::iDescr)
-  camMisc::arcSet $row cfg [file join [pwd] "ENTER FILENAME"]
+  camMisc::arcSet $row cfg "<enter filename>"
   camMisc::arcSet $row cfgc 0
   camMisc::arcSet $row archive "<enter filename>"
   camMisc::arcSet $row log "<enter filename>"
@@ -1378,6 +1436,7 @@ proc camGUI::aPrefs {} {
   set ::TbgUpdateInt $::bgUpdateInt
   set ::TcheckBgMan $::checkBgMan
   set ::T_port $::_port
+  set ::T_ips $::allowedIPs
 
   NoteBook .prefs.nb -font [.prefs.xxx cget -font]
   set w [.prefs.nb insert end "gen" -text "General"]
@@ -1385,7 +1444,7 @@ proc camGUI::aPrefs {} {
     {frame f {-bd 0} {} {
       {TitleFrame tf1 {-text "CAManager" -font [.prefs.xxx cget -font]} {-fill both -padx 4 -pady 4} {
 	{checkbutton check {-variable ::TcheckBgMan -anchor w \
-				-text "Check for running CAbgManager on startup"} {-fill x -pady 4} {}}
+				-text "Check for running CAbgManager"} {-fill x -pady 4} {}}
 	{checkbutton dontcheck {-variable ::TdontCheckAtAll -onvalue 0 -offvalue 1 -anchor w \
 				    -text "Check for running Archivers regularly"} {-fill x -pady 4} {}}
 	{LabelFrame inter {-side left -anchor w -text "check-interval:"} {-fill x -padx 24 -pady 4} {
@@ -1414,6 +1473,11 @@ proc camGUI::aPrefs {} {
 	  {SpinBox e {-entrybg white -bd 1 -width 5 -textvariable ::TbgUpdateInt -range {1 3600 1}} {-side right -padx 4} {} ::spb}
 	}}
       }}
+      {TitleFrame acc {-text "access control" -font [.prefs.xxx cget -font]} {-fill both -padx 4 -pady 4} {
+	{LabelFrame head {-side top -anchor w -text "IPs allowed to access (regexp):"} {-fill x -padx 4 -pady 4} {
+	  {entry ips {-textvariable ::T_ips -bg white} {-side top -fill x} {}}
+	}}
+      }}
     }}
   }
 
@@ -1433,7 +1497,7 @@ proc camGUI::aPrefs {} {
     {button ok {-text Ok -command {
       # if "OK" -> copy locals to globals
       set ::settingsSaved 0
-      lassign [list $::T_port $::TcheckInt $::TdontCheckAtAll $::TcheckBgMan $::TbgCheckInt $::TbgUpdateInt] ::_port ::checkInt ::dontCheckAtAll ::checkBgMan ::bgCheckInt ::bgUpdateInt
+      lassign [list $::T_port $::T_ips $::TcheckInt $::TdontCheckAtAll $::TcheckBgMan $::TbgCheckInt $::TbgUpdateInt] ::_port ::allowedIPs ::checkInt ::dontCheckAtAll ::checkBgMan ::bgCheckInt ::bgUpdateInt
       destroy .prefs
     }} {-side right -padx 8 -pady 8} {} ::_ok}
     {button can {-text Cancel -command {destroy .prefs}} {-side right -padx 8 -pady 8} {} ::_can}
@@ -1523,6 +1587,7 @@ proc camGUI::SaveSettings {{fh -1}} {
   save $wh ::bgCheckInt $::bgCheckInt bgCheckInt
   save $wh ::bgUpdateInt $::bgUpdateInt bgUpdateInt
   save $wh ::multiVersion $::multiVersion multiVersion
+  save $wh ::allowedIPs $::allowedIPs allowedIPs
   if {$wh != $fh} { 
     close $wh 
     file rename -force $camMisc::cfg_file.N $camMisc::cfg_file

@@ -36,12 +36,12 @@ dirs::
 	-mkdir tcl/O.$(HOST_ARCH)
 	-mkdir python/O.$(HOST_ARCH)
 
-python::
+python::	dirs
 	(cd python/O.$(HOST_ARCH);$(SWIG) -python -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i)
 	(cd python/O.$(HOST_ARCH);$(CC) -c $(CFLAGS) $(PY_FLAGS) $(PY_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp)
 	(cd python/O.$(HOST_ARCH);$(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(PY_LIB) $(LIBS)  -o casic.so)
 
-tcl::
+tcl::	dirs
 	(cd tcl/O.$(HOST_ARCH);$(SWIG) -tcl8 -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i)
 	(cd tcl/O.$(HOST_ARCH);$(CC) -c $(CFLAGS) $(TCL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp)
 	(cd tcl/O.$(HOST_ARCH);$(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(TCL_LIB) $(LIBS)  -o casi.so)

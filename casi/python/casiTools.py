@@ -70,6 +70,8 @@ def stamp2secs (stamp):
 
 # Test code
 if __name__=="__main__":
+	print "This module is meant to be imported, not run standalone..."
+	print "Tests:"
 	print "Timestamp Now: ", stampNow()
 	secs=time.time()
 	print "Now as seconds:", secs

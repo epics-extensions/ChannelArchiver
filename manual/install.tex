@@ -105,3 +105,38 @@ The ArchiveDataServer requires integration with your web server. The
 process is exemplified in the Data Server chapter starting on page
 \pageref{sec:dataserver}.
 
+\subsection{DTD Files} \label{sec:dtdfiles}
+Many of the configuration files use XML, and document type
+definitions are provided in the form of DTD files
+(See ArchiveDataServer configuration in \ref{lst:serverconfigdtd},
+ ArchiveEngine config.\ in \ref{lst:engineconfigdtd}, ArchiveIndexTool
+ config.\ in \ref{lst:indexconfigdtd}).
+You are \emph{strongly} encouraged to reference these DTD files in all
+your XML files, and to use the validating Xerces XML library, so that
+all your XML get valiated while the ChannelArchiver tools use them.
+This means that your XML files need to include a DOCTYPE declaration
+that points to the location of the respective DTD file.
+In practice, there are at least three ways to accomplish this:
+\begin{enumerate}
+\item Whereever you create an XML file, you copy the DTD into the same
+  directory. Then you can refer to the DTD like this: 
+  \begin{lstlisting}[keywordstyle=\sffamily]
+  <!DOCTYPE engineconfig SYSTEM "engineconfig.dtd">
+  \end{lstlisting}
+  \noindent Not the best idea because you need multiple copies of the
+  DTD and this is hard to maintain in case the DTD gets updated.
+\item You install the DTD files in a common location in the local file
+  system, e.g.\ in ``/archiver/dtd''. Then you can refer to the DTD like this: 
+  \begin{lstlisting}[keywordstyle=\sffamily]
+  <!DOCTYPE engineconfig
+  SYSTEM "/archiver/dtd/engineconfig.dtd">
+  \end{lstlisting}
+  \noindent This might still require copies of the DTD on multiple computers.
+\item You install the DTD files in the directory tree of a web server
+  that is accessible to all your computers.
+  Then you can refer to the DTD via a URL like this: 
+  \begin{lstlisting}[keywordstyle=\sffamily]
+  <!DOCTYPE engineconfig
+  SYSTEM "http://webserver/archdtd/engineconfig.dtd">
+  \end{lstlisting}
+\end{enumerate}

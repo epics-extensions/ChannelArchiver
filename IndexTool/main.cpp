@@ -14,8 +14,6 @@
 // Index
 #include <IndexFile.h>
 
-// TODO: XML archive list?
-
 int verbose;
 
 bool add_tree_to_master(const stdString &index_name,

@@ -12,24 +12,32 @@ on the network can get read-access to your data.
 \caption{\label{fig:dataserver}Data Server, refer to text.}
 \end{figure}
 
-\noindent The data server uses XML-RPC to serve the data. This means that
-software running on disparate operating systems, running in different
-environments can access your data over the Internet. As an example,
-your data server might be a Linux machine on a subnet behind a
-firewall. After you configure the firewall to pass HTTP requests, any
-Linux, Win32, Macintosh computer both inside or outside of the
-firewall can access the data from within perl, python or tcl scripts,
-programs written in C, C++ or Java, actually pretty much any programming
-language. As illustrated in fig.~\ref{fig:dataserver}, the client
-program sends its requests to a web server, which forwards it to the
-data server. The dataserver accesses the relevant archives --- you
-determine which ones are available via a configuration file --- and
-returns the data though the web server to the client program.  You can
-configure access security via e.g.~ the Apache web server
-configuration because the data server is simply a CGI program.
-XML-RPC handles the data type conversions. For details on how to use
-XML-RPC from your code, refer to section \ref{sec:xmlprotocol} on page
-\pageref{sec:xmlprotocol}.
+\noindent The data server is hosted by a web server, using the XML-RPC
+protocol to serve the data. This means that software running on
+disparate operating systems, running in different environments can
+access your data over the Internet via a URL. As an example, your data
+server might be a Linux machine on a subnet behind a firewall. After
+you configure the firewall to pass HTTP requests, any Linux, Win32,
+Macintosh computer both inside or outside of the firewall can access
+the data from within perl, python or tcl scripts, programs written in
+C, C++ or Java, actually pretty much any programming language. As
+illustrated in fig.~\ref{fig:dataserver}, the client program sends its
+requests to a web server, which forwards it to the data server that is
+running as a CGI tool under the web server. The dataserver accesses
+the relevant archives --- you determine which ones are available via a
+configuration file --- and returns the data though the web server to
+the client program.  You can configure access security via e.g.\ the
+Apache web server configuration.
+
+\NOTE The fact that the data server is hosted by a web server,
+accessible via a URL, does \emph{not} imply that you can use any web browser
+to retrieve data. You have to use the XML remote procedure call
+protocol described in section \ref{sec:xmlprotocol} on page
+\pageref{sec:xmlprotocol}. XML-RPC handles the network connections,
+data type conversions, and XML-RPC libraries are available for most
+programming languages.
+We provide the Java Archive Client (see section \ref{sec:javaclient})
+as a generic, interactive data client. 
 
 \subsection{Installation} % ---------------------------------------------
 After successful compilation in ChannelArchiver/XMLRPCServer, you will
@@ -66,12 +74,13 @@ What follows is an example setup for the Apache Web Server under Linux:
 \subsection{Setup}
 You need to prepare an XML-formatted configuration file for the
 ArchiveDataServer that follows the DTD from listing
-\ref{lst:serverconfigdtd}. Note that the ArchiveDataServer might not
-verify your configuration file, so you are strongly encouraged to use a
-tool like 'xmllint' on Linux to check your configuration against the
-DTD. Listing \ref{lst:serverconfigex} shows one example
-configuration which lists two archives to be served. Client programs
-will internally use the respective 'key' to access them.
+\ref{lst:serverconfigdtd} (see section \ref{sec:dtdfiles} on DTD file
+installation). Note that the ArchiveDataServer might not verify your
+configuration file, so you are strongly encouraged to use a tool like
+'xmllint' on Linux to check your configuration against the
+DTD. Listing \ref{lst:serverconfigex} shows one example configuration
+which lists two archives to be served. Client programs will internally
+use the respective 'key' to access them.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for the Data Server Configuration},label=lst:serverconfigdtd]{../XMLRPCServer/serverconfig.dtd}
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Data Server Configuration},label=lst:serverconfigex]{../XMLRPCServer/serverconfig.xml}

@@ -51,6 +51,8 @@ xmlrpc_value *get_names(xmlrpc_env *env,
     size_t pattern_len; 
     xmlrpc_parse_value(env, args, STR("(s#)"),
                        &pattern, &pattern_len);
+    if (env->fault_occurred)
+        return NULL;
     if (pattern_len > 0)
     {
         re = RegularExpression::reference(pattern);
@@ -119,6 +121,8 @@ xmlrpc_value *get_values(xmlrpc_env *env,
                        &names,
                        &start_sec, &start_nano, &end_sec, &end_nano,
                        &count, &how);
+    if (env->fault_occurred)
+        return NULL;
     name_count = xmlrpc_array_size(env, names);
     // Build result for each requested channel name
     results = xmlrpc_build_value(env, STR("()"));
@@ -126,6 +130,11 @@ xmlrpc_value *get_values(xmlrpc_env *env,
     {
         // extract name from array (no new ref!)
         name_val = xmlrpc_array_get_item(env, names, name_index);
+        if (env->fault_occurred)
+        {
+            xmlrpc_DECREF(results);
+            return NULL;
+        }
         xmlrpc_parse_value(env, name_val, STR("s#"),
                            &name, &name_len);                       
         // Meta information
@@ -159,7 +168,6 @@ xmlrpc_value *get_values(xmlrpc_env *env,
         xmlrpc_array_append_item(env, results, result);
         xmlrpc_DECREF(result);
     }
-
     return results;
 }
 

@@ -5,7 +5,13 @@ Returns version info for whoever cares.
 
 { int32 ver, string desc } = archiver.info()
 
-All in here uses ver = 1
+The result is a structure with a numeric "ver"
+member and a string "desc" member. Implementations
+like perl will return a hash with members "ver"
+and "desc".
+
+ver:  Version number.  All in here uses ver = 1
+desc: Cute description that one can print.
 
 ** archiver.get_names
 Returns channel names and start/end times.
@@ -15,6 +21,14 @@ If left empty, all names are returned.
 {string name, int32 start_sec, int32 start_nano,
               int32 end_sec,   int32 end_nano}[] 
             = archiver.get_names(string pattern)
+
+The result is an array of structures, one structure
+per channel that matches the pattern.
+Start/end gives an idea of the time range that can
+be found in the archive for that channel.
+The archive might actually contain entries _after_
+the reported end time because the index might not
+be up too date on the end times.
 
 Time Stamps:
 Not(!) the raw EPICS time stamps with 1990 epoch,
@@ -27,7 +41,7 @@ result = archiver.get_values(string name[],
                              int32 how)
 
 how : 0 - get raw data from archive, starting w/ start,
-          up to either ('end' time or max. 'count' samples)
+          up to either 'end' time or max. 'count' samples.
 
 Result := { string name, meta, int32 type, int32 count, values[] }[]
 

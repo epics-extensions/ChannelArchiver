@@ -22,35 +22,46 @@ purposes:
 
 \noindent Another important difference between sub-archive index files
 and master index files lies in the fact that the sub-archive index
-files only contain the relative path to their data files.
+files only contain the relative path names to their data files.
 A sub-archive index and its data file can therefore be moved to a new
-location.
-The master index file contains the full path to its data files,
-because different sub-archives can use the same data file names within
-their sub-archive directory and we can only distinguish data files vy
-their full path.
-Once a master archive index has been created, the sub-archives must
-therefore not be moved. If any of the sub-archives gets moved, the
-master index needs to be recreated.
+location. As long as the index file and its data files remain
+in one directory, the location of that directory does not matter.
+
+The master index file on the other hand contains the full path to its
+data files, because different sub-archives can use the same data file
+names within their sub-archive directory and we can only distinguish
+data files by their full path.  Once a master archive index has been
+created, the sub-archives must therefore not be moved. If any of the
+sub-archives gets moved, the master index needs to be recreated.
 
 The channel names are maintained in a hash table and the
-data block information is kept in an R*Tree structure.
+data block information is kept in a modified RTree structure.
 An RTree \cite{guttman84} is a balanced tree taylored for holding
-multidimensional data like time ranges.
-The leaves of the tree contain the data block
+multidimensional data like rectangles, allowing lookup of
+rectangles via points that fall inside rectangles.
+Sergei Chevtsov extended this concept to handle time ranges.
+
+Each node in an RTree has several records. How many records there are
+per node is determine by a tunable parameter $M$.
+The records in the leave nodes of the tree point to data block
 information (i.e.\ path to a data file and offset inside that data
-file) and the time range that is covered by the data block. Parent
-nodes reflect the time range covered by all their child nodes, up
-until the root node which holds the total time range covered by all
-the data blocks. Each node can be a list of sub-nodes. How many
-sub-nodes there are per node is determined by a tunable parameter M.
+file) and the time range that is covered by the data block.
+The records do not overlap, i.e.\ no two records will cover the same
+time range, and the records are sorted in time.
+Since the actual data blocks might overlap for a master index, more
+than one non-overlapping record might refer to the same data block.
+Records in parent nodes reflect the time range covered by all their
+child node records, up to the root node records which hold the total
+time range covered by all the data blocks.
 
 \begin{figure}[htb]
 \begin{center}
 \InsertImage{width=0.6\textwidth}{rtree}
 \end{center}
-\caption{\label{fig:rtree}R*Tree Demo, refer to text.}
+\caption{\label{fig:rtree}RTree Demo, refer to text.}
 \end{figure}
+
+THIS NEEDS TO BE ADJUSTED:
 
 Fig.~\ref{fig:rtree} demonstrates a tree that covers the total
 time range from ``1'' to ``9'' (in the real world, these numbers would
@@ -63,80 +74,60 @@ we end up at the data blocks.
 Note that data block ``G'' is listed several times. The reason could
 be that data block ``G'' in fact contains data from ``2'' to ``9''.
 But since other data blocks with a higher priority have data in at least part
-of that same time range and the leaves of the R*Tree must not overlap,
+of that same time range and the leaves of the RTree must not overlap,
 the data block G=[2;9] was partitioned into [2;3], [4;5] and [7;9].
 The remaining time ranges like [3;4] happen to be covered by other
 data blocks.
 
 \subsection{Implementation Details}
-The header of the index file contains the magic id number, the
-parameter M of the R trees, and the start address of the hash table.
 
-The hash table stores the "channel name table units" (CNTUs) which
-contain the channel names and two pointers: one to the corresponding
-AU list, the other to the corresponding R tree (as a reminder: each AU
-stores only one channel).
+\begin{table}[htbp]
+  \begin{center}
+    \begin{tabular}{ll}
+     Offset  & Content \\
+     \hline
+     0x0000  & 'CAI1' \\
+     0x0004  & NameHash anchor: start (0x30), size N \\
+     0x000C  & FileAllocator used list: size, start (0x24), end \\
+     0x0018  & FileAllocator free list: size, start, end \\
+     0x0024  & FileAllocator header: size, prev(0), next(??) \\
+     0x0030  & Hash Table Entry 0: \\
+             & Pointer to first entry for this hash value \\
+     0x0034  & Hash Table Entry 1:  \\
+     ...     & ... \\
+     ??????  & Hash Table Entry N-1:  \\
+     ...     & ... \\
+     ??????  & FileAllocator header: size, prev(0), next(??) \\
+     ??????  & Hash Entry: \\
+             & next, RTree pointer, channel name \\
+     ...     & ... \\  
+     ??????  & FileAllocator header: size, prev(0), next(??) \\
+     ??????  & RTree: pointer to root node, M value \\
+     ...     & ... \\  
+    \end{tabular}
+    \caption{Index file: Example layout.}
+    \label{tab:indexfile}
+  \end{center}
+\end{table}
 
-The AU list is a double linked list, ordered by the start time of the
-AUs. It stores (absolute) paths and offsets of the AUs, the start and
-end times of the archived data and its priority. The path length is
-variable.
+\noindent Table~\ref{tab:indexfile} shows the basic layout of an index file.
+The header of the index file contains a 4-ASCII character magic id
+like 'CAI1' for ``Channel Archiver Index Type 1'',
+and the hash table anchor.
+Those 12 bytes constitute ``reserved space'' for the FileAllocator
+class. What follows is start- and end pointers for the FileAllocator's
+list of allocated and available items, because the remaining file space is
+handled by the FileAllocator class.
+The first allocated region is the NameHash, so it's start location
+would be known. Each hash table entry points to the start of channel
+entries that hashed to the repective value, and each channel entry
+contains the anchor for its RTree. Like every file block after the
+``reserved space'', the hash table and each channel entry are preceeded
+by a FileAllcator header.
 
-The R tree consists of the root and a number of R tree entries.
-An R tree root is virtually the header of an R tree. It stores the
-entire interval of the archived data (i.e. oen that spans over all R
-entries), the parameter "i" which determines the maximum number of
-entries (i.e. the size of the R tree) before the reserved space is
-full, the first free index inside the reserved space, the index of the
-first entry on the highest level of the R tree, and- for performance-
-the index of the last entry on the lowest level.
-
-Since we don't delete AUs (see also "algorithms"), it is guaranteed
-that before adding a new AU, all indices upto the one that is stored
-inside the R tree as the "first free index" are occupied by the R
-entries.
-
-When the reserved space fills up, a twice as large space is allocated,
-the parameter "i" is increased by 1, and the R tree is moved to
-another address. So internally, instead of addresses indices are used
-to establish links between the R entries.
-
-An R entry can be of two types: an internal entry or a leaf. Both
-types have some common features:
-
-Common features: pointers to the index of the next entry (or -1 if
-there is no next entry), to the previous entry and to the parent entry
-(-1 means here highest level).
-
-Leaf features: a -1 as an indication there are no children, a pointer
-to the corresponding AU pointer list, and either the complete interval
-of the key AU, or a part of its interval (and intervals of other AUs
-in the AU pointer list, see "algorithms").
-
-Internal entry features: a pointer to the child entry, the entire
-interval of the child node (a 'node' is not to be confused with an
-'entry'), and a -1 in place of a pointer to the AU pointer list.
-
-An R node is a union of at least M and at most (2*M - 1) R entries on
-each level. The R entries in one node have all the same parent
-entry. The parameter M is important for balancing the R tree.
-
-The AU pointers in the lists are ordered in accordance with the
-following criteria:
-\begin{itemize}
-\item the priority of an AU
-\item the "continuity" of an AU being the key, i.e. if the new AU is the
- key of the previous leaf, it is the key of this leaf, too; if the key
- AU of the previous leaf is the same as the key of the current leaf
- (before the insert), leave the key, and apply the next criteria
-\item the end times of the AUs (so that the number of retrieved AUs is as
- small as possible)
-\end{itemize}
-
-Two more characteristica: The intervals of R entries on eachlevel do
- not intersect. A leaf points to a distinct AU pointer list, i.e. for
- each given interval, only one possible sequence of AUs is retrieved
- (according the criterias above).
-
-To achieve this vital features, the intervals of the AUs might need to
-be partitioned (see "alogithms").
+An RTree entry consists of the pointer to the root node and a number
+of records per node $M$. The RTree nodes are interlinked as shown in
+the example in Fig.~\ref{fig:rtree}, where each node and data block is
+allocated from the FileAllocator class. For details of how the nodes
+and data blocks are written to the disk you will have to use the force
+and read the source.

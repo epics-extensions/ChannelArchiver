@@ -162,6 +162,7 @@ proc camGUI::checkJob {} {
 
 
 proc camGUI::aCheck {w} {
+  set ::busyIndicator "\#"
   after 1 {checkForBgManager 1}
   if {[regexp (\[0-9\]*), [$w cursel] all row] && 
       ($row < [llength [camMisc::arcIdx]])} {
@@ -171,6 +172,7 @@ proc camGUI::aCheck {w} {
       after 1 camComm::CheckRunning $row camGUI::aEngines($row,$::iRun)
     }
   }
+  after 500 {set ::busyIndicator ""}
 }
 
 proc camGUI::ClearSel {w} {

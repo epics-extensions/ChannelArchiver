@@ -85,9 +85,9 @@ all::	tcl python perl
 static::	static-tcl static-python
 
 dirs::
-	-mkdir tcl/O.$(HOST_ARCH)
-	-mkdir python/O.$(HOST_ARCH)
-	-mkdir perl/O.$(HOST_ARCH)
+	@-mkdir -p tcl/O.$(HOST_ARCH)
+	@-mkdir -p python/O.$(HOST_ARCH)
+	@-mkdir -p perl/O.$(HOST_ARCH)
 
 python::	dirs
 	(cd python/O.$(HOST_ARCH);\

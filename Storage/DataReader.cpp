@@ -99,7 +99,7 @@ const RawValue::Data *RawDataReader::find(
         stdString s, e;
         epicsTime2string(node->record[rec_idx].start, s);
         epicsTime2string(node->record[rec_idx].end, e);
-        printf("First Block: %s @ 0x%lX: %s - %s\n",
+        printf("- First Block: %s @ 0x%lX: %s - %s\n",
                datablock.data_filename.c_str(),
                datablock.data_offset,
                s.c_str(), e.c_str());
@@ -127,29 +127,36 @@ const RawValue::Data *RawDataReader::next()
             valid_datablock = tree->getNextDatablock(*node,rec_idx,datablock);
         if (valid_datablock)
         {
-#ifdef DEBUG_DATAREADER
+#           ifdef DEBUG_DATAREADER
             stdString s, e;
-            printf("Next  Block: %s @ 0x%lX: %s - %s\n",
+            printf("- Next  Block: %s @ 0x%lX: %s - %s\n",
                    datablock.data_filename.c_str(), datablock.data_offset,
                    epicsTimeTxt(node->record[rec_idx].start, s),
                    epicsTimeTxt(node->record[rec_idx].end, e));
-#endif
+#           endif
             if (!getHeader(index.getDirectory(),
                            datablock.data_filename, datablock.data_offset))
                 return 0;
-            return findSample(node->record[rec_idx].start);
+            if (!findSample(node->record[rec_idx].start))
+                return 0;
+            if (RawValue::getTime(data) >= node->record[rec_idx].start)
+                return data;
+#           ifdef DEBUG_DATAREADER
+            printf("- findSample gave sample<start, skipping that one\n");
+#           endif
+            return next();   
         }
         else
         {   // Special case: master index might be between updates.
             // Try to get more samples from Datafile, ignoring RTree.
-#ifdef DEBUG_DATAREADER
+#           ifdef DEBUG_DATAREADER
             stdString txt;
-            printf("RawDataReader reached end for '%s' in '%s':\n",
+            printf("- RawDataReader reached end for '%s' in '%s': ",
                    header->datafile->getBasename().c_str(),
                    header->datafile->getDirname().c_str());
             printf("Sample %d of %lu\n",
                    val_idx, (unsigned long)header->data.num_samples);
-#endif
+#           endif
             // Refresh datafile and header                
             if (!(header->datafile->reopen() && header->read(header->offset)))
             {
@@ -164,19 +171,19 @@ const RawValue::Data *RawDataReader::next()
                                header->data.next_file,
                                header->data.next_offset))
                     return 0; 
-#ifdef DEBUG_DATAREADER
+#               ifdef DEBUG_DATAREADER
                 stdString txt;
-                printf("Using new data block %s @ 0x%X:\n",
+                printf("- Using new data block %s @ 0x%X:\n",
                        header->datafile->getFilename().c_str(),
                        (unsigned int)header->offset);
-#endif
+#               endif
                 return findSample(header->data.begin_time);
             }
             // else fall through and continue in current header
-#ifdef DEBUG_DATAREADER 
+#           ifdef DEBUG_DATAREADER 
             printf("Using sample %d of %lu\n",
                    val_idx, (unsigned long)header->data.num_samples);
-#endif
+#           endif
         }
     }
     // Read next sample in current block       
@@ -313,7 +320,8 @@ bool RawDataReader::getHeader(const stdString &dirname,
 // Based on a valid 'header' & allocated 'data',
 // return sample before-or-at start,
 // leaving val_idx set to the following sample
-// (i.e. we return sample[val_idx-1], it's stamp <= start,
+// (i.e. we return sample[val_idx-1],
+//  its stamp is <= start,
 //  and sample[val_idx] should be > start)
 const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
 {
@@ -322,13 +330,13 @@ const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
 #ifdef DEBUG_DATAREADER
     stdString stamp_txt;
     epicsTime2string(start, stamp_txt);
-    printf("Goal: %s\n", stamp_txt.c_str());
+    printf("- Goal: %s\n", stamp_txt.c_str());
 #endif
     // Speedier handling of start == header->data.begin_time
     if (start == header->data.begin_time)
     {
 #ifdef DEBUG_DATAREADER
-        printf("Using the first sample in the buffer\n");
+        printf("- Using the first sample in the buffer\n");
 #endif
         val_idx = 0;
         return next();
@@ -339,12 +347,8 @@ const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
     FileOffset offset, offset0 =
         header->offset + sizeof(DataHeader::DataHeaderData);
     while (true)
-    {
-        // Pick middle value, rounded up
-        val_idx = low+high;
-        if (val_idx & 1)
-            ++val_idx;
-        val_idx /= 2;   
+    {   // Pick middle value, rounded up
+        val_idx = (low+high+1)/2;
         offset = offset0 + val_idx * raw_value_size;
         if (! RawValue::read(dbr_type, dbr_count, raw_value_size, data,
                              header->datafile, offset))
@@ -352,11 +356,11 @@ const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
         stamp = RawValue::getTime(data);
 #ifdef DEBUG_DATAREADER
         epicsTime2string(stamp, stamp_txt);
-        printf("Index %d: %s\n", val_idx, stamp_txt.c_str());
+        printf("- Index %d: %s\n", val_idx, stamp_txt.c_str());
 #endif
         if (high-low <= 1)
-        {   // The intervall can't shrink further,
-            // idx = (low+high)/2 == high.
+        {   // The intervall can't shrink further.
+            // idx == high because of up-rounding above.
             // Which value's best?
             LOG_ASSERT(val_idx == high);
             if (stamp > start)
@@ -364,7 +368,7 @@ const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
                 val_idx = low;
                 return next();
             }
-            // else: val_idx == high is good & already in data
+            // else: val_idx == high is good & already into data
             break;
         }
         if (stamp == start)

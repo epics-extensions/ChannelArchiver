@@ -34,7 +34,6 @@ class FUX
 {
 public:
     FUX(); ///< Constructor
-
     ~FUX(); ///< Destructor
 
     /// One element in the FUX tree.
@@ -42,17 +41,10 @@ public:
     {
     public:
         Element(Element *parent, const stdString &name); ///< Constructor
-        
-        ~Element(); ///< Destructor
-
-        /// Parent element or 0.
-        Element *parent;
-
-        /// Name of this element.
-        stdString name;
-
-        /// Value of this element.
-        stdString value;
+        ~Element();      ///< Destructor
+        Element *parent; ///< Parent element or 0.
+        stdString name;  ///< Name of this element.
+        stdString value; ///< Value of this element.
 
         /// Add a child to this Element.
         void add(Element *child)
@@ -64,6 +56,8 @@ public:
         /// List of children.
         stdList<Element *> children;
     };
+
+    stdString DTD; ///< The DTD. Set for dump().
 
     /// Parse the given XML file into the FUX tree.
 

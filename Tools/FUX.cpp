@@ -14,6 +14,15 @@ XERCES_CPP_NAMESPACE_USE
 #include <xmlparse.h>
 #endif
 
+// TODO: Catch the name of the DTD so that
+//       we can print it out in dump()?
+//       Unclear how to do that in a SAX
+//       environment. he Xerces entity resolver
+//       sees the systemID of the <!DOCTYPE ... >
+//       entry, but it's not obvious that
+//       the parser is in a <!DOCTYPE> tag at that point.
+//       Could also be <!ENTITY ...>.
+
 FUX::Element::Element(FUX::Element *parent, const stdString &name)
         : parent(parent), name(name)
 {}
@@ -88,6 +97,9 @@ inline void indent(int depth)
 void FUX::dump(FILE *f)
 {
     fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    if (root && DTD.length() > 0)
+        fprintf(f, "<!DOCTYPE %s SYSTEM \"%s\">\n",
+                root->name.c_str(), DTD.c_str());
     dump_element(f, root, 0);
 }
 
@@ -132,10 +144,33 @@ void FUX::dump_element(FILE *f, Element *e, int depth)
 
 #ifdef FUX_XERCES
 // Xerces implementation ---------------------------------------------------
+
+#if 0
+class FUXEntityResolver : public EntityResolver
+{
+public:
+    InputSource *resolveEntity(const XMLCh *const publicId,
+                               const XMLCh *const systemId);
+};
+
+InputSource *FUXEntityResolver::resolveEntity(const XMLCh *const publicId,
+                                              const XMLCh *const systemId)
+{
+    char *s;
+    s = XMLString::transcode(publicId);
+    printf("Entity, publicId '%s'\n", s);
+    XMLString::release(&s);
+    s = XMLString::transcode(systemId);
+    printf("Entity, systemId '%s'\n", s);
+    XMLString::release(&s);
+    return 0;
+}
+#endif
+
 class FUXContentHandler : public DefaultHandler
 {
 public:
-    FUXContentHandler(FUX *fux) : fux(fux) {}    
+    FUXContentHandler(FUX *fux) : fux(fux) {}
     void startElement(const XMLCh* const uri, const XMLCh* const localname,
                       const XMLCh* const qname,const Attributes& attrs);
     void characters(const XMLCh *const chars, const unsigned int length);
@@ -219,6 +254,7 @@ FUX::Element *FUX::parse(const char *file_name)
     try
     {
         XMLPlatformUtils::Initialize();
+        //FUXEntityResolver entity_resolver;
         FUXContentHandler content_handler(this);
         FUXErrorHandler   error_handler(this);
         SAX2XMLReader *parser = XMLReaderFactory::createXMLReader();
@@ -227,9 +263,20 @@ FUX::Element *FUX::parse(const char *file_name)
             LOG_MSG("Couldn't allocate parser\n");
             return 0;
         }
+        // Very strange notation, but these XMLUni constants
+        // are simply the XMLCh strings shown in the following comments.
+        // Those URLs matche the SAX2XMLReader documentation,
+        // but it's very hard to find the XMLUni members
+        // for the URLs without looking at XMLUni.cpp.
+        // "http://xml.org/sax/features/validation"
         parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-        parser->setFeature(XMLUni::fgXercesDynamic, true);
+        // "http://xml.org/sax/features/namespaces"
         parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
+        // "http://xml.org/sax/features/validation"
+        parser->setFeature(XMLUni::fgXercesDynamic, true);
+        // "http://apache.org/xml/features/validation-error-as-fatal"
+        parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
+        //parser->setEntityResolver(&entity_resolver);
         parser->setContentHandler(&content_handler);
         parser->setErrorHandler(&error_handler);
         parser->parse(file_name);

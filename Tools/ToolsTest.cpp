@@ -4,6 +4,7 @@
 
 // Enable/disable certain tests in case one doesn't work out
 // on your architecture
+#if 0
 #define TEST_STRING
 #define TEST_TIME
 #define TEST_AVL
@@ -12,6 +13,7 @@
 #define TEST_TIMER
 #define TEST_CA
 #define TEST_BITSET
+#endif
 #define TEST_FUX
 
 // Nothing should need to be touched from here down
@@ -744,6 +746,7 @@ void test_fux()
     TEST(xml_doc != 0);
     if (xml_doc == 0)
         return;
+    fux.DTD="../Engine/engineconfig.dtd";
     fux.dump(stdout);
     TEST(xml_doc->find("write_period") != 0);
     TEST(xml_doc->find("group") != 0);

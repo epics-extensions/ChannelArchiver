@@ -156,7 +156,7 @@ proc checkForBgManager { {force 0} } {
 	  } else {
 	    set tclext ""
 	  }
-	  exec CAbgManager$tclext $::argv &
+	  exec CAbgManager$tclext $camMisc::cfg_file &
 	} else {
 	  set ret($h) 1
 	}
@@ -384,6 +384,7 @@ proc runArchiver {i {forceRun 0} {verbose 1}} {
   }
   if {"$cfgc" == ""} {set cfgc 0}
   if {"$cvs" == ""} {set cvs 0}
+  if {"$rmlock" == ""} {set rmlock 0}
 
   set logtxt [list "Started by [file tail [file rootname [info script]]] ($::CVS(Version)) @ [clock format $now]\n"]
   lappend logtxt " Description:\t\"$descr\""

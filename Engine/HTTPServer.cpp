@@ -82,7 +82,7 @@ void HTTPServer::callBack ()
 // statics:
 PathHandlerList *HTTPClientConnection::_handler;
 size_t HTTPClientConnection::_total = 0;
-list<HTTPClientConnection *> HTTPClientConnection::_clients;
+size_t HTTPClientConnection::_clients = 0;
 
 HTTPClientConnection::HTTPClientConnection (SOCKET socket)
         : fdReg (socket, fdrRead)
@@ -90,12 +90,17 @@ HTTPClientConnection::HTTPClientConnection (SOCKET socket)
     _socket = socket;
     _dest = _line;
     ++_total;
-    _clients.push_back (this);
+    ++_clients;
 }
 
 HTTPClientConnection::~HTTPClientConnection ()
 {
-    _clients.remove (this);
+    if (_clients > 0)
+        --_clients;
+    else
+    {
+        LOG_MSG ("~HTTPClientConnection: odd client count\n");
+    }
     socket_close (_socket);
 }
 

@@ -24,6 +24,7 @@
 #include "HTTPServer.h"
 #include "CGIDemangler.h"
 #include "NetTools.h"
+#include "cvtFast.h"
 #include <list>
 #include <vector>
 #include <strstream>
@@ -47,66 +48,48 @@ static void engineinfo (HTTPClientConnection *connection,
                         const stdString &path)
 {
     HTMLPage page (connection->getSocket(), "Archive Engine");
-
+    stdString s;
+    char line[100];
+    
     page.openTable (2, "Engine Info", 0);
     page.tableLine ("Name", "ArchiveEngine", 0);
     page.tableLine ("Version", VERSION_TXT ", built " __DATE__, 0);
     page.tableLine ("Description", theEngine->getDescription().c_str(), 0);
-    {
-        strstream line;
-        line << theEngine->getStartTime () << '\0';
-        page.tableLine ("Started", line.str(), 0);
-        line.rdbuf()->freeze (false);
-    }
+    
+    osiTime2string (theEngine->getStartTime (), s);
+    page.tableLine ("Started", s.c_str(), 0);
+
     page.tableLine ("Archive ", theEngine->getDirectory().c_str(), 0);
+
 #ifdef SHOW_DIR
     char dir[100];
     getcwd (dir, sizeof dir);                 
     page.tableLine ("Directory ", dir, 0);
 #endif
-    {
-        strstream line;
-        line << theEngine->getWriteTime () << '\0';
-        page.tableLine ("Last write check", line.str(), 0);
-        line.rdbuf()->freeze (false);
-    }
-    {
-        strstream line;
-        line << theEngine->lockChannels ().size() << '\0';
-        theEngine->unlockChannels ();
-        page.tableLine ("Channels", line.str(), 0);
-        line.rdbuf()->freeze (false);
-    }
-    {
-        strstream line;
-        line << theEngine->getDefaultPeriod() << " sec" << '\0';
-        page.tableLine ("Default Period", line.str(), 0);
-        line.rdbuf()->freeze (false);
-    }
-    {
-        strstream line;
-        line << theEngine->getWritePeriod() << " sec" << '\0';
-        page.tableLine ("Write Period", line.str(), 0);
-        line.rdbuf()->freeze (false);
-    }
-    {
-        strstream line;
-        line << theEngine->getGetThreshold() << " sec" << '\0';
-        page.tableLine ("'Get' Threshold", line.str(), 0);
-        line.rdbuf()->freeze (false);
-    }
-    {
-        strstream line;
-        line << connection->getTotalClientCount() << '\0';
-        page.tableLine ("Clients (total)", line.str(), 0);
-        line.rdbuf()->freeze (false);
-    }
-    {
-        strstream line;
-        line << connection->getClients().size () << '\0';
-        page.tableLine ("Clients (current)", line.str(), 0);
-        line.rdbuf()->freeze (false);
-    }
+
+    osiTime2string (theEngine->getWriteTime (), s);
+    page.tableLine ("Last write check", s.c_str(), 0);
+
+    unsigned long num = theEngine->lockChannels ().size();
+    theEngine->unlockChannels ();
+    cvtUlongToString (num, line);
+    page.tableLine ("Channels", line, 0);
+
+    sprintf (line, "%f sec", theEngine->getDefaultPeriod());
+    page.tableLine ("Default Period", line, 0);
+
+    sprintf (line, "%f sec", theEngine->getWritePeriod());
+    page.tableLine ("Write Period", line, 0);
+
+    sprintf (line, "%f sec", theEngine->getGetThreshold());
+    page.tableLine ("Get Threshold", line, 0);
+
+    cvtUlongToString ((unsigned long) connection->getTotalClientCount(), line);
+    page.tableLine ("Clients (total)", line, 0);
+
+    cvtUlongToString ((unsigned long) connection->getClientCount(), line);
+    page.tableLine ("Clients (current)", line, 0);
+
     page.closeTable ();
 }
 

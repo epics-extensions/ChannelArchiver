@@ -76,7 +76,7 @@ public:
     {   _handler = handler; }
 
     // List of all open client connections
-    static const list<HTTPClientConnection *> &getClients ()
+    static size_t getClientCount ()
     {   return _clients;    }
 
     // Total number of clients since started (for debugging)
@@ -95,7 +95,7 @@ private:
 
     static PathHandlerList  *_handler;
     static size_t _total;
-    static list<HTTPClientConnection *> _clients;
+    static size_t _clients;
 
     // Called by fdManager on input:
     void callBack ();

@@ -66,6 +66,7 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
     }
 }
 
+
 void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard,
                                double period)
 {
@@ -101,7 +102,7 @@ void ArchiveChannel::startCA(Guard &guard)
     if (!chid_valid)
     {
         //LOG_MSG("CA create channel '%s'\n", name.c_str());
-	// I have see the first call to ca_create_channel take
+        // I have see the first call to ca_create_channel take
         // about 10 second when the EPICS_CA_ADDR_LIST pointed
         // to a computer outside of my private office network.
         // (Similarly, using ssh to get out of the office net
@@ -217,13 +218,13 @@ void ArchiveChannel::init(Guard &engine_guard, Guard &guard,
 void ArchiveChannel::write(Guard &guard, IndexFile &index)
 {
     guard.check(mutex);
-    size_t num_samples = buffer.getCount();
+    size_t i, num_samples = buffer.getCount();
     if (num_samples <= 0)
         return;
     DataWriter writer(index, name, ctrl_info, dbr_time_type, nelements,
                       period, num_samples);
     const RawValue::Data *value;
-    while (num_samples-- > 0)
+    for (i=0; i<num_samples; ++i)
     {
         if (!(value = buffer.removeRawValue()))
         {
@@ -482,14 +483,15 @@ void ArchiveChannel::addEvent(Guard &guard,
     memset(value, 0, RawValue::getSize(dbr_time_type, nelements));
     RawValue::setStatus(value, status, severity);
     if (event_time < last_stamp_in_archive)
-    {   // adjust time, event has to be added to archive
+        // adjust time, event has to be added to archive
         RawValue::setTime(value, last_stamp_in_archive);
-    }
     else
     {
         last_stamp_in_archive = event_time;
         RawValue::setTime(value, event_time);
     }
+    if (!isValidTime(RawValue::getTime(value)))
+        LOG_MSG("'%s': Added event w/ bad time stamp!\n", name.c_str());
 }
 
 bool ArchiveChannel::isGoodTimestamp(const epicsTime &stamp,

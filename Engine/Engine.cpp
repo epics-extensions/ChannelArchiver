@@ -203,88 +203,84 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
 {
     engine_guard.check(mutex);
     ArchiveChannel *channel = findChannel(engine_guard, channel_name);
-    bool new_channel;
     if (!channel)
     {
         channel = new ArchiveChannel(channel_name, period);
+        if (!channel)
+        {
+            LOG_MSG("Engine::addChannel cannot allocate '%s'\n",
+                    channel_name.c_str());
+            return 0;
+        }
         channels.push_back(channel);
-        new_channel = true;
     }
-    else
-        new_channel = false;
     Guard guard(channel->mutex);
     SampleMechanism *mechanism;
     // For existing channels: maximize monitor feature, minimize period
     if (monitored)
         mechanism = new SampleMechanismMonitored(channel);
+    else if (period >= get_threshhold)
+        mechanism = new SampleMechanismGet(channel);
     else
-    {
-        if (period >= get_threshhold)
-            mechanism = new SampleMechanismGet(channel);
-        else
-            mechanism = new SampleMechanismMonitoredGet(channel);
-    }
+        mechanism = new SampleMechanismMonitoredGet(channel);
     if (channel->getPeriod(guard) > period)
         channel->setPeriod(engine_guard, guard, period);
     channel->setMechanism(engine_guard, guard, mechanism);
     group->addChannel(guard, channel);
     channel->addToGroup(guard, group, disabling);
-    if (new_channel)
-    {
-        IndexFile index(RTreeM);
-        if (index.open(index_name.c_str(), false))
-        {   // Is channel already in Archive?
-            AutoPtr<RTree> tree(index.getTree(channel_name));
-            if (tree)
-            {
-                RTree::Datablock block;
-                RTree::Node node(tree->getM(), true);
-                int idx;
-                if (tree->getLastDatablock(node, idx, block))
-                {   // extract previous knowledge from Archive
-                    DataFile *datafile =
-                        DataFile::reference(index.getDirectory(),
-                                            block.data_filename, false);
-                    if (datafile)
+    IndexFile index(RTreeM);
+    if (index.open(index_name.c_str(), false))
+    {   // Is channel already in Archive?
+        AutoPtr<RTree> tree(index.getTree(channel_name));
+        if (tree)
+        {
+            RTree::Datablock block;
+            RTree::Node node(tree->getM(), true);
+            int idx;
+            if (tree->getLastDatablock(node, idx, block))
+            {   // extract previous knowledge from Archive
+                DataFile *datafile =
+                    DataFile::reference(index.getDirectory(),
+                                        block.data_filename, false);
+                if (datafile)
+                {
                     {
+                        AutoPtr<DataHeader> header(
+                            datafile->getHeader(block.data_offset));
+                        if (header)
                         {
-                            AutoPtr<DataHeader> header(
-                                datafile->getHeader(block.data_offset));
-                            if (header)
-                            {
-                                epicsTime last_stamp(header->data.end_time);
-                                CtrlInfo ctrlinfo;
-                                ctrlinfo.read(datafile,
-                                              header->data.ctrl_info_offset);
-                                channel->init(engine_guard, guard,
-                                              header->data.dbr_type,
-                                              header->data.dbr_count,
-                                              &ctrlinfo,
-                                              &last_stamp);
-                                stdString stamp_txt;
-                                epicsTime2string(last_stamp, stamp_txt);
-                                /*
-                                LOG_MSG("'%s' initialized from storage.\n"
-                                        "Data file '%s' @ 0x%lX\n"
-                                        "Last Stamp: %s\n",
-                                        channel_name.c_str(),
-                                        block.data_filename.c_str(),
-                                        block.data_offset,
-                                        stamp_txt.c_str());
-                                */
-                                // As long as we don't have a new value,
-                                // log as disconnected
-                                channel->addEvent(guard, 0, ARCH_DISCONNECT,
-                                                  epicsTime::getCurrent());
-                            }
+                            epicsTime last_stamp(header->data.end_time);
+                            CtrlInfo ctrlinfo;
+                            ctrlinfo.read(datafile,
+                                          header->data.ctrl_info_offset);
+                            channel->init(engine_guard, guard,
+                                          header->data.dbr_type,
+                                          header->data.dbr_count,
+                                          &ctrlinfo,
+                                          &last_stamp);
+                            stdString stamp_txt;
+                            epicsTime2string(last_stamp, stamp_txt);
+                            /*
+                              LOG_MSG("'%s' initialized from storage.\n"
+                              "Data file '%s' @ 0x%lX\n"
+                              "Last Stamp: %s\n",
+                              channel_name.c_str(),
+                              block.data_filename.c_str(),
+                              block.data_offset,
+                              stamp_txt.c_str());
+                            */
+                            // As long as we don't have a new value,
+                            // log as disconnected
+                            channel->addEvent(guard, 0, ARCH_DISCONNECT,
+                                              epicsTime::getCurrent());
                         }
-                        datafile->release();
-                        DataFile::close_all();
                     }
+                    datafile->release();
+                    DataFile::close_all();
                 }
             }
-            index.close();
         }
+        index.close();
     }
     channel->startCA(guard);
     return channel;
@@ -337,7 +333,7 @@ stdString Engine::makeDataFileName()
 
 void Engine::writeArchive(Guard &engine_guard)
 {
-    LOG_MSG("Engine: writing\n");
+    //LOG_MSG("Engine: writing\n");
     is_writing = true;
     IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
@@ -357,7 +353,7 @@ void Engine::writeArchive(Guard &engine_guard)
     }
     DataFile::close_all();
     is_writing = false;
-    LOG_MSG("Engine: writing done.\n");
+    //LOG_MSG("Engine: writing done.\n");
 }
 
 bool Engine::process()

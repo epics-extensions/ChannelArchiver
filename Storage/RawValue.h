@@ -29,7 +29,6 @@ enum RawValueSpecialSeverities
     ARCH_DISABLED           = 0x0f08,
 };
 
-
 /// Helper class for raw dbr_time_xxx values.
 
 /// This class has all static methods, it always requires

@@ -106,9 +106,7 @@ int main(int argc, const char *argv[])
         if (! description.get().empty())
             theEngine->setDescription(guard, description);
         EngineConfig config;
-        LOG_MSG("Reading %s\n", config_name.c_str());
         run = config.read(guard, theEngine, config_name);
-        LOG_MSG("Done Reading config.\n");
     }
 #ifdef ENGINE_DEBUG
     LOG_MSG("ChannelArchiver thread 0x%08X entering main loop\n",
@@ -128,10 +126,9 @@ int main(int argc, const char *argv[])
     signal(SIGTERM, signal_handler);
 #endif
     // Main loop
-    LOG_MSG("\n------------------------------------------\n"
-            "Engine Running.\n"
-            "Stop via web browser at http://localhost:%d/stop\n"
-            "------------------------------------------\n",
+    LOG_MSG("\n----------------------------------------------------\n"
+            "Engine Running. Stop via http://localhost:%d/stop\n"
+            "----------------------------------------------------\n",
             EngineServer::_port);
     while (run)
         theEngine->process();

@@ -218,6 +218,11 @@ void SampleMechanismGet::handleValue(Guard &guard,
             RawValue::setTime(previous_value, now);
         }
         channel->buffer.addRawValue(previous_value);
+        if (!isValidTime(RawValue::getTime(previous_value)))
+        {
+            LOG_MSG("'%s': SampleMechanismGet added bad time stamp!\n",
+                    channel->getName().c_str());
+        }
         previous_value_set = true;
         channel->last_stamp_in_archive = stamp;
         wasWrittenAfterConnect = true;
@@ -250,6 +255,11 @@ void SampleMechanismGet::handleValue(Guard &guard,
     LOG_MSG("SampleMechanismGet: accepted\n");
 #   endif
     channel->buffer.addRawValue(value);
+    if (!isValidTime(RawValue::getTime(value)))
+    {
+        LOG_MSG("'%s': SampleMechanismGet(2) added bad time stamp!\n",
+                channel->getName().c_str());
+    }
     channel->last_stamp_in_archive = stamp;
     // remember
     if (previous_value)
@@ -276,6 +286,11 @@ void SampleMechanismGet::flushPreviousValue(Guard &guard,
         RawValue::setStatus(previous_value, repeat_count, ARCH_REPEAT);
         RawValue::setTime(previous_value, stamp);
         channel->buffer.addRawValue(previous_value);
+        if (!isValidTime(RawValue::getTime(previous_value)))
+        {
+            LOG_MSG("'%s': flushPreviousValue( added bad time stamp!\n",
+                    channel->getName().c_str());
+        }
         channel->last_stamp_in_archive = stamp;
     }
     else

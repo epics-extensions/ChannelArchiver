@@ -13,6 +13,11 @@
 #
 # kasemir@lanl.gov
 
+# TODO: when creating indexconfig,
+#       omit indices whose modification time are old
+#       (what's old?) so that the ArchiveIndexTool
+#       runs faster
+
 # TODO: daemon often tries to stop twice. Is that an issue?
 
 use English;

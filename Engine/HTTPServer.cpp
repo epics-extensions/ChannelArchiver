@@ -50,7 +50,7 @@ HTTPServer::HTTPServer(SOCKET socket)
         : thread(*this, "HTTPD",
                  epicsThreadGetStackSize(epicsThreadStackBig),
                  epicsThreadPriorityMedium),
-          go(true), socket(socket)
+          go(true), socket(socket), total_clients(0)
 {}
 
 HTTPServer::~HTTPServer()
@@ -143,9 +143,8 @@ void HTTPServer::run()
                 client_list_mutex.lock();
                 if (clients.size() < MAX_NUM_CLIENTS)
                 {
-                    ++total_clients;
                     HTTPClientConnection *client =
-                        new HTTPClientConnection(this, peer, total_clients);
+                        new HTTPClientConnection(this, peer, ++total_clients);
                     clients.push_back(client);
                     client_list_mutex.unlock();
                     client->start();
@@ -232,11 +231,13 @@ HTTPClientConnection::HTTPClientConnection(HTTPServer *server,
         : thread(*this, "HTTPClientConnection",
                  epicsThreadGetStackSize(epicsThreadStackBig),
                  epicsThreadPriorityLow),
-          server(server), num(num), done(false), socket(socket)
-{
-    dest = 0;
-    birthtime = epicsTime::getCurrent();
-}
+          server(server),
+          birthtime(epicsTime::getCurrent()),
+          num(num),
+          done(false),
+          socket(socket),
+          dest(0)
+{}
 
 HTTPClientConnection::~HTTPClientConnection()
 {

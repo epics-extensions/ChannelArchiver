@@ -446,6 +446,11 @@ void RawValue::show(FILE *file,
     DbrType type, DbrCount count, const Data *value,
     const class CtrlInfo *info)
 {
+    if (!value)
+    {
+        fprintf(file, "<null-value>\n");
+        return;
+    }
     stdString time, stat, txt;
     getTime(value, time);
     getStatus(value, stat);

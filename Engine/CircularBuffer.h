@@ -2,12 +2,8 @@
 #ifndef __CIRCULARBUFFER_H__
 #define __CIRCULARBUFFER_H__
 
-#ifdef CIRCBUF_TEST
-#include <stdlib.h>
-#else
 // Storage
 #include <RawValue.h>
-#endif
 
 /// \ingroup Engine In-Memory buffer for values.
 
@@ -24,17 +20,17 @@ public:
     void allocate(DbrType type, DbrCount count, size_t num);
 
     /// Capacity, that is: max. number of elements
-    size_t getCapacity()
+    size_t getCapacity() const
     {   return max_index-1; }
 
     /// Number of values in the buffer, 0...(capacity-1)
-    size_t getCount();
+    size_t getCount() const;
 
     /// Keep memory as is, but reset to have 0 entries
     void reset();
     
     /// Number of samples that had to be dropped
-    size_t getOverwrites()
+    size_t getOverwrites() const
     {   return overwrites; }
 
     /// Doesn't change buffer at all, just reset the overwrite count
@@ -49,15 +45,14 @@ public:
     RawValue::Data *getNextElement();
     
     /// Copy a raw value into the buffer
-    void addRawValue(const RawValue::Data *raw_value)
-    {   memcpy(getNextElement(), raw_value, element_size); }
+    void addRawValue(const RawValue::Data *raw_value);
 
     /// Get a pointer to value number i without removing it
 
     ///
     /// Returns 0 if i is invalid.
     ///
-    const RawValue::Data *getRawValue(size_t i);
+    const RawValue::Data *getRawValue(size_t i) const;
     
     /// Return pointer to the oldest value in the buffer and remove it.
 
@@ -66,11 +61,13 @@ public:
     ///
     const RawValue::Data *removeRawValue();
 
+    void dump() const;
+    
 private:
     CircularBuffer(const CircularBuffer &); // not impl.
     CircularBuffer & operator = (const CircularBuffer &); // not impl.
 
-    RawValue::Data *getElement(size_t i);
+    RawValue::Data *getElement(size_t i) const;
 
     DbrType         type;        // dbr_time_xx
     DbrCount        count;       // array size of type

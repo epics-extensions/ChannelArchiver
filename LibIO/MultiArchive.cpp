@@ -92,6 +92,9 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
 	     if (!isValidTime(from) && !isValidTime(to)) {
 		// No timestamps
 		// -> we have to use every Archive in the Multi-Archive
+#ifdef DEBUG_MULTIARCHIVE
+		   LOG_MSG("sub-archive: " << parser.getLine() << "\n");
+#endif
 		_archives.push_back(parser.getLine());
 	     } else {
 		// avoiding to search archives that can't contain queried
@@ -109,9 +112,8 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
 		   if (time > end)
 		      end = time;
 		}
-	     
-		if ( (!isValidTime(from) || ( from < start ) ) &&
-		     (!isValidTime(to)   || ( to >= end ) ) ) {
+		if ( (!isValidTime(from) || ( from < end ) ) &&
+		     (!isValidTime(to)   || ( to >= start ) ) ) {
 #ifdef DEBUG_MULTIARCHIVE
 		   LOG_MSG("sub-archive: " << parser.getLine() << "\n");
 #endif

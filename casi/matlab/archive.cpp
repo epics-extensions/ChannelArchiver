@@ -20,6 +20,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
         mexErrMsgTxt("Expected archive name.");
     if (! mxIsChar(prhs[0]))
         mexErrMsgTxt("Wrong argument type, expected archive name.");
+    if (nlhs != 3)
+        mexErrMsgTxt("Expected three left-hand variables for archive, "
+                     "channel iter. and value iterator.");
         
     int len = mxGetNumberOfElements(prhs[0]) + 1;
     char *name = (char *)mxCalloc(len+1, sizeof(char));
@@ -37,6 +40,15 @@ void mexFunction(int nlhs, mxArray *plhs[],
     
     plhs[0] = mxCreateNumericMatrix(1, 1, mxUINT32_CLASS, 0);
     *((UINT32_T *)mxGetData(plhs[0])) = (UINT32_T)archive;
+    
+    plhs[1] = mxCreateNumericMatrix(1, 1, mxUINT32_CLASS, 0);
+    *((UINT32_T *)mxGetData(plhs[1])) =
+        (UINT32_T)archive->newChannelIterator();
+
+    plhs[2] = mxCreateNumericMatrix(1, 1, mxUINT32_CLASS, 0);
+    *((UINT32_T *)mxGetData(plhs[2])) =
+        (UINT32_T)archive->newValueIterator();
 }
 } // extern "C"
  
+

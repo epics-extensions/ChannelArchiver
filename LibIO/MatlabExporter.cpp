@@ -11,6 +11,34 @@
 #include <fstream>
 #include <iostream>
 
+bool MatlabExporter::osiTime2datestr(const osiTime &time, char *text)
+{
+    int year, month, day, hour, min, sec;
+    unsigned long nano;
+    
+    osiTime2vals (time, year, month, day, hour, min, sec, nano);
+    sprintf(text, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
+            month, day, year, hour, min, sec, nano);
+    return true;
+}
+
+bool MatlabExporter::datestr2osiTime(const char *text, osiTime &time)
+{
+    int     year, month, day, hour, min;
+    double  second;
+
+    if (sscanf(text, "%02d/%02d/%04d %02d:%02d:%lf",
+               &month, &day, &year, &hour, &min, &second) != 6)
+        return false;
+
+    int secs = (int)second;
+    unsigned long nano = (unsigned long) ((second - secs) * 1000000000L);
+
+    vals2osiTime(year, month, day, hour, min, secs, nano, time);
+
+    return true;
+}
+
 MatlabExporter::MatlabExporter(ArchiveI *archive)
         : Exporter(archive)
 {
@@ -30,9 +58,8 @@ void MatlabExporter::exportChannelList(
     ValueIterator   value(archive);
     osiTime         time;
     stdString       txt;
+    char            datestr[DATESTR_LEN];
     char            info[300];
-    int year, month, day, hour, min, sec;
-    unsigned long nano;
 
     if (channel_names.size() > _max_channel_count)
     {
@@ -124,10 +151,8 @@ void MatlabExporter::exportChannelList(
             time=value->getTime();
             ++line;
             ++_data_count;
-            osiTime2vals (time, year, month, day, hour, min, sec, nano);
-            sprintf(info, "%s.t(%d)={'%02d-%02d-%04d %02d:%02d:%02d.%09ld'};",
-                    variable, line,
-                    month, day, year, hour, min, sec, nano);
+            osiTime2datestr(time, datestr);
+            sprintf(info, "%s.t(%d)={'%s'};", variable, line, datestr);
             *out << info << "\n";
         
             if (value->isInfo())

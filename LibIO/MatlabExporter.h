@@ -17,7 +17,20 @@ public:
     MatlabExporter(ArchiveI *archive, const stdString &filename);
 
     virtual void exportChannelList(const stdVector<stdString> &channel_names);
-protected:
+
+    // convert osiTime into a Matlab 'datestr' that 'datenum' can handle
+    enum { DATESTR_LEN=30 };
+    static bool osiTime2datestr(const osiTime &time, char *text);
+
+    // The other way round.
+    // Does only work for datestr of the format
+    //     mm/dd/yyyy hh:mm:ss.nano
+    // In Matlab, this can be created as:
+    // [datestr(n,'mm') '/' datestr(n,'dd') '/' datestr(n,'yyyy')
+    //  ' ' datestr(n,'HH:MM:SS')]
+    static bool datestr2osiTime(const char *text, osiTime &time);
+
+  protected:
 };
 
 #endif

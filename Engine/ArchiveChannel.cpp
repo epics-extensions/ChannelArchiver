@@ -406,6 +406,17 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
 void ArchiveChannel::value_callback(struct event_handler_args args)
 {
     ArchiveChannel *me = (ArchiveChannel *) args.usr;
+    if (args.status != ECA_NORMAL)
+    {
+        const char *pName;        
+        if (args.chid)
+            pName = ca_name(args.chid);
+        else
+            pName = "?";
+        LOG_MSG("ArchiveChannel::value_callback(%s): CA error %s\n", 
+                pName, ca_message(args.status));
+        return;
+    }   
     epicsTime now = epicsTime::getCurrent();
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
     Guard guard(me->mutex);

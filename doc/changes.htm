@@ -10,8 +10,7 @@
 
 <blockquote>
   <h1>Channel Archiver Changes</h1>
-  As you might notice, new "versions" are marked by some
-  additional functionality.
+  New "versions" are marked by some additional functionality.
   The "patches" are then used to debug those new things.
   
   <ul>
@@ -23,19 +22,22 @@
            is for now the only compiler that implements them and
 	   actually uses namespaces in the supplied library.
 	   I should burn the books that told me to use namespaces.
-       <li>Engine now ignores stamps which are 24h in the future,
+       <li>Engine now ignores stamps which are "in the future",
            compared to the clock of the machine where the engine
 	   is running.
-	   (hardcoded in getIgnoredFutureSecs(), Engine/Engine.h)
+	   This avoids problems since once a channel has logged
+	   a (bogus) value from the "future",
+	   you cannot go back-in-time, so you cannot add
+	   correct values.
+	   For now the definition of "future" is hardcoded in
+	   getIgnoredFutureSecs(), Engine/Engine.h.
        <li>Removed ASSERTs in Engine/ChannelInfo, replaced by
            error messages.
-       <li>replaced some usage of std::strbuf with sprintf
+       <li>Replaced some usage of std::strbuf with sprintf
            because strbuf's operators caused unexplainable lockup.
-       <li>The scripting interface CASI now works with perl,
-           but so far on Linux only.
-           I'm trying to find the correct combination of
-	   SWIG, tcl, python, perl, perl-DBI and perl-DBD-Oracle
-	   that works on Linux and Win32.
+	   Should remove all strbuf calls.
+       <li>The scripting interface CASI now works with perl
+           on Linux and Win32.
        </ul>
     <li>11/20/2000<br>
       Patch #1:<br>

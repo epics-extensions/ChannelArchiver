@@ -11,55 +11,64 @@
   <h1><I>CASI</I> - Channel Archive Scripting Interface</h1>
   This is a SWIG-based scripting interface to the
   ChannelArchiver I/O library.<br>
-  It replaces the TCL-only "ATAC" extension.
+  (It replaces the previous, TCL-only "ATAC" extension)
     
   <h2>SWIG, tcl, perl, python</h2>
   SWIG generates the glue code to get from a C/C++ library,
   in this case the ChannelArchiver I/O library,
-  to a scripting language like perl, tcl, python, ...<br>
-  So far supported with example scripts: tcl and python,
-  both with tk and BLT.
+  to a scripting language like perl, python, ...
+  <br>
+  So far supported:
+  <ul>
+  <li>python
+  <li>perl
+  <li>tcl
+  </ul>
+  There are example scripts, some using tk, BLT, Pmw.
   Originally only tcl was supported because it provides
   cross-platform portablility for GUI programming.
   Personally I find python is a better language than tcl
   for calculation and writing reusable modules.
   It also turns out to have the same or even better support
   for tk & BLT.
-  In principle perl should work and I'd consider it useful
-  for medium-size tasks or in case there is available
-  experience in perl but not python.
-  For lack of time I have not tried it, though.
+  Perl is certainly a good pick for text processing.
   
   <h2>Setup</h2>
   Details on building casi as well as how to install python
   and useful extensions are in the Readme.htm file in
-  the casi source directory.
-  <br>
-  On Unix systems, python is installed in /usr/bin,
-  /usr/local/bin or ...
-  The scripts start with "#! /bin/env python"
-  (thanks to  Vladimir Sirotenko) to keep them independent.
+  the casi source directory.<br>
+  On Unix systems, the scripting languages like python
+  can be installed in /usr/bin, /usr/local/bin or ...
+
+  Vladimir Sirotenko suggested using 
+  <pre>
+  #! /bin/env python
+  </pre>
+  to keep the scripts independent from installation details.
   This means they run as long a python is in your PATH.
+  This doesn't work in all cases, though.
   It is also a security hole if someone sneaks a fake python
   in your PATH.
   On Windows, .py files are usually associated with python,
-  the shebang is ignored.
+  .pl can be bound to perl etc., the shebang is ignored.
   <br>
   On Unix you might have to set LD_LIBRARY_PATH
-  to include the casi shared lib.
+  to include the casi shared libraries as well as
+  the EPICS base libraries.
   For Win32, the EPICS base DLLs (ca, Com, Db) have
   to be in PATH.
   <br>
-  The scripts use some means of
+  The python scripts use some means of
   <em>rootwidget.option_readfile ('optionDB')</em>
   so that the colors and fonts can be adjusted globally.
 
   <h2>Usage</h2>
-  Both the tcl and python syntax closely reflect the C++
+  The scripting tcl and python syntax closely reflect the C++
   class hierarchy of the ChannelArchiver
   <a href="../libio/default.htm">I/O library.</a>
-  There are  SWIG-generated dscriptions for
-  <a href="pythoncasi.htm">python</a> and
+  There are  SWIG-generated decriptions for
+  <a href="perlcasi.htm">perl</a>, 
+  <a href="pythoncasi.htm">python</a>, and
   <a href="tclcasi.htm">tcl</a>.
 
   <h2>Example Scripts</h2>

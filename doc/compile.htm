@@ -18,14 +18,10 @@
 
   <h2>Configuration</h2>
   There are some variables to be set in Tools/ToolsConfig.h.
-  The #defines concerning NAMESPACE and&nbsp; CPP_EDITION depend on the
-  compiler that you have:
   <ul>
-    <li>Microsoft Visual C++ 6.0 can do namespaces and conforms
-        to CPP_EDITION=3.
+    <li>Microsoft Visual C++ 6.0 conforms to CPP_EDITION=3.
     <li>Recent GNU compilers are usable with CPP_EDITION=2<br>
-        RedHat 6.0-6.2 Linux comes with egcs-2.91.66 ... 2.95,<br>
-	RedHat 5.2 with egcs-2.90.29 is also OK (but cannot do NAMESPACE).
+        RedHat 6.0-6.2 Linux comes with egcs-2.91.66 ... 2.95
   </ul>
   Unfortunately, C++ object files are rarely recognized by different compilers.
   This means that you have to compile <em>all</em> the C++ code with
@@ -74,7 +70,8 @@
   because this tool is not portable to Unix.
   <h3>CASI</h3>
   For CASI, a Makefile.Win32 and Makefile.Unix is included
-  because the EPICS make-system doesn't handle SWIG, tcl and python.
+  because the EPICS make-system doesn't handle SWIG
+  and the various supported scripting languages.
 
   <h2>MS Visual C++ specials</h2>
   For MS Visual C++, alternative project files are included

@@ -4,6 +4,7 @@
 CASI - ChannelArchiver Scripting Interface</TITLE>
 <BODY bgcolor="#B0B0FF"><BLOCKQUOTE><FONT face="Comic Sans MS">
 <H1>CASI - ChannelArchiver Scripting Interface</H1>
+[ Module  : casi, Package : casi ]<BR>
 
 <HR><H1> Contents </H1>
 <UL><LI> <A HREF="#s1_">1. Accessing an Archive</A>
@@ -29,7 +30,7 @@ an UnknownError.
 
 
 <P><TT><B>$casi_version = 1.0</B></TT>
-<BLOCKQUOTE>[ Constant : char * ]
+<BLOCKQUOTE>[ Constant: char * ]
 <BR></BLOCKQUOTE>
 
 <A name="s1_">
@@ -37,43 +38,43 @@ an UnknownError.
 <A name="s1_1_">
 <H3>1.1. class archive</H3></A>
 [ created from class archive ]<BR>
-<P><TT><B>archive name </B></TT>
+<P><TT><B>new();</B></TT>
 <BLOCKQUOTE>[ Constructor: returns archive * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>rename obj {}</B></TT>
-<BLOCKQUOTE>[ Destructor: returns void  ]
+<P><TT><B>DESTROY</B></TT>
+<BLOCKQUOTE>[ Destructor ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>open name </B></TT>
+<P><TT><B>open(name);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>findFirstChannel channel </B></TT>
+<P><TT><B>findFirstChannel(channel);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>findChannelByName name channel </B></TT>
+<P><TT><B>findChannelByName(name,channel);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>findChannelByPattern pattern channel </B></TT>
+<P><TT><B>findChannelByPattern(pattern,channel);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>name </B></TT>
+<P><TT><B>name();</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>write name hours_per_file </B></TT>
+<P><TT><B>write(name,hours_per_file);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>addChannel name channel </B></TT>
+<P><TT><B>addChannel(name,channel);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>nextFileTime current_time </B></TT>
+<P><TT><B>nextFileTime(current_time);</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
@@ -82,67 +83,67 @@ an UnknownError.
 <A name="s2_1_">
 <H3>2.1. class channel</H3></A>
 [ created from class channel ]<BR>
-<P><TT><B>channel name </B></TT>
+<P><TT><B>new();</B></TT>
 <BLOCKQUOTE>[ Constructor: returns channel * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>rename obj {}</B></TT>
-<BLOCKQUOTE>[ Destructor: returns void  ]
+<P><TT><B>DESTROY</B></TT>
+<BLOCKQUOTE>[ Destructor ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>valid </B></TT>
+<P><TT><B>valid();</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>name </B></TT>
+<P><TT><B>name();</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>next </B></TT>
+<P><TT><B>next();</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>getFirstTime </B></TT>
+<P><TT><B>getFirstTime();</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>getLastTime </B></TT>
+<P><TT><B>getLastTime();</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>getFirstValue value </B></TT>
+<P><TT><B>getFirstValue(value);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>getLastValue value </B></TT>
+<P><TT><B>getLastValue(value);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>getValueAfterTime time value </B></TT>
+<P><TT><B>getValueAfterTime(time,value);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>getValueBeforeTime time value </B></TT>
+<P><TT><B>getValueBeforeTime(time,value);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>getValueNearTime time value </B></TT>
+<P><TT><B>getValueNearTime(time,value);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>lockBuffer value </B></TT>
+<P><TT><B>lockBuffer(value);</B></TT>
 <BLOCKQUOTE>[ Member : returns int  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>addBuffer value value_count </B></TT>
+<P><TT><B>addBuffer(value,value_count);</B></TT>
 <BLOCKQUOTE>[ Member : returns void  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>addValue value </B></TT>
+<P><TT><B>addValue(value);</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>releaseBuffer </B></TT>
+<P><TT><B>releaseBuffer();</B></TT>
 <BLOCKQUOTE>[ Member : returns void  ]
 <BR></BLOCKQUOTE>
 
@@ -151,66 +152,66 @@ an UnknownError.
 <A name="s3_1_">
 <H3>3.1. class value</H3></A>
 [ created from class value ]<BR>
-<P><TT><B>value name </B></TT>
+<P><TT><B>new();</B></TT>
 <BLOCKQUOTE>[ Constructor: returns value * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>rename obj {}</B></TT>
-<BLOCKQUOTE>[ Destructor: returns void  ]
+<P><TT><B>DESTROY</B></TT>
+<BLOCKQUOTE>[ Destructor ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>valid </B></TT>
+<P><TT><B>valid();</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>isInfo </B></TT>
+<P><TT><B>isInfo();</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>type </B></TT>
+<P><TT><B>type();</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>count </B></TT>
+<P><TT><B>count();</B></TT>
 <BLOCKQUOTE>[ Member : returns int  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>get </B></TT>
+<P><TT><B>get();</B></TT>
 <BLOCKQUOTE>[ Member : returns double  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>getidx index </B></TT>
+<P><TT><B>getidx(index);</B></TT>
 <BLOCKQUOTE>[ Member : returns double  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>text </B></TT>
+<P><TT><B>text();</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>time </B></TT>
+<P><TT><B>time();</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>status </B></TT>
+<P><TT><B>status();</B></TT>
 <BLOCKQUOTE>[ Member : returns char * ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>next </B></TT>
+<P><TT><B>next();</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>prev </B></TT>
+<P><TT><B>prev();</B></TT>
 <BLOCKQUOTE>[ Member : returns bool  ]
 <BR></BLOCKQUOTE>
 
-<P><TT><B>determineChunk until </B></TT>
+<P><TT><B>determineChunk(until);</B></TT>
 <BLOCKQUOTE>[ Member : returns int  ]
 <BR></BLOCKQUOTE>
 
 <A name="s4_">
 <HR><H2>4. Misc.</H2></A>
 <P><TT><B>$HOURS_PER_MONTH = 24*31</B></TT>
-<BLOCKQUOTE>[ Constant : int  ]
+<BLOCKQUOTE>[ Constant: int  ]
 <BR>   depends on month, ... this is
                                       a magic number   
 </BLOCKQUOTE>

@@ -28,6 +28,8 @@
 // ArchiveEngine
 // ----------------------------------------------------------
 
+#define ENGINE_DEBUG
+
 // Config:
 //
 // Type of data format to use (only BinArchive is supported):

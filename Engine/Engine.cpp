@@ -102,6 +102,7 @@ void Engine::shutdown()
     epicsTime now;
     now = epicsTime::getCurrent();
 
+    _engine_lock.lock();
     _archive_lock.lock();
     ChannelIterator channel(*_archive);
     try
@@ -119,6 +120,7 @@ void Engine::shutdown()
     }
     channel->releaseBuffer();
     _archive_lock.unlock();
+    _engine_lock.unlock();
 
     LOG_MSG("Done.\n");
     theEngine = 0;
@@ -186,6 +188,12 @@ bool Engine::process()
         else
             epicsThreadSleep(scan_delay);
     }
+
+    if (_need_CA_flush)
+    {
+        ca_flush_io();
+        _need_CA_flush = false;
+    }
     
     return true;
 }
@@ -251,12 +259,14 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
     if (!channel_info)
     {
         channel_info = new ChannelInfo();
+        channel_info->lock();
         channel_info->setName(channel_name);
         _channels.push_back(channel_info);
         new_channel = true;
     }
     else
     {
+        channel_info->lock();
         // For existing channels: minimize period, maximize monitor feature
         if (channel_info->isMonitored())
             monitored = true;
@@ -303,6 +313,7 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
         _configuration->saveChannel(channel_info);
     
     channel_info->startCaConnection(new_channel);
+    channel_info->unlock();
 
     return channel_info;
 }

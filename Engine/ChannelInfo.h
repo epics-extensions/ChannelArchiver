@@ -27,9 +27,13 @@ public:
     ChannelInfo();
     ~ChannelInfo();
 
+    // In general, the ChannelInfo doesn't lock itself.
+    // Whoever's using the ChannelInfo class needs to lock/unlock
+    // accordingly.
+    // Exception: Some callbacks within the ChannelInfo class that
+    // get invoked by the ChannelAccess thread lock/unlock.
     void lock()                               { _lock.lock();   }
     void unlock()                             { _lock.unlock(); }
-    
     
     // Archiver configuration for this channel
     // ------------------------------------------------------------
@@ -134,7 +138,7 @@ private:
     bool                _connected;    // CA: currently connected?
     bool                _ever_written; // ever archived since connected?
     chid                _chid;
-    epicsTime             _connect_time; // when did _connected change?
+    epicsTime           _connect_time; // when did _connected change?
     Mechanism           _mechanism;    // scanned via get or monitor?
 
     CtrlInfoI           _ctrl_info;    // has to be copy, not * !
@@ -152,9 +156,9 @@ private:
     unsigned short      _vals_per_buffer; // see enum: INIT_VALS_PER_BUF ...
     CircularBuffer      _buffer;    // buffer in memory, later written to disk
     
-    epicsTime             _expected_next_time;
-    epicsTime             _last_archive_stamp; // last time stamp in Archie
-    epicsTime             _had_null_time;
+    epicsTime           _expected_next_time;
+    epicsTime           _last_archive_stamp; // last time stamp in Archie
+    epicsTime           _had_null_time;
 
     ChannelInfo(const ChannelInfo &rhs); // not defined
     ChannelInfo & operator = (const ChannelInfo &rhs); // not defined

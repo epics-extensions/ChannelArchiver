@@ -341,7 +341,9 @@ static void channelInfo(HTTPClientConnection *connection, const stdString &path)
     HTMLPage page(connection->getSocket(), "Channel Info", 30);
 
     channelInfoTable(page);
+    channel->lock();
     channelInfoLine(page, channel);
+    channel->unlock();
     page.closeTable();
 }
 
@@ -436,7 +438,11 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     channelInfoTable(page);
     stdList<ChannelInfo *>::const_iterator channel;
     for (channel = channels.begin(); channel != channels.end(); ++channel)
+    {
+        (*channel)->lock();
         channelInfoLine(page, *channel);
+        (*channel)->unlock();
+    }
     theEngine->unlock();
     page.closeTable();
 }
@@ -561,14 +567,8 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
     page.out(channel_name);
     page.line("</H1>");
 
+    channel->lock();
     const stdList<GroupInfo *> group_list = channel->getGroups();
-    if (group_list.empty())
-    {
-        theEngine->unlock();
-        page.line("This channel does not belong to any groups.");
-        return;
-    }
-
     page.openTable(2, "Group", 0);
     stdList<GroupInfo *>::const_iterator group;
     stdString link;
@@ -582,6 +582,7 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
         link += "</A>";
         page.tableLine(link.c_str(), 0);
     }
+    channel->unlock();
     theEngine->unlock();
     page.closeTable();
 }

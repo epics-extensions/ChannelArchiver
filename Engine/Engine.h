@@ -42,6 +42,10 @@ public:
     // All but
     // - archive
     // - data within one ChannelInfo
+    // General idea:
+    // The Engine class doesn't take its own lock,
+    // but when you call methods of the Engine
+    // you might have to lock/unlock
     void lock()             { _engine_lock.lock();   }
     void unlock()           { _engine_lock.unlock(); }
     
@@ -49,6 +53,10 @@ public:
     const stdString &getDescription() const;
     void setDescription(const stdString &description);
 
+    //* Called to inform Engine that it needs
+    // to flush CA requests in next process call
+    void needCAflush()      {_need_CA_flush = true; }
+    
     //* Call this in a "main loop" as often as possible
     bool process();
 
@@ -101,6 +109,8 @@ private:
     friend class ToAvoidGNUWarning;
 
     epicsMutex      _engine_lock;
+
+    bool            _need_CA_flush;
     
     epicsTime       _start_time;
     stdString       _directory;

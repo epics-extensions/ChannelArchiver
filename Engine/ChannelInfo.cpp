@@ -14,45 +14,36 @@
 
 // Helper:
 // print chid
-#if 0
-static void show_chid(FILE *f, const chid &chid)
+static void show_chid(const chid &chid)
 {
     short typ = ca_field_type(chid);
     const char *type_txt = (typ > 0  &&  typ < dbr_text_dim) ?
                            dbr_text[typ] : dbr_text_invalid;
 
-    fprintf(f, "CHID: %s\n", ca_name(chid));
-    fprintf(f, "\ttype/count: %s (%d) / %d\n",
-            type_txt, typ, ca_element_count(chid));
-    fprintf(f, "\thost: %s\n", ca_host_name(chid));
-    fprintf(f, "\tuser ptr: 0x%lX\n", (unsigned long) ca_puser(chid));
-    fprintf(f, "\tca state: ");
+    printf("CHID: %s\n", ca_name(chid));
+    printf("\ttype/count: %s (%d) / %lu\n",
+           type_txt, typ, ca_element_count(chid));
+    printf("\thost: %s\n", ca_host_name(chid));
+    printf("\tuser ptr: 0x%lX\n", (unsigned long) ca_puser(chid));
+    printf("\tca state: ");
     switch (ca_state(chid))
     {
     case cs_never_conn:
-        fprintf(f, "cs_never_conn: valid chid, IOC not found\n");
+        printf("cs_never_conn: valid chid, IOC not found\n");
         break;
     case cs_prev_conn:
-        fprintf(f,
-                "cs_prev_conn   valid chid, IOC was found, but unavailable\n");
+        printf("cs_prev_conn   valid chid, IOC was found, but unavailable\n");
         break;
     case cs_conn:
-        fprintf(f,
-                "cs_conn:       valid chid, IOC was found, still available\n");
+        printf("cs_conn:       valid chid, IOC was found, still available\n");
         break;
     case cs_closed:
-        fprintf(f, "cs_closed:     invalid chid\n");
+        printf("cs_closed:     invalid chid\n");
         break;
     default:
-        fprintf(f, "%d (undefined)\n", ca_state(chid));
+        printf("%d (undefined)\n", ca_state(chid));
     }
 }
-#endif
-
-// Locking:
-// 
-// The ChannelInfo list and the Circ. Buffers in there are
-// locked for multithreading.
 
 ChannelInfo::ChannelInfo()
 {
@@ -79,9 +70,7 @@ ChannelInfo::ChannelInfo()
 
 ChannelInfo::~ChannelInfo()
 {
-    _write_lock.lock();
     delete _write_value;
-    _write_lock.unlock();
     delete _tmp_value;
     delete _previous_value;
     delete _pending_value;
@@ -127,9 +116,9 @@ void ChannelInfo::startCaConnection(bool new_channel)
     if (new_channel)
     {
         // avoid warning for HPUX:
-        if (ca_search_and_connect ((char *)_name.c_str(), &_chid,
-                                   caLinkConnectionHandler, this)
-            != ECA_NORMAL)
+        if (ca_create_channel(_name.c_str(),
+                              caLinkConnectionHandler, this,
+                              CA_PRIORITY_ARCHIVE, &_chid) != ECA_NORMAL)
         {
             LOG_MSG("'%s': ca_search_and_connect failed\n", _name.c_str());
         }
@@ -154,6 +143,7 @@ void ChannelInfo::startCaConnection(bool new_channel)
             }
         }
     }
+    theEngine->needCAflush();
 }
 
 // CA Callback for each channel that connects or disconnects:
@@ -163,8 +153,16 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
 {
     stdList<GroupInfo *>::iterator g;
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
-    bool was_connected = me->_connected;
 
+    me->lock();
+    bool was_connected = me->_connected;
+#ifdef ENGINE_DEBUG
+    LOG_MSG("caLinkConnectionHandler(%s), thread 0x%08X: %s, now: %s\n",
+            me->getName().c_str(), epicsThreadGetIdSelf(),
+            (was_connected ? "was connected" : "wasn't connected"),
+            (ca_state(arg.chid) == cs_conn ? "connected" : "disconnected")
+            );
+#endif
     if (ca_state(arg.chid) != cs_conn)
     {
         LOG_MSG("'%s': CA disconnect\n", me->getName().c_str());
@@ -185,26 +183,31 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
             for (g=me->_groups.begin(); g!=me->_groups.end(); ++g)
                 (*g)->decConnectedChannels();
         }
-        return;
     }
-    // else: (re-)connected
-
-    // Get control information for this channel
-    // TODO: This is only requested on connect
-    // - similar to the previous engine or DM.
-    // How do we learn about changes, since you might actually change
-    // a channel without rebooting an IOC?
-    int status = ca_array_get_callback(ca_field_type(arg.chid)
-                                       +DBR_CTRL_STRING, 1,
-                                       me->_chid, caControlHandler, me);
-    if (status != ECA_NORMAL)
+    else
     {
-        LOG_MSG("'%s': ca_array_get_callback error in "
-                "caLinkConnectionHandler: %s",
-                me->getName().c_str(), ca_message (status));
+        // else: (re-)connected
+        // Get control information for this channel
+        // TODO: This is only requested on connect
+        // - similar to the previous engine or DM.
+        // How do we learn about changes, since you might actually change
+        // a channel without rebooting an IOC?
+        // Note: CA used to be proken here; DBR_CTRL... only worked with
+        //       count==1 for arrays. We'll get the full value later
+        int status = ca_array_get_callback(ca_field_type(arg.chid)
+                                           +DBR_CTRL_STRING, 1,
+                                           me->_chid, caControlHandler, me);
+        if (status != ECA_NORMAL)
+        {
+            LOG_MSG("'%s': ca_array_get_callback error in "
+                    "caLinkConnectionHandler: %s",
+                    me->getName().c_str(), ca_message (status));
+        }
+        // ChannelInfo is not really considered 'connected' until
+        // we received the control information...
+        theEngine->needCAflush();
     }
-    // ChannelInfo is not really considered 'connected' until
-    // we received the control information...
+    me->unlock();
 }
 
 static bool setup_CtrlInfo(DbrType type, CtrlInfoI &info, const void *raw)
@@ -278,7 +281,14 @@ static bool setup_CtrlInfo(DbrType type, CtrlInfoI &info, const void *raw)
 void ChannelInfo::caControlHandler(struct event_handler_args arg)
 {
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
+    me->lock();
     bool was_connected = me->_connected;
+
+#ifdef ENGINE_DEBUG
+    LOG_MSG("caControlHandler(%s), thread 0x%08X: %s\n",
+            me->getName().c_str(), epicsThreadGetIdSelf(),
+            (was_connected ? "was connected" : "wasn't connected"));
+#endif
 
     if (arg.status != ECA_NORMAL)
     {
@@ -326,6 +336,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
                 {
                     LOG_MSG("'%s' CA ca_add_array_event failed: %s\n",
                             me->_name.c_str(), ca_message(status));
+                    me->unlock();
                     return;
                 }
                 me->_mechanism = use_monitor;
@@ -340,21 +351,28 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
         for (g=me->_groups.begin(); g!=me->_groups.end(); ++g)
             (*g)->incConnectedChannels();
     }
+    me->unlock();
 }
 
 // Callback for values (from monitor or get_callback)
 void ChannelInfo::caEventHandler(struct event_handler_args arg)
 {
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
+    me->lock();
+#ifdef ENGINE_DEBUG
+    LOG_MSG("caEventHandler(%s), thread 0x%08X\n",
+            me->getName().c_str(), epicsThreadGetIdSelf());
+#endif
     if (!me || !me->_new_value)
     {
         LOG_MSG("'%s': caEventHandler called without ChannelInfo\n",
                 ca_name(arg.chid));
+        me->unlock();
         return;
     }
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
-    // LOG_NSV("caEventHandler %s\n", me->getName());
     me->handleNewValue();
+    me->unlock();
 }
 
 // Issue CA get for _scanned_value, no ca_pend_io in here!
@@ -366,6 +384,10 @@ void ChannelInfo::issueCaGetCallback()
                 _name.c_str());
         return;
     }
+#ifdef ENGINE_DEBUG
+    LOG_MSG("issueCaGetCallback(%s), thread 0x%08X\n",
+            getName().c_str(), epicsThreadGetIdSelf());
+#endif
     if (ca_array_get_callback(_new_value->getType(), _new_value->getCount(),
                               _chid, caEventHandler, this) != ECA_NORMAL)
         LOG_MSG("ca_array_get_callback(%s) failed\n", _name.c_str());
@@ -386,9 +408,7 @@ bool ChannelInfo::setValueType(DbrType type, DbrCount count)
         delete _new_value;
         delete _previous_value;
         delete _tmp_value;
-        _write_lock.lock();
         delete _write_value;
-        _write_lock.unlock();
         changed = true;
     }
     _new_value_set = false;
@@ -400,9 +420,7 @@ bool ChannelInfo::setValueType(DbrType type, DbrCount count)
     _pending_value = _new_value->clone();
     _previous_value = _new_value->clone();
     _tmp_value = _new_value->clone();
-    _write_lock.lock();
     _write_value = _new_value->clone();
-    _write_lock.unlock();
     checkRingBuffer();
 
     return changed;
@@ -787,7 +805,6 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
     }
 
     const RawValueI::Type *raw = _buffer.removeRawValue();
-    _write_lock.lock();
     size_t avail = channel->lockBuffer(*_write_value, _period);
     while (raw)
     {
@@ -813,7 +830,6 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
         --avail;
         raw = _buffer.removeRawValue();
     }
-    _write_lock.unlock();
     _buffer.resetOverwrites();
 }
 

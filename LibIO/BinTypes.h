@@ -2,7 +2,7 @@
 #define __BINTYPES_H__
 
 #include "ArchiveTypes.h"
-#include<epicsTime.h>
+#include <epicsTime.h>
 #include <LowLevelIO.h>
 
 #ifdef CONVERSION_REQUIRED

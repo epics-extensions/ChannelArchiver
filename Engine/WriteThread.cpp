@@ -31,7 +31,9 @@ void WriteThread::run()
             _writing = true;
             try
             {
+                theEngine->lock();
                 theEngine->writeArchive();
+                theEngine->unlock();
             }
             catch (ArchiveException &e)
             {

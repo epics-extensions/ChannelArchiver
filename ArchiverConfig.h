@@ -16,7 +16,7 @@
 // General
 // ----------------------------------------------------------
 
-// Some even more generic things are configured in ToolsConfig.h!
+// Some even more generic things are coArnfigured in ToolsConfig.h!
 
 // This should match Make.ver
 #define VERSION 1

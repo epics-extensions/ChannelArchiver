@@ -11,17 +11,30 @@ int main(int argc, const char *argv[])
 {
     CmdArgParser parser(argc, argv);
     parser.setArgumentsInfo(" <directory file> { channel }");
-    CmdArgString start_time (parser, "start", "<time>", "Format: mm/dd/yy hh:mm:ss[.nano-secs]");
-    CmdArgString end_time   (parser, "end", "<time>", "(exclusive)");
-    CmdArgFlag   fill       (parser, "fill", "fill columns w/ repeated values");
-    CmdArgDouble interpol   (parser, "interpolate", "<seconds>", "interpolate values");
-    CmdArgFlag   verbose    (parser, "verbose", "verbose mode");
-    CmdArgFlag   GNUPlot    (parser, "gnuplot", "generate GNUPlot output");
-    CmdArgFlag   Matlab     (parser, "Matlab", "generate Matlap output");
-    CmdArgFlag   GIFPlot    (parser, "GIF", "generate GNUPlot output for gif image");
-    CmdArgFlag   status_text(parser, "text", "include status information");
-    CmdArgString output     (parser, "output", "<file>", "output to file instead of stdout");
-    CmdArgString pattern    (parser, "match", "<pattern>", "reg. expr. pattern for channel names");
+    CmdArgString start_time (parser,
+                             "start", "<time>", "Format: mm/dd/yy hh:mm:ss[.nano-secs]");
+    CmdArgString end_time   (parser,
+                             "end", "<time>", "(exclusive)");
+    CmdArgFlag   fill       (parser,
+                             "fill", "fill columns w/ repeated values");
+    CmdArgDouble interpol   (parser,
+                             "interpolate", "<seconds>", "interpolate values");
+    CmdArgFlag   verbose    (parser,
+                             "verbose", "verbose mode");
+    CmdArgFlag   GNUPlot    (parser,
+                             "gnuplot", "generate GNUPlot output");
+    CmdArgFlag   image      (parser,
+                             "Gnuplot", "generate GNUPlot output for Image");
+    CmdArgFlag   pipe       (parser,
+                             "pipe", "run GNUPlot via pipe");
+    CmdArgFlag   Matlab     (parser,
+                             "Matlab", "generate Matlap output");
+    CmdArgFlag   status_text(parser,
+                             "text", "include status information");
+    CmdArgString output     (parser,
+                             "output", "<file>", "output to file");
+    CmdArgString pattern    (parser,
+                             "match", "<reg. exp.>", "channel name pattern");
     if (! parser.parse())
         return -1;
     if (parser.getArguments().size() < 1)
@@ -31,13 +44,13 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    if (GIFPlot)
-        GNUPlot.set(true);
+    if (image || pipe)
+        GNUPlot.set();
     if (GNUPlot  &&  output.get().empty())
     {
         std::cerr << "Error:\n"
-                  << "For GNUPlot output (-g or -G flag) you must specify\n"
-                  << "an output file (-o)\n\n";
+                  << "You must specify an output file (-o)"
+                  << " for GNUPlot output\n";
         parser.usage();
         return -1;
     }
@@ -50,8 +63,10 @@ int main(int argc, const char *argv[])
         if (GNUPlot)
         {
             GNUPlotExporter *gnu = new GNUPlotExporter(archive, output);
-            if (GIFPlot)
+            if (image)
                 gnu->makeImage();
+            if (pipe)
+                gnu->usePipe();
             exporter = gnu;
         }
         else if (Matlab)

@@ -137,7 +137,11 @@ inline long CtrlInfoI::getPrecision() const
 {	return _infobuf.mem()->value.analog.prec;	}
 
 inline const char *CtrlInfoI::getUnits() const
-{	return _infobuf.mem()->value.analog.units;	}
+{
+    if (getType() == Numeric)
+        return _infobuf.mem()->value.analog.units;
+    return "";
+}
 
 inline float CtrlInfoI::getDisplayHigh() const
 {	return _infobuf.mem()->value.analog.disp_high; }

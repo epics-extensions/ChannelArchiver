@@ -8,18 +8,27 @@
 <body background="blueback.jpg">
 
 <blockquote>
- <h1>Regular Expressions</h1>
+<h1>Channel Name Patters</h1>
 
-The name matching algorithm uses <I>Regular Expressions</I>
-like Perl or most UNIX tools (grep, vi, sed, awk, ...).
-Regular Expressions are very powerful but must not be confused with
-the primitive DOS filename patterns.
+Two types of channel name patterns are supported:
+<ul>
+<li>File 'globs': Simple to use
+<li>Regular expressions: More powerful.
+</ul>
 
- <h2>Regular Expressions vs. DOS filename pattens</h2>
+<h2>File globs</h2>
+These are '?' for a single character and
+'*' for zero or more arbitrary characters.
+
+<h2>Regular Expressions</h2>
+Regular Expressions are used by Emacs, Perl, Python and
+most UNIX tools (grep, vi, sed, awk, emacs,...).
+
+<h2>Regular Expressions vs. glob pattens</h2>
 
 <CENTER>
 <TABLE BORDER=1>
-<TR><TH>Filename Patten</TH><TH>Reg.Exp..</TH><TH>Meaning</TH></TR>
+<TR><TH>Glob</TH><TH>Reg.Exp..</TH><TH>Meaning</TH></TR>
 <TR><TD>?</TD><TD>.</TD><TD>Any Single Character</TD></TR>
 <TR><TD>*</TD><TD>.*</TD><TD>Zero or More Characters</TD></TR>
 </TABLE>

@@ -297,7 +297,8 @@ typedef enum
 // Export data as configured for HTMLPage (names, start, end, ...)
 // to stdout (or temp_file_base files for GNUPlot).
 // Result: Any data?
-static bool exportFunc(HTMLPage &page, Format format, const char *temp_file_base=0)
+static bool exportFunc(HTMLPage &page, Format format,
+                       const char *temp_file_base=0)
 {
 	bool have_data = false;
 	stdString tempfilebase;
@@ -313,7 +314,7 @@ static bool exportFunc(HTMLPage &page, Format format, const char *temp_file_base
 		{
 			GNUPlotExporter *gnu = new GNUPlotExporter(archive, tempfilebase);
 			gnu->makeImage();
-			gnu->setPath();
+			gnu->usePipe();
 			exporter = gnu;
 		}
 		else
@@ -355,7 +356,8 @@ static bool exportFunc(HTMLPage &page, Format format, const char *temp_file_base
         {
             if (page._glob)
             {
-                stdString expr = RegularExpression::fromGlobPattern(page._pattern);
+                stdString expr =
+                    RegularExpression::fromGlobPattern(page._pattern);
                 exporter->exportMatchingChannels(expr);
             }
             else
@@ -363,7 +365,6 @@ static bool exportFunc(HTMLPage &page, Format format, const char *temp_file_base
         }
 		else
 			exporter->exportChannelList(page._names);
-
 		have_data = exporter->getDataCount() > 0;
 
 		delete exporter;
@@ -413,71 +414,56 @@ static bool cmdPlot(HTMLPage &page, const stdString &script_dir)
     // but the GIF it creates will be accessed through the Web server's
     // virtual directory
     char physical[300];
-    char timetext[40];
-    getTimeTxt(timetext);
 #ifdef USE_RELATIVE_PHYSICAL_PATH
     getcwd(physical, sizeof physical);
 #else
     physical[0] = '\0';
 #endif
+    char timetext[40];
+    getTimeTxt(timetext);
+    
     strcat(physical, PHYSICAL_PATH);
     strcat(physical, timetext);
     strcat(physical, "_");
     strcat(physical, client);
 
+    stdString GNUPlotData;
+    GNUPlotData.reserve(200);
+#ifdef USE_RELATIVE_URL
+    GNUPlotData = script_dir;
+#endif
+    GNUPlotData += URL_PATH;
+    GNUPlotData += timetext;
+    GNUPlotData += "_";
+    GNUPlotData += client;
+    
+    stdString GNUPlotImage;
+    GNUPlotImage.reserve(GNUPlotData.length() + 5);
+    GNUPlotImage = GNUPlotData;
+    GNUPlotImage += GNUPlotExporter::imageExtension();
+    
     page.start();
     page.header("Channel Plot", 2);
     if (! exportFunc(page, fmt_GNUPlot, physical))
     {
-        page.header("Error: No data",3);
-        std::cout << "There seems to be no data for that channel and time range.\n";
+        page.header("Error: Possible reasons",3);
+        std::cout << "<ul>\n";
+        std::cout << "<li>No data<br>\n";
+        std::cout << "    There seems to be no data for that channel\n";
+        std::cout << "    and time range.\n";
+        std::cout << "    Check the <A HREF=\"" << GNUPlotData << "\">";
+        std::cout << "    data that was supposed to be plotted.</A>\n";
+        std::cout << "<li>Internal GNUPlot error<br>\n";
+        std::cout << "    If you can't get <i>any</i> plot today\n";
+        std::cout << "    even though the data is available as\n";
+        std::cout << "    a spreadsheet, the plotting is broken.\n";
+        std::cout << "</ul>\n";
         page.interFace();
         return 0;
     }
     
-#ifdef WIN32
-    // On Win9x, system() will lauch command.com
-    // which really messes things up,
-    // starting with a temporarily appearing command prompt window
-    // and sometimes hanging the WWW server.
-    // -> Circumvent command.com, start GNUPlot directly:
-    stdString GNUPlotCommand = stdString(physical) + ".plt";
-    int result = _spawnl(_P_WAIT, GNUPlot.c_str(), GNUPlot.c_str(), GNUPlotCommand.c_str(), 0);
-    
-    // Still build the complete GNUPlotCommand for further debugging
-    GNUPlotCommand = GNUPlot + " " + GNUPlotCommand;
-#else
-    stdString GNUPlotCommand = GNUPlot + " " + physical + ".plt";
-    int result = system(GNUPlotCommand.c_str());
-#endif
-    if (result != 0)
-    {
-        page.header("Error: GNUPlot",3);
-        std::cout << "The execution of GNUPlot to generate your plot failed:<P>\n";
-        std::cout << "<PRE>'" << GNUPlotCommand << "'</PRE><P>\n";
-        std::cout << "Result: " << result << "<P>\n";
-        std::cout << "Possible Reasons:\n";
-        std::cout << "<UL>\n";
-        std::cout << "<LI>No data? Use <B>GET</B> to check this\n";
-        std::cout << "<LI>Constant data so GNUPlot doesn't know how to draw the axis?<BR>";
-        std::cout << "Use <B>GET</B> to check this\n";
-        std::cout << "<LI>Gnuplot not installed?\n";
-        std::cout << "</UL>\n";
-        return 0;
-    }
-    
-#		ifdef USE_RELATIVE_URL
-    stdString GNUPlotImage = script_dir;
-#		else
-    stdString GNUPlotImage;
-#		endif
-    
-    GNUPlotImage += URL_PATH;
-    GNUPlotImage += timetext;
-    GNUPlotImage += "_";
-    GNUPlotImage += client;
-    GNUPlotImage += GNUPlotExporter::imageExtension();
-    std::cout << "<IMG SRC=\"" + GNUPlotImage + "\"</A><P>\n";
+    std::cout << "<A HREF=\"" << GNUPlotData << "\">";
+    std::cout << "<IMG SRC=\"" + GNUPlotImage + "\"</A></A><P>\n";
     std::cout << "<HR>\n";
     page.interFace();
     

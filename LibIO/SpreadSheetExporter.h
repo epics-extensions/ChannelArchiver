@@ -14,8 +14,7 @@ public:
     SpreadSheetExporter(ArchiveI *archive);
     SpreadSheetExporter(ArchiveI *archive, const stdString &filename);
 
-protected:
-    void prolog(std::ostream &out);
+    void exportChannelList(const stdVector<stdString> &channel_names);
 };
 
 

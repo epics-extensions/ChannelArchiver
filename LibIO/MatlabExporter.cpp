@@ -34,7 +34,6 @@ void MatlabExporter::exportChannelList(
     int year, month, day, hour, min, sec;
     unsigned long nano;
 
-    _datacount = 0;
     if (channel_names.size() > _max_channel_count)
     {
         archive.detach();
@@ -121,8 +120,8 @@ void MatlabExporter::exportChannelList(
                (time=value->getTime()) !=nullTime &&
                (_end==nullTime || time <= _end))
         {
-            ++_datacount;
             ++line;
+            ++_data_count;
             osiTime2vals (time, year, month, day, hour, min, sec, nano);
             sprintf(info, "%s.t(%d)={'%02d-%02d-%04d %02d:%02d:%02d.%09ld'};",
                     variable, line,

@@ -99,7 +99,7 @@ void HTMLPage::interFace() const
     std::cout << "          <INPUT name=GLOB type=checkbox value=ON";
     if (_glob)
         std::cout << " checked=1";
-    std::cout <<            ">glob\n";
+    std::cout <<            ">file glob\n";
     std::cout << "      </TD>\n";
     std::cout << "      <TD colspan=4><INPUT NAME=\"PATTERN\" VALUE=\""
               <<            _pattern << "\" SIZE=40 MAXLENGTH=100>\n";

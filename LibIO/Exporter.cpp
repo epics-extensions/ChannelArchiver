@@ -10,38 +10,7 @@
 #endif
 
 #include "Exporter.h"
-#include "ExpandingValueIteratorI.h"
-#include "LinInterpolValueIteratorI.h"
 #include "ArchiveException.h"
-#include <fstream>
-#include <iostream>
-
-inline double fabs(double x)
-{ return x>=0 ? x : -x; }
-
-// Loop over current values and find oldest
-static osiTime findOldestValue(ValueIteratorI *values[], size_t num)
-{
-    size_t i;
-    osiTime first;
-    for (i=0; i<num; ++i) // get first valid time
-    {
-        if (values[i]->isValid())
-        {
-            first = values[i]->getValue()->getTime();
-            break;
-        }
-    }
-    for (++i; i<num; ++i) // see if anything is older
-    {
-        if (values[i]->isValid() &&
-            first > values[i]->getValue()->getTime())
-            first = values[i]->getValue()->getTime();
-    }
-
-    return first;
-}
-
 
 Exporter::Exporter(ArchiveI *archive)
 {
@@ -63,10 +32,9 @@ void Exporter::init(ArchiveI *archive)
     _gap_factor = 0;
     _fill = false;
     _be_verbose = false;
-    _time_col_val_format = false;
     _is_array = false;
-    _datacount = 0;
     _max_channel_count = 100;
+    _data_count = 0;
 }
 
 void Exporter::exportMatchingChannels (const stdString &channel_name_pattern)
@@ -126,18 +94,8 @@ void Exporter::printValue(std::ostream *out,
         }
         else
         {
-            if (_is_array && _time_col_val_format)
-            {
-                *out << '\t' << 0 << '\t' << v->getDouble(0) << "\n";
-                for (ai=1; ai<v->getCount(); ++ai)
-                {
-                    printTime(out, time);
-                    *out << '\t' << ai << '\t' << v->getDouble(ai) << "\n";
-                }
-            }
-            else
-                for (ai=0; ai<v->getCount(); ++ai)
-                    *out << '\t' << v->getDouble(ai);
+            for (ai=0; ai<v->getCount(); ++ai)
+                *out << '\t' << v->getDouble(ai);
         }
     }
 
@@ -151,200 +109,5 @@ void Exporter::printValue(std::ostream *out,
     }
 }
 
-void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
-{
-    size_t i, ai, num = channel_names.size();
-    ChannelIteratorI **channels = 0;
-    ValueIteratorI   **base = 0;
-    ValueIteratorI   **values = 0;
-    ValueI           **prev_values = 0;
-    CtrlInfoI        **infos = 0;
-    const ValueI *v;
-    char info[300];
 
-    _datacount = 0;
-    if (num > _max_channel_count)
-    {
-        sprintf(info,
-                "You tried to export %d channels.\n"
-                "For performance reason you are limited "
-                "to export %d channels at once",
-                num, _max_channel_count);
-        throwDetailedArchiveException(Invalid, info);
-        return;
-    }
-
-    channels = new ChannelIteratorI *[num];
-    base = new ValueIteratorI *[num];
-    values = new ValueIteratorI *[num];
-    prev_values = new ValueI *[num];
-    infos = new CtrlInfoI *[num];
-    // Open Channel & ValueIterator
-    for (i=0; i<num; ++i)
-    {
-        channels[i] = _archive->newChannelIterator();
-        if (! _archive->findChannelByName(channel_names[i], channels[i]))
-        {
-            sprintf(info, "Cannot find channel '%s' in archive",
-                    channel_names[i].c_str());
-            throwDetailedArchiveException (ReadError, info);
-            return;
-        }
-        base[i] = _archive->newValueIterator();
-        prev_values[i] = 0;
-        infos[i] = new CtrlInfoI();
-        values[i] = 0;
-
-        if (_fill)
-        {
-            channels[i]->getChannel()->getValueBeforeTime(_start, base[i]);
-            if (!base[i]->isValid() || base[i]->getValue()->isInfo())
-                channels[i]->getChannel()->getValueAfterTime(_start, base[i]);
-        }
-        else
-            channels[i]->getChannel()->getValueAfterTime(_start, base[i]);
-
-        if (_linear_interpol_secs > 0.0)
-        {
-            LinInterpolValueIteratorI *interpol =
-                new LinInterpolValueIteratorI(base[i], _linear_interpol_secs);
-            interpol->setMaxDeltaT(_linear_interpol_secs * _gap_factor);
-            values[i] = interpol;
-        }
-        else
-            values[i] = new ExpandingValueIteratorI(base[i]);
-
-        if (values[i]->isValid() && values[i]->getValue()->getCount() > 1)
-        {
-            _is_array = true;
-            if (num > 1)
-            {
-                sprintf(info,
-                        "Array channels like '%s' can only be exported "
-                        "on their own, "
-                        "not together with another channel",
-                        channel_names[i].c_str());
-                throwDetailedArchiveException(Invalid, info);
-            }
-        }
-    }
-
-    std::ostream *out = &std::cout; // default: stdout
-    std::ofstream file;
-    if (! _filename.empty())
-    {
-        file.open (_filename.c_str());
-#       ifdef __HP_aCC
-        if (file.fail ())
-#else
-        if (! file.is_open ())
-#endif
-        {
-            throwDetailedArchiveException(WriteError, _filename);
-        }
-        out = &file;
-    }
-
-    prolog(*out);
-
-    // Headline: "Time" and channel names
-    *out << "Time";
-    for (i=0; i<num; ++i)
-    {
-        *out << '\t' << channels[i]->getChannel()->getName();
-        if (! values[i]->isValid())
-            continue;
-        if (values[i]->getValue()->getCtrlInfo()->getType()
-            == CtrlInfoI::Numeric)
-            *out << " [" << values[i]->getValue()->getCtrlInfo()->getUnits()
-                 << ']';
-        // Array columns
-        for (ai=1; ai<values[i]->getValue()->getCount(); ++ai)
-            *out << "\t[" << ai << ']';
-        if (_show_status)
-            *out << "\t" << "Status";
-    }
-    *out << "\n";
-
-    // Find first time stamp
-    osiTime time = findOldestValue(values, num);
-    while (time != nullTime && (_end==nullTime  ||  time <= _end))
-    {
-#if 0
-        // Debug    
-        for (i=0; i<num; ++i)
-        {
-            if (values[i]->isValid())
-                *out << i << ": " << *values[i]->getValue() << "\n";
-            else
-                *out << i << ": " << _undefined_value << "\n";
-        }
-        *out << "->" << time << "\n";
-#endif
-        ++_datacount;
-        // One line: time and all values for that time
-        printTime(out, time);
-        for (i=0; i<num; ++i)
-        {
-            // print all valid values that match the current time stamp:
-            if (values[i]->isValid()  &&
-                (v=values[i]->getValue())->getTime() == time)
-            {
-                
-                printValue(out, time, v);
-                if (_fill) // keep copy of this value?
-                {
-                    if (v->isInfo () && prev_values[i])
-                    {
-                        delete prev_values[i];
-                        prev_values[i] = 0;
-                    }
-                    /* would be faster but leads to crashes:
-                     * Have to figure out when to copy the CtrlInfo and when
-                     * the pointer can be kept. Pointer changes when we switch
-                     * data files or even cross archive boundaries
-                    else if (prev_values[i] && prev_values[i]->hasSameType(*v))
-                        prev_values[i]->copyValue(*v);
-                        */
-                    else
-                    {
-                        delete prev_values[i];
-                        prev_values[i] = v->clone();
-                        *infos[i] = *v->getCtrlInfo();
-                        prev_values[i]->setCtrlInfo(infos[i]);
-                    }
-                }
-                values[i]->next();
-            }
-            else
-            {   // no valid value for current time stamp:
-                if (prev_values[i])
-                    printValue(out, time, prev_values[i]);
-                else
-                    *out << "\t" << _undefined_value;
-            }
-        }
-        *out << "\n";
-        // Find time stamp for next line
-        time = findOldestValue(values, num);
-    }
-    post_scriptum(channel_names);
-
-    if (out == &file)
-        file.close();
-
-    for (i=0; i<num; ++i)
-    {
-        delete infos[i];
-        delete prev_values[i];
-        delete values[i];
-        delete base[i];
-        delete channels[i];
-    }
-    delete [] infos;
-    delete [] prev_values;
-    delete [] values;
-    delete [] base;
-    delete [] channels;
-}
 

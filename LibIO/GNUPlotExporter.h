@@ -1,3 +1,4 @@
+// $id$ -*- c++ -*-
 #ifndef __GNUPLOTEXPORTER_H__
 #define __GNUPLOTEXPORTER_H__
 
@@ -8,7 +9,7 @@
 // together with a simple plotting script.
 //
 // The data file will be called "<filename>",
-// the script will be called "<filename>.plt".
+// the script (unless using pipe) will be called "<filename>.plt".
 //
 // Implements CLASS Exporter.
 class GNUPlotExporter : public SpreadSheetExporter
@@ -21,31 +22,20 @@ public:
 	GNUPlotExporter (Archive &archive, const stdString &filename);
 	GNUPlotExporter (ArchiveI *archive, const stdString &filename);
 
-	//* When set, this exporter will create a script
-	// for GNUPlot that will build "<filename>.png"
-	// instead of displaying the plot in a window.
-	void makeImage ()
-	{	_make_image = true;	}
+    void exportChannelList(const stdVector<stdString> &channel_names);
 
-	static const char *imageExtension ()
-	{	return ".png";	}
+    //* Issue GNUPlot commands to generate an image file
+    // (<filename>.png)
+    void makeImage()      { _make_image = true; }
+    static const char *imageExtension();
 
-	//* When set, this exporter will create a script
-	// for GNUPlot that will set the path
-	// to where the script is.
-	// (useful when called from someplace else
-	// since the script wouldn't find the data files)
-	void setPath ()
-	{	_set_path = true;	}
-
-protected:
-    void prolog (std::ostream &out);
-	void post_scriptum (const stdVector<stdString> &channel_names);
-
+    //* Call GNUPlot and run the command script via pipe
+    // instead of dumping script to disk
+    void usePipe()        { _use_pipe = true; }
+    
 private:
-	stdString _script_name;
-	bool _make_image;
-	bool _set_path;
+    bool _make_image;
+    bool _use_pipe;
 };
 
 #endif //__GNUPLOTEXPORTER_H__

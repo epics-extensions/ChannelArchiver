@@ -17,18 +17,37 @@
     <li>05/21/2001<br>
       Patch #7:<br>
        <ul>
+       <li>MultiArchive:<br>
+           <ul>
+	   <li>Didn't really handle multiple archives until now.
+	       Hopefully not too many bugs left.
+           <li>No longer investigates all subarchives
+	       unless necessary (for the INFO and LIST command).
+	       For find-channel and get-value-after-timestamp
+	       this can be skipped -> <font color=red>much faster!</font>
+	       When a list of channels and/or times is requested,
+	       the sub archives are still queried.
+	   </ul>
+       <li>GNUPlotExporter:<br>
+           <ul>
+	   <li>Use two Y-axes if exporting two channels
+	   <li>Can call GNUPlot via pipe, skipping the command-file
+	       generation
+           <li>Use 'steps' instead of 'linespoints'
+	   </ul>
+       <li>CGIExport<br>
+           <ul>
+	   <li>Benefits from new GNUPlotExporter
+	   <li>Image is now a HREF link to GNUPlot data.
+	       That's different from the spreadsheet format,
+	       but might still be useful.
+	   </ul>
        <li>Engine: don't write buffers to disk
            at shutdown because this can take too long.
            After receiving a signal (e.g. on computer shutdown),
            the engine will now stop ASAP.
            The archive contains data up to the previous
            write period.
-       <li>MultiArchive: Don't investigate all subarchives
-           unless necessary.
-           For find-channel and get-value-after-timestamp
-           this can be skipped -> faster startup.
-           When a list of channels and/or times is requested,
-           the sub archives are still queried.
        </ul>
     <li>04/30/2001<br>
       Patch #6:<br>
@@ -308,44 +327,52 @@
       ATAC: Scalar access to data; allows to create e.g. beam statistics with plot.<br>
       WinBrowser: Fixed axis plotting code.</li>
     <li>12/18/1999<br>
-      I/O Library: Split pure interface classes from the actual implementation for the original,
-      binary data file format. This will now allow the independent developement of other data
-      file formats. <br>
-      ATAC: Started TCL interface to the I/O library. </li>
+      I/O Library: Split pure interface classes from the actual
+      implementation for the original, binary data file format. This
+      will now allow the independent developement of other data file
+      formats. <br>
+      ATAC: Started TCL interface to the I/O library.
     <li>11/08/1999<br>
       The Archive Engine is now multithreaded.<br>
       Fixes as a result of Test run on LEDA at LANL.<br>
-      In a test setup the Engine ran fine until the disk got full (PC, original configuration
-      files from LEDA, ca. 1200 channels every 30 secs, free disk space of 200MB used after 5-7
-      days).<br>
-      Switched to/added standard EPICS make system Makefiles.</li>
+      In a test setup the Engine ran fine until the disk got full (PC,
+      original configuration files from LEDA, ca. 1200 channels every
+      30 secs, free disk space of 200MB used after 5-7 days).
+      Switched to/added standard EPICS make system Makefiles.
     <li>10/18/1999<br>
       Profiled &amp; enhanced engine:<br>
-      Reduced #of disk accesses.</li>
+      Reduced #of disk accesses.
     <li>9/24/1999<br>
-      No warnings left with MS VC++ or g++ (egcs-2.91.66) except for Tools/gnu_regex.c (only
-      needed for Win32).<br>
+      No warnings left with MS VC++ or g++ (egcs-2.91.66) except for
+      Tools/gnu_regex.c (only needed for Win32).<br>
       Eliminated calls to string::copy to make it work on RedHat 5.2.<br>
-      Some changes to the Engine to improve performance at higher rate of incoming values. </li>
+      Some changes to the Engine to improve performance at higher rate
+      of incoming values.
     <li>9/15/1999<br>
-      The new archive engine can read the config files that we use on LEDA and even does some of
-      what's written in there. It does handle disabling channels and creates new data files,
-      e.g. one per day. The web interface is still simple and on a fixed port (4812), but
-      already shows status information for the engine, groups, channels, and allows adding
-      channels to groups (not permanent, though).<br>
-      The IO-library has only a few warnings left when compiled with egcs (no warnings with MS
-      VC). Several bugs have been eliminated. I'm pretty sure that the sequential readout part
-      can stay as it is, buffered read might also be OK. The write portion is likely to change
-      while I'm still working on the engine. As soon as the engine is believed to be stable
-      enough so that I can run it in parallel to the old engine I'll 'freeze' the IO-library by
-      actually building it as a library. I might also need a more sophisticated version number
-      scheme then. </li>
+      The new archive engine can read the config files that we use on
+      LEDA and even does some of what's written in there. It does
+      handle disabling channels and creates new data files, e.g. one
+      per day. The web interface is still simple and on a fixed port
+      (4812), but already shows status information for the engine,
+      groups, channels, and allows adding channels to groups (not
+      permanent, though).<br>
+
+      The IO-library has only a few warnings left when compiled with
+      egcs (no warnings with MS VC). Several bugs have been
+      eliminated. I'm pretty sure that the sequential readout part can
+      stay as it is, buffered read might also be OK. The write portion
+      is likely to change while I'm still working on the engine. As
+      soon as the engine is believed to be stable enough so that I can
+      run it in parallel to the old engine I'll 'freeze' the
+      IO-library by actually building it as a library. I might also
+      need a more sophisticated version number scheme then.
     <li>6/28/1999<br>
-      Compiles on Solaris with egcs </li>
+      Compiles on Solaris with egcs
     <li>6/25/1999<br>
-      The Archive class now takes a full pathname (with '/' or '\' on Win32, Unix paths with '/'
-      only) and opens data files in that directory without calling chdir but generating the
-      appropriate names. Thus you can now open more than one Archive. </li>
+      The Archive class now takes a full pathname (with '/' or '\' on
+      Win32, Unix paths with '/' only) and opens data files in that
+      directory without calling chdir but generating the appropriate
+      names. Thus you can now open more than one Archive.
   </ul>
   <hr>
   <a HREF="mailto:kasemir@lanl.gov"><p>-Kay (kasemir@lanl.gov)</a></p>

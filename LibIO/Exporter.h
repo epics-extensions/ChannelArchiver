@@ -34,7 +34,7 @@ public:
     virtual ~Exporter() {}
 
     //* Allowed number of channels to export
-    // (limited for performance reason)
+    // (limited for performance reasons)
     void setMaxChannelCount(size_t limit);
 
     //* Set start/end time. Default: dump from whole archive
@@ -64,11 +64,14 @@ public:
     void exportMatchingChannels(const stdString &channel_name_pattern);
 
     //* Export channels from provided list
-    virtual void exportChannelList(const stdVector<stdString> &channel_names);
+    // Derived class has to implement this.
+    // The protected members can be used
+    // but it's up to the implementation as to how.
+    virtual void exportChannelList(
+        const stdVector<stdString> &channel_names) = 0;
 
-    //* Return number of data lines produced
     size_t getDataCount();
-
+    
 protected:
     ArchiveI *_archive;
     stdString _filename;
@@ -78,39 +81,25 @@ protected:
     bool _fill;
     bool _be_verbose;
 
-    void printTime(std::ostream *out, const osiTime &time);
-    void printValue(std::ostream *out, const osiTime &time, const ValueI *v);
-
-    // Will be called before actually outputting anything.
-    // This routine might write header information
-    // and adjust the following settings for this Exporter
-    virtual void prolog(std::ostream &out) {}
-
-    // Settings:
-
     // String to be used for undefined values
     stdString _undefined_value;
     // Show status text in seperate column
     bool _show_status;
 
-    // For GNUPlot: each line holds
-    // Time Column# Value
-    bool _time_col_val_format;
-
     bool _is_array;
-    size_t _datacount;
     size_t _max_channel_count;
+    size_t _data_count;
 
-    // Will be called after dumping the actual values.
-    virtual void post_scriptum(const stdVector<stdString> &channel_names) {}
+    void printTime(std::ostream *out, const osiTime &time);
+    void printValue(std::ostream *out, const osiTime &time, const ValueI *v);
+
 private:
     void init(ArchiveI *archive);
 };
 
-inline void Exporter::setStart(const osiTime &start)   { _start = start; }
-inline void Exporter::setEnd(const osiTime &end)       { _end = end; }
-inline void Exporter::enableStatusText(bool yesno)     { _show_status = yesno; }
-inline size_t Exporter::getDataCount()                 { return _datacount; }
+inline void Exporter::setStart(const osiTime &start) { _start = start; }
+inline void Exporter::setEnd(const osiTime &end)     { _end = end; }
+inline void Exporter::enableStatusText(bool yesno)   { _show_status = yesno; }
 
 inline void Exporter::setLinearInterpolation(double secs, size_t gap)
 {
@@ -126,9 +115,9 @@ inline void Exporter::useFilledValues()
 }
 
 inline void Exporter::setMaxChannelCount(size_t limit)
-{
-    _max_channel_count = limit;
-}
+{   _max_channel_count = limit; }
 
+inline size_t Exporter::getDataCount()
+{   return _data_count; }
 
 #endif //__EXPORTER_H__

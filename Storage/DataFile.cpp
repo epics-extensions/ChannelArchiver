@@ -111,7 +111,7 @@ void DataFile::release ()
 #endif
 }
 
-bool DataFile::close_all()
+bool DataFile::close_all(bool verbose)
 {
     DataFile *file;
     bool all_closed = true;
@@ -122,8 +122,11 @@ bool DataFile::close_all()
         file = *i;
         if (file->ref_count > 0)
         {
-            LOG_MSG("DataFile %s still ref'ed in close_all (%d)\n",
-                    file->filename.c_str(), file->ref_count);
+            if (verbose)
+            {
+                LOG_MSG("DataFile %s still ref'ed in close_all (%d)\n",
+                        file->filename.c_str(), file->ref_count);
+            }
             all_closed = false;
             ++i;
         }

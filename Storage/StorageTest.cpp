@@ -7,6 +7,7 @@
 #include "DataWriter.h"
 #include "OldDataReader.h"
 #include "DataReader.h"
+#include "SpreadsheetReader.h"
 
 bool verbose;
 
@@ -229,6 +230,24 @@ void value_dump(const stdString &index_name,
     delete reader;
 }
 
+void run_test(const stdString &index_name)
+{
+    archiver_Index index;
+    if (!index.open(index_name.c_str()))
+    {
+        fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
+        return;
+    }
+    SpreadsheetReader sheet(index);
+    stdVector<stdString> names;
+    names.push_back("jane");
+    names.push_back("janet");
+    names.push_back("freddy");
+    sheet.find(names, 0);
+
+
+}   
+
 int main(int argc, const char *argv[])
 { 
     CmdArgParser parser(argc, argv);
@@ -245,7 +264,8 @@ int main(int argc, const char *argv[])
                          "End time");
     CmdArgInt add_values(parser, "add", "<count>", "Add values");
     CmdArgFlag   old    (parser, "old", "Use old directory file routines");
-
+    CmdArgFlag   test   (parser, "test", "Run some test code");
+    
     channel.set("jane");
     if (parser.parse() == false)
         return -1;
@@ -285,6 +305,10 @@ int main(int argc, const char *argv[])
         else
             value_dump(index_name, channel, start_time, end_time);
     }
+    if (test)
+        run_test(index_name);
+
+    DataFile::close_all(true);
         
     return 0;
 }

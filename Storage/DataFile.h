@@ -55,7 +55,10 @@ public:
     /// Returns true if all files could be closed.
     /// Returns false if at least one data file is still
     /// referenced and thus we couldn't close it.
-    static bool close_all();
+    static bool close_all(bool verbose=false);
+
+    /// Check if any data files are still open (e.g. at end of program)
+    static bool any_still_open();
     
     const stdString &getFilename() {   return filename; }
     const stdString &getDirname () {   return dirname;  }

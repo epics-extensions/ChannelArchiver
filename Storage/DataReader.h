@@ -1,5 +1,8 @@
 // -*- c++ -*-
 
+#ifndef __DATA_READER_H__
+#define __DATA_READER_H__
+
 // Tools
 #include "stdString.h"
 // Storage
@@ -43,6 +46,9 @@ public:
 
     /// Returns next value or 0.
     const RawValue::Data *next();
+
+    /// Name of the channel, i.e. the one passed to find()
+    stdString channel_name;
     
     /// The dbr_time_xxx type
     DbrType dbr_type;
@@ -63,7 +69,6 @@ public:
 
 private:
     archiver_Index &index;
-    stdString channel_name;
     key_AU_Iterator *au_iter; // iterator for index & channel_name
     bool valid_datablock; // is au_iter on valid datablock? 
     key_Object datablock; // the current datablock
@@ -80,3 +85,4 @@ private:
 
 /// @}
 
+#endif

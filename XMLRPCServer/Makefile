@@ -10,7 +10,7 @@ USR_CXXFLAGS += -I/usr/local/include
 
 DummyServer_SRCS += DummyServer.cpp
 ArchiveServer_SRCS += main.cpp
-PROD_HOST := DummyServer ArchiveServer bench
+TESTPROD_HOST := DummyServer ArchiveServer bench clienttest
 
 PROD_LIBS_DEFAULT := rtree Storage Tools ca Com
 PROD_LIBS_WIN32 := rtreeObj StorageObj ToolsObj ca Com
@@ -27,7 +27,7 @@ Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 
 # Compare to output of `xmlrpc-c-config cgi-server --libs`
-PROD_LIBS_DEFAULT  += xmlrpc_cgi xmlrpc xmlrpc_xmlparse xmlrpc_xmltok xmlrpc_client
+PROD_LIBS_DEFAULT  += xmlrpc_cgi xmlrpc xmlrpc_xmlparse xmlrpc_xmltok
 
 xmlrpc_cgi_DIR = /usr/local/lib
 xmlrpc_DIR = /usr/local/lib
@@ -37,5 +37,7 @@ xmlrpc_client_DIR = /usr/local/lib
 
 # From xmlrpc-c-config libwww-client --libs
 bench_LDFLAGS=-L/usr/lib -L/usr/local/lib -lxmlrpc_client -L/usr/lib -lmd5 -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib   
+
+clienttest_LDFLAGS=-L/usr/lib -L/usr/local/lib -lxmlrpc_client -L/usr/lib -lmd5 -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib   
 
 include $(TOP)/configure/RULES

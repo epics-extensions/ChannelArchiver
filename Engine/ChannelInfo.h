@@ -27,6 +27,10 @@ public:
     ChannelInfo();
     ~ChannelInfo();
 
+    void lock()                               { _lock.lock();   }
+    void unlock()                             { _lock.unlock(); }
+    
+    
     // Archiver configuration for this channel
     // ------------------------------------------------------------
     void setName(const stdString &name)       { _name = name; }
@@ -49,9 +53,11 @@ public:
     void setCtrlInfo(const CtrlInfoI *info);
 
     void setLastArchiveStamp(const epicsTime &stamp)
-                                               { _last_archive_stamp = stamp; }
-    const epicsTime& getLastArchiveStamp() const { return _last_archive_stamp; }
-    const epicsTime& getExpectedNextTime() const { return _expected_next_time; }
+        { _last_archive_stamp = stamp; }
+    const epicsTime& getLastArchiveStamp() const
+        { return _last_archive_stamp; }
+    const epicsTime& getExpectedNextTime() const
+        { return _expected_next_time; }
     
     const CtrlInfoI &getCtrlInfo() const       { return _ctrl_info; }
     size_t getValsPerBuffer() const            { return _vals_per_buffer; }
@@ -69,9 +75,6 @@ public:
 
     // Issue CA get_callback for _value
     void issueCaGetCallback();
-
-    // Called by Engine
-    // ------------------------------------------------------------
 
     // Called from caEventHandler, _value is already set
     void handleNewValue();
@@ -107,6 +110,8 @@ public:
     void checkRingBuffer();
 
 private:
+    epicsMutex          _lock;
+
     enum
     {
     INIT_VALS_PER_BUF = 16,
@@ -142,7 +147,6 @@ private:
     ValueI              *_previous_value;// for change detection
     ValueI              *_tmp_value;     // for making values in addEvent
 
-    epicsMutex          _write_lock;
     ValueI              *_write_value;  // tmp for write (different thread!)
 
     unsigned short      _vals_per_buffer; // see enum: INIT_VALS_PER_BUF ...

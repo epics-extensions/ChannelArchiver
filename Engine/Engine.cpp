@@ -299,10 +299,10 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
         }
         _archive_lock.unlock();
     }
-    channel_info->startCaConnection(new_channel);
-
     if (_configuration)
         _configuration->saveChannel(channel_info);
+    
+    channel_info->startCaConnection(new_channel);
 
     return channel_info;
 }
@@ -315,7 +315,9 @@ void Engine::setWritePeriod(double period)
     stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
     while (channel_info != _channels.end())
     {
+        (*channel_info)->lock();
         (*channel_info)->checkRingBuffer();
+        (*channel_info)->unlock();
         ++channel_info;
     }
 
@@ -373,7 +375,9 @@ void Engine::writeArchive()
         while (channel_info != _channels.end() &&
                write_thread.isRunning())
         {
+            (*channel_info)->lock();
             (*channel_info)->write(*_archive, channel);
+            (*channel_info)->unlock();
             ++channel_info;
         }
     }

@@ -1,4 +1,4 @@
-\chapter{ArchiveEngine}
+\chapter{ArchiveEngine} \label{sec:engine}
 
 \begin{figure}[htb]
 \begin{center}
@@ -32,7 +32,7 @@ on the network.  The chapter on data retrieval, beginning on page
 \pageref{chap:retrieval}, introduces the available retrieval tools
 that allow users to look at the archived data.
 
-\section{Configuration}
+\section{Configuration} \label{sec:engineconfig}
 The ArchiveEngine expects an XML-type configuration file that follows
 the document type description format from listing
 \ref{lst:engineconfigdtd} (see section \ref{sec:dtdfiles} on DTD file
@@ -213,12 +213,12 @@ that contains the index file.
 This option causes the ArchiveEngine to create a log file into which
 all the messages that otherwise only appear on the standard output are copied.
 
-\subsection{``-description'' Option}
+\subsection{``-description'' Option} \label{sec:enginedesc}
 This option allows setting the description string that gets displayed
 on the main page of the engine's built-in HTTP server, see
 section \ref{sec:enginehttp}.
 
-\subsection{``-port'' Option}
+\subsection{``-port'' Option} \label{sec:engineport}
 This option configures the TCP port of the engine's HTTP server, again
 see section \ref{sec:enginehttp}. The default port number is 4812.
 

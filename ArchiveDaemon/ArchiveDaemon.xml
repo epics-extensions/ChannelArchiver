@@ -3,13 +3,13 @@
 <engines>
    <engine>
       <desc>Demo</desc>
-      <port>4812</port>
-      <config>/home/ade/epics/supTop/extensions/R3.14.4/src/ChannelArchiver/ArchiveDaemon/excas.xml</config>
-      <daily>02:00</daily>
+      <port>4813</port>
+      <config>/data/arch1/engineconfig.xml</config>
    </engine>
    <engine>
       <desc>Demo 2</desc>
-      <port>4813</port>
-      <config>/tmp/excas.xml</config>
+      <port>4814</port>
+      <config>/data/arch2/engineconfig.xml</config>
+      <daily>02:00</daily>
    </engine>
 </engines>

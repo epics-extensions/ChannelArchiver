@@ -1,0 +1,124 @@
+\chapter{ArchiveDaemon}
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=0.8\textwidth}{daemon}
+\end{center}
+\caption{\label{fig:daemon}Archive Daemon, refer to text.}
+\end{figure}
+
+\noindent The ArchiveDaemon is a script that automatically starts,
+monitors and restarts ArchiveEngines on the local host. It includes a
+built-in web server, so by listing all the ArchiveEngines that are
+meant to run on a host in the ArchiveDaemon's configuration file, one
+can check the status of all these engines on a single web page as
+shown in Fig.~\ref{fig:daemon}.
+
+The daemon will attempt to start any ArchiveEngine that it does not
+find running. In addition, the daemon can periodically stop and
+restart ArchiveEngines in order to create e.g.\ daily sub-archives.
+Furthermore, it adds each sub-archive to a configuration file for the
+ArchiveIndexTool and runs the latter, so that all the sub-archives can
+be accessed as if they were one big archive.
+
+Before attempting to use the ArchiveDaemon, one should be familiar
+with the configuration of the ArchiveEngine (sec.\ \ref{sec:engine}),
+and how to start and stop it. Furthermore, one needs to be familiar
+with the ArchiveIndexTool (sec.\ \ref{sec:indextool}).
+
+\subsection{Configuration}
+The ArchiveDaemon expects to find a configuration file called
+``ArchiveDaemon.xml'' in the directory where it is started.  That
+configuration file, an example of which can be found in listing
+\ref{lst:daemonconfigex}, needs to follow the DTD from listing
+\ref{lst:daemonconfigdtd}.
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Archive Daemon Configuration},label=lst:daemonconfigex]{../ArchiveDaemon/ArchiveDaemon.xml}
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for
+    the Archive Daemon Configuration},label=lst:daemonconfigdtd]{../ArchiveDaemon/ArchiveDaemon.dtd}
+
+\noindent The configuration lists all the
+ArchiveEngines that the daemon should manage on the local
+computer. One ``engine'' element per ArchiveEngine specifies the
+configuration of each engines. Specifically, the following tags are
+allowed:
+
+\subsubsection{desc}
+This mandatory element is used for the ``-description'' option of the
+Archive Engine, see section \ref{sec:enginedesc}.
+
+\subsubsection{port}
+This mandatory element determines the port number of the engine's HTTP
+server, see section \ref{sec:engineport}.
+
+\NOTE The ArchiveDaemon itself requires a TCP port number for its HTTP
+server. The port numbers used by the ArchiveDaemon and all the Archive
+Engines need to be different. You cannot use the same port number more
+than once per computer.
+
+\subsubsection{config}
+This mandatory element must contain the full path to the configuration
+file of the respective ArchiveEngine, see section \ref{sec:engineconfig}.
+
+\subsubsection{daily}
+This optional element configures the ArchiveDaemon to restart the
+ArchiveEngine periodically. The element must contain a time in the
+format ``HH:MM'' with 24-hour hours HH and minutes MM. One example
+would be ``02:00'' for a restart at 2~am each morning.
+
+\subsection{Operation}
+The ArchiveDaemon is a perl script that is typically started like this:
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+$ cd whereever_you_placed_ArchiveDaemon.xml
+$ perl ArchiveDaemon.pl
+Read ArchiveDaemon.xml, will disassociate from terminal
+and from now on only respond via
+          http://localhost:4610
+You can also monitor the log file:
+          ArchiveDaemon.log
+\end{lstlisting}
+
+\noindent One can use any web browser to connect to the daemon's HTTP server
+under the URL shown in the above status message. Fig.~\ref{fig:daemon}
+shows one example. The ArchiveDaemon offers a command line option for
+selecting a specific TCP port.
+Whenever running more than one ArchiveDaemon per computer, they
+need to be started with different TCP port numbers. Furthermore, each
+ArchiveEngine needs a different TCP port number.
+\begin{lstlisting}[keywordstyle=\sffamily]
+USAGE: ArchiveDaemon [-p port] 
+       -p <port> : TCP port number for HTTPD
+\end{lstlisting}
+
+\noindent The ArchiveDaemon will create or use the following files in the
+directory in which it was started:
+\begin{itemize}
+\item ArchiveDaemon.log\\
+  The log file of the ArchiveDaemon.
+\item indexconfig.xml\\
+  This is a configuration file for the ArchiveIndexTool.  If the file
+  already exists, the ArchiveDaemon will add every new sub-archive
+  that it creates to the file. If the file does not exist, one will be
+  created the next time a new sub-archive is started.
+\item ArchiveIndexTool.log\\
+  The log file of the last run of the ArchiveIndexTool.
+\item master\_index\\
+  The ArchiveIndexTool is run with indexconfig.xml to update
+  this master index file.
+\end{itemize}
+
+\noindent The ArchiveDaemon configuration file must list the full path
+names to the configuration files for the ArchiveEngines.
+Within each of those directories, an ArchiveEngine is run and the
+following files will be created:
+\begin{itemize}
+\item ArchiveEngine.log\\
+  A log file for the ArchiveEngine running in that directory
+\item archive\_active.lck\\
+  Lock file of the ArchiveEngine
+\item YYYY/MM\_DD/index \\
+  A subdirectory for index and data files of the sub-archive.  If the
+  ArchiveDaemon is configured to perform daily restarts, the format
+  uses the year, month and day to build the path name.
+\end{itemize}

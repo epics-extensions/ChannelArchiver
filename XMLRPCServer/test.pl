@@ -4,6 +4,7 @@ use DataServer;
 
 # Setup URL
 $server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
+$server_url = 'http://bogart/cgi-bin/xmlrpc/ArchiveDataServer2.cgi';
 
 print("Connecting to Archive Data Server URL '$server_url'\n");
 print("==================================================================\n");
@@ -27,7 +28,7 @@ foreach $result ( @{$results} )
     $key = $result->{key};
     print("Key $key: '$result->{name}' in '$result->{path}'\n");
 }
-$key = 20;
+$key = 2;
 
 print("Channels:\n");
 print("==================================================================\n");

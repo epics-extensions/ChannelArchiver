@@ -24,6 +24,8 @@ use IO::Handle;
 use Data::Dumper;
 use XML::Simple;
 use POSIX 'setsid';
+use vars qw($opt_h $opt_p);
+use Getopt::Std;
 
 # ----------------------------------------------------------------
 # Configurables
@@ -47,11 +49,26 @@ my ($master_index_config) = "indexconfig.xml";
 # The DTD for that file
 my ($master_index_dtd) = "indexconfig.dtd";
 
+# The name of the master index to create/update
+my ($master_index) = "master_index";
+
 # What ArchiveEngine to use. Just "ArchiveEngine" works if it's in the path.
 my ($ArchiveEngine) = "ArchiveEngine";
 
+# Log file of the ArchiveEngine
+my ($EngineLog) = "ArchiveEngine.log";
+
+# What ArchiveIndexTool to use. "ArchiveIndexTool" works if it's in the path.
+my ($ArchiveIndexTool) = "ArchiveIndexTool -v 1";
+
+# Log file of the Index Tool
+my ($ArchiveIndexLog) = "ArchiveIndexTool.log";
+
 # Seconds between "is the engine running?" checks
 my ($engine_check_period) = 30;
+
+# Seconds between runs of the ArchiveIndexTool
+my ($index_update_period) = 60*60;
 
 # Timeout used for "is there a HTTP client request?"
 my ($http_check_timeout) = 1;
@@ -63,22 +80,7 @@ my ($read_timeout) = 5;
 # more than one network card and a messed up network config.
 my ($host) = 'localhost';
 
-# Stuff prepended/appended to this HTTPD's HTML pages.
-my ($html_start) = "<HTML>
-<META HTTP-EQUIV=\"Refresh\" CONTENT=$engine_check_period>
-<HEAD>
-<TITLE>Archive Daemon</TITLE>
-</HEAD>
-<BODY BGCOLOR=#A7ADC6 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>
-<FONT FACE=\"Helvetica, Arial\">
-<BLOCKQUOTE>";
-my ($html_stop) = '</BLOCKQUOTE>
-</FONT>
-<P><HR WIDTH=50% ALIGN=LEFT>
-<A HREF="/">-Engines-</A>
-<A HREF="/status">-Status-</A>
-</BODY>
-</HTML>';
+my ($message_queue_length) = 15;
 
 my ($daemonization) = 1;
 
@@ -101,11 +103,29 @@ my (@config);
 # Array of index file names (for IndexTool)
 my (@indices);
 
+my (@message_queue);
+
+my ($last_index_update);
+
+# ----------------------------------------------------------------
+# Message Queue
+# ----------------------------------------------------------------
+
+sub add_message($)
+{
+    my ($msg) = @ARG;
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime;
+    shift @message_queue if ($#message_queue >= $message_queue_length-1);
+    push @message_queue,
+    sprintf("%04d/%02d/%02d %02d:%02d:%02d: <I>%s</I>",
+	    1900+$year, 1+$mon, $mday, $hour, $min, $sec, $msg);
+}
+
 # ----------------------------------------------------------------
 # Config File
 # ----------------------------------------------------------------
 
-# Reads @config
+# Reads config file into @config
 sub read_config($)
 {
     my ($file) = @ARG;
@@ -113,7 +133,6 @@ sub read_config($)
     my $doc = $parser->XMLin($file, ForceArray=>1);
     foreach my $engine ( @{$doc->{engine}} )
     {
-	#print Dumper($engine);
 	++$#config;
 	$config[$#config]{desc} = $engine->{desc}[0];
 	$config[$#config]{port} = $engine->{port}[0];
@@ -168,10 +187,11 @@ sub write_indexconfig($@)
     my ($index);
     unless (open(INDEX, ">$filename"))
     {
-	print "Cannot create $filename\n";
+	add_message("Cannot create $filename");
 	return;
     }
-    print INDEX "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n";
+    print INDEX "<?xml version=\"1.0\" encoding=\"UTF-8\"" .
+	" standalone=\"no\"?>\n";
     print INDEX "<!DOCTYPE indexconfig SYSTEM \"$master_index_dtd\">\n"
 	if (length($master_index_dtd) > 0);
     print INDEX "<indexconfig>\n";
@@ -183,11 +203,43 @@ sub write_indexconfig($@)
     }
     print INDEX "</indexconfig>\n";
     close(INDEX);
+    add_message("Updated $filename");
 }
 
 # ----------------------------------------------------------------
 # HTTPD Stuff
 # ----------------------------------------------------------------
+
+# Stuff prepended/appended to this HTTPD's HTML pages.
+sub html_start($$)
+{
+    my ($client, $refresh) = @ARG;
+    my ($web_refresh) = $engine_check_period / 2;
+    print $client "<HTML>\n";
+    print $client "<META HTTP-EQUIV=\"Refresh\" CONTENT=$web_refresh>\n"
+	if ($refresh);
+    print $client "<HEAD>\n";
+    print $client "<TITLE>Archive Daemon</TITLE>\n";
+    print $client "</HEAD>\n";
+    print $client "<BODY BGCOLOR=#A7ADC6 LINK=#0000FF " .
+	"VLINK=#0000FF ALINK=#0000FF>\n";
+    print $client "<FONT FACE=\"Helvetica, Arial\">\n";
+    print $client "<BLOCKQUOTE>\n";
+}
+
+sub html_stop($)
+{
+    my ($client) = @ARG;
+    print $client "</BLOCKQUOTE>\n";
+    print $client "</FONT>\n";
+    print $client "<P><HR WIDTH=50% ALIGN=LEFT>\n";
+    print $client "<A HREF=\"/\">-Engines-</A>\n";
+    print $client "<A HREF=\"/status\">-Status-</A><br>\n";
+    print $client scalar localtime;
+    print $client "\n";
+    print $client "</BODY>\n";
+    print $client "</HTML>\n";
+}
 
 # $httpd_handle = create_HTTPD($tcp_port)
 #
@@ -205,7 +257,6 @@ sub create_HTTPD($)
         or die "bind: $!";
     listen(HTTP,SOMAXCONN) or die "listen: $!";
     $SIG{CHLD} = 'IGNORE';
-
     print("Server started on port $port\n");
     return \*HTTP;
 }
@@ -213,13 +264,15 @@ sub create_HTTPD($)
 sub handle_HTTP_main($)
 {
     my ($client) = @ARG;
-    my ($engine);
+    my ($engine, $message);
+    html_start($client, 1);
     print $client "<H1>Archive Daemon</H1>\n";
     print $client "<TABLE BORDER=0 CELLPADDING=5>\n";
     print $client "<TR>";
     print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Engine</FONT></TH>";
     print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Port</FONT></TH>";
-    print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Restart</FONT></TH>";
+    print $client
+	"<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Restart</FONT></TH>";
     print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Status</FONT></TH>";
     print $client "</TR>\n";  
     foreach $engine ( @config )
@@ -250,12 +303,19 @@ sub handle_HTTP_main($)
 	print $client "</TR>\n";
     }
     print $client "</TABLE>\n";
+    print $client "<H2>Messages</H2>\n";
+    foreach $message ( reverse @message_queue )
+    {
+	print $client "$message<BR>\n";
+    }
+    html_stop($client);
 }
 
 sub handle_HTTP_status($)
 {
     my ($client) = @ARG;
     my ($engine, $total, $running);
+    html_start($client, 1);
     print $client "<H1>Archive Daemon</H1>\n";
     $total = $#config + 1;
     $running = 0;
@@ -266,6 +326,7 @@ sub handle_HTTP_status($)
     print $client "<FONT COLOR=#FF0000>" if ($running != $total);
     print $client "$running of $total engines are running\n";
     print $client "</FONT>" if ($running != $total);
+    html_stop($client);
 }
 
 # Used by check_HTTPD to dispatch requests
@@ -288,7 +349,9 @@ sub handle_HTTP_request($$)
 	}
 	elsif ($URL eq '/stop')
 	{
+	    html_start($client, 0);
 	    print $client "Quitting.\n";
+	    html_stop($client);
 	    return 0;
 	}
 	else
@@ -312,10 +375,7 @@ sub check_HTTPD($)
     $smask_in = '';
     vec($smask_in, fileno($sock), 1) = 1;
     $num = select($smask=$smask_in, undef, undef, $http_check_timeout);
-    if ($num <= 0)
-    {
-	return;
-    }
+    return if ($num <= 0);
     if ($c_addr = accept(CLIENT, $sock))
     {
 	#my($c_port,$c_ip) = sockaddr_in($c_addr);
@@ -348,9 +408,7 @@ sub check_HTTPD($)
 	print CLIENT "Connection: close\n";
 	print CLIENT "Content-Type: text/html\n";
 	print CLIENT "\n"; 
-	print CLIENT $html_start;
 	my ($continue) = handle_HTTP_request($doc, \*CLIENT);
-	print CLIENT $html_stop;
 	close CLIENT;
 	if (not $continue)
 	{
@@ -382,6 +440,7 @@ sub make_indexname($$)
 }
 
 # Attempt to start one engine
+# Returns 1 if the master index config. was updated
 sub start_engine($$)
 {
 	my ($now, $engine) = @ARG;
@@ -389,23 +448,38 @@ sub start_engine($$)
 	my ($dir) = dirname($engine->{config});
 	my ($cfg) = basename($engine->{config});
 	my ($index) = make_indexname($now, $engine);
-	print("Starting Engine '$engine->{desc}': $host:$engine->{port}\n");
+	add_message(
+	       "Starting Engine '$engine->{desc}': $host:$engine->{port}\n");
 	my ($path) = dirname("$dir/$index");
 	if (not -d $path)
 	{
-	    print("Creating dir '$path'\n");
+	    add_message("Creating dir '$path'\n");
 	    mkpath($path);
 	}
 	my ($cmd) = "cd \"$dir\";" .
-	    "$ArchiveEngine -d \"$engine->{desc}\" -l engine.log " .
+	    "$ArchiveEngine -d \"$engine->{desc}\" -l $EngineLog " .
 	    "-p $engine->{port} $cfg $index >$null 2>&1 &";
-	print("\tCommand: '$cmd'\n");
+	print("Engine Command: '$cmd'\n");
 	system($cmd);
 	if (add_index("$dir/$index", \@indices))
 	{
 	    write_indexconfig($master_index_config, @indices);
-	    print("Updated $master_index_config\n");
+	    return 1;
 	}
+	return 0;
+}
+
+sub run_indextool()
+{
+    my ($dir, $cfg, $cmd);
+    $dir = dirname($master_index_config);
+    $cfg = basename($master_index_config);
+    $cmd = "cd $dir;$ArchiveIndexTool $cfg master_index " .
+	">$ArchiveIndexLog 2>&1 &";
+    print("Index Command: '$cmd'\n");
+    add_message("Running Index Tool");
+    system($cmd);
+    $last_index_update = time;
 }
 
 # Connects to HTTPD at host/port and reads a URL,
@@ -448,17 +522,13 @@ sub stop_engine($$)
 {
     my ($host, $port) = @ARG;
     my (@doc, $line);
-    print("Stopping engine $host:$port: ");
+    add_message("Stopping engine $host:$port");
     @doc = read_URL($host, $port, "/stop");
     foreach $line ( @doc )
     {
-	if ($line =~ m'Engine will quit')
-	{
-	    print("Engine will quit\n");
-	    return 1;
-	}
+	return 1 if ($line =~ m'Engine will quit');
     }
-    print("Engine says: @doc\n");
+    print("Engine $host:$port won't quit.\nResponse : @doc\n");
     return 0;
 }
 
@@ -497,21 +567,14 @@ sub check_restart($$)
 	= split '[/ :.]', $engine->{started};
     $engine_secs
 	= timelocal($e_sec,$e_min,$e_hour,$e_mday,$e_mon-1,$e_year-1900);
-
-    print ("\tEngine was started $engine->{started}\n");
-    printf("\tIt's now           %02d/%02d/%04d %02d:%02d:%02d\n",
-           1+$n_mon, $n_mday, 1900+$n_year, $n_hour, $n_min, $n_sec);
-
     if (defined($engine->{daily}))
     {
 	my ($hour, $minute) = split ':', $engine->{daily};
 	$restart_secs = timelocal(0,$minute,$hour,$n_mday,$n_mon,$n_year);
-	printf("\tFor today that's %s\n", scalar localtime($restart_secs));
 	# Restart if we're past the restart time and the engine's too old:
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
 	    stop_engine($host, $engine->{port});
-	    start_engine($now, $engine);
 	}
     }
 }
@@ -535,16 +598,13 @@ sub check_engines($)
     my ($engine, $desc, $started);
     foreach $engine ( @config )
     {
-	print("Checking Engine $host:$engine->{port}: ");
 	($desc, $started) = check_engine($host, $engine->{port});
 	if (length($started) > 0)
 	{
-	    print("OK\n");
 	    $engine->{started} = $started;
 	}
 	else
 	{
-	    print("Not running.\n");
 	    $engine->{started} = 0;
 	}
     }
@@ -554,17 +614,40 @@ sub check_engines($)
 sub start_engines($)
 {
     my ($now) = @ARG;
-    my ($engine, $desc, $started);
+    my ($engine, $desc, $started, $index_changed);
+    $index_changed = 0;
     foreach $engine ( @config )
     {
 	next if ($engine->{started});
-	start_engine($now, $engine);
+	$index_changed += start_engine($now, $engine);
+    }
+    if ($index_changed > 0)
+    {
+	run_indextool();
     }
 }
 
 # ----------------------------------------------------------------
 # Main
 # ----------------------------------------------------------------
+sub usage()
+{
+    print("USAGE: ArchiveDaemon [-p port]\n");
+    print("\n");
+    print("\t-p <port> : TCP port number for HTTPD\n");
+    print("\n");
+    print("This tool automatically starts, monitors and restarts\n");
+    print("ArchiveEngines based on $config_file.");
+    exit(-1);
+}
+
+if (!getopts('hp:')  ||  $#ARGV != -1  ||  $opt_h)
+{
+    usage();
+}
+$http_port = $opt_p if ($opt_p);
+
+add_message("Started");
 read_config($config_file);
 if (length($master_index_config) > 0)
 {
@@ -588,6 +671,7 @@ if ($daemonization)
 my ($httpd) = create_HTTPD($http_port);
 my ($last_check) = 0;
 my ($now);
+$last_index_update = 0;
 while (1)
 {
     $now = time;
@@ -597,6 +681,10 @@ while (1)
 	check_engines($now);
 	start_engines($now);
 	$last_check = time;
+    }
+    if (($now - $last_index_update) > $index_update_period)
+    {
+	run_indextool();
     }
     check_HTTPD($httpd);
 }

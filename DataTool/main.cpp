@@ -411,6 +411,8 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
     stdString start, end;
     int idx;
     bool ok;
+    if (verbose > 1)
+        printf("RTree M for channel '%s': %d\n", channel_name.c_str(), tree->getM());
     if (verbose > 2)
         printf("Datablocks for channel '%s': ", channel_name.c_str());
     for (ok = tree->getFirstDatablock(node, idx, block);

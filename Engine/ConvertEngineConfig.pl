@@ -77,7 +77,7 @@ dump_xml();
 sub parse($$)
 {
     my ($group,$fh) = @ARG;
-    my ($channel, $period, $options, $opt, $monitor, $disable);
+    my ($channel, $period, $options, $opt, $monitor, $disable, $line);
     $fh++;
     if (not open $fh, "$group")
     {
@@ -90,6 +90,7 @@ sub parse($$)
 	chomp;
 	next if (m'\A#'); # Skip comments
 	next if (m'\A\s*\Z'); # Skip empty lines
+	$line = $_;
 	if (m'!(\S+)\s+(\S+)')
 	{   # Parameter "!<text> <text>" ?
 	    if ($1 eq "group")
@@ -172,8 +173,8 @@ sub parse($$)
 	}
 	else
 	{
-	    printf("%s, line %d: '%s' is neither comment, option nor channel definition\n",
-		   $group, $NR, $_);
+	    printf("%s, line %d:\n '%s' is neither comment, option nor channel definition\n",
+		   $group, $NR, $line);
 	    exit(-6);
 	}
     }

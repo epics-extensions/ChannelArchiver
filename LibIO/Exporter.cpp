@@ -86,6 +86,7 @@ void Exporter::printValue(std::ostream *out,
         // Format according to precision.
         // Unfortuately that is usually configured wrongly
         // and then people complain about not seeing their data...
+        // -> use prec. if > 0
         if (v->getType() == DBR_TIME_STRING  ||
             (info && info->getType() == CtrlInfoI::Enumerated))
         {
@@ -94,8 +95,19 @@ void Exporter::printValue(std::ostream *out,
         }
         else
         {
+            long o_flags = out->flags();
+            long o_prec = out->precision();
             for (ai=0; ai<v->getCount(); ++ai)
+            {
+                if (info && info->getPrecision() > 0)
+                {
+                    out->flags(ios::fixed);
+                    out->precision(info->getPrecision());
+                }
                 *out << '\t' << v->getDouble(ai);
+            }
+            out->flags(o_flags);
+            out->precision(o_prec);
         }
     }
 
@@ -108,6 +120,4 @@ void Exporter::printValue(std::ostream *out,
             *out << '\t' << txt;
     }
 }
-
-
 

@@ -22,6 +22,41 @@ static void printTime(FILE *f, const osiTime &time)
             month, day, year, hour, min, sec, nano);
 }
 
+static void printTimeAndValue(FILE *f, const osiTime &time,
+                              const ValueI &value)
+{
+    int prec;
+
+    if (value.getCtrlInfo() &&
+        value.getCtrlInfo()->getPrecision() > 0)
+        prec = value.getCtrlInfo()->getPrecision();
+    else
+        prec = 0;
+    
+    ::printTime(f, time);
+    if (value.getCount() > 0)
+    {
+        for (size_t ai=0; ai<value.getCount(); ++ai)
+        {
+            if (prec > 0)
+                fprintf(f, "\t%.*f\n", prec, value.getDouble(ai));
+            else
+                fprintf(f, "\t%g\n", value.getDouble(ai));
+        }
+    }
+    else
+    {
+        stdString txt;
+        value.getStatus(txt);
+        if (prec > 0)
+            fprintf(f, "\t%.*f\t%s\n",
+                    prec, value.getDouble(), txt.c_str());
+        else
+            fprintf(f, "\t%g\t%s\n",
+                    value.getDouble(), txt.c_str());
+    }
+}
+
 GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename)
         : SpreadSheetExporter (archive.getI(), filename)
 {
@@ -121,36 +156,25 @@ void GNUPlotExporter::exportChannelList(
             channel_desc = channel->getName();
         fprintf(f, "# %s\n", channel_desc.c_str());
         
-        // Dump values for this channel
+        // Dump values for this channel. We really want to see
+        // something for _start and _end, patching the original
+        // time stamps to get there.
         bool have_anything = false;
         bool last_was_data = false;
-        double value_number;
-        while (value)
+        while (value && (!isValidTime(_end) || time <= _end))
         {
             time = value->getTime();
-            if (isValidTime(_start) && time < _start)
+            if (isValidTime(_start) && time < _start) // start hack
             {
-                fprintf(f, "# extrapolated onto start time:\n");
+                fprintf(f, "# extrapolated onto start time from ");
+                ::printTime(f, time);
+                fprintf(f, "\n");
                 time = _start;
             }
-            if (isValidTime(_end)  &&  time > _end)
-            {
-                if (last_was_data)
-                {
-                    fprintf(f, "# extrapolated onto end time:\n");
-                    ::printTime(f, _end);
-                    fprintf(f, "\t%g\t%s\n",
-                            value_number,
-                            txt.c_str());
-                }
-                break;
-            }
-            
             if (value->isInfo())
             {
-                // Show as comment, empty line results in "gap"
-                // in GNUplot graph. But only one empty line maximum!
-                // (multiple empties separate channels)
+                // Show as comment & empty line -> "gap" in GNUplot graph.
+                // But only one empty line, multiples separate channels!
                 fprintf(f, "# ");
                 ::printTime(f, time);
                 value->getStatus(txt);
@@ -163,27 +187,28 @@ void GNUPlotExporter::exportChannelList(
             {
                 have_anything = true;
                 ++_data_count;
-                if (_is_array)
-                {
-                    for (size_t ai=0; ai<value->getCount(); ++ai)
-                    {
-                        ::printTime(f, time);
-                        fprintf(f, "\t%g\n", value->getDouble(ai));
-                    }
-                }
-                else
-                {
-                    ::printTime(f, time);
-                    value->getStatus(txt);
-                    fprintf(f, "\t%g\t%s\n",
-                            value->getDouble(),
-                            txt.c_str());
-                }
-                value_number = value->getDouble();
+                printTimeAndValue(f, time, *value);
                 last_was_data = true;
             }
             ++value;
         }
+        if (last_was_data && isValidTime(_end)) // end hack
+        {
+            fprintf(f, "# extrapolated onto end time from ");
+            ::printTime(f, time);
+            fprintf(f, "\n");
+            --value;
+            if (value)
+            {
+                osiTime now = osiTime::getCurrent();
+                if (now > time) // extrapolate until "now"
+                    time = now;
+                if (_end < time) // but not beyond "_end"
+                    time = _end;
+                printTimeAndValue(f, time, *value);
+            }
+        }
+        
         if (have_anything)
             plotted_channels.push_back(channel_desc);
         // Gap separates channels

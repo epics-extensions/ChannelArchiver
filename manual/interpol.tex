@@ -265,9 +265,13 @@ for the day are then investigated as follows:
   in the sequence initial, minimum, maximum, final.
 \end{itemize}
 
-In general, the use of $N$ bins can result in up to 4$N$ data points
-if we assume that each bin provides an initial, minimum, maximum and
-final value. In most cases, this results in a significant data
+Note that the ``before or at'' interpretation of start times does not
+apply for Plot-Binning: The exact start time of the request is used
+to determine the beginning of the first bin, and only samples within
+each bin are considered, there is no interpolation onto bin-boundaries.
+In general, the use of $N$ bins can result in up to 4$N$ data points,
+since each bin might provide an initial, minimum, maximum and final value.
+In most cases, this results in a significant data
 reduction. As long as we plot this such that the width of the plot in
 pixes is close to the number of bins, there is no visual difference
 between the raw data plot and the binned plot.  Typical numbers for

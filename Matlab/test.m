@@ -3,6 +3,7 @@
 eval('is_matlab=length(matlabroot)>0;', 'is_matlab=0;')
 
 url='http://bogart/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
+url='http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
 
 ml_arch_info(url);
 [ver, desc, hows]=ml_arch_info(url);
@@ -28,6 +29,13 @@ for i=1:size(data,2)
 end
 
 ml_arch_plot(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20), 3, 50);
+
+
+TROUBLE:
+ml_arch_plot(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20), 3, 2);
+---> allocates data_count=8, but used_samples == 9 ?!!!!!!!!!
+
+
 
 
 

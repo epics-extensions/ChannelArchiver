@@ -35,9 +35,9 @@ class PlotReader : public DataReader
 public:
     /// Create a reader for an index.
 
-    /// delta == 0 causes it to behave almost like the RawDataReader,
-    /// except that the first value of the RawDataReader is dropped.
-    /// So you get the first value _after_ the start time.
+    /// delta == 0 causes it to behave like the RawDataReader.
+    ///
+    ///
     PlotReader(IndexFile &index, double delta);
     ~PlotReader();
     const RawValue::Data *find(const stdString &channel_name,

@@ -275,7 +275,7 @@ else
     }
     my ($start, $startnano) = string2time($opt_s);
     my ($end, $endnano)   = string2time($opt_e);
-    $opt_c = 10 unless ($opt_c > 0);
+    $opt_c = 10 unless (defined($opt_c));
     $opt_h = 1 unless (defined($opt_h));
     # note: have to pass ref. to the 'names' array,
     # otherwise perl will turn it into a sequence of names:

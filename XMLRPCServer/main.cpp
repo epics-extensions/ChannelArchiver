@@ -351,12 +351,9 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
             meta = encode_ctrl_info(env, &reader->getInfo());
             dbr_type_to_xml_type(reader->getType(), reader->getCount(),
                                  xml_type, xml_count);
-            while (data && RawValue::getTime(data) < end)
+            while (num_vals < count  &&  data  &&  RawValue::getTime(data) < end)
             {
-                if (!plot_binnnig && num_vals >= count)
-                    break;
-                encode_value(env,
-                             reader->getType(), reader->getCount(),
+                encode_value(env, reader->getType(), reader->getCount(),
                              RawValue::getTime(data), data,
                              xml_type, xml_count, values);
                  ++num_vals;
@@ -755,8 +752,9 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
         case HOW_PLOTBIN:
             if (count <= 1)
                 count = 1;
+            // For plot binning, 'count' = # of bins, resulting in up to 4*count samples
             return get_channel_data(env, key, name_vector, start, end,
-                                    actual_count, (end-start)/count, true);
+                                    actual_count*4, (end-start)/count, true);
     }
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_ARG_ERROR,
                                    "Invalid how=%d", how);

@@ -137,8 +137,7 @@ void ScanList::scan(const osiTime &deadline)
                 (*li)->_next_scan += rounded_period;
             if (! (*li)->scan())
             {
-                LOG_MSG(osiTime::getCurrent()
-                        << ": ScanList timeout for period "
+                LOG_MSG("ScanList timeout for period "
                         << (*li)->_period << "\n");
             }
             if (_next_list_scan == nullTime ||

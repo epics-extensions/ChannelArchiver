@@ -96,7 +96,7 @@ void ChannelInfo::setPeriod(double secs)
 {
     if (secs <= 0.0)
     {
-        LOG_MSG(osiTime::getCurrent() << ", " << _name
+        LOG_MSG(_name
                 << ": setPeriod called with " << secs
                 << ", changed to 30 secs\n");
         secs = 30.0;
@@ -173,7 +173,7 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
 
     if (ca_state(arg.chid) != cs_conn)
     {
-        LOG_MSG(osiTime::getCurrent() << ", " << me->getName()
+        LOG_MSG(me->getName()
                 << ": CA disconnect\n");
         // Flush everything until the disconnect happened
         me->_connected = false;
@@ -206,7 +206,7 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
                                        me->_chid, caControlHandler, me);
     if (status != ECA_NORMAL)
     {
-        LOG_MSG(osiTime::getCurrent() << ", " << me->getName()
+        LOG_MSG(me->getName()
                 << ": ca_array_get_callback error in caLinkConnectionHandler: "
                 << ca_message (status) << "\n");
     }
@@ -289,7 +289,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
 
     if (arg.status != ECA_NORMAL)
     {
-        LOG_MSG(osiTime::getCurrent() << ", " << me->_name <<
+        LOG_MSG(me->_name <<
                 ": Bad control information, CA status "
                 << ca_message(arg.status) << "\n");
         LOG_MSG(me->_chid << "\n");
@@ -345,7 +345,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
 
     if (!was_connected  &&  me->_connected)
     {
-        LOG_MSG(osiTime::getCurrent() << ", " << me->_name
+        LOG_MSG(me->_name
                 << ": Connected\n");
         stdList<GroupInfo *>::iterator g;
         for (g=me->_groups.begin(); g!=me->_groups.end(); ++g)
@@ -359,7 +359,7 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
     if (!me || !me->_new_value)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << ca_name(arg.chid)
+        LOG_MSG (ca_name(arg.chid)
                  << ": caEventHandler called without ChannelInfo\n");
         return;
     }
@@ -433,14 +433,14 @@ void ChannelInfo::addToRingBuffer(const ValueI *value)
 {
     if (! value)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << _name
+        LOG_MSG (_name
                  << ": addToRingBuffer called without value\n");
         return;
     }
     
     if (value->getTime() < _last_archive_stamp)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << _name
+        LOG_MSG (_name
                  << ": Ring buffer back-in-time\n");
         LOG_MSG ("Prev:  " << _last_archive_stamp << "\n");
         LOG_MSG ("Value: " << *value << "\n");
@@ -450,7 +450,7 @@ void ChannelInfo::addToRingBuffer(const ValueI *value)
     _buffer.addRawValue(value->getRawValue());
     _ever_written = true;
     if (ow <= 0  &&  _buffer.getOverwrites() > 0)
-        LOG_MSG (osiTime::getCurrent() << ", " << _name << ": "
+        LOG_MSG (_name << ": "
                  << _buffer.getOverwrites() << " overwrites\n");
     setLastArchiveStamp(value->getTime());
 }
@@ -463,7 +463,7 @@ void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
 {
     if (!_tmp_value)
     {
-        LOG_MSG(osiTime::getCurrent() << ", " << _name << ", IOC "
+        LOG_MSG(_name << ", IOC "
                 << ca_host_name(_chid)
                 << " : Cannot add event because data type is unknown\n");
         return;
@@ -618,7 +618,7 @@ void ChannelInfo::handleNewScannedValue(osiTime &stamp)
 {
     if (!_previous_value)
     {
-        LOG_MSG(osiTime::getCurrent() << ", " << _name
+        LOG_MSG(_name
                 << ": handleNewScannedValue called "
                 "without _previous_value\n");
         return;
@@ -747,7 +747,7 @@ void ChannelInfo::enable(ChannelInfo *cause)
     // Check if enabled by all groups
     if (_disabled <= 0)
     {
-        LOG_MSG(osiTime::getCurrent() << ": Channel " << _name
+        LOG_MSG(_name
                 << " is not disabled, ERROR!\n");
         return;
     }

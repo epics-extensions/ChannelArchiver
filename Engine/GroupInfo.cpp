@@ -34,7 +34,7 @@ void GroupInfo::addChannel (ChannelInfo *channel)
 
 void GroupInfo::disable (ChannelInfo *cause)
 {
-	LOG_MSG (osiTime::getCurrent() << ", " << cause->getName ()
+	LOG_MSG (cause->getName ()
              << ": Disables group " << _name << "\n");
 	++_disabled;
 	if (_disabled != 1) // Was already disabled?
@@ -47,12 +47,11 @@ void GroupInfo::disable (ChannelInfo *cause)
 
 void GroupInfo::enable (ChannelInfo *cause)
 {
-	LOG_MSG (osiTime::getCurrent() << ", " << cause->getName ()
+	LOG_MSG (cause->getName ()
              << ": Enables group " << _name << "\n");
 	if (_disabled <= 0)
 	{
-		LOG_MSG (osiTime::getCurrent()
-                 << ": Group " << _name << " is not disabled, ERROR!\n");
+		LOG_MSG ("Group " << _name << " is not disabled, ERROR!\n");
 		return;
 	}
 	--_disabled;

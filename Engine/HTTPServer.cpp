@@ -203,7 +203,7 @@ bool HTTPClientConnection::analyzeInput ()
 #               ifdef LOG_HTTP
                 stdString peer;
                 GetSocketPeer (_socket, peer);
-                LOG_MSG (osiTime::getCurrent() << " HTTP get '" << path
+                LOG_MSG ("HTTP get '" << path
                     << "' from " << peer << "\n");
 #               endif
                 h->handler (this, path);

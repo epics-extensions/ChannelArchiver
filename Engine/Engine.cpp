@@ -244,8 +244,7 @@ void Engine::shutdown()
     }
     catch (ArchiveException &e)
     {
-        LOG_MSG(osiTime::getCurrent()
-                << ": " << "Engine::shutdown caught"
+        LOG_MSG("Engine::shutdown caught"
                 << e.what() << "\n");
     }
     unlockChannels();
@@ -312,8 +311,7 @@ bool Engine::process()
         _last_written = osiTime::getCurrent();
         if (! write_thread.isRunning())
         {
-            LOG_MSG(osiTime::getCurrent()
-                    << ": WriteThread stopped. Engine quits, too.\n");
+            LOG_MSG("WriteThread stopped. Engine quits, too.\n");
             return false;
         }
     }
@@ -510,8 +508,7 @@ void Engine::writeArchive()
     }
     catch (ArchiveException &e)
     {
-        LOG_MSG(osiTime::getCurrent()
-                 << ": " << "Engine::writeArchive caught"
+        LOG_MSG("Engine::writeArchive caught"
                  << e.what() << "\n");
     }
     unlockChannels();

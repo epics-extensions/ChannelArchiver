@@ -30,9 +30,25 @@
     <li><em>!group &lt;filename&gt;</em><br>
       Read given file and treat all channels in there as a group</li>
     <li><em>!default_period &lt;seconds&gt;<br>
-      </em>When no period is provided, this value will be used</li>
+      </em>When no period is provided, this value will be used.<br>
+      (default: 1 sec.)</li>
     <li><em>!write_period &lt;seconds&gt;<br>
-      </em>Time between writes to disk</li>
+      </em>Time between writes to disk<br>
+      (default: 30 sec.)</li>
+    <li><em>!get_threshold &lt;seconds&gt;<br>
+      </em>Channel Access offers two options for getting values:<br>
+      Issue a CA 'get' request or establish a monitor/callback for each change.<br>
+      If the sample rate is below the 'get_threshold' or the 'Monitor' flag was specified, a
+      Channel Access monitor will be used.<br>
+      This means that the Engine is passive, it receives every change from the IOC and then
+      decicides whether to save that as a new sample or not.<br>
+      When the channel changes much more often than the archiving rate, many of the incoming
+      monitors are irgnored but still show as network traffic.<br>
+      Therefore a threshold is used:<br>
+      If the sample period is greater than the 'get_threshold', a 'get' call will be used for
+      each sample. In this case the ArchiveEngine actively requests a value each time a channel
+      is to be sampled.<br>
+      (default: 20 sec.)</li>
     <li><em>!buffer_reserve</em><br>
       To buffer the samples between writes to the disk, the engine keeps a memory buffer for
       each channel.<br>
@@ -48,7 +64,6 @@
     </ul>
     <li>others...</li>
   </ul>
-
   <h2>Start/stop</h2>
   <p>The engine is started like this:</p>
   <pre><em>ArchiveEngine [options] &lt;config-file&gt;</em></pre>
@@ -62,15 +77,13 @@
     <p>http://&lt;host where engine is running&gt;:&lt;port&gt;</p>
   </blockquote>
   <p>e.g. <a href="http://localhost:4812">http://localhost:4812</a></p>
-
   <p>To stop the engine, use the special URL .../stop, e.g. <a
   href="http://localhost:4812/stop">http://localhost:4812/stop</a>.<br>
   With password protection enabled (has to be compiled in, see Engine/Config.h for
   configuration), you will be prompted for a user-name and password. In Engine/Tools there
   is an example tcl script that stops the engine with a user name and password in case you
   want to stop the engine from within a script and not interactively.</p>
-  (see <a href="Threads.htm">threads</a> about Ctrl-C)
-
+  <p>(see <a href="Threads.htm">threads</a> about Ctrl-C) </p>
   <h2>Persistent configuration</h2>
   <p>When the configuration is changes via the Web interface (channels added etc.), the
   original configuration files are <em>not </em>changed.<br>

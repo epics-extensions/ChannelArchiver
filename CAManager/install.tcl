@@ -72,8 +72,8 @@ Puts "Installing CAManager Version 1.0\n\n" error
 
 Puts "Searching Tcl/TK interpreters:\n" action
 set wish [info nameofexecutable]
-foreach pat "tcl$ext tclsh$ext tcl\[0-9\]*$ext tclsh\[0-9\]*$ext" {
-  set l [lmatch -regexp [glob -nocomplain [file dirname $wish]/*] [file dirname $wish]/$pat]
+foreach pat "tcl$ext tclsh$ext tcl\[0-9\\.\]+$ext tclsh\[0-9\\.\]+$ext" {
+  set l [lmatch -regexp [glob -nocomplain [file dirname $wish]/*] [file dirname $wish]/$pat\$]
   if {[llength $l] > 0} {
     set dt 0
     foreach f $l {
@@ -169,9 +169,10 @@ if {!$terminate} {
       set terminate 1
       break
     }
+    catch {file delete -force $df}
     if {[catch {write_file $df $d} res]} {
-      Puts "\nCan't create file $df" error
-      Puts "$res" error
+      Puts "\nCan't create file $df\n" error
+      Puts "$res\n" error
       set terminate 1
       break
     }
@@ -199,8 +200,8 @@ if {!$terminate} {
       break
     }
     if {[catch {file copy -force $lib $df}]} {
-      Puts "\nCan't create file $df" error
-      Puts "$res" error
+      Puts "\nCan't create file $df\n" error
+      Puts "$res\n" error
       set terminate 1
       break
     }

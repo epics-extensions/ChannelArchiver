@@ -24,6 +24,10 @@
 #include <epicsTimeHelper.h>
 #include <ArchiveDataClient.h>
 
+// Returning rows for datenum, nanoseconds, value,
+// one column per sample.
+#define DATA_ROWS 3
+
 #ifdef OCTAVE
 // For an unknown reason, octave has a ~1sec rounding problem.
 #    define SplitSecondTweak      (1.0/24/60/60/2)
@@ -31,7 +35,7 @@
 #    define SplitSecondTweak      0.0
 #endif
 
-static double epicsTime2DateNum(const epicsTime &t)
+static void epicsTime2DateNum(const epicsTime &t, double &seconds, double &nanoseconds)
 {
     xmlrpc_int32 secs, nano;
     epicsTime2pieces(t, secs, nano);
@@ -40,7 +44,8 @@ static double epicsTime2DateNum(const epicsTime &t)
     time_t local_secs = secs - timezone;
     // From Paul Kienzle's collection of compatibility routines for Octave:
     // seconds since 1970-1-1 divided by sec/day plus datenum(1970,1,1):
-    return (double)local_secs/86400.0 + 719529.0 + SplitSecondTweak;
+    seconds = (double)local_secs/86400.0 + 719529.0 + SplitSecondTweak;
+    nanoseconds = (double) nano/1e9;
 }    
 
 void DateNum2epicsTime(double num, epicsTime &t)
@@ -50,7 +55,6 @@ void DateNum2epicsTime(double num, epicsTime &t)
     secs = (xmlrpc_int32)local_secs + timezone;
     pieces2epicsTime(secs, nano, t);
 }
-
 // -----------------------------------------------------------------------
 // Octave Stuff
 // -----------------------------------------------------------------------
@@ -58,18 +62,37 @@ void DateNum2epicsTime(double num, epicsTime &t)
 #include <octave/oct.h>
 #include <octave/pager.h>
 #include <octave/Cell.h>
+#include <octave/lo-ieee.h>
 
 class ValueInfo
 {
 public:
-    ValueInfo(int n) : times(n), values(n)
-    {}
-    ColumnVector times;
-    ColumnVector values;
+    ValueInfo(size_t num, size_t count) : num(num)
+    {
+        data = (Matrix **) calloc(num, sizeof(Matrix *));
+        used_columns = (size_t *)calloc(num, sizeof(size_t));
+        size_t i;
+        for (i=0; i<num; ++i)
+            data[i] = new Matrix(DATA_ROWS, count);
+    }
+    ~ValueInfo()
+    {
+        free(used_columns);
+        size_t i;
+        for (i=0; i<num; ++i)
+            if (data[i])
+                delete data[i];
+        free(data);
+    }
+    Matrix **data;
+    size_t *used_columns;
+private:
+    size_t num;
 };
 
 static bool value_callback(void *arg,
                            const char *name,
+                           size_t n,
                            size_t i,
                            const CtrlInfo &info,
                            DbrType type, DbrCount count,
@@ -84,17 +107,18 @@ static bool value_callback(void *arg,
                   << " " << s.c_str() << "\n";
 #endif
     ValueInfo *vi = (ValueInfo *)arg;
-    vi->times(i) = epicsTime2DateNum(RawValue::getTime(value));
-    double d;
-    if (RawValue::getDouble(type, count, value, d))
-        vi->values(i) = d;
-    else
-        vi->values(i) = 0.0;
+    Matrix *m = vi->data[n];
+    epicsTime2DateNum(RawValue::getTime(value), m->elem(0, i), m->elem(1, i));
+    if (RawValue::isInfo(value)  ||
+        RawValue::getDouble(type, count, value, m->elem(2, i)) == false)
+        m->elem(2, i) = octave_NaN;
+    vi->used_columns[n] = i+1;
     return true;
 }
 
 DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
 {
+    size_t i, num;
     octave_value_list retval;
     int nargin = args.length();
     if (nargin < 2)
@@ -145,7 +169,7 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
         stdVector<ArchiveDataClient::ArchiveInfo> archives;
         if (client.getArchives(archives))
         {
-            size_t        i, num = archives.size();
+            num = archives.size();
             ColumnVector  keys(num);
             string_vector names(num);
             string_vector paths(num);
@@ -182,15 +206,18 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
         stdVector<ArchiveDataClient::NameInfo> name_infos;
         if (client.getNames(key, pattern, name_infos))
         {
-            size_t i, num = name_infos.size();
+            num = name_infos.size();
             string_vector names(num);
             ColumnVector  start(num);
             ColumnVector  end(num);
             for (i=0; i<num; ++i)
             {
                 names[i] = name_infos[i].name.c_str();
-                start(i) = epicsTime2DateNum(name_infos[i].start);
-                end(i) = epicsTime2DateNum(name_infos[i].end);
+                double secs, nano;
+                epicsTime2DateNum(name_infos[i].start, secs, nano);
+                start(i) = secs;
+                epicsTime2DateNum(name_infos[i].end, secs, nano);
+                end(i) = secs;
             }
             retval.append(octave_value(names));
             retval.append(octave_value(start));
@@ -213,7 +240,7 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
         {
             int rows = args(3).cell_value().rows();
             int cols = args(3).cell_value().cols();
-            int i, j;
+            int j;
             for (i=0; i<rows; ++i)
                 for (j=0; j<cols; ++j)
                 {
@@ -237,9 +264,9 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
             count = (int)args(6).double_value();
         if (nargin > 7)
             how = (int)args(7).double_value();
+        size_t num = names.size();
 #ifdef DEBUG
         {
-            size_t i, num = names.size();
             stdString txt;
             for (i=0; i<num; ++i)
                 octave_stdout << "Name: '" << names[i].c_str() << "'\n";
@@ -251,12 +278,15 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
             octave_stdout << "How  : " << how << "\n";
         }
 #endif
-        ValueInfo val_info(count);
+        ValueInfo val_info(num, count);
         if (client.getValues(key, names, start, end, count, how,
                              value_callback, (void *)&val_info))
         {
-            retval.append(octave_value(val_info.times));
-            retval.append(octave_value(val_info.values));
+            for (i=0; i<num; ++i)
+            {
+                val_info.data[i]->resize(DATA_ROWS, val_info.used_columns[i]);
+                retval.append(octave_value(*val_info.data[i]));
+            }
         }
         else
             error("'%s' failed\n", cmd.c_str());
@@ -271,6 +301,73 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
 // Matlab Stuff
 // -----------------------------------------------------------------------
 #include "mex.h"
+
+class ValueInfo
+{
+public:
+    ValueInfo(size_t num, size_t count) : num(num)
+    {
+        data = (mxArray **) mxCalloc(num, sizeof(mxArray *));
+        used_columns = (size_t *)calloc(num, sizeof(size_t));
+        size_t i;
+        for (i=0; i<num; ++i)
+            data[i] = mxCreateDoubleMatrix(DATA_ROWS, count, mxREAL);
+    }
+    ~ValueInfo()
+    {
+        free(used_columns);
+        size_t i;
+        for (i=0; i<num; ++i)
+            if (data[i])
+                mxDestroyArray(data[i]);
+        mxFree(data);
+    }
+    
+    mxArray *getUsedPortion(size_t n)
+    {
+        if (used_columns[n] <= 0)
+            return 0;
+        mxArray *sub = mxCreateDoubleMatrix(DATA_ROWS, used_columns[n], mxREAL);
+        const double *src = mxGetPr(data[n]);
+        double *dst = mxGetPr(sub);
+        memcpy(dst, src, sizeof(double)*DATA_ROWS*used_columns[n]);
+        return sub;
+    }
+    
+    mxArray **data;
+    size_t *used_columns;
+private:
+    size_t num;
+};
+
+static bool value_callback(void *arg,
+                           const char *name,
+                           size_t n,
+                           size_t i,
+                           const CtrlInfo &info,
+                           DbrType type, DbrCount count,
+                           const RawValue::Data *value)
+{
+#ifdef DEBUG
+    stdString t, v, s;
+    RawValue::getTime(value, t);
+    RawValue::getValueString(v, type, count, value, &info);
+    RawValue::getStatus(value, s);
+    mexPrintf("%d : %s %s %s\n", i, t.c_str(), v.c_str(), s.c_str());
+#endif
+    ValueInfo *vi = (ValueInfo *)arg;
+    mxAssert(mxGetM(vi->data[n]) == DATA_ROWS, "Dimensions don't match");
+    mxAssert(mxGetN(vi->data[n]) > i, "Too much data");
+    double *data = mxGetPr(vi->data[n]);
+#define elem(r,c)  data[(r)+(c)*DATA_ROWS]
+    epicsTime2DateNum(RawValue::getTime(value), elem(0, i), elem(1, i));
+    if (RawValue::isInfo(value)  ||
+        RawValue::getDouble(type, count, value, elem(2, i)) == false)
+        elem(2, i) = mxGetNaN();
+#undef elem
+    vi->used_columns[n] = i+1;
+    return true;
+}
 
 static bool get_string(const mxArray *arg, char **buf, const char *name)
 {
@@ -292,6 +389,7 @@ static bool get_string(const mxArray *arg, char **buf, const char *name)
 void mexFunction(int nresult, mxArray *result[],
                  int nargin, const mxArray *args[])
 {
+    size_t i, num;
     if (nargin < 2)
     {
         mexErrMsgTxt("At least two arguments (URL, cmd) required.");
@@ -332,7 +430,7 @@ void mexFunction(int nresult, mxArray *result[],
         stdVector<ArchiveDataClient::ArchiveInfo> archives;
         if (client.getArchives(archives))
         {
-            size_t i, num = archives.size();
+            num = archives.size();
             result[0] = mxCreateDoubleMatrix(num, 1, mxREAL);
             double *keys = mxGetPr(result[0]);
             if (nresult > 1)
@@ -375,8 +473,8 @@ void mexFunction(int nresult, mxArray *result[],
         stdVector<ArchiveDataClient::NameInfo> name_infos;
         if (client.getNames(key, pattern, name_infos))
         {
-            size_t i, num = name_infos.size();
-            double *start = 0, *end = 0;
+            num = name_infos.size();
+            double *start = 0, *end = 0, nano;
             result[0] = mxCreateCellMatrix(num, 1);
             if (nresult > 1)
             {
@@ -395,9 +493,9 @@ void mexFunction(int nresult, mxArray *result[],
                               name_infos[i].name.c_str(),
                               name_infos[i].name.length()));
                 if (start)
-                    start[i] = epicsTime2DateNum(name_infos[i].start);
+                    epicsTime2DateNum(name_infos[i].start, start[i], nano);
                 if (end)
-                    end[i] = epicsTime2DateNum(name_infos[i].end);
+                    epicsTime2DateNum(name_infos[i].end, end[i], nano);
             }
         }
         else
@@ -421,7 +519,7 @@ void mexFunction(int nresult, mxArray *result[],
         }
         else if (mxIsCell(args[3]))
         {
-            int i, num = mxGetM(args[3]) * mxGetN(args[3]);
+            num = mxGetM(args[3]) * mxGetN(args[3]);
             for (i=0; i<num; ++i)
             {
                 mxArray *cell = mxGetCell(args[3], i);
@@ -441,9 +539,9 @@ void mexFunction(int nresult, mxArray *result[],
             count = (int)mxGetScalar(args[6]);   
         if (nargin > 7)
             how = (int)mxGetScalar(args[7]);   
+        num = names.size();
 #ifdef DEBUG
         {
-            size_t i, num = names.size();
             stdString txt;
             for (i=0; i<num; ++i)
                 mexPrintf("Name: '%s'\n", names[i].c_str());
@@ -453,6 +551,18 @@ void mexFunction(int nresult, mxArray *result[],
             mexPrintf("How  : %d\n", how);
         }
 #endif
+        ValueInfo val_info(num, count);
+        if (client.getValues(key, names, start, end, count, how,
+                             value_callback, (void *)&val_info))
+        {
+            for (i=0; i<num; ++i)
+            {
+                if (nresult > i)
+                    result[i] = val_info.getUsedPortion(i);
+            }
+        }
+        else
+            mexErrMsgIdAndTxt("ArchiveData", "'%s' failed\n", cmd);
     }
     else
         mexErrMsgIdAndTxt("ArchiveData", "Unknown command '%s'", cmd);

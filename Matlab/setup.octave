@@ -1,0 +1,10 @@
+
+cat >> ~/.octaverc <<END
+eval('is_matlab=length(matlabroot)>0;', 'is_matlab=0;')
+path("$EPICS_EXTENSIONS/src/ChannelArchiver/Matlab/O.$EPICS_HOST_ARCH",path);
+path("$EPICS_EXTENSIONS/src/ChannelArchiver/Matlab/MatComp",path);
+page_screen_output=0;
+END
+
+echo "Created ~/.octaverc for using octave with archiver"
+echo "data access from $EPICS_EXTENSIONS/src/ChannelArchiver"

@@ -1,8 +1,10 @@
 all:    octave matlab
 
-octave:	ArchiveData.oct
+OUT=O.$(EPICS_HOST_ARCH)
 
-matlab: ArchiveData.mexglx
+octave:	$(OUT) $(OUT)/ArchiveData.oct
+
+matlab: $(OUT) $(OUT)/ArchiveData.mexglx
 
 # Both Octave and Matlab include
 # compilation tools mkoctfile resp. mex
@@ -29,11 +31,14 @@ FLAGS += -L$(EPICS_BASE_RELEASE)/lib/$(EPICS_HOST_ARCH) -ldbStaticHost -lCom -lc
 # compare to output of xmlrpc-c-config libwww-client --libs
 FLAGS += -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok
 
-ArchiveData.oct: ArchiveData.cpp
-	mkoctfile -DOCTAVE $(FLAGS) ArchiveData.cpp
+$(OUT):
+	mkdir $(OUT)
 
-ArchiveData.mexglx: ArchiveData.cpp
-	mex $(FLAGS) ArchiveData.cpp
+$(OUT)/ArchiveData.oct: ArchiveData.cpp
+	mkoctfile -DOCTAVE $(FLAGS) ArchiveData.cpp -o $(OUT)/ArchiveData.oct
+
+$(OUT)/ArchiveData.mexglx: ArchiveData.cpp
+	mex $(FLAGS) ArchiveData.cpp -o $(OUT)/ArchiveData.mexglx
 
 # In reality, your milage will vary.
 # Matlab 6p1 under Linux gave this runtime error:
@@ -43,4 +48,7 @@ ArchiveData.mexglx: ArchiveData.cpp
 # ... but then you'd have to add all the other FLAGS into that.
 
 clean:
-	-rm ArchiveData.oct ArchiveData.mexglx
+	-rm -rf $(OUT)
+
+rebuild: clean all
+

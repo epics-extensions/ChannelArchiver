@@ -96,7 +96,8 @@ void CtrlInfoI::allocEnumerated (size_t num_states, size_t string_len)
 void CtrlInfoI::setEnumeratedString (size_t state, const char *string)
 {
 	CtrlInfoData *info = _infobuf.mem();
-	if (info->type != Enumerated  ||  state >= (size_t)info->value.index.num_states)
+	if (info->type != Enumerated  ||
+        state >= (size_t)info->value.index.num_states)
 		throwArchiveException (Invalid);
 
 	char *enum_string = info->value.index.state_strings;
@@ -173,9 +174,6 @@ void CtrlInfoI::getState (size_t state, stdString &result) const
 		return;
 	}
 
-	const CtrlInfoData *info = _infobuf.mem();
-	LOG_MSG ("CtrlInfo::getState: Cannot decode state " << state
-		<< ", only " << info->value.index.num_states << " states defined");
 	strstream tmp;
 	tmp << "<Undef: " << state << '\0';
 	result = tmp.str();
@@ -234,3 +232,4 @@ void CtrlInfoI::show (ostream &o) const
 }
 
 END_NAMESPACE_CHANARCH
+

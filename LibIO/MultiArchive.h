@@ -40,7 +40,6 @@ class MultiValueIterator;
 // </UL>
 // <H2>Example</H2>
 // <PRE>
-//	# ChannelArchiver master file
 //	master_version=1
 //	# First check the "fast" archive
 //	/archives/fast/dir

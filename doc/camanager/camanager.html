@@ -38,8 +38,18 @@
 	<em>CAManager</em> and <em>CAbgManager</em>.
       </p>
 
+      <p>
+	Other main topics coverd here are:
+      </p>
+      <ul>
+	<li><a href="#cycling">Cycling Archives</a> - reuse a certain number of
+	  archives in a round robin way
+	<li><a href="#plugins">Plugins</a> - define own tcl-functions to be
+	used in <em>CA*Manager</em>
+      </ul>
+
       <hr noshade size=1>
-      <img align=right src="main.jpg" width=375 height=125 hspace=8 vspace=8>
+      <img align=right src="main.jpg" width=377 height=141 hspace=8 vspace=8>
       <a name="CAManager"><h1>CAManager</h1></a>
       <p>
 	The main frontend.
@@ -55,6 +65,7 @@
       </p>
       <ul>
 	<li><a href="#creat">Creating/Configuring an Archiver</a>
+	<li><a href="#block">Editing an ArchiveEngine configuration file</a>
 	<li><a href="#block">Blocking an Archiver</a>
 	<li><a href="#info">Info</a>
 	<li><a href="#test">Test</a>
@@ -62,7 +73,7 @@
 	<li><a href="#modify">Modify</a>
       </ul>
       <hr noshade size=1>
-      <img src="prop.jpg" width=212 height=226 align=right hspace=8 vspace=8>
+      <img src="prop.jpg" width=200 height=287 align=right hspace=8 vspace=8>
       <a name="creat"><h2>Creating/Configuring an Archiver</h2></a>
       <p>
 	A double-click on an archiver (an entry of the table in the main
@@ -75,8 +86,8 @@
       </p>
       <p>
 	A button with three dots in it opens a file-selection dialog. Most
-	other string entries have a list of suggestions and settings, that
-	are available in another configuration, attached to it.
+	other string entries have a list of suggestions and settings
+	attached to it.
       </p>
       <p>
 	The space below the Run/Rerun configuration option changes it's
@@ -102,11 +113,58 @@
 	<b>This parameter has to be a full pathname (starting with a "<tt>/</tt>"
 	  or e.g. "<tt>C:/</tt>" resp.)</b></dd>
       <hr noshade size=1>
+      <dt><b>Schedule</b></dt>
+      <dd><p>The <em>CAbgManager</em> is able to stop and restart archivers based on
+	  a certain schedule.
+	</p><p>
+	  This is especially useful, if you automatically want archives
+	  to be switched e.g. every week. In this case, set the
+	  Run/Rerun mode to <tt>week</tt>, select the appropriate
+	  weekday and time, when archives should be switched and set
+	  the Archive-file configuration option to e.g. "<tt>%Y/%V/directory</tt>".
+	</p><p>
+	  In this case the archiver would create one archive per week
+	  in a directory named
+	  <tt>[year]/[weeknumber]/directory</tt>. This directory will
+	  also be added to a <em>Multi-Archive</em> directory file in the
+	  directory of the main configuration file which may then
+	  e.g. look like this for an archiver rerun daily:</p>
+	<pre>
+master_version=1
+/home/birke/Archives/another example/2001/10/09/directory
+/home/birke/Archives/another example/2001/10/08/directory
+/home/birke/Archives/another example/2001/10/07/directory
+/home/birke/Archives/another example/2001/10/06/directory
+/home/birke/Archives/another example/2001/10/05/directory
+/home/birke/Archives/another example/2001/10/04/directory
+...
+	</pre>
+	<p>
+	  This <em>Multi-Archive</em> directory file can then be used
+	  to access the whole archive at once.
+	</p></dd>
+      <hr noshade size=1>
       <dt><b>disable configuration changes ...</b></dt>
-      <dd>check this flag if you want to disable the online configuration
+      <dd>Check this flag if you want to disable the online configuration
 	interface of the <em>ArchiveEngine</em>. This is especially
 	useful to avoid conflicting changes, if you create your
 	configuration from a different source.</dd>
+      <hr noshade size=1>
+      <dt><b>check online configuration changes into cvs</b></dt>
+      <dd><p>If this option is checked and a CVS directory exists in the main
+	archiver directory, <em>CA*Manager</em> will check configuration
+	changes into the CVS repository.</p><p><b>Note:</b><br>As this
+	cvs-operation is executed without any user-interaction, you are
+	advised to make shure that it won't hang e.g. asking for a
+	password!</p></dd>
+      <hr noshade size=1>
+      <dt><b>force remove of bogus lockfile</b></dt>
+      <dd><p>If an archiver cannot be started because of an existing lockfile,
+	  <em>CA*Manager</em> can delete this lockfile after three unsuccessful
+	  tries.</p><p>These lockfiles can e.g. be leftovers of a crashed
+	  ArchiveEngine (which should of course not happen ;-) or even a
+	  system crash.</p><p>Nevertheless deleting the lockfile is
+	  something that should be well considered.</p></dd>
       <hr noshade size=1>
       <dt><b>Archive-file</b></dt>
       <dd>
@@ -144,6 +202,14 @@
 	  a special meaning (see <a href="#cycling">cycling archives</a>).
 	</p>
 	<p>
+	  Another possibility is, to embed tcl-function calls in a
+	  component like "<tt>%{function args}</tt>". The component will
+	  then be replaced by the string returned by the function
+	  called. This way you can embed almost everything in this
+	  configuration parameter, especially, if you use the possibility
+	  to define <a href="#plugins">plugins</a>.
+	</p>
+	<p>
 	  If this parameter contains a directory-component that is
 	  different from the current directory, <em>CA*Manager</em> will
 	  create the appropriate directories before starting the
@@ -164,9 +230,8 @@
 	</p>
 	<p>
 	  Several archivers may share a single Multi-Archive. The entries
-	  in the 
-	  Multi-Archive are made in the order, the archivers appear in the
-	  configuration window.
+	  in the Multi-Archive are made in the same order, in which the
+	  archivers appear in the configuration window.
 	</p>
       </dd>
       <hr noshade size=1>
@@ -175,51 +240,33 @@
 	<p>This should also be a filename relative to the directory of
 	  the configuration file.</p>
 	<p>"<tt>%</tt>"-rules are applied like with the Archive-file option.</p></dd>
-      <hr noshade size=1>
-      <dt><b>Run/Rerun</b></dt>
-      <dd><p>The <em>CAbgManager</em> is able to stop and restart archivers based on
-	  a certain schedule.
-	</p><p>
-	  This is especially useful, if you automatically want archives
-	  to be switched e.g. every week. In this case, set the
-	  Run/Rerun mode to <tt>weekly</tt>, select the appropriate
-	  weekday and time, when archives should be switched and set
-	  the Archive-file configuration option to e.g. "<tt>%Y/%V/directory</tt>".
-	</p><p>
-	  In this case the archiver would create one archive per week
-	  in a directory named
-	  <tt>[year]/[weeknumber]/directory</tt>. This directory will
-	  also be added to a <em>Multi-Archive</em> directory file in the
-	  directory of the main configuration file which may then
-	  e.g. look like this for an archiver rerun daily:</p>
-	<pre>
-master_version=1
-/home/birke/Archives/another example/2001/10/09/directory
-/home/birke/Archives/another example/2001/10/08/directory
-/home/birke/Archives/another example/2001/10/07/directory
-/home/birke/Archives/another example/2001/10/06/directory
-/home/birke/Archives/another example/2001/10/05/directory
-/home/birke/Archives/another example/2001/10/04/directory
-...
-	</pre>
-	<p>
-	  This <em>Multi-Archive</em> directory file can then be used
-	  to access the whole archive at once.
-	</p></dd>
     </dl>
+      <hr noshade size=1>
+      <img src="edit1.jpg" width=292 height=192 align=right hspace=8 vspace=8>
+      <a name="block"><h2>Editing an ArchiveEngine configuration file</h2></a>
+      <p>
+	Clocking and holding the right mouse button over an archiver entry
+	pops up a menu where you can select <tt>View/Edit Configuration</tt>.
+      <br>
+	Do so and a new window will popup, where you can see and edit the
+	main configuration file. Included configuration files can be
+	clicked and the contents of the window will change to the contents
+	of the selected file.
+      </p>
       <hr noshade size=1>
       <a name="block"><h2>Blocking an archiver</h2></a>
       <p>
 	When an archiver that is supposed to run terminates (either
-	intentionally or not)), the archiver is automatically restarted by
-	<a href="#CAbgManager">CAbgManager</a>.<br> In certain cases,
+	intentionally or not), the archiver is automatically restarted by
+	<a href="#CAbgManager"><em>CAbgManager</em></a>.<br> In certain cases,
 	you might want to prevent this archiver from being restarted
 	(e.g. for reconfiguration, during a special shutdown...).
       </p><p>
-	In this case you may <em>block</em> such an archive. Just check the
-	checkbox for the appropriate archiver in the rightmost column of
-	the main window.<br>See <a href="#blocked">CAbgManager / Blocked Archivers</a> for
-	further details.
+	In this case you may <em>block</em> such an archive. Just popup the
+	functions-menu by clicking and holding the right mouse button and
+	select <tt>Block/Unblock</tt> from the list.<br>See <a
+	href="#blocked">CAbgManager / Blocked Archivers</a> for further
+	details.
       </p>
       <hr noshade size=1>
       <a name="info"><h2>Info</h2></a>
@@ -315,8 +362,7 @@ master_version=1
 	The port-setting applies on restart of the <em>CAbgManager</em>.
       </p>
       <p>
-	By default <em>CAManager</em> automatically checks for a running <em>CAbgManager</em> on
-	startup.
+	By default <em>CAManager</em> automatically checks for a running <em>CAbgManager</em>.
       </p>
 
       <hr noshade size=1>
@@ -337,8 +383,8 @@ master_version=1
 	(stop) the automatic restart of an archiver.
       </p>
       <p>
-	If you query the page "http://&lt;hostname&gt;:&lt;port&gt;/exit", the <em>CAbgManager</em> is
-	stopped.
+	If you query the page "http://&lt;hostname&gt;:&lt;port&gt;/exit",
+	the <em>CAbgManager</em> is stopped.
       </p>
       <hr noshade size=1>
       <a name="cycling"><h1>Cycling Archives</h1></a>
@@ -380,11 +426,41 @@ master_version=1
 	    The Multi-Archive files will be updated accordingly.
 	  </p>
 	</dd>
+      <hr noshade size=1>
+      <a name="plugins"><h1>Plugins</h1></a>
+      <p>
+	You may put any number of files (named <tt>*.tcl</tt>) containing
+	tcl-functions into the directory <tt>CAManager/libsrc/plugins</tt>
+	in the source-tree. These will automatically be installed when
+	installing the <em>CAManager</em>.
+      </p>
+      <p>
+	These plugins can be used e.g. in %-substitutions to determine the
+	name of a new archive dynamically.
+      </p>
+      <h2>example caget plugin</h2></a>
+      <p>
+	As an example <em>CAManager</em> comes with a "caget"-plugin, that simply
+	calls the external program "caget" with the supplied arguments and
+	returns the output-value of the program call.
+      </p>
+<pre>
+	proc caget {pv} {
+	  return [exec caget -t $pv]
+	}
+</pre>
+      <p>
+	<b>Example:</b><br>
+	A configuration value of
+	"<tt>archives/%{caget&nbsp;somePV}/directory</tt>" will result in
+	archives put into directories named by the value of the PV
+	<tt>somePV</tt> at the time the archive is created.
+      </p>
       <hr>
       <div align=right>
 	<i>
 	  <!-- hhmts start -->
-		  Latest modification: 25 Oct 01 16:56:25 Thomas Birke
+		  Latest modification: 12 Dec 01 11:31:05 Thomas Birke
 		  <!-- hhmts end -->
 	</i>
 	<address>

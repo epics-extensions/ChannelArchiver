@@ -243,7 +243,7 @@
   # Note that we set LD_LIBRARY_PATH!
   &lt;Directory /home/Kay/Epics/extensions/src/ChannelArchiver/CGIExport/Tests/cgi&gt;
   SetEnv LD_LIBRARY_PATH /cs/epics/R3.13.3/base/lib/Linux
-  PerlHandler Apache::Registry
+  PerlHandler ModPerl::Registry
   PerlSendHeader On
   Options +ExecCGI
   &lt;/Directory&gt; 

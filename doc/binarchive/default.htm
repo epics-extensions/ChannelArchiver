@@ -1,0 +1,72 @@
+<html>
+
+<head>
+<title>Binary Archive</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a name="Main">Binary Archive Format</a></h1>
+  <h2>Design Decisions</h2>
+  <p>An easy approach to archiving would be this:</p>
+  <p>For each channel, create an ASCII file and append new values to that file.<br>
+  This format is easy to maintain.</p>
+  <p>Problem: The number of open files is quite limited on all operating systems.<br>
+  The archiver would have to open each file, append values, close it and move on to the next
+  channel. This is much too slow!</p>
+  <p>Idea of the ChannelArchiver: All channels are written into a single file. The list of
+  channel names, the first and last position for each channel etc. is kept in a disk-based
+  hash table. Furthermore, a binary format is used to save space and time.</p>
+  <p>The disk-based hash-table is the &quot;directory&quot; file, by default called
+  &quot;freq_directory&quot;.<br>
+  As for a the data, one file per day (default) is used.<br>
+  A data file will be updated until all the buffers in there are filled. The filename mostly
+  reflects the date of creation, not the time regime of samples therein.</p>
+  <p>Advantage: This format allows archiving of up to 10000 values per second on a 450 Mhz
+  machine, 100baseT network. Fast retrival to the most recent values is accomplished via the
+  hash table and a pointer to the last entries.</p>
+  <p>Disadvantage: The combination of directory- and data-files must not be disturbed!<br>
+  <font color="#FF0000">Under no circumstances must any single data file be removed or
+  altered, since this will break the interlinked sequence of samples.</font><br>
+  This is not uncommon for database systems, but unfortunately the data management tools for
+  the ChannelArchiver are limited for the time being.</p>
+  <h2>Common Misunderstandings</h2>
+  <ul>
+    <li>Setpoint channels: invalid or old time stamps<br>
+      Many EPICS databases contain &quot;setpoints&quot;:<br>
+      Passive channels that are only changed from an operator interface.<br>
+      After booting an IOC, these channels have no valid time stamp. The archive engine might
+      issue a warning, but these channels cannot be archived because of the invalid time stamp.<br>
+      As soon as the setpoint is actually changed from an operator interface, the value is of
+      course archived. But since it might not be changed to often, its time stamp can be
+      &quot;old&quot;.<br>
+      <em>Consequence:</em><br>
+      When you start the engine and get warnings about &quot;invalid&quot; time stamps or find
+      that data files for &quot;old&quot; samples are created, this is the common reason.</li>
+    <li>Old data files are updated:<br>
+      Data files are updated until the buffers in there are filled. Only then a new file might
+      be created after e.g. 24 hours (default).<br>
+      <em>Consequence:</em><br>
+      When you see that &quot;old&quot; data files still change, this is the reason.</li>
+    <li>Size of data files:<br>
+      The ChannelArchiver saves this information for each channel: <ul>
+        <li>value in its native type (double, int, array, string, ...)</li>
+        <li>time stamp: This is the original time stamp that the IOC sends in nanosecond resolution!<br>
+          (Don't confuse this with other tools that take the current time of the computer that's
+          running the sampling engine.)</li>
+        <li>status/severity</li>
+        <li>Control Information: display limits, alarm limits, control limits, engineering units,
+          enumeration strings for enumerated values</li>
+      </ul>
+      <p>(This is also referred to as the DBR_CTRL_xxxx type in EPICS) </p>
+      <p>When archiving a channel with float values and the control information does not change,
+      this results in about 16 bytes per value</p>
+    </li>
+  </ul>
+  <p>&nbsp;</p>
+</blockquote>
+</font>
+</body>
+</html>

@@ -781,29 +781,30 @@ Puts "util: restartArchiver $i" funcall
   set ::nocheck($i) 0
 }
 
+
 proc stopArchiver {i {forceStop 0} {action stop}} {
 Puts "util: stopArchiver $i $forceStop $action" funcall
   array unset ::sched $i,stop,*
   if {!$forceStop && [file exists [Blockfile $i]]} {
-    Puts "$action of \"[camMisc::arcGet $i descr]\" blocked" error
-    return 0
+   Puts "$action of \"[camMisc::arcGet $i descr]\" blocked" error
+   return 0
   }
   if {$action == "stop"} {
-    Puts "stop \"[camMisc::arcGet $i descr]\"" command
+   Puts "stop \"[camMisc::arcGet $i descr]\"" command
   }
-  if {![catch {set sock [socket [camMisc::arcGet $i host] [camMisc::arcGet $i port]]}]} {
-    fconfigure $sock -blocking 0
-    fileevent $sock readable [list justread $sock]
-    lappend ::socks $sock
-    puts $sock "GET /stop HTTP/1.0"
-    puts $sock ""
-    flush $sock
-  }
+
+
+package require http
+  set conn [http::geturl "http://[camMisc::arcGet $i host]:[camMisc::arcGet $i port]/stop"]
+  update
+  array unset $conn
   set w [open [camMisc::arcGet $i mstr]/runmsg.txt a+]
+
   puts $w "Stopped by [file tail [file rootname [info script]]] ($::CVS(Version)) @ [clock format [clock seconds]]\n"
   close $w
   return 1
 }
+
 
 proc justread {sock} {
 Puts "util: justread $sock" funcall

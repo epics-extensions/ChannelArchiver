@@ -131,7 +131,7 @@ public:
 
         xmlrpc_value *channel = xmlrpc_build_value(
             user_arg->env,
-            STR("{s:s,s:i,s:i,s:i,s:i}"),
+            "{s:s,s:i,s:i,s:i,s:i}",
             "name", info.name.c_str(),
             "start_sec", ss, "start_nano", sn,
             "end_sec", es,   "end_nano", en);
@@ -148,19 +148,19 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
 {
     if (info && info->getType() == CtrlInfo::Enumerated)
     {
-        xmlrpc_value *state, *states = xmlrpc_build_value(env, STR("()"));
+        xmlrpc_value *state, *states = xmlrpc_build_value(env, "()");
         stdString state_txt;
         size_t i, num = info->getNumStates();
         for (i=0; i<num; ++i)
         {
             info->getState(i, state_txt);
-            state = xmlrpc_build_value(env, STR("s#"),
+            state = xmlrpc_build_value(env, "s#",
                                        state_txt.c_str(), state_txt.length());
             xmlrpc_array_append_item(env, states, state);
             xmlrpc_DECREF(state);
         }
         xmlrpc_value *meta = xmlrpc_build_value(
-            env, STR("{s:i,s:V}"),
+            env, "{s:i,s:V}",
             "type", (xmlrpc_int32)META_TYPE_ENUM, "states", states);
         xmlrpc_DECREF(states);
         return meta;
@@ -168,7 +168,7 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
     if (info && info->getType() == CtrlInfo::Numeric)
     {
         return xmlrpc_build_value(
-            env, STR("{s:i,s:d,s:d,s:d,s:d,s:d,s:d,s:i,s:s}"),
+            env, "{s:i,s:d,s:d,s:d,s:d,s:d,s:d,s:i,s:s}",
             "type", (xmlrpc_int32)META_TYPE_NUMERIC,
             "disp_high",  make_finite(info->getDisplayHigh()),
             "disp_low",   make_finite(info->getDisplayLow()),
@@ -179,7 +179,7 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
             "prec", (xmlrpc_int32)info->getPrecision(),
             "units", info->getUnits());
     }
-    return  xmlrpc_build_value(env, STR("{s:i,s:(s)}"),
+    return  xmlrpc_build_value(env, "{s:i,s:(s)}",
                                "type", (xmlrpc_int32)META_TYPE_ENUM,
                                "states", "<undefined>");
 }
@@ -213,7 +213,7 @@ void encode_value(xmlrpc_env *env,
 {
     if (xml_count > dbr_count)
         xml_count = dbr_count;
-    xmlrpc_value *element, *val_array =  xmlrpc_build_value(env, STR("()"));
+    xmlrpc_value *element, *val_array =  xmlrpc_build_value(env, "()");
     if (env->fault_occurred)
         return;
     int i;
@@ -224,7 +224,7 @@ void encode_value(xmlrpc_env *env,
             stdString txt;
             if (data)
                 RawValue::getValueString(txt, dbr_type, dbr_count, data, 0);
-            element = xmlrpc_build_value(env, STR("s#"),
+            element = xmlrpc_build_value(env, "s#",
                                          txt.c_str(), txt.length());
             xmlrpc_array_append_item(env, val_array, element);
             xmlrpc_DECREF(element);
@@ -239,7 +239,7 @@ void encode_value(xmlrpc_env *env,
                 if (!data  ||
                     !RawValue::getLong(dbr_type, dbr_count, data, l, i))
                     l = 0;
-                element = xmlrpc_build_value(env, STR("i"), (xmlrpc_int32)l);
+                element = xmlrpc_build_value(env, "i", (xmlrpc_int32)l);
                 xmlrpc_array_append_item(env, val_array, element);
                 xmlrpc_DECREF(element);
             }
@@ -253,7 +253,7 @@ void encode_value(xmlrpc_env *env,
                 if (!data  ||
                     !RawValue::getDouble(dbr_type, dbr_count, data, d, i))
                     d = 0.0;
-                element = xmlrpc_build_value(env, STR("d"), d);
+                element = xmlrpc_build_value(env, "d", d);
                 xmlrpc_array_append_item(env, val_array, element);
                 xmlrpc_DECREF(element);
             }
@@ -264,7 +264,7 @@ void encode_value(xmlrpc_env *env,
     xmlrpc_value *value;
     if (data)
         value = xmlrpc_build_value(
-            env, STR("{s:i,s:i,s:i,s:i,s:V}"),
+            env, "{s:i,s:i,s:i,s:i,s:V}",
             "stat", (xmlrpc_int32)RawValue::getStat(data),
             "sevr", (xmlrpc_int32)RawValue::getSevr(data),
             "secs", secs,
@@ -272,7 +272,7 @@ void encode_value(xmlrpc_env *env,
             "value", val_array);
     else
         value = xmlrpc_build_value(
-            env, STR("{s:i,s:i,s:i,s:i,s:V}"),
+            env, "{s:i,s:i,s:i,s:i,s:V}",
             "stat", (xmlrpc_int32)UDF_ALARM,
             "sevr", (xmlrpc_int32)INVALID_ALARM,
             "secs", secs,
@@ -285,43 +285,33 @@ void encode_value(xmlrpc_env *env,
 
 // Return the data for all the names[], start .. end etc.
 // as get_values() is supposed to return them.
-//
-// Returns raw values if interpol <= 0.0.
-// Uses PlotReader if plot_binnnig is set
-// (requires interpol > 0).
-// Uses LinearReader for interpol > 0.0.
 // Returns 0 on error.
 xmlrpc_value *get_channel_data(xmlrpc_env *env,
                                int key,
                                const stdVector<stdString> names,
                                const epicsTime &start, const epicsTime &end,
-                               long count, double interpol, bool plot_binnnig)
+                               long count,
+                               ReaderFactory::How how, double delta)
 {
     xmlrpc_value   *results = 0;
 #ifdef LOGFILE
     stdString txt;
-    LOG_MSG("get_channel_values\n");
-    LOG_MSG("Start: %s\n", epicsTimeTxt(start, txt));
-    LOG_MSG("End  : %s\n", epicsTimeTxt(end, txt));
-    LOG_MSG("Interpolating onto %g seconds\n", interpol);
+    LOG_MSG("get_channel_data\n");
+    LOG_MSG("Start:  %s\n", epicsTimeTxt(start, txt));
+    LOG_MSG("End  :  %s\n", epicsTimeTxt(end, txt));
+    LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
 #endif
     AutoPtr<IndexFile> index(open_index(env, key));
-    AutoPtr<DataReader> reader;
     if (env->fault_occurred)
         return 0;
-    if (interpol <= 0.0)
-        reader = new RawDataReader(*index);
-    else if (plot_binnnig)
-        reader = new PlotReader(*index, interpol);
-    else
-        reader = new LinearReader(*index, interpol);
+    AutoPtr<DataReader> reader(ReaderFactory::create(*index, how, delta));
     if (!reader)
     {
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
                                        "Cannot create reader");
         goto exit_get_channel_data;
     }
-    results = xmlrpc_build_value(env, STR("()"));
+    results = xmlrpc_build_value(env, "()");
     if (env->fault_occurred)
         goto exit_get_channel_data;
     const RawValue::Data *data;
@@ -335,7 +325,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
         LOG_MSG("Handling '%s'\n", names[i].c_str());
 #endif
         num_vals = 0;
-        values = xmlrpc_build_value(env, STR("()"));
+        values = xmlrpc_build_value(env, "()");
         if (env->fault_occurred)
             goto exit_get_channel_data;
         data = reader->find(names[i], &start);
@@ -361,7 +351,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
             }
         }
         // Assemble result = { name, meta, type, count, values }
-        result = xmlrpc_build_value(env, STR("{s:s,s:V,s:i,s:i,s:V}"),
+        result = xmlrpc_build_value(env, "{s:s,s:V,s:i,s:i,s:V}",
                                     "name",   names[i].c_str(),
                                     "meta",   meta,
                                     "type",   xml_type,
@@ -390,7 +380,8 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
                              int key,
                              const stdVector<stdString> names,
                              const epicsTime &start, const epicsTime &end,
-                             long count, double interpol)
+                             long count,
+                             ReaderFactory::How how, double delta)
 {
     xmlrpc_value *results = 0, **meta = 0, **values = 0;
     xmlrpc_int32 *xml_type = 0, *xml_count = 0;
@@ -398,18 +389,18 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
     bool ok = false;
 #ifdef LOGFILE
     stdString txt;
-    LOG_MSG("get_sheet_values\n");
-    LOG_MSG("Start: %s\n", epicsTimeTxt(start, txt));
-    LOG_MSG("End  : %s\n", epicsTimeTxt(end, txt));
-    LOG_MSG("Interpolating onto %g seconds\n", interpol);
+    LOG_MSG("get_sheet_data\n");
+    LOG_MSG("Start : %s\n", epicsTimeTxt(start, txt));
+    LOG_MSG("End   : %s\n", epicsTimeTxt(end, txt));
+    LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
 #endif
     AutoPtr<IndexFile> index(open_index(env, key));
     if (env->fault_occurred)
         return 0;
-    AutoPtr<SpreadsheetReader> sheet(new SpreadsheetReader(*index, interpol));
+    AutoPtr<SpreadsheetReader> sheet(new SpreadsheetReader(*index, how, delta));
     if (!sheet)
         goto exit_get_sheet_data;
-    results = xmlrpc_build_value(env, STR("()"));
+    results = xmlrpc_build_value(env, "()");
     if (env->fault_occurred)
         goto exit_get_sheet_data;
     meta     = (xmlrpc_value **) calloc(name_count, sizeof(xmlrpc_value *));
@@ -421,7 +412,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
     ok = sheet->find(names, &start);
     for (i=0; i<name_count; ++i)
     {
-        values[i] = xmlrpc_build_value(env, STR("()"));            
+        values[i] = xmlrpc_build_value(env, "()");            
         if (env->fault_occurred)
             goto exit_get_sheet_data;
         if (ok)
@@ -453,7 +444,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
     for (i=0; i<name_count; ++i)
     {   // Assemble result = { name, meta, type, count, values }
         xmlrpc_value *result =
-            xmlrpc_build_value(env, STR("{s:s,s:V,s:i,s:i,s:V}"),
+            xmlrpc_build_value(env, "{s:s,s:V,s:i,s:i,s:V}",
                                "name",   names[i].c_str(),
                                "meta",   meta[i],
                                "type",   xml_type[i],
@@ -509,77 +500,77 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
             ", built " __DATE__ ", " __TIME__ "\n"
             "Config '%s'\n",
             ARCH_VER, config);
-    xmlrpc_value *how = xmlrpc_build_value(env, STR("(ssss)"),
-                                            STR("raw"),
-                                            STR("spreadsheet"),
-                                            STR("interpol/average"),
-                                            STR("plot-binning")
-                                            );
+    xmlrpc_value *how = xmlrpc_build_value(env, "(sssss)",
+                                           "raw",
+                                           "spreadsheet",
+                                           "average",
+                                           "plot-binning",
+                                           "linear");
     if (!how)
     {
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
                                        "Cannot create how");
         return 0;
     }
-    xmlrpc_value *element, *status = xmlrpc_build_value(env, STR("()"));
+    xmlrpc_value *element, *status = xmlrpc_build_value(env, "()");
     for (i=0; i<=lastEpicsAlarmCond; ++i)
     {
-        element = xmlrpc_build_value(env, STR("s"), alarmStatusString[i]);
+        element = xmlrpc_build_value(env, "s", alarmStatusString[i]);
         xmlrpc_array_append_item(env, status, element);
         xmlrpc_DECREF(element);
     }
-    xmlrpc_value *severity = xmlrpc_build_value(env, STR("()"));
+    xmlrpc_value *severity = xmlrpc_build_value(env, "()");
     for (i=0; i<=lastEpicsAlarmSev; ++i)
     {
-        element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
-                                     STR("num"), (xmlrpc_int32)i,
-                                     STR("sevr"), alarmSeverityString[i],
-                                     STR("has_value"), (xmlrpc_bool) 1,
-                                     STR("txt_stat"), (xmlrpc_bool) 1);
+        element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
+                                     "num", (xmlrpc_int32)i,
+                                     "sevr", alarmSeverityString[i],
+                                     "has_value", (xmlrpc_bool) 1,
+                                     "txt_stat", (xmlrpc_bool) 1);
         xmlrpc_array_append_item(env, severity, element);
         xmlrpc_DECREF(element);
     }
-    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
-                                 STR("num"), (xmlrpc_int32)ARCH_EST_REPEAT,
-                                 STR("sevr"), "Est_Repeat",
-                                 STR("has_value"), (xmlrpc_bool) 0,
-                                 STR("txt_stat"), (xmlrpc_bool) 0);
+    element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
+                                 "num", (xmlrpc_int32)ARCH_EST_REPEAT,
+                                 "sevr", "Est_Repeat",
+                                 "has_value", (xmlrpc_bool) 0,
+                                 "txt_stat", (xmlrpc_bool) 0);
     xmlrpc_array_append_item(env, severity, element);
     xmlrpc_DECREF(element);
-    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
-                                 STR("num"), (xmlrpc_int32)ARCH_REPEAT,
-                                 STR("sevr"), "Repeat",
-                                 STR("has_value"), (xmlrpc_bool) 0,
-                                 STR("txt_stat"), (xmlrpc_bool) 0);
+    element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
+                                 "num", (xmlrpc_int32)ARCH_REPEAT,
+                                 "sevr", "Repeat",
+                                 "has_value", (xmlrpc_bool) 0,
+                                 "txt_stat", (xmlrpc_bool) 0);
     xmlrpc_array_append_item(env, severity, element);
     xmlrpc_DECREF(element);
-    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
-                                 STR("num"), (xmlrpc_int32)ARCH_DISCONNECT,
-                                 STR("sevr"), "Disconnected",
-                                 STR("has_value"), (xmlrpc_bool) 0,
-                                 STR("txt_stat"), (xmlrpc_bool) 1);
+    element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
+                                 "num", (xmlrpc_int32)ARCH_DISCONNECT,
+                                 "sevr", "Disconnected",
+                                 "has_value", (xmlrpc_bool) 0,
+                                 "txt_stat", (xmlrpc_bool) 1);
     xmlrpc_array_append_item(env, severity, element);
     xmlrpc_DECREF(element);
-    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
-                                 STR("num"), (xmlrpc_int32)ARCH_STOPPED,
-                                 STR("sevr"), "Archive_Off",
-                                 STR("has_value"), (xmlrpc_bool) 0,
-                                 STR("txt_stat"), (xmlrpc_bool) 1);
+    element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
+                                 "num", (xmlrpc_int32)ARCH_STOPPED,
+                                 "sevr", "Archive_Off",
+                                 "has_value", (xmlrpc_bool) 0,
+                                 "txt_stat", (xmlrpc_bool) 1);
     xmlrpc_array_append_item(env, severity, element);
     xmlrpc_DECREF(element);
-    element = xmlrpc_build_value(env, STR("{s:i,s:s,s:b,s:b}"),
-                                 STR("num"), (xmlrpc_int32)ARCH_DISABLED,
-                                 STR("sevr"), "Archive_Disabled",
-                                 STR("has_value"), (xmlrpc_bool) 0,
-                                 STR("txt_stat"), (xmlrpc_bool) 1);
+    element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
+                                 "num", (xmlrpc_int32)ARCH_DISABLED,
+                                 "sevr", "Archive_Disabled",
+                                 "has_value", (xmlrpc_bool) 0,
+                                 "txt_stat", (xmlrpc_bool) 1);
     xmlrpc_array_append_item(env, severity, element);
     xmlrpc_DECREF(element);
-    xmlrpc_value *result = xmlrpc_build_value(env, STR("{s:i,s:s,s:V,s:V,s:V}"),
-                                              STR("ver"), ARCH_VER,
-                                              STR("desc"), STR(txt),
-                                              STR("how"), how,
-                                              STR("stat"), status,
-                                              STR("sevr"), severity);
+    xmlrpc_value *result = xmlrpc_build_value(env, "{s:i,s:s,s:V,s:V,s:V}",
+                                              "ver", ARCH_VER,
+                                              "desc", txt,
+                                              "how", how,
+                                              "stat", status,
+                                              "sevr", severity);
     xmlrpc_DECREF(severity);
     xmlrpc_DECREF(status);
     xmlrpc_DECREF(how);
@@ -597,7 +588,7 @@ xmlrpc_value *get_archives(xmlrpc_env *env, xmlrpc_value *args, void *user)
     if (!get_config(env, config))
         return 0;
     // Create result
-    xmlrpc_value *result = xmlrpc_build_value(env, STR("()"));
+    xmlrpc_value *result = xmlrpc_build_value(env, "()");
     if (!result)
     {
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
@@ -608,10 +599,10 @@ xmlrpc_value *get_archives(xmlrpc_env *env, xmlrpc_value *args, void *user)
     for (i=config.config.begin(); i!=config.config.end(); ++i)
     {
         xmlrpc_value *archive =
-            xmlrpc_build_value(env, STR("{s:i,s:s,s:s}"),
-                               STR("key"),  i->key,
-                               STR("name"), i->name.c_str(),
-                               STR("path"), i->path.c_str());
+            xmlrpc_build_value(env, "{s:i,s:s,s:s}",
+                               "key",  i->key,
+                               "name", i->name.c_str(),
+                               "path", i->path.c_str());
         xmlrpc_array_append_item(env, result, archive);
         xmlrpc_DECREF(archive);
     }
@@ -631,13 +622,13 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
     xmlrpc_int32 key;
     char *pattern;
     size_t pattern_len; 
-    xmlrpc_parse_value(env, args, STR("(is#)"), &key, &pattern, &pattern_len);
+    xmlrpc_parse_value(env, args, "(is#)", &key, &pattern, &pattern_len);
     if (env->fault_occurred)
         return NULL;
     if (pattern_len > 0)
         regex = RegularExpression::reference(pattern);
     // Create result
-    xmlrpc_value *result = xmlrpc_build_value(env, STR("()"));
+    xmlrpc_value *result = xmlrpc_build_value(env, "()");
     if (!result)
     {
         if (regex)
@@ -699,7 +690,7 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     xmlrpc_int32 key, start_sec, start_nano, end_sec, end_nano, count, how;
     xmlrpc_int32 actual_count;
     // Extract arguments
-    xmlrpc_parse_value(env, args, STR("(iAiiiiii)"),
+    xmlrpc_parse_value(env, args, "(iAiiiiii)",
                        &key, &names,
                        &start_sec, &start_nano, &end_sec, &end_nano,
                        &count, &how);    
@@ -708,29 +699,28 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
 #ifdef LOGFILE
     LOG_MSG("how=%d, count=%d\n", (int) how, (int) count);
 #endif
-    // Put an upper limit on count to avoid outrageous requests:
-    if (count > 10000)
+    if (count <= 1)
+        count = 1;
+    actual_count = count;
+    if (count > 10000) // Upper limit to avoid outrageous requests.
         actual_count = 10000;
-    else
-        actual_count = count;
     // Build start/end
     epicsTime start, end;
     pieces2epicsTime(start_sec, start_nano, start);
     pieces2epicsTime(end_sec, end_nano, end);    
-    // Pull names into stdVector<stdString>
-    // for SpreadsheetReader and just because.
+    // Pull names into vector for SpreadsheetReader and just because.
     xmlrpc_value *name_val;
     char *name;
     int i;
     xmlrpc_int32 name_count = xmlrpc_array_size(env, names);
     stdVector<stdString> name_vector;
     name_vector.reserve(name_count);
-    for (i = 0; i < name_count; ++i)
+    for (i=0; i<name_count; ++i)
     {   // no new ref!
         name_val = xmlrpc_array_get_item(env, names, i);
         if (env->fault_occurred)
             return 0;
-        xmlrpc_parse_value(env, name_val, STR("s"), &name);
+        xmlrpc_parse_value(env, name_val, "s", &name);
         if (env->fault_occurred)
             return 0;
         name_vector.push_back(stdString(name));
@@ -740,21 +730,23 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     {
         case HOW_RAW:
             return get_channel_data(env, key, name_vector, start, end,
-                                    actual_count, -1.0, false);
+                                    actual_count, ReaderFactory::Raw, 0.0);
         case HOW_SHEET:
             return get_sheet_data(env, key, name_vector, start, end,
-                                  actual_count, -1.0);
-        case HOW_INTERPOL:
-            if (count <= 1)
-                count = 1;
-            return get_channel_data(env, key, name_vector, start, end,
-                                    actual_count, (end-start)/count, false);
+                                  actual_count, ReaderFactory::Raw, 0.0);
+        case HOW_AVERAGE:
+            return get_sheet_data(env, key, name_vector, start, end,
+                                  actual_count,
+                                  ReaderFactory::Average, (end-start)/count);
         case HOW_PLOTBIN:
-            if (count <= 1)
-                count = 1;
-            // For plot binning, 'count' = # of bins, resulting in up to 4*count samples
+            // 'count' = # of bins, resulting in up to 4*count samples
             return get_channel_data(env, key, name_vector, start, end,
-                                    actual_count*4, (end-start)/count, true);
+                                    actual_count*4,
+                                    ReaderFactory::Plotbin, (end-start)/count);
+        case HOW_LINEAR:
+            return get_sheet_data(env, key, name_vector, start, end,
+                                  actual_count,
+                                  ReaderFactory::Linear, (end-start)/count);
     }
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_ARG_ERROR,
                                    "Invalid how=%d", how);
@@ -788,22 +780,22 @@ int main(int argc, const char *argv[])
     LOG_MSG("---- ArchiveServer Started ----\n");
 #endif
     xmlrpc_cgi_init(XMLRPC_CGI_NO_FLAGS);
-    xmlrpc_cgi_add_method_w_doc(STR("archiver.info"),
+    xmlrpc_cgi_add_method_w_doc("archiver.info",
                                 &get_info, 0,
-                                STR("S:"),
-                                STR("Get info"));
-    xmlrpc_cgi_add_method_w_doc(STR("archiver.archives"),
+                                "S:",
+                                "Get info");
+    xmlrpc_cgi_add_method_w_doc("archiver.archives",
                                 &get_archives, 0,
-                                STR("A:"),
-                                STR("Get archives"));
-    xmlrpc_cgi_add_method_w_doc(STR("archiver.names"),
+                                "A:",
+                                "Get archives");
+    xmlrpc_cgi_add_method_w_doc("archiver.names",
                                 &get_names, 0,
-                                STR("A:is"),
-                                STR("Get channel names"));
-    xmlrpc_cgi_add_method_w_doc(STR("archiver.values"),
+                                "A:is",
+                                "Get channel names");
+    xmlrpc_cgi_add_method_w_doc("archiver.values",
                                 &get_values, 0,
-                                STR("A:iAiiiiii"),
-                                STR("Get values"));
+                                "A:iAiiiiii",
+                                "Get values");
     xmlrpc_cgi_process_call();
     xmlrpc_cgi_cleanup();
 #ifdef LOGFILE

@@ -15,11 +15,16 @@
 #define ARCH_VER 0
 
 // Code numbers for 'how'
+// Raw data, channel by channel
 #define HOW_RAW      0
+// Raw data in 'filled' spreadsheet
 #define HOW_SHEET    1
-#define HOW_INTERPOL 2
+// Averaged spreadsheet
+#define HOW_AVERAGE  2
+// Plot-binned, channel by channel
 #define HOW_PLOTBIN  3
-
+// Linear interpolation spreadsheet
+#define HOW_LINEAR   4
 
 // XML-RPC does not define fault codes.
 // The xml-rpc-c library uses -500, -501, ... (up to -510)
@@ -36,11 +41,6 @@
 // meta.type as returned by archiver.get_values
 #define META_TYPE_ENUM    0
 #define META_TYPE_NUMERIC 1
-
-// The xml-rpc API defines "char *" strings
-// for what should be "const char *".
-// This macro helps avoid those "deprected conversion" warnings of g++
-#define STR(s) ((char *)((const char *)s))
 
 void epicsTime2pieces(const epicsTime &t,
                       xmlrpc_int32 &secs, xmlrpc_int32 &nano);

@@ -174,12 +174,12 @@ bool ArchiveDataClient::getValues(int key, stdVector<stdString> &names,
 {
     xmlrpc_value *name_array, *result, *element;
     size_t n;
-    name_array = xmlrpc_build_value(&env, STR("()"));
+    name_array = xmlrpc_build_value(&env, "()");
     if (log_fault())
         return false;
      for (n=0; n<names.size(); ++n)
     {
-        element = xmlrpc_build_value(&env, STR("s"), names[n].c_str());
+        element = xmlrpc_build_value(&env, "s", names[n].c_str());
         if (log_fault())
             return false;
         xmlrpc_array_append_item(&env, name_array, element);

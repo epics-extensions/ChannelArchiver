@@ -1,5 +1,6 @@
 // System
 #include <stdio.h>
+#include <math.h>
 #include <time.h>
 #include <sys/time.h>
 // XML-RPC
@@ -7,6 +8,7 @@
 #include <xmlrpc_cgi.h>
 // EPICS Base
 #include <alarm.h>
+#include <epicsMath.h> // math.h + isinf + isnan
 // Tools
 #include <AutoPtr.h>
 #include <MsgLogger.h>
@@ -30,6 +32,16 @@
 #ifdef LOGFILE
 static FILE *logfile = 0;
 #endif
+
+// Some compilers have "finite()",
+// others have "isfinite()".
+// This hopefully works everywhere:
+static double make_finite(double value)
+{
+    if (isinf(value) ||  isnan(value))
+        return 0;
+    return value;
+}
 
 // Return name of configuration file from environment or 0
 const char *get_config_name(xmlrpc_env *env)
@@ -158,12 +170,12 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
         return xmlrpc_build_value(
             env, STR("{s:i,s:d,s:d,s:d,s:d,s:d,s:d,s:i,s:s}"),
             "type", (xmlrpc_int32)META_TYPE_NUMERIC,
-            "disp_high",  info->getDisplayHigh(),
-            "disp_low",   info->getDisplayLow(),
-            "alarm_high", info->getHighAlarm(),
-            "warn_high",  info->getHighWarning(),
-            "warn_low",   info->getLowWarning(),
-            "alarm_low",  info->getLowAlarm(),
+            "disp_high",  make_finite(info->getDisplayHigh()),
+            "disp_low",   make_finite(info->getDisplayLow()),
+            "alarm_high", make_finite(info->getHighAlarm()),
+            "warn_high",  make_finite(info->getHighWarning()),
+            "warn_low",   make_finite(info->getLowWarning()),
+            "alarm_low",  make_finite(info->getLowAlarm()),
             "prec", (xmlrpc_int32)info->getPrecision(),
             "units", info->getUnits());
     }

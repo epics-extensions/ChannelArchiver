@@ -186,7 +186,18 @@ void SampleMechanismGet::handleValue(Guard &guard,
         RawValue::copy(channel->dbr_time_type, channel->nelements,
                        previous_value, value);
         if (channel->isBackInTime(stamp))
+        {
+            if (channel->isBackInTime(now))
+            {
+#   ifdef DEBUG_SAMPLING
+                LOG_MSG("SampleMechanismGet::handleValue %s: "
+                        "unresolved back in time\n",
+                        channel->getName().c_str());
+#   endif                
+                return;
+            }
             RawValue::setTime(previous_value, now);
+        }
         channel->buffer.addRawValue(previous_value);
         previous_value_set = true;
         channel->last_stamp_in_archive = stamp;

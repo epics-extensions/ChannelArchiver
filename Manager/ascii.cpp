@@ -2,13 +2,16 @@
 //
 
 #include "BinArchive.h"
-#include <fstream>
+#include <ASCIIParser.h>
 #include <vector>
-#include <ctype.h>
 #include <stdlib.h>
 
 USING_NAMESPACE_CHANARCH
 using namespace std;
+
+// -------------------------------------------------------------------
+// write
+// -------------------------------------------------------------------
 
 static void output_header (const ValueIterator &value)
 {
@@ -106,98 +109,9 @@ void output_ascii (const stdString &archive_name, const stdString &channel_name,
 	}
 }
 
-class ASCIIParser
-{
-public:
-	ASCIIParser ()
-	{
-		_line_no = 0;
-	}
-	virtual ~ASCIIParser ()
-	{
-		if (_file.is_open ())
-			_file.close ();
-	}
-
-	bool open (const stdString &file_name);
-
-protected:
-	// Read next line from file.
-	// Result: hit end of file?
-	bool nextLine ();
-
-	// Get current line
-	const stdString & getLine () const
-	{	return _line; }
-	size_t getLineNo () const
-	{	return _line_no; }
-
-	// Try to extract parameter=value pair
-	// from current line.
-	// Result: found parameter?
-	bool getParameter (stdString &parameter, stdString &value);
-
-private:
-
-	size_t		_line_no;
-	stdString	_line;
-	ifstream		_file;
-};
-
-bool ASCIIParser::open (const stdString &file_name)
-{
-	_file.open (file_name.c_str());
-	if (! _file.is_open ())
-		return false;
-	_file.unsetf (ios::binary);     
-	return true;
-}
-
-bool ASCIIParser::nextLine ()
-{
-	char line[100];
-	char *ch;
-
-	while (true)
-	{
-		_file.getline (line, 100);
-		if (_file.eof ())
-		{
-			_line.assign (0, 0);
-			return false;     
-		}
-		++_line_no;
-
-		ch = line;
-		// skip white space
-		while (*ch && isspace(*ch))
-			++ch;
-		if (! *ch)
-			return nextLine (); // empty line
-
-		// skip comment lines
-		if (*ch == '#')
-			continue; // try next line 
-
-		_line = ch;
-		return true;
-	}
-}
-
-bool ASCIIParser::getParameter (stdString &parameter, stdString &value)
-{
-	size_t pos = _line.find ('=');
-	if (pos == _line.npos)
-		return false;
-
-	parameter = _line.substr (0, pos);
-	++pos;
-	while (_line[pos] && isspace(_line[pos]))
-		++pos;
-	value = _line.substr (pos);
-
-	return true;
-}
+// -------------------------------------------------------------------
+// read
+// -------------------------------------------------------------------
 
 class ArchiveParser : public ASCIIParser
 {

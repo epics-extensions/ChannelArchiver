@@ -9,9 +9,7 @@
 // --------------------------------------------------------
 
 #include "MultiArchive.h"
-#include "BinArchive.h"
 #include <ASCIIParser.h>
-#include <BinaryTree.h>
 
 BEGIN_NAMESPACE_CHANARCH
 
@@ -78,12 +76,9 @@ bool MultiArchive::parseMasterFile (const stdString &master_file)
 		parameter != "master_version"				||
 		value != "1")
 	{
-		LOG_MSG ("Expecting master_version=1 in '" << master_file
-			<< "', line " << parser.getLineNo() << "\n");
-		LOG_MSG ("Assuming '" << master_file << "' is a BinArchive\n");
-		_archives.push_back (master_file);
-
-		return true;
+		 LOG_MSG ("Expecting master_version=1 in '" << master_file
+		 		<< "', line " << parser.getLineNo() << "\n");
+		 return false;
 	}
 
 	while (parser.nextLine ())
@@ -91,48 +86,12 @@ bool MultiArchive::parseMasterFile (const stdString &master_file)
 		_archives.push_back (parser.getLine ());
 	}
 
-	listChannels ();
-
 	log ();
-
-	return true;
-}
-
-void MultiArchive::fill_channels (const stdString &channel, void *arg)
-{
-	MultiArchive *me = (MultiArchive *) arg;
-
-	me->_channels.push_back (channel);
 }
 
 // Fill _channels from _archives
 bool MultiArchive::listChannels ()
 {
-	BinaryTree<stdString> name_tree;
-
-	list<stdString>::const_iterator archs = _archives.begin();
-	
-	while (archs != _archives.end())
-	{
-		Archive         archive (new BinArchive (*archs));
-	    ChannelIterator channel (archive);
-		stdString name;
-
-		archive.findFirstChannel (channel);
-		while (channel)
-		{
-			name = channel->getName();
-			if (! name_tree.find (name))
-				name_tree.add (name);
-			++ channel;
-		}         
-		
-		++archs;
-	}
-
-	_channels.clear ();
-	name_tree.traverse (fill_channels, this);
-
 	return true;
 }
 
@@ -146,15 +105,4 @@ void MultiArchive::log ()
 		LOG_MSG ("Archive file: " << *i << "\n");
 		++i;
 	}
-
-	LOG_MSG ("Channels:\n");
-	i = _channels.begin();
-	while (i != _archives.end())
-	{
-		LOG_MSG (*i << "\n");
-		++i;
-	}
 }
-
-
-END_NAMESPACE_CHANARCH

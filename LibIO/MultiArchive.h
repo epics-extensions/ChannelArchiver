@@ -8,13 +8,11 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-#ifndef __MULTI_ARCHIVEI_H__
-#define __MULTI_ARCHIVEI_H__
+#ifndef __ARCHIVEI_H__
+#define __ARCHIVEI_H__
 
 #include "ArchiveI.h"
-#include <list>
 
-using namespace std;
 BEGIN_NAMESPACE_CHANARCH
 
 //CLASS MultiArchive
@@ -73,7 +71,6 @@ private:
 
 	// Fill _channels from _archives
 	bool listChannels ();
-	static void fill_channels(const class stdString &, void *); // helper for this
 
 	list<stdString>	_archives; // names of archives
 	list<stdString>	_channels; // names of channels in all archives

@@ -23,6 +23,10 @@
 #include "EngineServer.h"
 #include "HTMLPage.h"
 
+#ifdef SAMPLE_TEST
+#include "ArchiveChannel.h"
+#endif
+
 // For communication sigint_handler -> main loop
 bool run = true;
 
@@ -33,7 +37,6 @@ static void signal_handler(int sig)
     signal(sig, SIG_IGN);
 #endif
     run = false;
-    LOG_MSG("Exiting on signal %d, please be patient!\n", sig);
 }
 
 FILE *logfile = 0;
@@ -140,6 +143,13 @@ int main(int argc, const char *argv[])
                 "Stop via web browser at http://localhost:%d/stop\n"
                 "------------------------------------------\n",
                 EngineServer::_port);
+#ifdef SAMPLE_TEST
+        ArchiveChannel *ac = new ArchiveChannel("fred", new SampleMechanismMonitored(5.0));
+
+        ac->startCA();
+
+#endif
+
         while (run)
         {
             theEngine->process();

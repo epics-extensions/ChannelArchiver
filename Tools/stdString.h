@@ -3,54 +3,49 @@
 
 #include <cstring>
 
-//CLASS stdString
-//
-// Meant to behave like std::string,
-// unfortunately necessary as long as
-// egcs implementation leads to memory leak.
-//
-// This string class does not do reference counting,
-// so it might me a bit slower than std::string.
+/// Meant to behave like std::string,
+/// was introduced when egcs implementation lead
+/// to memory leak - and then kept.
 class stdString
 {
 public:
 	typedef size_t size_type;
 
-	//* Create/delete string
+	/// Create/delete string
 	stdString();
 	stdString(const stdString &rhs);
 	stdString(const char *s);
 	virtual ~stdString();
 
-	//* Length information
+	/// Length information
 	size_type length() const;
 	bool empty() const;
 
-	//* Get C-type data which is always != NULL
+	/// Get C-type data which is always != NULL
 	const char *c_str() const;
 
-	//* Character access, <I>no test for valid index value!!</I>
+	/// Character access, <I>no test for valid index value!!</I>
 	char operator [] (size_t index) const;
 
-	//* Assignments
-	//
-	// (assign (0, 0) implemented as means of "clear()")
+	/// Assignments
+	///
+	/// (assign (0, 0) implemented as means of "clear()")
 	stdString & assign(const char *s, size_type len);
 	stdString & operator = (const stdString &rhs);
 	stdString & operator = (const char *rhs);
 
-	//* Concatenations
-	// (prefer reserve() && += to + for performance)
+	/// Concatenations
+	/// (prefer reserve() && += to + for performance)
 	stdString & operator += (const stdString &rhs);
 	stdString & operator += (const char *rhs);
 	stdString & operator += (char ch);
 	friend stdString operator + (const stdString &lhs, const stdString &rhs);
 
-	//* Comparisons
-	//
-	// compare <  0: this <  rhs<br>
-	// compare >  0: this >  rhs<br>
-	// compare == 0: this == rhs
+	/// Comparisons
+	///
+	/// compare <  0: this <  rhs<br>
+	/// compare >  0: this >  rhs<br>
+	/// compare == 0: this == rhs
 	int compare(const stdString &rhs) const;
 	bool operator == (const stdString &rhs) const;
 	bool operator != (const stdString &rhs) const;
@@ -59,15 +54,15 @@ public:
 	bool operator <= (const stdString &rhs) const;
 	bool operator >= (const stdString &rhs) const;
 
-	//* Reserve space for string of given max. length.
-	//
-	// Call in advance to make assignments and concatenations
-	// more effective
+	/// Reserve space for string of given max. length.
+	///
+	/// Call in advance to make assignments and concatenations
+	/// more effective
 	bool reserve(size_type len);
 
-	//* Get position [0 .. length()-1] of first/last ch
-	//
-	// Retuns npos if not found
+	/// Get position [0 .. length()-1] of first/last ch
+	///
+	/// Retuns npos if not found
 	size_type find(char ch) const; 
 	size_type find(const stdString &s) const; 
 	size_type find(const char *) const; 
@@ -75,7 +70,7 @@ public:
 
 	static const size_type npos; 
 
-	//* Extract sub-string from position <I>from</I>, up to n elements
+	/// Extract sub-string from position <I>from</I>, up to n elements
 	stdString substr(size_type from = 0, size_type n = npos) const;
 
 private:

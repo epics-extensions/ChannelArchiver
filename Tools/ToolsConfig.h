@@ -37,18 +37,7 @@
 // --------------------------------------------------------
 
 // Support for standard C++ library
-//
-// Have std::string or look-a-like and want to use it:
-#undef USE_STD_STRING
-// When I first used GNU std::string, it resulted in a memory leak.
-// This might have been fixed, in any case this replacement works
-// for the archiver:
-#ifdef USE_STD_STRING
-#include <string>
-#define stdString std::string
-#else
 #include <stdString.h>
-#endif
 
 // On RedHat9 and R3.14.4, there's a conflict
 // between /usr/include/assert.h and epicsAssert.h.

@@ -16,6 +16,10 @@ ArchiveEngine_SRCS += ConfigFile.cpp
 ArchiveEngine_SRCS += EngineServer.cpp
 ArchiveEngine_SRCS += Engine.cpp
 
+#USR_CXXFLAGS += -D SAMPLE_TEST
+#ArchiveEngine_SRCS += ArchiveChannel.cpp
+#ArchiveEngine_SRCS += SampleMechanism.cpp
+
 # Those are examples, not useful for production
 #SCRIPTS += Tools/stopEngine.py
 #SCRIPTS += Tools/stopEngine.tcl

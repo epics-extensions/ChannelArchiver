@@ -3,50 +3,37 @@
 
 #include "LockFile.h"
 #include <stdio.h>
-#include <strstream>
-#include <fstream>
 #include "osiTimeHelper.h"
+#include "MsgLogger.h"
 
 // Try to generate lock file.
 // Result: succesful?
 bool Lockfile::Lock (const stdString &prog_name)
 {
 	// Check for existing file
-    std::ifstream ifile;
-	ifile.open (_filename.c_str());
-#	if defined(HP_UX)
-	if (! ifile.fail())
-#	else
-	if (ifile.is_open ())
-#	endif
+    FILE *f = fopen(_filename.c_str(), "rt");
+	if (f)
 	{
 		char line[80];
-		ifile.getline (line, sizeof (line));
-
-        std::cerr << "Found an existing lock file '" << _filename << "':\n";
-		std::cerr << line << "\n";
-		ifile.close ();
-
+        fgets(line, sizeof (line), f);
+        LOG_MSG("Found an existing lock file '%s':\n%s\n",
+                _filename.c_str(), line);
+		fclose(f);
 		return false;
 	}
 
-    std::ofstream ofile;
-	ofile.open (_filename.c_str());
-#	if defined(HP_UX)
-	if (ofile.fail())
-#	else
-	if (! ofile.is_open ())
-#	endif
+	f = fopen(_filename.c_str(), "wt");
+    if (!f)
 	{
-		std::cerr << "cannot open lock file '" << _filename << "'\n";
+		LOG_MSG("cannot open lock file '%s'\n", _filename.c_str());
 		return false;
 	}
-	osiTime now;
-	now = osiTime::getCurrent ();
-	ofile << prog_name << " started on " << now << "\n";
-	ofile << "\n";
-	ofile << "If you can read this, the program is still running or exited ungracefully...\n";
-	ofile.close ();
+    stdString t;
+    osiTime2string(osiTime::getCurrent(), t);
+    fprintf(f, "%s started on %s\n\n", prog_name.c_str(), t.c_str());
+	fprintf(f, "If you can read this, the program is still running "
+            "or exited ungracefully...\n");
+	fclose(f);
 
 	return true;
 }
@@ -56,6 +43,4 @@ void Lockfile::Unlock ()
 {
 	remove (_filename.c_str());
 }
-
-
 

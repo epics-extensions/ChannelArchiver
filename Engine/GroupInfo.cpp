@@ -34,8 +34,8 @@ void GroupInfo::addChannel (ChannelInfo *channel)
 
 void GroupInfo::disable (ChannelInfo *cause)
 {
-	LOG_MSG (cause->getName ()
-             << ": Disables group " << _name << "\n");
+	LOG_MSG ("'%s' disables group '%s'\n",
+             cause->getName().c_str(), _name.c_str());
 	++_disabled;
 	if (_disabled != 1) // Was already disabled?
 		return;
@@ -47,11 +47,11 @@ void GroupInfo::disable (ChannelInfo *cause)
 
 void GroupInfo::enable (ChannelInfo *cause)
 {
-	LOG_MSG (cause->getName ()
-             << ": Enables group " << _name << "\n");
+	LOG_MSG ("'%s' enables group '%s'\n",
+             cause->getName().c_str(), _name.c_str());
 	if (_disabled <= 0)
 	{
-		LOG_MSG ("Group " << _name << " is not disabled, ERROR!\n");
+		LOG_MSG ("Group %d is not disabled, ERROR!\n", _name.c_str());
 		return;
 	}
 	--_disabled;

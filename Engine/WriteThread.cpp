@@ -27,8 +27,8 @@ int WriteThread::run ()
     {
         if (! _wait.take ())
         {
-            LOG_MSG ("WriteThread cannot take _wait semaphore,"
-                     << "quitting\n");
+            LOG_MSG ("WriteThread cannot take _wait semaphore, "
+                     "quitting\n");
             _go = false;
         }
         
@@ -41,8 +41,7 @@ int WriteThread::run ()
             }
             catch (ArchiveException &e)
             {
-                LOG_MSG ("WriteThread Cannot write, got\n\t"
-                         << e.what() << "\n");
+                LOG_MSG ("WriteThread Cannot write, got\n%s\n", e.what());
                 _go = false;
             }
             _writing = false;

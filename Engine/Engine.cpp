@@ -86,19 +86,16 @@ static void caException(struct exception_handler_args args)
     if (CA_EXTRACT_SEVERITY(args.stat) >= 0  &&
         CA_EXTRACT_SEVERITY(args.stat) < 8)
     {
-        LOG_MSG("CA Exception received: stat "
-                << severity[CA_EXTRACT_SEVERITY(args.stat)]
-                << ", op " << args.op << "\n");
+        LOG_MSG("CA Exception received: stat %s, op %ld\n",
+                severity[CA_EXTRACT_SEVERITY(args.stat)], args.op);
     }
     else
-        LOG_MSG("CA Exception received: stat " << args.stat
-                << ", op " << args.op << "\n");
+        LOG_MSG("CA Exception received: stat %d, op %ld\n",
+                args.stat, args.op);
     if (args.chid)
-        LOG_MSG("Channel '" << ca_name(args.chid) << "'\n");
-    if (args.ctx)
-        LOG_MSG("Context " << args.ctx << "\n");
+        LOG_MSG("Channel '%s'\n", ca_name(args.chid));
     if (args.pFile)
-        LOG_MSG("File " << args.pFile << " (" << args.lineNo << ")\n");
+        LOG_MSG("File %s (%d)\n", args.pFile, args.lineNo);
 }
 
 // fd_register is called by the CA client lib.
@@ -107,7 +104,7 @@ static void fd_register(void *pfdctx, int fd, int opened)
 {
     if (opened)
     {
-        LOG_MSG("CA registers fd " << fd << "\n");
+        LOG_MSG("CA registers fd %d\n", fd);
 
         // Attempt to make this socket's input buffer as large as possible
         // to have some headroom while the engine is busy writing.
@@ -131,8 +128,7 @@ static void fd_register(void *pfdctx, int fd, int opened)
         
         if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF,
                        (char *)&bufsize, &len) == 0)
-            LOG_MSG("Adjusted receive buffer to " << bufsize << "\n");
-        
+            LOG_MSG("Adjusted socket buffer to %d\n", bufsize);
         // Just creating a CAfdReg will register it in fdManager:
         CAfdReg *handler = new CAfdReg(fd);
         handler = 0; // to avoid warnings about "not used"
@@ -144,7 +140,7 @@ static void fd_register(void *pfdctx, int fd, int opened)
             delete reg;
         else
         {
-            LOG_MSG("fd_register: cannot remove fd " << fd << "\n");
+            LOG_MSG("fd_register: cannot remove fd %d\n", fd);
         }
     }
 }
@@ -225,7 +221,7 @@ void Engine::shutdown()
     write_thread.stop();
     write_thread.join(code);
     if (code)
-        LOG_MSG("WriteThread exit code: " << code << "\n");
+        LOG_MSG("WriteThread exit code: %d\n", code);
 
     LOG_MSG("Adding 'Archive_Off' events...\n");
     osiTime now;
@@ -244,8 +240,7 @@ void Engine::shutdown()
     }
     catch (ArchiveException &e)
     {
-        LOG_MSG("Engine::shutdown caught"
-                << e.what() << "\n");
+        LOG_MSG("Engine::shutdown caught %s\n", e.what());
     }
     unlockChannels();
     channel->releaseBuffer();
@@ -367,8 +362,9 @@ ChannelInfo *Engine::findChannel(const stdString &name)
     return found;
 }
 
-ChannelInfo *Engine::addChannel(GroupInfo *group, const stdString &channel_name,
-    double period, bool disabling, bool monitored)
+ChannelInfo *Engine::addChannel(GroupInfo *group,
+                                const stdString &channel_name,
+                                double period, bool disabling, bool monitored)
 {
     ChannelInfo *channel_info = findChannel(channel_name);
     bool new_channel;
@@ -421,7 +417,7 @@ ChannelInfo *Engine::addChannel(GroupInfo *group, const stdString &channel_name,
         }
         catch (ArchiveException &e)
         {
-            LOG_MSG("Engine::addChannel: caught\n" << e.what() << "\n");
+            LOG_MSG("Engine::addChannel: caught\n%s\n", e.what());
         }
         unlockArchive();
     }
@@ -439,7 +435,7 @@ void Engine::setWritePeriod(double period)
     _write_period = period;
 
     lockChannels();
-    stdList<ChannelInfo *>::iterator channel_info = channel_info = _channels.begin();
+    stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
     while (channel_info != _channels.end())
     {
         (*channel_info)->checkRingBuffer();
@@ -508,8 +504,7 @@ void Engine::writeArchive()
     }
     catch (ArchiveException &e)
     {
-        LOG_MSG("Engine::writeArchive caught"
-                 << e.what() << "\n");
+        LOG_MSG("Engine::writeArchive caught %s\n", e.what());
     }
     unlockChannels();
     channel->releaseBuffer();

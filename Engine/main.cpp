@@ -12,7 +12,6 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include <fstream>
 #include <signal.h>
 #include "Engine.h"
 #include "ConfigFile.h"
@@ -40,25 +39,20 @@ static void signal_handler (int sig)
     signal (sig, SIG_IGN);
 #endif
     run = false;
-
-    std::cerr << "Exiting on signal " << sig << ", please be patient!\n";
+    LOG_MSG("Exiting on signal %d, please be patient!\n", sig);
 }
 
-static std::ofstream *logfile = 0;
+FILE *logfile = 0;
 
-static void LoggerPrintRoutine (void *arg, const stdString &text)
+static void LoggerPrintRoutine (void *arg, const char *text)
 {
-    std::cout << text;
+    fputs(text, stdout);
     if (logfile)
     {
-        *logfile << text;
-        logfile->flush();
+        fputs(text, logfile);
+        fflush(logfile);
     }
 }
-
-#if JustToHaveANiceSymbolToJumpToForSMVisualStudio
-class MAIN {};
-#endif
 
 int main (int argc, const char *argv[])
 {
@@ -88,17 +82,10 @@ int main (int argc, const char *argv[])
     
     if (log.get().length() > 0)
     {
-        logfile = new std::ofstream;
-        logfile->open (log.get().c_str (), std::ios::out | std::ios::trunc);
-#       if defined(HP_UX)
-        if (logfile->fail())
-#       else
-        if (! logfile->is_open())
-#       endif
+        logfile = fopen(log.get().c_str(), "wt");
+        if (! logfile)
         {
-            std::cerr << "Cannot open logfile '" << log.get() << "'\n";
-            delete logfile;
-            logfile = 0;
+            LOG_MSG("Cannot open logfile '%s'\n", log.get().c_str());
         }
     }
 
@@ -114,8 +101,8 @@ int main (int argc, const char *argv[])
     else
         directory_name = parser.getArgument (1);
 
-    LOG_MSG("Starting Engine with configuration file "
-            << config_file << "\n");
+    LOG_MSG("Starting Engine with configuration file %s\n",
+            config_file.c_str());
 
     Lockfile lock_file("archive_active.lck");
     if (! lock_file.Lock (argv[0]))
@@ -133,8 +120,7 @@ int main (int argc, const char *argv[])
     }
     catch (GenericException &e)
     {
-        std::cerr << "Cannot start archive engine:\n";
-        std::cerr << e.what ();
+        LOG_MSG("Cannot start archive engine:%s\n", e.what());
         return -1;
     }
 
@@ -150,25 +136,23 @@ int main (int argc, const char *argv[])
         action.sa_flags = 0;
         if (sigaction (SIGINT, &action, 0) ||
             sigaction (SIGTERM, &action, 0))
-            std::cerr << "Error setting signal handler\n";
+            LOG_MSG("Error setting signal handler\n");
 #else
         signal (SIGINT, signal_handler);
         signal (SIGTERM, signal_handler);
 #endif
 
-        std::cerr << "\n------------------------------------------\n"
-             << "Engine Running.\n"
-             << "Stop via web browser at http://localhost:"
-             << EngineServer::_port << "/stop\n"
-             << "------------------------------------------\n";
-
+        LOG_MSG("\n------------------------------------------\n"
+                "Engine Running.\n"
+                "Stop via web browser at http://localhost:%d/stop\n"
+                "------------------------------------------\n",
+                EngineServer::_port);
         while (run  &&  theEngine->process ())
         {}
     }
     catch (GenericException &e)
     {
-        std::cerr << "Exception caugh in main loop:\n";
-        std::cerr << e.what ();
+        LOG_MSG("Exception caugh in main loop:\n%s\n", e.what());
     }
 
     // If engine is not shut down properly (ca_task_exit !),
@@ -179,11 +163,7 @@ int main (int argc, const char *argv[])
     delete config;
     lock_file.Unlock ();
     if (logfile)
-    {
-        logfile->close ();
-        delete logfile;
-        logfile = 0;
-    }
+        fclose(logfile);
 
     return 0;
 }

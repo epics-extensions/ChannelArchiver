@@ -11,6 +11,7 @@
 #include "ScanList.h"
 #include "float.h"
 
+// This does no longer work:
 //#define LOG_SCANLIST
 
 SinglePeriodScanList::SinglePeriodScanList(double period)
@@ -137,8 +138,7 @@ void ScanList::scan(const osiTime &deadline)
                 (*li)->_next_scan += rounded_period;
             if (! (*li)->scan())
             {
-                LOG_MSG("ScanList timeout for period "
-                        << (*li)->_period << "\n");
+                LOG_MSG("ScanList timeout for period %g\n", (*li)->_period);
             }
             if (_next_list_scan == nullTime ||
                 _next_list_scan > (*li)->_next_scan)

@@ -122,7 +122,7 @@ static void stop(HTTPClientConnection *connection, const stdString &path)
     line = "Shutdown initiated via HTTP from ";
     line += peer;
     line += "\n";
-    LOG_MSG(line);
+    LOG_MSG(line.c_str());
 
     HTMLPage page(s, "Archive Engine Stop");
 
@@ -610,11 +610,11 @@ EngineServer::EngineServer ()
     _server = HTTPServer::create (_port);
     if (_server)
     {
-        LOG_MSG ("Launched EngineServer on port " << _port << "\n");
+        LOG_MSG ("Launched EngineServer on port %d\n", _port);
     }
     else
     {
-        LOG_MSG ("Cannot create EngineServer on port " << _port << "\n");
+        LOG_MSG ("Cannot create EngineServer on port %d\n", _port);
         throwDetailedArchiveException (Fail, "HTTPServer::create failed");
     }
 }

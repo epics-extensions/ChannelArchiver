@@ -16,6 +16,7 @@
 
 // Helper:
 // print chid
+#if 0
 static void show_chid(FILE *f, const chid &chid)
 {
     short typ = ca_field_type(chid);
@@ -48,6 +49,7 @@ static void show_chid(FILE *f, const chid &chid)
         fprintf(f, "%d (undefined)\n", ca_state(chid));
     }
 }
+#endif
 
 // Locking:
 // 

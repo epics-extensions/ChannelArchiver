@@ -45,12 +45,16 @@ public:
 
 private:
 	void determineLookUpInterval(const interval& retrieved_Interval, interval * lookup_Interval) const;	
-	bool getInterval(long leaf_Address, interval * leaf_Interval);
+	/*
+	*	Checks also if the interval is beyond the search interval
+	*/
+	bool checkInterval(long leaf_Address, interval * leaf_Interval);
 	bool getKey(long leaf_Address, key_Object * result);
 	FILE * index_File;
 	const r_Tree  * source;
 	interval iv;
 	r_Entry current_Entry;
+	bool no_More_Leaves;
 };
 
 #endif //key_au_iterator.h

@@ -18,15 +18,21 @@ class archiver_Index
 public:
 	archiver_Index();
 	~archiver_Index();
-	
-	/***
+
+	/**
+	*	Affects only addDataFromAnotherIndex()
+	*	@see addDataFromAnotherIndex()
+	*	@param value is read from the master index configuration file
+	*/
+	void setGlobalPriority(short value)	{global_Priority = value;}
+
+	/**
 	*	Open the file with the specified path and check, if it is a valid index file
 	*	@return False, if the file is not valid, or errors occured; true otherwise.
 	*/
-	//bool open(const char * file_Path, bool read_only=true);
-	bool open(const char * file_Path);
+	bool open(const char * file_Path, bool read_Only = true);
 
-	/***
+	/**
 	*	Create a new index file
 	*	Caution: If the file with the specified name exists, it is overwritten!
 	*	@param m determines the size of the R tree nodes; must be greater than or equal 2
@@ -35,7 +41,7 @@ public:
 	*/
 	bool create(const char * file_Path, short m=3, short hash_Table_Size=1007);
 
-	/***
+	/**
 	*	Detach the file allocator, close the index file and reset the object attributes.
 	*	@return False, if errors occured; true otherwise.
 	*/
@@ -43,7 +49,7 @@ public:
 
 	FILE * getFile() const			{return f;}
 
-	/***
+	/**
 	*	Find the R tree for the specified channel name;
 	*	if the AU is not yet stored in the R tree, insert it into the R tree;
 	*	if it is already there- update either its end time or its priority, or both
@@ -58,7 +64,7 @@ public:
 	*/
 	bool addAU(const char * channel_Name, archiver_Unit & au);
 	
-	/***
+	/**
 	*	Find the R tree for the specified channel name in another index file and
 	*	add the archiver units to the corresponding R tree in the file managed by 
 	*	<i>this</i> index object.
@@ -144,12 +150,13 @@ public:
 	bool isInstanceValid() const;	
 private:
 
-	
 	FILE * f;						
 	file_allocator fa;
 	cntu_Table t;
 	r_Tree r;	
 	short m;	
+	bool read_Only;
+	short global_Priority;
 };
 
 

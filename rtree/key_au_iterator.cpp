@@ -5,7 +5,7 @@
 #include "archiver_unit.h"
 
 key_AU_Iterator::key_AU_Iterator(const r_Tree * source)
-:	index_File(0), source(source)
+:	index_File(0), source(source), no_More_Leaves(false)
 {}
 
 
@@ -29,7 +29,7 @@ bool key_AU_Iterator::getFirst(const interval& search_Interval, key_Object * res
 	interval initial_Interval;
 	long first_Address = source->index2address(first_Leaf);
 	if(	!getKey(first_Address, result) ||
-		!getInterval(first_Address, &initial_Interval)) return false;
+		!checkInterval(first_Address, &initial_Interval)) return false;
 
 	key_Object temp;
 	interval next_Interval = initial_Interval;
@@ -38,10 +38,15 @@ bool key_AU_Iterator::getFirst(const interval& search_Interval, key_Object * res
 	while(true)
 	{
 		if(current_Entry.readNextIndex(&next_Leaf) == false) return false;
+		if(next_Leaf < 0)
+		{
+			no_More_Leaves = true;
+			break;
+		}
 		next_Address = source->index2address(next_Leaf);
 		if(	!getKey(next_Address, &temp)	||
 			!(temp == *result)) break;
-		if( !getInterval(next_Address, &next_Interval)) break;
+		if( !checkInterval(next_Address, &next_Interval)) break;
 	}
 	//now current_Leaf is attached to the next AU!
 	
@@ -59,10 +64,11 @@ bool key_AU_Iterator::getNext(key_Object * result, interval * lookup_Interval)
 		printf("You wanted a next AU, but next counting from where?!?! (forgot to call getFirst())\n");
 		return false;
 	}
-		
+	
+	if(no_More_Leaves) return false;
 	interval initial_Interval;
 	if(	!getKey(current_Entry.getAddress(), result) ||
-		!getInterval(current_Entry.getAddress(), &initial_Interval)) return false;
+		!checkInterval(current_Entry.getAddress(), &initial_Interval)) return false;
 
 	key_Object temp;
 	interval next_Interval = initial_Interval;
@@ -71,15 +77,15 @@ bool key_AU_Iterator::getNext(key_Object * result, interval * lookup_Interval)
 	while(true)
 	{
 		if(current_Entry.readNextIndex(&next_Leaf) == false) return false;
-        if (next_Leaf < 0)
-            {
-                leaf_Address = -1;
-                break;
-            }
+		if(next_Leaf < 0)
+		{
+			no_More_Leaves = true;
+			break;
+		}
 		next_Address = source->index2address(next_Leaf);
 		if(	!getKey(next_Address, &temp)	||
 			!(temp == *result)) break;
-		if( !getInterval(next_Address, &next_Interval)) break;
+		if( !checkInterval(next_Address, &next_Interval)) break;
 	}
 	//now current_Leaf is attached to the next AU!
 	
@@ -90,7 +96,7 @@ bool key_AU_Iterator::getNext(key_Object * result, interval * lookup_Interval)
 	return true;
 }
 
-bool key_AU_Iterator::getInterval(long leaf_Address, interval * leaf_Interval)
+bool key_AU_Iterator::checkInterval(long leaf_Address, interval * leaf_Interval)
 {
 	current_Entry.attach(index_File, leaf_Address);
 	if(current_Entry.readInterval() == false) return false;

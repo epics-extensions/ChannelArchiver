@@ -2,10 +2,27 @@
 #include <stdio.h>
 // Base
 #include <epicsVersion.h>
+// Index
+#include <archiver_index.h>
 // Tools
 #include "ArchiverConfig.h"
+
 #include "ArgParser.h"
 #include "epicsTimeHelper.h"
+
+//result must already be allocated 
+void  readLine(FILE * f, char * result)
+{
+    char s;
+    int i = 0;
+    while(s!='\n' || s==EOF)
+    {
+        s = getc(f);
+        result[i] = s;
+        i++;
+    }
+    result[i-1] = 0;      //zero termination
+}
 
 int main(int argc, const char *argv[])
 {
@@ -48,6 +65,59 @@ int main(int argc, const char *argv[])
         printf("Reading archive list %s, generating %s\n",
                archive_list_name.c_str(),
                output_name.c_str());
+    char line[1000];
+    char path[1000];
+    char channel_Name[CHANNEL_NAME_LENGTH];
+    int priority;
+    bool result;
+    archiver_Index ai;
+    archiver_Index master_Index;
+    FILE * f  = fopen(output_name.c_str(), "r+b");
+    //at this point the R tree parameters can be set for user's needs
+    if(f == 0)  master_Index.create(output_name.c_str());
+    else master_Index.open(output_name.c_str(), false);
+    fclose(f);
 
+    f = fopen(archive_list_name.c_str(), "r+t");
+    while(!feof(f))
+    {
+        readLine(f, line);
+        switch(sscanf(line, "%s %d", path, &priority))
+        {
+            case 2:
+                ai.setGlobalPriority(priority);
+            case 1:
+                ai.open(path, false);
+                break;
+            default:
+                printf("The configuration file is corrupt\n");
+                return 0;
+        }
+        channel_Name_Iterator * cni = ai.getChannelNameIterator();
+        if(cni == 0) return 0;
+        result = cni->getFirst(channel_Name);
+        while(result)
+        {
+            if(verbose)
+            {
+                printf("Processing channel %s in the index file %s\n", channel_Name, path);
+            }
+            if(master_Index.addDataFromAnotherIndex(channel_Name, ai, !redo) == false)
+                {
+                    delete cni;
+                    return 0;
+                }
+            result = cni->getNext(channel_Name);
+        }
+        delete cni;
+        ai.close();
+    }
+    master_Index.close();
     return 0;
 }
+
+
+
+
+
+

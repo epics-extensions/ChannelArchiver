@@ -1,0 +1,53 @@
+* Spec. for Archiver Server/Client
+
+** archiver.info
+Returns version info for whoever cares.
+
+{ int32 ver, string desc } = archiver.info()
+
+All in here uses ver = 1
+
+
+** archiver.get_names
+Returns channel names and start/end times.
+Pattern is a regular expression.
+If left empty, all names are returned.
+
+{string name, int32 start_sec, int32 start_nano,
+              int32 end_sec,   int32 end_nano}[] = archiver.get_names(string pattern)
+
+
+Time Stamps:
+Not(!) the raw EPICS time stamps with 1990 epoch,
+but time_t (1970 epoch).
+
+
+** archiver.get_values
+result = archiver.get_values(string name[],
+                             int32 start_sec, int32 start_nano,
+                             int32 end_sec, int32 end_nano, int32 count,
+                             int32 how)
+
+how : 0 - get raw data from archive, starting w/ start,
+          up to either ('end' time or max. 'count' samples)
+
+Result := { meta, data }
+
+meta := { int32 type;
+          type==0: string states[],
+          type==1: disp_high, disp_low, alarm_high, alarm_low,
+                   warn_high, warn_low, prec, units }
+
+data := { int32 type, int32 count, value[] }
+
+type:  string	0
+       enum	1 (XML int32)
+       int      2
+       double   3
+
+value := { int32 status, int32 sevr, int32 secs, int32 nano,
+           <type> value([]) }
+
+count == 1 : scalar, value.value is just a value
+count >  1 : array,  value.value is an array
+

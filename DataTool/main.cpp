@@ -75,6 +75,110 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
     DataFile::close_all();
 }
 
+
+static DataHeader *get_dataheader(const stdString &file, FileOffset offset)
+{
+    DataFile *datafile =
+        DataFile::reference("", file, false);
+    if (!datafile)
+        return 0;
+    DataHeader *header = datafile->getHeader(offset);
+    datafile->release(); // ref'ed by header
+    return header; // might be NULL
+}                
+
+void convert_index_dir(const stdString &index_name, const stdString &dir_name)
+{
+    archiver_Index index;
+    if (!index.open(index_name.c_str()))
+    {
+        fprintf(stderr, "Cannot open index '%s'\n",
+                index_name.c_str());
+        return;
+    }
+    channel_Name_Iterator *names = index.getChannelNameIterator();
+    if (!names)
+    {
+        fprintf(stderr, "Cannot get name iterator for index '%s'\n",
+                index_name.c_str());
+        return;
+    }
+    char name[CHANNEL_NAME_LENGTH];
+    key_AU_Iterator *aus;
+    bool ok = names->getFirst(name);
+    key_Object key;
+    interval iv, key_iv;
+    epicsTime start_time, end_time;
+    stdString start_file, end_file;
+    FileOffset start_offset, end_offset;
+    while (ok)
+    {
+        if (verbose)
+            printf("Channel '%s':\n", name);
+        if (!index.getEntireIndexedInterval(name, &iv))
+        {
+            fprintf(stderr, "Cannot get interval for channel '%s'\n", name);
+        }       
+        else
+        {
+            aus = index.getKeyAUIterator(name);
+            // Get first and last data buffer from RTree
+            if (aus)
+            {
+                bool have_au = aus->getFirst(iv, &key, &key_iv);
+                if (have_au)
+                {
+                    start_file = key.getPath();
+                    start_offset = key.getOffset();
+                    while (have_au)
+                    {
+                        end_file = key.getPath();
+                        end_offset = key.getOffset();
+                        have_au = aus->getNext(&key, &key_iv);
+                    }
+                    if (verbose)
+                        printf("'%s' @ 0x%lX - '%s' @ 0x%lX\n",
+                               start_file.c_str(), start_offset,
+                               end_file.c_str(), end_offset);
+                }
+                delete aus;
+                // Check by reading first+last buffer & getting times
+                bool times_ok = false;
+                DataHeader *header;
+                header = get_dataheader(start_file, start_offset);
+                if (header)
+                {
+                    start_time = header->data.begin_time;
+                    delete header;
+                    header = get_dataheader(end_file, end_offset);
+                    if (header)
+                    {
+                        end_time = header->data.end_time;
+                        delete header;
+                        times_ok = true;
+                    }
+                }
+                if (times_ok)
+                {
+                    stdString start, end;
+                    epicsTime2string(start_time, start);
+                    epicsTime2string(end_time, end);
+                    if (verbose)
+                        printf("%s - %s\n",
+                               start.c_str(), end.c_str());
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Cannot get AU iterator for channel '%s'\n",
+                        name);
+            }   
+        }
+        ok = names->getNext(name);
+    }
+    delete names;
+}
+
 void dump_index(const stdString &index_name)
 {
     archiver_Index index;
@@ -144,6 +248,8 @@ int main(int argc, const char *argv[])
     CmdArgFlag verbose_flag (parser, "verbose", "Show more info");
     CmdArgString dir2index (parser, "dir2index", "<dir. file>",
                              "Convert old directory file to RTree index");
+    CmdArgString index2dir (parser, "index2dir", "<index file>",
+                             "Convert RTree index to old directory file");
     CmdArgString dumpindex (parser, "dumpindex", "<index file>",
                              "Dump contents of RTree index");
     CmdArgString output (parser, "output", "<file name>", "Output file");
@@ -164,6 +270,16 @@ int main(int argc, const char *argv[])
             return 1;
         }
         convert_dir_index(dir2index.get(), output.get());
+        return 0;
+    }
+    else if (index2dir.get().length() > 0)
+    {
+        if (output.get().length() == 0)
+        {
+            fprintf(stderr, "Option index2dir requires output option\n");
+            return 1;
+        }
+        convert_index_dir(index2dir.get(), output.get());
         return 0;
     }
     else if (dumpindex.get().length() > 0)

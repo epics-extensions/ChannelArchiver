@@ -62,7 +62,7 @@ bool interval::isIntervalValid() const
 	else
 	{
 		return	isTimeStampValid(start) && isTimeStampValid(end) && 
-				compareTimeStamps(end, start) > 0;
+				compareTimeStamps(end, start) >= 0;
 	}
 }
 

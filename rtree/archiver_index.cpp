@@ -6,14 +6,14 @@
 #include "file_allocator.h"
 
 archiver_Index::archiver_Index()
-:f(0), m(0){}
+:f(0), m(0), global_Priority(-1){}
 
 archiver_Index::~archiver_Index()
 {
 	if(f!=0) close();
 }
 
-bool archiver_Index::open(const char * file_Path)
+bool archiver_Index::open(const char * file_Path, bool read_Only)
 {
 	if(file_Path == 0) return false;
 	f = fopen(file_Path, "r+b");
@@ -55,7 +55,7 @@ bool archiver_Index::open(const char * file_Path)
 		return false;
 	}
 	t.setSize(hash_Table_Size);
-
+	this->read_Only = read_Only;
 	fseek(f, R_TREE_M, SEEK_SET);
 	if(readShort(f, &m) == false)
 	{
@@ -79,6 +79,7 @@ bool archiver_Index::create(const char * file_Path, short m, short hash_Table_Si
 		return false;
 	}
 	if(file_Path == 0) return false;
+	read_Only = false;
 	this->m = m;
 	t.setSize(hash_Table_Size);
 
@@ -131,12 +132,13 @@ bool archiver_Index::close()
 	f = 0;
 	r.detach();
 	t.detach();
+	global_Priority = -1;
 	return true;
 }
 
 bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver_Index& other, bool only_New_Data)
 {	
-	if(!isInstanceValid() || !other.isInstanceValid()) return false;
+	if(!isInstanceValid() || !other.isInstanceValid() || read_Only) return false;
 	long root_Pointer;
 	long au_List_Pointer;
 	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer, &au_List_Pointer);
@@ -162,14 +164,11 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 	}
 	
 	aup_Iterator * ai = other.getAUPIterator(channel_Name);
+	if(ai == 0) return false;
 	long au_Address;
 	archiver_Unit au;
-	if(ai->getFirstAUAddress(search_Interval, &au_Address) == false) 
-	{
-		delete ai;
-		return false;
-	}
-	do
+	bool result = ai->getFirstAUAddress(search_Interval, &au_Address);
+	while(result)
 	{
 		if(au_Address < 0) 
 		{
@@ -182,21 +181,22 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 			delete ai;
 			return false;
 		}
+		if(global_Priority > -1)	au.setPriority(global_Priority);
 		//we know its unique
 		if(addAU(channel_Name, au) == false) 
 		{
 			delete ai;
 			return false;
 		}
+		result = ai->getNextAUAddress(&au_Address);
 	}
-	while(ai->getNextAUAddress(&au_Address));
 	delete ai;
 	return false;
 }
 	
 bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au) 
 {
-	if(isInstanceValid() == false) return false;
+	if(!isInstanceValid() || read_Only) return false;
 	if(au.isAUValid() == false) return false;
 	long root_Pointer;
 	long au_List_Pointer;
@@ -300,7 +300,7 @@ bool archiver_Index::getLatestAU(const char * channel_Name, archiver_Unit * au)
 
 bool archiver_Index::deleteTree(const char * channel_Name) 
 {
-	if(isInstanceValid() == false) return false;
+	if(!isInstanceValid() || read_Only) return false;
 	if(channel_Name == 0) return false;
 	long cntu_Address = t.findCNTU(channel_Name);
 	if(cntu_Address < 0) return true;

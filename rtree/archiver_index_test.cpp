@@ -108,7 +108,7 @@ int run()
 
 	//close and open again
 	my_Index.close();
-	my_Index.open("index.dat");
+	my_Index.open("index.dat", false);
 
 	archiver_Index new_Index; 
 	new_Index.create("new_index.dat", 3, 1007);
@@ -119,6 +119,7 @@ int run()
 	//add units from one index to another (change m of the tree :-)	
 	do
 	{	
+		new_Index.setGlobalPriority(2);
 		new_Index.addDataFromAnotherIndex(channel_Name, my_Index);
 		new_Index.dump("new_tree.txt", "w");
 	}
@@ -159,7 +160,7 @@ int run()
 	key_AU_Iterator * kai = my_Index.getKeyAUIterator("James_Bond");
 	if(kai !=0)
 	{
-		bool tmp = kai->getFirst(interval(7,0,39,0), &ko, &lookup_Interval);
+		bool tmp = kai->getFirst(interval(44,1,0,0), &ko, &lookup_Interval);
 		while(tmp)
 		{
 			//epicsTimeStamp start = lookup_Interval.getStart();

@@ -3,8 +3,7 @@
 #include "MsgLogger.h"
 #include "ArchiveException.h"
 // Storage
-#include "DirectoryFile.h"
-#include "DataFile.h"
+#include "DataWriter.h"
 //Engine
 #include "ArchiveChannel.h"
 #include "Engine.h"
@@ -128,76 +127,35 @@ void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
 
 void ArchiveChannel::write(DirectoryFile &index)
 {
-    DataFile *datafile;
-    DataHeader *header;
-    size_t avail, count = buffer.getCount();
-    if (count <= 0)
+    size_t num_samples = buffer.getCount();
+    if (num_samples <= 0)
         return;
-    try
-    {
-        DirectoryFileIterator dfi = index.find(name);
-        if (!dfi.isValid())
-        {
-            LOG_MSG ("ArchiveChannel::write: Cannot find '%s'\n",
-                     name.c_str());
-            return;
-        }
-        if (!Filename::isValidFilename(dfi.entry.data.last_file))
-        {   // Channel has never been written
-            //datafile = DataFile::reference(index.getDirname(),
-            //                               theEngine->makeDataFileName(), true);
-            //dhi = new DataHeaderIterator();
-            //dhi->attach(datafile);
-            //avail = 0;
-            LOG_MSG("%s NEVER WRITTEN. NOT YET\n", name.c_str());
-            return;
-        }
-        else
-        {
-            datafile = DataFile::reference(index.getDirname(),
-                                           dfi.entry.data.last_file, true);
-            if (!datafile)
-            {
-                LOG_MSG("ArchiveChannel::write(%s) cannot open data file %s\n",
-                        name.c_str(), dfi.entry.data.last_file);
-                return;
-            } 
-            header = datafile->getHeader(dfi.entry.data.last_offset);
-            if (!header)
-            {
-                LOG_MSG("ArchiveChannel::write(%s): cannot get header %s @ 0x%lX\n",
-                        name.c_str(),
-                        dfi.entry.data.last_file,
-                        dfi.entry.data.last_offset);
-                return;
-            }
-            avail = header->available();
-        }
-        const RawValue::Data *raw;
-        while ((raw=buffer.removeRawValue()) != 0)
-        {
-            if (avail <= 0) // no buffer at all or buffer full
-            {
-                // Add a new buffer
-                // Set ctrl info
-                // avail = 100;
-            }
-            // add value to buffer
-            
-            if (--count <= 0)
-                break;
-            --avail;
-        }
-        delete header;
-        datafile->release();
-        buffer.resetOverwrites();
-    }
-    catch (ArchiveException &e)
-    {
-        LOG_MSG("ArchiveChannel::write caught %s\n", e.what());
-    }
-}
 
+    DataWriter writer(index,
+                      name, ctrl_info,
+                      dbr_time_type, nelements,
+                      period,
+                      num_samples);
+    const RawValue::Data *value;
+    
+    while (num_samples-- > 0)
+    {
+        value = buffer.removeRawValue();
+        if (!value)
+        {
+            LOG_MSG("'%s': Circular buffer empty while writing\n",
+                    name.c_str());
+            break;
+        }
+        if (! writer.add(value))
+        {
+            LOG_MSG("'%s': Couldn't write value\n",
+                    name.c_str());
+            break;
+        }
+    }
+    buffer.resetOverwrites();
+}
 
 // CA callback for connects and disconnects
 void ArchiveChannel::connection_handler(struct connection_handler_args arg)
@@ -338,6 +296,8 @@ void ArchiveChannel::handleDisabling(const RawValue::Data *value)
     bool criteria = RawValue::isZero(dbr_time_type, value) == false;
     if (criteria && !currently_disabling)
     {   // wasn't disabling -> disabling
+        // TODO: Add this value, so that we see what value
+        //       triggered the disabled state!
         currently_disabling = true;
         stdList<GroupInfo *>::iterator g;
         for (g=groups.begin(); g!=groups.end(); ++g)

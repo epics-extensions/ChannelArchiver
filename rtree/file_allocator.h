@@ -53,6 +53,18 @@ public:
      */
     bool free(long offset);
 
+    /// To avoid allocating tiny areas,
+    /// also to avoid splitting free blocks into pieces
+    /// that are then too small to be ever useful,
+    /// all memory regions are at least this big.
+    /// Meaning: Whenever you allocate less than minimum_size,
+    /// you will get a block that's actually minimum_size.
+    static long minimum_size;
+
+    /// Setting file_size_increment will cause the file size
+    /// to jump in the given increments.
+    static long file_size_increment;
+    
     /// Show ASCII-type info about the file structure.
     /**
      * This routines lists all the allocated and free blocks
@@ -73,7 +85,7 @@ private:
     
     FILE *f;
     long reserved_space; // Bytes we ignore in header
-    long file_size;      // Total # of bytes in file
+    long file_size; // Total # of bytes in file
     // For the head nodes,
     // 'prev' = last entry, tail of list,
     // 'next' = first entry, head of list!

@@ -18,11 +18,8 @@
 // not including possible pad bytes of the structure
 static const long list_node_size = 12;
 
-// To avoid allocating tiny areas,
-// also to avoid splitting free blocks into pieces
-// that are then too small to be ever useful,
-// all memory regions are at least this big:
-static const long minimum_size = 64;
+long file_allocator::minimum_size = 64;
+long file_allocator::file_size_increment = 0;
 
 file_allocator::file_allocator()
 {
@@ -145,6 +142,22 @@ long file_allocator::allocate(long num_bytes)
     // Update overall file size, return offset of new data block
     long data_offset = file_size + list_node_size;
     file_size = data_offset + num_bytes;
+    if (file_size_increment > 0)
+    {
+        // Grow to desired multiple of file_size_increment
+        // after the fact, but this way it can use the
+        // allocate() & free() calls as is:
+        if (file_size % file_size_increment)
+        {
+            size_t bytes_to_next_increment =
+                ((file_size / file_size_increment)+1)*file_size_increment
+                - file_size;
+            // We'll allocate the block and free it
+            // so that the file grows as intended and
+            // the unused mem is on the free list
+            this->free(this->allocate(bytes_to_next_increment - list_node_size));
+        }
+    }
     return data_offset;
 }
 

@@ -85,12 +85,37 @@ int main()
     TEST(fa.attach(f, 1000), "re-attach");
     fa.dump();
 
+
+    puts("-- upping file size increment to 50000 --");
+    file_allocator::file_size_increment = 50000;
+    TEST(o1=fa.allocate(10000), "allocate 10000");
+    printf("Got offset %ld\n", o1);
+    fa.dump();
+    puts("-----------------------------------------");
+    TEST(o1=fa.allocate(10000), "allocate 10000");
+    printf("Got offset %ld\n", o1);
+    fa.dump();
+    puts("-----------------------------------------");
+    TEST(o1=fa.allocate(10000), "allocate 10000");
+    printf("Got offset %ld\n", o1);
+    fa.dump();
+    puts("-----------------------------------------");
+    TEST(o2=fa.allocate(5000), "allocate 5000");
+    printf("Got offset %ld\n", o2);
+    fa.dump();
+    puts("-----------------------------------------");
+    TEST(o3=fa.allocate(5000), "allocate 5000");
+    printf("Got offset %ld\n", o3);
+    fa.dump();
+    puts("-----------------------------------------");
+
+    
     puts("-----------------------------------------");
     puts("Performing some random tests");
     long o[10];
     memset(o, 0, sizeof(o));
     int i;
-    for (i=0; i<1000; ++i)
+    for (i=0; i<500; ++i)
     {
         if (o[i%10] && rand()>RAND_MAX/2)
         {

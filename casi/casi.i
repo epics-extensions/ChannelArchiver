@@ -1,13 +1,7 @@
 /*  -*- mode: C++ -*-          <-              for emacs */
 
-%title "CASI - ChannelArchiver Scripting Interface"
-%style html_body="<BODY bgcolor=\"#B0B0FF\"><BLOCKQUOTE><FONT face=\"Comic Sans MS\">:</FONT></BLOCKQUOTE></BODY>"
-
 %module casi
 
-#ifdef SWIGTCL
-%include consthash.i
-#endif
 %include typemaps.i
 
 %text %{
@@ -17,11 +11,8 @@ as close as possible.
 Therefore you might consider crosschecking with
 that documentation.
 
-
 Most functions can generate a RuntimeError or
 an UnknownError.
-
-
 %}
 
 /* Includes for compilation of wrapper */
@@ -54,11 +45,8 @@ class ValueI;
 
 /* Following includes are used by SWIG for generation of wrapper */
 
-%section "ChannelArchiver related Variables"
+#define casi_version "1.0"
 
-const char *casi_version = "1.0";
-
-%subsection "Datatypes"
 #define DBR_TIME_STRING 14
 #define DBR_TIME_INT    15
 #define DBR_TIME_SHORT  15
@@ -68,7 +56,6 @@ const char *casi_version = "1.0";
 #define DBR_TIME_LONG   19
 #define DBR_TIME_DOUBLE 20
 
-%subsection "special values for severity"
 #define ARCH_NO_VALUE 		0x0f00
 #define ARCH_EST_REPEAT 	0x0f80
 #define ARCH_DISCONNECT 	0x0f40
@@ -82,7 +69,7 @@ const char *casi_version = "1.0";
 
 %include exception.i
 
-%except
+%exception
 {
     try
     {
@@ -98,54 +85,30 @@ const char *casi_version = "1.0";
     }
 }
 
-%section "Accessing an Archive"
 /* The archive class is the starting point:
 
    Open an archive first, then look for specific channels
    by name or loop over all the channels
    (maybe restricted by regular expression).
-
  */
-
 %include "archive.h"
 
-%section "Channel Information"
 /* The channel class provides information about a single channel.
-
    It allows searching for values relative to some point in time
  */
-
 %include "channel.h"
 
-%section "Value Information"
 /* The value class provides access to a single value,
    consisting of a time stamp, a value and status information.
  */
-
 %include "value.h"
 
-%section "Control Information"
 /* The ctrlinfo class provides access to the conrtol-info of a value.
  */
-
 %include "ctrlinfo.h"
 
-
-%section "Misc."
 /* Helpers specific to the BinArchive
+ * depends on month, ... this is a magic number
  */
-
-const int HOURS_PER_MONTH = 24*31; /* depends on month, ... this is
-                                      a magic number */
-
-%section "Questions, comments?"
-%text %{
-Let me know: Kay-Uwe Kasemir, kasemir@lanl.gov
-%}
-
-
-
-
-
-
+#define HOURS_PER_MONTH (24*31)
 

@@ -561,6 +561,23 @@ void copy(const stdString &archive_name,
     }
 }
 
+void delete_name(const stdString &archive_name, const stdString &channel_name)
+{
+    DirectoryFile dir(archive_name, true /* for write */);
+    if (dir.remove(channel_name))
+    {
+        std::cout << "Removed '" << channel_name << "' from directory file\n";
+        std::cout << "Note that this does not remove any samples or compact\n";
+        std::cout << "the data files, you have to copy the data files\n";
+        std::cout << "to accomplish this.\n";
+        std::cout << "And by the way there is no way back, the channel is now gone.\n";
+    }
+    else
+    {
+        std::cout << "Cannot remove '" << channel_name << "'\n";
+    }
+}
+
 #define EXPERIMENT
 #ifdef EXPERIMENT
 // Ever changing experimental routine,
@@ -629,6 +646,7 @@ int main(int argc, const char *argv[])
     CmdArgString compare_target (parser, "Compare", "<target archive>", "Compare with target archive");
     CmdArgFlag   do_seek_test   (parser, "Seek", "Seek test (use with -start)");
     CmdArgString copy_channel   (parser, "Copy", "<new name>", "Copy channel name");
+    CmdArgString delete_channel (parser, "DELETE", "<channel>", "Delete channel from directory file");
 #ifdef EXPERIMENT
     CmdArgFlag   do_experiment  (parser, "Experiment", "Perform experiment (temporary option)");
 #endif
@@ -683,6 +701,10 @@ int main(int argc, const char *argv[])
                 return -1;
             }
             copy(archive_name, channel_name.get(), copy_channel.get());
+        }
+        else if (delete_channel.get().length() > 0)
+        {
+            delete_name(archive_name, delete_channel.get());
         }
         else if (dump_channels.get().length() > 0)
             dump(archive_name, dump_channels, start, end);

@@ -8,6 +8,23 @@
 #include "BinChannel.h"
 #include "HashTable.h"
 
+// The Directory File is a disk-based hash table:
+//
+// First, there is a hash table with HashTable::HashTableSize
+// entries. Each entry maps a channel name to a file offset.
+// At the given file offset, there follow lists of BinChannel
+// entries.
+//
+// Find a channel:
+//
+// hash name, get offset from HashTable,
+// read the BinChannel at the given offset.
+// Does it match the name? If not, follow the "next"
+// pointer in the BinChannel to the next Channel entry.
+//
+// DirectoryFile::_next_free_entry points to the end
+// of the DirectoryFile.
+
 //////////////////////////////////////////////////////////////////////
 // DirectoryFileIterator
 //////////////////////////////////////////////////////////////////////
@@ -84,6 +101,10 @@ public:
     // Add new DirecotryEntry with given name.
     // Entry will be empty, i.e. point to no data file.
     DirectoryFileIterator add(const stdString &name);
+
+    // Remove name from directory file.
+    // Will not remove data but only "pointers" to the data!
+    bool remove(const stdString &name);
 
     const stdString &getDirname()    {   return _dirname;  }
 

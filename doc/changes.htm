@@ -41,8 +41,12 @@
 	  now handle enumerated values by plotting the numbers.
       <li>ArchiveManager can copy a channel inside the directory file,
           creating a new name for the same data.
-          Useful in connection with the (yet to be added) "remove"
-	  option: copy + remove = rename.
+	  It can also delete a channel. Note: not the data but the channel.
+	  The data is still in the data file but you can no longer get
+          to it. To remove the data, xport the archive into a new one,
+	  then the deleted channel's data will also vanish.
+	  No, there is no undo for the delete.<br>
+          Useful: copy + remove = rename.
       </ul>
     <li>07/25/2001<br>
       Patch #4:<br>

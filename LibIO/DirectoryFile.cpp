@@ -143,6 +143,45 @@ DirectoryFileIterator DirectoryFile::add(const stdString &name)
     return i;
 }
 
+// Remove name from directory file.
+// Will not remove data but only "pointers" to the data!
+bool DirectoryFile::remove(const stdString &name)
+{
+    DirectoryFileIterator i(this);
+	BinChannel *channel = i.getChannel();
+    HashTable::HashValue hash = HashTable::Hash(name.c_str());
+    FileOffset prev=0, offset = readHTEntry(hash);
+
+    // Follow the channel chain that hashes to this value:
+    while (offset != INVALID_OFFSET)
+    {
+        channel->read(_file, offset);
+        if (name == channel->getName())
+        {
+            // unlink this entry from list of names that share 'hash'
+            if (prev == 0) // first entry in list?
+            {
+                // Make hash table point to the next channel,
+                // skipping this one
+                writeHTEntry(hash, channel->getNextEntryOffset());
+                return true;
+            }
+            else
+            {
+                // Make previous entry skip this one
+                offset = channel->getNextEntryOffset();
+                channel->read(_file, prev);
+                channel->setNextEntryOffset(offset);
+                channel->write(_file, prev);
+                return true;
+            }
+        }
+        prev = offset;
+        offset = channel->getNextEntryOffset();
+    }
+    return false;
+}
+
 FileOffset DirectoryFile::readHTEntry(HashTable::HashValue entry) const
 {
     FileOffset offset;

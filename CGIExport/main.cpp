@@ -334,6 +334,8 @@ static bool exportFunc(HTMLPage &page, Format format,
 			gnu->makeImage();
             gnu->setY0(page._y0);
             gnu->setY1(page._y1);
+            if (page._use_logscale)
+                gnu->useLogscale();
 #ifndef WIN32
             // Pipe based on _pipe call only works for console apps.
             // Within the WIN32 web server it doesn't seem to function.
@@ -671,6 +673,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	page._status = cgi.find("STATUS").length()>0;
 	page._y0 = atof(cgi.find ("Y0").c_str());
 	page._y1 = atof(cgi.find ("Y1").c_str());
+    page._use_logscale = cgi.find("LOGY").length()>0;
 	getNames(cgi.find("NAMES"), page._names);
 	if (! decodeTimes(cgi, page._start, page._end))
 	{

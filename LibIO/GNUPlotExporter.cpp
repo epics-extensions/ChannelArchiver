@@ -84,6 +84,7 @@ GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename,
 {
     _make_image = false;
     _use_pipe = false;
+    _use_logscale = false;
     _y0 = 0.0;
     _y1 = 0.0;
     if (filename.empty())
@@ -96,6 +97,7 @@ GNUPlotExporter::GNUPlotExporter(ArchiveI *archive, const stdString &filename,
 {
     _make_image = false;
     _use_pipe = false;
+    _use_logscale = false;
     _y0 = 0.0;
     _y1 = 0.0;
     if (filename.empty())
@@ -326,6 +328,8 @@ void GNUPlotExporter::exportChannelList(
 
     if (_y0 != 0.0  ||  _y1 != 0.0)
         fprintf(f, "set yrange [ %g:%g ]\n", _y0, _y1);
+    if (_use_logscale)
+        fprintf(f, "set logscale y\n");
     
     num = plotted_channels.size();
     if (num == 2)
@@ -336,6 +340,8 @@ void GNUPlotExporter::exportChannelList(
         fprintf(f, "set y2tics\n");
         if (_y0 != 0.0  && _y1 != 0.0)
             fprintf(f, "set y2range [ %g,%g ]\n", _y0, _y1);
+        if (_use_logscale)
+            fprintf(f, "set logscale y2\n");
     }
     
     if (_is_array)

@@ -27,6 +27,7 @@ HTMLPage::HTMLPage()
     _fill = true;
     _status = false;
     _reduce = true;
+    _use_logscale = false;
     _interpol = 0;
 }
 
@@ -99,6 +100,7 @@ void HTMLPage::interFace() const
     std::cout << "  <INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\""
               << _directory << "\">\n";
     // Table: 5 columns!
+    // Start/end/Get | Format | Config. description | config input | Clear/Empty
     std::cout << "  <TABLE cellpadding=1>\n";
     std::cout << "  <TR valign=top>\n";
     std::cout << "      <TD>Pattern:<br>\n";
@@ -197,6 +199,14 @@ void HTMLPage::interFace() const
     std::cout << "      <TD><input maxLength=10 name=INTERPOL size=5 value="
 	      << _interpol << "> secs (linear)</TD>\n";
     std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "  </TR>\n";
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD align=right>Log Scale:</TD>\n";
+    std::cout << "      <TD><input name=LOGY type=checkbox value=ON"
+	      << (_use_logscale ?" checked=1":"") << "></TD>\n";
     std::cout << "      <TD></TD>\n";
     std::cout << "  </TR>\n";
     std::cout << "  </TABLE>\n";

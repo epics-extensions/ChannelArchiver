@@ -44,6 +44,7 @@ public:
     bool _fill;
     bool _status;
     bool _reduce;
+    bool _use_logscale;
     osiTime _start;
     osiTime _end;
     double _y0, _y1;

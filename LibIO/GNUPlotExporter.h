@@ -39,7 +39,10 @@ public:
     //* Set Y scale limits. Default: auto
     void setY0(double y0) { _y0 = y0; }
     void setY1(double y1) { _y1 = y1; }
-    
+
+    //* Use log scale for y axes
+    void useLogscale()    { _use_logscale = true; }
+        
 private:
     bool _make_image;
     bool _use_pipe;
@@ -48,6 +51,7 @@ private:
     int _reduce;
 
     double _y0, _y1;
+    bool _use_logscale;
 };
 
 #endif //__GNUPLOTEXPORTER_H__

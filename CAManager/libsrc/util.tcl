@@ -154,7 +154,8 @@ proc checkForBgManager {} {
 	}
       }
       config {
-	tk_dialog .w "CAbgManager: invalid response" "$msg\nPlease reconfigure!" warning 0 "Ok"
+	camGUI::MessageBox warning "Warning" "CAbgManager: invalid response!" \
+	    "$msg" "Please reconfigure!" Ok .
       }
     }
   }

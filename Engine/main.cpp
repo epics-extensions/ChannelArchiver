@@ -90,7 +90,7 @@ int main (int argc, const char *argv[])
     {
         logfile = new std::ofstream;
         logfile->open (log.get().c_str (), std::ios::out | std::ios::trunc);
-#       ifdef __HP_aCC
+#       if defined(HP_UX)
         if (logfile->fail())
 #       else
         if (! logfile->is_open())
@@ -114,8 +114,7 @@ int main (int argc, const char *argv[])
     else
         directory_name = parser.getArgument (1);
 
-    LOG_MSG(osiTime::getCurrent()
-            << " Starting Engine with configuration file "
+    LOG_MSG("Starting Engine with configuration file "
             << config_file << "\n");
 
     Lockfile lock_file("archive_active.lck");

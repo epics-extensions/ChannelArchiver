@@ -105,5 +105,13 @@
 #define USE_RELATIVE_URL
 #define URL_PATH "/tmp/"
 
+// ----------------------------------------------------------
+// ArchiveExport
+// ----------------------------------------------------------
+
+// (This is more of a test program. You should use the CGIExport tool
+//  or the tcl/tk extension instead)
+
+#define EXPORT_ARCHIVE_TYPE MultiArchive
 
 #endif

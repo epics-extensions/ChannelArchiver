@@ -45,7 +45,11 @@ namespace eval camMisc {
       set cfg_file $k
       set force_cfg_file 1
     } elseif {[info exists camMisc::rcdir]} {
-      set cfg_file "$rcdir/$k"
+      if {[regexp "/.*" $k]} {
+	set cfg_file "$k"
+      } else {
+	set cfg_file "$rcdir/$k"
+      }
       set force_cfg_file 1
     }
   }

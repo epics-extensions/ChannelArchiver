@@ -64,7 +64,7 @@ sub parse_config_file($$)
 	chomp;                          # Chop CR/LF
 	next if ($ARG =~ '\A#');        # Skip comments
 	next if ($ARG =~ '\A[ \t]*\Z'); # ... and empty lines
-	($type,$name,$port,$desc,$time,$restart) = split(/\t/, $ARG); # Get columns
+	($type,$name,$port,$desc,$restart,$time) = split(/\t/, $ARG); # Get columns
 	$desc = $name unless (length($desc) > 0); # Desc defaults to name
 	if ($type eq "DAEMON")
 	{

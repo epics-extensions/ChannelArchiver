@@ -116,7 +116,7 @@ sub create_stuff()
 	    foreach $engine ( @{ $daemon->{engines} } )
 	    {
 		printf("  <engine>\n");
-		printf("    <desc>%s</desc>\n", $engine->{name});
+		printf("    <desc>%s</desc>\n", $engine->{desc});
 		printf("    <port>%d</port>\n", $engine->{port}); 
 		printf("    <config>%s/%s/%s/%s-group.xml</config>\n",
 		       $path, $daemon->{name}, $engine->{name}, $engine->{name});

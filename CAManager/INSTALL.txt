@@ -1,0 +1,89 @@
+#
+# Time-stamp: <09 Oct 01 15:39:20 birke@lanl.gov (Thomas Birke)>
+#
+################################################################################
+# PREREQUISITES
+################################################################################
+
+Tcl/Tk
+======
+
+Regardless of the Operating System you want to install CAManager on, a
+Tcl/Tk environment including some extra packages is needed.
+
+The following is a list of packages and their version numbers used for
+development:
+
+  Tcl       8.3
+  Tk        8.3
+  Tclx      8.3
+  Tkx       8.3
+  Iwidgets  4.0.0
+  BWidget   1.3.1
+  Tktable   2.7
+
+You find ready-to-go versions of Tcl/Tk with the required packages on the 
+"ActiveState Programmer Network" (http://aspn.activestate.com/ASPN/Tcl/).
+Follow the link "ActiveTcl download" to get installable binary versions for
+Linux, Solaris or Windows.
+
+If ActiveTcl is not available for your platform, or you want to use your
+existing installation of Tcl/Tk, you can install the required packages
+manually. You should find references to the sources on the
+"Tcl Developer Exchange" (http://tcl.activestate.com/).
+
+ChannelArchiver
+===============
+
+Make sure the ChannelArchiver is installed on your system and the programs
+can be found in the PATH (calling "ArchiveEngine" on the command line
+must not produce a "command not found"-error). This includes proper
+installation of the Channel Access libraries.
+
+
+################################################################################
+# INSTALLATION
+################################################################################
+
+Once having an proper Tcl/Tk installation (or to try your pre-installed or
+manually prepared installation) continue with the next step.
+
+On Unix Systems:
+================
+
+1. Change to the CAManager directory.
+
+2. On the command-line, issue the command:
+
+   > wish install.tcl
+
+   where wish should be Tcl/Tk interpreter matching the requirements
+   mentioned above.
+
+3. Check the Installation-directory and the Tcl/Tk interpreters found and
+   modify the settings if necessary.
+
+4. Click the "Install"-button.
+
+5. Check for errors (if there are some)
+
+On Windows Systems:
+===================
+
+1. Open the CAManager directory in the explorer.
+
+2. Double-click on "install.tcl"
+
+3. Check the Installation-directory and modify the setting if necessary.
+
+4. Click the "Install"-button.
+
+5. Check for errors (if there are some)
+
+
+################################################################################
+# RUNNING
+################################################################################
+
+You should now be able to run "CAManager" immediately, either on the
+command-line or (for Windows) from the "Start" menu.

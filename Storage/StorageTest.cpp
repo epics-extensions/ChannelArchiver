@@ -70,11 +70,12 @@ void add(const stdString &index_name)
 
 int main(int argc, const char *argv[])
 {
-    stdString index_name = argv[1];
+    stdString *index_name = new stdString(argv[1]);
 
-    //header_dump(index_name);
+    //header_dump(*index_name);
 
-    add(index_name);
+    add(*index_name);
+    delete index_name;
 
     return 0;
 }

@@ -126,7 +126,8 @@ void determine_period_and_samples(IndexFile &index,
 }
 
 void copy(const stdString &index_name, const stdString &copy_name,
-          int RTreeM, const epicsTime *start, const epicsTime *end)
+          int RTreeM, const epicsTime *start, const epicsTime *end,
+          const stdString &single_name)
 {
     IndexFile               index(RTreeM), new_index(RTreeM);
     IndexFile::NameIterator names;
@@ -153,10 +154,14 @@ void copy(const stdString &index_name, const stdString &copy_name,
         printf("Copying values from '%s' to '%s'\n",
                index_name.c_str(), copy_name.c_str());
     RawDataReader reader(index);
+    stdString channel_name;
+    bool use_single_name = single_name.length() > 0;
     for (channel_ok = index.getFirstChannel(names);
          channel_ok;  channel_ok = index.getNextChannel(names))
     {
-        const stdString &channel_name = names.getName();
+        channel_name = names.getName();
+        if (use_single_name)
+            channel_name = single_name;
         if (verbose > 1)
         {
             printf("Channel '%s': ", channel_name.c_str());
@@ -182,7 +187,7 @@ void copy(const stdString &index_name, const stdString &copy_name,
             {
                 delete writer;
                 writer = new DataWriter(
-                    new_index, names.getName(),
+                    new_index, channel_name,
                     reader.getInfo(), reader.getType(), reader.getCount(),
                     period, num_samples);
                 if (!writer)
@@ -228,6 +233,8 @@ void copy(const stdString &index_name, const stdString &copy_name,
         ++channel_count;
         value_count += count;
         back_count += back;
+        if (use_single_name)
+            break;
     }
     new_index.close();
     index.close();
@@ -613,7 +620,7 @@ int main(int argc, const char *argv[])
         list_names(index_name);
     else if (copy_index.get().length() > 0)
     {
-        copy(index_name, copy_index, RTreeM, start, end);
+        copy(index_name, copy_index, RTreeM, start, end, channel_name);
         return 0;
     }
     else if (hashinfo)

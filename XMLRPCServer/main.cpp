@@ -580,7 +580,7 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
                                               STR("sevr"), severity);
     xmlrpc_DECREF(severity);
     xmlrpc_DECREF(status);
-    xmlrpc_DECREF(how);3
+    xmlrpc_DECREF(how);
     return result;
 }
 
@@ -701,6 +701,7 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
                        &count, &how);    
     if (env->fault_occurred)
         return 0;
+    LOG_MSG("how=%d, count=%d\n", (int) how, (int) count);
     // Put an upper limit on count to avoid outrageous requests:
     if (count > 10000)
         actual_count = 10000;

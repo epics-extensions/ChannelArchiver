@@ -1,10 +1,12 @@
+# $Id$
+
 source atacTools.tcl
 
 proc usage {} {
 	global argv0
 	puts "USAGE: $argv0 archive"
 	puts "\tFor all channels in archive,"
-	puts "\tthe first time a channel was archived is shown..."
+	puts "\tthe last value..."
 
 	exit 1
 }
@@ -19,13 +21,15 @@ set archiveName [ lindex $argv 0 ]
 
 #################################
 # Open archive,
-# get first value
+# get first channel
 #
 set archiveId [ archive open $archiveName ]
 set channelId [ archive findFirstChannel $archiveId ]
 
 while { [ channel valid $channelId ] } {
-	puts "[ channel getFirstTime $channelId ]\t[ channel name $channelId ]"
+	set valueId [ channel getLastValue $channelId ]
+	puts "[channel name $channelId ] : [ formatValue $valueId ]"
+	value close $valueId
 	channel next $channelId
 }
 

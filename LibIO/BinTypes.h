@@ -80,7 +80,7 @@ const FileOffset INVALID_OFFSET = 0xffffffff;
 #define FileOffsetToDisk ULONGToDisk
 
 inline bool isValidFilename (const stdString &name)
-{	return name[0] != '\0';	}
+{	return ! name.empty();	}
 
 inline bool isValidFilename (const char *name)
 {	return name[0] != '\0';	}

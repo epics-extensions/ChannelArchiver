@@ -32,3 +32,8 @@ TESTPROD_HOST := bench
 SCRIPTS += ConvertEngineConfig.pl
 
 include $(TOP)/configure/RULES
+
+valgrind:
+	echo "Example of running the engine under valgrind for testing"
+	valgrind --skin=memcheck --leak-check=yes --show-reachable=yes --suppressions=valgrind.supp --gen-suppressions=no --gdb-attach=yes --num-callers=8 O.linux-x86/ArchiveEngine excas.xml index
+

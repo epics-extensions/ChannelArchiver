@@ -131,8 +131,11 @@ void Engine::shutdown()
         {
             ArchiveChannel *c = channels.back();
             channels.pop_back();
-            Guard guard(c->mutex);
-            c->destroy(engine_guard, guard);
+            {
+                Guard guard(c->mutex);
+                c->prepareToDie(engine_guard, guard);
+            }
+            delete c;
         }
         while (! groups.empty())
         {

@@ -34,9 +34,24 @@ public:
     /// Create an ArchiveChannel.
     ArchiveChannel(const stdString &name, double period);
 
-    /// Remove/delete an ArchiveChannel.
-    void destroy(Guard &engine_guard, Guard &guard);
+    /// Remove most of the channel's resources.
+
+    /// This one needs to be called before deleting the
+    /// ArchiveChannel. 
+    /// If we did all this in the destructor, we couldn't
+    /// pass the guards.
+    /// If we used a destroy() method that ends in 'delete *this',
+    /// then we'd also delete the channel's mutex,
+    /// which at the same time is still held by the guard...
+    void prepareToDie(Guard &engine_guard, Guard &guard);
     
+    /// Destructor. Call only after prepareToDie().
+
+    /// For prepareToDie(), a Guard for the channel is required.
+    /// For the destructor, the channel must not be locked
+    /// since we want to delete the channel's mutex.
+    ~ArchiveChannel();
+
     /// Define the samlpe mechanism.
     void setMechanism(Guard &engine_guard, Guard &guard,
                       SampleMechanism *mechanism);
@@ -117,8 +132,6 @@ private:
     friend class SampleMechanismMonitored;
     friend class SampleMechanismGet;
     friend class SampleMechanismMonitoredGet;
-    
-    ~ArchiveChannel() {} // hidden, use destroy()
     
     stdString   name;
     double      period; // Sample period, max period, ..(see SampleMechanism)

@@ -24,7 +24,7 @@ ArchiveChannel::ArchiveChannel(const stdString &name, double period)
     currently_disabling = false;
 }
 
-void ArchiveChannel::destroy(Guard &engine_guard, Guard &guard)
+void ArchiveChannel::prepareToDie(Guard &engine_guard, Guard &guard)
 {
     if (mechanism)
     {
@@ -45,6 +45,15 @@ void ArchiveChannel::destroy(Guard &engine_guard, Guard &guard)
         engine_guard.lock();
         guard.lock();
         chid_valid = false;
+    }
+}
+
+ArchiveChannel::~ArchiveChannel()
+{
+    if (mechanism || pending_value || chid_valid)
+    {
+        LOG_MSG("ArchiveChannel '%s' was deleted without prior prepareToDie()\n",
+                 name.c_str());
     }
 }
 

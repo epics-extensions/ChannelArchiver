@@ -18,7 +18,7 @@ public:
 
     void exportChannelList(const stdVector<stdString> &channel_names);
 private:
-    stdString _comment;
+    const char *_comment;
     bool _use_matlab_format;
 };
 

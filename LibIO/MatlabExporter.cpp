@@ -6,10 +6,8 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include "MatlabExporter.h"
-#include "ArchiveException.h"
-#include <fstream>
-#include <iostream>
+#include"MatlabExporter.h"
+#include"ArchiveException.h"
 
 bool MatlabExporter::osiTime2datestr(const osiTime &time, char *text)
 {
@@ -74,61 +72,54 @@ void MatlabExporter::exportChannelList(
     }
 
     // Redirection of output
-    std::ostream *out = &std::cout; // default: stdout
-    std::ofstream file;
+    FILE *f = stdout; // default: stdout
     if (! _filename.empty())
     {
-        file.open (_filename.c_str());
-#       if defined(HP_UX)
-        if (file.fail())
-#else
-        if (! file.is_open())
-#endif
+        f = fopen(_filename.c_str(), "wt");
+        if (! f)
         {
             archive.detach();
             throwDetailedArchiveException(WriteError, _filename);
         }
-        out = &file;
     }
 
-    *out << "% MatLab data file, created by ChannelArchiver.\n";
-    *out << "% Channels: "  "\n";
+    fputs("% MatLab data file, created by ChannelArchiver.\n", f);
+    fputs("% Channels: "  "\n", f);
     for (i=0; i<num; ++i)
-        *out << "%  " << channel_names[i] << "\n";
-    *out << "%\n";
-    *out << "% Struct: t - time string\n";
-    *out << "%         v - value\n";
+        fprintf(f, "%%  %s\n", channel_names[i].c_str());
+    fputs("%\n", f);
+    fputs("% Struct: t - time string\n", f);
+    fputs("%         v - value\n", f);
     if (_show_status)
-        *out <<  "%         s - status\n";
-    *out << "%         d - date number\n";
-    *out << "%         l - length of data\n";
-    *out << "%         n - name\n";
-    *out << "%\n";
-    *out << "% Example for generic plot func. that can handle this data:\n";
-    *out << "%\n";
-    *out << "%  function archdataplot(data)\n";
-    *out << "%\n";
-    *out << "%  plot(data.d, data.v);\n";
-    *out << "%  datetick('x');\n";
-    *out << "%  xlabel([data.t{1} ' - ' data.t{data.l}]);\n";
-    *out << "%  title(data.n);\n";
-    *out << "%\n";
-    *out << "% For the of data.v being an array, try the 'mesh' function.\n";
-
+        fputs("%         s - status\n", f);
+    fputs("%         d - date number\n", f);
+    fputs("%         l - length of data\n", f);
+    fputs("%         n - name\n", f);
+    fputs("%\n", f);
+    fputs("% Example for generic plot func. that can handle this data:\n", f);
+    fputs("%\n", f);
+    fputs("%  function archdataplot(data)\n", f);
+    fputs("%\n", f);
+    fputs("%  plot(data.d, data.v), f);\n", f);
+    fputs("%  datetick('x');\n", f);
+    fputs("%  xlabel([data.t{1} ' - ' data.t{data.l}]);\n", f);
+    fputs("%  title(data.n);\n", f);
+    fputs("%\n", f);
+    fputs("% For the of data.v being an array, try the 'mesh' function.\n", f);
     
     for (i=0; i<num; ++i)
     {
         if (! archive.findChannelByName(channel_names[i], channel))
         {
-            *out << "% Cannot find channel '" << channel_names[i]
-                 << "' in archive\n";
+            fprintf(f, "%% Cannot find channel '%s' in archive\n",
+                    channel_names[i].c_str());
             continue;
         }
         if (! channel->getValueBeforeTime(_start, value) &&
             ! channel->getValueAfterTime(_start, value))
         {
-            *out << "% No values found for channel '" << channel_names[i]
-                 << "'\n";
+            fprintf(f, "%% No values found for channel '%s'\n",
+                    channel_names[i].c_str());
             continue;
         }
         
@@ -140,79 +131,66 @@ void MatlabExporter::exportChannelList(
             fixed_name = true;
         }
         if (fixed_name)
-            *out << "% Used '" << variable
-                 << "' for channel '" << channel_names[i] << "'\n";
-
+            fprintf(f, "%% Used '%s' for channel '%s'\n",
+                    variable, channel_names[i].c_str());
+        
         // Value loop per channel
         line = 0;
         count = value->getCount();
-        long o_flags = out->flags();
-        long o_prec = out->precision();
         while (value)
         {
             time=value->getTime();
             ++line;
             ++_data_count;
             osiTime2datestr(time, datestr);
-            sprintf(info, "%s.t(%d)={'%s'};", variable, line, datestr);
-            *out << info << "\n";
-        
+            fprintf(f, "%s.t(%d)={'%s'};\n", variable, line, datestr);
+
             if (value->isInfo())
             {
                 if (count > 1)
                 {
-                    *out << variable << ".v(:," << line << ")=";
+                    fprintf(f, "%s.v(:,%d)=[", variable, line);
                     for (ai=0; ai<count; ++ai)
-                        *out << "nan ";
-                    *out << ";\n";
+                        fprintf(f, "nan ");
+                    fprintf(f, "];\n");
                 }
                 else
-                    *out << variable << ".v(:," << line << ")= nan;\n";
+                    fprintf(f, "%s.v(%d)=nan;\n", variable, line);
             }
             else
             {
-                const CtrlInfoI *info = value->getCtrlInfo();
-                if (info && info->getPrecision() > 0)
-                {
-                    out->flags(std::ios::fixed);
-                    out->precision(info->getPrecision());
-                }
                 if (count == 1)
-                    *out << variable << ".v(" << line << ")="
-                         << value->getDouble() << ";\n";
+                    fprintf(f, "%s.v(%d)=%g;\n",
+                            variable, line, value->getDouble());
                 else
                 {
-                    *out << variable << ".v(:," << line << ")=[";
+                    fprintf(f, "%s.v(:,%d)=[", variable, line);
                     for (ai=0; ai<count; ++ai)
-                        *out << value->getDouble(ai) << " ";
-                    *out << "];\n";
+                        fprintf(f, "%g ", value->getDouble(ai));
+                    fprintf(f, "];\n");
                 }
             }
+            
             if (_show_status)
             {
                 value->getStatus (txt);
-                *out << variable << ".s(" << line << ")={'"
-                     << txt << "'};\n";
+                fprintf(f, "%s.s(%d)={'%s'}",
+                        variable, line, txt.c_str());
             }
             // Show one value after _end, then quit:
             if (isValidTime(_end) && time >= _end)
                 break;
             ++value;
         }
-        out->flags(o_flags);
-        out->precision(o_prec);
 
-        *out << variable << ".d=datenum(char("
-             << variable << ".t));\n";
-        *out << variable << ".l=size("
-             << variable << ".v, 2);\n";
-        *out << variable << ".n='"
-             << variable << "';\n";
+        fprintf(f, "%s.d=datenum(char(%s.t));\n", variable, variable);
+        fprintf(f, "%s.l=size(%s.v, 2);\n", variable, variable);
+        fprintf(f, "%s.n='%s';\n", variable, variable);
         free(variable);
     }
-    
-    if (out == &file)
-        file.close();
+
+    if (f != stdout)
+        fclose(f);
     archive.detach();
 }
 

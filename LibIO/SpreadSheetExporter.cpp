@@ -132,121 +132,120 @@ void SpreadSheetExporter::exportChannelList(
         }
     }
 
-    std::ostream *out = &std::cout; // default: stdout
-    std::ofstream file;
+    FILE *f = stdout; // default: stdout
     if (! _filename.empty())
     {
-        file.open (_filename.c_str());
-#       if defined(HP_UX)
-        if (file.fail ())
-#else
-        if (! file.is_open ())
-#endif
+        f = fopen(_filename.c_str(), "wt");
+        if (! f)
         {
             throwDetailedArchiveException(WriteError, _filename);
         }
-        out = &file;
     }
 
     if (_use_matlab_format)
     {
-        *out << "% Generated from archive data\n";
-        *out << "%\n";
-        *out << "% To plot this data into MatLab:\n";
-        *out << "%\n";
-        *out << "% [date, time, ch1, ch2]=textread('data.txt', '%s %s %f %f', 'commentstyle', 'matlab');\n";
-        *out << "%\n";
-        *out << "% (replace ch1, ch2 by the names you like, check for a matching number of %f format arguments)\n";
-        *out << "%\n";
-        *out << "% You will obtain arrays date, time, ch1, ....\n";
-        *out << "% To plot one of them over time:\n";
-        *out << "% times=datenum(date) + datenum(time);\n";
-        *out << "% plot(times, ch1); datetick('x');\n";
-        *out << "\n";
+        fputs("% Generated from archive data\n", f);
+        fputs("%\n", f);
+        fputs("% To plot this data into MatLab:\n", f);
+        fputs("%\n", f);
+        fputs("% [date, time, ch1, ch2]=textread('data.txt', '%s %s %f %f', "
+              "'commentstyle', 'matlab', f);\n", f);
+        fputs("%\n", f);
+        fputs("% (replace ch1, ch2 by the names you like, "
+              "check for a matching number of %f format arguments)\n", f);
+        fputs("%\n", f);
+        fputs("% You will obtain arrays date, time, ch1, ....\n", f);
+        fputs("% To plot one of them over time:\n", f);
+        fputs("% times=datenum(date) + datenum(time, f);\n", f);
+        fputs("% plot(times, ch1, f); datetick('x', f);\n", f);
+        fputs("\n", f);
     }
     else
     {
-        *out << "; Generated from archive data\n";
-        *out << ";\n";
-        *out << "; To plot this data in MS Excel:\n";
-        *out << "; 1) choose a suitable format for the Time colunm (1st col.)\n";
-        *out << ";    Excel can display up to the millisecond level\n";
-        *out << ";    if you choose a custom cell format like\n";
-        *out << ";              mm/dd/yy hh:mm:ss.000\n";
-        *out << "; 2) Select the table and generate a plot,\n";
-        *out << ";    a useful type is the 'XY (Scatter) plot'.\n";
-        *out << ";\n";
-        *out << "; '#N/A' is used to indicate that there is no valid data for\n";
-        *out << "; this point in time because e.g. the channel was disconnected.\n";
-        *out << "; A seperate 'status' column - if included - shows details.\n";
-        *out << ";\n";
+        fputs("; Generated from archive data\n", f);
+        fputs(";\n", f);
+        fputs("; To plot this data in MS Excel:\n", f);
+        fputs("; 1) choose a suitable format for the Time colunm (1st col)\n",
+              f);
+        fputs(";    Excel can display up to the millisecond level\n", f);
+        fputs(";    if you choose a custom cell format like\n", f);
+        fputs(";              mm/dd/yy hh:mm:ss.000\n", f);
+        fputs("; 2) Select the table and generate a plot,\n", f);
+        fputs(";    a useful type is the 'XY (Scatter) plot'.\n", f);
+        fputs(";\n", f);
+        fprintf(f,
+                "; %s is used to indicate that there is no valid data for\n",
+                _undefined_value.c_str());
+        fputs("; this point in time, e.g. the channel was disconnected.\n", f);
+        fputs("; A seperate 'status' column - if included - shows details.\n",
+              f);
+        fputs(";\n", f);
     }
 
     if (_linear_interpol_secs > 0.0)
 	{
-		*out << _comment << "NOTE:\n";
-		*out << _comment << "The values in this table\n";
-		*out << _comment << "were interpolated within " << _linear_interpol_secs << " seconds\n";
-		*out << _comment << "(linear interpolation), so that the values for different channels\n";
-		*out << _comment << "can be written on lines for the same time stamp.\n";
-		*out << _comment << "If you prefer to look at the exact time stamps for each value\n";
-		*out << _comment << "export the data without interpolation.\n";
+		fprintf(f, "%sNOTE:\n", _comment);
+		fprintf(f, "%sThe values in this table were interpolated within %g "
+                "seconds\n", _comment, _linear_interpol_secs);
+		fprintf(f, "%s(linear interpolation), so that the values for "
+                "different channels\n", _comment);
+		fprintf(f, "%scan be written on lines for the same time stamp.\n",
+                _comment);
+		fprintf(f, "%sIf you prefer to look at the exact time stamps "
+                "for each value\n", _comment);
+		fprintf(f, "%sexport the data without interpolation.\n", _comment);
 	}
 	else if (_fill)
 	{
-		*out << _comment << "NOTE:\n";
-		*out << _comment << "The values in this table were filled, i.e. repeated\n";
-		*out << _comment << "using staircase interpolation.\n";
-		*out << _comment << "If you prefer to look at the exact time stamps\n";
-		*out << _comment << "for all channels, export the data without rounding.\n";
+		fprintf(f, "%sNOTE:\n", _comment);
+		fprintf(f, "%sThe values in this table were filled, i.e. repeated\n",
+                _comment);
+		fprintf(f, "%susing staircase interpolation.\n", _comment);
+		fprintf(f, "%sIf you prefer to look at the exact time stamps\n",
+                _comment);
+		fprintf(f, "%sfor all channels, export the data without rounding.\n",
+                _comment);
 	}
 	else
 	{
-		*out << _comment << "This table holds the raw data as found in the archive.\n";
-		*out << _comment << "Since Channels are not always scanned at exactly the same time,\n";
-		*out << _comment << "many '" << _undefined_value
-             << "' may appear when looking at more than one channel like this.\n";
+		fprintf(f,
+                "%sThis table holds the raw data as found in the archive.\n",
+                _comment);
+		fprintf(f, "%sSince Channels are not always scanned at exactly "
+                "the same time,\n", _comment);
+		fprintf(f, "%smany '%s' may appear when looking at more than "
+                " one channel like this.\n", _comment,
+                _undefined_value.c_str());
 	}
 
     // Headline: "Time" and channel names
     if (_use_matlab_format)
-        *out << _comment << "Date / Time";
+        fprintf(f, "%sDate / Time", _comment);
     else
-        *out << "Time";
+        fprintf(f, "Time");
     for (i=0; i<num; ++i)
     {
-        *out << '\t' << channels[i]->getChannel()->getName();
+        fprintf(f, "\t%s", channels[i]->getChannel()->getName());
         if (! values[i]->isValid())
             continue;
         if (values[i]->getValue()->getCtrlInfo()->getType()
             == CtrlInfoI::Numeric)
-            *out << " [" << values[i]->getValue()->getCtrlInfo()->getUnits()
-                 << ']';
+            fprintf(f, " [%s]",
+                    values[i]->getValue()->getCtrlInfo()->getUnits());
         // Array columns
         for (ai=1; ai<values[i]->getValue()->getCount(); ++ai)
-            *out << "\t[" << ai << ']';
+            fprintf(f, "\t[%d]", ai);
         if (_show_status)
-            *out << "\t" << "Status";
+            fprintf(f, "\tStatus");
     }
-    *out << "\n";
+    fprintf(f, "\n");
 
     // Find first time stamp
     osiTime time = findOldestValue(values, num);
     while (time != nullTime)
     {
-#if 0
-        // Debug    
-        for (i=0; i<num; ++i)
-        {
-            if (values[i]->isValid())
-                *out << i << ": " << *values[i]->getValue() << "\n";
-            else
-                *out << i << ": " << _undefined_value << "\n";
-        }
-        *out << "->" << time << "\n";
-#endif
         // One line: time and all values for that time
-        printTime(out, time);
+        printTime(f, time);
         for (i=0; i<num; ++i)
         {
             // print all valid values that match the current time stamp:
@@ -254,7 +253,7 @@ void SpreadSheetExporter::exportChannelList(
                 (v=values[i]->getValue())->getTime() == time)
             {
                 ++_data_count;
-                printValue(out, time, v);
+                printValue(f, time, v);
                 if (_fill) // keep copy of this value?
                 {
                     if (v->isInfo () && prev_values[i])
@@ -282,12 +281,12 @@ void SpreadSheetExporter::exportChannelList(
             else
             {   // no valid value for current time stamp:
                 if (prev_values[i])
-                    printValue(out, time, prev_values[i]);
+                    printValue(f, time, prev_values[i]);
                 else
-                    *out << "\t" << _undefined_value;
+                    fprintf(f, "\t%s", _undefined_value.c_str());
             }
         }
-        *out << "\n";
+        fprintf(f, "\n");
         // Print one value beyond time, then quit:
         if (isValidTime(_end) && time >= _end)
             break;
@@ -295,9 +294,8 @@ void SpreadSheetExporter::exportChannelList(
         time = findOldestValue(values, num);
     }
 
-    if (out == &file)
-        file.close();
-
+    if (f != stdout)
+        fclose(f);
     for (i=0; i<num; ++i)
     {
         delete infos[i];

@@ -53,13 +53,13 @@ DirectoryFile::DirectoryFile(const stdString &filename, bool for_write)
     FileOffset rest = (_next_free_entry - FirstEntryOffset)
         % BinChannel::getDataSize();
     if (rest)
-        LOG_MSG("Suspicious directory file:\n"
-                 << filename << " has a 'tail' of " << rest << " Bytes\n");
+        LOG_MSG("Suspicious directory file %s has a 'tail' of %d Bytes\n",
+                filename.c_str(), rest);
     
 #ifdef LOG_DIRFILE
     if (_file.isReadonly())
         LOG_MSG("(readonly) ");
-    LOG_MSG("DirectoryFile " << _filename << "\n");
+    LOG_MSG("DirectoryFile %s\n", _filename);
 #endif
 }
 
@@ -68,7 +68,7 @@ DirectoryFile::~DirectoryFile()
 #ifdef LOG_DIRFILE
     if (_file.isReadonly())
         LOG_MSG("(readonly) ");
-    LOG_MSG("~DirectoryFile " << _filename << "\n");
+    LOG_MSG("~DirectoryFile %s\n", _filename);
 #endif
     _file.llclose();
 }

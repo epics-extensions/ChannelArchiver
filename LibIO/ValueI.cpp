@@ -44,8 +44,8 @@ size_t RawValueI::getSize (DbrType type, DbrCount count)
     return buf_size;
 }
 
-bool RawValueI::hasSameValue (DbrType type, DbrCount count, size_t size,
-                              const Type *lhs, const Type *rhs)
+bool RawValueI::hasSameValue(DbrType type, DbrCount count, size_t size,
+                             const Type *lhs, const Type *rhs)
 {
     size_t offset;
 
@@ -59,8 +59,7 @@ bool RawValueI::hasSameValue (DbrType type, DbrCount count, size_t size,
     case DBR_TIME_LONG:   offset = offsetof (dbr_time_long, value);   break;
     case DBR_TIME_DOUBLE: offset = offsetof (dbr_time_double, value); break;
     default:
-        LOG_MSG ("RawValueI::hasSameValue: cannot decode type "
-                 << type << "\n");
+        LOG_MSG("RawValueI::hasSameValue: cannot decode type %d\n", type);
         return false;
     }
 
@@ -219,7 +218,7 @@ bool ValueI::parseStatus (const stdString &text)
     return false;
 }
 
-void ValueI::getType (stdString &text) const
+void ValueI::getType(stdString &text) const
 {
     if (getType() < dbr_text_dim)
         text = dbr_text[getType()];
@@ -239,15 +238,13 @@ bool ValueI::parseType (const stdString &text, DbrType &type)
     return false;
 }
 
-void ValueI::show (std::ostream &o) const
+void ValueI::show(FILE *f) const
 {
     stdString time_text, stat_text;
-
-    getTime (time_text);
-    getStatus (stat_text);
-
-    o << time_text << ' ';
-    o << "RawValue (type " << getType() << ", count " << getCount();
-    o << ") " << stat_text;
+    getTime(time_text);
+    getStatus(stat_text);
+    fprintf(f, "%s RawValue (type %d, count %d) %s",
+            time_text.c_str(), getType(), getCount(),
+            stat_text.c_str());
 }
 

@@ -107,8 +107,7 @@ BinValue *BinValue::create(DbrType type, DbrCount count)
     case DBR_TIME_CHAR:
         return new BinValueDbrChar(count);
         default:
-        LOG_MSG("BinValue::create (" << type << ", " << count
-                << "): Unsupported\n");
+        LOG_MSG("BinValue::create (%d, %d): Unsupported\n", type, count);
         return 0;
     }
 
@@ -144,20 +143,19 @@ ValueI *BinValue::clone() const
     return value;
 }
 
-void BinValue::show(std::ostream &o) const
+void BinValue::show(FILE *f) const
 {
     stdString time_text, stat_text;
-
-    getTime (time_text);
-    getStatus (stat_text);
-
+    getTime(time_text);
+    getStatus(stat_text);
     if (isInfo ())
-        o << time_text << "\t-\t" << stat_text;
+        fprintf(f, "%s\t-\t%s", time_text.c_str(), stat_text.c_str());
     else
     {
         stdString val_text;
         getValue (val_text);
-        o << time_text << '\t' << val_text << '\t' << stat_text;
+        fprintf(f, "%s\t%s\t%s",
+                time_text.c_str(), val_text.c_str(), stat_text.c_str());
     }
 }
 
@@ -409,19 +407,19 @@ bool BinValueDbrEnum::parseValue (const stdString &text)
 
 double BinValueDbrString::getDouble (DbrCount index) const
 {
-    LOG_MSG ("BinValueDbrString::getDouble called\n");
+    LOG_MSG("BinValueDbrString::getDouble called\n");
     return 0.0;
 }
 
 void BinValueDbrString::setDouble (double value, DbrCount index)
 {
-    LOG_MSG ("BinValueDbrString::setDouble called\n");
+    LOG_MSG("BinValueDbrString::setDouble called\n");
 }
 
 void BinValueDbrString::getValue (stdString &result) const
 {
     if (! _ctrl_info)
-         LOG_MSG ("BinValueDbrString::getValue: CtrlInfo not set");
+         LOG_MSG("BinValueDbrString::getValue: CtrlInfo not set");
     const char *data = (reinterpret_cast<const dbr_time_string *>(_value))->value; 
     if (getCount() > 1)
         throwDetailedArchiveException (Unsupported, "BinValueDbrString::getValue, count > 1");

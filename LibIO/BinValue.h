@@ -45,7 +45,7 @@ public:
     void read (LowLevelIO &filefd, FileOffset offset);
     void write (LowLevelIO &filefd, FileOffset offset) const;
 
-    void show (std::ostream &o) const;
+    void show(FILE *f) const;
 
 protected:
     BinValue (DbrType type, DbrCount count);

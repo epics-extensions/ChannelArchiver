@@ -166,7 +166,7 @@ bool BinChannel::getValueAfterTime (const osiTime &time, ValueIteratorI *arg)
 		}
 		catch (ArchiveException &e)
 		{
-			LOG_MSG ("BinChannel::getValueAfterTime caught: " << e.what());
+			LOG_MSG("BinChannel::getValueAfterTime caught: %s\n", e.what());
 		}
 	}
 	// start f. beginning not suggested - or failed for some other reason like broken archive
@@ -198,7 +198,7 @@ bool BinChannel::getValueAfterTime (const osiTime &time, ValueIteratorI *arg)
 
 bool BinChannel::getValueBeforeTime(const osiTime &time, ValueIteratorI *value)
 {
-	LOG_ASSERT (value);
+	LOG_ASSERT(value);
 	if (time == nullTime)
 		return getFirstValue(value);
 
@@ -265,19 +265,21 @@ size_t BinChannel::lockBuffer (const ValueI &value, double period)
 void BinChannel::addBuffer (const ValueI &value_arg, double period, size_t value_count)
 {
 	// dir_entry: this BinChannel + it's offset in _archive->_dir
-	LOG_ASSERT (getArchive ());
+	LOG_ASSERT(getArchive());
 	DirectoryFileIterator *dir_entry = &_channel_iter->_dir;
-	LOG_ASSERT (dir_entry->getChannel() == this);
+	LOG_ASSERT(dir_entry->getChannel() == this);
 
 	const BinValue *value = dynamic_cast<const BinValue *>(&value_arg);
 	if (! value)
 	{
-		throwDetailedArchiveException (Invalid, "BinChannel::addBuffer: empty ValueIterator");
+		throwDetailedArchiveException(
+            Invalid, "BinChannel::addBuffer: empty ValueIterator");
 		return;
 	}
 	if (! value->getCtrlInfo())
 	{
-		throwDetailedArchiveException (Invalid, "BinChannel::addBuffer: Value w/o CtrlInfo");
+		throwDetailedArchiveException(
+            Invalid, "BinChannel::addBuffer: Value w/o CtrlInfo");
 		return;
 	}
 
@@ -320,7 +322,7 @@ void BinChannel::addBuffer (const ValueI &value_arg, double period, size_t value
 
 	// cannot use dynamic_cast because it might really be only a CtrlInfoI
 	const BinCtrlInfo *ctrl_info = (const BinCtrlInfo*) value->getCtrlInfo();
-	LOG_ASSERT (ctrl_info);
+	LOG_ASSERT(ctrl_info);
 	*_append_buffer = data->addHeader (header, *ctrl_info, prev);
 	data->release (); // now ref'ed by _append_buffer
 	delete prev;

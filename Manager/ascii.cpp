@@ -27,77 +27,76 @@
 // write
 // -------------------------------------------------------------------
 
-static void output_header (const ValueIterator &value)
+static void output_header(const ValueIterator &value)
 {
     stdString type;
-    value->getType (type);
+    value->getType(type);
 
-    std::cout << "# ------------------------------------------------------\n";
-    std::cout << "Header\n";
-    std::cout << "{\n";
-    std::cout << "\tperiod=" << value.getPeriod () << "\n";
-    std::cout << "\ttype="   << type               << "\n";
-    std::cout << "\tcount="  << value->getCount () << "\n";
-    std::cout << "}\n";
-    std::cout << "# ------------------------------------------------------\n";
+    printf("# ------------------------------------------------------\n");
+    printf("Header\n");
+    printf("{\n");
+    printf("\tperiod=%g\n", value.getPeriod());
+    printf("\ttype=%s\n", type.c_str());
+    printf("\tcount=%d\n", value->getCount());
+    printf("}\n");
+    printf("# ------------------------------------------------------\n");
 }
 
-static void output_info (const CtrlInfoI *info)
+static void output_info(const CtrlInfoI *info)
 {
-    std::cout << "# ------------------------------------------------------\n";
-    std::cout << "CtrlInfo\n";
-    std::cout << "{\n";
+    printf("# ------------------------------------------------------\n");
+    printf("CtrlInfo\n");
+    printf("{\n");
     if (info->getType() == CtrlInfoI::Numeric)
     {
-        std::cout << "\ttype=Numeric\n";
-        std::cout << "\tprecision="    << info->getPrecision ()   << "\n";
-        std::cout << "\tunits="        << info->getUnits ()       << "\n";
-        std::cout << "\tdisplay_high=" << info->getDisplayHigh () << "\n";
-        std::cout << "\tdisplay_low="  << info->getDisplayLow ()  << "\n";
-        std::cout << "\thigh_alarm="   << info->getHighAlarm ()   << "\n";
-        std::cout << "\thigh_warning=" << info->getHighWarning () << "\n";
-        std::cout << "\tlow_warning="  << info->getLowWarning ()  << "\n";
-        std::cout << "\tlow_alarm="    << info->getLowAlarm ()    << "\n";
+        printf("\ttype=Numeric\n");
+        printf("\tprecision=%ld\n",    info->getPrecision());
+        printf("\tunits=%s\n",        info->getUnits());
+        printf("\tdisplay_high=%g\n", info->getDisplayHigh());
+        printf("\tdisplay_low=%g\n",  info->getDisplayLow());
+        printf("\thigh_alarm=%g\n",   info->getHighAlarm());
+        printf("\thigh_warning=%g\n", info->getHighWarning());
+        printf("\tlow_warning=%g\n",  info->getLowWarning());
+        printf("\tlow_alarm=%g\n",    info->getLowAlarm());
     }
     else if (info->getType() == CtrlInfoI::Enumerated)
     {
-        std::cout << "\ttype=Enumerated\n";
-        std::cout << "\tstates=" << info->getNumStates () << "\n";
+        printf("\ttype=Enumerated\n");
+        printf("\tstates=%d\n", info->getNumStates());
         size_t i;
         stdString state;
-        for (i=0; i<info->getNumStates (); ++i)
+        for (i=0; i<info->getNumStates(); ++i)
         {
-            info->getState (i, state);
-            std::cout << "\tstate=" << state << "\n";
+            info->getState(i, state);
+            printf("\tstate=%s\n", state.c_str());
         }
     }
     else
     {
-        std::cout << "\ttype=Unknown\n";
+        printf("\ttype=Unknown\n");
     }
-    std::cout << "}\n";
-    std::cout << "# ------------------------------------------------------\n";
+    printf("}\n");
+    printf("# ------------------------------------------------------\n");
 }
 
-void output_ascii (const stdString &archive_name,
-                   const stdString &channel_name,
-                   const osiTime &start, const osiTime &end)
+void output_ascii(const stdString &archive_name,
+                  const stdString &channel_name,
+                  const osiTime &start, const osiTime &end)
 {
-    Archive         archive (new ARCHIVE_TYPE (archive_name));
-    ChannelIterator channel (archive);
-    ValueIterator   value (archive);
-    if (! archive.findChannelByName (channel_name, channel))
+    Archive         archive(new ARCHIVE_TYPE(archive_name));
+    ChannelIterator channel(archive);
+    ValueIterator   value(archive);
+    if (! archive.findChannelByName(channel_name, channel))
     {
-        std::cout << "# Channel not found: " << channel_name << "\n";
+        printf("# Channel not found: %s\n", channel_name.c_str());
         return;
     }
 
-    std::cout << "channel=" << channel_name << "\n";
+    printf("channel=%s\n", channel_name.c_str());
 
     if (! channel->getValueAfterTime (start, value))
     {
-        std::cout << "# no values\n";
-        return;
+        printf("# no values\n");
         return;
     }
 
@@ -109,16 +108,17 @@ void output_ascii (const stdString &archive_name,
         if (period != value.getPeriod())
         {
             period = value.getPeriod();
-            output_header (value);
+            output_header(value);
         }
         if (info != *value->getCtrlInfo())
         {
             info = *value->getCtrlInfo();
-            output_info (&info);
+            output_info(&info);
         }
-        if (isValidTime (last_time) && value->getTime() < last_time)
-            std::cout << "Error: back in time:\n";
-        std::cout << *value << "\n";
+        if (isValidTime(last_time) && value->getTime() < last_time)
+            printf("Error: back in time:\n");
+        value->show(stdout);
+        fputs("\n", stdout);
         last_time = value->getTime();
         ++value;
     }
@@ -131,22 +131,22 @@ void output_ascii (const stdString &archive_name,
 class ArchiveParser : public ASCIIParser
 {
 public:
-    ArchiveParser ()
+    ArchiveParser()
     {
         _value = 0;
         _buffer_alloc = 0;
         _new_ctrl_info = false;
     }
-    ~ArchiveParser ()
+    ~ArchiveParser()
     {
         delete _value;
     }
 
-    void run (Archive &archive);
+    void run(Archive &archive);
 private:
-    bool handleHeader (Archive &archive);
-    bool handleCtrlInfo (ChannelIterator &channel);
-    bool handleValue (ChannelIterator &channel);
+    bool handleHeader(Archive &archive);
+    bool handleCtrlInfo(ChannelIterator &channel);
+    bool handleValue(ChannelIterator &channel);
 
     double _period;
     ValueI *_value;
@@ -168,7 +168,7 @@ private:
 // but will stay on their last line
 // -> call nextLine again for following item
 
-bool ArchiveParser::handleHeader (Archive &archive)
+bool ArchiveParser::handleHeader(Archive &archive)
 {
     _period=-1;
     DbrType type = 999;
@@ -179,7 +179,7 @@ bool ArchiveParser::handleHeader (Archive &archive)
     if (!nextLine()  ||
         getLine () != "{")
     {
-        std::cout << "Line " << getLineNo() << ": missing start of Header\n";
+        printf("Line %d: missing start of Header\n", getLineNo());
         return false;
     }
 
@@ -187,16 +187,16 @@ bool ArchiveParser::handleHeader (Archive &archive)
     {
         if (getLine() == "}")
             break;
-        if (getParameter (parameter, value))
+        if (getParameter(parameter, value))
         {
             if (parameter == "period")
                 _period = atof(value.c_str());
             else if (parameter == "type")
             {
-                if (! ValueI::parseType (value, type))
+                if (! ValueI::parseType(value, type))
                 {
-                    std::cout << "Line " << getLineNo() << ": invalid type "
-                        << value << "\n";
+                    printf("Line %d: invalid type %s\n",
+                           getLineNo(), value.c_str());
                     return false;
                 }
             }
@@ -204,12 +204,12 @@ bool ArchiveParser::handleHeader (Archive &archive)
                 count = atoi(value.c_str());
         }
         else
-            std::cout << "Line " << getLineNo() << " skipped\n";
+            printf("Line %d skipped\n", getLineNo());
     }
 
     if (_period < 0.0 || type >= LAST_BUFFER_TYPE || count <= 0)
     {
-        std::cout << "Line " << getLineNo() << ": incomplete header\n";
+        printf("Line %d: incomplete header\n", getLineNo());
         return false;
     }
     if (_value)
@@ -221,18 +221,18 @@ bool ArchiveParser::handleHeader (Archive &archive)
         }
     }
     if (!_value)
-        _value = archive.newValue (type, count);
+        _value = archive.newValue(type, count);
     _buffer_alloc = INIT_VALS_PER_BUF;
     _new_ctrl_info = false;
 
     return true;
 }
 
-bool ArchiveParser::handleCtrlInfo (ChannelIterator &channel)
+bool ArchiveParser::handleCtrlInfo(ChannelIterator &channel)
 {
     if (!_value)
     {
-        std::cout << "Line " << getLineNo() << ": no header, yet\n";
+        printf("Line %d: no header, yet\n", getLineNo());
         return false;
     }
 
@@ -246,12 +246,12 @@ bool ArchiveParser::handleCtrlInfo (ChannelIterator &channel)
     stdVector<stdString> state;
     
     if (!nextLine()  ||
-        getLine () != "{")
+        getLine() != "{")
     {
-        std::cout << "Line " << getLineNo() << ": missing start of CtrlInfo\n";
+        printf("Line %d: missing start of CtrlInfo\n", getLineNo());
         return false;
     }
-
+    
     while (nextLine())
     {
         if (getLine() == "}")
@@ -266,8 +266,8 @@ bool ArchiveParser::handleCtrlInfo (ChannelIterator &channel)
                     type = CtrlInfoI::Enumerated;
                 else
                 {
-                    std::cout << "Line " << getLineNo()
-                        << ": Unknown type " << value << "\n";
+                    printf("Line %d: Unknown type %s\n",
+                           getLineNo(), value.c_str());
                     return false;
                 }
             }
@@ -293,7 +293,7 @@ bool ArchiveParser::handleCtrlInfo (ChannelIterator &channel)
                 state.push_back (value);
         }
         else
-            std::cout << "Line " << getLineNo() << " skipped\n";
+            printf("Line %d skipped\n", getLineNo());
     }
 
     if (type == CtrlInfoI::Numeric)
@@ -303,10 +303,9 @@ bool ArchiveParser::handleCtrlInfo (ChannelIterator &channel)
     {
         if (state.size() != states)
         {
-            std::cout << "Line " << getLineNo()
-                << ": Asked for " << states
-                << " states but provided " << state.size() << "\n";
-                return false;
+            printf("Line %d: Asked for %d states but provided %d\n",
+                   getLineNo(), states, state.size());
+            return false;
         }
         size_t i, len = 0;
         for (i=0; i<states; ++i)
@@ -317,88 +316,89 @@ bool ArchiveParser::handleCtrlInfo (ChannelIterator &channel)
     }
     else
     {
-        std::cout << "Line " << getLineNo()
-            << ": Invalid CtrlInfo\n";
+        printf("Line %d: Invalid CtrlInfo\n", getLineNo());
         return false;
     }
 
-    _value->setCtrlInfo (&_info);
+    _value->setCtrlInfo(&_info);
     _new_ctrl_info = true;
 
     return true;
 }
 
-bool ArchiveParser::handleValue (ChannelIterator &channel)
+bool ArchiveParser::handleValue(ChannelIterator &channel)
 {
     if (!_value)
     {
-        std::cout << "Line " << getLineNo() << ": no header, yet\n";
+        printf("Line %d: no header, yet\n", getLineNo());
         return false;
     }
     // Format of line:   time\tvalue\tstatus
     const stdString &line = getLine();
-    size_t pos = line.find ('\t');
-    if (pos == stdString::npos)
+    size_t valtab = line.find('\t');
+    if (valtab == stdString::npos)
     {
-        std::cout << "Line " << getLineNo() << ": expected value\n";
-        std::cout << line;
+        printf("Line %d: expected time stamp of value\n%s\n",
+               getLineNo(), line.c_str());
         return false;
     }
 
     // Time:
-    stdString text = line.substr (0, pos);
+    stdString text = line.substr(0, valtab);
     osiTime time;
-    if (! string2osiTime (text, time))
+    if (! string2osiTime(text, time))
     {
-        std::cout << "Line " << getLineNo() << ": invalid time '" << text << "'\n";
+        printf("Line %d: invalid time '%s'\n", getLineNo(), text.c_str());
         return false;
     }
-    _value->setTime (time);
+    _value->setTime(time);
 
-    text = line.substr (pos+1);
-    pos = text.find ('\t');
-    if (pos == stdString::npos)
+    stdString status;
+    stdString value = line.substr(valtab+1);
+    size_t stattab = value.find('\t');
+    if (stattab != stdString::npos)
     {
-        std::cout << "Line " << getLineNo() << ": expected value\n";
-        std::cout << line;
-        return false;
+        status = value.substr(stattab+1);
+        value = value.substr(0, stattab);
     }
-
+        
     // Value:
-    stdString value = text.substr(0, pos);
-    if (! _value->parseValue (value))
+    if (! _value->parseValue(value))
     {
-        std::cout << "Line " << getLineNo() << ": invalid value '" << value << "'\n";
-        std::cout << line;
+        printf("Line %d: invalid value '%s'\n%s\n",
+               getLineNo(), value.c_str(), line.c_str());
         return false;
     }
-
-    stdString status = text.substr(pos+1);
 
     // Status:
-    if (!_value->parseStatus (status))
+    if (status.empty())
+        _value->setStatus(0, 0);
+    else
     {
-        std::cout << "Line " << getLineNo() << ": invalid status '" << status << "'\n";
-        std::cout << line;
+        if (!_value->parseStatus(status))
+        {
+            printf("Line %d: invalid status '%s'\n%s\n",
+                   getLineNo(), status.c_str(), line.c_str());
+            return false;
+        }
+    }
+
+    if (isValidTime(_last_time)  && _value->getTime() < _last_time)
+    {
+        printf("Line %d: back in time\n", getLineNo());
         return false;
     }
 
-    if (isValidTime (_last_time)  && _value->getTime() < _last_time)
-    {
-        std::cout << "Line " << getLineNo() << ": back in time\n";
-        return false;
-    }
-
-    size_t avail = channel->lockBuffer (*_value, _period);
+    size_t avail = channel->lockBuffer(*_value, _period);
     if (avail <= 0 || _new_ctrl_info)
     {
-        channel->addBuffer (*_value, _period, _buffer_alloc);
+        channel->addBuffer(*_value, _period, _buffer_alloc);
         if (_buffer_alloc < MAX_VALS_PER_BUF)
             _buffer_alloc *= BUF_GROWTH_RATE;
         _new_ctrl_info = false;
     }
-    channel->addValue (*_value);
-    channel->releaseBuffer ();
+    channel->addValue(*_value);
+    channel->releaseBuffer();
 
     _last_time = _value->getTime();
 
@@ -426,7 +426,8 @@ void ArchiveParser::run (Archive &archive)
                 {
                     if (! archive.addChannel (arg, channel))
                     {
-                        std::cout << "Cannot add channel " << arg << " to archive\n";
+                        printf("Cannot add channel '%s' to archive\n",
+                               arg.c_str());
                         return;
                     }
                     _last_time = nullTime;
@@ -436,23 +437,22 @@ void ArchiveParser::run (Archive &archive)
         else
         {
             if (getLine() == "Header")
-                go = handleHeader (archive);
+                go = handleHeader(archive);
             else if (getLine() == "CtrlInfo")
-                go = handleCtrlInfo (channel);
+                go = handleCtrlInfo(channel);
             else
-                go = handleValue (channel);
+                go = handleValue(channel);
         }
     }
 }
 
-void input_ascii (const stdString &archive_name, const stdString &file_name)
+void input_ascii(const stdString &archive_name, const stdString &file_name)
 {
-    ArchiveParser   parser;
-    if (! parser.open (file_name))
+    ArchiveParser parser;
+    if (! parser.open(file_name))
     {
-        std::cout << "Cannot open " << file_name << "\n";
+        printf("Cannot open '%s'\n", file_name.c_str());
     }
-
-    Archive archive (new BinArchive (archive_name, true));
-    parser.run (archive);
+    Archive archive(new BinArchive(archive_name, true));
+    parser.run(archive);
 }

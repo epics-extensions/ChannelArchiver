@@ -3,8 +3,8 @@
 #ifndef __EXPORTER_H__
 #define __EXPORTER_H__
 
-#include "ArchiveI.h"
-#include <iostream>
+#include"ArchiveI.h"
+#include<stdio.h>
 
 //CLASS Exporter
 // Exporter is the virtual base class for
@@ -92,11 +92,11 @@ protected:
 
     // Helpers for derived classes:
     // Print time in some human readable format
-    void printTime(std::ostream *out, const osiTime &time);
+    void printTime(FILE *f, const osiTime &time);
     // Print value, handling status values (_show_status)
     // as well as arrays.
     // Uses CtrlInfoI->getPrecision() if > 0.
-    void printValue(std::ostream *out, const osiTime &time, const ValueI *v);
+    void printValue(FILE *f, const osiTime &time, const ValueI *v);
 
 private:
     void init(ArchiveI *archive);

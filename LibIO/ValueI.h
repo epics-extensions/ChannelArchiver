@@ -76,19 +76,20 @@ private:
     static Type * allocate (size_t size);
 };
 
-inline void RawValueI::copy (DbrType type, DbrCount count, Type *lhs, const Type *rhs)
-{   memcpy (lhs, rhs, getSize (type, count));   }
+inline void RawValueI::copy(DbrType type, DbrCount count,
+                            Type *lhs, const Type *rhs)
+{   memcpy(lhs, rhs, getSize(type, count));   }
 
-inline short RawValueI::getStat (const Type *value)
+inline short RawValueI::getStat(const Type *value)
 { return value->status; }
 
-inline short RawValueI::getSevr (const Type *value)
+inline short RawValueI::getSevr(const Type *value)
 { return value->severity; }
 
-inline void RawValueI::setStatus (Type *value, short status, short severity)
+inline void RawValueI::setStatus(Type *value, short status, short severity)
 {   value->status = status; value->severity = severity; }
 
-inline const osiTime RawValueI::getTime (const Type *value)
+inline const osiTime RawValueI::getTime(const Type *value)
 {   return TS_STAMP2osi(value->stamp);  }
 
 inline void RawValueI::setTime (Type *value, const osiTime &stamp)
@@ -157,9 +158,9 @@ public:
     bool isInfo () const;
 
     //* Access to contained RawValue:
-    DbrType getType () const;
-    void getType (stdString &type) const;
-    DbrCount getCount () const;
+    DbrType getType() const;
+    void getType(stdString &type) const;
+    DbrCount getCount() const;
 
     // Parse string for DbrType
     // (as written by getType())
@@ -171,7 +172,7 @@ public:
     RawValueI::Type *getRawValue ();
     size_t getRawValueSize () const;
 
-    virtual void show (std::ostream &o) const;
+    virtual void show(FILE *f) const;
 
 protected:
     // Hidden constuctor: Use Create!
@@ -184,9 +185,6 @@ protected:
     size_t          _size;      // ..to avoid calls to RawValue::getSize ()
     RawValueI::Type *_value;
 };
-
-inline std::ostream & operator << (std::ostream &o, const ValueI &value)
-{   value.show (o); return o;   }
 
 inline bool ValueI::hasSameType (const ValueI &rhs) const
 {   return _type == rhs._type && _count == rhs._count; }

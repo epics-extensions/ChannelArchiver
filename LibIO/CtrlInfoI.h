@@ -122,7 +122,7 @@ public:
 	// position 'next' on character following the recognized state text
 	bool parseState(const char *text, const char **next, size_t &state) const;
 
-    void show(std::ostream &o) const;
+    void show(FILE *f) const;
 
 protected:
 	const char *getState(size_t state, size_t &len) const;

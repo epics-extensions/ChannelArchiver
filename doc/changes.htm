@@ -15,6 +15,22 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>10/18/2002<br>
+      Removing C++ streams and replacing them with C-type FILE access.
+      Just like the not-so-standard std::string and std::list, the C++ stream
+      classes have caused problems with every new platform and
+      compiler version.
+      <br>
+      So all the theoretically superior
+      <pre>
+      long old_flags = cout.flags(std::ios::fixed);
+      int old_precision = cout.precision(4);
+      cout << 42;
+      cout.flags(old_flags);
+      cout.precision(old_precision);</pre>
+      gets now replaced by
+      <pre>
+      printf("%4d", 42);</pre>
     <li>10/08/2002<br>
       LibIO for BinArchive: Added a 'flush' call to the directory
       file because previously the directory file was incomplete for
@@ -87,21 +103,21 @@
           dramatically reduced.
       <li>ArchiveEngine should now store one sample after a
           re-connect. That sample might have an adjusted time stamp,
-	  not the original IOC time stamp, because the preceding
+          not the original IOC time stamp, because the preceding
           "disconnect" status is written with a time stamp from the
           host that runs the ArchiveEngine.
       <li>The ArchiveEngine has now a command line option to switch off the
           online-configuration web-interface.
       <li>GNUPlotExporter had problems with non-numeric data.
           While it'll never be able to plot strings, it should
-	  now handle enumerated values by plotting the numbers.
+          now handle enumerated values by plotting the numbers.
       <li>ArchiveManager can copy a channel inside the directory file,
           creating a new name for the same data.
-	  It can also delete a channel. Note: not the data but the channel.
-	  The data is still in the data file but you can no longer get
+          It can also delete a channel. Note: not the data but the channel.
+          The data is still in the data file but you can no longer get
           to it. To remove the data, xport the archive into a new one,
-	  then the deleted channel's data will also vanish.
-	  No, there is no undo for the delete.<br>
+          then the deleted channel's data will also vanish.
+          No, there is no undo for the delete.<br>
           Useful: copy + remove = rename.
       <li>Added a first version of CAManager - a Tcl/Tk based frontend to
           ArchiveEngine configuration (see doc/camanager/camanager.html
@@ -128,10 +144,10 @@
        <ul>
        <li>Redid the documentation:
            The original docs concentrated on compilation and
-	   installation. Now that has been moved down and
-	   more emphasis it put on usage, closer to a "user manual".
-	   Ben Kruger, a LANL summer student, provided some of the new
-	   pages and paragraphs.
+           installation. Now that has been moved down and
+           more emphasis it put on usage, closer to a "user manual".
+           Ben Kruger, a LANL summer student, provided some of the new
+           pages and paragraphs.
        <li>GNUPlotExporter fixes, second round:
            Given a <em>start</em> and <em>end</em> time stamp, the
            GNUPlot exporter will try to come up with values at those
@@ -143,25 +159,25 @@
        <li>CGIExport: will swap start/end time if given in wrong order.
        <li>Use of "precision":
            The ArchiveEngine archives the precision.
-	   The original retrieval tools used that precision
-	   when formatting values.
-	   As it turned out, few of the IOC databases are
-	   configured properly, so users complained about the
-	   truncated numbers (default is PREC=0, so you saw no
+           The original retrieval tools used that precision
+           when formatting values.
+           As it turned out, few of the IOC databases are
+           configured properly, so users complained about the
+           truncated numbers (default is PREC=0, so you saw no
            fractional digits).
-	   The early fix was to ignore PREC.
-	   But then our BESSY colleagues actually depend on the PREC-driven
-	   formatting and had to put the PREC formatting back in.<br>
-	   As a compromise, a PREC of zero is now ignored,
-	   PREC &gt; 0 is acknowledged.
+           The early fix was to ignore PREC.
+           But then our BESSY colleagues actually depend on the PREC-driven
+           formatting and had to put the PREC formatting back in.<br>
+           As a compromise, a PREC of zero is now ignored,
+           PREC &gt; 0 is acknowledged.
        </ul>
     <li>07/18/2001<br>
       Patch #2:<br>
        <ul>
        <li>GNUPlotExporter fixes, suggested by Thomas Birke.
            Correct problems with gaps caused by subsequent
-	   status values (Archiver off, disconnected, ...).
-	   Will now try to show one value at given start and end time
+           status values (Archiver off, disconnected, ...).
+           Will now try to show one value at given start and end time
            stamp by mapping the last value before start onto start and
            copying the last value before end onto the end.
        <li>SpreadsheetExporter: Will now show one value before
@@ -175,7 +191,7 @@
            Fixed EngineServer, the engine's HTTP server,
            to run on even if the write thread hangs because
            of a NFS disconnect. Top-level engine status page
-	   shows if the write thread is writing right now.
+           shows if the write thread is writing right now.
        </ul>
     <li>06/07/2001<br>
       <font color="#0000A0">Version 1.8</font>:<br>
@@ -185,12 +201,12 @@
            <li>Didn't really handle multiple archives until now.
                Hopefully not too many bugs left.
            <li>No longer investigates all subarchives
-	       unless necessary.<br>
-	       For find-channel and get-value-after-timestamp
-	       this can be skipped -> much faster!<br>
-	       When a list of channels and/or times is requested,
-	       the sub archives are still queried.
-	   </ul>
+               unless necessary.<br>
+               For find-channel and get-value-after-timestamp
+               this can be skipped -> much faster!<br>
+               When a list of channels and/or times is requested,
+               the sub archives are still queried.
+           </ul>
        <li>GNUPlotExporter:<br>
            <ul>
            <li>Use two Y-axes if exporting excactly two channels

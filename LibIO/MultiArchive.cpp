@@ -19,7 +19,7 @@
 
 // Open a MultiArchive for the given master file
 MultiArchive::MultiArchive(const stdString &master_file, 
-			   const osiTime &from, const osiTime &to)
+                           const osiTime &from, const osiTime &to)
 {
     _queriedAllArchives = false;
     if (! parseMasterFile(master_file, from, to))
@@ -36,7 +36,7 @@ ValueI *MultiArchive::newValue(DbrType type, DbrCount count)
 {   return 0; }
 
 bool MultiArchive::parseMasterFile(const stdString &master_file,
-				   const osiTime &from, const osiTime &to)
+                                   const osiTime &from, const osiTime &to)
 {
 #ifdef DEBUG_MULTIARCHIVE
     LOG_MSG("MultiArchive::parseMasterFile\n");
@@ -45,13 +45,14 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
     LowLevelIO file;
     if (! file.llopen (master_file.c_str()))
     {
-        LOG_MSG("Cannot open master file '" << master_file << "'\n");
+        LOG_MSG("Cannot open master file '%s'\n",
+                master_file.c_str());
         return false;
     }
     char line[14]; // master_version  : 14 chars
     if (! file.llread(line, 14))
     {
-        LOG_MSG("Invalid master file '" << master_file << "'\n");
+        LOG_MSG("Invalid master file '%s'\n", master_file.c_str());
         return false; // too small to be anything
     }
     file.llclose();
@@ -71,7 +72,8 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
     // Example:
     //     50 (weekly) Archives, each ~1GB / ~3000 channels
     //     All in 1 MultiArchive
-    //     Command: ArchiveExport -start <T0> -end <T1> <MultiArchive> -match <any pattern>
+    //     Command: ArchiveExport -start <T0> -end <T1> <MultiArchive> 
+    //                            -match <any pattern>
     //
     //  1. plain, searching all archives in MultiArchive
     //     (master_version=1)                            ~90 seconds
@@ -79,81 +81,89 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
     //     (exteded master_version=1)                    ~6 seconds
     //  3. searching all archives that intersect timerange
     //     (master_version=2)                            ~2 seconds
-
     stdString parameter, value;
     if (parser.nextLine()                      &&
         parser.getParameter(parameter, value)  &&
-        parameter == "master_version") {
-       if (value == "1")
-       {
-	  // version 1 has one archive to search per line
-	  while (parser.nextLine())
-	  {
-	     if (!isValidTime(from) && !isValidTime(to)) {
-		// No timestamps
-		// -> we have to use every Archive in the Multi-Archive
+        parameter == "master_version")
+    {
+        if (value == "1")
+        {
+            // version 1 has one archive to search per line
+            while (parser.nextLine())
+            {
+                if (!isValidTime(from) && !isValidTime(to))
+                {
+                    // No timestamps
+                    // -> we have to use every Archive in the Multi-Archive
 #ifdef DEBUG_MULTIARCHIVE
-		   LOG_MSG("sub-archive: " << parser.getLine() << "\n");
+                    LOG_MSG("sub-archive: %s\n", parser.getLine().c_str());
 #endif
-		_archives.push_back(parser.getLine());
-	     } else {
-		// avoiding to search archives that can't contain queried
-		// values at all should save some time...
-		Archive archive(new BinArchive(parser.getLine()));
-		ChannelIterator channel(archive);
-		osiTime start, end, time;
+                    _archives.push_back(parser.getLine());
+                }
+                else
+                {
+                    // avoiding to search archives that can't contain queried
+                    // values at all should save some time...
+                    Archive archive(new BinArchive(parser.getLine()));
+                    ChannelIterator channel(archive);
+                    osiTime start, end, time;
 
-		for (archive.findChannelByPattern(".*", channel); channel; ++channel)
-		{
-		   time = channel->getFirstTime();
-		   if (isValidTime(time) &&  (time < start  ||  start == nullTime))
-		      start = time;
-		   time = channel->getLastTime();
-		   if (time > end)
-		      end = time;
-		}
-		if ( (!isValidTime(from) || ( from < end ) ) &&
-		     (!isValidTime(to)   || ( to >= start ) ) ) {
+                    for (archive.findFirstChannel(channel); channel; ++channel)
+                    {
+                        time = channel->getFirstTime();
+                        if (isValidTime(time) &&
+                            (time < start  ||  start == nullTime))
+                            start = time;
+                        time = channel->getLastTime();
+                        if (time > end)
+                            end = time;
+                    }
+                    if ( (!isValidTime(from) || ( from < end ) ) &&
+                         (!isValidTime(to)   || ( to >= start ) ) ) {
 #ifdef DEBUG_MULTIARCHIVE
-		   LOG_MSG("sub-archive: " << parser.getLine() << "\n");
+                        LOG_MSG("sub-archive: %s\n", parser.getLine().c_str());
 #endif
-		   _archives.push_back(parser.getLine());
-		}
-	     }
-	  }
-       } else if (value == "2") {
-	  // version 2 has 2 timestamps (from, to) and an archive per line
-	  // the timestamps denote the times for which the archive contains
-	  // values
-	  while (parser.nextLine())
-	  {
-	     osiTime f, t;
-	     string2osiTime(parser.getLine().substr(0, 19), f);
-	     string2osiTime(parser.getLine().substr(20, 19), t);
-	     if ( !isValidTime(f) || !isValidTime(t) ) {
-		LOG_MSG("Invalid timestamp in master file: '" <<
-			master_file << "' line " <<
-			parser.getLineNo() << "!\n");
-		continue;
-	     }
-	     if ( (!isValidTime(from) || ( from < t ) ) &&
-		  (!isValidTime(to)   || ( to >= f ) ) ) {
+                        _archives.push_back(parser.getLine());
+                    }
+                }
+            }
+        }
+        else if (value == "2")
+        {
+            // version 2 has 2 timestamps (from, to) and an archive per line
+            // the timestamps denote the times for which the archive contains
+            // values
+            while (parser.nextLine())
+            {
+                osiTime f, t;
+                string2osiTime(parser.getLine().substr(0, 19), f);
+                string2osiTime(parser.getLine().substr(20, 19), t);
+                if ( !isValidTime(f) || !isValidTime(t) )
+                {
+                    LOG_MSG("Invalid timestamp in master file '%s' line %d\n",
+                            master_file.c_str(), parser.getLineNo());
+                    continue;
+                }
+                if ( (!isValidTime(from) || ( from < t ) ) &&
+                     (!isValidTime(to)   || ( to >= f ) ) ) {
 #ifdef DEBUG_MULTIARCHIVE
-		LOG_MSG("sub-archive: " << parser.getLine() << "\n");
+                    LOG_MSG("sub-archive: %s\n", parser.getLine().c_str());
 #endif
-		_archives.push_back(parser.getLine().substr(40));
-	     }
-	  }
-       } else {
-	  LOG_MSG("Invalid master file '" << master_file
-		  << "', unknown version '" << value << "'\n");
-	  return false;
-       }
+                    _archives.push_back(parser.getLine().substr(40));
+                }
+            }
+        }
+        else
+        {
+            LOG_MSG("Invalid master file '%s' version %s\n",
+                    master_file.c_str(), value.c_str());
+            return false;
+        }
     }
     else
     {
-        LOG_MSG("Invalid master file '" << master_file
-                << "', maybe wrong version\n");
+        LOG_MSG("Invalid master file '%s', maybe wrong version\n",
+                master_file.c_str());
         return false;
     }
     return true;
@@ -166,17 +176,19 @@ void MultiArchive::log() const
     
     while (archs != _archives.end())
     {
-        LOG_MSG("Archive file: " << *archs << "\n");
+        LOG_MSG("Archive file: %s\n", archs->c_str());
         ++archs;
     }
-
+    
     LOG_MSG("Channels:\n");
     stdVector<ChannelInfo>::const_iterator chans = _channels.begin();
+    stdString start, end;
     while (chans != _channels.end())
     {
-        LOG_MSG(chans->_name << ": "
-                << chans->_first_time << ", "
-                << chans->_last_time << "\n");
+        osiTime2string(chans->_first_time, start);
+        osiTime2string(chans->_last_time, end);
+        LOG_MSG("%s: %s, %s\n",
+                chans->_name.c_str(), start.c_str(), end.c_str());
         ++chans;
     }
 }
@@ -270,7 +282,6 @@ bool MultiArchive::findChannelByName(const stdString &name,
             }
         }         
     }
-    
     multi_channel_iter->clear();
     return false;
 }
@@ -442,6 +453,4 @@ bool MultiArchive::getValueNearTime(
         return value_iterator.isValid ();
     return false;
 }
-
-
 

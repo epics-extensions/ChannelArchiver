@@ -20,17 +20,15 @@ const char *ArchiveException::what() const
 {
 	if (_error_info.empty ())
 	{
-        std::strstream buf;
-
+        char buffer[2048];
 		if (_detail.empty())
-			buf << getSourceFile() << " (" << getSourceLine() <<"): "
-					<< error_text[_code] << '\0';
-		else
-			buf << getSourceFile() << " (" << getSourceLine() <<"): "
-					<< error_text[_code]
-					<< "\n(" << _detail << ')' << '\0';
-		_error_info = buf.str ();
-		buf.rdbuf()->freeze (false);
+            sprintf(buffer, "%s (%d): %s\n",
+                    getSourceFile(), getSourceLine(), error_text[_code]);
+        else
+            sprintf(buffer, "%s (%d): %s\n(%s)",
+                    getSourceFile(), getSourceLine(), error_text[_code],
+                    _detail.c_str());
+        _error_info = buffer;
 	}
 
 	return _error_info.c_str ();

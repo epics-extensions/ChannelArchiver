@@ -172,13 +172,13 @@ void CtrlInfoI::getState(size_t state, stdString &result) const
         return;
     }
 
-    std::strstream tmp;
-    tmp << "<Undef: " << state << '\0';
-    result = tmp.str();
-    tmp.rdbuf()->freeze (false);
+    char buffer[80];
+    sprintf(buffer, "<Undef: %d>", state);
+    result = buffer;
 }
 
-bool CtrlInfoI::parseState(const char *text, const char **next, size_t &state) const
+bool CtrlInfoI::parseState(const char *text,
+                           const char **next, size_t &state) const
 {
     const char *state_text;
     size_t  i, len;
@@ -188,7 +188,7 @@ bool CtrlInfoI::parseState(const char *text, const char **next, size_t &state) c
         state_text = getState(i, len);
         if (! state_text)
         {
-            LOG_MSG("CtrlInfoI::parseState: missing state " << i);
+            LOG_MSG("CtrlInfoI::parseState: missing state %d", i);
             return false;
         }
         if (!strncmp(text, state_text, len))
@@ -202,31 +202,27 @@ bool CtrlInfoI::parseState(const char *text, const char **next, size_t &state) c
     return false;
 }
 
-void CtrlInfoI::show(std::ostream &o) const
+void CtrlInfoI::show(FILE *f) const
 {
     if (getType() == Numeric)
     {
-        o << "CtrlInfo: Numeric\n";
-        o << "Display: " << getDisplayLow() << " ... "
-                << getDisplayHigh () << "\n";
-        o << "Alarm:   " << getLowAlarm() << " ... "
-                << getHighAlarm () << "\n";
-        o << "Warning: " << getLowWarning() << " ... "
-                << getHighWarning () << "\n";
-        o << "Prec:    " << getPrecision() << " '" << getUnits() << "'\n";
+        fprintf(f, "CtrlInfo: Numeric\n");
+        fprintf(f, "Display : %g ... %g\n", getDisplayLow(), getDisplayHigh());
+        fprintf(f, "Alarm   : %g ... %g\n", getLowAlarm(), getHighAlarm());
+        fprintf(f, "Warning : %g ... %g\n", getLowWarning(), getHighWarning());
+        fprintf(f, "Prec    : %ld '%s'\n", getPrecision(), getUnits());
     }
     else if (getType() == Enumerated)
     {
-        o << "CtrlInfo: Enumerated\n";
-        o << "States:\n";
+        fprintf(f, "CtrlInfo: Enumerated\n");
+        fprintf(f, "States:\n");
         size_t i, len;
         for (i=0; i<getNumStates(); ++i)
         {
-            o << "\tstate='" << getState(i, len) << "'\n";
+            fprintf(f, "\tstate='%s'\n", getState(i, len));
         }
     }
     else
-        o << "CtrlInfo: Unknown\n";
+        fprintf(f, "CtrlInfo: Unknown\n");
 }
-
 

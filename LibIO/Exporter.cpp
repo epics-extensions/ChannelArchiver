@@ -9,11 +9,9 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include "Exporter.h"
-#include "ArchiveException.h"
-#ifndef USE_CPP_STREAMS
-#include <cvtFast.h>
-#endif
+#include"Exporter.h"
+#include"ArchiveException.h"
+#include<cvtFast.h>
 
 Exporter::Exporter(ArchiveI *archive)
 {
@@ -40,7 +38,7 @@ void Exporter::init(ArchiveI *archive)
     _data_count = 0;
 }
 
-void Exporter::exportMatchingChannels (const stdString &channel_name_pattern)
+void Exporter::exportMatchingChannels(const stdString &channel_name_pattern)
 {
     // Find all channels in archive that match a given pattern.
     // If pattern is empty,
@@ -48,45 +46,39 @@ void Exporter::exportMatchingChannels (const stdString &channel_name_pattern)
     stdVector<stdString> channel_names;
 
     ChannelIteratorI *channel = _archive->newChannelIterator();
-    _archive->findChannelByPattern (channel_name_pattern, channel);
+    _archive->findChannelByPattern(channel_name_pattern, channel);
     while (channel->isValid())
     {
-        channel_names.push_back (channel->getChannel()->getName ());
+        channel_names.push_back(channel->getChannel()->getName ());
         channel->next();
     }
     delete channel;
 
-    exportChannelList (channel_names);
+    exportChannelList(channel_names);
 }
 
-void Exporter::printTime(std::ostream *out, const osiTime &time)
+void Exporter::printTime(FILE *f, const osiTime &time)
 {
     int year, month, day, hour, min, sec;
     unsigned long nano;
     osiTime2vals (time, year, month, day, hour, min, sec, nano);
 
-    char buf[80];
-    sprintf(buf, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
+    fprintf(f, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
             month, day, year, hour, min, sec, nano);
-    *out << buf;
 }
 
-void Exporter::printValue(std::ostream *out,
-                          const osiTime &time, const ValueI *v)
+void Exporter::printValue(FILE *f, const osiTime &time, const ValueI *v)
 {
     // skip values which are Archiver specials
     size_t ai;
     stdString txt;
-#ifndef USE_CPP_STREAMS
     char buf[100];
     unsigned short precision;
-    buf[0] = '\t';
-#endif
     
     if (v->isInfo())
     {
         for (ai=0; ai<v->getCount(); ++ai)
-            *out << '\t' << _undefined_value;
+            fprintf(f, "\t%s", _undefined_value.c_str());
     }
     else
     {
@@ -100,43 +92,29 @@ void Exporter::printValue(std::ostream *out,
             (info && info->getType() == CtrlInfoI::Enumerated))
         {
             v->getValue(txt);
-            *out << '\t' << txt;
+            fprintf(f, "\t%s", txt.c_str());
         }
         else
         {
-#ifdef USE_CPP_STREAMS
-            long o_flags = out->flags();
-            long o_prec = out->precision();
-            if (info && info->getPrecision() > 0)
-            {
-                out->flags(std::ios::fixed);
-                out->precision(info->getPrecision());
-            }
-            for (ai=0; ai<v->getCount(); ++ai)
-                *out << '\t' << v->getDouble(ai);
-            out->flags(o_flags);
-            out->precision(o_prec);
-#else
             if (info && info->getPrecision() > 0)
                 precision = info->getPrecision();
             else
                 precision = 6;
             for (ai=0; ai<v->getCount(); ++ai)
             {
-                cvtDoubleToString(v->getDouble(ai), buf+1, precision);
-                *out << buf;
+                cvtDoubleToString(v->getDouble(ai), buf, precision);
+                fprintf(f, "\t%s", buf);
             }
-#endif
         }
     }
-
+    
     if (_show_status)
     {
         v->getStatus(txt);
         if (txt.empty())
-            *out << "\t ";
+            fprintf(f, "\t ");
         else
-            *out << '\t' << txt;
+            fprintf(f, "\t%s", txt.c_str());
     }
 }
 

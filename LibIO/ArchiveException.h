@@ -55,7 +55,8 @@ public:
 
 	//* Similar, use 
 	// <I>throwDetailedArchiveException(code, info)</I>.
-	ArchiveException (const char *sourcefile, size_t line, Code code, const stdString &detail)
+	ArchiveException(const char *sourcefile, size_t line,
+                     Code code, const stdString &detail)
 	: GenericException(sourcefile, line), _code (code), _detail (detail)
 	{}
 

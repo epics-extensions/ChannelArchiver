@@ -10,33 +10,33 @@
 // For other types, the current info is maintained
 // so that the reader can decide to ignore the problem.
 // In other cases, the type is set to Invalid
-void BinCtrlInfo::read (LowLevelIO &file, FileOffset offset)
+void BinCtrlInfo::read(LowLevelIO &file, FileOffset offset)
 {
     // read size field only
     unsigned short size;
-    if (file.llseek (offset) != offset ||
-        !file.llread (&size, sizeof size))
+    if (file.llseek(offset) != offset ||
+        !file.llread(&size, sizeof size))
     {
         _infobuf.mem()->type = Invalid;
-        throwDetailedArchiveException (ReadError, "Cannot read size of CtrlInfo");
+        throwDetailedArchiveException(
+            ReadError, "Cannot read size of CtrlInfo");
         return;
     }
-    SHORTFromDisk (size);
+    SHORTFromDisk(size);
 
-    if (size < offsetof (CtrlInfoData, value) + sizeof (EnumeratedInfo))
+    if (size < offsetof(CtrlInfoData, value) + sizeof(EnumeratedInfo))
     {
         if (getType() == Enumerated)
         {
-            LOG_MSG ("CtrlInfo too small: " << size <<
-                ", forcing to empty enum for compatibility\n");
+            LOG_MSG("CtrlInfo too small: %d, "
+                    "forcing to empty enum for compatibility\n", size);
             setEnumerated (0, 0);
             return;
         }
         // keep current values for _infobuf!
-        std::strstream buf;
-        buf << "CtrlInfo too small: " << size << '\0';
-        throwDetailedArchiveException (Invalid, buf.str());
-        buf.rdbuf()->freeze (false);
+        char buffer[100];
+        sprintf(buffer, "CtrlInfo too small: %d", size);
+        throwDetailedArchiveException(Invalid, buffer);
         return;
     }
 
@@ -46,10 +46,9 @@ void BinCtrlInfo::read (LowLevelIO &file, FileOffset offset)
     if (info->size > _infobuf.getBufferSize ())
     {
         info->type = Invalid;
-        std::strstream buf;
-        buf << "CtrlInfo too big: " << info->size << '\0';
-        throwDetailedArchiveException (Invalid, buf.str());
-        buf.rdbuf()->freeze (false);
+        char buffer[100];
+        sprintf(buffer, "CtrlInfo too big: %d", info->size);
+        throwDetailedArchiveException(Invalid, buffer);
         return;
     }
     // read remainder of CtrlInfo:
@@ -88,10 +87,11 @@ void BinCtrlInfo::read (LowLevelIO &file, FileOffset offset)
         SHORTFromDisk (info->value.index.num_states);
         break;
     default:
-        LOG_MSG ("CtrlInfo::read @offset " << (void *) offset << ":\n");
-        LOG_MSG ("Invalid CtrlInfo, type " << info->type << ", size " << info->size << "\n");
+        LOG_MSG("CtrlInfo::read @offset 0x%X:\n", (void *) offset);
+        LOG_MSG("Invalid CtrlInfo, type %d, size %d\n",
+                info->type, info->size);
         info->type = Invalid;
-        throwDetailedArchiveException (Invalid, "Archive: Invalid CtrlInfo");
+        throwDetailedArchiveException(Invalid, "Archive: Invalid CtrlInfo");
     }
 }
 

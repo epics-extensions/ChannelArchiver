@@ -65,7 +65,7 @@ bool BinValueIterator::attach (class BinChannel *channel,
 }
 
 // Constructor-helper: Called after _header is set
-void BinValueIterator::buildFromHeader (bool last_value)
+void BinValueIterator::buildFromHeader(bool last_value)
 {
     _ctrl_info_offset  = INVALID_OFFSET;
     _value_index = AFTER_END;
@@ -73,34 +73,37 @@ void BinValueIterator::buildFromHeader (bool last_value)
         return;
     if (_header->getPeriod() < 0)
     {
-        LOG_MSG ("BinValueIterator::buildFromHeader: skipping buffer w/ bad Period in "
-            << _header.getFilename () << "@" << _header.getOffset () << "\n");
+        LOG_MSG("BinValueIterator::buildFromHeader: "
+                "skipping buffer w/ bad Period in %s @ 0x%X\n",
+                _header.getFilename().c_str(), _header.getOffset());
         if (last_value)
         {
-            if (! prevBuffer ())    return;
+            if (! prevBuffer())
+                return;
         }
         else
         {
-            if (! nextBuffer ())    return;
+            if (! nextBuffer())
+                return;
         }
     }
-    if (! (readCtrlInfo () && checkValueType ()))
+    if (! (readCtrlInfo() && checkValueType()))
         return;
 
     if (last_value)
     {
-        if (! readValue (_header->getNumSamples ()-1))
+        if (! readValue(_header->getNumSamples ()-1))
         {
             _value_index = BEFORE_START;
-            prev ();    // move to first non-empty buffer
+            prev();    // move to first non-empty buffer
         }
     }
     else
     {
-        if (! readValue (0))
+        if (! readValue(0))
         {
             _value_index = AFTER_END;
-            next ();    // move to first non-empty buffer
+            next();    // move to first non-empty buffer
         }
     }
 }
@@ -193,7 +196,7 @@ bool BinValueIterator::isValid () const
 
 class BinArchive *BinValueIterator::getArchive ()
 {
-    LOG_ASSERT (_channel);
+    LOG_ASSERT(_channel);
     return _channel->getArchive ();
 }
 
@@ -232,7 +235,7 @@ size_t BinValueIterator::determineChunk (const osiTime &until)
     }
     catch (ArchiveException &e)
     {
-        LOG_MSG ("ValueIterator::determineChunk: caught " << e.what () << "\n");
+        LOG_MSG("ValueIterator::determineChunk: caught %s\n", e.what());
     }
 
     return count;
@@ -299,7 +302,7 @@ bool BinValueIterator::readCtrlInfo ()
                 _ctrl_info_offset = INVALID_OFFSET;
                 return false;
             }
-            LOG_MSG ("Ignoring CtrlInfo error, keeping current one\n");
+            LOG_MSG("Ignoring CtrlInfo error, keeping current one\n");
             return true;
         }
         else
@@ -365,7 +368,7 @@ bool BinValueIterator::nextBuffer ()
         return false;
     stdString old_name = _header.getFilename ();
     ++_header;
-    LOG_ASSERT (_header);
+    LOG_ASSERT(_header);
     // new info or switched files -> re-read!
     if (_ctrl_info_offset != _header->getConfigOffset ()  ||
         old_name != _header.getFilename ())
@@ -374,15 +377,17 @@ bool BinValueIterator::nextBuffer ()
         // If we hit that, skip this block:
         if (!readCtrlInfo ())
         {
-            LOG_MSG ("ValueIterator::nextBuffer: skipping buffer w/ bad CtrlInfo in "
-                << _header.getFilename () << "\n");
+            LOG_MSG("ValueIterator::nextBuffer: "
+                    "skipping buffer w/ bad CtrlInfo in %s",
+                    _header.getFilename().c_str());
             return nextBuffer ();
         }
     }
     if (_header->getPeriod() < 0)
     {
-        LOG_MSG ("ValueIterator::nextBuffer: skipping buffer w/ bad Period in "
-            << _header.getFilename () << "@" << _header.getOffset() << "\n");
+        LOG_MSG("ValueIterator::nextBuffer: "
+                "skipping buffer w/ bad Period in %s @ 0x%X\n",
+                _header.getFilename().c_str(), _header.getOffset());
         return nextBuffer ();
     }
 
@@ -395,7 +400,7 @@ bool BinValueIterator::prevBuffer ()
         return false;
     stdString old_name = _header.getFilename ();
     --_header;
-    LOG_ASSERT (_header);
+    LOG_ASSERT(_header);
     // new info or switched files -> re-read!
     if (_ctrl_info_offset != _header->getConfigOffset ()  ||
         old_name != _header.getFilename ())
@@ -403,18 +408,20 @@ bool BinValueIterator::prevBuffer ()
         // See comment in nextBuffer()...
         if (! readCtrlInfo ())
         {
-            LOG_MSG ("ValueIterator::prevBuffer: skipping buffer w/ bad CtrlInfo in "
-                << _header.getFilename () << "\n");
+            LOG_MSG("ValueIterator::prevBuffer: "
+                    "skipping buffer w/ bad CtrlInfo in %s\n",
+                    _header.getFilename().c_str());
             return prevBuffer ();
         }
     }
     if (_header->getPeriod() < 0)
     {
-        LOG_MSG ("ValueIterator::prevBuffer: skipping buffer w/ bad Period in "
-            << _header.getFilename () << "@" << _header.getOffset() << "\n");
-        return prevBuffer ();
+        LOG_MSG("ValueIterator::prevBuffer: "
+                "skipping buffer w/ bad Period in %s @ 0x%X\n",
+                _header.getFilename().c_str(), _header.getOffset());
+        return prevBuffer();
     }
 
-    return checkValueType ();
+    return checkValueType();
 }
 

@@ -5,8 +5,7 @@
 #include "LinearReader.h"
 #include "SpreadsheetReader.h"
 
-SpreadsheetReader::SpreadsheetReader(IndexFile &index,
-                                     double delta)
+SpreadsheetReader::SpreadsheetReader(IndexFile &index, double delta)
         : index(index), delta(delta)
 {
     num = 0;
@@ -21,7 +20,13 @@ SpreadsheetReader::SpreadsheetReader(IndexFile &index,
 SpreadsheetReader::~SpreadsheetReader()
 {
     size_t i;
-    free(value);
+    if (value)
+    {
+        for (i=0; i<num; ++i)
+            if (value[i])
+                RawValue::free(value[i]);
+        free(value);
+    }
     free(count);
     free(type); 
     if (info)
@@ -75,7 +80,7 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
             info[i] = new CtrlInfo(reader[i]->getInfo());
             if (!info[i])
             {
-                LOG_MSG("SpreadsheetReader::find cannot allocate info %d\n", i);
+                LOG_MSG("SpreadsheetReader::find cannot allocate info %d\n",i);
                 return false;
             }
         }
@@ -118,8 +123,7 @@ bool SpreadsheetReader::next()
                     RawValue::free(value[i]);
                     type[i] = reader[i]->getType();
                     count[i] = reader[i]->getCount();
-                    value[i] = RawValue::allocate(type[i],
-                                                  count[i], 1);
+                    value[i] = RawValue::allocate(type[i], count[i], 1);
                     if (!value[i])
                     {
                         LOG_MSG("SpreadsheetReader cannot allocate value\n");
@@ -130,11 +134,6 @@ bool SpreadsheetReader::next()
                 read_data[i] = reader[i]->next(); // advance reader
             }
             // else leave value[i] as is, which initially means: 0
-        }
-        else if (value[i])
-        {
-            RawValue::free(value[i]);
-            value[i] = 0;
         }
     }    
     return have_any;

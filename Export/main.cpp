@@ -102,7 +102,6 @@ bool dump_spreadsheet(IndexFile &index,
                 output_name.c_str());
         return false;
     }
-
     FILE *gnufile = 0;
     if (gnuplot || image)
     {

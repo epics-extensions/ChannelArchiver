@@ -144,7 +144,7 @@ proc checkForBgManager {} {
     }
     switch $act {
       start {
-	if {[tk_dialog .w "CAbgManager not running" "$msg!" warning 0 "Continue without" "Start"] == 1} {
+	if {[camGUI::MessageBox warning "Warning!" "CAbgManager not running!" "$msg!" "" {"Continue without" "Start"} .] == "Start"} {
 	  if {[regexp "Windows" $tcl_platform(os)]} {
 	    set tclext .tcl
 	  } else {
@@ -531,7 +531,7 @@ proc runArchiver {i {forceRun 0}} {
   }
   set md [split $master_txt "\n"]
   if {$toggle} {
-    set j [lsearch -regex $md ".* $ROOT/$archive"]
+    set j [lsearch -regex $md "^(.* )?$ROOT/$archive"]
     if {$j > 0} {
       if {[regexp "^\#" [lindex $md [expr $j - 1]]]} {incr j -1}
       set md [lrange $md 0 [expr $j - 1]]
@@ -540,7 +540,7 @@ proc runArchiver {i {forceRun 0}} {
 
   if {"[file dirname $archive]" != "."} {
     if {"[lindex $md 0]" == "master_version=$::multiVersion"} {
-      if {[lsearch -regex $md ".*$ROOT/$archive"] < 0} {
+      if {[lsearch -regex $md "^(.* )?$ROOT/$archive"] < 0} {
 	set ts ""
 	if {$::multiVersion == 2} {
 	  if {$starttime == 0} {

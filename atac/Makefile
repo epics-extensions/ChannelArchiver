@@ -49,7 +49,7 @@ endif
 
 ifdef PSI
      TCLLIBS=/usr/lib/libtcl8.0.so
-     BASE=/work/epics/base  
+     BASE=/work/epics/base
 endif
 
 CFLAGS+=-I $(EXTENSIONS)/include -I $(BASE)/include

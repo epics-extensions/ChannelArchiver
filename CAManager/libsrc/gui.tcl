@@ -1041,7 +1041,7 @@ proc camGUI::initTable {table} {
     set aEngines($i,$::iPort) [camMisc::arcGet $i port]
     set aEngines($i,$::iDescr) [camMisc::arcGet $i descr]
     set aEngines($i,$::iRun) Dunno
-    set aEngines($i,$::iBlocked) Dunno
+    set aEngines($i,$::iBlocked) "???"
 
     set camGUI::aEngines($i,$::iBlocked) \
 	[lindex $::yesno [file exists [Blockfile $i]]]
@@ -1752,6 +1752,7 @@ proc camGUI::setButtons {w} {
   }
   if {![camMisc::isLocalhost $camGUI::aEngines($row,$::iHost)]} {
     $topf.bf.start configure -state disabled
+    $topf.bf.stop configure -state disabled
   }
   if {$row > 0} {
     $topf.bf.up configure -state normal
@@ -1786,6 +1787,7 @@ proc camGUI::aStart {w} {
 proc camGUI::aStop {w} {
   regexp (\[0-9\]*), [$w cursel] all row
 
+  if {![camMisc::isLocalhost "$host"]} {return}
   stopArchiver $row 1
 
   after 2000 [list camComm::CheckRunning $row camGUI::aEngines($row,$::iRun)]

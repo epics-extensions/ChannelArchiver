@@ -28,8 +28,9 @@ FLAGS += -I/usr/local/include
 FLAGS += -L../../../lib/$(EPICS_HOST_ARCH) -lDataServer -lStorage -lTools 
 # EPICS Base
 FLAGS += -L$(EPICS_BASE_RELEASE)/lib/$(EPICS_HOST_ARCH) -ldbStaticHost -lCom -lca
-# compare to output of xmlrpc-c-config libwww-client --libs
-FLAGS += -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok
+# XML-RPC library
+# TODO: This is not portable to Win32
+FLAGS += `xmlrpc-c-config libwww-client --libs  | sed -e 's/-Wl,--rpath.*//'`
 
 $(OUT):
 	mkdir $(OUT)

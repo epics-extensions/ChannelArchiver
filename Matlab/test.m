@@ -64,6 +64,8 @@ if length(tin) ~= length(tout) |  ~(isempty(find(tin-tout)))
     disp('TIME STAMPS OF THE 2 CHANNELS DO NOT MATCH');
 end
 gain=10*log10((out*1000)./in);
+% Patch gain to remove e.g. +-Inf
+gain(find(abs(gain) > 100)) = 0;
 if is_matlab==1
     subplot(1,2,1);
     plot(tin, in*10, 'b-', tin, out, 'r-');
@@ -76,14 +78,14 @@ if is_matlab==1
     ylabel('Gain [dB]');
     title('Klystron Gain');
 else
-    subplot(1,2,1);
+    figure(1);
     t0=min(tin(1),tout(1));
     [Y,M,D,h,m,s] = datevec(t0);
     day=floor(t0);
     xlabel(sprintf('Time on %02d/%02d/%04d [24h]', M, D, Y))
     plot(tin-day, in, '-;Klystron Input [10 W];', ...
          tout-day,out, '-;Klystron Output [kW];');
-    subplot(1,2,2);
+    figure(2);
     xlabel('Klystron Output [kW]');
     ylabel('Gain [dB]');
     plot(out, gain, '*;;');

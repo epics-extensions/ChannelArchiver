@@ -50,11 +50,12 @@ What follows is an example setup for the Apache Web Server under Linux:
 \begin{enumerate}
 \item Check your Apache configuration file, which can often been found
   in ``/etc/httpd/conf/httpd.conf'', for the location of your cgi-bin
-  directory.  In my case, there was already a CGI directory /var/www/cgi-bin.
+  directory (For Mandrake 10, check ``/etc/httpd/conf/commonhttpd.conf'').
+  In my case, there was already a CGI directory configured as /var/www/cgi-bin.
 
 \item Create a new CGI directory so that we can specifically configure
-   it.\\
-   Adding the following to the Apache config file worked for me:
+   it, e.g.\ /var/www/cgi-bin/xmlrpc, and then add the following to
+   the Apache config file:
 \begin{lstlisting}[keywordstyle=\sffamily]
 <Directory /var/www/cgi-bin/xmlrpc>
    SetEnv LD_LIBRARY_PATH  /usr/local/lib:...
@@ -64,11 +65,15 @@ What follows is an example setup for the Apache Web Server under Linux:
 \end{lstlisting}
   The LD\_LIBRARY\_PATH needs to include all the directories that
   contain shared libraries which your ArchiveDataServer.cgi uses.
-  In many cases, this means the EPICS base and extensions' lib
-  directories as well as the install location of the expat and XML-RPC
-  libraries.
+  In most cases, this includes the
+  \begin{itemize}
+  \item install location of the expat and XML-RPC
+        libraries, often /usr/local/lib,
+  \item ``lib'' subdirectories of EPICS base and EPICS extensions,
+        something like /ade/epics/supTop/base/R3.14.4/lib/linux-x86:...
+  \end{itemize}
   The SERVERCONFIG variable needs to point to your server configuration
-   file, more about which next.
+  file, more about which next.
 \end{enumerate}
 
 \subsection{Setup}

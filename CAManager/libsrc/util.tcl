@@ -10,10 +10,51 @@ regsub ": (.*) \\$" $CVS(Revision,Util) "\\1" CVS(Revision,Util)
 regsub ": (.*) \\$" $CVS(Date,Util) "\\1" CVS(Date,Util)
 regsub ": (.*) \\$" $CVS(Author,Util) "\\1" CVS(Author,Util)
 
+# EnvVar DEBUG should be numeric
+set ::debug 0
 if {[info exists env(DEBUG)]} {
-  set ::debug 1
-} else {
-  set ::debug 0
+  if {[catch {set ::debug [expr $env(DEBUG)]}]} {
+    set ::debug 1
+  }
+}
+
+# messages with color set to "NO" are never printed anywhere
+# messages with color set to "no" appear only on cosole and in logfile
+# any other string is used as color value for html-output
+
+array set colormap {
+  error		red
+  command	blue
+  schedule	no
+  debug1	NO
+  debug2	NO
+  debug3	NO
+  funcall	NO
+  funcallX	NO
+  console	no
+  normal	normal
+}
+
+array set colorname {
+  error		"Errors/Warnings"
+  command	"Starts/Stops"
+  schedule	"Scheduled jobs"
+  debug1	"Debug 1"
+  debug2	"Debug 2"
+  debug3	"Debug 3"
+  funcall	"Function Calls"
+  funcallX	"Function Calls (functions often called)"
+  console	"Console"
+  normal	"Misc."
+}
+
+if {$::debug} {
+  if {[expr $::debug & 1]} { set colormap(schedule) green }
+  if {[expr $::debug & 6]} { set colormap(debug1) brown }
+  if {[expr $::debug & 4]} { set colormap(debug2) orange }
+  if {[expr $::debug & 8]} { set colormap(funcall) no }
+  if {[expr $::debug & 16]} { set colormap(funcallX) no }
+  if {[expr $::debug & 32]} { set colormap(console) no }
 }
 
 set yesno {NO YES}
@@ -37,6 +78,7 @@ if [info exists tk_version] {
 }
 
 proc $funame {args} {
+Puts "util: $funame $args" funcall
   global errorInfo
   foreach l [split $errorInfo "\n"] {
     Puts "$l" error
@@ -45,6 +87,7 @@ proc $funame {args} {
 }
 
 proc Exit {{code 0}} {
+Puts "util: Exit $code" funcall
   if {[llength $::socks] > 0} {
     puts stderr "waiting for open connections to close..."
   }
@@ -64,14 +107,16 @@ proc Exit {{code 0}} {
 proc Puts {s {color normal}} {
   set color $::colormap($color)
   set now "[clock format [clock seconds] -format %Y/%m/%d\ %H:%M:%S]: "
-  if {[info exists ::args(log)] && ("$::args(log)" != "")} {
-    set w [open $::args(log) a+]
-    puts $w "$now$s"
-    close $w
+  if {$color != "NO"} {
+    if {[info exists ::args(log)] && ("$::args(log)" != "")} {
+      set w [open $::args(log) a+]
+      puts $w "${now}([file rootname [file tail [info script]]]) $s"
+      close $w
+    }
+    
+    puts stdout "${now}([file rootname [file tail [info script]]]) $s"
   }
-
-  puts stdout "$now$s"
-  if {$color == "no"} {return 1}
+  if {[string toupper $color] == "NO"} {return 1}
   if {$color != "normal"} {
     set s "<font color=$color>$s</font>"
   }
@@ -80,9 +125,11 @@ proc Puts {s {color normal}} {
 }
 
 proc checkArchivers {args} {
+Puts "util: checkArchivers $args" funcall
   trace vdelete ArchiversSet w {after 1 checkArchivers}
   after [expr 1000 * $::bgCheckInt] checkArchivers
   foreach i [camMisc::arcIdx] {
+    trace vdelete ::_run($i) w checkstate
     if {[info exists ::nocheck($i)] && $::nocheck($i)} continue
     if {![info exists ::_run($i)]} {set ::_run($i) -}
     if {![camMisc::isLocalhost "[camMisc::arcGet $i host]"]} continue
@@ -92,6 +139,7 @@ proc checkArchivers {args} {
 }
 
 proc checkBgManager {fd h} {
+Puts "util: checkBgManager $fd $h" funcall
   gets $fd line
   if {[regexp "Server: Channel Archiver bgManager (.*)@(.*):(\[0-9\]*):(.*)" $line \
 	   all ::reply($h,user) ::reply($h,host) ::reply($h,port) ::reply($h,cfg)]} {
@@ -104,12 +152,14 @@ proc checkBgManager {fd h} {
 }
 
 proc cfbgmTimeout {fd h} {
+Puts "util: cfbgmTimeout $fd $h" funcall
   set ::reply($h) "timeout"
   incr ::open -1
   catch {close $fd}
 }
 
 proc checkForBgManager { {force 0} } {
+Puts "util: checkForBgManager $force" funcall
   global tcl_platform
   if {$::checkBgMan == 0} return
   set hosts {}
@@ -186,31 +236,46 @@ proc checkForBgManager { {force 0} } {
 }
 
 proc checkstate {arr ind op} {
+Puts "util: checkstate $arr \"$ind\" $op" funcall
+  Puts "${arr}($ind) was set to [array get $arr $ind]" debug3
+  trace vdelete ::_run($ind) w checkstate
   if {"$::_run($ind)" == "NO"} {
-    trace vdelete ::_run($ind) w checkstate
     if {("[camMisc::arcGet $ind start]" == "NO")} return
     if {("[camMisc::arcGet $ind start]" != "timerange")} {
-      catch {after cancel $::sched($ind,start,job)}
-      set ::sched($ind,start,job) [after 100 "runArchiver $ind"]
+      if {[info exists ::sched($ind,start,job)]} {
+	after cancel $::sched($ind,start,job)
+	Puts "canceled startjob $::sched($ind,start,job) ($ind,start,job) \"[camMisc::arcGet $ind descr]\"" debug2
+	array unset ::sched $ind,start,job
+      }
+      set ::sched($ind,start,job) [after 10 "runArchiver $ind"]
     } else {
       # timerange
       lassign [duetime $ind] Starttime Stoptime
-      set starttime [expr ( $Starttime - [clock seconds] ) * 1000]
-      set stoptime [expr ( $Stoptime - [clock seconds] ) * 1000]
-      if {$stoptime <= 0} return
-      if {$starttime < 0} {set starttime 0}
+      set now [clock seconds]
+      # timerange is already over
+      if {$Stoptime <= $now} return
+      # fix starttime not to be in the past
+      if {$Starttime < $now} {
+	set Starttime $now
+      }
+      # schedule job at most 10 days ahead (otherwise we might get an integer-overflow...)
+      if {($Starttime - $now) > 604800} {Puts "start of \"[camMisc::arcGet $ind descr]\" too far ahead; will schedule later" debug2; return}
+      set starttime [expr ( $Starttime - $now ) * 1000]
+      set stoptime [expr ( $Stoptime - $now ) * 1000]
       if {[info exists ::sched($ind,start,time)] && ($::sched($ind,start,time) == $Starttime)} return
       Puts "starting \"[camMisc::arcGet $ind descr]\" @ [httpd::time $Starttime]" schedule
       set ::sched($ind,start,time) $Starttime
       set ::sched($ind,start,job) [after $starttime "runArchiver $ind"]
+      Puts "scheduled start-job in [expr $starttime/1000]s" debug1 
     }
-  } elseif [regexp "^(BLOCKED|since)" $::_run($ind)] {
-    trace vdelete ::_run($ind) w checkstate
+#  } elseif {[regexp "^(BLOCKED|since)" $::_run($ind)]} {
+#    trace vdelete ::_run($ind) w checkstate
   }
 }
 
 # returns start- and stop-time, when an archiver is SUPPOSED to run!
 proc duetime {i {run X} {timespec X}} {
+Puts "util: duetime $i $run \"$timespec\"" funcall
   if {$run == "X"} {set run [camMisc::arcGet $i start]}
   if {$timespec == "X"} {set timespec [camMisc::arcGet $i timespec]}
   set now [clock seconds]
@@ -282,44 +347,9 @@ proc duetime {i {run X} {timespec X}} {
   return [list $starttime [expr $starttime + $delta]]
 }
 
-if {$::debug} {
-  set ::weekdays {Sunday Monday Tuesday Wednesday Thursday Friday Saturday}
-  set xamples {
-    {minute "0 1"}
-    {minute "12 12"}
-    {minute "12 15"}
-    {hour "00:27:00 1"}
-    {hour "06:00:00 8"}
-    {day "14:30:00 1"}
-    {day "02:00:00 2"}
-    {day "23:59:59 3"}
-    {week "Sunday 12:00:00 1"}
-    {week "Monday 12:00:00 2"}
-    {week "Tuesday 12:00:00 3"}
-    {week "Wednesday 12:00:00 4"}
-    {week "Thursday 12:00:00 5"}
-    {week "Friday 12:00:00 6"}
-    {week "Saturday 12:00:00 7"}
-    {month "1 12:00:00"}
-    {month "10 12:00:00"}
-    {month "20 12:00:00"}
-    {month "28 12:00:00"}
-    {timerange "10/28/2001 12:00:00 - 10/28/2001 13:00:00"}
-  }
-  foreach sample $xamples {
-    lassign $sample run timespec
-    lassign [duetime 0 $run $timespec] starttime stoptime
-    if {$starttime < 0} {
-      set a "invalid"
-    } else {
-      set a "[clock format $starttime] .. [clock format $stoptime]"
-    }
-    puts [format "%-25s %s" "$sample:" $a]
-  }
-}
-
 set cfg_ts 0
 proc readCFG {} {
+Puts "util: readCFG" funcallX
   after 1000 readCFG
   if {$camMisc::force_cfg_file} {
     set ts [file mtime $camMisc::cfg_file]
@@ -331,6 +361,7 @@ proc readCFG {} {
     foreach i [array names ::sched *,job] {
       regsub "job\$" $i "time" t
       after cancel $::sched($i)
+      Puts "canceled job \"[camMisc::arcGet $i descr]\"" debug2
       array unset ::sched $i
       array unset ::sched $t
     }
@@ -346,6 +377,7 @@ proc readCFG {} {
 }
 
 proc EPuts {i lvl msg} {
+Puts "util: EPuts $i $lvl \"$msg\"" funcall
   if {![info exists ::wasError($i)] || ($::wasError($i) != $lvl)} {
     Puts "$msg" error
   }
@@ -354,6 +386,7 @@ proc EPuts {i lvl msg} {
 
 set ::mutex 0
 proc semTake {} {
+Puts "util: semTake" funcall
   while {$::mutex} {
     after 100 {set ::pipi 1}
     vwait ::pipi
@@ -362,10 +395,12 @@ proc semTake {} {
 }
 
 proc semGive {} {
+Puts "util: semGive" funcall
   set ::mutex 0
 }
 
 proc runArchiver {i {forceRun 0} {verbose 1}} {
+Puts "util: runArchiver $i $forceRun $verbose" funcall
 
   # Each archiver has a root-directory ROOT
   # ArchiveEngine runs in ROOT
@@ -619,12 +654,22 @@ proc runArchiver {i {forceRun 0} {verbose 1}} {
     }
   }
   if {"$multi" != ""} {
-    after 20000 "updateMultiArchive \"$multi\""
+    ReAfter 20000 "updateMultiArchive \"$multi\""
   }
   return 1
 }
 
+proc ReAfter {ms command} {
+  foreach j [after info] {
+    if {"[lindex [after info $j] 0]" == "$command"} {
+      after cancel $j
+    }
+  }
+  after $ms $command
+}
+
 proc scheduleStop {i} {
+Puts "util: scheduleStop $i" funcall
   set now [clock seconds]
   lassign [duetime $i] starttime stoptime
   if {$starttime > $now} return
@@ -632,7 +677,15 @@ proc scheduleStop {i} {
 
   camMisc::arcSet $i stoptime $stoptime
   if {[info exists ::sched($i,stop,time)] && ($::sched($i,stop,time) == $stoptime)} return
-  if {[info exists ::sched($i,stop,job)]} {after cancel $::sched($i,stop,job)}
+  if {[info exists ::sched($i,stop,job)]} {
+    after cancel $::sched($i,stop,job)
+    Puts "canceled job \"[camMisc::arcGet $i descr]\"" debug2
+  }
+  # schedule jobs at most 10 days ahead
+  if {[expr $stoptime - $now] > 864000} {
+    Puts "restart/stop of \"[camMisc::arcGet $i descr]\" too far ahead; will schedule later" debug2; 
+    return
+  }
   if {[lsearch -exact {minute hour day week month} [camMisc::arcGet $i start]] >= 0} {
     Puts "restarting \"[camMisc::arcGet $i descr]\" @ [httpd::time $stoptime]" schedule
     set ::sched($i,stop,job) [after [expr ( $stoptime - $now ) * 1000] "restartArchiver $i"]
@@ -640,11 +693,13 @@ proc scheduleStop {i} {
     Puts "stopping \"[camMisc::arcGet $i descr]\" @ [httpd::time $stoptime]" schedule
     set ::sched($i,stop,job) [after [expr ( $stoptime - $now ) * 1000] "stopArchiver $i"]
   }
+  Puts "scheduled restart/stop-job in [expr ( $stoptime - $now )]s" debug1
   set ::sched($i,stop,time) $stoptime
 }
 
 set bgsleep 0
 proc bgsleep {msec} {
+Puts "util: bgsleep $msec" funcall
   incr ::bgsleep
   set v ::bgsleep$::bgsleep
   after $msec "set $v 1"
@@ -653,6 +708,7 @@ proc bgsleep {msec} {
 }
 
 proc restartArchiver {i} {
+Puts "util: restartArchiver $i" funcall
   Puts "restart \"[camMisc::arcGet $i descr]\"" command
   set ::nocheck($i) 1
   set try 0
@@ -674,6 +730,7 @@ proc restartArchiver {i} {
 }
 
 proc stopArchiver {i {forceStop 0} {action stop}} {
+Puts "util: stopArchiver $i $forceStop $action" funcall
   array unset ::sched $i,stop,*
   if {!$forceStop && [file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]} {
     Puts "$action of \"[camMisc::arcGet $i descr]\" blocked" error
@@ -697,6 +754,7 @@ proc stopArchiver {i {forceStop 0} {action stop}} {
 }
 
 proc justread {sock} {
+Puts "util: justread $sock" funcall
   set data [read $sock]
   flush $sock
   if {[eof $sock]} {
@@ -707,6 +765,7 @@ proc justread {sock} {
 }
 
 proc updateMultiArchives {} {
+Puts "util: updateMultiArchives" funcall
   set A {}
   foreach i [camMisc::arcIdx] {
     if {[camMisc::arcGet $i multi] != ""} {
@@ -719,6 +778,7 @@ proc updateMultiArchives {} {
 }
 
 proc getTimes {arc i} {
+Puts "util: getTimes $arc $i" funcall
   if {![catch {
     for_file line "|ArchiveManager -info \"$arc\"" {
       regexp "First.*sample.*: (\[^\\.\]*)" $line all starttime
@@ -736,6 +796,7 @@ proc getTimes {arc i} {
 
 set ::n 1
 proc updateMultiArchive {arch} {
+Puts "util: updateMultiArchive $arch" funcall
   set myN $::n
   incr ::n
   set wh [open $arch.$myN w]
@@ -768,3 +829,40 @@ proc updateMultiArchive {arch} {
   close $wh
   file rename -force $arch.$myN $arch
 }
+
+if {[expr $::debug & 256]} {
+  set ::weekdays {Sunday Monday Tuesday Wednesday Thursday Friday Saturday}
+  set xamples {
+    {minute "0 1"}
+    {minute "12 12"}
+    {minute "12 15"}
+    {hour "00:27:00 1"}
+    {hour "06:00:00 8"}
+    {day "14:30:00 1"}
+    {day "02:00:00 2"}
+    {day "23:59:59 3"}
+    {week "Sunday 12:00:00 1"}
+    {week "Monday 12:00:00 2"}
+    {week "Tuesday 12:00:00 3"}
+    {week "Wednesday 12:00:00 4"}
+    {week "Thursday 12:00:00 5"}
+    {week "Friday 12:00:00 6"}
+    {week "Saturday 12:00:00 7"}
+    {month "1 12:00:00"}
+    {month "10 12:00:00"}
+    {month "20 12:00:00"}
+    {month "28 12:00:00"}
+    {timerange "10/28/2001 12:00:00 - 10/28/2001 13:00:00"}
+  }
+  foreach sample $xamples {
+    lassign $sample run timespec
+    lassign [duetime 0 $run $timespec] starttime stoptime
+    if {$starttime < 0} {
+      set a "invalid"
+    } else {
+      set a "[clock format $starttime] .. [clock format $stoptime]"
+    }
+    puts [format "%-25s %s" "$sample:" $a]
+  }
+}
+

@@ -43,4 +43,4 @@ ArchiveData.mexglx: ArchiveData.cpp
 # ... but then you'd have to add all the other FLAGS into that.
 
 clean:
-	-rm ArchiveData.oct
+	-rm ArchiveData.oct ArchiveData.mexglx

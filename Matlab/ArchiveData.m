@@ -13,11 +13,21 @@
 % [ver, desc] = ArchiveData(URL, 'info')
 %    Gets version number and description string from data server.   
 %
-% [keys, names] = ArchiveData(URL, 'archives')
-%    Lists available archives by key and name.
+% [keys, names, paths] = ArchiveData(URL, 'archives')
+%    Lists available archives by key, name and path.
 %
-% [names] = ArchiveData(URL, 'names', KEY [, PATTERN])
-%    Lists available archives by key and name.
+% [names,starts,ends] = ArchiveData(URL, 'names', KEY [, PATTERN])
+%    Lists available channels for archive with given key.
+%    Optional pattern is a regular expression.
+%    Returns list of names, start and end times.
+%
+%    Times: All times are in the format of Matlab's.
+%           "serial data number".
+%           Octave needs to use matlab-compatibility routines
+%           datenum, datevec, ...
+
+% Plotting: datetick   <-> 
+%  gset xdata time; gset timefmt "%d/%m"; gset format x "%b %d"
 
 % kasemir@lanl.gov
 

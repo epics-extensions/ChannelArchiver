@@ -10,20 +10,23 @@
 <blockquote>
   <h1>Binary Archive Format</h1>
   <h2>Directory File</h2>
-  The ArchiveEngine is started with the name of a directory file.
-  The default is <code>freq_directory</code>. All retrieval tools use
+  The ArchiveEngine is started with the name of a <em>directory file</em>.
+  If you omit the "directory file" command-line argument, it defaults
+  to <code>freq_directory</code>. All retrieval tools use
   the name of this directory file to get at the archived data.
   Note that in here directory file stands for a file name, not a
-  directory name. The file itself is called a directory file.
+  directory name. The file itself is called a "directory file".
 
   <h2>Data Files</h2>
-  The directory file holds channel names but not archived data.
+  The directory file holds channel names and information about
+  each channel, but <em>not</em> archived data.
   The data is stored in data files. By default, the ArchiveEngine
-  creates one data file per day.
+  creates one data file per day. Each data file name resembles the
+  date when that data file was created, e.g. <CODE>20000301-000000</CODE>.
   You cannot directly use a single the data file but only
   the combination of all data files and the directory file,
   the latter is given to the retrieval tools.<br>
-  The ArchiveManager is a tool for maintaining the combination of
+  The <a href="../manager/default.htm">ArchiveManager</a> is a tool for maintaining the combination of
   directory and data files.
 
   <h1>MultiArchive</h1>
@@ -88,7 +91,8 @@
   data file is reached (per default: one day), a new data file is
   added.
   Therefore the filename of a data file merely reflects the date of
-  creation, not the time regime of samples therein.
+  creation, not the time regime of samples therein.<br>
+  
 
   <img src=binarchive.gif width=778 height=427><br>
 
@@ -108,10 +112,22 @@
   data management tools for the ChannelArchiver are limited for the
   time being.
 
-  <h2>Common Misunderstandings</h2>
+  <h2>Common Questions</h2>
   <ul>
+    <li>Data files grow/don't grow<br>
+      Each data file has buffers, that is: reserved regions.
+      Initially, one buffer per channel is reserved. When a buffer has
+      been filled with samples, a new buffer is created. Each new
+      buffer has twice the previous buffer's size (up to a limit).
+      This means: The data file size will "jump" whenever a new buffer
+      is allocated and then stay constant while buffers are filled.
+      Ways to check wether the ArchiveEngine is still working:
+      Check the ArchiveEngine's status. Does it still respond via the
+      web interface? If any new data arrived that's worth writing,
+      the time stamp of the latest data file should change at each
+      write period.
     <li>Setpoint channels: invalid or old time stamps<br>
-      Many EPICS databases contain &quot;setpoints&quot;:<br>
+      Many EPICS databases contain "setpoints":<br>
       Passive channels that are only changed from an operator interface.<br>
       After booting an IOC, these channels have no valid time
       stamp. The archive engine might issue a warning, but these
@@ -119,19 +135,18 @@
       stamp.<br>
       As soon as the setpoint is actually changed from an operator
       interface, the value is of course archived. But since it might
-      not be changed to often, its time stamp can be
-      &quot;old&quot;.<br>
+      not be changed often, its time stamp can be "old".<br>
       <em>Consequence:</em><br>
       When you start the engine and get warnings about
-      &quot;invalid&quot; time stamps or find that data files for
-      &quot;old&quot; samples are created, this is the common
+      "invalid" time stamps or find that data files for
+      "old" samples are created, this is the common
       reason.
     <li>Old data files are updated:<br>
       Data files are updated until the buffers in there are
       filled. Only then a new file might be created after e.g. 24
       hours (default).<br>
       <em>Consequence:</em><br>
-      When you see that &quot;old&quot; data files still change, this
+      When you see that "old" data files still change, this
       is the reason.
     <li>Size of data files:<br>
       The ChannelArchiver saves this information for each channel: <ul>
@@ -149,10 +164,12 @@
       <br>
       When archiving a channel with float values and the control
       information does not change, this results in about 16 bytes per
-      value
+      value.
     </li>
   </ul>
 
+  <hr>
+  <a href="../default.htm">ChannelArchiver Manual</a>
 </blockquote>
 </body>
 </html>

@@ -10,11 +10,13 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "config.h"
+#include "../ArchiverConfig.h"
+#include <ArchiveI.h>
 #include "ActionEdit.h"
 #include "PlotCanvas.h"
 #include "Limits.h"
 
+USING_NAMESPACE_CHANARCH
 
 /////////////////////////////////////////////////////////////////////////////
 // CBrowserDlg dialog

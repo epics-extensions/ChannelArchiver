@@ -104,6 +104,10 @@ SOURCE=..\LibIO\ArchiveI.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Tools\ASCIIParser.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Axis.cpp
 # End Source File
 # Begin Source File
@@ -197,6 +201,22 @@ SOURCE=.\MsgBoxF.cpp
 # Begin Source File
 
 SOURCE=..\..\Tools\MsgLogger.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MultiArchive.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MultiChannel.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MultiChannelIterator.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MultiValueIterator.cpp
 # End Source File
 # Begin Source File
 

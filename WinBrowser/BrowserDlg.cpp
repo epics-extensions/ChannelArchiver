@@ -1,7 +1,10 @@
 // BrowserDlg.cpp
 
 #include "stdafx.h"
-#include "config.h"
+#include "../ArchiverConfig.h"
+#include <BinArchive.h>
+#include <MultiArchive.h>
+#include <ArchiveException.h>
 #include "WinBrowser.h"
 #include "BrowserDlg.h"
 #include <limits>
@@ -11,7 +14,7 @@
 #include "DoEvents.h"
 #include "DlgExport.h"
 #include "VectorHelper.h"
-#include "RegularExpression.h"
+#include <RegularExpression.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -276,7 +279,7 @@ bool CBrowserDlg::ListChannelNames(const stdString &pattern)
 		osiTime start, end, nullTime;
 		m_channel_list.ResetContent ();
 
-		Archive archive (new ARCHIVE_TYPE((LPCTSTR) m_dir_name));
+		Archive archive (new WINBROWSER_ARCHIVE_TYPE((LPCTSTR) m_dir_name));
 		ChannelIterator channel (archive);
 		
 		if (pattern.empty())
@@ -427,7 +430,7 @@ void CBrowserDlg::UpdateCurves(bool redraw)
 	Limits tlim, ylim;
 	try
 	{
-		Archive archive (new ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
+		Archive archive (new WINBROWSER_ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
 		ChannelIterator channel (archive);
 		osiTime start, end;
 		for (size_t i=0; i<curves.size(); ++i)
@@ -643,7 +646,7 @@ void CBrowserDlg::OnShow()
 
 	try
 	{
-		Archive archive (new ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
+		Archive archive (new WINBROWSER_ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
 		ChannelIterator channel (archive);
 		for (int i=0; i<got; ++i)
 		{
@@ -742,7 +745,7 @@ void CBrowserDlg::OnExport()
 			return;
 
 		stdString filename = dlg.m_filename;
-		Archive archive (new ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
+		Archive archive (new WINBROWSER_ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
 		Exporter *export;
 		if (dlg.m_format == CDlgExport::SpreadSheet)
 			export = new SpreadSheetExporter (archive, filename);

@@ -101,19 +101,33 @@ public:
     /// Set time stamp
     static void setTime(Data *value, const epicsTime &stamp);
 
-    /// Display value, using CtrlInfo if available
+    /// Convert value to txt, using CtrlInfo if available.
+
+    /// This gives only the value. Use getTime() and getStatus()
+    /// for time and status.
+    static void getValueString(stdString &txt,
+                               DbrType type, DbrCount count, const Data *value,
+                               const class CtrlInfo *info=0);
+
+    /// Display value, using CtrlInfo if available.
     static void show(FILE *file,
                      DbrType type, DbrCount count, const Data *value,
                      const class CtrlInfo *info=0);
     
     /// Read a value from binary file.
-    /// size: pre-calculated from type, count
+    
+    /// size: pre-calculated from type, count.
+    ///
+    ///
     static bool read(DbrType type, DbrCount count,
                      size_t size, Data *value,
                      class DataFile *datafile, FileOffset offset);
     
-    /// Write a value to binary file
-    /// Requires a buffer for the memory-to-disk format conversions
+    /// Write a value to binary file/
+    
+    /// Requires a buffer for the memory-to-disk format conversions.
+    ///
+    ///
     static bool write(DbrType type, DbrCount count,
                       size_t size, const Data *value,
                       MemoryBuffer<dbr_time_string> &cvt_buffer,

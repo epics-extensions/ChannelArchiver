@@ -243,9 +243,42 @@ void run_test(const stdString &index_name)
     names.push_back("jane");
     names.push_back("janet");
     names.push_back("freddy");
-    sheet.find(names, 0);
-
-
+    bool ok = sheet.find(names, 0);
+    size_t i;
+    stdString time, stat, val;
+    const RawValue::Data *value;
+    printf("# Time                       ");
+    for (i=0; i<sheet.getNum(); ++i)
+        printf("\t%s\t[%s]",
+               sheet.getName(i).c_str(),
+               sheet.getCtrlInfo(i).getUnits());
+    printf("\n");
+    while (ok)
+    {
+        epicsTime2string(sheet.getTime(), time);
+        printf("%s", time.c_str());
+        for (i=0; i<sheet.getNum(); ++i)
+        {
+            value = sheet.getValue(i);
+            if (value)
+            {
+                RawValue::getStatus(value, stat);
+                if (RawValue::isInfo(value))
+                    printf("\t#N/A\t(%s)", stat.c_str());
+                else
+                {
+                    RawValue::getValueString(
+                        val, sheet.getType(i), sheet.getCount(i),
+                        value, &sheet.getCtrlInfo(i));
+                    printf("\t%s\t(%s)", val.c_str(), stat.c_str());
+                }
+            }
+            else
+                printf("\t#N/A\t");
+        }
+        printf("\n");
+        ok = sheet.next();
+    }
 }   
 
 int main(int argc, const char *argv[])

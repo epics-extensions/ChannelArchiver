@@ -212,13 +212,130 @@ void RawValue::getTime(const Data *value, stdString &time)
     epicsTime2string(et, time);
 }
 
-void RawValue::show(FILE *file,
-                    DbrType type, DbrCount count, const Data *value,
-                    const class CtrlInfo *info)
+void RawValue::getValueString(stdString &txt,
+                              DbrType type, DbrCount count, const Data *value,
+                              const class CtrlInfo *info=0)
 {
-    stdString time, stat;
     int i;
-    // Print time, get status
+    txt.assign(0,0);
+    if (isInfo(value)) // done    
+        return;
+    char line[100];
+    switch (type)
+    {
+    case DBR_TIME_STRING:
+        txt = ((dbr_time_string *)value)->value;
+        return;
+    case DBR_TIME_ENUM:
+        i = ((dbr_time_enum *)value)->value;
+        if (info)
+            info->getState(i, txt);
+        else
+        {
+            sprintf(line, "%d", i);
+            txt = line;
+        }
+        return;
+    case DBR_TIME_CHAR:
+        {
+            txt.reserve(4*count);
+            dbr_char_t *val = &((dbr_time_char *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i==0)
+                    sprintf(line, "%d", (int)*val);
+                else
+                    sprintf(line, "\t%d", (int)*val);
+                txt += line;
+                ++val;
+            }
+            return;
+        }
+    case DBR_TIME_SHORT:
+        {
+            txt.reserve(6*count);
+            dbr_short_t *val = &((dbr_time_short *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i==0)
+                    sprintf(line, "%d", (int)*val);
+                else
+                    sprintf(line, "\t%d", (int)*val);
+                txt += line;
+                ++val;
+            }
+            return;
+        }
+    case DBR_TIME_LONG:
+        {
+            txt.reserve(8*count);
+            dbr_long_t *val = &((dbr_time_long *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i==0)
+                    sprintf(line, "%ld", (long)*val);
+                else
+                    sprintf(line, "\t%ld", (long)*val);
+                txt += line;
+                ++val;
+            }
+            return;
+        }
+    case DBR_TIME_FLOAT:
+        {
+            txt.reserve(6*count);
+            dbr_float_t *val = &((dbr_time_float *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i==0)
+                    sprintf(line, "%f", (double)*val);
+                else
+                    sprintf(line, "\t%f", (double)*val);
+                txt += line;
+                ++val;
+            }
+            return;
+        }
+    case DBR_TIME_DOUBLE:
+        {
+            txt.reserve(6*count);
+            dbr_double_t *val = &((dbr_time_double *)value)->value;
+            if (info)
+            {
+                int prec = info->getPrecision();
+                for (i=0; i<count; ++i)
+                {
+                    if (i==0)
+                        sprintf(line, "%.*f", prec, (double)*val);
+                    else
+                        sprintf(line, "\t%.*f", prec, (double)*val);
+                    txt += line;
+                    ++val;
+                }
+            }
+            else
+            {
+                for (i=0; i<count; ++i)
+                {
+                    if (i==0)
+                        sprintf(line, "%f", (double)*val);
+                    else
+                        sprintf(line, "\t%f", (double)*val);
+                    txt += line;
+                    ++val;
+                }
+            }
+            return;
+        }
+    }
+    txt = "<cannot decode>";
+}
+
+void RawValue::show(FILE *file,
+    DbrType type, DbrCount count, const Data *value,
+    const class CtrlInfo *info)
+{
+    stdString time, stat, txt;
     getTime(value, time);
     getStatus(value, stat);
     if (isInfo(value))
@@ -226,92 +343,9 @@ void RawValue::show(FILE *file,
         fprintf(file, "%s\t%s\n", time.c_str(), stat.c_str());
         return;
     }
-    fprintf(file, "%s\t", time.c_str());
-    // print value
-    switch (type)
-    {
-        case DBR_TIME_STRING:
-            fprintf(file, "\t'%s'",
-                    ((dbr_time_string *)value)->value);
-            break;
-        case DBR_TIME_ENUM:
-            i = ((dbr_time_enum *)value)->value;
-            if (info)
-            {
-                stdString state;
-                info->getState(i, state);
-                fprintf(file, "%s (%d)", state.c_str(), i);
-            }
-            else
-                fprintf(file, "%d", i);
-            break;
-        case DBR_TIME_CHAR:
-        {
-            dbr_char_t *val = &((dbr_time_char *)value)->value;
-            for (i=0; i<count; ++i)
-            {
-                fprintf(file, "%d\t", (int)*val);
-                ++val;
-            }
-            break;
-        }
-        case DBR_TIME_SHORT:
-        {
-            dbr_short_t *val = &((dbr_time_short *)value)->value;
-            for (i=0; i<count; ++i)
-            {
-                fprintf(file, "%d\t", (int)*val);
-                ++val;
-            }
-            break;
-        }
-        case DBR_TIME_LONG:
-        {
-            dbr_long_t *val = &((dbr_time_long *)value)->value;
-            for (i=0; i<count; ++i)
-            {
-                fprintf(file, "%ld\t", (long)*val);
-                ++val;
-            }
-            break;
-        }
-        case DBR_TIME_FLOAT:
-        {
-            dbr_float_t *val = &((dbr_time_float *)value)->value;
-            for (i=0; i<count; ++i)
-            {
-                fprintf(file, "%f\t", (double)*val);
-                ++val;
-            }
-            break;
-        }
-        case DBR_TIME_DOUBLE:
-        {
-            dbr_double_t *val = &((dbr_time_double *)value)->value;
-            if (info)
-            {
-                int prec = info->getPrecision();
-                for (i=0; i<count; ++i)
-                {
-                    fprintf(file, "%.*f\t", prec, (double)*val);
-                    ++val;
-                }
-            }
-            else
-            {
-                for (i=0; i<count; ++i)
-                {
-                    fprintf(file, "%f\t", (double)*val);
-                    ++val;
-                }
-            }
-            break;
-        }
-        default:
-            fprintf(file, "<cannot decode>\n");
-            return;
-    }
-    fprintf(file, "%s\n", stat.c_str());
+    getValueString(txt, type, count, value, info);
+    fprintf(file, "%s\t%s\%s\n",
+            time.c_str(), txt.c_str(), stat.c_str());
 }   
 
 bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,

@@ -45,25 +45,16 @@ class LinearReader : public DataReader
 public:
     /// Create a reader for an index.
     LinearReader(archiver_Index &index, double delta);
-
     ~LinearReader();
-    
     const RawValue::Data *find(const stdString &channel_name,
                                const epicsTime *start,
                                const epicsTime *end);
-    
     const RawValue::Data *next();
-
     DbrType getType() const;
-    
     DbrCount getCount() const;
-    
     const CtrlInfo &getInfo() const;
-    
     bool changedType();
-    
     bool changedInfo();
-
 private:
     RawDataReader reader;
     double delta;

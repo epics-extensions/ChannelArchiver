@@ -55,13 +55,21 @@ bool DataFile::reopen ()
 {
     if (file)
         fclose(file);
-    file = fopen(filename.c_str(), "r+b");
+    if (file==0)
+    {
+        if (for_write)
+            file = fopen(filename.c_str(), "r+b");
+        else
+            file = fopen(filename.c_str(), "rb");
+    }
     if (file==0  && for_write)
         file = fopen(filename.c_str(), "w+b");
     if (file == 0)
     {
-        LOG_MSG ("Cannot open/create DataFile '%s'\n",
-                 filename.c_str());
+        
+        LOG_MSG("Cannot %s DataFile '%s'\n",
+                (for_write ? "create" : "open"),
+                filename.c_str());
         return false;
     }
     return true;

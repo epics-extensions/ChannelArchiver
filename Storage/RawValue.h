@@ -107,7 +107,7 @@ public:
     ///
     ///
     static bool getDouble(DbrType type, DbrCount count,
-                          const Data *value, double &d);
+                          const Data *value, double &d, int i=0);
 
     /// Set data from a double or return false
 

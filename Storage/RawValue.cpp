@@ -213,35 +213,40 @@ void RawValue::getTime(const Data *value, stdString &time)
 }
 
 bool RawValue::getDouble(DbrType type, DbrCount count,
-                         const Data *value, double &d)
+                         const Data *value, double &d, int i)
 {
     if (isInfo(value)) // done    
         return false;
-    if (count != 1)
+    if (i >= count)
         return false;
     switch (type)
     {
         case DBR_TIME_SHORT:
         {
-            d = ((dbr_time_short *)value)->value;
+            const dbr_short_t *v = &((const dbr_time_short *)value)->value;
+            d = v[i];
             return true;
         }
         case DBR_TIME_LONG:
         {
-            d = ((dbr_time_long *)value)->value;
-            return true;
+            const dbr_long_t *v = &((const dbr_time_long *)value)->value;
+            d = v[i];
+           return true;
         }
         case DBR_TIME_FLOAT:
         {
-            d = ((dbr_time_float *)value)->value;
-            return true;
+            const dbr_float_t *v = &((const dbr_time_float *)value)->value;
+            d = v[i];
+           return true;
         }
         case DBR_TIME_DOUBLE:
         {
-            d = ((dbr_time_double *)value)->value;
+            const double *v = & ((const dbr_time_double *)value)->value;
+            d = v[i];
             return true;
         }
     }
+    d = 0.0;
     return false;
 }
 

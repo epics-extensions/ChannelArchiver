@@ -76,23 +76,15 @@ class RawDataReader : public DataReader
 {
 public:
     RawDataReader(archiver_Index &index);
-
     virtual ~RawDataReader();
-    
     virtual const RawValue::Data *find(const stdString &channel_name,
                                        const epicsTime *start,
                                        const epicsTime *end);
-
     virtual const RawValue::Data *next();
-
     virtual DbrType getType() const;
-    
     virtual DbrCount getCount() const;
-    
     virtual const CtrlInfo &getInfo() const;
-
     virtual bool changedType();
-
     virtual bool changedInfo();
 private:
     archiver_Index &index;

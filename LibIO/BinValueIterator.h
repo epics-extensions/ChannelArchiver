@@ -38,7 +38,7 @@ public:
 
 	//* Implementation of pure virtuals from  CLASS ValueIteratorI
 	bool isValid() const;
-	size_t determineChunk(const osiTime &until);
+	size_t determineChunk(const epicsTime &until);
 	double getPeriod() const;
 	const ValueI *getValue() const;
 	bool next();
@@ -65,7 +65,7 @@ protected:
 
 	class BinChannel	*_channel;
 	DataHeaderIterator	_header;
-	BinCtrlInfo			_ctrl_info;
+	CtrlInfo			_ctrl_info;
 	FileOffset			_ctrl_info_offset;
 	BinValue			*_value;
 	size_t				_value_index;	// Index of current value: 0 .. _header->getNumSamples ()-1

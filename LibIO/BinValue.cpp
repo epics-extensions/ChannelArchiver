@@ -1,91 +1,10 @@
 // BinValue.cpp
 
-#include <MemoryBuffer.h>
 #include <stdlib.h>
+#include <math.h> // MSVisC has HUGE_VAL in here?!
+#include <MemoryBuffer.h>
 #include "ArchiveException.h"
 #include "BinValue.h"
-
-//////////////////////////////////////////////////////////////////////
-// BinRawValue
-//////////////////////////////////////////////////////////////////////
-
-void BinRawValue::read (DbrType type, DbrCount count, size_t size, Type *value,
-                        LowLevelIO &file, FileOffset offset)
-{
-    if (file.llseek (offset) != offset   ||   !file.llread (value, size))
-        throwArchiveException (ReadError);
-    SHORTFromDisk (value->status);
-    SHORTFromDisk (value->severity);
-    TS_STAMPFromDisk (value->stamp);
-
-    // nasty: cannot use inheritance in lightweight RawValue,
-    // so we have to switch for the type here:
-    switch (type)
-    {
-#define FROM_DISK(DBR, TYP, TIMETYP, MACRO)                             \
-    case DBR:                                                           \
-        {                                                               \
-            TYP *data = & (reinterpret_cast<TIMETYP *>(value))->value;  \
-            for (size_t i=0; i<count; ++i)  MACRO (data[i]);            \
-        }                                                               \
-        break;
-    case DBR_TIME_CHAR:
-    case DBR_TIME_STRING:
-        break;
-        FROM_DISK(DBR_TIME_SHORT,  dbr_short_t,  dbr_time_short,  SHORTFromDisk)
-        FROM_DISK(DBR_TIME_FLOAT,  dbr_float_t,  dbr_time_float,  FloatFromDisk)
-        FROM_DISK(DBR_TIME_DOUBLE, dbr_double_t, dbr_time_double, DoubleFromDisk)
-        FROM_DISK(DBR_TIME_ENUM,   dbr_enum_t,   dbr_time_enum,   USHORTFromDisk)
-        FROM_DISK(DBR_TIME_LONG,   dbr_long_t,   dbr_time_long,   LONGFromDisk)
-    default:
-        throwDetailedArchiveException (Invalid, "Unknown DBR_xx");
-#undef FROM_DISK
-    }
-}
-
-void BinRawValue::write (DbrType type, DbrCount count, size_t size, const Type *value,
-                         MemoryBuffer<dbr_time_string> &cvt_buffer,
-                         LowLevelIO &file, FileOffset offset)
-{
-    cvt_buffer.reserve (size);
-    dbr_time_string *buffer = cvt_buffer.mem();
-
-    memcpy (buffer, value, size);
-    SHORTToDisk (buffer->status);
-    SHORTToDisk (buffer->severity);
-    TS_STAMPToDisk (buffer->stamp);
-
-    switch (type)
-    {
-#define TO_DISK(DBR, TYP, TIMETYP, CVT_MACRO)                           \
-    case DBR:                                                           \
-        {                                                               \
-            TYP *data = & (reinterpret_cast<TIMETYP *>(buffer))->value; \
-            for (size_t i=0; i<count; ++i)  CVT_MACRO (data[i]);        \
-        }                                                               \
-        break;
-
-    case DBR_TIME_CHAR:
-    case DBR_TIME_STRING:
-        // no conversion necessary
-        break;
-        TO_DISK(DBR_TIME_SHORT,  dbr_short_t,  dbr_time_short,  SHORTToDisk)
-        TO_DISK(DBR_TIME_FLOAT,  dbr_float_t,  dbr_time_float,  FloatToDisk)
-        TO_DISK(DBR_TIME_DOUBLE, dbr_double_t, dbr_time_double, DoubleToDisk)
-        TO_DISK(DBR_TIME_ENUM,   dbr_enum_t,   dbr_time_enum,   USHORTToDisk)
-        TO_DISK(DBR_TIME_LONG,   dbr_long_t,   dbr_time_long,   LONGToDisk)
-    default:
-        throwDetailedArchiveException (Invalid, "Unknown DBR_xx");
-#undef TO_DISK
-    }
-
-    if (file.llseek (offset) != offset  ||   !file.llwrite (buffer, size))
-        throwArchiveException (WriteError);
-}
-
-//////////////////////////////////////////////////////////////////////
-// BinValue
-//////////////////////////////////////////////////////////////////////
 
 // Create a value suitable for the given DbrType
 BinValue *BinValue::create(DbrType type, DbrCount count)
@@ -125,12 +44,12 @@ BinValue::~BinValue()
     _ctrl_info = 0;
 }
 
-const CtrlInfoI *BinValue::getCtrlInfo() const
+const CtrlInfo *BinValue::getCtrlInfo() const
 {
 	return _ctrl_info; 
 }
 
-void BinValue::setCtrlInfo(const CtrlInfoI *info)
+void BinValue::setCtrlInfo(const CtrlInfo *info)
 {
     _ctrl_info = info;
 }
@@ -169,7 +88,7 @@ double CLASS::getDouble(DbrCount index) const                                \
     if (index >= getCount())                                                 \
         throwDetailedArchiveException(Invalid, "Invalid index");             \
     const DATATYPE *data =                                                   \
-        & (reinterpret_cast<const TIMETYPE *>(_value))->value;               \
+        & ((const TIMETYPE *)_value)->value;                                 \
     return (double)data[index];                                              \
 }
 
@@ -178,7 +97,7 @@ void CLASS::setDouble(double value, DbrCount index)                          \
 {                                                                            \
     if (index >= getCount())                                                 \
         throwDetailedArchiveException(Invalid, "Invalid index");             \
-    DATATYPE    *data = & (reinterpret_cast<TIMETYPE *>(_value))->value;     \
+    DATATYPE    *data = & ((TIMETYPE *)_value)->value;                       \
     data[index] = (DATATYPE) value;                                          \
 }
 
@@ -188,7 +107,7 @@ void CLASS::getValue(stdString &result) const                                \
     if (! _ctrl_info)                                                        \
         throwDetailedArchiveException(Invalid, "CtrlInfo not set");          \
     const DATATYPE *data =                                                   \
-                    & (reinterpret_cast<const TIMETYPE *>(_value))->value;   \
+                    & ((const TIMETYPE *)_value)->value;                     \
     _ctrl_info->formatDouble ((double)data[0], result);                      \
     if (getCount() > 1)                                                      \
     {                                                                        \
@@ -209,7 +128,7 @@ IMPLEMENT_NUMERIC_getValue(BinValueDbrShort,dbr_time_short,dbr_short_t)
 
 bool BinValueDbrShort::parseValue (const stdString &text)
 {
-    dbr_short_t *data = & (reinterpret_cast<dbr_time_short *>(_value))->value;
+    dbr_short_t *data = & ((dbr_time_short *)_value)->value;
 
     if (text.length() == 1  && text[0] == '-' && getCount()>0)
     {
@@ -250,7 +169,7 @@ bool BinValueDbrLong::parseValue (const stdString &text)
 {
     const char *txt = text.c_str();
     char *next;
-    dbr_long_t *data = & (reinterpret_cast<dbr_time_long *>(_value))->value;
+    dbr_long_t *data = & ((dbr_time_long *)_value)->value;
     long val;
 
     for (size_t i = 0; i<getCount(); ++i)
@@ -280,7 +199,7 @@ IMPLEMENT_NUMERIC_getValue(BinValueDbrDouble,dbr_time_double,dbr_double_t)
 
 bool BinValueDbrDouble::parseValue (const stdString &text)
 {
-    dbr_double_t *data = & (reinterpret_cast<dbr_time_double *>(_value))->value;
+    dbr_double_t *data = & ((dbr_time_double *)_value)->value;
     if (text.length() == 1  && text[0] == '-' && getCount()>0)
     {
         data[0] = 0.0;
@@ -317,7 +236,7 @@ IMPLEMENT_NUMERIC_getValue(BinValueDbrFloat,dbr_time_float,dbr_float_t)
 
 bool BinValueDbrFloat::parseValue (const stdString &text)
 {
-    dbr_float_t *data = & (reinterpret_cast<dbr_time_float *>(_value))->value;
+    dbr_float_t *data = & ((dbr_time_float *)_value)->value;
     if (text.length() == 1  && text[0] == '-' && getCount()>0)
     {
         data[0] = 0.0;
@@ -355,7 +274,7 @@ void BinValueDbrEnum::getValue (stdString &result) const
 {
     if (! _ctrl_info)
         throwDetailedArchiveException (Invalid, "CtrlInfo not set");
-    const dbr_enum_t *data = & (reinterpret_cast<const dbr_time_enum *>(_value))->value; 
+    const dbr_enum_t *data = & ((const dbr_time_enum *)_value)->value; 
     _ctrl_info->getState (data[0], result);
     if (getCount() > 1)
     {
@@ -372,7 +291,7 @@ void BinValueDbrEnum::getValue (stdString &result) const
 
 bool BinValueDbrEnum::parseValue (const stdString &text)
 {
-    dbr_enum_t *data = & (reinterpret_cast<dbr_time_enum *>(_value))->value;
+    dbr_enum_t *data = & ((dbr_time_enum *)_value)->value;
     if (text.length() == 1  && text[0] == '-' && getCount()>0)
     {
         data[0] = 0;
@@ -420,7 +339,7 @@ void BinValueDbrString::getValue (stdString &result) const
 {
     if (! _ctrl_info)
          LOG_MSG("BinValueDbrString::getValue: CtrlInfo not set");
-    const char *data = (reinterpret_cast<const dbr_time_string *>(_value))->value; 
+    const char *data = ((const dbr_time_string *)_value)->value; 
     if (getCount() > 1)
         throwDetailedArchiveException (Unsupported, "BinValueDbrString::getValue, count > 1");
 
@@ -429,7 +348,7 @@ void BinValueDbrString::getValue (stdString &result) const
 
 bool BinValueDbrString::parseValue (const stdString &text)
 {
-    char *data = (reinterpret_cast<dbr_time_string *>(_value))->value; 
+    char *data = ((dbr_time_string *)_value)->value; 
     size_t len = text.length();
 
     if (len == 1  && text[0] == '-' && getCount()>0)
@@ -458,7 +377,7 @@ IMPLEMENT_NUMERIC_getValue(BinValueDbrChar,dbr_time_char,dbr_char_t)
 
 bool BinValueDbrChar::parseValue (const stdString &text)
 {
-    dbr_char_t *data = & (reinterpret_cast<dbr_time_char *>(_value))->value;
+    dbr_char_t *data = & ((dbr_time_char *)_value)->value;
     if (text.length() == 1  && text[0] == '-' && getCount()>0)
     {
         data[0] = 0;
@@ -484,5 +403,3 @@ bool BinValueDbrChar::parseValue (const stdString &text)
 
     return true;
 }
-
-

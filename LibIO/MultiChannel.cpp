@@ -28,14 +28,14 @@ const char *MultiChannel::getName() const
         _channel_iterator->_channel_index]._name.c_str();
 }
 
-osiTime MultiChannel::getFirstTime() const
+epicsTime MultiChannel::getFirstTime() const
 {
     _channel_iterator->_multi_archive->queryAllArchives();
 	return _channel_iterator->_multi_archive->_channels[
         _channel_iterator->_channel_index]._first_time;
 }
 
-osiTime MultiChannel::getLastTime() const
+epicsTime MultiChannel::getLastTime() const
 {
     _channel_iterator->_multi_archive->queryAllArchives();
 	return _channel_iterator->_multi_archive->_channels[
@@ -52,12 +52,12 @@ bool MultiChannel::getLastValue(ValueIteratorI *values)
 	return getValueAfterTime(getLastTime(), values);
 }
 
-bool MultiChannel::getValueAfterTime(const osiTime &time,
+bool MultiChannel::getValueAfterTime(const epicsTime &time,
                                      ValueIteratorI *values)
 {
 	MultiValueIterator *multi_values =
         dynamic_cast<MultiValueIterator *>(values);
-    osiTime t = time;
+    epicsTime t = time;
 
     if (!isValidTime(t))
         t = getFirstTime();
@@ -68,12 +68,12 @@ bool MultiChannel::getValueAfterTime(const osiTime &time,
     return false;
 }
 
-bool MultiChannel::getValueBeforeTime(const osiTime &time,
+bool MultiChannel::getValueBeforeTime(const epicsTime &time,
                                       ValueIteratorI *values)
 {
 	MultiValueIterator *multi_values =
         dynamic_cast<MultiValueIterator *>(values);
-    osiTime t = time;
+    epicsTime t = time;
 
     if (!isValidTime(t))
         t = getFirstTime();
@@ -85,12 +85,12 @@ bool MultiChannel::getValueBeforeTime(const osiTime &time,
     return false;
 }
 
-bool MultiChannel::getValueNearTime(const osiTime &time,
+bool MultiChannel::getValueNearTime(const epicsTime &time,
                                     ValueIteratorI *values)
 {
 	MultiValueIterator *multi_values =
         dynamic_cast<MultiValueIterator *>(values);
-    osiTime t = time;
+    epicsTime t = time;
     
     if (!isValidTime(t))
         t = getFirstTime();

@@ -8,10 +8,13 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-#include "ToolsConfig.h"
+#include <stdio.h>
+#include <stdarg.h>
+#include <ToolsConfig.h>
+#include <epicsTimeHelper.h>
+#include "ArchiverConfig.h"
 #include "NetTools.h"
 #include "HTMLPage.h"
-#include <stdarg.h>
 
 bool HTMLPage::_nocfg = false;
 
@@ -41,15 +44,19 @@ HTMLPage::HTMLPage(SOCKET socket, const char *title, int refresh)
 	line("</TITLE>");
 	line("</HEAD>");
 	line("");
-	line("<BODY BGCOLOR=#AEC9D2 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>");
-	line("<FONT FACE=\"Arial, Comic Sans MS, Helvetica\">");
+	line("<BODY BGCOLOR=#A7ADC6 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>");
+	line("<FONT FACE=\"Helvetica, Arial\">");
 	line("<BLOCKQUOTE>");
-
+#if 0
 	line("<TABLE BORDER=3>");
 	line("<TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>");
 	line(title);
 	line("</FONT></TD></TR>");
 	line("</TABLE>");
+#endif
+    line("<H1>");
+    line(title);
+    line("</H1>");
 	line("");
 	line("<P>");
 	line("");
@@ -65,20 +72,47 @@ HTMLPage::~HTMLPage()
         line("<A HREF=\"/config\">-Config.-</A>  ");
 	line("<BR>");
     
+    char linebuf[100];
 	if (_refresh > 0)
 	{
-        char linebuf[100];
 		sprintf(linebuf, "This page will update every %d seconds...",
                 _refresh);
 		line(linebuf);
 	}
 	else
-		line("(Use <I>Reload</I> from the Browser's menu for updates)");
+    {
+        int year, month, day, hour, min, sec;
+        unsigned long nano;
+        epicsTime2vals(epicsTime::getCurrent(),
+                       year, month, day, hour, min, sec, nano);
+		sprintf(linebuf,
+                "(Status for %02d/%02d/%04d %02d:%02d:%02d. "
+                "Use <I>Reload</I> from the Browser's menu for updates)",
+                month, day, year, hour, min, sec);
+		line(linebuf);
+    }
 	line("</BLOCKQUOTE>");
 	line("</FONT>");
 	line("</BODY>");
 	line("</HTML>");
+    // Mozilla would quite often not display the full page.
+    // Did these empty lines at the end of the document fix that?!
+	out("\r\n", 2);
+	out("\r\n", 2);
+	out("\r\n", 2);
 }
+
+void HTMLPage::out(const char *line, size_t length)
+{	
+	::send(_socket, line, length, 0);
+}
+
+void HTMLPage::out(const char *line)
+{	out(line, strlen(line));	}
+
+void HTMLPage::out(const stdString &line)
+{	out(line.c_str(), line.length ());	}
+
 
 void HTMLPage::line(const char *line)
 {

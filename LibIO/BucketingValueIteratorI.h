@@ -56,7 +56,7 @@ public:
 	bool next ();
 	bool prev ();
 
-	size_t determineChunk (const osiTime &until);
+	size_t determineChunk (const epicsTime &until);
 
 	//* This method will return <I>deltaT</I>,
 	// not the original scan period of the underlying
@@ -67,7 +67,7 @@ private:
         bool iterate ( int dir );
 
 	ValueIteratorI *_base;
-	osiTime _time;
+	epicsTime _time;
         //* In the <em>current</em> bucket, these four values, the
         //  ControlInfo and the appropriate status and severity are the
         //  ones we're interested in.
@@ -76,7 +76,7 @@ private:
    	double _max;
    	double _last;
         dbr_short_t _status, _sevr;
-        const CtrlInfoI *_ctrlinfo;
+        const CtrlInfo *_ctrlinfo;
 
         //* The <em>bucketing</em> algorithm is based on 2 nested state
         //  machines.

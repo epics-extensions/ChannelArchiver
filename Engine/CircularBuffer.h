@@ -1,110 +1,83 @@
+// -*- c++ -*-
 #ifndef __CIRCULARBUFFER_H__
 #define __CIRCULARBUFFER_H__
 
-#include <ValueI.h>
-#include <Thread.h>
+// Storage
+#include <RawValue.h>
 
-// Circular buffer:
-// Each channel has one to buffer the incoming values
-// until they are written to the disk.
-//
-// Hopefully thread-save.
-//
+/// \ingroup Engine In-Memory buffer for values.
+
+/// Circular buffer:
+/// Each ArchiveChannel has one to buffer the incoming values
+/// of type dbr_time_xxx until they are written to the disk.
 class CircularBuffer
 {
 public:
     CircularBuffer();
     ~CircularBuffer();
+ 
+    /// Allocate buffer for num*(type,count) values.
+    void allocate(DbrType type, DbrCount count, size_t num);
 
-    // Keep memory as is, but reset to have 0 entries
+    /// Capacity, that is: max. number of elements
+    size_t getCapacity() const
+    {   return max_index-1; }
+
+    /// Number of values in the buffer, 0...(capacity-1)
+    size_t getCount() const;
+
+    /// Keep memory as is, but reset to have 0 entries
     void reset();
     
-    CircularBuffer & operator = (const CircularBuffer &);
+    /// Number of samples that had to be dropped
+    size_t getOverwrites() const
+    {   return overwrites; }
 
-    void allocate(DbrType type, DbrCount count, double scan_period);
-
-    // Capacity of this CircularBuffer (Number of elements)
-    size_t getSize()
-    {   return _num; }
-
-    size_t getOverwrites()
-    {   return _overwrites; }
-
+    /// Doesn't change buffer at all, just reset the overwrite count
     void resetOverwrites()
-    {   _lock.take(); _overwrites = 0; _lock.give();    }
+    {   overwrites = 0; }
 
-    void addRawValue(const RawValueI::Type *raw_value);
+    /// Advance pointer to the next element and return it.
 
-    const RawValueI::Type *removeRawValue();
+    /// This allows you to fiddle with that element yourself,
+    /// otherwise see addRawValue.
+    ///
+    RawValue::Data *getNextElement();
+    
+    /// Copy a raw value into the buffer
+    void addRawValue(const RawValue::Data *raw_value);
 
-    size_t getCount();
+    /// Get a pointer to value number i without removing it
 
+    ///
+    /// Returns 0 if i is invalid.
+    ///
+    const RawValue::Data *getRawValue(size_t i) const;
+    
+    /// Return pointer to the oldest value in the buffer and remove it.
+
+    ///
+    /// Returns 0 of there's nothing more to remove.
+    ///
+    const RawValue::Data *removeRawValue();
+
+    void dump() const;
+    
 private:
     CircularBuffer(const CircularBuffer &); // not impl.
+    CircularBuffer & operator = (const CircularBuffer &); // not impl.
 
-    void allocate(DbrType type, DbrCount count, size_t num);
-    RawValueI::Type *getElement(RawValueI::Type *buf, size_t i);
-    RawValueI::Type *getNextElement();
+    RawValue::Data *getElement(size_t i) const;
 
-    ThreadSemaphore _lock;
-    DbrType         _type;
-    DbrCount        _count;
-    RawValueI::Type *_buffer;
-    size_t          _element_size;// == RawValue::getSize (_type, _count)
-    size_t          _num;         // number of elements in buffer
-    size_t          _head;        // index of current element
-    size_t          _tail;        // before! last element, _tail==_head: empty
-    size_t          _overwrites;
+    DbrType         type;        // dbr_time_xx
+    DbrCount        count;       // array size of type
+    RawValue::Data  *buffer;     // the buffer
+    size_t          element_size;// == RawValue::getSize (_type, _count)
+    size_t          max_index;   // max. number of elements in buffer
+    size_t          head;        // index of current element
+    size_t          tail;        // before(!) last element, _tail==_head: empty
+    size_t          overwrites;  // # of elements we had to drop
 };
-
-inline RawValueI::Type *CircularBuffer::getElement(RawValueI::Type *buf,
-                                                   size_t i)
-{   return (RawValueI::Type *) (((char *)buf) + i * _element_size); }
-
-inline void CircularBuffer::addRawValue(const RawValueI::Type *raw_value)
-{
-    if (_lock.take())
-    {
-        memcpy(getNextElement(), raw_value, _element_size);
-        _lock.give();
-    }
-}
-
-inline size_t CircularBuffer::getCount()
-{
-    size_t count;
-    if (! _lock.take())
-        return 0;
-    
-    if (_head >= _tail)
-        count = _head - _tail;
-    else    
-        //     #(tail .. end)      + #(start .. head)
-        count = (_num - _tail - 1) + (_head + 1);
-    _lock.give();
-
-    return count;
-}
-
-inline const RawValueI::Type *CircularBuffer::removeRawValue()
-{
-    RawValueI::Type *val;
-
-    if (!_lock.take())
-        return 0;
-    
-    if (_tail == _head)
-        val = 0;
-    else
-    {
-        if (++_tail >= _num)
-            _tail = 0;
-
-        val = getElement(_buffer, _tail);
-    }
-    _lock.give();
-    return val;
-}
 
 #endif //__CIRCULARBUFFER_H__
 

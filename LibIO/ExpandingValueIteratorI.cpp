@@ -1,5 +1,6 @@
 #include "ExpandingValueIteratorI.h"
 #include "ArchiveException.h"
+#include "epicsTimeHelper.h"
 
 static inline bool isRepeat(const ValueI *value)
 {
@@ -57,7 +58,7 @@ void ExpandingValueIteratorI::attach(ValueIteratorI *base)
             _until = _repeat_value->getTime();
             if (value->getCtrlInfo())
             {
-                _info = new CtrlInfoI(*value->getCtrlInfo());
+                _info = new CtrlInfo(*value->getCtrlInfo());
                 if (_info)
                     _repeat_value->setCtrlInfo(_info);
             }
@@ -79,7 +80,7 @@ bool ExpandingValueIteratorI::next()
 	if (_repeat_value)
 	{
 		// expanding repeat count:
-		osiTime time = _repeat_value->getTime();
+		epicsTime time = _repeat_value->getTime();
 		time += _base->getPeriod ();
 		if (time > _until) // end of repetitions
 		{
@@ -113,7 +114,7 @@ bool ExpandingValueIteratorI::next()
                 if (_info)
                     *_info = *last->getCtrlInfo();
                 else
-                    _info = new CtrlInfoI(*last->getCtrlInfo());
+                    _info = new CtrlInfo(*last->getCtrlInfo());
                 last->setCtrlInfo(_info);
             }
     }
@@ -134,7 +135,7 @@ bool ExpandingValueIteratorI::next()
 			_repeat_value = last;
             _until = value->getTime();
 			// calculate first repetition
-			osiTime time = roundTimeUp(last->getTime(), getPeriod());
+			epicsTime time = roundTimeUp(last->getTime(), getPeriod());
             if (time > _until)
                 _repeat_value->setTime(_until);
             else
@@ -167,7 +168,7 @@ bool ExpandingValueIteratorI::prev()
 	return _base->prev();
 }
 
-size_t ExpandingValueIteratorI::determineChunk(const osiTime &until)
+size_t ExpandingValueIteratorI::determineChunk(const epicsTime &until)
 {
 	LOG_MSG("Warning: ExpandingValueIteratorI::determineChunk called, "
             "will give base's return\n");

@@ -4,11 +4,11 @@
 class EngineServer
 {
 public:
-	EngineServer ();
-	~EngineServer ();
+	EngineServer();
+	~EngineServer();
 
 	static short _port;
-        static bool _nocfg;
+    static bool _nocfg;
 private:
 	class HTTPServer *_server;
 };

@@ -3,11 +3,12 @@
 #include "BinChannelIterator.h"
 #include "BinValueIterator.h"
 #include "DirectoryFile.h"
+#include "epicsTimeHelper.h"
 #include "Filename.h"
 
 BinArchive::BinArchive(const stdString &archive_name, bool for_write)
 {
-    initOsiHelpers();
+    initEpicsTimeHelper();
     _dir = new DirectoryFile(archive_name, for_write);
     _secs_per_file = SECS_PER_MONTH;
 }
@@ -71,22 +72,22 @@ void BinArchive::makeDataFileName (const ValueI &value, stdString &data_file_nam
     unsigned long nano;
     char buffer[80];
 
-    osiTime time = value.getTime();
-    osiTime file;
+    epicsTime time = value.getTime();
+    epicsTime file;
 
     if (getSecsPerFile() == SECS_PER_MONTH)
     {
-        osiTime2vals (time, year, month, day, hour, min, sec, nano);
-        vals2osiTime (year, month, 1, 0, 0, 0, 0, file);
+        epicsTime2vals (time, year, month, day, hour, min, sec, nano);
+        vals2epicsTime (year, month, 1, 0, 0, 0, 0, file);
     }
     else
         file = roundTimeDown (time, getSecsPerFile());
-    osiTime2vals (file, year, month, day, hour, min, sec, nano);
+    epicsTime2vals (file, year, month, day, hour, min, sec, nano);
     sprintf (buffer, "%04d%02d%02d-%02d%02d%02d", year, month, day, hour, min, sec);
     data_file_name = buffer;
 }
 
-void BinArchive::calcNextFileTime (const osiTime &time, osiTime &next_file_time)
+void BinArchive::calcNextFileTime (const epicsTime &time, epicsTime &next_file_time)
 {
     if (!isValidTime (time))
     {
@@ -98,7 +99,7 @@ void BinArchive::calcNextFileTime (const osiTime &time, osiTime &next_file_time)
     {
         int year, month, day, hour, min, sec;
         unsigned long nano;
-        osiTime2vals (time, year, month, day, hour, min, sec, nano);
+        epicsTime2vals (time, year, month, day, hour, min, sec, nano);
         if (month > 11)
         {
             month = 1;
@@ -106,11 +107,11 @@ void BinArchive::calcNextFileTime (const osiTime &time, osiTime &next_file_time)
         }
         else
             ++month;
-        vals2osiTime (year, month, 1, 0, 0, 0, 0, next_file_time);
+        vals2epicsTime (year, month, 1, 0, 0, 0, 0, next_file_time);
     }
     else
     {
-        osiTime file = roundTimeDown (time, getSecsPerFile());
+        epicsTime file = roundTimeDown (time, getSecsPerFile());
 
         // compute the next time a file will need to be created
         file += 1; // in case we are right on midnight
@@ -120,7 +121,7 @@ void BinArchive::calcNextFileTime (const osiTime &time, osiTime &next_file_time)
 
 bool BinArchive::makeFullFileName (const stdString &basename, stdString &full_name)
 {
-    if (! isValidFilename (basename))
+    if (! Filename::isValid(basename))
         return false;
     LOG_ASSERT (_dir);
     Filename::build (_dir->getDirname(), basename, full_name);

@@ -1,11 +1,11 @@
 // DirectoryFile.cpp
 //////////////////////////////////////////////////////////////////////
 
-#include "LowLevelIO.h"
-#include "DirectoryFile.h"
-#include "ArchiveException.h"
 #include "MsgLogger.h"
 #include "Filename.h"
+#include "Conversions.h"
+#include "DirectoryFile.h"
+#include "ArchiveException.h"
 
 //#define LOG_DIRFILE
 
@@ -21,20 +21,16 @@ DirectoryFile::DirectoryFile(const stdString &filename, bool for_write)
 {
     _filename = filename;
     Filename::getDirname(_filename, _dirname);
-    
-    if (for_write)
-    {
-        if (! _file.llopen(filename.c_str(), true))
-            throwDetailedArchiveException(CreateError, filename);
-    }
-    else
-    {
-        if (! _file.llopen(filename.c_str()))
-            throwDetailedArchiveException(OpenError, filename);
-    }
+    _file_for_write = for_write;
+    _file = fopen(filename.c_str(), "r+b");
+    if (_file==0 && for_write)
+        _file = fopen(filename.c_str(), "w+b");
+    if (_file == 0)
+        throwDetailedArchiveException(OpenError, filename);
 
     // Does file contain HT?
-    _next_free_entry = _file.llseek_end(0);
+    fseek(_file, 0, SEEK_END);
+    _next_free_entry = ftell(_file);
     if (_next_free_entry < FirstEntryOffset)
     {
         if (!for_write) // ... but it should
@@ -70,7 +66,8 @@ DirectoryFile::~DirectoryFile()
         LOG_MSG("(readonly) ");
     LOG_MSG("~DirectoryFile %s\n", _filename);
 #endif
-    _file.llclose();
+    if (_file)
+        fclose(_file);
 }
 
 DirectoryFileIterator DirectoryFile::findFirst()
@@ -138,7 +135,7 @@ DirectoryFileIterator DirectoryFile::add(const stdString &name)
     channel->init(cname);
     channel->setNextEntryOffset(INVALID_OFFSET);
     channel->write(_file, _next_free_entry);
-    _file.llflush();
+    fflush(_file);
     _next_free_entry += channel->getDataSize();
     
     return i;
@@ -188,11 +185,11 @@ FileOffset DirectoryFile::readHTEntry(HashTable::HashValue entry) const
     FileOffset offset;
     FileOffset pos = entry * sizeof(FileOffset);
     
-    if (_file.llseek(pos) != pos   ||
-        !_file.llread(&offset, sizeof(FileOffset)))
+    if (fseek(_file, pos, SEEK_SET) != 0 ||
+        (FileOffset) ftell(_file) != pos   ||
+        fread(&offset, sizeof(FileOffset), 1, _file) != 1)
         throwArchiveException(ReadError);
     FileOffsetFromDisk(offset);
-    
     return offset;
 }
 
@@ -200,8 +197,9 @@ void DirectoryFile::writeHTEntry(HashTable::HashValue entry, FileOffset offset)
 {       // offset is value parm -> safe to convert in place
     FileOffsetToDisk (offset);
     FileOffset pos = entry * sizeof(FileOffset);
-    if (_file.llseek(pos) != pos   ||
-        !_file.llwrite(&offset, sizeof(FileOffset)))
+    if (fseek(_file, pos, SEEK_SET) != 0 ||
+        (FileOffset) ftell(_file) != pos   ||
+        fwrite(&offset, sizeof(FileOffset), 1, _file) != 1)
         throwArchiveException(WriteError);
 }
 

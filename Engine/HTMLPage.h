@@ -10,7 +10,7 @@
 
 #ifndef __HTMLPAGE_H__
 #define __HTMLPAGE_H__
-#include "ArchiveTypes.h"
+
 #ifdef solaris
 // Hack around clash of struct map in inet headers with std::map
 #define map xxxMapxxx
@@ -44,17 +44,5 @@ protected:
 	SOCKET _socket;
 	int _refresh;
 };
-
-inline void HTMLPage::out (const char *line, size_t length)
-{	
-	// un-const for compatibility w/ HP_aCC
-	::send (_socket, (char *)line, length, 0);
-}
-
-inline void HTMLPage::out (const char *line)
-{	out (line, strlen(line));	}
-
-inline void HTMLPage::out (const stdString &line)
-{	out (line.c_str(), line.length ());	}
 
 #endif //__HTMLPAGE_H__

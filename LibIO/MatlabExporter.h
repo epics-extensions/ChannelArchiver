@@ -20,7 +20,7 @@ public:
 
     // convert osiTime into a Matlab 'datestr' that 'datenum' can handle
     enum { DATESTR_LEN=30 };
-    static bool osiTime2datestr(const osiTime &time, char *text);
+    static bool epicsTime2datestr(const epicsTime &time, char *text);
 
     // The other way round.
     // Does only work for datestr of the format
@@ -28,7 +28,7 @@ public:
     // In Matlab, this can be created as:
     // [datestr(n,'mm') '/' datestr(n,'dd') '/' datestr(n,'yyyy')
     //  ' ' datestr(n,'HH:MM:SS')]
-    static bool datestr2osiTime(const char *text, osiTime &time);
+    static bool datestr2epicsTime(const char *text, epicsTime &time);
 
   protected:
 };

@@ -8,18 +8,18 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+#include <math.h>
 #include "MultiArchive.h"
 #include "MultiChannelIterator.h"
 #include "MultiValueIterator.h"
 #include "BinArchive.h"
 #include "ArchiveException.h"
-#include "LowLevelIO.h"
 #include <ASCIIParser.h>
 #include <BinaryTree.h>
 
 // Open a MultiArchive for the given master file
 MultiArchive::MultiArchive(const stdString &master_file, 
-                           const osiTime &from, const osiTime &to)
+                           const epicsTime &from, const epicsTime &to)
 {
     _queriedAllArchives = false;
     if (! parseMasterFile(master_file, from, to))
@@ -45,30 +45,29 @@ static bool does_file_exist(const stdString &filename)
 }
 
 bool MultiArchive::parseMasterFile(const stdString &master_file,
-                                   const osiTime &from, const osiTime &to)
+                                   const epicsTime &from, const epicsTime &to)
 {
-    stdString sub_archive;
 #ifdef DEBUG_MULTIARCHIVE
     LOG_MSG("MultiArchive::parseMasterFile\n");
 #endif
+    stdString sub_archive;
     // Carefully check if "master_file" starts with the magic line:
-    LowLevelIO file;
-    if (! file.llopen (master_file.c_str()))
+    FILE *file = fopen(master_file.c_str(), "r");
+    if (!file)
     {
         LOG_MSG("Cannot open master file '%s'\n",
                 master_file.c_str());
         return false;
     }
     char line[14]; // master_version  : 14 chars
-    if (! file.llread(line, 14))
+    if (fread(line, 14, 1, file) != 1)
     {
         LOG_MSG("Invalid master file '%s'\n", master_file.c_str());
         return false; // too small to be anything
     }
-    file.llclose();
+    fclose(file);
     if (strncmp(line, "master_version", 14) !=0)
     {
-        // Not a multi-archive file.
         // Could be Binary file:
         if (does_file_exist(master_file))
         {
@@ -109,7 +108,7 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
                 sub_archive = parser.getLine();
                 if (!does_file_exist(sub_archive))
                     continue;
-               if (!isValidTime(from) && !isValidTime(to))
+                if (!isValidTime(from) && !isValidTime(to))
                 {
                     // No timestamps
                     // -> we have to use every Archive in the Multi-Archive
@@ -124,7 +123,7 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
                     // values at all should save some time...
                     Archive archive(new BinArchive(sub_archive));
                     ChannelIterator channel(archive);
-                    osiTime start, end, time;
+                    epicsTime start, end, time;
                     for (archive.findFirstChannel(channel); channel; ++channel)
                     {
                         time = channel->getFirstTime();
@@ -152,9 +151,9 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
             // values
             while (parser.nextLine())
             {
-                osiTime f, t;
-                string2osiTime(parser.getLine().substr(0, 19), f);
-                string2osiTime(parser.getLine().substr(20, 19), t);
+                epicsTime f, t;
+                string2epicsTime(parser.getLine().substr(0, 19), f);
+                string2epicsTime(parser.getLine().substr(20, 19), t);
                 if ( !isValidTime(f) || !isValidTime(t) )
                 {
                     LOG_MSG("Invalid timestamp in master file '%s' line %d\n",
@@ -193,7 +192,7 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
 void MultiArchive::log() const
 {
     LOG_MSG("MultiArchive:\n");
-    stdList<stdString>::const_iterator archs = _archives.begin();    
+    stdList<stdString>::const_iterator archs = _archives.begin();
     while (archs != _archives.end())
     {
         LOG_MSG("Archive file: %s\n", archs->c_str());
@@ -205,8 +204,8 @@ void MultiArchive::log() const
     stdString start, end;
     while (chans != _channels.end())
     {
-        osiTime2string(chans->_first_time, start);
-        osiTime2string(chans->_last_time, end);
+        epicsTime2string(chans->_first_time, start);
+        epicsTime2string(chans->_last_time, end);
         LOG_MSG("%s: %s, %s\n",
                 chans->_name.c_str(), start.c_str(), end.c_str());
         ++chans;
@@ -238,7 +237,7 @@ void MultiArchive::queryAllArchives()
     stdString name;
     size_t i;
     ChannelInfo *info;
-    osiTime time;
+    epicsTime time;
 
     stdList<stdString>::iterator archs = _archives.begin();
     for (/**/; archs != _archives.end(); ++archs)
@@ -327,7 +326,7 @@ bool MultiArchive::addChannel(const stdString &name,
 // See comment in header file
 bool MultiArchive::getValueAfterTime(
     MultiChannelIterator &channel_iterator,
-    const osiTime &time,
+    const epicsTime &time,
     MultiValueIterator &value_iterator) const
 {
 #ifdef DEBUG_MULTIARCHIVE
@@ -396,7 +395,7 @@ bool MultiArchive::getValueAfterTime(
 
 bool MultiArchive::getValueAtOrBeforeTime(
     MultiChannelIterator &channel_iterator,
-    const osiTime &time, bool exact_time_ok,
+    const epicsTime &time, bool exact_time_ok,
     MultiValueIterator &value_iterator) const
 {
     if (channel_iterator._channel_index >= _channels.size())
@@ -435,13 +434,12 @@ bool MultiArchive::getValueAtOrBeforeTime(
 
 bool MultiArchive::getValueNearTime(
     MultiChannelIterator &channel_iterator,
-    const osiTime &time, MultiValueIterator &value_iterator) const
+    const epicsTime &time, MultiValueIterator &value_iterator) const
 {
     if (channel_iterator._channel_index >= _channels.size())
         return false;
 
     // Query all archives in MultiArchive for value nearest "time"
-    double t = double (time);
     double best_bet = -1.0; // negative == invalid
 
     const ChannelInfo &info = _channels[channel_iterator._channel_index];
@@ -456,7 +454,7 @@ bool MultiArchive::getValueNearTime(
             if (! channel->getValueNearTime(time, value))
                 continue;
 
-            double distance = fabs(double(value->getTime()) - t);  
+            double distance = fabs(value->getTime() - time);  
             if (best_bet >= 0  &&  best_bet <= distance)
                 continue; // worse than what we found before
 

@@ -10,6 +10,7 @@
 
 #include "LinInterpolValueIteratorI.h"
 #include "ArchiveException.h"
+#include "epicsTimeHelper.h"
 
 LinInterpolValueIteratorI::LinInterpolValueIteratorI (ValueIteratorI *base, double deltaT)
 {
@@ -64,7 +65,7 @@ bool LinInterpolValueIteratorI::prev ()
 	return interpolate (_time) != 0;
 }
 
-size_t LinInterpolValueIteratorI::determineChunk (const osiTime &until)
+size_t LinInterpolValueIteratorI::determineChunk (const epicsTime &until)
 {
 	// How many values are there?
 	// Cannot say easily without actually interpolating them...
@@ -74,9 +75,10 @@ size_t LinInterpolValueIteratorI::determineChunk (const osiTime &until)
 }
 
 // Generate CLASS Value for given time
-const ValueI * LinInterpolValueIteratorI::interpolate (const osiTime &time)
+const ValueI * LinInterpolValueIteratorI::interpolate (const epicsTime &time)
 {
-	double v0, v1, t0, t1;
+	double v0, v1;
+    epicsTime t0, t1;
 
 	if (! _base->isValid ()) // not initialized, yet
 		return 0;
@@ -137,7 +139,7 @@ const ValueI * LinInterpolValueIteratorI::interpolate (const osiTime &time)
 	else
 	{
 		if (dT != 0)
-			_value->setDouble (v0+(v1-v0)*(double(time)-t0)/dT);
+			_value->setDouble (v0+(v1-v0)*(time-t0)/dT);
 		else
 			_value->setDouble ((v0+v1)/2); // better idea?
 		_value->setStatus (_base->getValue()->getStat(), _base->getValue()->getSevr());

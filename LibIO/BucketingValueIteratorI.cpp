@@ -10,6 +10,7 @@
 
 #include "BucketingValueIteratorI.h"
 #include "ArchiveException.h"
+#include "epicsTimeHelper.h"
 
 #define DL 5
 #define Dfprintf(l,args) if (l>DL) fprintf args
@@ -52,8 +53,8 @@ bool BucketingValueIteratorI::iterate ( int dir )
    bool run = 1;
    while ( run ) {
       if ( !_base->isValid() || 
-	   ((dir == D_FWD) && (double(_base->getValue()->getTime()) > double(_time) + _deltaT )) ||
-	   ((dir == D_BCK) && (double(_base->getValue()->getTime()) < double(_time) )) ) {
+	   ((dir == D_FWD) && (_base->getValue()->getTime() > (_time + _deltaT) )) ||
+	   ((dir == D_BCK) && (_base->getValue()->getTime() < _time )) ) {
 	 _state = S_OUT;
 
       } else if ( !(run = !_base->getValue()->isInfo()) ) {
@@ -145,7 +146,7 @@ bool BucketingValueIteratorI::prev ()
    return iterate(D_BCK);
 }
 
-size_t BucketingValueIteratorI::determineChunk (const osiTime &until)
+size_t BucketingValueIteratorI::determineChunk (const epicsTime &until)
 {
 	// How many values are there?
 	// Cannot say easily without actually interpolating them...

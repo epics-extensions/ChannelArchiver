@@ -8,19 +8,20 @@
 
 #include"MatlabExporter.h"
 #include"ArchiveException.h"
+#include"epicsTimeHelper.h"
 
-bool MatlabExporter::osiTime2datestr(const osiTime &time, char *text)
+bool MatlabExporter::epicsTime2datestr(const epicsTime &time, char *text)
 {
     int year, month, day, hour, min, sec;
     unsigned long nano;
     
-    osiTime2vals (time, year, month, day, hour, min, sec, nano);
+    epicsTime2vals (time, year, month, day, hour, min, sec, nano);
     sprintf(text, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
             month, day, year, hour, min, sec, nano);
     return true;
 }
 
-bool MatlabExporter::datestr2osiTime(const char *text, osiTime &time)
+bool MatlabExporter::datestr2epicsTime(const char *text, epicsTime &time)
 {
     int     year, month, day, hour, min;
     double  second;
@@ -32,7 +33,7 @@ bool MatlabExporter::datestr2osiTime(const char *text, osiTime &time)
     int secs = (int)second;
     unsigned long nano = (unsigned long) ((second - secs) * 1000000000L);
 
-    vals2osiTime(year, month, day, hour, min, secs, nano, time);
+    vals2epicsTime(year, month, day, hour, min, secs, nano, time);
 
     return true;
 }
@@ -54,7 +55,7 @@ void MatlabExporter::exportChannelList(
     Archive         archive(_archive);
     ChannelIterator channel(archive);
     ValueIterator   value(archive);
-    osiTime         time;
+    epicsTime         time;
     stdString       txt;
     char            datestr[DATESTR_LEN];
     char            info[300];
@@ -142,7 +143,7 @@ void MatlabExporter::exportChannelList(
             time=value->getTime();
             ++line;
             ++_data_count;
-            osiTime2datestr(time, datestr);
+            epicsTime2datestr(time, datestr);
             fprintf(f, "%s.t(%d)={'%s'};\n", variable, line, datestr);
 
             if (value->isInfo())

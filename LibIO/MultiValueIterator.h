@@ -28,7 +28,7 @@ public:
     virtual bool next();
     virtual bool prev();
 
-    virtual size_t determineChunk(const osiTime &until);
+    virtual size_t determineChunk(const epicsTime &until);
     virtual double getPeriod() const;
 
 private:

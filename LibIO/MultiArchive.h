@@ -13,6 +13,7 @@
 #define __MULTI_ARCHIVEI_H__
 
 #include "ArchiveI.h"
+#include "epicsTimeHelper.h"
 
 //#define DEBUG_MULTIARCHIVE
 
@@ -89,14 +90,14 @@ public:
     {
     public:
         stdString	_name;			// name of the channel
-        osiTime		_first_time;	// Time stamp of first value
-        osiTime		_last_time;		// Time stamp of last value
+        epicsTime		_first_time;	// Time stamp of first value
+        epicsTime		_last_time;		// Time stamp of last value
     };
 
     //* Open a MultiArchive for the given master file
     MultiArchive(const stdString &master_file, 
-		 const osiTime &from = nullTime,
-		 const osiTime &to = nullTime);
+		 const epicsTime &from = nullTime,
+		 const epicsTime &to = nullTime);
 
     //* All virtuals from CLASS ArchiveI are implemented,
     // except that the "write" routines fail for this read-only archive type.
@@ -119,15 +120,15 @@ public:
     // These routines will not clear() the value_iterator
     // to allow stepping back when used from within next()/prev()!
     bool getValueAfterTime(MultiChannelIterator &channel_iterator,
-                           const osiTime &time,
+                           const epicsTime &time,
                            MultiValueIterator &value_iterator) const;
 
     bool getValueAtOrBeforeTime(MultiChannelIterator &channel_iterator,
-                                const osiTime &time, bool exact_time_ok,
+                                const epicsTime &time, bool exact_time_ok,
                                 MultiValueIterator &value_iterator) const;
 
     bool getValueNearTime(MultiChannelIterator &channel_iterator,
-                          const osiTime &time,
+                          const epicsTime &time,
                           MultiValueIterator &value_iterator) const;
 
 private:
@@ -135,7 +136,7 @@ private:
     friend class MultiChannel;
     
     bool parseMasterFile(const stdString &master_file, 
-			 const osiTime &from, const osiTime &to);
+                         const epicsTime &from, const epicsTime &to);
 
     // Fill _channels from _archives
     void queryAllArchives();

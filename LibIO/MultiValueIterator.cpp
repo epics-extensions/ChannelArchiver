@@ -43,7 +43,7 @@ const ValueI * MultiValueIterator::getValue() const
 	return _base_value_iterator->getValue ();
 }
 
-static const osiTime epsilon_time(0L, 1L);
+static const double epsilon_time = 1e-9;
 
 bool MultiValueIterator::next()
 {
@@ -58,7 +58,7 @@ bool MultiValueIterator::next()
         _channel_iterator->_base_channel_iterator->isValid())
 	{
 		// last time stamp current archive has for this channel:
-		osiTime next_time = _channel_iterator->
+		epicsTime next_time = _channel_iterator->
             _base_channel_iterator->getChannel()->getLastTime();
         next_time += epsilon_time;
 		_is_valid = _channel_iterator->_multi_archive->getValueAfterTime
@@ -84,7 +84,7 @@ bool MultiValueIterator::prev()
         _channel_iterator->_base_channel_iterator->isValid())
 	{
 		// last time stamp current archive has for this channel:
-		osiTime next_time = _channel_iterator->
+		epicsTime next_time = _channel_iterator->
             _base_channel_iterator->getChannel()->getFirstTime();
 		_is_valid = _channel_iterator->_multi_archive->getValueAtOrBeforeTime
             (*_channel_iterator,
@@ -97,7 +97,7 @@ bool MultiValueIterator::prev()
 	return _is_valid;
 }     
 
-size_t MultiValueIterator::determineChunk(const osiTime &until)
+size_t MultiValueIterator::determineChunk(const epicsTime &until)
 {
 	return _base_value_iterator->determineChunk(until);
 }

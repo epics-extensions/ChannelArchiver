@@ -1,55 +1,100 @@
-// --------------------------------------------------------
+// -*- c++ -*-
 // $Id$
 //
 // Please refer to NOTICE.txt,
 // included as part of this distribution,
 // for legal information.
 //
-// Kay-Uwe Kasemir, kasemir@lanl.gov
-// --------------------------------------------------------
+// kasemir@lanl.gov
 
 #if !defined(HTTP_SERVER_H_)
 #define HTTP_SERVER_H_
 
-#include <list>
-#include <vector>
-#include <osiSock.h>
-#include <fdManager.h>
+// Base
+#include <epicsTime.h>
+#include <epicsThread.h>
+// Tools
+#include <ToolsConfig.h>
+#include <NetTools.h>
+#include <Guard.h>
+// Engine
 #include "HTMLPage.h"
 
-using stdList;
-using stdVector;
+// undef: Nothing
+//     1: Start/Stop
+//     2: Show Client IPs
+//     3: Connect & cleanup
+//     4: Requests
+//     5: whatever
+#define HTTPD_DEBUG 2
 
-//CLASS
-// A HTTPServer creates a CLASS HTTPClientConnection
-// for each incoming, well, client.
-//
-// All these classes are essentially run
-// by the EPICS fdManager, so it's process() method
-// has to be called periodically.
-class HTTPServer : public fdReg
+// Maximum number of clients that we accept.
+// This includes connections that are "done"
+// and need to be cleaned up
+// (which happens every HTTPD_TIMEOUT seconds)
+#define MAX_NUM_CLIENTS 10
+
+// These timeouts influence how quickly the server reacts,
+// including how fast the whole engine can be shut down.
+
+// Timeout for server to check for new client
+#define HTTPD_TIMEOUT 1
+
+// Client uses timeout for each read
+#define HTTPD_READ_TIMEOUT 1
+
+// HTTP clients older than this total timeout are killed
+#define HTTPD_CLIENT_TIMEOUT 10
+
+/// \addtogroup Engine
+/// @{
+
+/// An in-memory web server.
+
+/// Creates a HTTPClientConnection
+/// for each incoming, well, client.
+///
+/// The HTTPClientConnection then needs to handle
+/// the incoming requests and produce appropriate
+/// and hopefully strikingly beatiful HTML pages.
+class HTTPServer : public epicsThreadRunable
 {
 public:
-    //* Only user-callable method in HTTPServer:<BR>
-    // Create a HTTPServer.
-    static HTTPServer *create (short port=4812);
+    /// Create a HTTPServer.
+    static HTTPServer *create(short port);
+    
     virtual ~HTTPServer();
 
-private:
-    HTTPServer (SOCKET socket);
-    void callBack ();
+    /// Start accepting connections (launch thread)
+    void start();
 
-    SOCKET  _socket;
+    void run();
+
+    void serverinfo(SOCKET socket);
+
+    bool isShuttingDown() const
+    {   return go == false; }    
+    
+private:
+    HTTPServer(SOCKET socket);
+    epicsThread                           thread;
+    bool                                  go;
+    SOCKET                                socket;
+    size_t                                total_clients;
+    epicsMutex                            client_list_mutex;
+    stdList<class HTTPClientConnection *> clients;
+    // returns # of clients that are still active
+    int cleanup();
 };
 
-class HTTPClientConnection;
-typedef void (*PathHandler) (HTTPClientConnection *connection,
+typedef void (*PathHandler) (class HTTPClientConnection *connection,
                              const stdString &full_path);
 
-// Used by HTTPClientConnection
-// to dispatch client requests
-//
-// Terminator: entry with path = 0
+/// Used by HTTPClientConnection to dispatch client requests
+
+/// Terminator: entry with path = 0.
+///
+///
 typedef struct
 {
     const char  *path;      // Path for this handler
@@ -57,54 +102,63 @@ typedef struct
     PathHandler handler;    // Handler to call
 }   PathHandlerList;
 
-//CLASS HTTPClientConnection
-// HTTPClientConnection handles input and dispatches
-// to a PathHandler from PathList.
-// It's deleted when the connection is closed.
-class HTTPClientConnection : public fdReg
+/// Handler for a HTTPServer's client.
+
+/// Handles input and dispatches
+/// to a PathHandler from PathList.
+/// It's deleted when the connection is closed.
+class HTTPClientConnection : public epicsThreadRunable
 {
 public:
-    HTTPClientConnection (SOCKET socket);
-    virtual ~HTTPClientConnection ();
+    static PathHandlerList  *handlers;
 
-    SOCKET getSocket ()
-    {   return _socket; }
+    HTTPClientConnection(HTTPServer *server, SOCKET socket, int num);
+    virtual ~HTTPClientConnection();
 
-    static void setPathHandlers (PathHandlerList *handler)
-    {   _handler = handler; }
+    HTTPServer *getServer()
+    {   return server; }
+    
+    SOCKET getSocket()
+    {   return socket; }
+            
+    int getNum()
+    {   return num; }
+    
+    bool isDone()
+    {   return done; }    
 
-    // List of all open client connections
-    static size_t getClientCount ()
-    {   return _clients;    }
+    /// Predefined PathHandlers
+    void error(const stdString &message);
+    void pathError(const stdString &path);
+ 
+    void start()
+    {  thread.start(); }
 
-    // Total number of clients since started (for debugging)
-    static size_t getTotalClientCount ()
-    {   return _total;  }
+    void run();
 
-    // Predefined PathHandlers:
-    void error (const stdString &message);
-    void pathError (const stdString &path);
+    const epicsTime &getBirthTime()
+    {   return birthtime; }
 
 private:
-    SOCKET              _socket;
-    stdVector<stdString>   _input_line;
-    char                _line[2048];
-    unsigned int        _dest; // index in line
-
-    static PathHandlerList  *_handler;
-    static size_t _total;
-    static size_t _clients;
-
-    // Called by fdManager on input:
-    void callBack ();
+    epicsThread              thread; // .. that handles this connection
+    HTTPServer              *server;
+    epicsTime                birthtime;
+    int                      num;    // unique sequence number of this conn.
+    bool                     done;   // has run() finished running?
+    SOCKET                   socket;
+    stdVector<stdString>     input_line;
+    char                     line[2048];
+    unsigned int             dest;  // index of next unused char in _line
 
     // Result: done, i.e. connection can be closed?
-    bool handleInput ();
+    bool handleInput();
 
     // return: full request that I can handle?
-    bool analyzeInput ();
+    bool analyzeInput();
 
-    void dumpInput (HTMLPage &page);
+    void dumpInput(HTMLPage &page);
 };
+
+/// @}
 
 #endif // !defined(HTTP_SERVER_H_)

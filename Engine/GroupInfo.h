@@ -1,53 +1,74 @@
+// --------------------- -*- c++ -*- ----------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
 #ifndef __GROUPINFO_H__
 #define __GROUPINFO_H__
 
-#include "ChannelInfo.h"
+// System
+#include <stdlib.h>
+// Base
+#include <epicsTime.h>
+/// Tools
+#include <ToolsConfig.h>
+#include <Guard.h>
 
-//CLASS GroupInfo
-// Several Channels,
-// in the Engine identified by ChannelInfo,
-// might form a group that can e.g. be disabled as a whole.
-//
-// This is double-linked:
-// Each ChannelInfo indicates membership to several _groups
-// so that a channel can quickly diable a group.
-// Each GroupInfo knows all it's _members in order
-// to disable them.
+/// Each channel, identified by an ArchiveChannel,
+/// belongs to at least one group. GroupInfo handles
+/// one such group.
+/// A channel can disable its group.
+///
+/// This is double-linked:
+/// Each ArchiveChannel indicates membership to several groups
+/// so that a channel can disable its groups.
+/// Each GroupInfo knows all it's members in order
+/// to disable them.
 class GroupInfo
 {
 public:
-    GroupInfo ();
-    GroupInfo (const GroupInfo &);
+    GroupInfo(const stdString &name);
 
-    void setName (const stdString &name)            { _name = name; }
-    const stdString &getName () const               { return _name; }
+    /// Name of this group
+    const stdString &getName() const
+    { return name; }
+    
+    /// Unique ID (within one ArchiveEngine). 0 ... (#groups-1)
 
-    // Disabling channels use the ID
-    // to see if they disable this group:
-    size_t getID () const                           { return _ID; }
+    /// ArchiveChannel maintains a bitset of groups that it disabled.
+    /// This ID is used as an index into the bitset.
+    ///
+    size_t getID() const
+    { return ID; }
 
-    void addChannel (ChannelInfo *channel);
+    /// Add channel to this group. NOP if already group member.
+    void addChannel(Guard &channel_guard, class ArchiveChannel *channel);
 
-    const stdList<ChannelInfo *>&getChannels () const   { return _members; }
+    /// Return current list of group members
+    const stdList<class ArchiveChannel *>&getChannels () const
+    { return members; }
 
-    void disable (ChannelInfo *cause);
-    void enable (ChannelInfo *cause);
-    bool isEnabled () const                         { return _disabled <= 0; }
+    void disable(class ArchiveChannel *cause, const epicsTime &when);
+    void enable(class ArchiveChannel *cause, const epicsTime &when);
+    bool isEnabled() const
+    { return disable_count <= 0; }
 
-    // Info on connected channels out of getChannels.size():
-    size_t getConnectedChannels () const            { return _num_connected; }
-    void incConnectedChannels ()                    { ++ _num_connected; }
-    void decConnectedChannels ()                    { if (_num_connected > 0) --_num_connected; }
+    /// # of channels in group that are connected
+    size_t num_connected;
 
 private:
+    GroupInfo(const GroupInfo &); // not impl.
     GroupInfo & operator = (const GroupInfo &); // not impl.
 
-    static size_t   _next_ID;
-    size_t          _ID;
-    size_t          _num_connected;
-    stdString       _name;
-    stdList<ChannelInfo *>  _members;
-    size_t          _disabled;  // disabled by how many channels?
+    stdString              name;           // Well, guess what?
+    static size_t          next_ID;        // next unused group ID
+    size_t                 ID;             // ID of this group
+    stdList<class ArchiveChannel *> members; 
+    size_t                 disable_count;  // disabled by how many channels?
 };
 
 #endif //__GROUPINFO_H__

@@ -11,6 +11,7 @@
 
 #include"Exporter.h"
 #include"ArchiveException.h"
+#include"epicsTimeHelper.h"
 #include<cvtFast.h>
 
 Exporter::Exporter(ArchiveI *archive)
@@ -57,17 +58,17 @@ void Exporter::exportMatchingChannels(const stdString &channel_name_pattern)
     exportChannelList(channel_names);
 }
 
-void Exporter::printTime(FILE *f, const osiTime &time)
+void Exporter::printTime(FILE *f, const epicsTime &time)
 {
     int year, month, day, hour, min, sec;
     unsigned long nano;
-    osiTime2vals (time, year, month, day, hour, min, sec, nano);
+    epicsTime2vals (time, year, month, day, hour, min, sec, nano);
 
     fprintf(f, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
             month, day, year, hour, min, sec, nano);
 }
 
-void Exporter::printValue(FILE *f, const osiTime &time, const ValueI *v)
+void Exporter::printValue(FILE *f, const epicsTime &time, const ValueI *v)
 {
     // skip values which are Archiver specials
     size_t ai;
@@ -82,14 +83,14 @@ void Exporter::printValue(FILE *f, const osiTime &time, const ValueI *v)
     }
     else
     {
-        const CtrlInfoI *info = v->getCtrlInfo();
+        const CtrlInfo *info = v->getCtrlInfo();
         
         // Format according to precision.
         // Unfortuately that is usually configured wrongly
         // and then people complain about not seeing their data...
         // -> use prec. if > 0
         if (v->getType() == DBR_TIME_STRING  ||
-            (info && info->getType() == CtrlInfoI::Enumerated))
+            (info && info->getType() == CtrlInfo::Enumerated))
         {
             v->getValue(txt);
             fprintf(f, "\t%s", txt.c_str());

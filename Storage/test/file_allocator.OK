@@ -1,0 +1,225 @@
+-----------------------------------------
+OK: attach
+bytes in file: 1024. Reserved/Allocated/Free: 1000/0/0
+-----------------------------------------
+OK: allocate 1000
+Got offset 1036
+bytes in file: 2036. Reserved/Allocated/Free: 1000/1000/0
+Allocated Block @       1024: 1000 bytes
+-----------------------------------------
+OK: allocate 2000
+Got offset 2048
+bytes in file: 4048. Reserved/Allocated/Free: 1000/3000/0
+Allocated Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+-----------------------------------------
+OK: allocate 3000
+Got offset 4060
+bytes in file: 7060. Reserved/Allocated/Free: 1000/6000/0
+Allocated Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+-----------------------------------------
+OK: allocate 4000
+Got offset 7072
+bytes in file: 11072. Reserved/Allocated/Free: 1000/10000/0
+Allocated Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+Allocated Block @       7060: 4000 bytes
+-----------------------------------------
+OK: allocate 5000
+Got offset 11084
+bytes in file: 16084. Reserved/Allocated/Free: 1000/15000/0
+Allocated Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+Allocated Block @       7060: 4000 bytes
+Allocated Block @      11072: 5000 bytes
+-----------------------------------------
+OK: allocate 6000
+Got offset 16096
+bytes in file: 22096. Reserved/Allocated/Free: 1000/21000/0
+Allocated Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+Allocated Block @       7060: 4000 bytes
+Allocated Block @      11072: 5000 bytes
+Allocated Block @      16084: 6000 bytes
+-----------------------------------------
+OK: allocate 7000
+Got offset 22108
+bytes in file: 29108. Reserved/Allocated/Free: 1000/28000/0
+Allocated Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+Allocated Block @       7060: 4000 bytes
+Allocated Block @      11072: 5000 bytes
+Allocated Block @      16084: 6000 bytes
+Allocated Block @      22096: 7000 bytes
+-----------------------------------------
+OK: free 1000
+bytes in file: 29108. Reserved/Allocated/Free: 1000/27000/1000
+Free      Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+Allocated Block @       7060: 4000 bytes
+Allocated Block @      11072: 5000 bytes
+Allocated Block @      16084: 6000 bytes
+Allocated Block @      22096: 7000 bytes
+-----------------------------------------
+OK: free 7000
+bytes in file: 29108. Reserved/Allocated/Free: 1000/20000/8000
+Free      Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+Allocated Block @       7060: 4000 bytes
+Allocated Block @      11072: 5000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-----------------------------------------
+OK: free 5000
+bytes in file: 29108. Reserved/Allocated/Free: 1000/15000/13000
+Free      Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+Allocated Block @       7060: 4000 bytes
+Free      Block @      11072: 5000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-----------------------------------------
+OK: free 4000
+bytes in file: 29108. Reserved/Allocated/Free: 1000/11000/17012
+Free      Block @       1024: 1000 bytes
+Allocated Block @       2036: 2000 bytes
+Allocated Block @       4048: 3000 bytes
+Free      Block @       7060: 9012 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-----------------------------------------
+OK: free 2000
+bytes in file: 29108. Reserved/Allocated/Free: 1000/9000/19024
+Free      Block @       1024: 3012 bytes
+Allocated Block @       4048: 3000 bytes
+Free      Block @       7060: 9012 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-----------------------------------------
+OK: free 3000
+bytes in file: 29108. Reserved/Allocated/Free: 1000/6000/22048
+Free      Block @       1024: 15048 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-----------------------------------------
+OK: allocate 4000
+Got offset 12084
+bytes in file: 29108. Reserved/Allocated/Free: 1000/10000/18036
+Free      Block @       1024: 11036 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-----------------------------------------
+OK: allocate 500
+Got offset 11572
+bytes in file: 29108. Reserved/Allocated/Free: 1000/10500/17524
+Free      Block @       1024: 10524 bytes
+Allocated Block @      11560: 500 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-----------------------------------------
+OK: allocate 1500
+Got offset 10060
+bytes in file: 29108. Reserved/Allocated/Free: 1000/12000/16012
+Free      Block @       1024: 9012 bytes
+Allocated Block @      10048: 1500 bytes
+Allocated Block @      11560: 500 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-----------------------------------------
+OK: re-attach
+bytes in file: 29108. Reserved/Allocated/Free: 1000/12000/16012
+Free      Block @       1024: 9012 bytes
+Allocated Block @      10048: 1500 bytes
+Allocated Block @      11560: 500 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+-- upping file size increment to 50000 --
+OK: allocate 10000
+Got offset 29120
+bytes in file: 50000. Reserved/Allocated/Free: 1000/22000/26880
+Free      Block @       1024: 9012 bytes
+Allocated Block @      10048: 1500 bytes
+Allocated Block @      11560: 500 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+Allocated Block @      29108: 10000 bytes
+Free      Block @      39120: 10868 bytes
+-----------------------------------------
+OK: allocate 10000
+Got offset 40000
+bytes in file: 50000. Reserved/Allocated/Free: 1000/32000/16868
+Free      Block @       1024: 9012 bytes
+Allocated Block @      10048: 1500 bytes
+Allocated Block @      11560: 500 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+Allocated Block @      29108: 10000 bytes
+Free      Block @      39120: 856 bytes
+Allocated Block @      39988: 10000 bytes
+-----------------------------------------
+OK: allocate 10000
+Got offset 50012
+bytes in file: 100000. Reserved/Allocated/Free: 1000/42000/56844
+Free      Block @       1024: 9012 bytes
+Allocated Block @      10048: 1500 bytes
+Allocated Block @      11560: 500 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+Allocated Block @      29108: 10000 bytes
+Free      Block @      39120: 856 bytes
+Allocated Block @      39988: 10000 bytes
+Allocated Block @      50000: 10000 bytes
+Free      Block @      60012: 39976 bytes
+-----------------------------------------
+OK: allocate 5000
+Got offset 5048
+bytes in file: 100000. Reserved/Allocated/Free: 1000/47000/51832
+Free      Block @       1024: 4000 bytes
+Allocated Block @       5036: 5000 bytes
+Allocated Block @      10048: 1500 bytes
+Allocated Block @      11560: 500 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 7000 bytes
+Allocated Block @      29108: 10000 bytes
+Free      Block @      39120: 856 bytes
+Allocated Block @      39988: 10000 bytes
+Allocated Block @      50000: 10000 bytes
+Free      Block @      60012: 39976 bytes
+-----------------------------------------
+OK: allocate 5000
+Got offset 24108
+bytes in file: 100000. Reserved/Allocated/Free: 1000/52000/46820
+Free      Block @       1024: 4000 bytes
+Allocated Block @       5036: 5000 bytes
+Allocated Block @      10048: 1500 bytes
+Allocated Block @      11560: 500 bytes
+Allocated Block @      12072: 4000 bytes
+Allocated Block @      16084: 6000 bytes
+Free      Block @      22096: 1988 bytes
+Allocated Block @      24096: 5000 bytes
+Allocated Block @      29108: 10000 bytes
+Free      Block @      39120: 856 bytes
+Allocated Block @      39988: 10000 bytes
+Allocated Block @      50000: 10000 bytes
+Free      Block @      60012: 39976 bytes
+-----------------------------------------
+-----------------------------------------
+Performing some random tests
+If you saw no messages, all should be fine

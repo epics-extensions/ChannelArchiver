@@ -11,193 +11,257 @@
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
-#include "../ArchiverConfig.h"
-#include <Thread.h>
+// Engine
+#include "ArchiverConfig.h"
 #include "GroupInfo.h"
 #include "ScanList.h"
-#include "Configuration.h"
-#include "BinArchive.h"
 
-//CLASS Engine
+#undef ENGINE_DEBUG
+
+// The ArchiveEngine uses these locks:
+//
+// HTTPServer::client_list_mutex
+// -----------------------------
+// HTTPServer maintains a list of clients for cleanup,
+// but HTTPServer::serverinfo could also be invoked
+// by HTTPClientConnection (different thread) for the "/server" URL.
+// So far not locked elsewhere.
+//
+// Engine::mutex
+// -------------
+// Locks lists of channels, groups, ...
+// Almost all of the Engine's methods require a Guard with this mutex.
+//
+// ArchiveChannel::mutex
+// ---------------------
+// Locks state & values of one channel.
+// Almost all of the Channel's methods require a Guard with this mutex.
+//
+// The following situations created a deadlock:
+//
+// 1) Main thread was in Engine::process,
+//    locked engine->mutex,
+//    called writeArchive, trying to lock a channel for writing.
+// 2) The same channel received new control info via ChannelAccess:
+//    ArchiveChannel::control_callback had locked the channel
+//    and was trying to lock the engine to init. the channel.
+// ==> Whoever needs Engine & channel locks needs to first lock the
+//     engine, then the channel. Never the other way around!
+//
+// Many CA library calls take a 'callback lock' to prohibit callbacks.
+// That same callback lock is taken inside a CA callback.
+// This lead to the following deadlock on Engine shutdown:
+// Thread 1: Engine::shutdown()->lock engine,channel
+//           -> ca_clear_channel(janet998) -> callback lock
+// Thread 2: tcpRecvThread::run -> callback lock
+//           -> control_info_callback(janet641) -> lock engine
+// i.e. lock order engine, callback lock and then the reverse;
+// ==> no locks are allowed when adding/removing
+//     a channel or a subscription! Use temporary release.
+
+/// \defgroup Engine
+/// Classes related to the ArchiveEngine
+
+/// Engine is the main class of the ArchiveEngine program,
+/// the one that contains the lists of all the ArchiveChannel
+/// and GroupInfo entries as well as the main loop.
 class Engine
 {
 public:
-    //* The Engine is a Singleton,
-    // createable only by calling this method
-    // and from then on accessible via global Engine *theEngine
-    static void create(const stdString &directory_file_name);
+    /// The Engine is a Singleton,
+    /// createable only by calling this method
+    /// and from then on accessible via global Engine *theEngine
+    static void create(const stdString &index_name);
+
+    // Ask engine to stop & delete itself.
+    // shutdown() will take the engine's mutex.
     void shutdown();
 
-    //* Engine will tell this Configuration class about changes,
-    // so that they can be made persistent
-    void setConfiguration(Configuration *c);
-    Configuration *getConfiguration();
-
 #ifdef USE_PASSWD
-    // Check if user/password are valid
+    /// Check if user/password are valid
     bool checkUser(const stdString &user, const stdString &pass);
 #endif
-
-    //* Arb. description string
+    /// Lock for all the engine info:
+    /// groups, channels, next write time, ...
+    /// All but
+    /// - archive
+    /// - data within one ChannelInfo
+    /// General idea:
+    /// The Engine class doesn't take its own lock,
+    /// but when you call methods of the Engine
+    /// you might have to lock/unlock
+    epicsMutex mutex;
+    
+    /// Arb. description string
     const stdString &getDescription() const;
-    void setDescription(const stdString &description);
+    void setDescription(Guard &engine_guard, const stdString &description);
 
-    //* Call this in a "main loop" as often as possible
+    /// Called by other threads (EngineServer)
+    /// which need to issue CA calls within the context
+    /// of the Engine
+    bool attachToCAContext(Guard &engine_guard);
+
+    /// Set to make the Engine flush CA requests in next process call
+    bool need_CA_flush;
+    
+    /// Call this in a "main loop" as often as possible
+
+    // Locks mutex while accessing engine's internals
     bool process();
 
-    //* Add/list groups/channels
-    const stdList<GroupInfo *> &getGroups();
-    GroupInfo *findGroup(const stdString &name);
-    GroupInfo *addGroup(const stdString &name);
+    /// All the channels of this engine.
+    stdList<ArchiveChannel *> &getChannels(Guard &engine_guard);
 
-    // Get current channel list, locked and unlocked
-    stdList<ChannelInfo *> *getChannels();
-    stdList<ChannelInfo *> *lockChannels();
-    // has to be called after lockChannels
-    void unlockChannels();
-
-    ChannelInfo *findChannel(const stdString &name);
-    ChannelInfo *addChannel(GroupInfo *group, const stdString &channel_name,
-                            double period, bool disabling, bool monitored);
-
-    //* Engine configuration
-    void   setWritePeriod(double period);
-    double getWritePeriod() const;
-    void   setDefaultPeriod(double period);
-    double getDefaultPeriod();
+    /// All the groups.
+    stdList<GroupInfo *> &getGroups(Guard &engine_guard);
+    
+    GroupInfo *findGroup(Guard &engine_guard, const stdString &name);
+    GroupInfo *addGroup(Guard &engine_guard, const stdString &name);
+    ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);
+    ArchiveChannel *addChannel(Guard &engine_guard, GroupInfo *group,
+                               const stdString &channel_name,
+                               double period, bool disabling, bool monitored);
+    void incNumConnected(Guard &engine_guard);
+    void decNumConnected(Guard &engine_guard);
+    size_t getNumConnected(Guard &engine_guard);
+    
+    /// Engine configuration
+    void   setWritePeriod(Guard &engine_guard, double period);
+    double getWritePeriod() const;   
     int    getBufferReserve() const;
-    void   setBufferReserve(int reserve);
-    void   setSecsPerFile(double secs_per_file);
-    double getSecsPerFile() const;
+    void   setBufferReserve(Guard &engine_guard, int reserve);
 
-    // Engine ignores time stamps which are later than now+future_secs
+    /// Determine the suggested buffer size for a value
+    /// with given scan period based on how often we write
+    /// and the buffer reserve
+    size_t suggestedBufferSize(Guard &engine_guard, double period);
+    
+    /// Engine ignores time stamps which are later than now+future_secs
     double getIgnoredFutureSecs() const;
-    void setIgnoredFutureSecs(double secs);
+    void setIgnoredFutureSecs(Guard &engine_guard, double secs);
 
-    //* Channels w/ period > threshold are scanned, not monitored
-    void   setGetThreshold(double get_threshhold);
+    /// Channels w/ period > threshold are scanned, not monitored
+    void   setGetThreshold(Guard &engine_guard, double get_threshhold);
     double getGetThreshold();
 
-    // Engine Info: Started, where, info about write thread
-    const osiTime &getStartTime() const   { return _start_time; }
-    const stdString &getDirectory() const { return _directory;  }
-    const osiTime &getWriteTime() const   { return _last_written; }
-    bool isWriting() const                { return _is_writing; }
+    /// Engine Info: Started, where, info about writes
+    const epicsTime &getStartTime() const { return start_time; }
+    const stdString &getIndexName() const { return index_name;  }
+    const epicsTime &getNextWriteTime(Guard &engine_guard) const
+    {
+        engine_guard.check(mutex);
+        return next_write_time;
+    }
+    bool isWriting() const        { return is_writing; }
     
-    // Add channel to ScanList.
-    // If result is false,
-    // channel has to prepare a monitor.
-    bool addToScanList(ChannelInfo *channel);
-
-    Archive &lockArchive();
-    void unlockArchive();
-    ValueI *newValue(DbrType type, DbrCount count);
-
-    void writeArchive();
+    /// Get Engine's scan list
+    ScanList &getScanlist(Guard &engine_guard)
+    {
+        engine_guard.check(mutex);
+        return scan_list;
+    }
+    
+    stdString makeDataFileName();
 
 private:
-    Engine(const stdString &directory_file_name);
-    ~Engine();
-    friend class ToAvoidGNUWarning;
+    Engine(const stdString &index_name); // use create
+    ~Engine() {} // Use shutdown
+    void writeArchive(Guard &engine_guard);
 
-    osiTime         _start_time;
-    stdString       _directory;
-    stdString       _description;
-    bool            _is_writing;
+    stdList<ArchiveChannel *> channels;// all the channels
+    stdList<GroupInfo *> groups;    // scan-groups of channels
+    size_t num_connected;
     
+    struct ca_client_context *ca_context;
     
-    ThreadSemaphore     _channels_lock;
-    stdList<ChannelInfo *> _channels;// all the channels
-    stdList<GroupInfo *> _groups;    // scan-groups of channels
+    epicsTime       start_time;
+    int             RTreeM;
+    stdString       index_name;
+    stdString       description;
+    bool            is_writing;
+    
+    double          get_threshhold;
+    ScanList        scan_list;      // list of scanned, not monitored channels
 
-    double          _get_threshhold;
-    ScanList        _scan_list;      // list of scanned, not monitored channels
-
-    double          _write_period;   // period between writes to archive file
-    double          _default_period; // default if not specified by Channel
-    int             _buffer_reserve; // 2-> alloc. buffs for 2x expected data
-    osiTime         _last_written;   // time this took place
-    unsigned long   _secs_per_file;  // roughly: data file period
-    double          _future_secs;    // now+_future_secs is considered wrong
-
-    Configuration   *_configuration;
-    ThreadSemaphore _archive_lock;
-    Archive         *_archive;
+    double          write_period;   // period between writes to archive file
+    int             buffer_reserve; // 2-> alloc. buffs for 2x expected data
+    epicsTime       next_write_time;// when to write again
+    double          future_secs;    // now+_future_secs is considered wrong
 
 #ifdef USE_PASSWD
-    stdString       _user, _pass;
+    stdString       user, pass;
 #endif
 };
 
 // The only, global Engine object:
 extern Engine *theEngine;
 
-inline const stdString &Engine::getDescription() const
-{   return _description; }
-
-inline void Engine::setConfiguration(Configuration *c)
-{   _configuration = c; }
-
-inline Configuration *Engine::getConfiguration()
-{   return _configuration;  }
-
-inline stdList<ChannelInfo *> *Engine::getChannels()
-{   return &_channels; }
-
-inline stdList<ChannelInfo *> *Engine::lockChannels()
+inline stdList<ArchiveChannel *> &Engine::getChannels(Guard &engine_guard)
 {
-    _channels_lock.take();
-    return &_channels;
+    engine_guard.check(mutex);
+    return channels;
 }
 
-inline void Engine::unlockChannels()
-{   _channels_lock.give(); }
+inline stdList<GroupInfo *> &Engine::getGroups(Guard &engine_guard)
+{
+    engine_guard.check(mutex);
+    return groups;
+}
 
-inline const stdList<GroupInfo *> &Engine::getGroups()
-{   return _groups; }
+inline const stdString &Engine::getDescription() const
+{   return description; }
 
 inline double Engine::getGetThreshold()
-{   return _get_threshhold; }
+{   return get_threshhold; }
+
+
+inline void Engine::incNumConnected(Guard &engine_guard)
+{
+    engine_guard.check(mutex);
+    ++num_connected;
+}
+
+inline void Engine::decNumConnected(Guard &engine_guard)
+{
+    engine_guard.check(mutex);
+    if (num_connected <= 0)
+        LOG_MSG("Engine: discrepancy w/ # of connected channels\n");
+    else
+        --num_connected;
+}
+
+inline size_t Engine::getNumConnected(Guard &engine_guard)
+{
+    engine_guard.check(mutex);
+    return num_connected;
+}
 
 inline double Engine::getWritePeriod() const
-{   return _write_period; }
-
-inline double Engine::getDefaultPeriod()
-{   return _default_period; }
+{   return write_period; }
 
 inline int Engine::getBufferReserve() const
-{   return _buffer_reserve; }
-
-inline double Engine::getSecsPerFile() const
-{   return _secs_per_file; }
+{   return buffer_reserve; }
 
 inline double Engine::getIgnoredFutureSecs() const
-{   return _future_secs; }
+{   return future_secs; }
 
-inline void Engine::setIgnoredFutureSecs(double secs)
-{   _future_secs = secs; }
-
-inline bool Engine::addToScanList(ChannelInfo *channel)
+inline void Engine::setIgnoredFutureSecs(Guard &engine_guard, double secs)
 {
-    if (channel->getPeriod() >= _get_threshhold)
-    {
-        _scan_list.addChannel(channel);
-        return true;
-    }
-    return false;
+    engine_guard.check(mutex);
+    future_secs = secs;
 }
 
-inline Archive &Engine::lockArchive()
+inline size_t Engine::suggestedBufferSize(Guard &engine_guard, double period)
 {
-    _archive_lock.take();
-    return *_archive;
+    engine_guard.check(mutex);
+    size_t	num;
+	if (write_period <= 0)
+		return 100;
+    num = (size_t)(write_period * buffer_reserve / period);
+	if (num < 3)
+		num = 3;
+    return num;
 }
-
-inline void Engine::unlockArchive()
-{   _archive_lock.give(); }
-
-inline ValueI *Engine::newValue(DbrType type, DbrCount count)
-{   return _archive->newValue(type, count); }
 
 #endif //__ENGINE_H__
  

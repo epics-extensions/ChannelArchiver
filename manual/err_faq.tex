@@ -1,0 +1,108 @@
+\chapter{Common Errors and Questions}
+
+The following explains error messages and commonly
+asked questions.
+
+\noindent
+\textbf{Why is there no data in my archive?}\\
+The ArchiveEngine should report warning messages whenever the
+connection to a channel goes down or when there is a problem with the
+data. So after a channel was at least once available, there should be
+more or less meaningful messages. After the initial startup, however,
+there won't be any information until a channel is at least once
+connected. So if a channel never connected, the debugging needs to
+fall back to a basic CA error search:\\
+Is the data source available?
+Can you read the channel with other CA client tools
+(probe, EDM, cau, caget, ...)?
+Can you do that from the computer where you are running
+the ArchiveEngine? Does it work with the environment settings and user
+ID under which you are trying to run the ArchiveEngine?
+
+\noindent
+\textbf{Why do I get \#N/A, why are there missing values in my spreadsheet?}\\
+There are two main reasons for not having any data: There might not
+have been any data available because the respective channel was
+disconnected or the archive engine was off. When you look at the
+status of the channel, those cases might reveil themselves by status
+values like ``Disconnected'' or ``Archive Off''.
+The ArchiveEngine might also have crashed, not getting a chance to
+write ``Archive Off''. That would be a likely case if no channel has
+data for your time range of interest.
+The most common reason for missing values, however, simply results
+from the fact that we archive the original time stamps and you are
+trying to look at more than one channel at a time. See the section on
+time stamp correlation on page~\pageref{sec:timestampcorr}.  
+
+\noindent
+\textbf{Back in time?}\\
+The archiver relies on the world going forward in time. When
+retrieving samples from an archive, we expect the time stamps to be
+monotonic and non-decreasing. Time stamps going back in time break the
+lookup mechanism. Data files with non-monotonic time stamps are
+useless. Unfortunately, the clocks of IOCs or other computers running
+CA servers can be mis-configured. The ArchiveEngine attempts to catch
+some of these problems, but all it can do is drop the affected
+samples, there is no recipe for correcting the time stamps.
+
+Bottom line: When you receive time-stamp related warnings, it is too
+late. You need to have the clocks of all CA servers properly configured
+(also see page~\pageref{back:in:time}).
+
+\noindent
+\textbf{Found an existing lock file 'archive\_active.lck'}\\
+When the ArchiveEngine is started, it creates a \INDEX{lock file} in
+the current directory. The lock file is an ordinary text file
+that contains the start time when the engine was launched. When
+the engine stops, it removes the file.
+
+The idea here is to prevent more than one archive engine to run
+in the same directory, writing to the same index and data files
+and thus creating garbage data: Whenever the archive engine sees
+a lock file, it refuses to run with the above error message.
+
+Under normal circumstances, one should not find such lock files
+left behind after the engine shuts down cleanly. The presence of
+a lock file indicates two possible problems:
+\begin{enumerate}
+\item[a)] There is in fact already an archive engine running in
+this directory, so you cannot start another one.
+\item[b)] The previous engine crashed, it was stopped without
+opportunity to close the data files and remove the lock file.
+It \emph{might} be OK to simply remove the lock file and try
+again, but since the crash could have damaged the data files, it
+is advisable to back them up and run a test before removing the
+lock file and starting another engine.
+\end{enumerate}
+
+\noindent
+\textbf{'ChannelName': Cannot add event because data type is unknown}\\
+The ArchiveEngine tried to write an \INDEX{event} to the data
+file. Examples include a ``Disconnected'' or ``Archiver Off''
+event. Even though this event does not have a value, it only
+indicates a status change or warning, it nevertheless is written
+into the same data buffer where ordinary values are written.
+A problem arises when we never got a connection to the CA
+server, therefore we do not know the value type of the channel
+and thus we cannot allocate a data buffer in which to write this
+special event-type of value.
+
+\noindent
+\textbf{Cannot create a new data file within file size limit}\\
+You specified a rather small file size limit (file\_size option in the
+ArchiveEngine configuration), and the currently required buffer size
+for a single channel already exceeds that file size limit.
+The Engine will actually go ahead and create a bigger file in the hope
+that this avoids data loss.
+
+One example that could cause this: You try to archive array channels,
+where each individual sample is already quite big, and picked a tiny
+file\_size. 
+
+\noindent
+\textbf{Found an existing lock file 'indextool\_active.lck'}\\
+When an ArchiveIndexTool is started, it creates a lock file
+similar to the ArchiveEngine, in the hope of preventing more than
+one Index Tool from modifying a master index at the same time.
+See preceding description of archiver\_active.lck file.
+

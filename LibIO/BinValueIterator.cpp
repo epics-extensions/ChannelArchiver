@@ -3,20 +3,14 @@
 #include "BinValueIterator.h"
 #include "BinChannel.h"
 #include "BinArchive.h"
+#include "epicsTimeHelper.h"
 
-#if CPP_EDITION >= 3
-#include <limits>
-#undef max
 // size_t is usually unsigned, i.e. there is no _value_index < 0!
 // So both "index before buffer" and "after end of buffer" are > _header->getNumSamples ().
 // To distinguish those cases, these constants are used:
-static const size_t BEFORE_START = std::numeric_limits<size_t>::max()-1;
-static const size_t AFTER_END    = std::numeric_limits<size_t>::max();
-#else
-#include <climits>
+#include <limits.h>
 static const size_t BEFORE_START = ULONG_MAX-1;
 static const size_t AFTER_END    = ULONG_MAX;
-#endif
 
 BinValueIterator::BinValueIterator ()
 {
@@ -200,7 +194,7 @@ class BinArchive *BinValueIterator::getArchive ()
     return _channel->getArchive ();
 }
 
-size_t BinValueIterator::determineChunk (const osiTime &until)
+size_t BinValueIterator::determineChunk (const epicsTime &until)
 {
     if (! isValid ())
         return 0;
@@ -211,10 +205,10 @@ size_t BinValueIterator::determineChunk (const osiTime &until)
     try
     {
         BinValueIterator tmp (*this);
-        CtrlInfoI info = *tmp._value->getCtrlInfo ();
+        CtrlInfo info = *tmp._value->getCtrlInfo ();
         double period = tmp._header->getPeriod ();
 
-        osiTime next_file_time;
+        epicsTime next_file_time;
         getArchive()->calcNextFileTime (tmp.getValue()->getTime(), next_file_time);
 
         while ( tmp.isValid() &&
@@ -297,7 +291,7 @@ bool BinValueIterator::readCtrlInfo ()
     {
         if (e.getErrorCode() == ArchiveException::Invalid)
         {
-            if (_ctrl_info.getType() == CtrlInfoI::Invalid)
+            if (_ctrl_info.getType() == CtrlInfo::Invalid)
             {
                 _ctrl_info_offset = INVALID_OFFSET;
                 return false;

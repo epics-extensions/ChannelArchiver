@@ -1,0 +1,38 @@
+\chapter{Changes}
+
+This chapter describes the version numbers and changes since
+the beginning of the R3.14 port.
+New  "versions"  are  marked  by some additional functionality. The
+"patches" are then used to debug those new things.
+
+\begin{itemize}
+
+\item In the works --- Version 2.1.2:\\
+
+\item 04/01/2004 --- Version 2.1.1:\\
+Many little updates have been checked into CVS
+while the tools reported "2.1.1".
+In the end, the engine supported sampling, monitoring
+and sampling-based-on-monitors, and ran without known problems
+under valgrind.
+The XML-RPC Data Server seemed to work fine, supporting
+raw data, plot-binning, spreadsheets, averaged and linear interpolation.
+Java Archive client is useable.
+Switched index file to CAI2, where the name hash includes a filename
+for the RTree. For now it's left empty, but the file format now
+allows for a further extension where certain RTrees are in separate
+files as soon as the index file gets too big.
+
+\item 01/27/2004 --- Version 2.1.0:\\
+Uses new RTree, initial XML-RPC Data Server, XML configuration files.
+
+\item 09/05/2003 --- Version 2.0.1:\\
+Some bug fixes:
+The  "scanned"  operation didn't work, and when all was monitored,
+the  empty  scan lists lead to a high CPU load. Still not perfect,
+the  ChannelInfo  code  should  be  split  into  really monitored,
+scanned using CA monitor and scanned using CA get.
+
+\item 04/04/2003 --- Version 2.0:\\
+Starting to work on R3.14 port.
+\end{itemize}

@@ -31,10 +31,10 @@ public:
 	virtual const char *getName() const = 0;
 
 	//* Time stamp of first value
-	virtual osiTime getFirstTime()  const = 0;
+	virtual epicsTime getFirstTime()  const = 0;
 
 	//* Time stamp of last value
-	virtual osiTime getLastTime()   const = 0;
+	virtual epicsTime getLastTime()   const = 0;
 
 	//* Move CLASS ValueIterator for current Channel
 	// to first, last, ... value
@@ -44,19 +44,19 @@ public:
 	virtual bool getLastValue(ValueIteratorI *values) = 0;
 
 	//* Get value stamped >= time. time==0 results in call to getFirstValue
-	virtual bool getValueAfterTime(const osiTime &time,
+	virtual bool getValueAfterTime(const epicsTime &time,
                                    ValueIteratorI *values) = 0;
-	bool getValueAfterTime(const osiTime &time, ValueIterator &values);
+	bool getValueAfterTime(const epicsTime &time, ValueIterator &values);
 
 	//* Get value stamped <= time
-	virtual bool getValueBeforeTime(const osiTime &time,
+	virtual bool getValueBeforeTime(const epicsTime &time,
                                     ValueIteratorI *values) = 0;
-	bool getValueBeforeTime(const osiTime &time, ValueIterator &values);
+	bool getValueBeforeTime(const epicsTime &time, ValueIterator &values);
 
 	//* Get value stamped near time (whatever's next: before or after time)
-	virtual bool getValueNearTime(const osiTime &time,
+	virtual bool getValueNearTime(const epicsTime &time,
                                   ValueIteratorI *values) = 0;
-	bool getValueNearTime(const osiTime &time, ValueIterator &values);
+	bool getValueNearTime(const epicsTime &time, ValueIterator &values);
 
     // This is not copied into the HTML docs. because
     // I'm not certain about the interface:
@@ -95,15 +95,15 @@ inline bool ChannelI::getFirstValue(ValueIterator &values)
 inline bool ChannelI::getLastValue(ValueIterator &values)
 {    return getLastValue(values.getI()); }
 	
-inline bool ChannelI::getValueAfterTime(const osiTime &time,
+inline bool ChannelI::getValueAfterTime(const epicsTime &time,
                                         ValueIterator &values)
 {   return getValueAfterTime(time, values.getI()); }
 
-inline bool ChannelI::getValueBeforeTime(const osiTime &time,
+inline bool ChannelI::getValueBeforeTime(const epicsTime &time,
                                          ValueIterator &values)
 {   return getValueBeforeTime(time, values.getI()); }
 
-inline bool ChannelI::getValueNearTime(const osiTime &time,
+inline bool ChannelI::getValueNearTime(const epicsTime &time,
                                        ValueIterator &values)
 {   return getValueNearTime(time, values.getI()); }
 

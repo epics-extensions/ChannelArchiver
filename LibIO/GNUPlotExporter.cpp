@@ -4,38 +4,36 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "ArchiveException.h"
 #include "GNUPlotExporter.h"
 #include "LinInterpolValueIteratorI.h"
 #include "BucketingValueIteratorI.h"
 #include "ExpandingValueIteratorI.h"
 #include "Filename.h"
-#include <fstream>
+#include "epicsTimeHelper.h"
+#include <epicsMath.h> // math.h + isinf + isnan
 
-#ifdef WIN32
-#include <float.h>
-static int finite(double value)
+// Under RH9, isfinite is defined as a macro
+#undef isfinite
+static int isfinite(double value)
 {
-    return _finite(value);
+    return !(isinf(value) ||  isnan(value));
 }
-#else
-#include <math.h>
-#endif
 
 const char *GNUPlotExporter::imageExtension()
 {   return ".png"; }
 
-static void printTime(FILE *f, const osiTime &time)
+static void printTime(FILE *f, const epicsTime &time)
 {
     int year, month, day, hour, min, sec;
     unsigned long nano;
-    osiTime2vals (time, year, month, day, hour, min, sec, nano);
+    epicsTime2vals (time, year, month, day, hour, min, sec, nano);
     fprintf(f, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
             month, day, year, hour, min, sec, nano);
 }
 
-static void printTimeAndValue(FILE *f, const osiTime &time,
+static void printTimeAndValue(FILE *f, const epicsTime &time,
                               const ValueI &value)
 {
     int prec;
@@ -54,7 +52,7 @@ static void printTimeAndValue(FILE *f, const osiTime &time,
             ::printTime(f, time);
             if (value.getCount() > 1) fprintf(f, "\t%d", ai);
             v = value.getDouble(ai);
-            if (!finite(v))
+            if (!isfinite(v))
                 v = 0.0;
             if (prec > 0)
                 fprintf(f, "\t%.*f\n", prec, v);
@@ -69,7 +67,7 @@ static void printTimeAndValue(FILE *f, const osiTime &time,
         stdString txt;
         value.getStatus(txt);
         v = value.getDouble();
-        if (!finite(v))
+        if (!isfinite(v))
             v = 0.0;
         if (prec > 0)
             fprintf(f, "\t%.*f\t%s\n", prec, v, txt.c_str());
@@ -143,7 +141,7 @@ void GNUPlotExporter::exportChannelList(
     ValueIteratorI   *value = 0;
     ValueI   *last_value = 0;
 
-    osiTime time;
+    epicsTime time;
     stdString txt;
     
     for (size_t i=0; i<num; ++i)
@@ -162,8 +160,7 @@ void GNUPlotExporter::exportChannelList(
         if (_reduce && isValidTime(_start) && isValidTime(_end) && 
             ( base->getValue()->getCount() == 1 ))
         {
-            _linear_interpol_secs =
-                (_end.getSec() - _start.getSec()) / _reduce;
+            _linear_interpol_secs = (_end - _start) / _reduce;
             value = new BucketingValueIteratorI(base, _linear_interpol_secs);
         } else {
             _reduce = 0;
@@ -250,7 +247,7 @@ void GNUPlotExporter::exportChannelList(
             fprintf(f, "# extrapolated onto end time from ");
             ::printTime(f, time);
             fprintf(f, "\n");
-            osiTime now = osiTime::getCurrent();
+            epicsTime now = epicsTime::getCurrent();
             if (now > time) // extrapolate until "now"
                 time = now;
             if (_end < time) // but not beyond "_end"

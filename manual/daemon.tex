@@ -1,0 +1,171 @@
+\chapter{ArchiveDaemon}
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=0.8\textwidth}{daemon}
+\end{center}
+\caption{\label{fig:daemon}Archive Daemon, refer to text.}
+\end{figure}
+
+\noindent The ArchiveDaemon is a script that automatically starts,
+monitors and restarts ArchiveEngines on the local host. It includes a
+built-in web server, so by listing all the ArchiveEngines that are
+meant to run on a host in the ArchiveDaemon's configuration file, one
+can check the status of all these engines on a single web page as
+shown in Fig.~\ref{fig:daemon}.
+
+The daemon will attempt to start any ArchiveEngine that it does not
+find running. In addition, the daemon can periodically stop and
+restart ArchiveEngines in order to create e.g.\ daily sub-archives.
+Furthermore, it adds each sub-archive of newly created ArchiveEngines
+to a configuration file for the ArchiveIndexTool and runs the latter
+periodically, so that all the sub-archives can be accessed as if they
+were one big archive.
+
+Before using the ArchiveDaemon, one should be familiar
+with the configuration of the ArchiveEngine (sec.\ \ref{sec:engine}),
+and how to start and stop it. Furthermore, one needs to be familiar
+with the ArchiveIndexTool (sec.\ \ref{sec:indextool}).
+
+\subsection{Configuration}
+The ArchiveDaemon expects to find a configuration file called
+``ArchiveDaemon.xml'' in the directory where it is started.  That
+configuration file, an example of which can be found in listing
+\ref{lst:daemonconfigex}, needs to follow the DTD from listing
+\ref{lst:daemonconfigdtd}.
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Archive Daemon Configuration},label=lst:daemonconfigex]{../ArchiveDaemon/ArchiveDaemon.xml}
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for
+    the Archive Daemon Configuration},label=lst:daemonconfigdtd]{../ArchiveDaemon/ArchiveDaemon.dtd}
+
+\noindent The configuration lists all the
+ArchiveEngines that the daemon should manage on the local
+computer. One ``engine'' element per ArchiveEngine specifies the
+configuration of each engines. Specifically, the following tags are
+allowed:
+
+\subsubsection{desc}
+This mandatory element is used for the ``-description'' option of the
+Archive Engine, see section \ref{sec:enginedesc}.
+
+\subsubsection{port}
+This mandatory element determines the port number of the engine's HTTP
+server, see section \ref{sec:engineport}.
+
+\NOTE The ArchiveDaemon itself requires a TCP port number for its HTTP
+server. The port numbers used by the ArchiveDaemon and all the Archive
+Engines need to be different. You cannot use the same port number more
+than once per computer.
+
+\subsubsection{config}
+This mandatory element must contain the path to the configuration
+file of the respective ArchiveEngine, see section \ref{sec:engineconfig}.
+This can be either the full path to the engine configuration file or a path
+beneath the current working directory in which the ArchiveDaemon is running.
+
+\subsubsection{daily}
+This optional element configures the ArchiveDaemon to restart the
+ArchiveEngine periodically. The element must contain a time in the
+format ``HH:MM'' with 24-hour hours HH and minutes MM. One example
+would be ``02:00'' for a restart at 2~am each morning.
+
+\subsubsection{hourly}
+This optional element configures the ArchiveDaemon to restart the
+ArchiveEngine periodically. The element must contain a number
+specifying hours: A value of 2.0 will cause a restart every 2
+hours. The hourly restart is quite inefficient and primarily meant for testing.
+
+\subsection{Starting and Running}
+The ArchiveDaemon is a perl script that is typically started like this:
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+$ cd whereever_you_placed_ArchiveDaemon.xml
+$ perl ArchiveDaemon.pl -f ArchiveDaemon.xml
+Read ArchiveDaemon.xml, will disassociate from terminal
+and from now on only respond via
+          http://localhost:4610
+You can also monitor the log file:
+          ArchiveDaemon.log
+\end{lstlisting}
+
+\noindent One can use any web browser to connect to the daemon's HTTP server
+under the URL shown in the above status message. Fig.~\ref{fig:daemon}
+shows one example. The ArchiveDaemon offers a command line option for
+selecting a specific TCP port.
+Whenever running more than one ArchiveDaemon per computer, they
+need to be started with different TCP port numbers. Furthermore, each
+ArchiveEngine needs a different TCP port number.
+\begin{lstlisting}[keywordstyle=\sffamily]
+USAGE: ArchiveDaemon [options] 
+Options:
+        -p <port>: TCP port number for HTTPD
+        -f file  : config. file
+\end{lstlisting}
+
+\noindent The first few lines of the ArchiveDaemon.pl script contain
+numerous configuration variables. They allow fine tuning of e.g.\ the
+time period between runs of the ArchiveIndexTool, how often the daemon
+queries the Archive Engines and other customization options. In there
+you can also change many of the file names from their defaults up to
+the point where none of the following applies. With the original
+settings, the ArchiveDaemon will create or use the following files in
+the directory in which it was started:
+\begin{itemize}
+\item ArchiveDaemon.log\\
+  The log file of the ArchiveDaemon.
+\item indexconfig.xml\\
+  This is a configuration file for the ArchiveIndexTool.  If the file
+  already exists, the ArchiveDaemon will add every new sub-archive
+  that it creates to the file. If the file does not exist, one will be
+  created the next time a new sub-archive is started.
+
+  Note that the ArchiveDaemon will \emph{not} search for sub archives
+  or index files and automatically add them to indexconfig.xml. It
+  will only add newly created sub-archives. If you already have
+  sub-archives that need to be included in the master index, your
+  initial indexconfig.xml needs to list them.
+  Also note that the ArchiveDaemon reads this file on startup. In
+  order to \emph{remove} indices from indexconfig.xml, it is therefore
+  required to stop the running daemon, since it will otherwise
+  overwrite indexconfig.xml with its in-memory version.
+\item indexupdate.xml\\
+  This file is similar to indexconfig.xml, except that the index files
+  for sub-archives that are older than the master index file are
+  commented out, assuming that the master index already contains all
+  the information from those older sub-archives.
+  Running ArchiveIndexTool with this indexupdate file is naturally faster
+  than using indexconfig.xml. The ArchiveDaemon uses the full index
+  configuration from indexconfig.xml once after startup, and then
+  switches to indexupdate.xml.
+\item ArchiveIndexTool.log\\
+  The log file of the last run of the ArchiveIndexTool.
+\item master\_index\\
+  The ArchiveIndexTool is run with indexconfig.xml to update
+  this master index file.
+\end{itemize}
+
+\noindent The ArchiveDaemon configuration file must list the full path
+names to the configuration files for the ArchiveEngines or use a path
+that is below the current working directory of the ArchiveDaemon.
+Within each of those directories, an ArchiveEngine is run and the
+following files will be created:
+\begin{itemize}
+\item ArchiveEngine.log\\
+  A log file for the ArchiveEngine running in that directory
+\item archive\_active.lck\\
+  Lock file of the ArchiveEngine
+\item YYYY/MM\_DD/index \\
+  A subdirectory for index and data files of the sub-archive.  If the
+  ArchiveDaemon is configured to perform daily restarts, the format
+  uses the year, month and day to build the path name.
+\end{itemize}
+
+\subsection{Stopping and More}
+To stop the ArchiveDaemon, access the ``/stop'' URL of the daemon's
+HTTPD, e.g. ``http://localhost:4610/stop''.  Similar to the
+ArchiveEngine's HTTPD, this URL is not accessible by following links
+on the HTTPD's web pages. You will have to type the URL. This is to
+prevent web robots or a monkey who is sitting in front of the computer
+and clicking on every link from accidentally stopping the daemon.
+Finally, the daemon will respond to the URL ``/postal'' by stopping every
+ArchiveEngine controlled by the daemon, followed by stopping itself.

@@ -1,0 +1,86 @@
+\section{Data Server} \label{sec:dataserver}
+The archiver toolset includes a network data server.
+By running this data server on a computer that has
+physical access to your archived data, be it because the data resides
+on a local disk or an NFS-mapped volume, other machines
+on the network can get read-access to your data.
+
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=0.8\textwidth}{dataserver}
+\end{center}
+\caption{\label{fig:dataserver}Data Server, refer to text.}
+\end{figure}
+
+\noindent The data server is hosted by a web server, using the XML-RPC
+protocol to serve the data. This means that software running on
+disparate operating systems, running in different environments can
+access your data over the Internet via a URL. As an example, your data
+server might be a Linux machine on a subnet behind a firewall. After
+you configure the firewall to pass HTTP requests, any Linux, Win32,
+Macintosh computer both inside or outside of the firewall can access
+the data from within perl, python or tcl scripts, programs written in
+C, C++ or Java, actually pretty much any programming language. As
+illustrated in fig.~\ref{fig:dataserver}, the client program sends its
+requests to a web server, which forwards it to the data server that is
+running as a CGI tool under the web server. The dataserver accesses
+the relevant archives --- you determine which ones are available via a
+configuration file --- and returns the data though the web server to
+the client program.  You can configure access security via e.g.\ the
+Apache web server configuration.
+
+\NOTE The fact that the data server is hosted by a web server,
+accessible via a URL, does \emph{not} imply that you can use any web browser
+to retrieve data. You have to use the XML remote procedure call
+protocol described in section \ref{sec:xmlprotocol} on page
+\pageref{sec:xmlprotocol}. XML-RPC handles the network connections,
+data type conversions, and XML-RPC libraries are available for most
+programming languages.
+We provide the Java Archive Client (see section \ref{sec:javaclient})
+as a generic, interactive data client. 
+
+\subsection{Installation} % ---------------------------------------------
+After successful compilation in ChannelArchiver/XMLRPCServer, you will
+have a program ``ArchiveDataServer''. You need to copy that binary as
+``ArchiveDataServer.cgi'' into your web server's CGI directory and
+assert that the web server can execute the ArchiveDataServer.
+The ``.cgi'' extension is important, because otherwise your web server
+might not recognize your CGI program as such.
+What follows is an example setup for the Apache Web Server under Linux:
+\begin{enumerate}
+\item Check your Apache configuration file, which can often been found
+  in ``/etc/httpd/conf/httpd.conf'', for the location of your cgi-bin
+  directory.  In my case, there was already a CGI directory /var/www/cgi-bin.
+
+\item Create a new CGI directory so that we can specifically configure
+   it.\\
+   Adding the following to the Apache config file worked for me:
+\begin{lstlisting}[keywordstyle=\sffamily]
+<Directory /var/www/cgi-bin/xmlrpc>
+   SetEnv LD_LIBRARY_PATH  /usr/local/lib:...
+   SetEnv SERVERCONFIG /var/www/cgi-bin/ \
+                   xmlrpc/serverconfig.xml
+</Directory>
+\end{lstlisting}
+  The LD\_LIBRARY\_PATH needs to include all the directories that
+  contain shared libraries which your ArchiveDataServer.cgi uses.
+  In many cases, this means the EPICS base and extensions' lib
+  directories as well as the install location of the expat and XML-RPC
+  libraries.
+  The SERVERCONFIG variable needs to point to your server configuration
+   file, more about which next.
+\end{enumerate}
+
+\subsection{Setup}
+You need to prepare an XML-formatted configuration file for the
+ArchiveDataServer that follows the DTD from listing
+\ref{lst:serverconfigdtd} (see section \ref{sec:dtdfiles} on DTD file
+installation). Note that the ArchiveDataServer might not verify your
+configuration file, so you are strongly encouraged to use a tool like
+'xmllint' on Linux to check your configuration against the
+DTD. Listing \ref{lst:serverconfigex} shows one example configuration
+which lists two archives to be served. Client programs will internally
+use the respective 'key' to access them.
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for the Data Server Configuration},label=lst:serverconfigdtd]{../XMLRPCServer/serverconfig.dtd}
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Data Server Configuration},label=lst:serverconfigex]{../XMLRPCServer/serverconfig.xml}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE engines SYSTEM "ArchiveDaemon.dtd">
+<engines>
+   <engine>
+      <desc>Demo</desc>
+      <port>4813</port>
+      <config>/data/arch1/engineconfig.xml</config>
+   </engine>
+   <engine>
+      <desc>Demo 2</desc>
+      <port>4814</port>
+      <config>/data/arch2/engineconfig.xml</config>
+      <daily>02:00</daily>
+   </engine>
+</engines>

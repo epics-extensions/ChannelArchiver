@@ -1,8 +1,9 @@
 #ifndef __BINCHANNEL_H__
 #define __BINCHANNEL_H__
 
-#include "BinTypes.h"
+#include "string2cp.h"
 #include "ChannelI.h"
+
 
 class BinChannel : public ChannelI
 {
@@ -21,14 +22,14 @@ public:
 
     // Implementation of ChannelI
     const char *getName() const;
-    osiTime getCreateTime() const;
-    osiTime getFirstTime() const;
-    osiTime getLastTime() const;
+    epicsTime getCreateTime() const;
+    epicsTime getFirstTime() const;
+    epicsTime getLastTime() const;
     bool getFirstValue(ValueIteratorI *values);
     bool getLastValue(ValueIteratorI *values);
-    bool getValueAfterTime(const osiTime &time, ValueIteratorI *values);
-    bool getValueBeforeTime(const osiTime &time, ValueIteratorI *values);
-    bool getValueNearTime(const osiTime &time, ValueIteratorI *values);
+    bool getValueAfterTime(const epicsTime &time, ValueIteratorI *values);
+    bool getValueBeforeTime(const epicsTime &time, ValueIteratorI *values);
+    bool getValueNearTime(const epicsTime &time, ValueIteratorI *values);
     size_t lockBuffer(const ValueI &value, double period);
     void addBuffer(const ValueI &value_arg, double period, size_t value_count);
     bool addValue(const ValueI &value);
@@ -37,8 +38,8 @@ public:
 
     void init(const char *name=0);
     void setChannelIterator(class BinChannelIterator *i) { _channel_iter = i; }
-    void read(LowLevelIO &fd, FileOffset offset);
-    void write(LowLevelIO &fd, FileOffset offset) const;
+    void read(FILE *fd, FileOffset offset);
+    void write(FILE *fd, FileOffset offset) const;
 
     static size_t getDataSize()            { return sizeof(Data); }
     FileOffset getNextEntryOffset() const  { return _data.next_entry_offset; }
@@ -47,13 +48,19 @@ public:
     const char *getLastFile()   const      { return _data.last_file; }
     FileOffset  getLastOffset() const      { return _data.last_offset; }
 
-    void setFirstTime(const osiTime &t)      { _data.first_save_time = osi2TS_STAMP(t); }
-    void setFirstFile(const stdString &name) { string2cp(_data.first_file, name, FilenameLength);   }
+    void setFirstTime(const epicsTime &t)  { _data.first_save_time =
+                                                 (epicsTimeStamp)t; }
+    void setFirstFile(const stdString &name) { string2cp(_data.first_file,
+                                                         name, FilenameLength);
+                                             }
     void setFirstOffset(FileOffset o)        { _data.first_offset = o; }
-    void setLastTime(const osiTime &t)       { _data.last_save_time = osi2TS_STAMP(t); }
-    void setLastFile(const stdString &name)  { string2cp(_data.last_file, name, FilenameLength); }
+    void setLastTime(const epicsTime &t)     { _data.last_save_time =
+                                                   (epicsTimeStamp)t; }
+    void setLastFile(const stdString &name)  { string2cp(_data.last_file,
+                                                         name, FilenameLength);
+                                             }
     void setLastOffset(FileOffset o)         { _data.last_offset = o; }
-    void setNextEntryOffset(FileOffset next) { _data.next_entry_offset = next; }
+    void setNextEntryOffset(FileOffset next) { _data.next_entry_offset = next;}
 
     class BinArchive *getArchive();
     FileOffset getOffset() const           { return _offset; }
@@ -66,15 +73,15 @@ private:
     class Data
     {
     public:
-        char        name[ChannelNameLength];// channel name
-        FileOffset  next_entry_offset;      // offset of the next channel in the directory
-        FileOffset  last_offset;            // offset of the last buffer saved for this channel
-        FileOffset  first_offset;           // offset of the first buffer saved for this channel
-        TS_STAMP    create_time;
-        TS_STAMP    first_save_time;
-        TS_STAMP    last_save_time;
-        char        last_file[FilenameLength];  // filename where the last buffer was saved
-        char        first_file[FilenameLength]; // filename where the first buffer was saved
+        char           name[ChannelNameLength];// channel name
+        FileOffset     next_entry_offset;      // offset of the next channel in the directory
+        FileOffset     last_offset;            // offset of the last buffer saved for this channel
+        FileOffset  first_offset;              // offset of the first buffer saved for this channel
+        epicsTimeStamp create_time;
+        epicsTimeStamp first_save_time;
+        epicsTimeStamp last_save_time;
+        char           last_file[FilenameLength];  // filename where the last buffer was saved
+        char           first_file[FilenameLength]; // filename where the first buffer was saved
     }                           _data;
     mutable FileOffset          _offset; // .. in DirectoryFile where _data was read
 

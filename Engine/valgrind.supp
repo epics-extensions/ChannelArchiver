@@ -1,0 +1,26 @@
+# Valgrind suppression file for the ArchiveEngine
+# under RedHat 9
+#
+# There is one remaining warning:
+# Source and destination overlap in memcpy(0x4223a5a0, 0x4223a5a0, 8)
+# memcpy (mac_replace_strmem.c:95)
+# cvrt_ctrl_double(void const*, void*, int, unsigned long) (convert.cpp:829)
+# cac::readNotifyRespAction(epicsGuard<callbackMutex>&, tcpiiu&, epicsTime const&, caHdrLargeArray const&, void*) (cac.cpp:1124)
+# cac::executeResponse(epicsGuard<callbackMutex>&, tcpiiu&, epicsTime const&, caHdrLargeArray&, char*) (cac.cpp:1399)
+#
+# There are other warnings about pthread routines that aren't
+# simulated by valgrind:
+# pthread_cond_destroy, pthread_attr_destroy
+#
+# We disable this warning:
+{
+   ignored_pthread_attr_setscope
+   core:PThread
+   fun:pthread_error
+   fun:pthread_attr_setscope
+}
+
+# All memory leaks seem benign because they belong
+# to global classes or one-of thingies,
+# nothing that keeps growing at runtime.
+#

@@ -8,267 +8,147 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+// Base
+#include <cadef.h>
+// Tools
 #include "ToolsConfig.h"
-#include "NetTools.h"
+#include "AutoPtr.h"
+#include "epicsTimeHelper.h"
 #include "ArchiveException.h"
+#include "MsgLogger.h"
+// Storage
+#include "IndexFile.h"
+#include "DirectoryFile.h"
+#include "DataFile.h"
+// Engine
 #include "Engine.h"
 #include "EngineServer.h"
-#include "WriteThread.h"
-#include <cadef.h>
-#include <fdManager.h>
-#include <osiTimer.h>
 
 static EngineServer *engine_server = 0;
-static WriteThread  write_thread;
-static class CaPoller *ca_poller = 0;
-Engine *theEngine;
-
-// some time values for timeouts
-// Happens to be defined for SGI:
-#undef NSEC_PER_SEC
-const int NSEC_PER_SEC = 1000000000;    /* nano seconds per second */
-// osiTime (sec, nano-sec)
-const osiTime one_second(1,0);
-const osiTime tenth_second(0,NSEC_PER_SEC/10);
-const osiTime twentyth_second(0,NSEC_PER_SEC/20);
-const osiTime fiftyth_second(0,NSEC_PER_SEC/50);
-
-// --------------------------------------------------------------------------
-// Channel Access poll timer etc.
-// --------------------------------------------------------------------------
-
-// CaPoller: started at init, runs again.
-// Outgoing channel access events need to be scheduled through a
-// periodic excursion to channel access -
-// this allows channel access to broadcast channel searches and service puts
-class CaPoller : public osiTimer
-{
-public:
-    CaPoller(const osiTime &delay) : osiTimer(delay)  {}
-
-    void expire()
-    {   ca_poll();  };
-
-    osiBool again() const
-    {   return osiTrue; }
-
-    const osiTime delay() const
-    {   return twentyth_second; }
-};
-
-// Every task has one fd for the broadcast of channel names
-// plus one file descriptor per IOC that it connects to.
-// Fd activity will cause the fileDescriptorManager to wake up
-// to allow these fd changes to be serviced.
-class CAfdReg : public fdReg
-{
-public:
-    CAfdReg(const SOCKET fdIn) : fdReg(fdIn, fdrRead) {}
-private:
-    void callBack()
-    {   ca_poll();  }
-};
+Engine *theEngine = 0;
 
 static void caException(struct exception_handler_args args)
 {
-    static const char   *severity[] =
-    {
-        "Warning",
-        "Success",
-        "Error",
-        "Info",
-        "Fatal",
-        "Fatal",
-        "Fatal",
-        "Fatal"
-    };
-
-    if (CA_EXTRACT_SEVERITY(args.stat) >= 0  &&
-        CA_EXTRACT_SEVERITY(args.stat) < 8)
-    {
-        LOG_MSG("CA Exception received: stat %s, op %ld\n",
-                severity[CA_EXTRACT_SEVERITY(args.stat)], args.op);
-    }
-    else
-        LOG_MSG("CA Exception received: stat %d, op %ld\n",
-                args.stat, args.op);
+    const char *pName;
+    
     if (args.chid)
-        LOG_MSG("Channel '%s'\n", ca_name(args.chid));
-    if (args.pFile)
-        LOG_MSG("File %s (%d)\n", args.pFile, args.lineNo);
-}
-
-// fd_register is called by the CA client lib.
-// for each fd opened/closed
-static void fd_register(void *pfdctx, int fd, int opened)
-{
-    if (opened)
-    {
-        LOG_MSG("CA registers fd %d\n", fd);
-
-        // Attempt to make this socket's input buffer as large as possible
-        // to have some headroom while the engine is busy writing.
-        // This doesn't work because CA's "flow control" kicks in anyway
-        // since it's based on "is ca_poll called in vain"
-        // instead of "is input buffer getting full above high-water mark".
-        //
-        // Then there is the system dependency on the type of "len"
-        // -> use on known systems only for experimentation
-        socklen_t len;
-        // Win32-default: 8k
-        int bufsize = 0x400000; // 4MB
-        while (bufsize > 100)
-        {
-            len = sizeof(int);
-            if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
-                           (char *)&bufsize, len) == 0)
-                break;
-            bufsize /= 2;
-        }
-        
-        if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF,
-                       (char *)&bufsize, &len) == 0)
-            LOG_MSG("Adjusted socket buffer to %d\n", bufsize);
-        // Just creating a CAfdReg will register it in fdManager:
-        CAfdReg *handler = new CAfdReg(fd);
-        handler = 0; // to avoid warnings about "not used"
-    }
+        pName = ca_name(args.chid);
     else
-    {
-        fdReg *reg = fileDescriptorManager.lookUpFD(fd, fdrRead);
-        if (reg)
-            delete reg;
-        else
-        {
-            LOG_MSG("fd_register: cannot remove fd %d\n", fd);
-        }
-    }
+        pName = "?";
+
+    LOG_MSG("CA Exception %s - with request "
+            "chan=%s op=%d type=%s count=%d:\n%s\n", 
+            args.ctx, pName, args.op, dbr_type_to_text(args.type), args.count,
+            ca_message(args.stat));
 }
 
 // --------------------------------------------------------------------------
 // Engine
 // --------------------------------------------------------------------------
 
-Engine::Engine(const stdString &directory_file_name)
+Engine::Engine(const stdString &index_name)
 {
     static bool the_one_and_only = true;
 
-    if (! the_one_and_only)
-        throwDetailedArchiveException(
-            Unsupported, "Cannot run more than one Engine");
-    _start_time = osiTime::getCurrent();
-    _directory = directory_file_name;
-    _is_writing = false;
-    _description = "EPICS Channel Archiver Engine";
+    LOG_ASSERT(the_one_and_only);
+    start_time = epicsTime::getCurrent();
+    RTreeM = 50;
+    num_connected = 0;
+    this->index_name = index_name;
+    is_writing = false;
+    description = "EPICS Channel Archiver Engine";
     the_one_and_only = false;
 
-    _write_period = 30;
-    _default_period = 1.0;
-    _buffer_reserve = 3;
-    _get_threshhold = 20.0;
-    _secs_per_file = BinArchive::SECS_PER_DAY;
-    _future_secs = 6*60*60;
-    _configuration = 0; // init. so that setSecsPerFile works
-    _archive = new Archive(
-        new ENGINE_ARCHIVE_TYPE(directory_file_name, true /* for write */));
-    setSecsPerFile(_secs_per_file);
+    get_threshhold = 20.0;
+    write_period = 30;
+    buffer_reserve = 3;
+    next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
+    future_secs = 6*60*60;
 
-    if (ca_task_initialize() != ECA_NORMAL)
-        throwDetailedArchiveException(Fail, "ca_task_initialize");
-
-    // Add exception handler to avoid aborts from CA
-    if (ca_add_exception_event(caException, 0) != ECA_NORMAL)
-        throwDetailedArchiveException(Fail, "ca_add_exception_event");
-
-    // Link CA client library to fileDescriptorManager
-    if (ca_add_fd_registration(fd_register, 0) != ECA_NORMAL)
-        throwDetailedArchiveException(Fail, "ca_add_fd_registration");
-
-    engine_server = new EngineServer();
-
-    // Incoming CA activity will cause the fileDescriptorManager to wake up,
-    // outgoing CA events need to be scheduled through a periodic excursion
-    // to channel access. The CaPoller timer takes care of that:
-    ca_poller = new CaPoller(twentyth_second);
-    write_thread.create();
-
+    // Initialize CA library for multi-treaded use and
+    // add exception handler to avoid aborts from CA
+    if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL ||
+        ca_add_exception_event(caException, 0) != ECA_NORMAL)
+    {
+        LOG_MSG("CA client initialization failed\n");
+        LOG_ASSERT(0);
+    }
+    ca_context = ca_current_context();
 #ifdef USE_PASSWD
     _user = DEFAULT_USER;
     _pass = DEFAULT_PASS;
 #endif   
 }
 
-void Engine::create(const stdString &directory_file_name)
+void Engine::create(const stdString &index_name)
 {
-    theEngine = new Engine(directory_file_name);
+    theEngine = new Engine(index_name);
+    engine_server = new EngineServer();
+}
+
+bool Engine::attachToCAContext(Guard &engine_guard)
+{
+    engine_guard.check(mutex);
+    if (ca_attach_context(ca_context) != ECA_NORMAL)
+    {
+        LOG_MSG("ca_attach_context failed for thread 0x%08X (%s)\n",
+                epicsThreadGetIdSelf(), epicsThreadGetNameSelf());
+        return false;
+    }
+    return true;
 }
 
 void Engine::shutdown()
 {
     LOG_MSG("Shutdown:\n");
     LOG_ASSERT(this == theEngine);
-
-    if (ca_poller)
-    {
-        delete ca_poller;
-        ca_poller = 0;
-    }
     delete engine_server;
     engine_server = 0;
-
-    LOG_MSG("Waiting for WriteThread to exit...\n");
-    int code;
-    write_thread.stop();
-    write_thread.join(code);
-    if (code)
-        LOG_MSG("WriteThread exit code: %d\n", code);
-
     LOG_MSG("Adding 'Archive_Off' events...\n");
-    osiTime now;
-    now = osiTime::getCurrent();
-    Archive &archive = lockArchive();
-    ChannelIterator channel(archive);
-    lockChannels();
-    try
+    epicsTime now = epicsTime::getCurrent();
     {
-        stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
-        while (channel_info != _channels.end())
+        Guard engine_guard(mutex);
+        IndexFile index(RTreeM);
+        if (index.open(index_name.c_str(), false))
         {
-            (*channel_info)->shutdown(archive, channel, now);
-            ++channel_info;
+            stdList<ArchiveChannel *>::iterator ch;
+            for (ch = channels.begin(); ch != channels.end(); ++ch)
+            {
+                ArchiveChannel *c = *ch;
+                Guard guard(c->mutex);
+                c->setMechanism(engine_guard, guard, 0);
+                c->addEvent(guard, 0, ARCH_STOPPED, now);
+                c->write(guard, index);
+            }
+            DataFile::close_all();
+            index.close();
         }
+        else
+            LOG_MSG("Engine::shutdown cannot open index %s\n",
+                    index_name.c_str());
+        LOG_MSG("Removing memory for channels and groups\n");
+        while (! channels.empty())
+        {
+            ArchiveChannel *c = channels.back();
+            channels.pop_back();
+            {
+                Guard guard(c->mutex);
+                c->prepareToDie(engine_guard, guard);
+            }
+            delete c;
+        }
+        while (! groups.empty())
+        {
+            delete groups.back();
+            groups.pop_back();
+        }
+        theEngine = 0;
     }
-    catch (ArchiveException &e)
-    {
-        LOG_MSG("Engine::shutdown caught %s\n", e.what());
-    }
-    unlockChannels();
-    channel->releaseBuffer();
-    unlockArchive();
-
-    LOG_MSG("Done.\n");
-    theEngine = 0;
+    // engine unlocked
+    LOG_MSG("Stopping ChannelAccess:\n");
+    ca_context_destroy();
     delete this;
-}
-
-Engine::~Engine()
-{
-    ca_task_exit();
-    delete _archive;
-
-    lockChannels();
-    while (! _channels.empty())
-    {
-        delete _channels.back();
-        _channels.pop_back();
-    }
-    unlockChannels();
-
-    while (! _groups.empty())
-    {
-        delete _groups.back();
-        _groups.pop_back();
-    }
+    LOG_MSG("Engine shut down.\n");
 }
 
 #ifdef USE_PASSWD
@@ -278,46 +158,11 @@ bool Engine::checkUser(const stdString &user, const stdString &pass)
 }
 #endif   
 
-bool Engine::process()
+GroupInfo *Engine::findGroup(Guard &engine_guard, const stdString &name)
 {
-    osiTime now = osiTime::getCurrent();
-
-    // FiledescriptorManager: also keeps the osiTimer ticking.
-    // - keeps osiTimer ticking
-    // - on registered file descriptors, channel access events
-    //   result in faster reaction
-    // We wait this little so that the ca_get channels are < 50 msec
-    // away from the time stamp required for the get
-    fileDescriptorManager.process(fiftyth_second);
-
-    // fetch data with ca_gets that are too slow to monitor
-    if (_scan_list.isDue(now))
-        _scan_list.scan(now);
-
-    ca_poll();
-    if ((double(now) - double(_last_written)) >= _write_period)
-    {
-        write_thread.write();
-        // _last_written is modified after the archiving is done.
-        // If there is slowness in the file writing - we will check
-        // it less frequently - thus overwriting the archive circular
-        // buffer - thus causing events to be discarded at the monitor
-        // receive callback
-        _last_written = osiTime::getCurrent();
-        if (! write_thread.isRunning())
-        {
-            LOG_MSG("WriteThread stopped. Engine quits, too.\n");
-            return false;
-        }
-    }
-
-    return true;
-}
-
-GroupInfo *Engine::findGroup(const stdString &name)
-{
-    stdList<GroupInfo *>::iterator group = _groups.begin();
-    while (group != _groups.end())
+    engine_guard.check(mutex);
+    stdList<GroupInfo *>::iterator group = groups.begin();
+    while (group != groups.end())
     {
         if ((*group)->getName() == name)
             return *group;
@@ -326,192 +171,246 @@ GroupInfo *Engine::findGroup(const stdString &name)
     return 0;
 }
 
-GroupInfo *Engine::addGroup(const stdString &name)
+GroupInfo *Engine::addGroup(Guard &engine_guard, const stdString &name)
 {
+    engine_guard.check(mutex);
     if (name.empty())
-        throw GenericException(__FILE__, __LINE__);
-    GroupInfo *group = findGroup(name);
+    {
+        LOG_MSG("Engine::addGroup: No name given\n");
+        return 0;
+    }
+    GroupInfo *group = findGroup(engine_guard, name);
     if (!group)
     {
-        group = new GroupInfo();
-        group->setName(name);
-        _groups.push_back(group);
+        group = new GroupInfo(name);
+        groups.push_back(group);
     }
-
-    if (_configuration)
-        _configuration->saveGroup(group);
-
     return group;
 }
 
-ChannelInfo *Engine::findChannel(const stdString &name)
+ArchiveChannel *Engine::findChannel(Guard &engine_guard, const stdString &name)
 {
-    ChannelInfo *found = 0;
-
-    stdList<ChannelInfo *>::iterator channel = getChannels()->begin();
-    while (channel != _channels.end())
+    engine_guard.check(mutex);
+    stdList<ArchiveChannel *>::iterator channel = channels.begin();
+    while (channel != channels.end())
     {
         if ((*channel)->getName() == name)
-        {
-            found = *channel;
-            break;
-        }
+            return *channel;
         ++channel;
     }
-
-    return found;
+    return 0;
 }
 
-ChannelInfo *Engine::addChannel(GroupInfo *group,
-                                const stdString &channel_name,
-                                double period, bool disabling, bool monitored)
+ArchiveChannel *Engine::addChannel(Guard &engine_guard,
+                                   GroupInfo *group,
+                                   const stdString &channel_name,
+                                   double period, bool disabling,
+                                   bool monitored)
 {
-    ChannelInfo *channel_info = findChannel(channel_name);
-    bool new_channel;
-
-    lockChannels();
-    if (!channel_info)
+    engine_guard.check(mutex);
+    ArchiveChannel *channel = findChannel(engine_guard, channel_name);
+    if (!channel)
     {
-        channel_info = new ChannelInfo();
-        channel_info->setName(channel_name);
-        _channels.push_back(channel_info);
-        new_channel = true;
+        channel = new ArchiveChannel(channel_name, period);
+        if (!channel)
+        {
+            LOG_MSG("Engine::addChannel cannot allocate '%s'\n",
+                    channel_name.c_str());
+            return 0;
+        }
+        channels.push_back(channel);
+    }
+    Guard guard(channel->mutex);
+    SampleMechanism *mechanism;
+    // For existing channels: maximize monitor feature, minimize period
+    if (monitored)
+        mechanism = new SampleMechanismMonitored(channel);
+    else if (period >= get_threshhold)
+        mechanism = new SampleMechanismGet(channel);
+    else
+        mechanism = new SampleMechanismMonitoredGet(channel);
+    if (channel->getPeriod(guard) > period)
+        channel->setPeriod(engine_guard, guard, period);
+    channel->setMechanism(engine_guard, guard, mechanism);
+    group->addChannel(guard, channel);
+    channel->addToGroup(guard, group, disabling);
+    IndexFile index(RTreeM);
+    if (index.open(index_name.c_str(), false))
+    {   // Is channel already in Archive?
+        AutoPtr<RTree> tree(index.getTree(channel_name));
+        if (tree)
+        {
+            RTree::Datablock block;
+            RTree::Node node(tree->getM(), true);
+            int idx;
+            if (tree->getLastDatablock(node, idx, block))
+            {   // extract previous knowledge from Archive
+                DataFile *datafile =
+                    DataFile::reference(index.getDirectory(),
+                                        block.data_filename, false);
+                if (datafile)
+                {
+                    {
+                        AutoPtr<DataHeader> header(
+                            datafile->getHeader(block.data_offset));
+                        if (header)
+                        {
+                            epicsTime last_stamp(header->data.end_time);
+                            CtrlInfo ctrlinfo;
+                            ctrlinfo.read(datafile,
+                                          header->data.ctrl_info_offset);
+                            channel->init(engine_guard, guard,
+                                          header->data.dbr_type,
+                                          header->data.dbr_count,
+                                          &ctrlinfo,
+                                          &last_stamp);
+                            stdString stamp_txt;
+                            epicsTime2string(last_stamp, stamp_txt);
+                            /*
+                              LOG_MSG("'%s' initialized from storage.\n"
+                              "Data file '%s' @ 0x%lX\n"
+                              "Last Stamp: %s\n",
+                              channel_name.c_str(),
+                              block.data_filename.c_str(),
+                              block.data_offset,
+                              stamp_txt.c_str());
+                            */
+                            // As long as we don't have a new value,
+                            // log as disconnected
+                            channel->addEvent(guard, 0, ARCH_DISCONNECT,
+                                              epicsTime::getCurrent());
+                        }
+                    }
+                    datafile->release();
+                    DataFile::close_all();
+                }
+            }
+        }
+        index.close();
+    }
+    channel->startCA(guard);
+    return channel;
+}
+
+void Engine::setWritePeriod(Guard &engine_guard, double period)
+{
+    engine_guard.check(mutex);
+    write_period = period;
+    next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
+    // Re-set ev'ry channel's period so that they might adjust buffers
+    stdList<ArchiveChannel *>::iterator channel;
+    for (channel = channels.begin(); channel != channels.end(); ++channel)
+    {
+        ArchiveChannel *c = *channel;
+        Guard channel_guard(c->mutex);
+        c->setPeriod(engine_guard, channel_guard, c->getPeriod(channel_guard));
+    }
+}
+
+void Engine::setDescription(Guard &engine_guard, const stdString &description)
+{
+    engine_guard.check(mutex);
+    this->description = description;
+}
+
+void Engine::setGetThreshold(Guard &engine_guard, double get_threshhold)
+{
+    engine_guard.check(mutex);
+    this->get_threshhold = get_threshhold;
+}
+
+void Engine::setBufferReserve(Guard &engine_guard, int reserve)
+{
+    engine_guard.check(mutex);
+    buffer_reserve = reserve;
+}
+
+stdString Engine::makeDataFileName()
+{
+    int year, month, day, hour, min, sec;
+    unsigned long nano;
+    char buffer[80];
+    epicsTime now = epicsTime::getCurrent();
+    epicsTime2vals(now, year, month, day, hour, min, sec, nano);
+    sprintf(buffer, "%04d%02d%02d-%02d%02d%02d",
+            year, month, day, hour, min, sec);
+    return stdString(buffer);
+}
+
+void Engine::writeArchive(Guard &engine_guard)
+{
+    //LOG_MSG("Engine: writing\n");
+    is_writing = true;
+    IndexFile index(RTreeM);
+    if (index.open(index_name.c_str(), false))
+    {
+        stdList<ArchiveChannel *>::iterator ch;
+        for (ch = channels.begin(); ch != channels.end(); ++ch)
+        {
+            Guard guard((*ch)->mutex);
+            (*ch)->write(guard, index);
+        }
+        index.close();
     }
     else
     {
-        // For existing channels: minimize period, maximize monitor feature
-        if (channel_info->isMonitored())
-            monitored = true;
-        if (channel_info->getPeriod() < period)
-            period = channel_info->getPeriod();
-        channel_info->resetBuffers();
-        new_channel = false;
+        LOG_MSG("Engine::writeArchive cannot open index %s\n",
+                index_name.c_str());
     }
-    group->addChannel(channel_info);
-    channel_info->addToGroup(group, disabling);
-    channel_info->setMonitored(monitored);
-    channel_info->setPeriod(period);
+    DataFile::close_all();
+    is_writing = false;
+    //LOG_MSG("Engine: writing done.\n");
+}
 
-    if (new_channel)
-    {
-        Archive &archive = lockArchive();
-        try
+bool Engine::process()
+{
+    // When there's nothing to scan or write, we
+    // sleep a little. But not too long, because
+    // that e.g. determines the max. response time
+    // to a shutdown request (via CTRL-C or HTTPD)
+    // or a need_CA_flush
+#define MAX_DELAY 5.0
+    // scan, write or wait?
+    epicsTime now = epicsTime::getCurrent();
+    double scan_delay, write_delay;
+    bool do_wait = true;
+    {   // Engine locked
+        Guard engine_guard(mutex);
+        if (scan_list.isDueAtAll())
         {
-            // Is channel already in Archive?
-            ChannelIterator arch_channel(archive);
-            if (archive.findChannelByName(channel_name, arch_channel))
-            {   // extract previous knowledge from Archive
-                ValueIterator last_value(archive);
-                if (arch_channel->getLastValue(last_value))
-                {
-                    // ChannelInfo copies CtrlInfo, so it's still
-                    // valid after archive is closed!
-                    channel_info->setCtrlInfo(last_value->getCtrlInfo());
-                    channel_info->setValueType(last_value->getType(),
-                                               last_value->getCount());
-                    channel_info->setLastArchiveStamp(last_value->getTime());
-                }
+            scan_delay = scan_list.getDueTime() - now;
+            if (scan_delay <= 0.0)
+            {
+                scan_list.scan(now);
+                do_wait = false;
             }
-            else
-                archive.addChannel(channel_name, arch_channel);
+            if (scan_delay > MAX_DELAY)
+                scan_delay = MAX_DELAY;
         }
-        catch (ArchiveException &e)
+        else
+            scan_delay = MAX_DELAY; 
+        write_delay = next_write_time - now;            
+        if (write_delay <= 0.0)
         {
-            LOG_MSG("Engine::addChannel: caught\n%s\n", e.what());
-        }
-        unlockArchive();
-    }
-    channel_info->startCaConnection(new_channel);
-    unlockChannels();
-
-    if (_configuration)
-        _configuration->saveChannel(channel_info);
-
-    return channel_info;
-}
-
-void Engine::setWritePeriod(double period)
-{
-    _write_period = period;
-
-    lockChannels();
-    stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
-    while (channel_info != _channels.end())
-    {
-        (*channel_info)->checkRingBuffer();
-        ++channel_info;
-    }
-    unlockChannels();
-
-    if (_configuration)
-        _configuration->saveEngine();
-}
-
-void Engine::setDescription(const stdString &description)
-{
-    _description = description;
-    if (_configuration)
-        _configuration->saveEngine();
-}
-
-void Engine::setDefaultPeriod(double period)
-{
-    _default_period = period;
-    if (_configuration)
-        _configuration->saveEngine();
-}
-
-void Engine::setGetThreshold(double get_threshhold)
-{
-    _get_threshhold = get_threshhold;
-    if (_configuration)
-        _configuration->saveEngine();
-}
-
-void Engine::setBufferReserve(int reserve)
-{
-    _buffer_reserve = reserve;
-    if (_configuration)
-        _configuration->saveEngine();
-}
-
-void Engine::setSecsPerFile(double secs_per_file)
-{
-    _secs_per_file = (unsigned long) secs_per_file;
-    BinArchive *binarch = dynamic_cast<BinArchive *>(_archive->getI());
-    if (binarch)
-        binarch->setSecsPerFile(_secs_per_file);
-    if (_configuration)
-        _configuration->saveEngine();
-}
-
-// Called by WriteThread as well as Engine on shutdown!
-void Engine::writeArchive()
-{
-    _is_writing = true;
-    Archive &archive = lockArchive();
-    ChannelIterator channel(archive);
-    lockChannels();
-    try
-    {
-        stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
-        while (channel_info != _channels.end() &&
-               write_thread.isRunning())
-        {
-            (*channel_info)->write(archive, channel);
-            ++channel_info;
+            writeArchive(engine_guard);
+            next_write_time = roundTimeUp(epicsTime::getCurrent(),
+                                          write_period);
+            do_wait = false;
         }
     }
-    catch (ArchiveException &e)
+    // Guard released
+    if (need_CA_flush)
     {
-        LOG_MSG("Engine::writeArchive caught %s\n", e.what());
+        ca_flush_io();
+        need_CA_flush = false;
     }
-    unlockChannels();
-    channel->releaseBuffer();
-    unlockArchive();
-    _is_writing = false;
+    if (do_wait)
+    {
+        if (write_delay < scan_delay)
+            epicsThreadSleep(write_delay);
+        else
+            epicsThreadSleep(scan_delay);
+    }
+    return true;
 }
-
-
-
 

@@ -3,24 +3,9 @@
 #if !defined(_BINVALUE_H_)
 #define _BINVALUE_H_
 
-#include "BinTypes.h"
-#include "ValueI.h"
-#include "BinCtrlInfo.h"
 #include <iostream>
-
-//////////////////////////////////////////////////////////////////////
-//class BinRawValue
-class BinRawValue : public RawValueI 
-{
-public:
-    // size: pre-calculated from type, count
-    static void read  (DbrType type, DbrCount count, size_t size, Type *value,
-                       LowLevelIO &file, FileOffset offset);
-    // write requires a buffer for the memory-to-disk format conversions
-    static void write (DbrType type, DbrCount count, size_t size, const Type *value,
-                       MemoryBuffer<dbr_time_string> &cvt_buffer,
-                       LowLevelIO &file, FileOffset offset);
-};
+#include "ValueI.h"
+#include "CtrlInfo.h"
 
 //////////////////////////////////////////////////////////////////////
 //CLASS BinValue
@@ -38,12 +23,12 @@ public:
 
     ValueI *clone () const;
 
-    void setCtrlInfo (const CtrlInfoI *info);
-    const CtrlInfoI *getCtrlInfo () const;
+    void setCtrlInfo (const CtrlInfo *info);
+    const CtrlInfo *getCtrlInfo () const;
     
     // Read/write & convert single value/array
-    void read (LowLevelIO &filefd, FileOffset offset);
-    void write (LowLevelIO &filefd, FileOffset offset) const;
+    void read (FILE *filefd, FileOffset offset);
+    void write (FILE *filefd, FileOffset offset) const;
 
     void show(FILE *f) const;
 
@@ -52,18 +37,19 @@ protected:
     BinValue (const BinValue &); // not allowed
     BinValue &operator = (const BinValue &rhs);
 
-    const CtrlInfoI *_ctrl_info;// precision, units, limits, ...
+    const CtrlInfo *_ctrl_info;// precision, units, limits, ...
     mutable MemoryBuffer<dbr_time_string> _write_buffer;
 };
 
-inline void BinValue::read (LowLevelIO &file, FileOffset offset)
+inline void BinValue::read (FILE *file, FileOffset offset)
 {
-    BinRawValue::read (_type, _count, _size, _value, file, offset);
+    RawValue::read (_type, _count, _size, _value, file, offset);
 }
 
-inline void BinValue::write (LowLevelIO &file, FileOffset offset) const
+inline void BinValue::write (FILE *file, FileOffset offset) const
 {
-    BinRawValue::write (_type, _count, _size, _value, _write_buffer, file, offset);
+    RawValue::write (_type, _count, _size, _value, _write_buffer,
+                     file, offset);
 }
 
 //////////////////////////////////////////////////////////////////////

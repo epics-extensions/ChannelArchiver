@@ -4,16 +4,16 @@
 
 // Enable/disable certain tests in case one doesn't work out
 // on your architecture
-//#define TEST_AUTOPTR
+#define TEST_AUTOPTR
 #define TEST_STRING
 #define TEST_TIME
-//#define TEST_AVL
-//#define TEST_LOG
-//#define TEST_THREADS
-//#define TEST_TIMER
-//#define TEST_CA
-//#define TEST_BITSET
-//#define TEST_FUX
+#define TEST_AVL
+#define TEST_LOG
+#define TEST_THREADS
+#define TEST_TIMER
+#define TEST_CA
+#define TEST_BITSET
+#define TEST_FUX
 
 // Nothing should need to be touched from here down
 
@@ -294,6 +294,7 @@ void test_time()
 
     vals2epicsTime(1990, 3, 18, 12, 13, 44, 800000019L, now);
     epicsTime2string(roundTimeUp(now, 0), txt);            TEST(txt == "03/18/1990 12:13:44.800000019");
+    epicsTime2string(roundTimeUp(now, 0.1), txt);          TEST(txt == "03/18/1990 12:13:44.900000000");    
     epicsTime2string(roundTimeUp(now, 0.5), txt);          TEST(txt == "03/18/1990 12:13:45.000000000");    
     epicsTime2string(roundTimeUp(now, 1.0), txt);          TEST(txt == "03/18/1990 12:13:45.000000000");
     epicsTime2string(roundTimeUp(now, 10.0), txt);         TEST(txt == "03/18/1990 12:13:50.000000000");

@@ -178,7 +178,7 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 			"For performance reason you are limited to export "
 			<< _max_channel_count << " channels at once" << '\0';
 		throwDetailedArchiveException (Invalid, info.str());
-		info.freeze (false); // well, never reached ...
+		info.rdbuf()->freeze (false); // well, never reached ...
 		return;
 	}
 
@@ -191,7 +191,7 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 			strstream info;
 			info << "Cannot find channel '" << channel_names[i] << "' in archive" << '\0';
 			throwDetailedArchiveException (ReadError, info.str());
-			info.freeze (false); // not reached ...
+			info.rdbuf()->freeze (false); // not reached ...
 			return;
 		}
 		base[i] = _archive->newValueIterator ();
@@ -218,7 +218,7 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 					<< "' can only be exported on their own, not together with another channel"
 					<< '\0';
 				throwDetailedArchiveException (Invalid, info.str());
-				info.freeze (false);
+				info.rdbuf()->freeze (false);
 				return;
 			}
 		}

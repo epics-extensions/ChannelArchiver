@@ -73,12 +73,12 @@ void RawValueI::getStatus (const Type *value, stdString &result)
 	case ARCH_EST_REPEAT:
 		buf << "Est_Repeat " << (unsigned short)value->status << '\0';
 		result = buf.str();
-		buf.freeze (false);
+		buf.rdbuf()->freeze (false);
 		return;
 	case ARCH_REPEAT:
 		buf << "Repeat " << (unsigned short)value->status << '\0';
 		result = buf.str();
-		buf.freeze (false);
+		buf.rdbuf()->freeze (false);
 		return;
 	case ARCH_DISCONNECT:
 		result = "Disconnected";
@@ -106,7 +106,7 @@ void RawValueI::getStatus (const Type *value, stdString &result)
 		buf << severity << ' ' << value->status << '\0';
 		result = buf.str();
 	}
-	buf.freeze (false);
+	buf.rdbuf()->freeze (false);
 }
 
 bool RawValueI::parseStatus (const stdString &text, short &stat, short &sevr)

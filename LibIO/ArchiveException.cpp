@@ -33,7 +33,7 @@ const char *ArchiveException::what() const
 					<< error_text[_code]
 					<< "\n(" << _detail << ')' << '\0';
 		_error_info = buf.str ();
-		buf.freeze (false);
+		buf.rdbuf()->freeze (false);
 	}
 
 	return _error_info.c_str ();

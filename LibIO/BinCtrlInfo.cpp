@@ -39,7 +39,7 @@ void BinCtrlInfo::read (FILE *fd, FileOffset offset)
 		strstream buf;
 		buf << "CtrlInfo too small: " << size << '\0';
 		throwDetailedArchiveException (Invalid, buf.str());
-		buf.freeze (false);
+		buf.rdbuf()->freeze (false);
 		return;
 	}
 
@@ -52,7 +52,7 @@ void BinCtrlInfo::read (FILE *fd, FileOffset offset)
 		strstream buf;
 		buf << "CtrlInfo too big: " << info->size << '\0';
 		throwDetailedArchiveException (Invalid, buf.str());
-		buf.freeze (false);
+		buf.rdbuf()->freeze (false);
 		return;
 	}
 	// read remainder of CtrlInfo:

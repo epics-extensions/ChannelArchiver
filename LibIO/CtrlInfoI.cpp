@@ -137,7 +137,7 @@ void CtrlInfoI::formatDouble (double value, stdString &result) const
 	buf.precision (getPrecision ());
 	buf << value << '\0';
 	result = buf.str ();
-	buf.freeze (false);
+	buf.rdbuf()->freeze (false);
 }
 
 const char *CtrlInfoI::getState (size_t state, size_t &len) const
@@ -179,7 +179,7 @@ void CtrlInfoI::getState (size_t state, stdString &result) const
 	strstream tmp;
 	tmp << "<Undef: " << state << '\0';
 	result = tmp.str();
-	tmp.freeze (false);
+	tmp.rdbuf()->freeze (false);
 }
 
 bool CtrlInfoI::parseState (const char *text, const char **next, size_t &state) const

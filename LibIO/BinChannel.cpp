@@ -283,7 +283,7 @@ void BinChannel::addBuffer (const ValueI &value_arg, double period, size_t value
 	getArchive ()->makeDataFileName (value_arg, data_file_name);
 
 	osiTime next_file_time;
-	getArchive ()->calcNextFileTime (value_arg, next_file_time);
+	getArchive ()->calcNextFileTime (value_arg.getTime(), next_file_time);
 
 	// Init new DataHeader
 	DataHeader	header;

@@ -86,9 +86,8 @@ void BinArchive::makeDataFileName (const ValueI &value, stdString &data_file_nam
 	data_file_name = buffer;
 }
 
-void BinArchive::calcNextFileTime (const ValueI &value, osiTime &next_file_time)
+void BinArchive::calcNextFileTime (const osiTime &time, osiTime &next_file_time)
 {
-	osiTime time = value.getTime();
 	if (!isValidTime (time))
 	{
 		LOG_MSG ("BinArchive::calcNextFileTime: given invalid time\n");

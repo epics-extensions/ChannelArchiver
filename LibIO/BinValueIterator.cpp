@@ -212,7 +212,7 @@ size_t BinValueIterator::determineChunk (const osiTime &until)
 		double period = tmp._header->getPeriod ();
 
 		osiTime next_file_time;
-		getArchive()->calcNextFileTime (*tmp.getValue(), next_file_time);
+		getArchive()->calcNextFileTime (tmp.getValue()->getTime(), next_file_time);
 
 		while (	tmp.isValid() &&
 				(until==nullTime || tmp.getValue()->getTime () < until) &&

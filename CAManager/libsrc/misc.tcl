@@ -13,10 +13,14 @@ regsub ": (.*) \\$" $CVS(Author,Misc) "\\1" CVS(Author,Misc)
 namespace eval camMisc {
   variable cfg_file_d "<Registry>"
   variable force_cfg_file_d 0
-  if {[catch {package require registry}]} {
-    set force_cfg_file_d 1
+  if {[info exists ::env(HOME)]} {
     variable rcdir "$::env(HOME)/.CAManager"
     file mkdir "$rcdir"
+  } else {
+    variable rcdir [pwd]
+  }
+  if {[catch {package require registry}]} {
+    set force_cfg_file_d 1
     set cfg_file_d "$rcdir/archivers"
   } else {
     variable reg_stem "HKEY_CURRENT_USER\\Software\\ChannelArchiveManager"
@@ -31,8 +35,11 @@ namespace eval camMisc {
     {log+.arg "" "append to logfile"}
     {nocmd "" "without start/stop-interface (CAbgManager only)"}
   }]
-  if {[regexp "^\[^/\]" $::args(log)]} {set ::args(log) $::pwd/$::args(log)}
-  if {[regexp "^\[^/\]" $::args(log+)]} {set ::args(log+) $::pwd/$::args(log+)}
+  if {[regexp "^\[^/\]" $::args(log)]} {set ::args(log) [pwd]/$::args(log)}
+  if {[regexp "^\[^/\]" $::args(log+)]} {set ::args(log+) [pwd]/$::args(log+)}
+  regsub "^(.*/)/.*" $::args(log) "" ::args(log)
+  regsub "^(.*/)/.*" $::args(log+) "" ::args(log+)
+
   if {$::args(log) != ""} {
     file delete -force "$::args(log)"
   }
@@ -41,17 +48,26 @@ namespace eval camMisc {
   }
 
   foreach k $::argv {
+    set d [file dirname $k]
     if {[file exists "$k"]} {
       set cfg_file $k
       set force_cfg_file 1
-    } elseif {[info exists camMisc::rcdir]} {
-      if {[regexp "/.*" $k]} {
-	set cfg_file "$k"
-      } else {
-	set cfg_file "$rcdir/$k"
-      }
+    } elseif {![regexp "^/" $k] && [file exists "$rcdir/$k"]} {
+      set cfg_file "$rcdir/$k"
       set force_cfg_file 1
-    }
+    } elseif {[file isdirectory $d]} {
+      set cfg_file $k
+      set force_cfg_file 1
+    } elseif {![regexp "^/" $k] && [file isdirectory "$rcdir/$d"]} {
+      set cfg_file "$rcdir/$k"
+      set force_cfg_file 1
+    } else {
+      puts stderr "ERROR:"
+      puts stderr "File \"$k\" doesn't exist and can't be created in"
+      puts stderr "    neither [pwd]"
+      puts stderr "    nor     $rcdir"
+      exit 1
+    }      
   }
 
   variable _Archiver {}

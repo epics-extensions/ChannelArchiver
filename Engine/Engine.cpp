@@ -100,16 +100,14 @@ void Engine::shutdown()
 {
     LOG_MSG("Shutdown:\n");
     LOG_ASSERT(this == theEngine);
-    LOG_MSG("Stopped ChannelAccess:\n");
-    ca_context_destroy();
 
+    LOG_MSG("Stopping web server\n");
     delete engine_server;
     engine_server = 0;
 
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now;
     now = epicsTime::getCurrent();
-
 #ifdef TODO
     mutex.lock();
     ChannelIterator channel(*_archive);
@@ -129,15 +127,10 @@ void Engine::shutdown()
     channel->releaseBuffer();
     mutex.unlock();
 #endif
-    
-    LOG_MSG("Engine shut down.\n");
-    theEngine = 0;
-    delete this;
-}
-
-Engine::~Engine()
-{
+    LOG_MSG("Closing archive\n");
     delete _archive;
+
+    LOG_MSG("Removing memory for channels and groups\n");
     while (! channels.empty())
     {
         delete channels.back();
@@ -148,6 +141,12 @@ Engine::~Engine()
         delete groups.back();
         groups.pop_back();
     }
+    ca_flush_io();
+    LOG_MSG("Stopping ChannelAccess:\n");
+    ca_context_destroy();
+    theEngine = 0;
+    delete this;
+    LOG_MSG("Engine shut down.\n");
 }
 
 #ifdef USE_PASSWD

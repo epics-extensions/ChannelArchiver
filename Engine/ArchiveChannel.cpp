@@ -17,8 +17,11 @@ ArchiveChannel::ArchiveChannel(const stdString &name,
 
 ArchiveChannel::~ArchiveChannel()
 {
+    if (mechanism)
+        delete mechanism;
     if (chid_valid)
     {
+        LOG_MSG("'%s': clearing channel\n", name.c_str());
         ca_clear_channel(ch_id);
         chid_valid = false;
     }

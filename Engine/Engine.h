@@ -115,7 +115,6 @@ public:
 
 private:
     Engine(const stdString &directory_file_name);
-    ~Engine();
     
     struct ca_client_context *ca_context;
     

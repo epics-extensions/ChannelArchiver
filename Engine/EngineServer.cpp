@@ -46,10 +46,8 @@ static void engineinfo(HTTPClientConnection *connection,
     stdString s;
     char line[100];
 
-    page.openTable(2, "Engine Info", 0);
-    page.tableLine("Name", "ArchiveEngine", 0);
+    page.openTable(2, "Archive Engine Info", 0);
     page.tableLine("Version", VERSION_TXT ", built " __DATE__, 0);
-
     if (theEngine)
     {
         theEngine->mutex.lock();
@@ -272,7 +270,7 @@ static void channelInfoLine(HTMLPage &page, const ArchiveChannel *channel)
             {
                 if (at_least_one)
                     disabling += ", ";
-                sprintf(num, "%d", i);
+                cvtUlongToString((unsigned long)i, num);
                 disabling += num;
             }
     }
@@ -339,16 +337,16 @@ void groups(HTTPClientConnection *connection, const stdString &path)
         name += "\">";
         name += (*group)->getName();
         name += "</A>";
-        sprintf(id, "%d", (*group)->getID());
+        cvtUlongToString((unsigned long) (*group)->getID(), id);
         channel_count = (*group)->getChannels().size();
         connect_count = (*group)->num_connected;
         total_channel_count += channel_count;
         total_connect_count += connect_count;
-        sprintf(channels, "%d", channel_count);
+        cvtUlongToString((unsigned long) channel_count, channels);
         if (channel_count != connect_count)
             sprintf(connected, "<FONT COLOR=#FF0000>%d</FONT>", connect_count);
         else
-            sprintf(connected, "%d", connect_count);
+            cvtUlongToString((unsigned long)connect_count, connected);
         
         page.tableLine(name.c_str(), id,
                         ((*group)->isEnabled() ?
@@ -363,7 +361,7 @@ void groups(HTTPClientConnection *connection, const stdString &path)
         sprintf(connected, "<FONT COLOR=#FF0000>%d</FONT>",
                 total_connect_count);
     else
-        sprintf(connected, "%d", total_connect_count);
+        cvtUlongToString((unsigned long) total_connect_count, connected);
     page.tableLine("Total", " ", " ", channels, connected, 0);
     page.closeTable();
 }
@@ -383,7 +381,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     HTMLPage page(connection->getSocket(), "Group Info");
 
     char id[10];
-    sprintf(id, "%d", group->getID());
+    cvtUlongToString((unsigned long) group->getID(), id);
     page.openTable(2, "Group", 0);
     page.tableLine("Name", group_name.c_str(), 0);
     page.tableLine("ID", id, 0);
@@ -395,7 +393,6 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
         page.line("no channels");
         return;
     }
-
     page.line("<P>");
     page.line("<H2>Channels:</H2>");
 

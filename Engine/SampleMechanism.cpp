@@ -37,10 +37,13 @@ SampleMechanismMonitored::SampleMechanismMonitored()
 SampleMechanismMonitored::~SampleMechanismMonitored()
 {
     if (have_subscribed)
+    {
+        LOG_MSG("'%s': Unsubscribing\n", channel->name.c_str());
         ca_clear_subscription(ev_id);
+    }
 }
 
-stdString SampleMechanismMonitored::description()
+stdString SampleMechanismMonitored::getDescription() const
 {
     char desc[100];
     sprintf(desc, "Monitored, max. period %g secs", channel->period);
@@ -49,6 +52,7 @@ stdString SampleMechanismMonitored::description()
 
 void SampleMechanismMonitored::handleConnectionChange()
 {
+    stdList<GroupInfo *>::iterator g;
     if (channel->connected)
     {
         LOG_MSG("%s: fully connected\n", channel->name.c_str());
@@ -66,11 +70,18 @@ void SampleMechanismMonitored::handleConnectionChange()
             }
             theEngine->need_CA_flush = true;
         }
+        // Tell groups that we are connected
+        for (g=channel->groups.begin(); g!=channel->groups.end(); ++g)
+            ++ (*g)->num_connected;
     }
     else
     {
         LOG_MSG("%s: disconnected\n", channel->name.c_str());
         // TODO: Add a 'disconnected' value.
+
+        // Tell groups that we are disconnected
+        for (g=channel->groups.begin(); g!=channel->groups.end(); ++g)
+            -- (*g)->num_connected;
     }
 }
 
@@ -78,42 +89,37 @@ void SampleMechanismMonitored::value_callback(struct event_handler_args args)
 {
     SampleMechanismMonitored *me = (SampleMechanismMonitored *) args.usr;
     ArchiveChannel *channel = me->channel;
-    channel->mutex.lock();
-
-    if (channel->disabled)
-    {
-      channel->mutex.unlock();
-      return;
-    }    
     epicsTime now = epicsTime::getCurrent();
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
+    channel->mutex.lock();
     
-    LOG_MSG("SampleMechanismMonitored::value_callback %s\n",
-            channel->name.c_str());
-    RawValue::show(stdout, channel->dbr_time_type,
-                   channel->nelements, value, &channel->ctrl_info);
-    
-    // Add every monitor unconditionally to the ring buffer,
-    // but need to check for back-in-time
-    epicsTime stamp = RawValue::getTime(value);
-    if (me->isGoodTimestamp(stamp, now))
+    if (channel->disabled == false)
     {
-        // Check for back-in-time
-        if (isValidTime(channel->last_stamp_in_archive) &&
-            stamp < channel->last_stamp_in_archive)
+        LOG_MSG("SampleMechanismMonitored::value_callback %s\n",
+                channel->name.c_str());
+        RawValue::show(stdout, channel->dbr_time_type,
+                       channel->nelements, value, &channel->ctrl_info);
+        
+        // Add every monitor to the ring buffer only check for back-in-time
+        epicsTime stamp = RawValue::getTime(value);
+        if (me->isGoodTimestamp(stamp, now))
         {
-            stdString stamp_txt;
-            epicsTime2string(stamp, stamp_txt);
-            LOG_MSG("'%s': received back-in-time stamp %s\n",
-                    channel->name.c_str(), stamp_txt.c_str());
+            if (isValidTime(channel->last_stamp_in_archive) &&
+                stamp < channel->last_stamp_in_archive)
+            {
+                stdString stamp_txt;
+                epicsTime2string(stamp, stamp_txt);
+                LOG_MSG("'%s': received back-in-time stamp %s\n",
+                        channel->name.c_str(), stamp_txt.c_str());
+            }
+            else
+            {
+                channel->buffer.addRawValue(value);
+                channel->last_stamp_in_archive = stamp;
+            }
         }
-        else
-        {
-            channel->buffer.addRawValue(value);
-            channel->last_stamp_in_archive = stamp;
-        }
-        channel->handleDisabling(value);
     }
+    channel->handleDisabling(value);
     channel->mutex.unlock();
 }
 

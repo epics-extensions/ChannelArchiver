@@ -117,6 +117,8 @@ void MatlabExporter::exportChannelList(
         // Value loop per channel
         line = 0;
         count = value->getCount();
+        long o_flags = out->flags();
+        long o_prec = out->precision();
         while (value)
         {
             time=value->getTime();
@@ -132,6 +134,12 @@ void MatlabExporter::exportChannelList(
                 *out << variable << ".v(" << line << ")=nan;\n";
             else
             {
+                const CtrlInfoI *info = value->getCtrlInfo();
+                if (info && info->getPrecision() > 0)
+                {
+                    out->flags(ios::fixed);
+                    out->precision(info->getPrecision());
+                }
                 if (count == 1)
                     *out << variable << ".v(" << line << ")="
                          << value->getDouble() << ";\n";
@@ -158,6 +166,9 @@ void MatlabExporter::exportChannelList(
                 break;
             ++value;
         }
+        out->flags(o_flags);
+        out->precision(o_prec);
+
         *out << variable << ".d=datenum(char("
              << variable << ".t));\n";
         *out << variable << ".l=size("

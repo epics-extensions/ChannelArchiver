@@ -208,7 +208,7 @@ sub time_as_short_text($)
     my ($seconds) = @ARG;
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
 	= localtime($seconds);
-    return sprintf("%04d%02d%02d%02d%02d%02d",
+    return sprintf("%04d_%02d_%02d-%02d_%02d_%02d",
 		   1900+$year, 1+$mon, $mday, $hour, $min, $sec);
 }
 

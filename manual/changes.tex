@@ -5,12 +5,19 @@ the beginning of the R3.14 port.
 New  "versions"  are  marked  by some additional functionality. The
 "patches" are then used to debug those new things.
 
+% Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
 \item 06/30/2004 --- Version 2.1.2:\\
 Added tags and channel names to the Data files,
 so that in the future one could try to write
 a rescue tool.
+Patch for XML-RPC C/C++ lib.\ allows small numbers.
+DataTools' ``index2dir'' option now actually works.
+Matlab/Octave glue code can handle an array channel
+(when requesting a single channel, raw data).
+ArchiveDaemon generates indexupdate.xml for each re-index run;
+``-u'' option.
 
 When retrieval uses a "master" index and reaches
 its end, it will try to continue by following
@@ -22,12 +29,7 @@ of errors in the handling of the path names
 (master index has path to data files, but when
 we follow the links inside the sub-archive's data
 file, those are relative to where the sub-archive resides).
-
-Patch for XML-RPC C/C++ lib.\ allows small numbers.
-DataTools' ``index2dir'' option now actually works.
-
-Matlab/Octave glue code can handle an array channel
-(when requesting a single channel, raw data).
+Still not fully tested.
 
 \item 04/01/2004 --- Version 2.1.1:\\
 Many little updates have been checked into CVS

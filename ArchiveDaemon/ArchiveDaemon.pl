@@ -13,8 +13,6 @@
 #
 # kasemir@lanl.gov
 
-# TODO: daemon often tries to stop twice. Is that an issue?
-
 use English;
 use strict;
 use Socket;
@@ -27,12 +25,15 @@ use IO::Handle;
 use Data::Dumper;
 use XML::Simple;
 use POSIX 'setsid';
-use vars qw($opt_h $opt_p $opt_f $opt_i $opt_d);
+use vars qw($opt_h $opt_p $opt_f $opt_i $opt_u $opt_d);
 use Getopt::Std;
 
 # ----------------------------------------------------------------
 # Configurables
 # ----------------------------------------------------------------
+
+# Compare: manual/changes.tex
+my ($version) = "2.1.2";
 
 # Setting this to 1 disables(!) caching and might help with debugging.
 # Default: leave it commented-out.
@@ -110,20 +111,20 @@ my ($ArchiveIndexLog) = "ArchiveIndexTool.log";
 # so checking every 30 seconds is more than enough
 # yet gives us a fuzzy feeling that the daemon's web
 # page shows the current state of things.
-my ($engine_check_period) = 30;
+my ($engine_check_secper) = 30;
 
-# Seconds between runs of the ArchiveIndexTool.
-# 60*60 = 1 hour ?
+# Minutes between runs of the ArchiveIndexTool.
+# 60 = 1 hour ?
 # This means data in the master index is up to 1 hour old.
 # Can be a smaller number. You need to check how long
 # the index tool runs. You don't want it running all the time.
-my ($index_update_period) = 60*60;
+my ($index_update_minper) = 60;
 
 # Most of the time, the ArchiveIndexTool is run with
 # the $index_update_config.
 # But about once a day it's a good idea to
 # run it will the full $index_config.
-my ($full_index_period) = 24*60*60;
+my ($full_index_minper) = 24*60;
 
 # Timeout used for "is there a HTTP client request?"
 # 1 second gives good response yet daemon uses hardly any CPU.
@@ -476,7 +477,7 @@ sub write_indexconfig($)
 	    else
 	    {
 		$skip = 1;
-		$why = "Doesn't exist";
+		$why = "Doesn't exist (yet?)";
 	    }
 	}
 	print INDEX "\t<!-- skipped: $why\n" if ($skip);
@@ -498,7 +499,7 @@ sub write_indexconfig($)
 sub html_start($$)
 {
     my ($client, $refresh) = @ARG;
-    my ($web_refresh) = $engine_check_period / 2;
+    my ($web_refresh) = $engine_check_secper / 2;
     print $client "<HTML>\n";
     print $client "<META HTTP-EQUIV=\"Refresh\" CONTENT=$web_refresh>\n"
 	if ($refresh);
@@ -674,14 +675,15 @@ sub handle_HTTP_info($)
     print $client "<H1>Archive Daemon Info</H1>\n";
     print $client "<TABLE BORDER=0 CELLPADDING=5>\n";
 
+    print $client "<TR><TD><B>Version:</B></TD><TD>$version</TD></TR>\n";
     print $client "<TR><TD><B>Config File:</B></TD><TD>$config_file</TD></TR>\n";
     print $client "<TR><TD><B>Daemon start time:</B></TD><TD> $start_time_text</TD></TR>\n";
-    print $client "<TR><TD><B>Check Period:</B></TD><TD> $engine_check_period secs</TD></TR>\n";
+    print $client "<TR><TD><B>Check Period:</B></TD><TD> $engine_check_secper secs</TD></TR>\n";
     print $client "<TR><TD><B>Last Check:</B></TD><TD> ", time_as_text($last_check), "</TD></TR>\n";
     print $client "<TR><TD><B>Index DTD:</B></TD><TD> $master_index_dtd</TD></TR>\n";
-    print $client "<TR><TD><B>Full Index Period:</B></TD><TD> $full_index_period secs</TD></TR>\n";
+    print $client "<TR><TD><B>Full Index Period:</B></TD><TD> $full_index_minper minutes</TD></TR>\n";
     print $client "<TR><TD><B>Last:</B></TD><TD> ", time_as_text($last_full_index), "</TD></TR>\n";
-    print $client "<TR><TD><B>Index Update Period:</B></TD><TD> $index_update_period secs</TD></TR>\n";
+    print $client "<TR><TD><B>Index Update Period:</B></TD><TD> $index_update_minper minutes</TD></TR>\n";
     print $client "<TR><TD><B>Last:</B></TD><TD> ", time_as_text($last_index_update), "</TD></TR>\n";
     print $client "</TABLE>\n";
     html_stop($client);
@@ -835,7 +837,7 @@ sub run_indextool($)
     my ($now) = @ARG;
     my ($dir, $cfg, $cmd, $config);
     $config = $index_update_config;
-    if (($now - $last_full_index) > $full_index_period)
+    if (($now - $last_full_index) > ($full_index_minper*60))
     {
 	$config = $index_config;
 	$last_full_index = $now;
@@ -1010,7 +1012,6 @@ sub start_engine($$)
 	if (add_index("$dir/$index"))
 	{
 	    write_indexconfig(1);
-	    write_indexconfig(0);
 	    return 1;
 	}
 	return 0;
@@ -1048,16 +1049,17 @@ sub usage()
     print("USAGE: ArchiveDaemon [options]\n");
     print("\n");
     print("Options:\n");
-    print("\t-p <port>: TCP port number for HTTPD\n");
-    print("\t-f file  : config. file\n");
-    print("\t-i URL   : path or URL to indexconfig.dtd\n");
-    print("\t-d       : debug mode (stay in foreground etc.)\n");
+    print("\t-p <port>    : TCP port number for HTTPD\n");
+    print("\t-f <file>    : config. file\n");
+    print("\t-i <URL>     : path or URL to indexconfig.dtd\n");
+    print("\t-u <minutes> : Update period for master index\n");
+    print("\t-d           : debug mode (stay in foreground etc.)\n");
     print("\n");
     print("This tool automatically starts, monitors and restarts\n");
     print("ArchiveEngines based on a config. file.\n");
     exit(-1);
 }
-if (!getopts('hp:f:i:d')  ||  $#ARGV != -1  ||  $opt_h)
+if (!getopts('hp:f:i:u:d')  ||  $#ARGV != -1  ||  $opt_h)
 {
     usage();
 }
@@ -1082,7 +1084,8 @@ if (length($index_config) > 0  and -f $index_config)
     $master_index_dtd = $dtd if (length($dtd) > 0);
     read_indexconfig($index_config);
 }  
-$master_index_dtd = $opt_i if ($opt_i);
+$master_index_dtd = $opt_i if (length($opt_i) > 0);
+$index_update_minper = $opt_u if ($opt_u > 0);
 add_message("Started");
 print("Read $config_file. Check status via\n");
 print("          http://$localhost:$http_port\n");
@@ -1103,11 +1106,10 @@ $start_time_text = time_as_text(time);
 my ($httpd) = create_HTTPD($http_port);
 my ($now);
 write_indexconfig(1);
-write_indexconfig(0);
 while (1)
 {
     $now = time;
-    if (($now - $last_check) > $engine_check_period)
+    if (($now - $last_check) > $engine_check_secper)
     {
 	print("\n############## Main Loop Check ####\n") if ($opt_d);
 	check_engines($now);
@@ -1123,7 +1125,7 @@ while (1)
 	    $last_check = time;
 	}
     }
-    if (($now - $last_index_update) > $index_update_period)
+    if (($now - $last_index_update) > ($index_update_minper*60))
     {
 	write_indexconfig(0);
 	run_indextool($now);

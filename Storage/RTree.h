@@ -149,17 +149,27 @@ public:
     bool searchDatablock(const epicsTime &start, Node &node, int &i,
                          Datablock &block) const;
 
-    /// Locate first entry;
+    /// Locate first datablock in tree.
     bool getFirstDatablock(Node &node, int &i, Datablock &block) const;
     
     /// \see getFirstDatablock
     bool getLastDatablock(Node &node, int &i, Datablock &block) const;    
 
-    /// Absolutely no clue what this one could do.
-    bool prevDatablock(Node &node, int &i, Datablock &block) const;
+    /// Get a sub-block that's under the current block.
 
-    /// \see prevDatablock()
-    bool nextDatablock(Node &node, int &i, Datablock &block) const;
+    /// A record might not only point to the 'main' data block,
+    /// the one originally inserted and commonly used
+    /// for data retrieval. It can also contain a chain of
+    /// data blocks that were inserted later (at a lower priority).
+    /// In case you care about those, invoke getCoveredBlock()
+    /// until it returns false.
+    bool getNextChainedBlock(Datablock &block) const;
+    
+    /// Absolutely no clue what this one could do.
+    bool getPrevDatablock(Node &node, int &i, Datablock &block) const;
+
+    /// \see getPrevDatablock
+    bool getNextDatablock(Node &node, int &i, Datablock &block) const;
     
     /// Tries to update existing datablock.
 

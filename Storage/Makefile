@@ -41,11 +41,11 @@ LIB_SRCS += DataFile.cpp
 LIB_SRCS += FileAllocator.cpp
 LIB_SRCS += NameHash.cpp
 LIB_SRCS += RTree.cpp
-#LIB_SRCS += IndexFile.cpp
-#LIB_SRCS += DataWriter.cpp
-#LIB_SRCS += DataReader.cpp
-#LIB_SRCS += LinearReader.cpp
-#LIB_SRCS += SpreadsheetReader.cpp
+LIB_SRCS += IndexFile.cpp
+LIB_SRCS += DataWriter.cpp
+LIB_SRCS += DataReader.cpp
+LIB_SRCS += LinearReader.cpp
+LIB_SRCS += SpreadsheetReader.cpp
 
 # Library to build
 LIBRARY_HOST := Storage
@@ -59,8 +59,8 @@ rtree_DIR = $(INSTALL_LIB)
 rtreeObj_DIR = $(INSTALL_LIB)
 Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
-#TESTPROD_HOST += FileAllocatorTest NameHashTest RTreeTest FileAllocatorTool StorageTest
-TESTPROD_HOST += FileAllocatorTest NameHashTest RTreeTest
+TESTPROD_HOST += FileAllocatorTest FileAllocatorTool
+TESTPROD_HOST += NameHashTest RTreeTest IndexFileTest
 
 include $(TOP)/configure/RULES
 

@@ -135,6 +135,7 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
     index.close();
 }
 
+#ifdef TODO
 static DataHeader *get_dataheader(const stdString &file, FileOffset offset)
 {
     DataFile *datafile =
@@ -144,7 +145,8 @@ static DataHeader *get_dataheader(const stdString &file, FileOffset offset)
     DataHeader *header = datafile->getHeader(offset);
     datafile->release(); // ref'ed by header
     return header; // might be NULL
-}                
+}
+#endif
 
 void convert_index_dir(const stdString &index_name, const stdString &dir_name)
 {
@@ -270,7 +272,7 @@ void dump_datablocks(const stdString &index_name, const stdString &channel_name)
     printf("Datablocks for channel '%s':\n", channel_name.c_str());
     for (ok = tree->getFirstDatablock(node, idx, block);
          ok;
-         ok = tree->nextDatablock(node, idx, block))
+         ok = tree->getNextDatablock(node, idx, block))
     {
         printf("'%s' @ 0x%lX: %s - %s\n",
                block.data_filename.c_str(), block.data_offset,
@@ -298,7 +300,7 @@ void dot_index(const stdString &index_name, const stdString channel_name,
                 channel_name.c_str(), index_name.c_str());
         return;
     }
-    tree->makeDot(dot_name.c_str(), true);
+    tree->makeDot(dot_name.c_str());
     delete tree;
     index.close();
 }

@@ -79,7 +79,7 @@ const RawValue::Data *RawDataReader::next()
     if (val_idx >= header->data.num_samples            ||
         RawValue::getTime(data) > node.record[rec_idx].end)
     {   // Need to get another block
-        valid_datablock = tree->nextDatablock(node, rec_idx, datablock);
+        valid_datablock = tree->getNextDatablock(node, rec_idx, datablock);
         if (!valid_datablock)
             return 0;
 #ifdef DEBUG_DATAREADER

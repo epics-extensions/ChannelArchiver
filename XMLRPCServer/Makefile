@@ -12,11 +12,9 @@ DummyServer_SRCS += DummyServer.cpp
 ArchiveServer_SRCS += main.cpp
 TESTPROD_HOST := DummyServer ArchiveServer bench xmltest
 
-PROD_LIBS_DEFAULT := rtree Storage Tools ca Com
-PROD_LIBS_WIN32 := rtreeObj StorageObj ToolsObj ca Com
+PROD_LIBS_DEFAULT := Storage Tools ca Com
+PROD_LIBS_WIN32 := StorageObj ToolsObj ca Com
 SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
-rtree_DIR = $(INSTALL_LIB)
-rtreeObj_DIR = $(INSTALL_LIB)
 Storage_DIR = $(INSTALL_LIB)
 StorageObj_DIR = $(INSTALL_LIB)
 Tools_DIR = $(INSTALL_LIB)

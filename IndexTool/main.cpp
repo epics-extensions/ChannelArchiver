@@ -21,19 +21,18 @@ bool add_tree_to_master(const stdString &index_name,
                         const RTree *subtree,
                         RTree *index)
 {
-    RTree::InsertResult ir;
     RTree::Datablock block;
     RTree::Node node;
     int idx;
     bool ok;
     stdString datafile, start, end;
-    // We xfer data blocks from the end on, going back to the start.
-    // As soon as we find a block that was already in the master index,
-    // stop.
+    // Xfer data blocks from the end on, going back to the start.
+    // Stop when find a block that was already in the master index.
     for (ok = subtree->getLastDatablock(node, idx, block);
          ok;
-         ok = subtree->prevDatablock(node, idx, block))
+         ok = subtree->getPrevDatablock(node, idx, block))
     {
+        // Data files in master need full path
         if (Filename::containsPath(block.data_filename))
             datafile = block.data_filename;
         else
@@ -43,21 +42,23 @@ bool add_tree_to_master(const stdString &index_name,
                    datafile.c_str(), block.data_offset,
                    epicsTimeTxt(node.record[idx].start, start),
                    epicsTimeTxt(node.record[idx].end, end));
-        ir = index->insertDatablock(node.record[idx].start,
-                                    node.record[idx].end,
-                                    block.data_offset, datafile);
-        if (ir == RTree::InsError)
+        // Note that there's no inner loop over the 'chained'
+        // blocks, we only handle the main blocks of each sub-tree.
+        switch (index->insertDatablock(node.record[idx].start,
+                                       node.record[idx].end,
+                                       block.data_offset, datafile))
         {
-            fprintf(stderr,
-                    "Error inserting datablock for '%s' into '%s'\n",
-                    channel.c_str(), index_name.c_str());
-            return false;
-        }
-        if (ir == RTree::InsExisted)
-        {
-            if (verbose > 2)
-                printf("Block already existed, skipping the rest\n");
-            return true;
+            case RTree::YNE_Error:
+                fprintf(stderr,
+                        "Error inserting datablock for '%s' into '%s'\n",
+                        channel.c_str(), index_name.c_str());
+                return false;
+            case RTree::YNE_No:
+                if (verbose > 2)
+                    printf("Block already existed, skipping the rest\n");
+                return true;
+            case RTree::YNE_Yes:
+                continue; // insert more blocks
         }
     }
     return true;

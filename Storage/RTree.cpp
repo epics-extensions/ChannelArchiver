@@ -228,7 +228,15 @@ bool RTree::getLastDatablock(Node &node, int &i, Datablock &block) const
     return block.read(fa.getFile());
 }
 
-bool RTree::prevDatablock(Node &node, int &i, Datablock &block) const
+bool RTree::getNextChainedBlock(Datablock &block) const
+{
+    if (block.next_ID == 0)
+        return false;
+    block.offset = block.next_ID;
+    return block.read(fa.getFile());
+}
+
+bool RTree::getPrevDatablock(Node &node, int &i, Datablock &block) const
 {
     if (!prev(node, i))
         return false;
@@ -236,7 +244,7 @@ bool RTree::prevDatablock(Node &node, int &i, Datablock &block) const
     return block.read(fa.getFile());
 }
 
-bool RTree::nextDatablock(Node &node, int &i, Datablock &block) const
+bool RTree::getNextDatablock(Node &node, int &i, Datablock &block) const
 {
     if (!next(node, i))
         return false;
@@ -611,7 +619,7 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
             //     ==> Add block to existing record
             return add_block_to_record(node, i, data_offset, data_filename);
         if (start < node.record[i].start  &&
-            node.record[i].start < end && node.record[i].end <= end)
+            node.record[i].start < end && end <= node.record[i].end)
         {   // (2) Existing record:         |-------|
             //     New block      :     |--------|
             //     ==> Add non-overlap  |###|           

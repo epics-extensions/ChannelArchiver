@@ -101,7 +101,7 @@ void show_data(xmlrpc_env *env, xmlrpc_int32 type, xmlrpc_int32 count, xmlrpc_va
                        tm->tm_hour,
                        tm->tm_min,
                        tm->tm_sec,
-                       nano, stat, sevr);
+                       (long)nano, stat, sevr);
                 v_num = xmlrpc_array_size(env, value_array);
                 for (v=0; v<v_num; ++v)
                 {

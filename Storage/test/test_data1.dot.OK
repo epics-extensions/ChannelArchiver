@@ -4,11 +4,10 @@
 digraph RTree
 {
 	node [shape = record, height=.1];
-	node506 [ label="<f0>1-14|<f1>15-16|<f2>17-26"];
-	node506:f0->node198:f0;
-	node506:f1->node660:f0;
-	node506:f2->node429:f0;
-	node198 [ label="<f0>1-6|<f1>7-8|<f2>9-14"];
+	node352 [ label="<f0>1-16|<f1>17-20|<f2>0-0"];
+	node352:f0->node198:f0;
+	node352:f1->node429:f0;
+	node198 [ label="<f0>1-6|<f1>7-8|<f2>9-16"];
 	node198:f0->node44:f0;
 	node198:f1->node275:f0;
 	node198:f2->node121:f0;
@@ -22,31 +21,18 @@ digraph RTree
 	node275 [ label="<f0>7-8|<f1>0-0|<f2>0-0"];
 	id5 [ label="ID 5",style=filled ];
 	node275:f0->id5;
-	node121 [ label="<f0>9-10|<f1>11-12|<f2>13-14"];
+	node121 [ label="<f0>9-10|<f1>11-12|<f2>15-16"];
 	id6 [ label="ID 6",style=filled ];
 	node121:f0->id6;
 	id4 [ label="ID 4",style=filled ];
 	node121:f1->id4;
-	id10 [ label="ID 10",style=filled ];
-	node121:f2->id10;
-	node660 [ label="<f0>15-16|<f1>0-0|<f2>0-0"];
-	node660:f0->node583:f0;
-	node583 [ label="<f0>15-16|<f1>0-0|<f2>0-0"];
 	id7 [ label="ID 7",style=filled ];
-	node583:f0->id7;
-	node429 [ label="<f0>17-22|<f1>23-26|<f2>0-0"];
-	node429:f0->node352:f0;
-	node429:f1->node737:f0;
-	node352 [ label="<f0>17-18|<f1>19-20|<f2>21-22"];
+	node121:f2->id7;
+	node429 [ label="<f0>17-20|<f1>0-0|<f2>0-0"];
+	node429:f0->node506:f0;
+	node506 [ label="<f0>17-19|<f1>19-20|<f2>0-0"];
 	id8 [ label="ID 8",style=filled ];
-	node352:f0->id8;
-	id9 [ label="ID 9",style=filled ];
-	node352:f1->id9;
-	id12 [ label="ID 12",style=filled ];
-	node352:f2->id12;
-	node737 [ label="<f0>23-24|<f1>25-26|<f2>0-0"];
-	id11 [ label="ID 11",style=filled ];
-	node737:f0->id11;
-	id13 [ label="ID 13",style=filled ];
-	node737:f1->id13;
+	node506:f0->id8;
+	id10 [ label="ID 10",style=filled ];
+	node506:f1->id10;
 }

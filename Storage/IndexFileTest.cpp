@@ -44,19 +44,19 @@ bool index_test()
     string2epicsTime("12/24/2003 12:00:00", start);
     end = start + 90;
     tree->insertDatablock(start, end, 0x1200, "20031214");
-    tree->makeDot("i1.dot", true);
+    tree->makeDot("i1.dot");
     start += 120;
     end = start + 90;    
     tree->insertDatablock(start, end, 0x1202, "20031214");
-    tree->makeDot("i2.dot", true);
+    tree->makeDot("i2.dot");
     start += 120;
     end = start + 90;
     tree->insertDatablock(start, end, 0x1204, "20031214");
-    tree->makeDot("i3.dot", true);
+    tree->makeDot("i3.dot");
     start += 120;
     end = start + 90;
     tree->insertDatablock(start, end, 0x1206, "20031214");
-    tree->makeDot("i4.dot", true);
+    tree->makeDot("i4.dot");
     delete tree;
     index.close();
     
@@ -65,7 +65,7 @@ bool index_test()
     tree = index.getTree("fred");
     if (!tree)
         return false;
-    tree->makeDot("fred.dot", true);
+    tree->makeDot("fred.dot");
     delete tree;
     index.close();
     

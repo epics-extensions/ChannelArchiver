@@ -379,15 +379,17 @@ static bool exportFunc(HTMLPage &page, Format format,
 	catch (GenericException &e)
 	{
 		std::cout << "Archive Error :\n";
-		std::cout << "===============\n";
+		std::cout << "<PRE>\n";
 		std::cout << e.what() << "\n";
+		std::cout << "</PRE>\n";
 		return false;
 	}
 	catch (const char *txt)
 	{
 		std::cout << "Caught Error :\n";
-		std::cout << "===============\n";
+		std::cout << "<PRE>\n";
 		std::cout << txt << "\n";
+		std::cout << "</PRE>\n";
 		return false;
 	}
 	catch (...)
@@ -494,7 +496,9 @@ static bool cmdPlot(HTMLPage &page)
 #endif
     
     std::cout << "<A HREF=\"" << dataURL << "\">";
-    std::cout << "<IMG SRC=\"" + imageURL + "\"</A></A><P>\n";
+    std::cout << "<IMG SRC=\""
+              << imageURL
+              << "\" ALT=\"Click Image to see raw data\"</A></A><P>\n";
     std::cout << "<HR>\n";
     page.interFace();
     

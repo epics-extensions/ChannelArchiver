@@ -19,13 +19,13 @@
 class ValueIteratorI
 {
 public:
-	virtual ~ValueIteratorI ();
+	virtual ~ValueIteratorI();
 
 	//* Virtuals to be implemented by derived classes:
-	virtual bool isValid () const = 0;
-	virtual const ValueI * getValue () const = 0;
-	virtual bool next () = 0;
-	virtual bool prev () = 0;
+	virtual bool isValid() const = 0;
+	virtual const ValueI * getValue() const = 0;
+	virtual bool next() = 0;
+	virtual bool prev() = 0;
 
 	//* Number of "similar" values that can be read
 	//  as one chunk in a block operation.
@@ -33,10 +33,10 @@ public:
 	//  mechanism is implemented. Let me know if you depend on this call.
 	//  The result might also not be perfect,
 	//  e.g. a single 8000 chunk could be reported as two 4000-sized chunks etc.)
-	virtual size_t determineChunk (const osiTime &until) = 0;
+	virtual size_t determineChunk(const osiTime &until) = 0;
 
 	//* Sampling period for current values in secs.
-	virtual double getPeriod () const = 0;
+	virtual double getPeriod() const = 0;
 
 	// Period could be considered property of Value like CtrlInfo,
 	// but unlike CtrlInfo (for formatting), Value doesn't have to know
@@ -44,7 +44,7 @@ public:
 	// in DataHeader, so BinValue has no easy access to it)
 
 protected:
-	ValueIteratorI () {} // cannot be user-created
+	ValueIteratorI() {} // cannot be user-created
 };
 
 //CLASS ValueIterator
@@ -62,7 +62,7 @@ protected:
 //	while (values)
 //	{
 //		cout << *values << endl;
-//		sum += values->getDouble ();
+//		sum += values->getDouble();
 //		++values;
 //	}
 //</PRE>
@@ -72,20 +72,20 @@ class ValueIterator
 {
 public:
 	//* Obtain new, empty ValueIterator suitable for given Archive
-	ValueIterator (const class Archive &archive);
-	ValueIterator (ValueIteratorI *iter);
-	ValueIterator ();
+	ValueIterator(const class Archive &archive);
+	ValueIterator(ValueIteratorI *iter);
+	ValueIterator();
 
-	~ValueIterator ();
+	~ValueIterator();
 
-	void attach (ValueIteratorI *iter);
-	void detach ();
+	void attach(ValueIteratorI *iter);
+	void detach();
 
 	//* Check if iterator is at valid position
 	operator bool () const;
 
 	//* Retrieve current CLASS ValueI
-	const ValueI * operator -> () const;
+    const ValueI * operator -> () const;
 	const ValueI & operator * () const;
 
 	//* Move to next/prev Value
@@ -94,29 +94,29 @@ public:
 
 	//* Number of "similar" values that can be read
 	// as one chunk in a block operation:
-	size_t determineChunk (const osiTime &until);
+	size_t determineChunk(const osiTime &until);
 
 	//* Sampling period for current values in secs.
-	double getPeriod () const;
+	double getPeriod() const;
 
 	// Direct access to iterface
-	ValueIteratorI *getI ();
-	const ValueIteratorI *getI () const;
+	ValueIteratorI *getI();
+	const ValueIteratorI *getI() const;
 
 private:
-	ValueIterator (const ValueIterator &rhs); // not impl.
+	ValueIterator(const ValueIterator &rhs); // not impl.
 	ValueIterator & operator = (const ValueIterator &rhs); // not impl.
 
 	ValueIteratorI *_ptr;
 };
 
-inline ValueIterator::ValueIterator (ValueIteratorI *iter)
+inline ValueIterator::ValueIterator(ValueIteratorI *iter)
 {	_ptr = iter; }
 
-inline ValueIterator::ValueIterator ()
+inline ValueIterator::ValueIterator()
 {	_ptr = 0; }
 
-inline ValueIterator::~ValueIterator ()
+inline ValueIterator::~ValueIterator()
 {
 	if (_ptr)
 	{
@@ -125,14 +125,14 @@ inline ValueIterator::~ValueIterator ()
 	}
 }
 
-inline void ValueIterator::attach (ValueIteratorI *iter)
+inline void ValueIterator::attach(ValueIteratorI *iter)
 {
 	if (_ptr)
 		delete _ptr;
 	_ptr = iter;
 }
 
-inline void ValueIterator::detach ()
+inline void ValueIterator::detach()
 {	_ptr = 0;	}
 
 inline ValueIterator::operator bool () const
@@ -150,16 +150,16 @@ inline ValueIterator& ValueIterator::operator ++ ()
 inline ValueIterator & ValueIterator::operator -- ()
 {	_ptr->prev (); return *this; }
 
-inline size_t ValueIterator::determineChunk (const osiTime &until)
-{	return _ptr->determineChunk (until); }
+inline size_t ValueIterator::determineChunk(const osiTime &until)
+{	return _ptr->determineChunk(until); }
 
-inline double ValueIterator::getPeriod () const
-{	return _ptr->getPeriod (); }
+inline double ValueIterator::getPeriod() const
+{	return _ptr->getPeriod(); }
 
-inline ValueIteratorI *ValueIterator::getI ()
+inline ValueIteratorI *ValueIterator::getI()
 {	return _ptr; }
 
-inline const ValueIteratorI *ValueIterator::getI () const
+inline const ValueIteratorI *ValueIterator::getI() const
 {	return _ptr; }
 
 #endif //__VALUEITERATORI_H__

@@ -87,13 +87,7 @@ void SpreadSheetExporter::exportChannelList(
         infos[i] = new CtrlInfoI();
         values[i] = 0;
 
-        if (_fill)
-        {
-            channels[i]->getChannel()->getValueBeforeTime(_start, base[i]);
-            if (!base[i]->isValid() || base[i]->getValue()->isInfo())
-                channels[i]->getChannel()->getValueAfterTime(_start, base[i]);
-        }
-        else
+        if (! channels[i]->getChannel()->getValueBeforeTime(_start, base[i]))
             channels[i]->getChannel()->getValueAfterTime(_start, base[i]);
 
         if (_linear_interpol_secs > 0.0)
@@ -143,7 +137,7 @@ void SpreadSheetExporter::exportChannelList(
 	*out << "; 1) choose a suitable format for the Time colunm (1st col.)\n";
 	*out << ";    Excel can display up to the millisecond level\n";
 	*out << ";    if you choose a custom cell format like\n";
-	*out << ";              mm/d/yy hh:mm:ss.000\n";
+	*out << ";              mm/dd/yy hh:mm:ss.000\n";
 	*out << "; 2) Select the table and generate a plot,\n";
 	*out << ";    a useful type is the 'XY (Scatter) plot'.\n";
 	*out << ";\n";
@@ -199,7 +193,7 @@ void SpreadSheetExporter::exportChannelList(
 
     // Find first time stamp
     osiTime time = findOldestValue(values, num);
-    while (time != nullTime && (_end==nullTime  ||  time <= _end))
+    while (time != nullTime)
     {
 #if 0
         // Debug    
@@ -255,6 +249,9 @@ void SpreadSheetExporter::exportChannelList(
             }
         }
         *out << "\n";
+        // Print one value beyond time, then quit:
+        if (isValidTime(_end) && time >= _end)
+            break;
         // Find time stamp for next line
         time = findOldestValue(values, num);
     }

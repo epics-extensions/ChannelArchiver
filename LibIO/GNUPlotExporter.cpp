@@ -22,8 +22,8 @@ static void printTime(FILE *f, const osiTime &time)
             month, day, year, hour, min, sec, nano);
 }
 
-GNUPlotExporter::GNUPlotExporter (Archive &archive, const stdString &filename)
-: SpreadSheetExporter (archive.getI(), filename)
+GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename)
+        : SpreadSheetExporter (archive.getI(), filename)
 {
     _make_image = false;
     _use_pipe = false;
@@ -31,8 +31,8 @@ GNUPlotExporter::GNUPlotExporter (Archive &archive, const stdString &filename)
         throwDetailedArchiveException(Invalid, "empty filename");
 }           
 
-GNUPlotExporter::GNUPlotExporter (ArchiveI *archive, const stdString &filename)
-: SpreadSheetExporter (archive, filename)
+GNUPlotExporter::GNUPlotExporter(ArchiveI *archive, const stdString &filename)
+        : SpreadSheetExporter (archive, filename)
 {
     _make_image = false;
     _use_pipe = false;
@@ -62,7 +62,7 @@ void GNUPlotExporter::exportChannelList(
     script_name = _filename;
     script_name += ".plt";
     image_name = _filename;
-    image_name += ".png";
+    image_name += imageExtension();
     
     FILE *f;
     f = fopen(data_name.c_str(), "wt");
@@ -77,6 +77,7 @@ void GNUPlotExporter::exportChannelList(
     Archive         archive(_archive);
     ChannelIterator channel(archive);
     ValueIterator   value(archive);
+    osiTime time;
     stdString txt;
     for (size_t i=0; i<num; ++i)
     {
@@ -88,10 +89,9 @@ void GNUPlotExporter::exportChannelList(
             throwDetailedArchiveException (ReadError, info);
             return;
         }
-
         if (! channel->getValueBeforeTime(_start, value) &&
             ! channel->getValueAfterTime(_start, value))
-                continue;
+            continue; // nothing in time range
 
         if (value->getCount() > 1)
         {
@@ -122,12 +122,30 @@ void GNUPlotExporter::exportChannelList(
         fprintf(f, "# %s\n", channel_desc.c_str());
         
         // Dump values for this channel
-        osiTime time;
         bool have_anything = false;
         bool last_was_data = false;
+        double value_number;
         while (value)
         {
             time = value->getTime();
+            if (isValidTime(_start) && time < _start)
+            {
+                fprintf(f, "# extrapolated onto start time:\n");
+                time = _start;
+            }
+            if (isValidTime(_end)  &&  time > _end)
+            {
+                if (last_was_data)
+                {
+                    fprintf(f, "# extrapolated onto end time:\n");
+                    ::printTime(f, _end);
+                    fprintf(f, "\t%g\t%s\n",
+                            value_number,
+                            txt.c_str());
+                }
+                break;
+            }
+            
             if (value->isInfo())
             {
                 // Show as comment, empty line results in "gap"
@@ -161,16 +179,14 @@ void GNUPlotExporter::exportChannelList(
                             value->getDouble(),
                             txt.c_str());
                 }
+                value_number = value->getDouble();
                 last_was_data = true;
             }
-            // One value beyond _end is plotted, then break:
-            if (isValidTime(_end)  &&  time > _end)
-                break;
             ++value;
         }
         if (have_anything)
             plotted_channels.push_back(channel_desc);
-        
+        // Gap separates channels
         fprintf(f, "\n\n\n");
     }
     archive.detach();

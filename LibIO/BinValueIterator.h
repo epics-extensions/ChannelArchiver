@@ -23,40 +23,40 @@
 class BinValueIterator : public ValueIteratorI
 {
 public:
-	BinValueIterator ();
-	BinValueIterator (const BinValueIterator &rhs);
+	BinValueIterator();
+	BinValueIterator(const BinValueIterator &rhs);
 	BinValueIterator & operator = (const BinValueIterator &rhs);
-	~BinValueIterator ();
+	~BinValueIterator();
 
 	// Open ValueOterator for first value in header.
 	// Will skip empty buffers.
 	// With last_value==true it will position on the last value of that buffer.
-	bool attach (class BinChannel *channel, const stdString &data_file,
+	bool attach(class BinChannel *channel, const stdString &data_file,
 				FileOffset header_offset, bool last_value=false);
 
-	void clear ();
+	void clear();
 
 	//* Implementation of pure virtuals from  CLASS ValueIteratorI
-	bool isValid () const;
-	size_t determineChunk (const osiTime &until);
-	double getPeriod () const;
-	const ValueI *getValue () const;
-	bool next ();
-	bool prev ();
+	bool isValid() const;
+	size_t determineChunk(const osiTime &until);
+	double getPeriod() const;
+	const ValueI *getValue() const;
+	bool next();
+	bool prev();
 
 	// Low-level API ---------------------------------
 	// Not to be used by general clients,
 	// not available for ValueIteratorI.
 	//
 	// Get next buffer & CtrlInfo, does not get value
-	bool nextBuffer ();
-	bool prevBuffer ();
-	const DataHeaderIterator &getHeader ()	{ return _header; }
+	bool nextBuffer();
+	bool prevBuffer();
+	const DataHeaderIterator &getHeader()	{ return _header; }
 
 	// Read value from current buffer.
-	bool readValue (size_t index);
+	bool readValue(size_t index);
 
-	class BinArchive *getArchive ();
+	class BinArchive *getArchive();
 
 protected:
 	BinValueIterator (const DataHeaderIterator	&header);

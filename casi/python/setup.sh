@@ -1,1 +1,1 @@
-export PYTHONPATH=`pwd`/O.$HOST_ARCH
+export PYTHONPATH=`pwd`/O.$EPICS_HOST_ARCH

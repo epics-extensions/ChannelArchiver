@@ -1,7 +1,7 @@
 #! /bin/env python
 # $Id$
 
-import regsub, time, casi
+import time, casi, re
  
 #// Please note the two fundamentally different time formats
 #// which are used in the following description:
@@ -48,7 +48,7 @@ def secs2stamp (secs):
 
 def stamp2values (stamp):
 	"Returns (Year, Month, Day, Hours, Minutes, Seconds, Nano)"
-	values=regsub.split (stamp, '[/ :.]')
+	values=re.split ('[/ :.]', stamp)
 	if len(values)==6:
 		(y,m,d,H,M,S)=map(int,values)
 		n=0

@@ -29,9 +29,8 @@ an UnknownError.
 
 #undef setbuf
 
-
 #include "ToolsConfig.h"
-#include "GenericException.h"
+#include "ArchiveException.h"
 class ArchiveI;
 class ChannelIteratorI;
 class ValueIteratorI;
@@ -45,7 +44,7 @@ class ValueI;
 
 /* Following includes are used by SWIG for generation of wrapper */
 
-#define casi_version "1.0"
+#define casi_version "2.0"
 
 #define DBR_TIME_STRING 14
 #define DBR_TIME_INT    15
@@ -74,6 +73,10 @@ class ValueI;
     try
     {
         $action
+    }
+    catch (ArchiveException &e)
+    {   // un-const to avoid warnings
+        SWIG_exception (SWIG_RuntimeError, (char *) e.what());
     }
     catch (GenericException &e)
     {   // un-const to avoid warnings

@@ -12,7 +12,7 @@
 # Dump all values for some channel, no error checking at all
 import casiTools, casi, sys
 
-archiveName, channelName=("../../Engine/Test/freq_directory","fred")
+archiveName, channelName=("../../Engine/Test/index","fred")
 
 archive = casi.archive()
 channel = casi.channel()

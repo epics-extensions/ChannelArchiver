@@ -1,0 +1,95 @@
+<HTML>
+<HEAD>
+<TITLE>Class Documentation</TITLE>
+<BODY BGCOLOR=#F0F0FF BACKGROUND="../blueback.jpg">
+<FONT FACE="Comic Sans MS,Arial, Helvetica">
+<BLOCKQUOTE>
+<H1><A NAME=Main>ValueI Class</A></H1>
+
+Extends a <A HREF="RawValueI.htm#Main">RawValueI</A> with type/count.
+<H2>Interface</H2>
+<UL>
+<LI>
+Create/clone Value
+<PRE>
+virtual ValueI *clone () const = 0;
+</PRE>
+<LI>
+Get value as text.
+(undefined if CtrlInfo is invalid)
+Will get the whole array for getCount()>1.
+<PRE>
+virtual void getValue (stdString &result) const = 0;
+</PRE>
+<LI>
+Access to <A HREF="CtrlInfoI.htm#Main">CtrlInfoI</A> : units, precision, limits, ...
+<PRE>
+virtual const CtrlInfoI *getCtrlInfo () const = 0;
+virtual void setCtrlInfo (const CtrlInfoI *info);
+</PRE>
+<LI>
+Get/set one array element as double
+<PRE>
+virtual double getDouble (DbrCount index = 0) const = 0;
+virtual void setDouble (double value, DbrCount index = 0) = 0;
+</PRE>
+<LI>
+Get time stamp
+<PRE>
+const osiTime getTime () const;
+void getTime (stdString &result) const;
+void setTime (const osiTime &stamp);
+</PRE>
+<LI>
+Get status as raw value or string
+<PRE>
+dbr_short_t getStat () const;
+dbr_short_t getSevr () const;
+void getStatus (stdString &result) const;
+void setStatus (dbr_short_t status, dbr_short_t severity);
+</PRE>
+<LI>
+compare DbrType, DbrCount
+<PRE>
+bool hasSameType (const ValueI &rhs) const;
+</PRE>
+<LI>
+compare two Values (time stamp, status, severity, value)
+<PRE>
+bool operator == (const ValueI &rhs) const;
+bool operator != (const ValueI &rhs) const;
+</PRE>
+<LI>
+compare only the pure value (refer to operator ==),
+not the time stamp or status
+<PRE>
+bool hasSameValue (const ValueI &rhs) const;
+</PRE>
+<LI>
+Does this Value hold Archiver status information
+like disconnect and no 'real' value,
+so calling e.g. getDouble() makes no sense?
+<BR>
+Repeat counts do hold a value, so these
+are not recognized in here:
+<PRE>
+bool isInfo () const;
+</PRE>
+<LI>
+Access to contained RawValue:
+<PRE>
+DbrType getType () const;
+void getType (stdString &type) const;
+DbrCount getCount () const;
+</PRE>
+</UL>
+<HR WIDTH=40% ALIGN=LEFT>
+<A HREF="index.htm#Main">Index</A>
+<P ALIGN=CENTER>
+<FONT SIZE=1>
+Created from sources with <I>MakeDoc</I> Perl script.
+</FONT>
+</BLOCKQUOTE>
+</FONT>
+</P>
+</BODY>

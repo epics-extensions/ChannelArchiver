@@ -1,0 +1,110 @@
+<html>
+
+<head>
+<base>
+<title></title>
+</head>
+
+<body BGCOLOR="#B0B0FF" BACKGROUND="doc/blueback.jpg">
+<font face="Comic Sans MS">
+
+<blockquote>
+  <h1>Channel Archiver</h1>
+  <p>This is about the Channel Archiver, short CA.</p>
+  <h2>Files/dirs</h2>
+  <dl>
+    <dt>../Tools </dt>
+    <dd>C++ classes shared by CA and some other code</dd>
+    <dt><a href="doc/libio/default.htm">LibIO</a> </dt>
+    <dd>I/O library to access CA files: Basic I/O tools for proprietary CA file format as well
+      as generic classes based upon that like SpreadSheetExporter</dd>
+    <dt><a href="doc/engine/default.htm">Engine</a> </dt>
+    <dd>Archiver engine </dd>
+    <dt><a href="doc/manager/default.htm">Manager</a></dt>
+    <dd>Simple command-line tool to test the I/O Lib.</dd>
+    <dt><a href="doc/cgiexport/index.htm">CGIExport</a> </dt>
+    <dd>CGI-wrapper for the exporter classes, allows plotting via GNUPlot </dd>
+    <dt><a href="doc/atac/default.htm">ATAC</a></dt>
+    <dd>TCL interface to the archive IO library</dd>
+    <dt><a href="doc/winbrowser/index.htm">WinBrowser</a></dt>
+    <dd>Beginning of WIN32 archive browser</dd>
+    <dt><a href="doc/default.htm">doc</a></dt>
+    <dd>Documentation</dd>
+  </dl>
+  <h2>Compilation</h2>
+  <h3>Configuration</h3>
+  <p>There are some variables to be set in Tools/ToolsConfig.h. Please read further,
+  including the section about osiTime later on, to understand these settings.</p>
+  <h3>Compiler</h3>
+  <p>You need a C++ compiler that is at least somehow up to the standard C++ library as
+  defined in the 1997 Stroustrup C++ book. The new C++ library contains classes for strings,
+  vectors, maps, exceptions, etc., so you don't have to reinvent them as you had to before.
+  In fact EPICS base has some similar classes for historical reasons, but I'd prefer to use
+  the standards ones.<br>
+  <small>(<a href="doc/libio/default.htm">Note on std::string</a>)</small></p>
+  <p>The #defines in ToolsConfig.h concerning NAMESPACE and&nbsp; CPP_EDITION depend on the
+  compiler that you have:<ul>
+    <li>Microsoft Visual C++ 6.0 can do namespaces and conforms to CPP_EDITION=3.</li>
+    <li>Recent GNU compilers, now maintained by Cygnus and called egcs, are usable with
+      CPP_EDITION=2 (<a href="http://egcs.cygnus.com">http://egcs.cygnus.com</a>).<br>
+      The egcs sources usually build with &quot;./configure&quot;, &quot;make&quot;, &quot;make
+      install&quot;.<br>
+      RedHat 6.0 Linux comes with egcs-2.91.66,<br>
+      RedHat5.2 with egcs-2.90.29 is also OK (but cannot do NAMESPACE).</li>
+  </ul>
+  <h3>Make system</h3>
+  <p>The ChannelArchiver now uses the standard EPICS make system (Makefile, Makefile.Host)
+  and can be build like an ordinary EPICS extension on WIN32 and UNIX. A master
+  ChannelArchiver/Makefile will build the Tools &amp; LibIO libraries first, then Manager,
+  ..., Engine. (<a href="atac/Readme.htm">note about atac</a>)</p>
+  <p>Because the ChannelArchiver uses files in the Tools directory, it should be parallel to
+  the ChannelArchiver tree like this:<ul>
+    <li>...../extensions/config</li>
+    <li>...../extensions/src/Tools</li>
+    <li>...../extensions/src/ChannelArchiver</li>
+    <li>...../extensions/src/ChannelArchiver/LibIO</li>
+    <li>...../extensions/src/ChannelArchiver/Engine</li>
+    <li>...</li>
+  </ul>
+  <p><small>- Neither &quot;extensions&quot; nor &quot;src&quot; are imperative here.<br>
+  The point is that from within ChannelArchiver there is a ../Tools and ../../config
+  directory. If your setup is different, you will have to change the makefiles.</small></p>
+  <p>Tools &amp; LibIO are compiled as libraries. </p>
+  <p>Alternatively, MS Visual C++ project files are also included. When using those project
+  files, the sources under Tools &amp; LibIO are compiled as individial object files to ease
+  developement &amp; debugging (for me. If you don't like it, don't use it).<br>
+  Also caused by this multi-platform developement with differnet make systems:<ol>
+    <li>The real code is contained in *.cpp files. Since the EPICS make system works on *.cc
+      files only, these *.cc files are stubs, simply inclusing the *.cpp files.</li>
+    <li>Some files might (partially) be in &quot;DOS&quot; format. This can cause warnings in a
+      UNIX build, but hasn't been a problem so far.</li>
+  </ol>
+  <h3>Use of EPICS base</h3>
+  <p>net_convert.h and osiTime.* are likely causes for compile errors. Otherwise, neither MS
+  VC++ nor g++ (egcs-2.91.66) should give any warnings that relate to the ChannelArchiver
+  files except for many warning in Tools/gnu_regex.c (only used w/ WIN32). </p>
+  <h4>net_convert.h</h4>
+  <p>LibIO depends on base/src/ca/net_convert.h and osiTime.*. In principle the
+  functionality of net_convert.h should be exported from base, but maybe not exactly as
+  net_convert.h does it now. Since nobody is actively working on the definition of a
+  network/hostarch-independent data format, I just use net_convert.h as it is (i.e. add
+  base/src/ca to the include path).</p>
+  <h4>osiTime</h4>
+  <p>osiTime.* is a moving target.<br>
+  I based LibIO on EPICS/base Version 3.13.1..0 (no typo) but it also compiles with
+  3.13.1.1.<br>
+  The #define OLD_osiTime is used to determine the osiTime version.<br>
+  (I tried to base this on the settings in EPICS base/include/epicsVersion.h but the
+  resulting switch was messy and probably always incomplete.)</p>
+
+  <h2>Changes</h2>
+  <a href="changes.htm">See seperate doc. for changes, release history.</a>
+
+  <hr>
+  <address>
+  <a HREF="mailto:kasemir@lanl.gov"><p>-Kay (kasemir@lanl.gov)</a></p>
+  </address>
+</blockquote>
+</font>
+</body>
+</html>

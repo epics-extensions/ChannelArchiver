@@ -1,0 +1,10 @@
+To make the CGIExport test work,
+you have to put the executable CGIExport or CGIExport.exe
+in here and rename it to CGIExport.cgi.
+For Win32, you also have the required DLLs available,
+i.e. either here or in the %PATH%
+(Required: ca.dll, com.dll, db.dll, maybe more)
+
+For GNUPlot to work, you need
+1) gnuplot
+2) a 'tmp' directory in here

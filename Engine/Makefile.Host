@@ -1,0 +1,24 @@
+#	Makefile.Host
+
+include ../../Make.cfg
+include ../../Make.ver
+
+CXXFLAGS += -DENGINE_VERSION=\"$(VERSION).$(RELEASE)\"
+
+SRCS += ChannelInfo.cc
+SRCS += CircularBuffer.cc
+SRCS += Engine.cc
+SRCS += EngineServer.cc
+SRCS += GroupInfo.cc
+SRCS += HTMLPage.cc
+SRCS += LockFile.cc
+SRCS += main.cc
+SRCS += ScanList.cc
+SRCS += WriteThread.cc
+SRCS += HTTPServer.cc
+SRCS += Configuration.cc
+SRCS += ConfigFile.cc
+
+PROD := ArchiveEngine
+
+include ../../Make.end

@@ -1,0 +1,240 @@
+########################################################
+#
+#//PACKAGE atacGraph.tk
+#//
+#// <H2>BLT helpers for ATAC (A Tcl Archive Client)</H2>
+#//
+#// Imports the BLT extension
+#// and provides helpers for plotting archived data
+#// in a BLT graph.
+#// <P>
+#// The mayor task is <I>not</I> to plot connected lines
+#// for informational values like "Disconnect" or "Disable" events.
+#// A perfect solution might stop the current line,
+#// display an informational text tag and continue
+#// plotting with the next valid values.
+#// <P>
+#// Currently, a different line style is used to indicate
+#// informational events.
+#// 
+#// <H3>Internal organization:</H3>
+#//
+#// <FONT COLOR=#FF0000>
+#// This format could change,
+#// please let me know if you use this stuff,
+#// have better ideas, get to depend on some
+#// implementation details and would rather not
+#// see them changed! (kasemir@lanl.gov)
+#// </FONT>
+#// <P>
+#// Each channel is identified by a <I>key</I>
+#// which might be an integer.
+#// <P>
+#// The global (but intended to be internal to atacGraph) variable
+#// AtacGraph has these parts:
+#// <UL>
+#// <LI>AtacGraph(&lt;key&gt;.name): channel name
+#// <LI>AtacGraph(&lt;key&gt;.data): time/value list
+#// <LI>AtacGraph(&lt;key&gt;.weight): 0 for non-plottable data, else set to 1
+#// </UL>
+#// <P>
+#// Another global array: AtacColor(&lt;key&gt;): color used for this key
+
+package require BLT
+namespace import blt::*
+
+set AtacColor(0) red
+set AtacColor(1) green
+set AtacColor(2) blue
+set AtacColor(3) black
+set AtacColor(4) brown
+set AtacColor(5) orange
+set AtacColor(6) gray
+
+###################################################
+#//* <B>Syntax:</B> initGraphData key channelName
+#//
+#// Initialize storage for <I>key</I> so that it
+#// can now hold data for a graph
+
+proc initGraphData { key channelName } {
+	global AtacGraph
+
+	set AtacGraph($key.name) $channelName
+	set AtacGraph($key.data) {}
+	set AtacGraph($key.weight) {}
+}
+
+###################################################
+#//* <B>Syntax:</B> addGraphData key valueId
+#//
+#// Add current archive sample to data variable
+#//
+
+proc addGraphData { key valueId } {
+	global AtacGraph
+
+	set time [ stamp2secs [ value time $valueId ] ]
+	if { [ value isInfo $valueId ] } {
+		set value 0
+		set weight 0
+	} else {
+		set value [ value get $valueId ]
+		set weight 1
+	}
+	lappend AtacGraph($key.data) $time $value
+	lappend AtacGraph($key.weight) $weight
+}
+
+###################################################
+#//* <B>Syntax:</B> prependGraphData key valueId
+#//
+#// Prepend current archive sample to data variable
+#//
+
+proc prependGraphData { key valueId } {
+	global AtacGraph
+
+	set time [ stamp2secs [ value time $valueId ] ]
+	if { [ value isInfo $valueId ] } {
+		set value 0
+		set weight 0
+	} else {
+		set value [ value get $valueId ]
+		set weight 1
+	}
+	set AtacGraph($key.data) [ concat $time $value $AtacGraph($key.data) ]
+	set AtacGraph($key.weight) [ concat $weight $AtacGraph($key.weight) ]
+}
+
+###################################################
+#//* <B>Syntax:</B> getGraphDataCount key
+#//
+#// <B>Returns:</B> Number of data samples
+#//
+
+proc getGraphDataCount { key } {
+	global AtacGraph
+
+	set l [ llength $AtacGraph($key.data) ]
+	return [ expr $l / 2 ]
+}
+
+###################################################
+#//* <B>Syntax:</B> getGraphDataStartSecs key
+#//
+#// <B>Returns:</B> seconds of first sample
+#//
+
+proc getGraphDataStartSecs { key } {
+	global AtacGraph
+	return [ lindex $AtacGraph($key.data) 0 ]
+}
+
+###################################################
+#//* <B>Syntax:</B> getGraphDataEndSecs key
+#//
+#// <B>Returns:</B> seconds of last sample
+#//
+
+proc getGraphDataEndSecs { key } {
+	global AtacGraph
+
+	set l [ getGraphDataCount $key ]
+	return [ lindex $AtacGraph($key.data) [ expr $l * 2 - 2 ] ]
+}
+
+###################################################
+# TimeLabelCommand plot value
+#
+# Proc to use for "xaxis -command"
+# in order to have x-axis labels show up as date and time
+# instead of the numeric seconds
+#
+# (private)
+
+proc TimeLabelCommand { plot value } {
+	join [ split [ secs2stamp $value ] ] "\n"
+}
+
+###################################################
+#//* <B>Syntax:</B> createAtacGraph graph
+#//
+#// Create a new graph suitable for plotting data.
+#//
+#// The result is a BLT graph widget,
+#// the path is determined by the "graph" argument.
+#//
+#// In contrast to a standard BLT graph
+#// this new graph is preset to use time stamps
+#// for the x-axis.
+#//
+#// <B>Returns:</B> graph
+
+proc createAtacGraph { graph } {
+	graph $graph -plotbackground white -title "Channel Plot"
+	$graph grid configure -hide no -dashes { 2 2 }
+	$graph xaxis configure -command TimeLabelCommand
+	$graph pen create emptyPen -color red -linewidth 0 -symbol cross
+#	Blt_Crosshairs $graph
+#	Blt_ZoomStack $graph
+#	Blt_ActiveLegend $graph
+	return $graph
+}
+
+###################################################
+#//* <B>Syntax:</B> addToGraph key graph
+#//
+#// Add data for key to the graph
+#//
+
+proc addToGraph { key graph } {
+	global AtacGraph AtacColor
+
+	set name $AtacGraph($key.name)
+
+	if { [ lsearch -exact [ $graph element show ] $name ] == -1 } {
+		if { [ info exists AtacColor($key) ] } {
+			set color $AtacColor($key)
+		} else {
+			set color $AtacColor(0)
+		}
+		$graph element create $name -data $AtacGraph($key.data) -weights $AtacGraph($key.weight) \
+			-styles { { emptyPen 0 0.9 } } -symbol none -color $color
+	} else {
+		$graph element configure $name -data $AtacGraph($key.data) -weights $AtacGraph($key.weight)
+	}
+
+	update
+}
+
+###################################################
+#//* <B>Syntax:</B> saveGraph format graph filename
+#//
+#// Create hardcopy.
+#//
+#// Supported formats: PS, PPM, GIF (w/ ppmtogif installed)
+#//
+
+proc saveGraph { format graph filename } {
+	update
+	if { ![ string compare $format "PS" ] } {
+		$graph postscript output $filename -decorations yes -maxpect yes
+	} elseif { ![ string compare $format "PPM" ] } {
+		set snap [ image create photo ]
+		$graph snap $snap
+		$snap write -format PPM $filename
+		image delete $snap
+	} elseif { ![ string compare $format "GIF" ] } {
+		set snap [ image create photo ]
+		$graph snap $snap
+		$snap write -format PPM "$filename.ppm"
+		image delete $snap
+		exec ppmtogif -interlace "$filename.ppm" >$filename 2>>$filename.log
+		file delete "$filename.ppm"
+		file delete $filename.log
+	} else {
+		error "Format must be PS, PPM or GIF."
+	}
+}
+

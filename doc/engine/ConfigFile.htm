@@ -1,0 +1,46 @@
+<HTML>
+<HEAD>
+<TITLE>Class Documentation</TITLE>
+<BODY BGCOLOR=#F0F0FF BACKGROUND="../blueback.jpg">
+<FONT FACE="Comic Sans MS,Arial, Helvetica">
+<BLOCKQUOTE>
+<H1><A NAME=Main>ConfigFile Class</A></H1>
+
+This implementation of a <A HREF="Configuration.htm#Main">Configuration</A> will read
+the initial configuration from a master ASCII file,
+which may include additional group files.
+<BR>
+When one of the save() methods is called,
+the set of configuration files in ConfigDir
+is updated.
+<BR>
+See main() for the piping between
+Engine and ConfigFile:
+<PRE>
+// theEngine is created ...
+ConfigFile *config = new ConfigFile;
+config->load (config_file);
+...
+theEngine->setConfiguration (config);               
+</PRE>
+<H2>Interface</H2>
+<UL>
+<LI>
+Configuration interface
+<PRE>
+bool load (const stdString &config_name);
+bool loadGroup  (const stdString &group_name);
+bool save ();
+bool saveGroup (const class GroupInfo *group);
+</PRE>
+</UL>
+<HR WIDTH=40% ALIGN=LEFT>
+<A HREF="index.htm#Main">Index</A>
+<P ALIGN=CENTER>
+<FONT SIZE=1>
+Created from sources with <I>MakeDoc</I> Perl script.
+</FONT>
+</BLOCKQUOTE>
+</FONT>
+</P>
+</BODY>

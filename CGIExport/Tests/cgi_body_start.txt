@@ -1,0 +1,4 @@
+<BODY bgcolor="#FFFFFF" vlink="#0000FF" background="../blueback.jpg">
+
+<BLOCKQUOTE>
+<FONT face="Comic Sans MS, Arial, Helvetica">

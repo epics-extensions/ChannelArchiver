@@ -1,0 +1,88 @@
+<html>
+
+<head>
+<title>Channel Archive</title>
+</head>
+
+<body BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#0000FF" ALINK="#800080"
+background="blueback.jpg">
+<font COLOR="#000000" FACE="Comic Sans MS, Arial, Helvetica">
+
+<blockquote>
+  <h1>Channel Archive CGI Interface</h1>
+  <h2>Take 1</h2>
+  This example allows you to start the CGI interface
+  for a user-supplied archive file:
+  <form METHOD="GET" ACTION="cgi/CGIExport.cgi">
+        Archive:
+        <input TYPE="TEXT" NAME="DIRECTORY" VALUE="../../../CATests/LEDA/dir" SIZE="40"
+        MAXLENGTH="100">
+        <input TYPE="submit" NAME="COMMAND" VALUE="START">
+  </form>
+  This is probably not what you want for "end user access".
+  <BR>
+  But it's very useful for testing.
+
+  <h2>Take 2</h2>
+  This example launches the CGI interface with a predefined archive:<BR>
+	<P ALIGN=CENTER>
+	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2F..%2FCATests%2FLEDA%2Fdir&COMMAND=START">
+	  Go to Archive</A>
+	</P>
+  <P>
+  This is the usual setup. You might have several archive links on the "start" page
+   that launch the CGI tool on different archives.
+
+  <h2>Take 3</h2>
+  This example launches the CGI interface with a predefined archive
+  and initiates the "LIST" command:<BR>
+	<P ALIGN=CENTER>
+	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2F..%2FCATests%2FLEDA%2Fdir&COMMAND=LIST">
+	  List names in "Project XXX" Archive</A>
+	</P>
+  <P>
+  Similar is the next example:
+
+  <h2>Take 4</h2>
+  Launch the CGI interface with a predefined archive
+  and immediately run the "INFO" command on two predefined channels:<BR>
+	<P ALIGN=CENTER>
+	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2F..%2FCATests%2FLEDA%2Fdir&COMMAND=INFO&NAMES=ChannelA%0D%0AChannelB%0D%0A">
+	  Info for ChannelA, ChannelB</A>
+	</P>
+  <P>
+  All the commands that you can access via the form fields and buttons
+  on the CGIExport-generated web page
+  can be invoced directly as shown in this example.
+
+  <h2>Take 5</h2>
+  One useful application can be a link to the DEBUG command:
+	<P ALIGN=CENTER>
+	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2F..%2FCATests%2FLEDA%2Fdir&COMMAND=DEBUG">
+	  Debug Archive</A>
+	</P>
+  <P>
+  If you feel that the information from the DEBUG command is dangerous
+  because it might invite hackers,
+  compile the CGITool without debug information.
+
+ <HR>
+
+<P>
+ Note that the appearance of the CGITool output can be adjusted:
+ <UL>
+ <LI>Put files <I>cgi_body_start.txt</I> and <I>cgi_body_end.txt</I> in this directory.
+     They are shown before/after the CGITool's output.
+ <LI>Change the source....
+ </UL>
+
+<p><img SRC="LineSqueeze.gif" WIDTH="582" HEIGHT="21" BORDER="0"></p>
+  <p align="left"><img src="ViewCompAndMonitor.gif" align="right" WIDTH="256" HEIGHT="46">
+  Requests/comments?<br>
+  <a href="mailto:kasemir@lanl.gov">E-Mail: Kay-Uwe Kasemir</a><br>
+  </p>
+</blockquote>
+
+</font>
+</body>
+</html>

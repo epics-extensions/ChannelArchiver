@@ -1,0 +1,151 @@
+<HTML>
+<HEAD>
+<TITLE>Class Documentation</TITLE>
+<BODY BGCOLOR=#F0F0FF BACKGROUND="../blueback.jpg">
+<FONT FACE="Comic Sans MS,Arial, Helvetica">
+<BLOCKQUOTE>
+<H1><A NAME=Main>Package: atacTools.tcl</A></H1>
+
+<BR>
+<H2>Initialization file for ATAC (A Tcl Archive Client)</H2>
+<BR>
+This file has to be configured for your system so that it
+knows how to find the actual ATAC extension.
+<P>
+When this is done properly, atacTools.tcl...
+<UL>
+<LI>loads the atac extension
+    if it was build as a shared library and not linked
+    to the tcl shell that you are using.
+<LI>defines some helper procs for dealing with time stamps.
+<LI>defines some helpers for BLT graphs
+</UL>
+<BR>
+<H3>Time stamps</H3>
+Please note the two fundamentally different time formats
+which are used in the following description:
+<UL>
+<LI><B>secs:</B><BR>
+	Time in seconds since some epoch as used by the TCL <I>clock</I> command
+       (EXCEPT: these seconds are doubles,
+        whereas the clock command accepts only integers)
+<LI><B>stamp:</B><BR>
+	Time string in "YYYY/MM/DD hh:mm:ss" format
+      as used by the archiver,
+      with 24h hours and (maybe) fractional seconds
+	up to the nanosecond level.
+    <BR>
+	This string time stamp is certainly slower to handle,
+	but it is user-readable and does not require knowledge
+	of a specific epoch, offsets between epochs, leap seconds etc.
+    The order year/month/day was chosen to have an ASCII-sortable
+    date.
+</UL>
+The preferred format should be "stamp" because it's user-readable
+and can as well be used in time comparisons.
+The "secs" format is useful for calculations based on <I>differences</I> in time,
+but no assumption should be made as far as the absolute epoch is concerned.
+<H2>Details</H2>
+<UL>
+<LI>
+<B>Syntax:</B> stampNow
+<BR>
+<B>Returns:</B> stamp string
+<BR>
+Get current time as stamp
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> secs2stamp secs
+<BR>
+<B>Returns:</B> stamp string
+<BR>
+Convert time in seconds into stamp
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> stamp2secs stamp
+<BR>
+<B>Returns:</B> secs as double
+<BR>
+Convert stamp into seconds
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> stamp2values stamp year month day hour minute second
+<BR>
+Extract numeric values for year, month, ... from stamp
+and set remaining arguments accordingly.
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> values2stamp year month day hour minute second
+<BR>
+Returns stamp generated from numeric values for year, month, ...
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> formatValue valueId
+<BR>
+Returns string with valueId's value as time, number, status
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> showAtacNag
+<BR>
+Display "Nag" panel with version info etc.
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> createChannelInfo archiveName channelName
+<BR>
+Create a new toplevel ".channelInfo"
+that displays information about that channel:
+<UL>
+<LI>Name of channel
+<LI>Time when channel was first archived
+<LI>Time when channel was last archived
+</UL>
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> openSpreadsheetContext archiveName startStamp channelNameList contextVar valuesVar statiVar
+<BR>
+<B>Returns:</B> true if values were found
+<BR>
+Open archive, find channels and get values/stati for given startStamp.
+<BR>
+Fills context variable for subsequent calls to nextSpeadsheetContext.
+<BR>
+Will report error if archive cannot be opened or channels don't exist at all.
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> nextSpeadsheetContext contextVar timeStampVar valuesVar statiVar
+<BR>
+<B>Returns:</B> true if values were found
+<BR>
+Find next set of values/stati, set timeStamp to were that set was found.
+<BR>
+<PRE>
+</PRE>
+</UL>
+<HR WIDTH=40% ALIGN=LEFT>
+<A HREF="index.htm#Main">Index</A>
+<P ALIGN=CENTER>
+<FONT SIZE=1>
+Created from sources with <I>MakeDoc</I> Perl script.
+</FONT>
+</BLOCKQUOTE>
+</FONT>
+</P>
+</BODY>

@@ -1,0 +1,33 @@
+#######################################################################
+# Demo of plotting from archive
+# with BLT
+#
+# run this with wish or bltwish
+
+source atacTools.tcl
+source atacGraph.tk
+
+set archiveName "../../CATests/LEDA/freq_directory"
+set channelName "is_hvps_actv"
+
+set archiveId [ archive open $archiveName ]
+set channelId [ archive findChannelByName $archiveId is_hvps_actv ]
+
+#  last 24h:
+set endTime [ channel getLastTime $channelId ]
+set startTime [ secs2stamp [ expr [ stamp2secs $endTime ] - 60*60*24 ] ]
+set valueId [ channel getValueAfterTime $channelId $startTime ]
+
+initGraphData data $channelName
+puts "Reading values..."
+while { [ value valid $valueId ] } {
+	addGraphData data $valueId
+	value next $valueId
+}
+
+set graph [ createAtacGraph .g ]
+addToGraph data $graph
+pack $graph
+update
+# saveGraph PS $graph "snapshot.ps"
+

@@ -1,0 +1,84 @@
+<html>
+
+<head>
+<base>
+<title>Channel Archiver Changes</title>
+</head>
+
+<body BGCOLOR="#B0B0FF" BACKGROUND="doc/blueback.jpg">
+<font face="Comic Sans MS">
+
+<blockquote>
+  <h1>Channel Archiver Changes</h1>
+  <ul>
+    <li>03/23/2000<br>
+      <font color="#0000A0">Version 1.2</font>:<br>
+      Optional password for stopping the ArchiveEngine over the Web, to be configured via
+      Engine/Config.h.<br>
+      TCL example: PlotBrowser.tk</li>
+    <li>03/01/2000<br>
+      <font color="#0000A0">Version 1.1</font>:<br>
+      More documentation about Engine, Manager, ATAC.<br>
+      ArchiveManager can read/write ASCII files.<br>
+      (for repairing archives the hard way)<br>
+      <a href="doc/atac/default.htm">atac</a> allows to read arrays, more example tcl/tk scripts
+      to list channels, dump values, browse values in a list box or do X-Y-Plots. </li>
+    <li>02/09/2000<br>
+      Intruduced version/release scheme to better keep track of changes since the software is no
+      longer only at LANL.<br>
+      First Release, <font color="#0000A0">Version 1.0</font>.<br>
+      Fixed memory leak on RedHat 6.x (should appear on all systems that use that version og
+      egcs) by replacing std::string with self-written stdString, maintaining API.<br>
+      Fixed CtrlInfo size problem for compatibility with wrong size calculation of original
+      engine. </li>
+    <li>01/28/2000<br>
+      CGIExport: support for retrieving status info and &quot;filled&quot; export where
+      unchanged values are repeated; channel list and channel information are now sorted.<br>
+      ATAC: Scalar access to data; allows to create e.g. beam statistics with plot.<br>
+      WinBrowser: Fixed axis plotting code.</li>
+    <li>12/18/1999<br>
+      I/O Library: Split pure interface classes from the actual implementation for the original,
+      binary data file format. This will now allow the independedn developement of other data
+      file formats. <br>
+      ATAC: Started TCL interface to the I/O library. </li>
+    <li>11/08/1999<br>
+      The Archive Engine is now multithreaded.<br>
+      Fixes as a result of Test run on LEDA at LANL.<br>
+      In a test setup the Engine ran fine until the disk got full (PC, original configuration
+      files from LEDA, ca. 1200 channels every 30 secs, free disk space of 200MB used after 5-7
+      days).<br>
+      Switched to/added standard EPICS make system Makefiles.</li>
+    <li>10/18/1999<br>
+      Profiled &amp; enhanced engine:<br>
+      Reduced #of disk accesses.</li>
+    <li>9/24/1999<br>
+      No warnings left with MS VC++ or g++ (egcs-2.91.66) except for Tools/gnu_regex.c (only
+      needed for Win32).<br>
+      Eliminated calls to string::copy to make it work on RedHat 5.2.<br>
+      Some changes to the Engine to improve performance at higher rate of incoming values. </li>
+    <li>9/15/1999<br>
+      The new archive engine can read the config files that we use on LEDA and even does some of
+      what's written in there. It does handle disabling channels and creates new data files,
+      e.g. one per day. The web interface is still simple and on a fixed port (4812), but
+      already shows status information for the engine, groups, channels, and allows adding
+      channels to groups (not permanent, though).<br>
+      The IO-library has only a few warnings left when compiled with egcs (no warnings with MS
+      VC). Several bugs have been eliminated. I'm pretty sure that the sequential readout part
+      can stay as it is, buffered read might also be OK. The write portion is likely to change
+      while I'm still working on the engine. As soon as the engine is believed to be stable
+      enough so that I can run it in parallel to the old engine I'll 'freeze' the IO-library by
+      actually building it as a library. I might also need a more sophisticated version number
+      scheme then. </li>
+    <li>6/28/1999<br>
+      Compiles on Solaris with egcs </li>
+    <li>6/25/1999<br>
+      The Archive class now takes a full pathname (with '/' or '\' on Win32, Unix paths with '/'
+      only) and opens data files in that directory without calling chdir but generating the
+      appropriate names. Thus you can now open more than one Archive. </li>
+  </ul>
+  <hr>
+  <a HREF="mailto:kasemir@lanl.gov"><p>-Kay (kasemir@lanl.gov)</a></p>
+</blockquote>
+</font>
+</body>
+</html>

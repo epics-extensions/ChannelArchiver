@@ -1,0 +1,36 @@
+<html>
+
+<head>
+<title>ATAC Example</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a NAME="Main">Command: XYPlot.tk</a></h1>
+  <p><br>
+  <b>Syntax:</b> wish XYPlot.tk archive xChannelName yChannelName [ time ]<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <em>time as
+  &quot;YYYY/MM/DD hh:mm:ss&quot; in 24h format</em></p>
+  <p><strong>Function:</strong></p>
+  <p>Plot two array channels as an X/Y plot.</p>
+  <p>Allows to move to the previous/next X/Y pair.</p>
+  <p><strong>Example Snapshot:</strong></p>
+  <p><img src="xyplot1.gif" width="516" height="597" alt="xyplot1.gif (23887 bytes)"></p>
+  <p><strong>Details:</strong></p>
+  <p>The two array channels must have the same length.</p>
+  <p>An IOC can seldom provide both the X and Y value at exactly the same time, unless
+  specialized code is used to attach the same time stamp to both values before serving them
+  via ChannelAccess.<br>
+  Therefore this plot tool tries to find an X/Y pair whose time stamps are as close as
+  possible to each other. The time stamps found as well as the difference in seconds
+  (&quot;gap&quot;) are displayed.</p>
+  <p>The tool makes no attempt to determine if the X and Y value actually builds a
+  &quot;pair&quot;, instead the user has to look at the gap value and decide if the values
+  found are together &quot;close enough&quot; in time to be considered a valid X-Y pair.</p>
+  <hr WIDTH="40%" ALIGN="LEFT">
+</blockquote>
+</font>
+</body>
+</html>

@@ -1,0 +1,238 @@
+#!/usr/bin/wish
+#######################################################################
+# Demo of plotting from archive with BLT
+#######################################################################
+
+source atacTools.tcl
+source atacGraph.tk
+
+# Globals --------------------------------------------
+# graph:
+#	BLT graph ID
+# startStamp, endStamp:
+#	visible time range
+# samples:
+#	Number of samples shown in plot
+# archiveId:
+#	atac archive ID
+# channelName(0), channelName(1), ...:
+#	Channel names.
+#   indices 0, 1, ... are also used as keys for atacGraph routines
+
+proc usage {} {
+	global argv0
+	puts "USAGE: $argv0 archive channelName ?channelName? ..."
+
+	exit 1
+}      
+
+set showArchiveName 0
+set samples 0
+
+#################################
+# Parse args
+#
+set argc [ llength $argv ]
+if { $argc < 2 } { usage }
+
+set archiveName [ lindex $argv 0 ]
+set key 0
+foreach name [ lrange $argv 1 end ] {
+	set channelName($key) $name
+	incr key
+}
+
+set archiveId [ archive open $archiveName ]
+
+#################################
+# GUI
+#
+option add *background #AEC9D2
+
+set height 30
+
+if { $showArchiveName } {
+	frame .archivename
+	label .archivename.lbl -text "Archive:" -width 10
+	entry .archivename.entry -textvariable archiveName
+	pack .archivename.lbl -side left
+	pack .archivename.entry -side right -expand yes -fill x
+	pack .archivename -expand yes -fill x
+}
+
+createAtacGraph .g
+set graph .g
+pack .g -expand yes -fill both
+
+frame .start
+label .start.lbl -text "Start:" -width 10
+entry .start.entry -textvariable startStamp -width 30
+pack .start.lbl -side left
+pack .start.entry  -side left
+pack .start -expand yes -fill x
+
+frame .end
+label .end.lbl -text "End:" -width 10
+entry .end.entry -textvariable endStamp -width 30
+pack .end.lbl -side left
+pack .end.entry  -side left
+pack .end -expand yes -fill x
+
+frame .samples
+label .samples.lbl -text "Samples:" -width 10
+entry .samples.entry -textvariable samples -width 30
+pack .samples.lbl -side left
+pack .samples.entry  -side left
+pack .samples -expand yes -fill x
+
+frame .buttons
+button .buttons.fastback -command "backward 0.9" -text "<<<"
+button .buttons.backward -command "backward 0.2" -text "<"
+button .buttons.zoomin   -command "zoomIn"       -text "In"
+button .buttons.zoomout  -command "zoomOut"      -text "Out"
+button .buttons.forward  -command "forward 0.2"  -text ">"
+button .buttons.fastfor  -command "forward 0.9"  -text ">>>"
+button .buttons.exit -command "exit" -text "Exit"
+pack .buttons.fastback -side left -padx 5
+pack .buttons.backward -side left -padx 5
+pack .buttons.zoomin   -side left -padx 5
+pack .buttons.zoomout  -side left -padx 5
+pack .buttons.forward  -side left -padx 5
+pack .buttons.fastfor  -side left -padx 5
+pack .buttons.exit     -side right -padx 0
+pack .buttons -expand yes -fill both
+
+update
+
+#########################################################
+
+#  Get the last count samples for channel $channelName($key)
+proc getLastSamples { key count } {
+	global graph archiveId channelName startStamp endStamp
+
+	set channelId [ archive findChannelByName $archiveId $channelName($key) ]
+	set valueId [ channel getLastValue $channelId ]
+	initGraphData $key $channelName($key)
+	while { $count > 0  &&  [ value valid $valueId ] } {
+		prependGraphData  $key $valueId
+		value prev $valueId
+		incr count -1
+	}
+	value close $valueId
+	channel close $channelId
+	addToGraph $key $graph
+
+	set startStamp [ secs2stamp [ getGraphDataStartSecs $key ] ]
+	set endStamp   [ secs2stamp [ getGraphDataEndSecs   $key ] ]
+}
+
+# get values from start to end
+proc getKeyData { key start end } {
+	global samples graph archiveId channelName
+
+	# read one value before start and after end
+	# in order to "fill" the plot to the outsides
+	set channelId [ archive findChannelByName $archiveId $channelName($key) ]
+	set valueId [ channel getValueBeforeTime $channelId $start ]
+	if { ! [ value valid $valueId ] } {
+		set valueId [ channel getValueAfterTime $channelId $start ]
+	}
+	initGraphData $key $channelName($key)
+	while { [ value valid $valueId ] } {
+		addGraphData $key $valueId
+		if { [ value time $valueId ] > $end } break
+		value next $valueId
+	}
+	value close $valueId
+	channel close $channelId
+	addToGraph $key $graph
+	incr samples [ getGraphDataCount $key ]
+}
+
+# get values from start to end
+proc getData { start end } {
+	global samples graph channelName
+
+	set samples 0
+	foreach key [ array names channelName ] {
+		getKeyData $key $start $end
+		update
+	}
+	$graph axis configure x -min [ stamp2secs $start ] -max [ stamp2secs $end ]
+}
+
+# Move start and end of time range
+# by portion of visible range
+proc moveRange { startPortion endPortion } {
+	global startStamp endStamp
+
+	# determine on-graph time range
+	set s0 [ stamp2secs $startStamp ]
+	set s1 [ stamp2secs $endStamp ]
+	set delta [ expr $s1 - $s0 ]
+
+	# find new start...end
+	set startSecs  [ expr $s0 + $startPortion * $delta ] 
+	set endSecs    [ expr $s1 + $endPortion   * $delta ] 
+	set startStamp [ secs2stamp $startSecs ]
+	set endStamp   [ secs2stamp $endSecs   ]
+	update
+
+	getData $startStamp $endStamp
+}
+
+proc forward { portion } {
+	busy hold .
+	update
+	moveRange $portion $portion
+	busy release .
+	update
+}
+
+proc backward { portion } {
+	busy hold .
+	update
+	moveRange -$portion -$portion
+	busy release .
+	update
+}
+
+proc zoomIn {} {
+	busy hold .
+	update
+	moveRange 0.2 -0.2
+	busy release .
+	update
+}
+
+proc zoomOut {} {
+	busy hold .
+	update
+	moveRange -0.8 0.8
+	busy release .
+	update
+}
+
+#########################################################
+# Initialize
+
+busy hold .
+update
+
+# use first channel to determine time range
+# by fetching "count" samples
+set key 0
+set count 100
+getLastSamples $key $count
+
+# Fill this time range for remaining channels
+foreach key [ lrange [ array names channelName ] 1 end ] {
+	getKeyData $key $startStamp $endStamp
+}
+
+busy release .
+
+update
+
+# saveGraph PS .g "snapshot.ps"
+

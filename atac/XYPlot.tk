@@ -1,0 +1,224 @@
+
+source atacTools.tcl
+package require BLT
+namespace import blt::*
+
+proc usage {} {
+	global argv0
+	puts "USAGE: $argv0 archive xChannelName yChannelName \[ time \]"
+	puts "       time as \"YYYY/MM/DD hh:mm:ss\" in 24h format"
+	exit 1
+}
+
+#################################
+# Parse args
+#
+set argc [ llength $argv ]
+if { $argc < 3 } { usage }
+
+set archiveName  [ lindex $argv 0 ]
+set xChannelName [ lindex $argv 1 ]
+set yChannelName [ lindex $argv 2 ]
+if { $argc > 3 } {
+	set time     [ lindex $argv 3 ]
+} else {
+	set time	0
+}
+
+#########################################################################
+# Globals:
+set archiveId	0
+set xChannelId	0
+set yChannelId	0
+set xValueId	0
+set xStamp      0
+set yStamp      0
+set gap         0
+# yValueId is temporary
+
+#########################################################################
+# GUI
+#
+option add *background #AEC9D2 
+
+set textWidth 10
+frame .archivename
+label .archivename.lbl -text "Archive:" -width $textWidth
+entry .archivename.entry -textvariable archiveName
+pack .archivename.lbl -side left
+pack .archivename.entry -side right -expand yes -fill x
+pack .archivename -expand yes -fill x
+
+frame .xchannelname
+label .xchannelname.lbl -text "X Channel:" -width $textWidth
+entry .xchannelname.entry -textvariable xChannelName
+button .xchannelname.info -text "?" -command { createChannelInfo $archiveName $xChannelName }
+pack .xchannelname.lbl -side left
+pack .xchannelname.entry -side left -expand yes -fill x
+pack .xchannelname.info -side right
+pack .xchannelname -expand yes -fill x
+
+frame .ychannelname
+label .ychannelname.lbl -text "Y Channel:" -width $textWidth
+entry .ychannelname.entry -textvariable yChannelName
+button .ychannelname.info -text "?" -command { createChannelInfo $archiveName $yChannelName }
+pack .ychannelname.lbl -side left
+pack .ychannelname.entry -side left -expand yes -fill x
+pack .ychannelname.info -side right
+pack .ychannelname -expand yes -fill x
+
+frame .start
+label .start.lbl -text "Time:" -width $textWidth
+entry .start.entry -textvariable time
+pack .start.lbl -side left
+pack .start.entry -side right -expand yes -fill x
+pack .start -expand yes -fill x
+
+set xygraph [ graph .xy -title "X/Y Plot" ]
+pack $xygraph
+vector xData yData
+$xygraph element create data -xdata xData -ydata yData -symbol {} -label {}
+
+frame .times
+label .times.xlbl     -text "X Time:" -width $textWidth
+entry .times.xentry   -textvariable xStamp -width 40
+label .times.ylbl     -text "Y Time:" -width $textWidth
+entry .times.yentry   -textvariable yStamp -width 40
+label .times.gaplbl   -text "Gap:" -width $textWidth
+entry .times.gapentry -textvariable gap
+
+grid .times.xlbl .times.xentry .times.gaplbl .times.gapentry -row 0
+grid .times.ylbl .times.yentry -row 1
+pack .times 
+
+frame .buttons
+button .buttons.restart -command "restart" -text "Restart"
+button .buttons.backward -command "backward" -text "<<<"
+button .buttons.forward  -command "forward" -text ">>>"
+button .buttons.exit -command "exit" -text "Exit"
+
+pack .buttons.restart  -side left  -padx 0
+pack .buttons.backward -side left  -padx 10
+pack .buttons.forward  -side left  -padx 10
+pack .buttons.exit     -side right -padx 0
+pack .buttons -expand yes -fill x
+
+#########################################################################
+#
+
+proc openArchive {} {
+	global archiveId xChannelId yChannelId archiveName xChannelName yChannelName
+
+	set archiveId [ archive open $archiveName ]
+	set xChannelId [ archive findChannelByName $archiveId $xChannelName ]
+	set yChannelId [ archive findChannelByName $archiveId $yChannelName ]
+}
+
+proc closeArchive {} {
+	global archiveId xChannelId yChannelId
+
+	channel close $xChannelId
+	channel close $yChannelId
+	archive close $archiveId
+}
+
+#########################################################################
+# Look for x/y pair close to "when".
+# Set timeVar, xVar, yVar to values found.
+#
+# Result: >=0 Difference in seconds between the original timestamps found
+#          <0 Nothing found
+
+proc getXY { when timeVar xVar yVar } {
+	upvar $xVar x
+	upvar $yVar y
+	upvar $timeVar time
+	global xChannelId yChannelId xValueId xStamp yStamp
+
+	if { $when == 0 } { set when [ channel getFirstTime $xChannelId ] }
+
+	# set xValueId to something close to $time
+	# (maybe it's already there)
+	if { [ value valid $xValueId ] } {
+		if { [ value time $xValueId ] != $when } {
+			value close $xValueId
+			set xValueId [ channel getValueNearTime $xChannelId $when ]
+		}
+	} else {
+		set xValueId [ channel getValueNearTime $xChannelId $when ]
+	}
+	
+	if { ! [ value valid $xValueId ] } { return -1 }
+
+	set xStamp [ value time $xValueId ]
+
+	set yValueId [ channel getValueNearTime $yChannelId $xStamp ]
+	if { ! [ value valid $yValueId ] } { return -1 }
+	
+	set yStamp [ value time $yValueId ]
+	set x [ value get $xValueId ]
+	set y [ value get $yValueId ]
+	value close $yValueId
+
+	set gap [ expr [ stamp2secs $xStamp ] - [ stamp2secs $yStamp ] ]
+	set time [ secs2stamp [ expr [ stamp2secs $yStamp ] + $gap ] ]
+
+	return [ expr abs($gap) ]
+}
+
+#########################################################################
+# Button commands
+#
+
+proc backward {} {
+	global xValueId time gap
+
+	if { ! [ value valid $xValueId ] } { return }
+
+	value prev $xValueId
+	if { ! [ value valid $xValueId ] } {
+		value next $xValueId
+		return
+	}
+
+	set gap [ getXY [ value time $xValueId ] time x y ]
+	if { $gap >= 0 } {
+		xData set $x
+		yData set $y
+	}
+}
+
+proc forward {} {
+	global xValueId time gap
+
+	if { ! [ value valid $xValueId ] } { return }
+
+	value next $xValueId
+	if { ! [ value valid $xValueId ] } {
+		value prev $xValueId
+		return
+	}
+
+	set gap [ getXY [ value time $xValueId ] time x y ]
+	if { $gap >= 0 } {
+		xData set $x
+		yData set $y
+	}
+}
+
+proc restart {} {
+	global time gap
+
+	closeArchive
+	openArchive
+	set gap [ getXY $time time x y ]
+	if { $gap >= 0 } {
+		xData set $x
+		yData set $y
+	}
+}
+
+#########################################################################
+#
+restart
+

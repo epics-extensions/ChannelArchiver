@@ -1,0 +1,31 @@
+  <font size="1">
+  <h3>Command Explanation:</h3>
+  <ul>
+    <li><B>List</B> all channels that match <I>pattern</I></li>
+    <li>Show <B>Info</B> on channels that match <I>pattern</I> or a in <I>names</I> list</li>
+    <li><B>Plot</B> channels that match ... &amp; are within time range</li>
+    <li><B>Get</B> spreadsheet intended to be saved &amp; loaded into e.g. Excel</li>
+  </ul>
+
+  <h3>Hints concerning...</h3>
+  <ul>
+    <li><A HREF=../RegEx.htm><I>pattern</I> Expressions</A></li>
+    <li><A HREF=../Rounding.htm>the <I>round</I> field</A></li>
+    <li><A HREF=../SpreadSheet.htm>Spreadsheet programs</A></li>
+  </ul>
+
+  </font>
+
+<p>
+<IMG SRC="../LineSqueeze.gif" WIDTH=582 HEIGHT=21 BORDER=0>
+</p>
+<ADDRESS>
+<P align=left>
+Requests/comments?<br>
+<a href="mailto:kasemir@lanl.gov">E-Mail: Kay-Uwe Kasemir</a>
+</P>
+</ADDRESS>
+
+</FONT>
+</BLOCKQUOTE>
+</BODY>

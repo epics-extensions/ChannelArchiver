@@ -1,0 +1,64 @@
+<html>
+
+<head>
+<title>ChannelArchiver</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a NAME="Main"><em>ATAC</em>: <i>A TCL Archive client</i></a></h1>
+  <p><i><a href="#Why TCL?">Why TCL?</a>&nbsp; -&nbsp; <a href="#Usage">Usage</a> -&nbsp; <a
+  href="#Example Scripts">Example Scripts</a></i></p>
+  <h2>Motivation</h2>
+  <p>Common requests to the archive are: <ul>
+    <li>&quot;How often was value <i>x</i> above 10 in the last week?&quot; </li>
+    <li>&quot;Show me <i>x</i> times <i>y</i> whenever <i>z</i> is on!&quot; </li>
+    <li>... </li>
+  </ul>
+  <p>Another possible application is the interactive or automated generation of dayly
+  reports.<br>
+  Images of those plots can then be put on Web pages etc.:</p>
+  <p><img src="current.gif" width="700" height="500" alt="current.gif (13095 bytes)"></p>
+  <p>Requests like these will never be easy to answer with a standard GUI tool, instead they
+  require some sort of programming or query <i>language</i>. </p>
+  <h2><a name="Why TCL?">Why TCL?</a></h2>
+  <p>Short answer: Because it was of immediate use at LANL.</p>
+  <p>More reasons: Tool languages like Perl or TCL lack the computing power of SDDS, MatLab,
+  ....,<br>
+  but most programmers know them and with such a scripting language at hand you can generate
+  other formats as needed.</p>
+  <p>TCL was one of the first embeddable scripting langages, it now runs (together with tk
+  for a GUI) on Unix and Win32. So do Perl and Python. Now also with a GUI, in fact the very
+  same tk, though that's faily new and less well known and supported. While I really like
+  Perl, it's emphasis is still on text processing, TCL is faster for numerics.</p>
+  <p>A common problem with tcl was that extensions had to be compiled in, some were mutually
+  exclusive or you could not easily use one extension without getting many others as well.
+  Since version 8.0 dynamic loading is supported.</p>
+  <p>So TCL was chosen. Perl, Python, ... might still follow, but not at a high priority </p>
+  <h2><a name="Usage">Usage</a></h2>
+  <p>After staring tcl (or wish, tcldp, bltwish, ...), load the atac extension: <ul>
+    <pre>source atacTools.tcl</pre>
+  </ul>
+  <p><br>
+  More details on the supported commands <a HREF="index.htm">can be found here.</a> </p>
+  <h2><a name="Example Scripts">Example Scripts</a></h2>
+  <ul>
+    <li><a href="listchannels.htm">listChannels.tcl</a></li>
+    <li><a href="listchannels_tk.htm">ListChannels.tk</a></li>
+    <li><a href="dump.htm">dump.tcl</a></li>
+    <li><a href="seek.htm">seek.tcl</a></li>
+    <li><a href="listbrowser.htm">ListBrowser.tk</a></font><font
+      FACE="Comic Sans MS,Arial, Helvetica"></li>
+    <li><a href="plotbrowser.htm">PlotBrowser.tk</a></li>
+    <li><a href="xyplot.htm">XYPlot.tk</a></li>
+  </ul>
+  <p><img SRC="../rule.gif" WIDTH="582" HEIGHT="9" BORDER="0"></p>
+  <address>
+    Questions/comments? -<a href="mailto:kasemir@lanl.gov">kasemir@lanl.gov</a> 
+  </address>
+</blockquote>
+</font>
+</body>
+</html>

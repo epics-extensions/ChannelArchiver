@@ -1,0 +1,55 @@
+<html>
+
+<head>
+<title>Archive Engine</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a name="Usage">Archive Engine: Timing</a></h1>
+  <h2>Time Stamps</h2>
+  <p>Each ChannelAccess Server provides time-stamped data. An IOC for example stamps each
+  sample when the corresponding record is processed.</p>
+  <p>These time-stamps offer nano-second granularity. Most applications will not require
+  this accuracy, but some hardware-triggered aquisition, utilizing interrupts on a fast CPU,
+  might in fact put the full time stamp resolution to good use.</p>
+  <p>The ChannelArchiver as a generic tool does not know about the origin of the time
+  stamps, but it tries to conserve them.</p>
+  <h2>Archived Data</h2>
+  <p><img src="times.gif" width="640" height="480" alt="times.gif (8732 bytes)" border="1"></p>
+  <p>The above example shows the same value (a knob on a LabVIEW panel), served via
+  different PVs and archived with different methods:<ul>
+    <li>The &quot;Monitor&quot; channel archived every change (up until there are more changes
+      than anticipated, which leads to buffer overwrites, see <a href="usage.htm">configuration</a>)</font><font
+      FACE="Comic Sans MS,Arial, Helvetica"></li>
+    <li>The channel archived with a &quot;1.0 sec&quot; period is archived every second.<br>
+      But: The timestamp written to the archive is not a generated timestamp,<br>
+      rounded to &quot;10.0&quot;, &quot;11.0&quot;, &quot;12.0&quot;, ... seconds.<br>
+      Instead, every second the last sample provided by the ChannelAccess Server is written,
+      conserving the original time stamps<br>
+      (which happened to be 9.9679712, 10.98944, 11.7605488).</li>
+  </ul>
+  <h2>Repeat Counts</h2>
+  <p>To save disk space, the ChannelArchiver writes only changes to the disk.</p>
+  <p>For &quot;Monitor&quot; channels, this happens automatically because ChannelAccess does
+  only report changes. For periodically sampled channels, special &quot;Repeat Counts&quot;
+  are written when a value has not changed.</p>
+  <p><strong>Example:</strong></p>
+  <pre>03/01/2000 16:42:24.983827200 6.50
+03/01/2000 16:42:28.000000000 6.50 Repeat 3
+03/01/2000 16:42:28.308608000 6.62
+03/01/2000 16:42:28.859400000 8.86</pre>
+  <p>This channel was configured with a period of 1 second.<br>
+  After 16:42:24.98, the value 6.50 was repeated three times when checked at 16:42:26,
+  16:42:27 and 16:42:28, before the value changed to &quot;6.62&quot;.</p>
+  <p>A retrieval tool can choose to neglect repeat counts because the time stamp is not
+  an original IOC time stamp but an artificial one (usually easy to spot because the
+  nanoseconds are all 0).<br>
+  For plotting, on the other hand, you might prefer to expand the repeat count into
+  inividual samples.</p>
+</blockquote>
+</font>
+</body>
+</html>

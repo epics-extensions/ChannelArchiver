@@ -1,0 +1,3 @@
+#	Makefile.end: Common section for end of Makefile.Host
+
+include $(TOP)/config/RULES.Host

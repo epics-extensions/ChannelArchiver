@@ -1,0 +1,132 @@
+<HTML>
+<HEAD>
+<TITLE>Class Documentation</TITLE>
+<BODY BGCOLOR=#F0F0FF BACKGROUND="../blueback.jpg">
+<FONT FACE="Comic Sans MS,Arial, Helvetica">
+<BLOCKQUOTE>
+<H1><A NAME=Main>Package: atacGraph.tk</A></H1>
+
+<BR>
+<H2>BLT helpers for ATAC (A Tcl Archive Client)</H2>
+<BR>
+Imports the BLT extension
+and provides helpers for plotting archived data
+in a BLT graph.
+<P>
+The mayor task is <I>not</I> to plot connected lines
+for informational values like "Disconnect" or "Disable" events.
+A perfect solution might stop the current line,
+display an informational text tag and continue
+plotting with the next valid values.
+<P>
+Currently, a different line style is used to indicate
+informational events.
+<BR>
+<H3>Internal organization:</H3>
+<BR>
+<FONT COLOR=#FF0000>
+This format could change,
+please let me know if you use this stuff,
+have better ideas, get to depend on some
+implementation details and would rather not
+see them changed! (kasemir@lanl.gov)
+</FONT>
+<P>
+Each channel is identified by a <I>key</I>
+which might be an integer.
+<P>
+The global (but intended to be internal to atacGraph) variable
+AtacGraph has these parts:
+<UL>
+<LI>AtacGraph(&lt;key&gt;.name): channel name
+<LI>AtacGraph(&lt;key&gt;.data): time/value list
+<LI>AtacGraph(&lt;key&gt;.weight): 0 for non-plottable data, else set to 1
+</UL>
+<P>
+Another global array: AtacColor(&lt;key&gt;): color used for this key
+<H2>Details</H2>
+<UL>
+<LI>
+<B>Syntax:</B> initGraphData key channelName
+<BR>
+Initialize storage for <I>key</I> so that it
+can now hold data for a graph
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> addGraphData key valueId
+<BR>
+Add current archive sample to data variable
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> prependGraphData key valueId
+<BR>
+Prepend current archive sample to data variable
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> getGraphDataCount key
+<BR>
+<B>Returns:</B> Number of data samples
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> getGraphDataStartSecs key
+<BR>
+<B>Returns:</B> seconds of first sample
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> getGraphDataEndSecs key
+<BR>
+<B>Returns:</B> seconds of last sample
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> createAtacGraph graph
+<BR>
+Create a new graph suitable for plotting data.
+<BR>
+The result is a BLT graph widget,
+the path is determined by the "graph" argument.
+<BR>
+In contrast to a standard BLT graph
+this new graph is preset to use time stamps
+for the x-axis.
+<BR>
+<B>Returns:</B> graph
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> addToGraph key graph
+<BR>
+Add data for key to the graph
+<BR>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> saveGraph format graph filename
+<BR>
+Create hardcopy.
+<BR>
+Supported formats: PS, PPM, GIF (w/ ppmtogif installed)
+<BR>
+<PRE>
+</PRE>
+</UL>
+<HR WIDTH=40% ALIGN=LEFT>
+<A HREF="index.htm#Main">Index</A>
+<P ALIGN=CENTER>
+<FONT SIZE=1>
+Created from sources with <I>MakeDoc</I> Perl script.
+</FONT>
+</BLOCKQUOTE>
+</FONT>
+</P>
+</BODY>

@@ -1,0 +1,137 @@
+<HTML>
+<HEAD>
+<TITLE>Class Documentation</TITLE>
+<BODY BGCOLOR=#F0F0FF BACKGROUND="../blueback.jpg">
+<FONT FACE="Comic Sans MS,Arial, Helvetica">
+<BLOCKQUOTE>
+<H1><A NAME=Main>Command: value</A></H1>
+
+<BR>
+<B>Syntax:</B> value subcommand ?options?
+<P>
+<BR>
+See also: <A HREF="archive.htm#Main">archive</A>,
+<A HREF="channel.htm#Main">channel</A>.
+<H2>Details</H2>
+<UL>
+<LI>
+<B>Syntax:</B> <I>value valid valueId</I>
+<BR>
+<B>Returns:</B> 0 or 1
+<BR>
+Use this in loops over values to check if the valueId
+references a valid entry.
+<BR>
+The following subcommands are only defined when a valueId is valid!
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value isInfo valueId</I>
+<BR>
+<B>Returns:</B> 0 or 1
+<BR>
+Some values are not numeric values but purely informational.
+<BR>
+In that case <I>value status</I>  returns
+<BR>
+<UL>
+<LI>Archive_Off
+<LI>Disconnected
+<LI>Disabled
+<LI>... maybe more
+</UL>
+<BR>
+To check for such "info" values, this command can be used.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value get valueId</I>
+<BR>
+<B>Returns:</B> numeric/double, list if valueId references array
+<BR>
+Get numeric value of current valueId.
+<BR>
+(arrays/lists not implemented, yet)
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value text valueId</I>
+<BR>
+<B>Returns:</B> text
+<BR>
+Get current value of current valueId formatted as text.
+<br>
+For enumerated values this function will return
+the state text assiciated with the value
+while <I>value get</I> would only provide
+the integer code.
+<BR>
+(arrays/lists not implemented, yet)
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value time valueId</I>
+<BR>
+<B>Returns:</B> time-string as "yyyy/mm/dd hh:mm:ss.nanosec"
+<BR>
+Get time stamp of current valueId.
+<BR>
+The time string is in an ASCII-sortable format with 24h hours,
+which is useful for display mostly.
+For further calculations you might have to split it into numbers.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value status valueId</I>
+<BR>
+<B>Returns:</B> status-string
+<BR>
+Get status of current valueId.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value next valueId</I>
+<BR>
+<B>Returns:</B> 0 or 1
+<BR>
+Make valueId reference next value
+<BR>
+The return values is the same as <I>value valid</I>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value prev valueId</I>
+<BR>
+<B>Returns:</B> 0 or 1
+<BR>
+Make valueId reference previous value
+<BR>
+The return values is the same as <I>value valid</I>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value type valueId</I>
+<BR>
+<B>Returns:</B> string describing type
+<BR>
+Get type of current value for valueId.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>value close valueId</I>
+<BR>
+Invalidate valueId when no longer used.<BR>
+(Does not return error when Id was invalid)
+<PRE>
+</PRE>
+</UL>
+<HR WIDTH=40% ALIGN=LEFT>
+<A HREF="index.htm#Main">Index</A>
+<P ALIGN=CENTER>
+<FONT SIZE=1>
+Created from sources with <I>MakeDoc</I> Perl script.
+</FONT>
+</BLOCKQUOTE>
+</FONT>
+</P>
+</BODY>

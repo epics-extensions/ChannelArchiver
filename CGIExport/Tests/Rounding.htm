@@ -1,0 +1,82 @@
+<html>
+
+<head>
+<title>Export: Rounding</title>
+</head>
+
+<body bgcolor="#FFFFFF" vlink="#0000FF" background="blueback.jpg">
+<font face="Comic Sans MS, Arial, Helvetica">
+
+<blockquote>
+ <h1>Export: Rounding of Time Stamps</h1>
+
+ <h2>Problem</h2>
+
+The EPICS time stamps provide accuracy up to the nanosecond level
+and the ChannelArchiver saves those stamps without loss.
+The clocks of multiple I/O controllers can be synchronized
+to a high degree, so time stamps remain comparable
+even if the channels originate from different machines.
+<BR>
+A problem arises when you compare different channels.
+The time stamps might differ slightly because a single CPU cannot
+scan several channels exactly at once.
+In addition, scan tasks on different machines are not synchronized,
+you might also want to compare channels that were
+scanned at different rates or were archived on change ('monitored').
+<BR>
+The net result is that for a given exact point in time the archiver
+will seldom find more than one value.
+When exporting in a spreadsheet format, '#N/A' is used to indicate this:
+<P>
+<CENTER>
+<TABLE BORDER=1>
+<TR><TH>Time</TH><TH> A</TH><TH> B</TH></TR>
+<TR><TD>5/15/1998 10:50:30.899910084</TD><TD>1         </TD><TD>  #N/A</TD></TR>
+<TR><TD>5/15/1998 10:50:31.149910074</TD><TD>    #N/A   </TD><TD> 75.2</TD></TR>
+<TR><TD>5/15/1998 10:51:01.166575540</TD><TD>    #N/A   </TD><TD> 75.8</TD></TR>
+<TR><TD>5/15/1998 10:51:01.183242206</TD><TD>    1        </TD><TD>  #N/A</TD></TR>
+<TR><TD>5/15/1998 10:51:31.166574340 </TD><TD>   #N/A  </TD><TD>  76.4</TD></TR>
+<TR><TD>5/15/1998 10:51:31.183241006</TD><TD>    1 </TD><TD>         #N/A</TD></TR>
+</TABLE>
+</CENTER>
+<P>
+
+You can still plot this data, even with interpolated lines,
+but calculations like "A-B" will always yield '#N/A' for the example above
+since either A of B is undefined.
+
+ <h2>Solution</h2>
+
+When it's not imperative to know the exact time stamps,
+the export module can round adjacent time stamps.
+If the data from the example is rounded to be within 1 second,
+the result becomes:
+<P>
+<CENTER>
+<TABLE BORDER=1>
+<TR><TH>Time</TH><TH> A</TH><TH> B</TH></TR>
+<TR><TD>5/15/1998 10:50:31.024910092  </TD><TD>  1   </TD><TD>    75.2</TD></TR>
+<TR><TD>5/15/1998 10:51:01.174908876  </TD><TD>  1   </TD><TD>    75.8</TD></TR>
+<TR><TD>5/15/1998 10:51:31.174907684  </TD><TD>  1   </TD><TD>    76.4</TD></TR>
+</TABLE>
+</CENTER>
+<P>
+
+To remind you that these time stamps are not the
+exact ones from the archive,
+a comment is added to the header of the exported data.
+<P>
+
+<HR WIDTH=80%>
+
+<ADDRESS>
+Requests/comments?<br>
+<a href="mailto:kasemir@lanl.gov">E-Mail: Kay-Uwe Kasemir</a><br>
+</ADDRESS>
+
+</blockquote>
+</font>
+</body>
+</html>
+

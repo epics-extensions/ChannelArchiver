@@ -1,0 +1,9 @@
+#	Makefile.Host
+
+include ../../Make.cfg
+
+SRCS += Export.cc
+
+PROD := ArchiveExport
+
+include ../../Make.end

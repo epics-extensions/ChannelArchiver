@@ -1,0 +1,79 @@
+<html>
+
+<head>
+<title>Archive Engine</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a name="Usage">Archive Engine Usage</a></h1>
+  <h2>Configuration Files</h2>
+  <p>This new engine is intended to read the same configuration files as the current engine,
+  so you might want to check the previous documentation until this manual has better
+  content. </p>
+  <p>Basic layout of config files: </p>
+  <pre>  <em>&lt;ChannelName&gt;  &lt;Period&gt; [Monitor] [Disable]</em></pre>
+  <ul>
+    <li>The scan <em>period</em> is given in seconds </li>
+    <li>a monitored channel is archived <em>on change</em>.<br>
+      The scan period should then be the estimated rate of change because it is used to allocate
+      internal buffers.<br>
+      When you get &quot;overrun&quot; warning messages from the running engine, the estimated
+      period for that monitored channel needs to be decreased.</li>
+    <li>a disabling channel will disable the current group</li>
+  </ul>
+  <p>Special commands:<ul>
+    <li><em># ......</em><br>
+      Comment, ignored by engine.</li>
+    <li><em>!group &lt;filename&gt;</em><br>
+      Read given file and treat all channels in there as a group</li>
+    <li><em>!default_period &lt;seconds&gt;<br>
+      </em>When no period is provided, this value will be used</li>
+    <li><em>!write_period &lt;seconds&gt;<br>
+      </em>Time between writes to disk</li>
+    <li><em>!buffer_reserve</em><br>
+      To buffer the samples between writes to the disk, the engine keeps a memory buffer for
+      each channel.<br>
+      The size of this buffer is<br>
+      &nbsp;&nbsp;&nbsp; <em>buffer_reserve * write_period/scan_period<br>
+      </em>Since writes can be delayed by other tasks, disk activity etc., the buffer is usually
+      bigger than the minimum required: buffer_reserve defaults to 3.<br>
+      If you get &quot;override&quot; messages, you should</li>
+    <ul>
+      <li>Check if the offending channel is tagged <em>Monitor</em>. In that case the <em>period</em>
+        estimate might bee too large. </li>
+      <li>Increase <em>buffer_reserve</em> (global for all channels)</li>
+    </ul>
+    <li>others...</li>
+  </ul>
+  <h2>Start/stop</h2>
+  <p>The engine is started like this:</p>
+  <pre><em>ArchiveEngine [options] &lt;config-file&gt;</em></pre>
+  <p>Options: <ul>
+    <li>-d &lt;description&gt; : set engine's description (for HTTP display) </li>
+    <li>-l &lt;log-file&gt; : write to log file (in addition to stdout)</li>
+    <li>-p &lt;port&gt; : run HTTP-server on given port (default: 4812)</li>
+  </ul>
+  <p>From now on, you can watch the engine's status with any web-browser pointed to</p>
+  <blockquote>
+    <p>http://&lt;host where engine is running&gt;:&lt;port&gt;</p>
+  </blockquote>
+  <p>e.g. <a href="http://localhost:4812">http://localhost:4812</a></p>
+  <p>To stop the engine, use the special URL .../stop, e.g. <a
+  href="http://localhost:4812/stop">http://localhost:4812/stop</a>.<br>
+  With password protection enabled (has to be compiled in, see Engine/Config.h for
+  configuration), you will be prompted for a user-name and password. In Engine/Tools there
+  is an example tcl script that stops the engine with a user name and password in case you
+  want to stop the engine from within a script and not interactively.</p>
+  <h2>Persistent configuration</h2>
+  <p>When the configuration is changes via the Web interface (channels added etc.), the
+  original configuration files are <em>not </em>changed.<br>
+  Instead, the engine tries to write a <em>new</em> set of configuration files in a
+  &quot;cfg&quot; subdirectory. After a shutdown, a system like cvs or edit-and-compare can
+  then be used to merge the online changes into the original files. (better ideas welcome)</p>
+</blockquote>
+</font>
+</body>
+</html>

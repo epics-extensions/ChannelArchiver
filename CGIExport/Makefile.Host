@@ -1,0 +1,17 @@
+#	Makefile.Host
+
+include ../../Make.cfg
+include ../../Make.ver
+
+USR_CXXFLAGS_WIN32 += -DGNUPLOT_PROGRAM=\"c:\\Progra~1\\gnuplot3.7\\wgnuplot.exe\"
+USR_CXXFLAGS_Linux += -DGNUPLOT_PROGRAM=\"`which gnuplot`\"
+USR_CXXFLAGS_DEFAULT += -DGNUPLOT_PROGRAM=\"/opt/apache/htdocs/archive/cgi/gnuplot\"
+CXXFLAGS += -DCGIEXPORT_VERSION=\"$(VERSION).$(RELEASE)\"
+
+SRCS += CGIInput.cc
+SRCS += HTMLPage.cc
+SRCS += main.cc
+
+PROD := CGIExport
+
+include ../../Make.end

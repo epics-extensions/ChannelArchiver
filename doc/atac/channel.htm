@@ -1,0 +1,119 @@
+<HTML>
+<HEAD>
+<TITLE>Class Documentation</TITLE>
+<BODY BGCOLOR=#F0F0FF BACKGROUND="../blueback.jpg">
+<FONT FACE="Comic Sans MS,Arial, Helvetica">
+<BLOCKQUOTE>
+<H1><A NAME=Main>Command: channel</A></H1>
+
+<BR>
+<B>Syntax:</B> channel subcommand ?options?
+<BR>
+<P>
+See the documentation for <A HREF="archive.htm#Main">archive</A> on how to obtain a channelId.
+<BR>
+See also: <A HREF="value.htm#Main">value</A>.
+<H2>Details</H2>
+<UL>
+<LI>
+<B>Syntax:</B> <I>channel valid channelId</I>
+<BR>
+<B>Returns:</B> 0 or 1
+<BR>
+Use this in loops over channels to check if the channelId
+references a valid entry.
+<BR>
+The following subcommands are only defined when a channelId is valid!
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel name channelId</I>
+<BR>
+<B>Returns:</B> string
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel next channelId</I>
+<BR>
+<B>Returns:</B> 0 or 1
+<BR>
+Make channelId reference next channel
+(in no specific order).
+<BR>
+The return values is the same as <I>channel valid</I>
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel getFirstTime channelId</I>
+<BR>
+<B>Returns:</B> timestamp
+<BR>
+Get stamp for when this channel was first archived.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel getLastTime channelId</I>
+<BR>
+<B>Returns:</B> timestamp
+<BR>
+Get timestamp for when this channel was last archived.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel getFirstValue channelId</I>
+<BR>
+<B>Returns:</B> valueId
+<BR>
+Return first value that's in the archive.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel getLastValue channelId</I>
+<BR>
+<B>Returns:</B> valueId
+<BR>
+Return last value that's in the archive.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel getValueAfterTime channelId timestamp</I>
+<BR>
+<B>Returns:</B> valueId
+<BR>
+Return first value in the archive that's following the given timestamp.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel getValueNearTime channelId timestamp</I>
+<BR>
+<B>Returns:</B> valueId
+<BR>
+Return first value in the archive that's following the given timestamp.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel getValueBeforeTime channelId timestamp</I>
+<BR>
+<B>Returns:</B> valueId
+<BR>
+Return last value in the archive that's immediately before the given timestamp.
+<PRE>
+</PRE>
+<LI>
+<B>Syntax:</B> <I>channel close channelId</I>
+<BR>
+Invalidate channelId when no longer used.<BR>
+(Does not return error when Id was invalid)
+<PRE>
+</PRE>
+</UL>
+<HR WIDTH=40% ALIGN=LEFT>
+<A HREF="index.htm#Main">Index</A>
+<P ALIGN=CENTER>
+<FONT SIZE=1>
+Created from sources with <I>MakeDoc</I> Perl script.
+</FONT>
+</BLOCKQUOTE>
+</FONT>
+</P>
+</BODY>

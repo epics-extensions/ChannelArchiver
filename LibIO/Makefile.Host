@@ -1,0 +1,61 @@
+#	Makefile.Host
+
+include ../../Make.cfg
+
+#	includes to install from this subproject
+INC += ArchiveTypes.h
+INC += ArchiveException.h
+INC += ArchiveI.h
+INC += ChannelI.h
+INC += ChannelIteratorI.h
+INC += CtrlInfoI.h
+INC += ValueI.h
+INC += ValueIteratorI.h
+INC += HashTable.h
+INC += ExpandingValueIteratorI.h
+INC += LinInterpolValueIteratorI.h
+INC += Exporter.h
+INC += GNUPlotExporter.h
+INC += InfoFilterValueIteratorI.h
+INC += SpreadSheetExporter.h
+INC += DataFile.h
+INC += DirectoryFile.h
+INC += BinArchive.h
+INC += BinChannel.h
+INC += BinChannelIterator.h
+INC += BinCtrlInfo.h
+INC += BinTypes.h
+INC += BinValue.h
+INC += BinValueIterator.h
+
+#	Contents of library:
+LIBSRCS += HashTable.cc
+LIBSRCS += ArchiveException.cc
+LIBSRCS += ArchiveI.cc
+LIBSRCS += ChannelI.cc
+LIBSRCS += ChannelIteratorI.cc
+LIBSRCS += CtrlInfoI.cc
+LIBSRCS += ValueI.cc
+LIBSRCS += ValueIteratorI.cc
+
+LIBSRCS += DataFile.cc
+LIBSRCS += DirectoryFile.cc
+LIBSRCS += BinArchive.cc
+LIBSRCS += BinChannel.cc
+LIBSRCS += BinChannelIterator.cc
+LIBSRCS += BinCtrlInfo.cc
+LIBSRCS += BinValue.cc
+LIBSRCS += BinValueIterator.cc
+
+LIBSRCS += ExpandingValueIteratorI.cc
+LIBSRCS += LinInterpolValueIteratorI.cc
+LIBSRCS += Exporter.cc
+LIBSRCS += SpreadSheetExporter.cc
+LIBSRCS += GNUPlotExporter.cc
+
+#       Library to build:
+#       lib$(LIBRARY).a  or   ..dll/..exp/..lib
+#
+LIBRARY := ChanArchIO
+
+include ../../Make.end

@@ -1,0 +1,76 @@
+<html>
+
+<head>
+<title>Regular Expressions</title>
+</head>
+
+<body bgcolor="#FFFFFF" vlink="#0000FF" background="blueback.jpg">
+<font face="Comic Sans MS, Arial, Helvetica">
+
+<blockquote>
+ <h1>Regular Expressions</h1>
+
+The name matching algorithm uses <I>Regular Expressions</I>
+like Perl or most UNIX tools (grep, vi, sed, awk, ...).
+Regular Expressions are very powerful but must not be confused with
+the primitive DOS filename patterns.
+
+ <h2>Regular Expressions vs. DOS filename pattens</h2>
+
+<CENTER>
+<TABLE BORDER=1>
+<TR><TH>Filename Patten</TH><TH>Reg.Exp..</TH><TH>Meaning</TH></TR>
+<TR><TD>?</TD><TD>.</TD><TD>Any Single Character</TD></TR>
+<TR><TD>*</TD><TD>.*</TD><TD>Zero or More Characters</TD></TR>
+</TABLE>
+</CENTER>
+
+ <h2>More Regular Expressions</h2>
+
+<CENTER>
+<TABLE BORDER=1>
+<TR><TH>Reg.Expr.</TH><TH>Meaning</TH></TR>
+<TR><TD>^</TD><TD>Start</TD></TR>
+<TR><TD>$</TD><TD>End</TD></TR>
+<TR><TD>.</TD><TD>any character</TD></TR>
+<TR><TD>a?</TD><TD>'a' or no 'a'</TD></TR>
+<TR><TD>a*</TD><TD>zero or more 'a'</TD></TR>
+<TR><TD>a+</TD><TD>one or more 'a'</TD></TR>
+<TR><TD>.+</TD><TD>one or more arb. characters</TD></TR>
+<TR><TD>a|b</TD><TD>'a' or 'b'</TD></TR>
+<TR><TD>[0-9]</TD><TD>'0' or '1' or ... or '9'</TD></TR>
+<TR><TD>()</TD><TD>grouping of subexpressions</TD></TR>
+</TABLE>
+</CENTER>
+
+
+ <h2>Examples</h2>
+
+<CENTER>
+<TABLE BORDER=1>
+<TR><TH>Reg.Expr.</TH><TH>Matches...</TH></TR>
+<TR><TD>Temp</TD><TD>Any Channel containing 'Temp'</TD></TR>
+<TR><TD>Temp$</TD><TD>Any Channel <I>ending</I> in 'Temp'</TD></TR>
+<TR><TD>^RFQHR</TD><TD>Any Channel <I>starting</I> with 'RFQHR'</TD></TR>
+<TR><TD>Tin_[0-9]+_sig$</TD><TD>Channels ending in 'Tin_&lt;NUMBER&gt;_sig'</TD></TR>
+<TR><TD>^XYZSys_Temp[2-3]$</TD><TD>'XYZSys_Temp2' or 'XYZSys_Temp3' </TD></TR>
+<TR><TD>Pwr_(in)|(out)</TD><TD>Channels containing 'Pwr_in' or  'Pwr_out'</TD></TR>
+</TABLE>
+</CENTER>
+
+
+
+<P>
+
+<HR WIDTH=80%>
+
+<ADDRESS>
+Requests/comments?<br>
+<a href="mailto:kasemir@lanl.gov">E-Mail: Kay-Uwe Kasemir</a><br>
+</ADDRESS>
+
+</blockquote>
+</font>
+</body>
+</html>
+

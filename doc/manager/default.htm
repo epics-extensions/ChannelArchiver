@@ -1,0 +1,118 @@
+<html>
+
+<head>
+<title>Archive Manager</title>
+</head>
+
+<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
+<font FACE="Comic Sans MS,Arial, Helvetica">
+
+<blockquote>
+  <h1><a name="Main">Archive Manager</a></h1>
+  <p><a href="#usage">Usage</a> - <a href="#Background">Background</a> - <a href="#Examples">Examples</a>
+  - <a href="#Note">Creating new archives</a></p>
+  <p>The ArchiveManager tool started as a test for the archive I/O library.<br>
+  It can be used for basic archive data file maintainance.</p>
+  <p>It evolved into command-line monster, but archive repairs on GB files take time and
+  this tool can run batch-driven over weekends.</p>
+  <h2><a name="usage">Usage</a></h2>
+  <p>The tool displays an option summary like this: </p>
+  <pre> ArchiveManager [options]  &lt;archive&gt;
+        options:
+        -i                     : show archive information
+        -T                     : test archive
+        -m &lt;regular expression&gt;: list matching names
+        -c &lt;channel name&gt;      : use given channel
+        -s &lt;time&gt;              : start time as mm/dd/yyyy hh:mm:ss[.nano-secs]
+        -e &lt;time&gt;              : end time (exclusive)
+        -x &lt;new directory file&gt;: export data into new archive
+        -r &lt;repeat count limit&gt;: for export: remove all 'repeat' entries beyond limit
+        -h &lt;channel name&gt;      : show headers for channel
+        -O &lt;channel name&gt;      : output ASCII dump for channel
+        -I &lt;dump file&gt;         : read ASCII dump for channel into archive	</pre>
+  <h2><a name="Background">Background</a>:</h2>
+  <p>An easy approach for archiving would be this:</p>
+  <p>For each channel, create an ASCII file and append new values to that file.<br>
+  This format is easy to maintain.</p>
+  <p>Problem: The number of open files is quite limited on all operating systems.<br>
+  The archiver would have to open each file, append values, close it and move on to the next
+  channel. This is much too slow!</p>
+  <p>Idea of the ChannelArchiver: All channels are written into a single file. The list of
+  channel names, the first and last position for each channel etc. is kept in a disk-based
+  hash table. Furthermore, a binary format is used to save space and time.</p>
+  <p>The disk-based hash-table is the &quot;directory&quot; file, by default called
+  &quot;freq_directory&quot;.<br>
+  As for a the data, one file per day (default) is used.<br>
+  (A data file will be updated until all the buffers in there are filled. The filename
+  mostly reflects the date of creation, not the time regime of samples therein) </p>
+  <p>Advantage: This format allows archiving of up to 10000 values per second on a 450 Mhz
+  machine, 100baseT network. Fast retrival to the most recent values is accomplished via the
+  hash table and a pointer to the last entries.</p>
+  <p>Disadvantage: The combination of directory- and data-files must not be disturbed!<br>
+  <font color="#FF0000">Under no circumstances must any single data file be removed or
+  altered, since this will break the interlinked sequence of samples.</font><br>
+  This is not uncommon for database systems, but unfortunately the data management tools for
+  the ChannelArchiver are limited for the time being.</p>
+  <h2><a name="Examples">Examples</a>:</h2>
+  <p><em>ARCH=../../../CATests/LEDA/dir</em></p>
+  <h3>Show time range of archive</h3>
+  <p><em>ArchiveManager $ARCH -i</em></p>
+  <h3>Test archive</h3>
+  <p><em>ArchiveManager $ARCH -T</em></p>
+  <p>Tries to read all values for all channels, reporting errors while doing this.<br>
+  Since a broken archive might be broken in many unexpected ways, this test will always be
+  uncomplete, but if the test succeeds, retrival tools should have no problem looking at the
+  samples.</p>
+  <h3>Show time of first/last sample for specific channel</h3>
+  <p><em>ArchiveManager $ARCH -c is_hvps_actv -i</em></p>
+  <h3>List all channel names</h3>
+  <p><em>ArchiveManager $ARCH</em></p>
+  <h3>List all values for specific channel</h3>
+  <p><em>ArchiveManager $ARCH -c is_hvps_actv</em></p>
+  <h3>... between given times</h3>
+  <p><em>ArchiveManager $ARCH -c is_hvps_actv -s &quot;02/10/2000 17:21:17&quot; -e
+  &quot;02/10/2000 17:43:22&quot;</em></p>
+  <h3>Dump channel in ASCII</h3>
+  <p><em>ArchiveManager $ARCH -O is_hvps_actv &gt;is_hvps_actv.txt</em></p>
+  <h3>Add values from ASCII dump (<a href="#Note">see note</a>)</h3>
+  <p><em>ArchiveManager /tmp/new_dir -I is_hvps_actv.txt</em></p>
+  <h3>Copy archive (<a href="#Note">see note</a>)</h3>
+  <p><u><font color="#008000">This is the major repair facility for now (besides editing the
+  ASCII dump):</font></u></p>
+  <p><em>ArchiveManager $ARCH -x /tmp/new_dir</em></p>
+  <p>While copying the samples, bad CtrlInfo entries or samples that go &quot;back in
+  time&quot; are skipped.<br>
+  With the &quot;-r&quot; option, outrageous repeat counts can be removed.</p>
+  <p>The newly generated archive is more tighly packed, consuming less disk space and
+  allowing faster retrival.</p>
+  <h3>Create monthly extract, e.g. for CD-ROM (<a href="#Note">see note</a>)</h3>
+  <p><em>ArchiveManager $ARCH -x /tmp/new_dir -s &quot;01/01/2000 00:00:00&quot; -e
+  &quot;02/01/2000 00:00:00&quot;</em></p>
+  <h3>Restore extract from CD-ROM to new archive (<a href="#Note">see note</a>)</h3>
+  <p><em>ArchiveManager /mnt/cdrom/dir -x /tmp/new_dir -s &quot;01/01/2000 00:00:00&quot;</em></p>
+  <p>(assuming that /mnt/cdrom/dir holds a &quot;January 2000&quot; extract)</p>
+  <hr>
+  <h3><a name="Note">Note on creating new archives</a></h3>
+  <p>The ArchiveManager can create new archives by extracting samples from an existing
+  archive or reading ASCII files. It can also add samples to an existing archive.</p>
+  <p><font color="#FF0000">But:</font> It cannot remove entries from an archive.<br>
+  It cannot add a sample stamped before the last sample for that channel.</p>
+  <p><u>Example:</u><br>
+  If channel X has samples up to &quot;02/01/2000 18:35:12&quot;,<br>
+  you cannot add a sample stamped &quot;02/01/2000 18:00:00&quot; because that would go back
+  in time.</p>
+  <p>Idea for maintaining the archive:<ul>
+    <li>Create a monthly extract and put it on CD-ROM<br>
+      - or weekly, bi-monthly, .. whatever has &quot;CD ROM size&quot;.</li>
+    <li>From that, you can then restore the archive by</li>
+    <ol>
+      <li>copying the first CD over,</li>
+      <li>adding the samples from the next CD,</li>
+      <li>adding the third CD</li>
+      <li>...</li>
+    </ol>
+  </ul>
+</blockquote>
+</font>
+</body>
+</html>

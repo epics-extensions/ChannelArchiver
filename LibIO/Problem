@@ -1,0 +1,21 @@
+bool BinChannel::getFirstValue (ValueIteratorI *arg)
+{
+    BinValueIterator *value = dynamic_cast <BinValueIterator *> (arg);
+
+    if (getArchive () && isValidFilename (getFirstFile()))
+    {
+        FilenameTool full_name;
+
+
+		#error HERE ?!
+        getArchive ()->makeFullFileName (getFirstFile(), full_name);
+
+        return true;
+#if 0
+        return value->attach (this, full_name.getFilename (), getFirstOffset ());
+#endif
+    }
+
+    value->clear ();
+    return false;
+}

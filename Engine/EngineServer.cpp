@@ -499,10 +499,9 @@ static void parseGroup(HTTPClientConnection *connection, const stdString &path)
 
     theEngine->mutex.lock();
     theEngine->attachToCAContext();
-    Configuration *cfg = theEngine->getConfiguration();
-    if (cfg->loadGroup(group_name))
+    if (theEngine->config_file.loadGroup(group_name))
     {
-        cfg->save();
+        theEngine->config_file.save();
         page.line("</I> was added to / reloaded into the engine.");
     }
     else

@@ -50,7 +50,7 @@ Engine::Engine(const stdString &directory_file_name)
     _start_time = epicsTime::getCurrent();
     directory = directory_file_name;
     is_writing = false;
-    _description = "EPICS Channel Archiver Engine";
+    description = "EPICS Channel Archiver Engine";
     the_one_and_only = false;
 
     _get_threshhold = 20.0;
@@ -60,7 +60,6 @@ Engine::Engine(const stdString &directory_file_name)
     _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
     _secs_per_file = BinArchive::SECS_PER_DAY;
     _future_secs = 6*60*60;
-    _configuration = 0; // init. so that setSecsPerFile works
     _archive = new Archive(
         new ENGINE_ARCHIVE_TYPE(directory_file_name, true /* for write */));
     setSecsPerFile(_secs_per_file);
@@ -181,8 +180,6 @@ GroupInfo *Engine::addGroup(const stdString &name)
         group = new GroupInfo(name);
         groups.push_back(group);
     }
-    if (_configuration)
-        _configuration->saveGroup(group);
     return group;
 }
 
@@ -299,30 +296,25 @@ void Engine::setWritePeriod(double period)
 
 void Engine::setDescription(const stdString &description)
 {
-    _description = description;
-    if (_configuration)
-        _configuration->saveEngine();
+    this->description = description;
 }
 
 void Engine::setDefaultPeriod(double period)
 {
     _default_period = period;
-    if (_configuration)
-        _configuration->saveEngine();
+    config_file.save();
 }
 
 void Engine::setGetThreshold(double get_threshhold)
 {
     _get_threshhold = get_threshhold;
-    if (_configuration)
-        _configuration->saveEngine();
+    config_file.save();
 }
 
 void Engine::setBufferReserve(int reserve)
 {
     _buffer_reserve = reserve;
-    if (_configuration)
-        _configuration->saveEngine();
+    config_file.save();
 }
 
 void Engine::setSecsPerFile(double secs_per_file)
@@ -331,8 +323,6 @@ void Engine::setSecsPerFile(double secs_per_file)
     BinArchive *binarch = dynamic_cast<BinArchive *>(_archive->getI());
     if (binarch)
         binarch->setSecsPerFile(_secs_per_file);
-    if (_configuration)
-        _configuration->saveEngine();
 }
 
 void Engine::writeArchive()

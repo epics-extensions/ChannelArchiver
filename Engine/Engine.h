@@ -14,7 +14,7 @@
 #include "ArchiverConfig.h"
 #include "GroupInfo.h"
 #include "ScanList.h"
-#include "Configuration.h"
+#include "ConfigFile.h"
 #include "BinArchive.h"
 
 /// Engine is the main class of the ArchiveEngine program,
@@ -29,12 +29,8 @@ public:
     static void create(const stdString &directory_file_name);
     void shutdown();
 
-    /// Engine will tell this Configuration class about changes,
-    /// so that they can be made persistent
-    ///
-    void setConfiguration(Configuration *c);
-    Configuration *getConfiguration();
-
+    ConfigFile config_file;
+    
 #ifdef USE_PASSWD
     /// Check if user/password are valid
     bool checkUser(const stdString &user, const stdString &pass);
@@ -115,12 +111,12 @@ public:
 
 private:
     Engine(const stdString &directory_file_name);
-    
+
     struct ca_client_context *ca_context;
     
     epicsTime       _start_time;
     stdString       directory;
-    stdString       _description;
+    stdString       description;
     bool            is_writing;
     
     double          _get_threshhold;
@@ -133,7 +129,6 @@ private:
     unsigned long   _secs_per_file;  // roughly: data file period
     double          _future_secs;    // now+_future_secs is considered wrong
 
-    Configuration   *_configuration;
     Archive         *_archive;
 
 #ifdef USE_PASSWD
@@ -145,13 +140,7 @@ private:
 extern Engine *theEngine;
 
 inline const stdString &Engine::getDescription() const
-{   return _description; }
-
-inline void Engine::setConfiguration(Configuration *c)
-{   _configuration = c; }
-
-inline Configuration *Engine::getConfiguration()
-{   return _configuration;  }
+{   return description; }
 
 inline double Engine::getGetThreshold()
 {   return _get_threshhold; }

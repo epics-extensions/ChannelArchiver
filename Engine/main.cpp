@@ -100,15 +100,14 @@ int main(int argc, const char *argv[])
     if (! lock_file.Lock (argv[0]))
         return -1;
 
-    ConfigFile *config = new ConfigFile;
     try
     {
         Engine::create(index_name);
         if (! description.get().empty())
             theEngine->setDescription(description);
-        run = config->load(config_name);
+        run = theEngine->config_file.load(config_name);
         if (run)
-            config->save();
+            theEngine->config_file.save();
     }
     catch (GenericException &e)
     {
@@ -123,7 +122,6 @@ int main(int argc, const char *argv[])
     try
     {
         // Main loop
-        theEngine->setConfiguration(config);
 #ifdef HAVE_SIGACTION
         struct sigaction action;
         memset(&action, 0, sizeof(struct sigaction));
@@ -157,7 +155,6 @@ int main(int argc, const char *argv[])
     LOG_MSG ("Shutting down Engine\n");
     theEngine->shutdown ();    
     LOG_MSG ("Removing lockfile.\n");
-    delete config;
     lock_file.Unlock ();
     if (logfile)
         fclose(logfile);

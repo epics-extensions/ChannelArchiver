@@ -1,11 +1,122 @@
+#include <ctype.h>
+#include <ASCIIParser.h>
+#include <Filename.h>
 #include "Engine.h"
 #include "ConfigFile.h"
-#include <Filename.h>
-#include <ctype.h>
 
 ConfigFile::ConfigFile()
 {
     config_dir = "cfg";
+}
+
+bool ConfigFile::load(const stdString &config_name)
+{
+    this->config_name = config_name;
+    return loadGroup(config_name);
+}
+
+bool ConfigFile::loadGroup(const stdString &group_name)
+{
+    ASCIIParser parser;
+    
+    if (! parser.open(group_name))
+    {
+        LOG_MSG("Config file '%s': cannot open\n", group_name.c_str());
+        return false;
+    }
+
+    // new archive group?
+    GroupInfo *group = theEngine->findGroup(group_name);
+    if (! group)
+    {
+        group = theEngine->addGroup(group_name);
+        if (! group)
+        {
+            LOG_MSG("Config file '%s': cannot add to Engine\n",
+                    group_name.c_str());
+            return false;
+        }
+    }
+
+    file_name = group_name;
+    stdString channel_name;
+    double period;
+    bool monitor, disable;
+    while (getChannel(parser, channel_name, period, monitor, disable))
+        theEngine->addChannel(group, channel_name, period, disable, monitor);
+
+    return true;
+}
+
+bool ConfigFile::save()
+{
+    const stdList<GroupInfo *> & groups = theEngine->groups;
+    stdList<GroupInfo *>::const_iterator group;
+    
+    for (group=groups.begin(); group!=groups.end(); ++group)
+    {
+        if (! saveGroup(*group))
+            return false;
+    }
+
+    return true;
+}
+
+bool ConfigFile::saveGroup(const class GroupInfo *group)
+{
+#ifdef TODO
+    stdString filename;
+    Filename::build(config_dir, group->getName(), filename);
+    FILE *f = fopen(filename.c_str(), "wt");
+    if (! f)
+    {
+        LOG_MSG("Config file '%s': cannot create\n"
+                "(No severe error. Create a '%s' subdirectory\n"
+                " if you want to save updated configuration files).\n",
+                filename.c_str(), config_dir.c_str());
+        return false;
+    }
+    
+    fprintf(f, "# Group: %s\n", group->getName().c_str());
+    fprintf(f, "# This file was auto-created by the ChannelArchiver Engine\n");
+    fprintf(f, "# Instance: %s\n", theEngine->getDescription().c_str());
+    fprintf(f, "\n");
+    fprintf(f, "!write_period\t%g\n", theEngine->getWritePeriod());
+    fprintf(f, "!default_period\t%g\n", theEngine->getDefaultPeriod());
+    fprintf(f, "!get_threshold\t%g\n", theEngine->getGetThreshold());
+    fprintf(f, "!file_size\t%g\n", theEngine->getSecsPerFile()/3600);
+    fprintf(f, "!ignored_future\t%g\n",
+            theEngine->getIgnoredFutureSecs()/3600);
+    fprintf(f, "!buffer_reserve\t%d", theEngine->getBufferReserve());
+    fprintf(f, "\n");
+
+    if (group->getName() == config_name)
+    {
+        const stdList<GroupInfo *> & groups = theEngine->getGroups ();
+        stdList<GroupInfo *>::const_iterator g;
+        
+        for (g=groups.begin(); g!=groups.end(); ++g)
+            if ((*g)->getName ()  != group->getName()) // don't include self
+                fprintf(f, "!group %s\n", (*g)->getName().c_str());
+    }
+
+    const stdList <ChannelInfo *> & channels = group->getChannels();
+    stdList <ChannelInfo *>::const_iterator channel;
+    for (channel=channels.begin(); channel!=channels.end(); ++channel)
+    {
+        fprintf(f, "%s\t%g",
+                (*channel)->getName().c_str(), (*channel)->getPeriod());
+        if ((*channel)->isMonitored())
+            fprintf(f, "\tMonitor");
+        if ((*channel)->isDisabling(group))
+            fprintf(f, "\tDisable");
+        fprintf(f, "\n");
+    }
+    fprintf(f, "# EOF\n\n");
+
+    fclose(f);
+#endif
+    return true;
 }
 
 void ConfigFile::setParameter(const ASCIIParser &parser,
@@ -149,116 +260,6 @@ bool ConfigFile::getChannel(ASCIIParser &parser, stdString &channel,
         if (! *ch) return true;
         setParameter(parser, parameter, ch);
         parameter = '\0';
-    }
-
-    return true;
-}
-
-bool ConfigFile::loadGroup(const stdString &group_name)
-{
-    ASCIIParser parser;
-    
-    if (! parser.open(group_name))
-    {
-        LOG_MSG("Config file '%s': cannot open\n", group_name.c_str());
-        return false;
-    }
-
-    // new archive group?
-    GroupInfo *group = theEngine->findGroup(group_name);
-    if (! group)
-    {
-        group = theEngine->addGroup(group_name);
-        if (! group)
-        {
-            LOG_MSG("Config file '%s': cannot add to Engine\n",
-                    group_name.c_str());
-            return false;
-        }
-    }
-
-    file_name = group_name;
-    stdString channel_name;
-    double period;
-    bool monitor, disable;
-    while (getChannel(parser, channel_name, period, monitor, disable))
-        theEngine->addChannel(group, channel_name, period, disable, monitor);
-
-    return true;
-}
-
-bool ConfigFile::load(const stdString &config_name)
-{
-    this->config_name = config_name;
-    return loadGroup (config_name);
-}
-
-bool ConfigFile::saveGroup(const class GroupInfo *group)
-{
-#ifdef TODO
-    stdString filename;
-    Filename::build(config_dir, group->getName(), filename);
-    FILE *f = fopen(filename.c_str(), "wt");
-    if (! f)
-    {
-        LOG_MSG("Config file '%s': cannot create\n"
-                "(No severe error. Create a '%s' subdirectory\n"
-                " if you want to save updated configuration files).\n",
-                filename.c_str(), config_dir.c_str());
-        return false;
-    }
-    
-    fprintf(f, "# Group: %s\n", group->getName().c_str());
-    fprintf(f, "# This file was auto-created by the ChannelArchiver Engine\n");
-    fprintf(f, "# Instance: %s\n", theEngine->getDescription().c_str());
-    fprintf(f, "\n");
-    fprintf(f, "!write_period\t%g\n", theEngine->getWritePeriod());
-    fprintf(f, "!default_period\t%g\n", theEngine->getDefaultPeriod());
-    fprintf(f, "!get_threshold\t%g\n", theEngine->getGetThreshold());
-    fprintf(f, "!file_size\t%g\n", theEngine->getSecsPerFile()/3600);
-    fprintf(f, "!ignored_future\t%g\n",
-            theEngine->getIgnoredFutureSecs()/3600);
-    fprintf(f, "!buffer_reserve\t%d", theEngine->getBufferReserve());
-    fprintf(f, "\n");
-
-    if (group->getName() == config_name)
-    {
-        const stdList<GroupInfo *> & groups = theEngine->getGroups ();
-        stdList<GroupInfo *>::const_iterator g;
-        
-        for (g=groups.begin(); g!=groups.end(); ++g)
-            if ((*g)->getName ()  != group->getName()) // don't include self
-                fprintf(f, "!group %s\n", (*g)->getName().c_str());
-    }
-
-    const stdList <ChannelInfo *> & channels = group->getChannels();
-    stdList <ChannelInfo *>::const_iterator channel;
-    for (channel=channels.begin(); channel!=channels.end(); ++channel)
-    {
-        fprintf(f, "%s\t%g",
-                (*channel)->getName().c_str(), (*channel)->getPeriod());
-        if ((*channel)->isMonitored())
-            fprintf(f, "\tMonitor");
-        if ((*channel)->isDisabling(group))
-            fprintf(f, "\tDisable");
-        fprintf(f, "\n");
-    }
-    fprintf(f, "# EOF\n\n");
-
-    fclose(f);
-#endif
-    return true;
-}
- 
-bool ConfigFile::save()
-{
-    const stdList<GroupInfo *> & groups = theEngine->groups;
-    stdList<GroupInfo *>::const_iterator group;
-    
-    for (group=groups.begin(); group!=groups.end(); ++group)
-    {
-        if (! saveGroup(*group))
-            return false;
     }
 
     return true;

@@ -151,7 +151,7 @@ proc camGUI::checkJob {} {
   set ::busyIndicator "@"
   for {set row 0} {$row < [llength [camMisc::arcIdx]]} {incr row} {
     camComm::condSet camGUI::aEngines($row,$::iBlocked) \
-	[lindex $::yesno [Blockfile $row]]
+	[lindex $::yesno [file exists [Blockfile $row]]]
 	
     after 10 camComm::CheckRunning $row camGUI::aEngines($row,$::iRun)
     update

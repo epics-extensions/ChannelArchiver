@@ -13,7 +13,7 @@ sub usage()
 {
     print("USAGE: ConvertEngineConfig [-d DTD] old-config new-config\n");
     print("\n");
-    print("This tool reads an old-type ArchiveEngine ASCII config.\n");
+    print("This tool reads an old-type ArchiveEngine ASCII configuration\n");
     print("file and converts it into the current XML config file.\n");
     exit(-1);
 }
@@ -32,6 +32,7 @@ unless (length($opt_d) > 0)
     printf ("to provide the path to your DTD.\n\n");
 }
 my (%params, %groups, $directory, $filesize_warning);
+# Defaults for the global options
 %params = 
 (
  write_period => 30,
@@ -41,25 +42,29 @@ my (%params, %groups, $directory, $filesize_warning);
  buffer_reserve => 3,
  max_repeat_count => 120
 );
-
 $filesize_warning = 0;
 $directory = dirname($infile);
 $infile = basename($infile);
 parse($infile,'fh00');
 dump_xml();
 
-#%groups =
-#(
-# "excas" =>
-# {
-#     "fred" => { period => 5, scan => 1 },
-#     "janet" => { period => 1, monitor => 1, disable => 1 },
-# },
-#);
+# parse(<group file name>, file handle to use)
+# creates something like this:
+# %groups =
+# (
+#  "excas" =>
+#  {
+#      "fred" => { period => 5, scan => 1 },
+#      "janet" => { period => 1, monitor => 1, disable => 1 },
+#  },
+# );
+#
+# file handle is used to that parse() can recurse.
+# 'recurse': See 'recurse'
 sub parse($$)
 {
     my ($group,$fh) = @ARG;
-    my ($channel, $period, $options);
+    my ($channel, $period, $options, $opt, $monitor, $disable);
     $fh++;
     if (not open $fh, "$group")
     {
@@ -73,12 +78,12 @@ sub parse($$)
 	next if (m'\A#'); # Skip comments
 	next if (m'\A\s*\Z'); # Skip empty lines
 	if (m'!(\S+)\s+(\S+)')
-	{   # Parameter?
+	{   # Parameter "!<text> <text>" ?
 	    if ($1 eq "group")
 	    {
 		parse($2,$fh);
 	    }
-	    if (length($params{$1}))
+	    elsif (length($params{$1}) > 0)
 	    {
 		$params{$1} = $2;
 		if ($1 eq "file_size")
@@ -86,34 +91,70 @@ sub parse($$)
 		    $params{$1} = $2/24 * 10;
 		    if (not $filesize_warning)
 		    {
-			printf("The 'file_size' parameter used to be in hours,\n");
-			printf("but has been changed to MB.\n");
-			printf("The automated conversion is arbitrary, assuming a\n");
-			printf("data file size of about 10 MB per day (24h).\n");
+			printf("%s, line %d:\n", $group, $NR);
+			printf("\tThe 'file_size' parameter used to be in hours,\n");
+			printf("\tbut has been changed to MB.\n");
+			printf("\tThe automated conversion is arbitrary, assuming a\n");
+			printf("\tdata file size of about 10 MB per day (24h).\n");
 			$filesize_warning = 1;
 		    }
 		}
 	    }
-	    next;
+	    else
+	    {
+		printf("%s, line %d: Unknown parameter/value '%s' - '%s'\n",
+		       $group, $NR, $1, $2);
+		exit(-2);
+	    }
 	}
-	if (m'(\S+)\s+([0-9\.]+)?(.*)')
-	{
+	elsif (m'\A\s*(\S+)\s+([0-9\.]+)(\s+.+)?\Z')
+	{   # <channel> <period> [Monitor|Disable]*
 	    $channel = $1;
 	    $period = $2;
 	    $options = $3;
-	    $groups{$group}{$channel}{period} = $period;
-	    if ($options =~ m'[Mm]onitor')
+	    $monitor = $disable = 0;
+	    if (not defined($period)  or  $period <= 0)
 	    {
-		$groups{$group}{$channel}{monitor} = 1;
+		printf("%s, line %d: Invalid scan period\n",
+		       $group, $NR);
+		exit(-3);
+	    }
+	    if (length($options) > 0)
+	    {
+		foreach $opt ( split /\s+/, $options )
+		{
+		    if ($opt =~ m'\A[Mm]onitor\Z')
+		    {
+			$monitor = 1;
+		    }
+		    elsif ($opt =~ m'\A[Dd]isable\Z')
+		    {
+			$disable = 1;
+		    }
+		    elsif (length($opt) > 0)
+		    {
+			printf("%s, line %d: Invalid option '%s'\n",
+			       $group, $NR, $opt);
+			exit(-4);
+		    }
+		}
+	    }
+	    $groups{$group}{$channel}{period} = $period;
+	    if ($monitor)
+	    {
+		$groups{$group}{$channel}{monitor} = $monitor;
 	    }
 	    else
 	    {
 		$groups{$group}{$channel}{scan} = 1;
 	    }
-	    if ($options =~ m'[Dd]isable')
-	    {
-		$groups{$group}{$channel}{disable} = 1;
-	    }
+	    $groups{$group}{$channel}{disable} = $disable;
+	}
+	else
+	{
+	    printf("%s, line %d: '%s' is neither comment, option nor channel definition\n",
+		   $group, $NR, $_);
+	    exit(-5);
 	}
     }
     close($fh);

@@ -27,13 +27,19 @@
 
 #include "../ArchiverConfig.h"
 #include "BinArchive.h"
-#include "MultiArchive.h"
 #include "ArgParser.h"
 #include "BinValueIterator.h"
 #include <signal.h>
 #include "ExpandingValueIteratorI.h"
 #include "Filename.h"
 #include "ascii.h"
+
+#ifdef MANAGER_USE_MULTI
+#	include "MultiArchive.h"
+#	define ARCHIVE_TYPE	MultiArchive
+#else
+#	define ARCHIVE_TYPE	BinArchive
+#endif
 
 USING_NAMESPACE_CHANARCH
 using namespace std;
@@ -54,7 +60,7 @@ static void signal_handler (int sig)
 // (leave empty to list all channels)
 void list_channels (const stdString &archive_name, const stdString &pattern)
 {
-	Archive			archive (new BinArchive (archive_name));
+	Archive			archive (new ARCHIVE_TYPE (archive_name));
 	ChannelIterator	channel (archive);
 
 	archive.findChannelByPattern (pattern, channel);
@@ -71,7 +77,7 @@ void list_channels (const stdString &archive_name, const stdString &pattern)
 void list_values (const stdString &archive_name, const stdString &channel_name,
 				const osiTime &start, const osiTime &end)
 {
-	Archive			archive (new BinArchive (archive_name));
+	Archive			archive (new ARCHIVE_TYPE (archive_name));
 	ChannelIterator channel(archive);
 	ValueIterator	value(archive);
 
@@ -93,7 +99,7 @@ void list_values (const stdString &archive_name, const stdString &channel_name,
 void dump (const stdString &archive_name, const stdString &channel_pattern,
 	const osiTime &start, const osiTime &end)
 {
-	Archive			archive (new BinArchive (archive_name));
+	Archive			archive (new ARCHIVE_TYPE (archive_name));
 	ChannelIterator channel(archive);
 	ValueIterator	value(archive);
 
@@ -113,7 +119,7 @@ void dump (const stdString &archive_name, const stdString &channel_pattern,
 
 void show_info (const stdString &archive_name, const stdString &pattern)
 {
-	Archive			archive (new BinArchive (archive_name));
+	Archive			archive (new ARCHIVE_TYPE (archive_name));
 	ChannelIterator	channel (archive);
 	size_t channel_count = 0;
 	osiTime start, end, time;
@@ -141,7 +147,7 @@ void show_info (const stdString &archive_name, const stdString &pattern)
 
 void show_channel_info (const stdString &archive_name, const stdString &channel_name)
 {
-	Archive			archive (new BinArchive (archive_name));
+	Archive			archive (new ARCHIVE_TYPE (archive_name));
 	ChannelIterator channel (archive);
 
 	if (archive.findChannelByName (channel_name, channel))
@@ -155,7 +161,7 @@ void show_channel_info (const stdString &archive_name, const stdString &channel_
 
 void seek_time (const stdString &archive_name, const stdString &channel_name, const osiTime &start)
 {
-	Archive			archive (new BinArchive (archive_name));
+	Archive			archive (new ARCHIVE_TYPE (archive_name));
 	ChannelIterator channel (archive);
 	ValueIterator	value (archive);
 
@@ -293,8 +299,8 @@ void export (const stdString &archive_name,
 
 void compare (const stdString &archive_name, const stdString &target_name)
 {
-	Archive src (new BinArchive (archive_name));
-	Archive dst (new BinArchive (target_name));
+	Archive src (new ARCHIVE_TYPE (archive_name));
+	Archive dst (new ARCHIVE_TYPE (target_name));
 	ChannelIterator src_chan (src);
 	ChannelIterator dst_chan (dst);
 	ValueIterator src_val (src);
@@ -332,7 +338,7 @@ void compare (const stdString &archive_name, const stdString &target_name)
 void expand (const stdString &archive_name, const stdString &channel_name,
 				const osiTime &start, const osiTime &end)
 {
-	Archive			archive (new BinArchive (archive_name));
+	Archive			archive (new ARCHIVE_TYPE (archive_name));
 	ChannelIterator channel(archive);
 
 	if (! archive.findChannelByName (channel_name, channel))
@@ -450,7 +456,7 @@ void headers (const stdString &directory, const stdString &channel_name)
 
 void test (const stdString &directory, const osiTime &start, const osiTime &end)
 {
-	Archive	archive (new BinArchive (directory));
+	Archive	archive (new ARCHIVE_TYPE (directory));
 	ChannelIterator channel(archive);
 	ValueIterator value(archive);
 	size_t chan_errors, errors = 0, channels = 0;
@@ -500,23 +506,10 @@ void test (const stdString &directory, const osiTime &start, const osiTime &end)
 	cout << errors << " errors\n";
 }
 
+// Ever changing experimental routine,
+// usually empty in "useful" versions of the ArchiveManager
 void do_experiment (const stdString &archive_name)
 {
-	Archive archive (new MultiArchive (archive_name));
-	ChannelIterator	channels (archive);
-	ValueIterator	values (archive);
-
-	archive.findFirstChannel (channels);
-	for (/**/;  run && channels;  ++channels)
-	{
-		cout << channels->getName() << endl;
-		cout << "Start: " << channels->getFirstTime() << endl;
-		cout << "End:   " << channels->getLastTime() << endl;
-
-		channels->getFirstValue (values);
-		for (/**/;  run && values;  ++values)
-			cout << *values << endl;
-	}
 }
 
 void Usage ()
@@ -539,7 +532,7 @@ void Usage ()
 	cerr << "\t-C <target>            : Compare: test if all in archive is found in target\n";
 	cerr << "\t-S <time>              : Seek test\n";
 	cerr << "\t-T                     : Test archive\n";
-//	cerr << "\t-E                     : Experiment w/ MultiArchive\n";
+//	cerr << "\t-E                     : Experiment\n";
 }
 
 static void PrintRoutine (void *arg, const stdString &text)

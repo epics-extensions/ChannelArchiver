@@ -107,11 +107,12 @@ sub parse($$)
 		exit(-2);
 	    }
 	}
-	elsif (m'\A\s*(\S+)\s+([0-9\.]+)(\s+.+)?\Z')
+	elsif (m'\A\s*(\S+)\s+([0-9\.]+)(\s+)?(.+)?\Z')
 	{   # <channel> <period> [Monitor|Disable]*
 	    $channel = $1;
 	    $period = $2;
-	    $options = $3;
+	    $opt_delim = $3;
+	    $options = $4;
 	    $monitor = $disable = 0;
 	    if (not defined($period)  or  $period <= 0)
 	    {
@@ -121,6 +122,12 @@ sub parse($$)
 	    }
 	    if (length($options) > 0)
 	    {
+                if (length($opt_delim) <= 0)
+                {
+                    printf("%s, line %d: Missing space between period and options\n",
+                           $group, $NR);
+                    exit(-4);
+                }
 		foreach $opt ( split /\s+/, $options )
 		{
 		    if ($opt =~ m'\A[Mm]onitor\Z')
@@ -135,7 +142,7 @@ sub parse($$)
 		    {
 			printf("%s, line %d: Invalid option '%s'\n",
 			       $group, $NR, $opt);
-			exit(-4);
+			exit(-5);
 		    }
 		}
 	    }
@@ -154,7 +161,7 @@ sub parse($$)
 	{
 	    printf("%s, line %d: '%s' is neither comment, option nor channel definition\n",
 		   $group, $NR, $_);
-	    exit(-5);
+	    exit(-6);
 	}
     }
     close($fh);

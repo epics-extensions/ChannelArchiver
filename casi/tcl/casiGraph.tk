@@ -178,9 +178,11 @@ proc createCasiGraph { graph } {
     $graph grid configure -hide no -dashes { 2 2 }
     $graph xaxis configure -command TimeLabelCommand
     $graph pen create emptyPen -color red -linewidth 0 -symbol cross
-    Blt_Crosshairs $graph
-    Blt_ZoomStack $graph
-    Blt_ActiveLegend $graph
+
+    # Unclear: which version of tcl supports these?
+    #Blt_Crosshairs $graph
+    #Blt_ZoomStack $graph
+    #Blt_ActiveLegend $graph
     return $graph
 }
 

@@ -39,6 +39,14 @@
 	  the ArchiveManager would be.<br>
 	  Later additions will hopefully turn CArDMiner
 	  into a real "data mining" tool.
+      <li>Bug (which needs more attention):
+          The LOG_MSG utility uses a lock. It's possible
+          to deadlock if a LOG_MSG call uses another call
+          which in turn (because of an error) tries to call
+	  LOG_MSG.
+	  As a quick fix, the calls in CtrlInfoI.cpp are
+	  removed because they caused problems with
+	  channels that have invalid enum. values.
       </ul>
 
     <li>07/24/2000<br>

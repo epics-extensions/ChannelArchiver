@@ -689,8 +689,8 @@ int main(int argc, const char *argv[])
 
     epicsTime start, end;
     string2epicsTime(start_text, start);
-    string2epicsTime(end_text, end);
-
+    string2epicsTime(end_text.get(), end);
+    
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
 

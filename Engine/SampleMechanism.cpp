@@ -235,7 +235,7 @@ void SampleMechanismGet::handleValue(Guard &guard,
 
 void SampleMechanismGet::flushPreviousValue(const epicsTime &stamp)
 {
-    if (!previous_value_set)
+    if (previous_value_set == false || repeat_count <= 0)
         return;
 #   ifdef DEBUG_SAMPLING
     LOG_MSG("'%s': Flushing %lu repeats\n",
@@ -266,7 +266,6 @@ void SampleMechanismGetViaMonitor::handleValue(Guard &guard,
 
     if (now > next_time_due)
     {    
-        // TODO: compare w/ remembered value for 'repeat'
         channel->buffer.addRawValue(value);
         channel->last_stamp_in_archive = stamp;
         next_time_due = now + period; // round this one!

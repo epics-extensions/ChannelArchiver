@@ -60,6 +60,7 @@ Engine::Engine(const stdString &index_name)
     the_one_and_only = false;
 
     get_threshhold = 20.0;
+    disconnect_on_disable = false;
     write_period = 30;
     buffer_reserve = 3;
     next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);

@@ -17,19 +17,23 @@
   this tool can run batch-driven over weekends.</p>
   <h2><a name="usage">Usage</a></h2>
   <p>The tool displays an option summary like this: </p>
-  <pre> ArchiveManager [options]  &lt;archive&gt;
-        options:
-        -i                     : show archive information
-        -T                     : test archive
-        -m &lt;regular expression&gt;: list matching names
-        -c &lt;channel name&gt;      : use given channel
-        -s &lt;time&gt;              : start time as mm/dd/yyyy hh:mm:ss[.nano-secs]
-        -e &lt;time&gt;              : end time (exclusive)
-        -x &lt;new directory file&gt;: export data into new archive
-        -r &lt;repeat count limit&gt;: for export: remove all 'repeat' entries beyond limit
-        -h &lt;channel name&gt;      : show headers for channel
-        -O &lt;channel name&gt;      : output ASCII dump for channel
-        -I &lt;dump file&gt;         : read ASCII dump for channel into archive	</pre>
+  <pre>USAGE:  ArchiveManager [Options] &lt;archive&gt;
+
+Options:
+        -info                          Show archive information
+        -test                          Test archive for errors
+        -channel &lt;channel&gt;             Specify channel name
+        -match &lt;regular expression&gt;    List matching channels
+        -Match &lt;regular expression&gt;    Dump values for matching channels
+        -start &lt;time&gt;                  Start time as mm/dd/yyyy hh:mm:ss[.nano-secs]
+        -end &lt;time&gt;                    End time (exclusive)
+        -xport &lt;new archive&gt;           export data into new archive
+        -repeat_limit &lt;seconds&gt;        remove 'repeat' entries beyond limit (export)
+        -headers &lt;channel&gt;             show headers for channel
+        -Output &lt;channel&gt;              output ASCII dump for channel
+        -Input &lt;ascii file&gt;            read ASCII dump for channel into archive
+        -Compare &lt;target archive&gt;      Compare with target archive
+        -Seek                          Seek test (use with -start)</pre>
   <h2><a name="Background">Background</a>:</h2>
   <p>An easy approach for archiving would be this:</p>
   <p>For each channel, create an ASCII file and append new values to that file.<br>

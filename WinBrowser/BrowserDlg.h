@@ -1,3 +1,5 @@
+// $Id$
+//
 // BrowserDlg.h : header file
 //
 

@@ -188,6 +188,10 @@ SOURCE=..\LibIO\HashTable.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\LibIO\LinInterpolValueIteratorI.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\MsgBoxF.cpp
 # End Source File
 # Begin Source File

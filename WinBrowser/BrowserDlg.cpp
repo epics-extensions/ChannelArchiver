@@ -744,16 +744,23 @@ void CBrowserDlg::OnExport()
 		stdString filename = dlg.m_filename;
 		Archive archive (new ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
 		Exporter *export;
-		if (dlg.m_type == CDlgExport::SpeadSheet)
+		if (dlg.m_format == CDlgExport::SpreadSheet)
 			export = new SpreadSheetExporter (archive, filename);
 		else
 			export = new GNUPlotExporter (archive, filename);
 		export->setMaxChannelCount (1000);
 
-		if (dlg.m_round > 0.0)
-			export->setTimeRounding (dlg.m_round);
-		if (dlg.m_fill)
+		switch (dlg.m_interpol)
+		{
+		case CDlgExport::Raw:
+		case CDlgExport::Linear:
+			if (dlg.m_seconds > 0.0)
+				export->setLinearInterpolation (dlg.m_seconds);
+			break;
+		case CDlgExport::Fill:
 			export->useFilledValues ();
+			break;
+		}
 
 		osiTime	time;
 		vals2osiTime (m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),

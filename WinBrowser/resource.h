@@ -38,9 +38,11 @@
 #define IDC_SPREADSHEET                 1028
 #define IDC_GNUPLOT                     1029
 #define IDC_ROUND                       1030
+#define IDC_SECONDS                     1030
 #define IDC_ADJUST_LIMITS               1031
-#define IDC_CHECK1                      1032
-#define IDC_FILL                        1032
+#define IDC_INTERPOL                    1033
+#define IDC_FILLED                      1034
+#define IDC_RAW                         1035
 
 // Next default values for new objects
 // 
@@ -48,7 +50,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1033
+#define _APS_NEXT_CONTROL_VALUE         1034
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

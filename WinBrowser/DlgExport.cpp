@@ -1,3 +1,4 @@
+// $Id$
 // DlgExport.cpp
 
 #include "stdafx.h"
@@ -16,10 +17,12 @@ CDlgExport::CDlgExport(CWnd* pParent /*=NULL*/)
 	const char *tmp = getenv ("TEMP");
 	if (tmp)
 		m_filename.Format ("%s\\data.xls", tmp);
+	else
+		m_filename = "\\data.xls";
 	//{{AFX_DATA_INIT(CDlgExport)
-	m_round = 0.0;
-	m_type = SpeadSheet;
-	m_fill = TRUE;
+	m_format = SpreadSheet;
+	m_interpol = Raw;
+	m_seconds = 10.0;
 	//}}AFX_DATA_INIT
 }
 
@@ -33,10 +36,9 @@ void CDlgExport::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CDlgExport)
 	DDX_Text(pDX, IDC_EXPORT_FILENAME, m_filename);
-	DDX_Text(pDX, IDC_ROUND, m_round);
-	DDV_MinMaxDouble(pDX, m_round, 0., 9999999.);
-	DDX_Radio(pDX, IDC_SPREADSHEET, m_type);
-	DDX_Check(pDX, IDC_FILL, m_fill);
+	DDX_Radio(pDX, IDC_GNUPLOT, m_format);
+	DDX_Radio(pDX, IDC_RAW, m_interpol);
+	DDX_Text(pDX, IDC_SECONDS, m_seconds);
 	//}}AFX_DATA_MAP
 }
 

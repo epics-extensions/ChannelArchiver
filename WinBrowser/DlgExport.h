@@ -12,17 +12,26 @@ class CDlgExport : public CDialog
 public:
 	CDlgExport(CWnd* pParent = NULL);   // standard constructor
 
+	// Trick for Radio Buttons:
+	// * have to be in tab sequence
+	// * first one sets "group"
 	enum
 	{
-		SpeadSheet,
-		GNUPlot
+		GNUPlot,
+		SpreadSheet
+	};
+	enum
+	{
+		Raw,
+		Linear,
+		Fill
 	};
 	//{{AFX_DATA(CDlgExport)
 	enum { IDD = IDD_EXPORT };
 	CString	m_filename;
-	double	m_round;
-	int m_type;
-	BOOL	m_fill;
+	int m_format;
+	int m_interpol;
+	double	m_seconds;
 	//}}AFX_DATA
 
 	// ClassWizard generated virtual function overrides

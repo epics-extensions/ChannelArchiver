@@ -203,7 +203,7 @@ const char *archive::nextFileTime(const char *current_time)
 // ----------------------------------------------------------------
 //  c h a n n e l
 
-const size_t channel::init_buf_size = 16;
+const size_t channel::init_buf_size = 64;
 const size_t channel::max_buf_size = 1024;
 const size_t channel::buf_size_fact = 4;
 
@@ -447,6 +447,14 @@ const char *value::type() const
     
     sprintf (txt, "unknown: 0x%X", type);
     return txt;
+}
+
+int value::ntype() const
+{
+    if (! valid())
+        return -1;
+
+    return getVal()->getType();
 }
 
 int value::count() const

@@ -1,43 +1,18 @@
-# Makefile to call sub-makes
+# EPICS R3.14 Makefile for the Channel Archiver
 
-include Make.ver
+TOP=../..
+include $(TOP)/configure/CONFIG
 
-all:
-	$(MAKE) -C Tools
-	$(MAKE) -C rtree
-	$(MAKE) -C StorageLib
-	$(MAKE) -C LibIO
-	$(MAKE) -C DataTool
-	$(MAKE) -C Manager
-	$(MAKE) -C Export
-	$(MAKE) -C CGIExport
-	$(MAKE) -C Engine
+DIRS += Tools
+DIRS += rtree
+DIRS += StorageLib
+DIRS += LibIO
+DIRS += DataTool
+DIRS += Engine
+DIRS += XMLRPCServer
 
-clean:
-	@$(MAKE) -C Tools clean
-	@$(MAKE) -C rtree clean
-	@$(MAKE) -C StorageLib clean
-	@$(MAKE) -C LibIO clean
-	@$(MAKE) -C DataTool clean
-	@$(MAKE) -C Manager clean
-	@$(MAKE) -C Export clean
-	@$(MAKE) -C CGIExport clean
-	@$(MAKE) -C Engine clean
+DIRS += Manager
+DIRS += Export
+DIRS += CGIExport
 
-cleanCGITest:
-	@-rm -f CGIExport/Tests/cgi/tmp/*
-	@-rm -f CGIExport/Tests/cgi/CGIExport.cgi
-
-SRCZIP=channelarchiver-$(VERSION).$(RELEASE).$(PATCH).src.zip
-
-brokenzip:	cleanCGITest
-	(cd /tmp; \
-	 rm -rf /tmp/ChannelArchiver;\
-         cvs -d :ext:kasemir@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot\
-	    export -r ChannelArchiver-$(VERSION)-$(RELEASE)-$(PATCH) \
-	    -d ChannelArchiver epics/supTop/extensions/1.1/src/ChannelArchiver;\
-	 rm $(SRCZIP);\
-	 zip -r $(SRCZIP) ChannelArchiver\
-	)  
-
-
+include $(TOP)/configure/RULES_DIRS

@@ -1,8 +1,33 @@
-
+# EPICS R3.14 Makefile for the Engine
 TOP=../../..
-EPICS=../../..
+include $(TOP)/configure/CONFIG
+include $(TOP)/src/ChannelArchiver/make.cfg
 
-include $(TOP)/config/CONFIG_EXTENSIONS
+SRCS += CircularBuffer.cpp
+SRCS += ArchiveChannel.cpp
+SRCS += SampleMechanism.cpp
+SRCS += GroupInfo.cpp
+SRCS += HTMLPage.cpp
+SRCS += LockFile.cpp
+SRCS += ScanList.cpp
+SRCS += HTTPServer.cpp
+SRCS += ConfigFile.cpp
+SRCS += EngineServer.cpp
+SRCS += Engine.cpp
+SRCS += main.cpp
 
-include $(TOP)/config/RULES_ARCHS
+PROD_HOST := ArchiveEngine
+PROD_LIBS_DEFAULT := Storage Tools ca Com
+PROD_LIBS_WIN32 := StorageObj ToolsObj ca Com
+SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
+
+Storage_DIR = $(INSTALL_LIB)
+StorageObj_DIR = $(INSTALL_LIB)
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
+
+# Only for benchmarking the write routines:
+TESTPROD_HOST := bench
+
+include $(TOP)/configure/RULES
 

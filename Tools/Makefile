@@ -1,4 +1,59 @@
+# EPICS R3.14 Makefile for the Tools library
 TOP=../../..
-include $(TOP)/config/CONFIG_EXTENSIONS
-include $(TOP)/config/RULES_ARCHS
+include $(TOP)/configure/CONFIG
+include $(TOP)/src/ChannelArchiver/make.cfg
 
+# Includes to install from this subproject
+INC += ToolsConfig.h 
+INC += stdString.h 
+INC += string2cp.h
+INC += ArgParser.h
+INC += ASCIIParser.h
+INC += ArrayTools.h
+INC += Bitset.h
+INC += CGIDemangler.h
+INC += Filename.h
+INC += GenericException.h
+INC += Histogram.h
+INC += MemoryPool.h 
+INC += MemoryBuffer.h 
+INC += MsgLogger.h
+INC += RegularExpression.h 
+INC += NetTools.h       
+INC += BinaryTree.h
+INC += epicsTimeHelper.h       
+INC += VectorHelper.h       
+INC += ArchiveException.h
+INC += ArchiverConfig.h
+INC += Conversions.h
+
+# Contents of library
+LIB_SRCS += stdString.cpp
+LIB_SRCS += Filename.cpp
+LIB_SRCS += ArgParser.cpp
+LIB_SRCS += ASCIIParser.cpp
+LIB_SRCS += Bitset.cpp
+LIB_SRCS += CGIDemangler.cpp
+LIB_SRCS += GenericException.cpp
+LIB_SRCS += RegularExpression.cpp
+LIB_SRCS += NetTools.cpp
+LIB_SRCS += MemoryPool.cpp
+LIB_SRCS += epicsTimeHelper.cpp
+LIB_SRCS += MsgLogger.cpp
+LIB_SRCS += ArchiveException.cpp
+#	on WIN32 only...
+LIB_SRCS_WIN32 := gnu_regex.c
+
+# Library to build:
+LIBRARY_HOST := Tools
+# In case of shared lib, link these:
+Tools_LIBS += Com ca
+
+# Build "ToolsTest" w/o installation
+PROD_LIBS_DEFAULT := Tools ca Com
+PROD_LIBS_WIN32 := ToolsObj ca Com
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
+TESTPROD_HOST += ToolsTest
+
+include $(TOP)/configure/RULES

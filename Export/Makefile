@@ -1,8 +1,19 @@
-
+# EPICS R3.14 Makefile for the Export Tool
 TOP=../../..
-EPICS=../../..
+include $(TOP)/configure/CONFIG
+include $(TOP)/src/ChannelArchiver/make.cfg
 
-include $(TOP)/config/CONFIG_EXTENSIONS
+USR_CXXFLAGS += -I ../../LibIO
 
-include $(TOP)/config/RULES_ARCHS
+SRCS += Export.cpp
 
+PROD_HOST := ArchiveExport
+PROD_LIBS_DEFAULT := ChanArchIO Tools ca Com
+PROD_LIBS_WIN32 := ChanArchIOObj ToolsObj ca Com
+SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
+ChanArchIO_DIR = $(INSTALL_LIB)
+ChanArchIOObj_DIR = $(INSTALL_LIB)
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
+
+include $(TOP)/configure/RULES

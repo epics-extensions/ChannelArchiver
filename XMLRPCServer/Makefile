@@ -1,5 +1,37 @@
+# EPICS R3.14 Makefile for the Data Server
 TOP=../../..
-EPICS=../../..
-include $(TOP)/config/CONFIG_EXTENSIONS
-include $(TOP)/config/RULES_ARCHS
+include $(TOP)/configure/CONFIG
+include $(TOP)/src/ChannelArchiver/make.cfg
 
+USR_CXXFLAGS += -I ../../Storage -I ../../rtree
+
+# Compare to output of `xmlrpc-c-config cgi-server --cflags`
+USR_CXXFLAGS += -I/usr/local/include
+
+DummyServer_SRCS += DummyServer.cpp
+ArchiveServer_SRCS += main.cpp
+PROD_HOST := DummyServer ArchiveServer
+
+PROD_LIBS_DEFAULT := rtree Storage Tools ca Com
+PROD_LIBS_WIN32 := rtreeObj StorageObj ToolsObj ca Com
+SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
+rtree_DIR = $(INSTALL_LIB)
+rtreeObj_DIR = $(INSTALL_LIB)
+Storage_DIR = $(INSTALL_LIB)
+StorageObj_DIR = $(INSTALL_LIB)
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
+Storage_DIR = $(INSTALL_LIB)
+StorageObj_DIR = $(INSTALL_LIB)
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
+
+# Compare to output of `xmlrpc-c-config cgi-server --libs`
+PROD_LIBS_DEFAULT  += xmlrpc_cgi xmlrpc xmlrpc_xmlparse xmlrpc_xmltok
+
+xmlrpc_cgi_DIR = /usr/local/lib
+xmlrpc_DIR = /usr/local/lib
+xmlrpc_xmlparse_DIR = /usr/local/lib
+xmlrpc_xmltok_DIR = /usr/local/lib
+
+include $(TOP)/configure/RULES

@@ -1,9 +1,12 @@
-#!/usr/bin/wish
-#
+#!/bin/sh
+# -*- tcl -*- \
+	exec atac $0 ${1+"$@"}
+
 # List all channel names in a list-box
 #
 
-source atacTools.tcl
+set installPath "."
+source $installPath/atacTools.tcl
 
 proc usage {} {
 	global argv0
@@ -35,29 +38,30 @@ label .archivename.lbl -text "Archive:" -width 20
 entry .archivename.entry -textvariable archiveName -width 40
 pack .archivename.lbl -side left
 pack .archivename.entry -side right -expand yes -fill x
-pack .archivename -expand yes -fill x
 
 frame .channelpattern
 label .channelpattern.lbl -text "Channel Pattern:" -width 20
 entry .channelpattern.entry -textvariable channelPattern -width 40
 pack .channelpattern.lbl -side left
 pack .channelpattern.entry -side right -expand yes -fill x
-pack .channelpattern -expand yes -fill x
 
 frame .names
-listbox .names.list -yscrollcommand ".names.scroll set" -width 30 -height 30
+listbox .names.list -yscrollcommand ".names.scroll set" -width 30 -height 20
 scrollbar .names.scroll -command ".names.list yview" 
 set namelist ".names.list"
-pack .names.list -side left -expand yes -fill both
 pack .names.scroll -side right -fill y
-pack .names -expand yes -fill both
+pack .names.list -side left -expand yes -fill both
 
 frame .buttons
 button .buttons.restart -command "showNames" -text "Restart"
 button .buttons.exit -command "exit" -text "Exit"
 pack .buttons.restart  -side left -padx 0
 pack .buttons.exit     -side right -padx 0
-pack .buttons -expand yes -fill x
+
+pack .archivename -fill x -side top
+pack .channelpattern -fill x -side top
+pack .buttons -fill x -side bottom
+pack .names -expand yes -fill both -side top
 
 update                               
 

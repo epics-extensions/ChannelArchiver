@@ -1,4 +1,9 @@
-source atacTools.tcl
+#!/bin/sh
+# -*- tcl -*- \
+	exec atac $0 ${1+"$@"}
+
+set installPath "."
+source $installPath/atacTools.tcl
 
 proc usage {} {
 	global argv0
@@ -27,38 +32,32 @@ if { $argc > 2 } {
 #
 option add *background #AEC9D2
 
-set height 30
 frame .archivename
 label .archivename.lbl -text "Archive:" -width 10
 entry .archivename.entry -textvariable archiveName
 pack .archivename.lbl -side left
 pack .archivename.entry -side right -expand yes -fill x
-pack .archivename -expand yes -fill x
 
 frame .channelname
 label .channelname.lbl -text "Channel:" -width 10
 entry .channelname.entry -textvariable channelName
 pack .channelname.lbl -side left
 pack .channelname.entry -side right -expand yes -fill x
-pack .channelname -expand yes -fill x
 
 frame .start
 label .start.lbl -text "End:" -width 10
 entry .start.entry -textvariable endStamp
 pack .start.lbl -side left
 pack .start.entry -side right -expand yes -fill x
-pack .start -expand yes -fill x
 
 frame .data
-listbox .data.time -yscrollcommand ".data.scroll set" -width 30 -height $height
-listbox .data.value -yscrollcommand ".data.scroll set" -width 60 -height $height
+listbox .data.time -yscrollcommand ".data.scroll set" -width 30
+listbox .data.value -yscrollcommand ".data.scroll set" -width 60
 scrollbar .data.scroll -command "yviewBoth"
 
-pack .data.time  -side left -expand yes -fill y
+pack .data.time  -side left -expand no -fill y
+pack .data.scroll -side right -expand no -fill y
 pack .data.value  -side left -expand yes -fill both
-pack .data.scroll -side right -fill y
-pack .data -expand yes -fill both
-
 set timeList .data.time
 set valueList .data.value
 
@@ -73,7 +72,12 @@ pack .buttons.info     -side left -padx 0
 pack .buttons.backward -side left -padx 10
 pack .buttons.forward  -side left -padx 10
 pack .buttons.exit     -side right -padx 0
-pack .buttons -expand yes -fill x
+
+pack .archivename -fill x
+pack .channelname -fill x
+pack .start -fill x
+pack .buttons -fill x -side bottom
+pack .data -expand yes -fill both -side top
 
 update
 

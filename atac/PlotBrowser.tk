@@ -1,4 +1,7 @@
-#!/usr/bin/wish
+#!/bin/sh
+# -*- tcl -*- \
+	exec atac $0 ${1+"$@"}
+
 #######################################################################
 # Demo of plotting from archive with BLT
 #######################################################################
@@ -57,33 +60,26 @@ if { $showArchiveName } {
 	entry .archivename.entry -textvariable archiveName
 	pack .archivename.lbl -side left
 	pack .archivename.entry -side right -expand yes -fill x
-	pack .archivename -expand yes -fill x
+	pack .archivename -expand yes -fill x -side bottom
 }
-
-createAtacGraph .g
-set graph .g
-pack .g -expand yes -fill both
 
 frame .start
 label .start.lbl -text "Start:" -width 10
 entry .start.entry -textvariable startStamp -width 30
 pack .start.lbl -side left
 pack .start.entry  -side left
-pack .start -expand yes -fill x
 
 frame .end
 label .end.lbl -text "End:" -width 10
 entry .end.entry -textvariable endStamp -width 30
 pack .end.lbl -side left
 pack .end.entry  -side left
-pack .end -expand yes -fill x
 
 frame .samples
 label .samples.lbl -text "Samples:" -width 10
 entry .samples.entry -textvariable samples -width 30
 pack .samples.lbl -side left
 pack .samples.entry  -side left
-pack .samples -expand yes -fill x
 
 frame .buttons
 button .buttons.fastback -command "backward 0.9" -text "<<<"
@@ -100,7 +96,15 @@ pack .buttons.zoomout  -side left -padx 5
 pack .buttons.forward  -side left -padx 5
 pack .buttons.fastfor  -side left -padx 5
 pack .buttons.exit     -side right -padx 0
-pack .buttons -expand yes -fill both
+
+pack .buttons -fill x -side bottom
+pack .samples -fill x -side bottom
+pack .end -fill x -side bottom
+pack .start -fill x -side bottom
+createAtacGraph .g
+set graph .g
+pack .g -expand yes -fill both -side top
+
 
 update
 

@@ -1,5 +1,7 @@
 ########################################################
 #
+# $Id$
+#
 #//PACKAGE atacGraph.tk
 #//
 #// <H2>BLT helpers for ATAC (A Tcl Archive Client)</H2>
@@ -176,9 +178,9 @@ proc createAtacGraph { graph } {
 	$graph grid configure -hide no -dashes { 2 2 }
 	$graph xaxis configure -command TimeLabelCommand
 	$graph pen create emptyPen -color red -linewidth 0 -symbol cross
-#	Blt_Crosshairs $graph
-#	Blt_ZoomStack $graph
-#	Blt_ActiveLegend $graph
+	Blt_Crosshairs $graph
+	Blt_ZoomStack $graph
+	Blt_ActiveLegend $graph
 	return $graph
 }
 

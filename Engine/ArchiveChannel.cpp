@@ -38,8 +38,9 @@ ArchiveChannel::~ArchiveChannel()
     }
 }
 
-void ArchiveChannel::addToGroup(GroupInfo *group, bool disabling)
+void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
 {
+    guard.check(mutex);
     // bit in 'disabling' indicates if we could disable that group
     groups_to_disable.grow(group->getID() + 1);
     groups_to_disable.set(group->getID(), disabling);
@@ -56,8 +57,9 @@ void ArchiveChannel::addToGroup(GroupInfo *group, bool disabling)
         ++group->num_connected;
 }
     
-void ArchiveChannel::startCA()
+void ArchiveChannel::startCA(Guard &guard)
 {
+    guard.check(mutex);
     if (!chid_valid)
     {
 #       ifdef DEBUG_CI
@@ -79,20 +81,22 @@ void ArchiveChannel::startCA()
     theEngine->need_CA_flush = true;
 }
 
-void ArchiveChannel::disable(const epicsTime &when)
+void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
 {
+    guard.check(mutex);
     ++disabled_count;
     if (disabled_count > (int)groups.size())
     {
         LOG_MSG("Channel '%s': Disable count is messed up (%d)\n",
                 name.c_str(), disabled_count);
     }
-    if (isDisabled())
-        addEvent(0, ARCH_DISABLED, when);
+    if (isDisabled(guard))
+        addEvent(guard, 0, ARCH_DISABLED, when);
 }
 
-void ArchiveChannel::enable(const epicsTime &when)
+void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
 {
+    guard.check(mutex);
     --disabled_count;
     if (disabled_count < 0)
     {
@@ -114,10 +118,12 @@ void ArchiveChannel::enable(const epicsTime &when)
     }
 }
 
-void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
+void ArchiveChannel::init(Guard &guard,
+                          DbrType dbr_time_type, DbrCount nelements,
                           const CtrlInfo *ctrl_info,
                           const epicsTime *last_stamp)
 {
+    guard.check(mutex);
     this->dbr_time_type = dbr_time_type;
     this->nelements = nelements;
     buffer.allocate(dbr_time_type, nelements,
@@ -132,19 +138,18 @@ void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
         last_stamp_in_archive = *last_stamp;
 }
 
-void ArchiveChannel::write(IndexFile &index)
+void ArchiveChannel::write(Guard &guard, IndexFile &index)
 {
+    guard.check(mutex);
     size_t num_samples = buffer.getCount();
     if (num_samples <= 0)
         return;
-
     DataWriter writer(index,
                       name, ctrl_info,
                       dbr_time_type, nelements,
                       period,
                       num_samples);
     const RawValue::Data *value;
-    
     while (num_samples-- > 0)
     {
         value = buffer.removeRawValue();
@@ -168,7 +173,7 @@ void ArchiveChannel::write(IndexFile &index)
 void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
-    me->mutex.lock();
+    Guard guard(me->mutex);
     if (ca_state(arg.chid) == cs_conn)
     {
         LOG_MSG("%s: cs_conn, getting control info\n", me->name.c_str());
@@ -194,9 +199,8 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
         me->connected = false;
         me->connection_time = epicsTime::getCurrent();
         me->pending_value_set = false;
-        me->mechanism->handleConnectionChange();
+        me->mechanism->handleConnectionChange(guard);
     }    
-    me->mutex.unlock();
 }
 
 // Fill crtl_info from raw dbr_ctrl_xx data
@@ -286,17 +290,16 @@ bool ArchiveChannel::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
 void ArchiveChannel::control_callback(struct event_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
-    me->mutex.lock();
-
+    Guard guard(me->mutex);
     if (arg.status == ECA_NORMAL &&
         me->setup_ctrl_info(arg.type, arg.dbr))
     {
         LOG_MSG("%s: received control info\n", me->name.c_str());
         me->connection_time = epicsTime::getCurrent();
-        me->init(ca_field_type(arg.chid)+DBR_TIME_STRING,
+        me->init(guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
                  ca_element_count(arg.chid));
         me->connected = true;
-        me->mechanism->handleConnectionChange();
+        me->mechanism->handleConnectionChange(guard);
     }
     else
     {
@@ -304,14 +307,14 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
         me->connection_time = epicsTime::getCurrent();
         me->connected = false;
         me->pending_value_set = false;
-        me->mechanism->handleConnectionChange();
+        me->mechanism->handleConnectionChange(guard);
     }
-    me->mutex.unlock();
 }
 
-// called by SampleMechanism, mutex is locked.
-void ArchiveChannel::handleDisabling(const RawValue::Data *value)
+// called by SampleMechanism
+void ArchiveChannel::handleDisabling(Guard &guard, const RawValue::Data *value)
 {
+    guard.check(mutex);
     if (groups_to_disable.empty())
         return;
     // We disable if the channel is non-zero
@@ -343,9 +346,11 @@ void ArchiveChannel::handleDisabling(const RawValue::Data *value)
 // Event (value with special status/severity):
 // Add unconditionally to ring buffer,
 // maybe adjust time so that it can be added
-void ArchiveChannel::addEvent(dbr_short_t status, dbr_short_t severity,
+void ArchiveChannel::addEvent(Guard &guard,
+                              dbr_short_t status, dbr_short_t severity,
                               const epicsTime &event_time)
 {
+    guard.check(mutex);
     if (nelements <= 0)
     {
         LOG_MSG("'%s': Cannot add event because data type is unknown\n",

@@ -234,8 +234,9 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
         link += "\">";
         link += (*channel)->getName();
         link += "</A>";
+        Guard guard((*channel)->mutex);
         page.tableLine(link.c_str(),
-                       ((*channel)->isConnected() ?
+                       ((*channel)->isConnected(guard) ?
                         "connected" : "<FONT COLOR=#FF0000>disconnected</FONT>"),
                        0);
     }
@@ -253,7 +254,7 @@ static void channelInfoTable(HTMLPage &page)
                    0);
 }
 
-static void channelInfoLine(HTMLPage &page, const ArchiveChannel *channel)
+static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
 {
     stdString channel_link; // link to group list for this channel
     channel_link = "<A HREF=\"/channelgroups?CHANNEL=";
@@ -264,7 +265,8 @@ static void channelInfoLine(HTMLPage &page, const ArchiveChannel *channel)
     
     stdString disabling;
     char num[10];
-    const BitSet &bits = channel->getGroupsToDisable();
+    Guard guard(channel->mutex);
+    const BitSet &bits = channel->getGroupsToDisable(guard);
     if (bits.empty())
         disabling = "-";
     else
@@ -283,12 +285,12 @@ static void channelInfoLine(HTMLPage &page, const ArchiveChannel *channel)
     
     page.tableLine(
         channel_link.c_str(),
-        (channel->isConnected() ? 
+        (channel->isConnected(guard) ? 
          "connected" :
          "<FONT COLOR=#FF0000>NOT CONNECTED</FONT>"),
-        channel->getMechanism()->getDescription().c_str(),
+        channel->getMechanism(guard)->getDescription().c_str(),
         disabling.c_str(),
-        (channel->isDisabled() ?
+        (channel->isDisabled(guard) ?
          "<FONT COLOR=#FFFF00>disabled</FONT>" :
          "enabled"),
         0);
@@ -374,7 +376,8 @@ void groups(HTTPClientConnection *connection, const stdString &path)
 
 static void groupInfo(HTTPClientConnection *connection, const stdString &path)
 {
-    const stdString group_name = path.substr(7);
+    stdString group_name = path.substr(7);
+    CGIDemangler::unescape(group_name);
     theEngine->mutex.lock();
     const GroupInfo *group = theEngine->findGroup(group_name);
     if (! group)
@@ -534,13 +537,14 @@ static void channelGroups(HTTPClientConnection *connection,
     page.out("<H2>Group membership for channel ");
     page.out(channel_name);
     page.line("</H2>");
-    channel->mutex.lock();
     page.openTable(1, "Group", 1, "ID", 1, "Enabled", 0);
     stdList<GroupInfo *>::const_iterator group;
     stdString link;
     link.reserve(80);
     char id[10];
-    for (group=channel->groups.begin(); group!=channel->groups.end(); ++group)
+    Guard guard(channel->mutex);
+    stdList<class GroupInfo *> &groups = channel->getGroups(guard);
+    for (group=groups.begin(); group!=groups.end(); ++group)
     {
         link = "<A HREF=\"/group/";
         link += (*group)->getName();
@@ -552,7 +556,6 @@ static void channelGroups(HTTPClientConnection *connection,
                        ((*group)->isEnabled() ?
                         "Yes" : "<FONT COLOR=#FF0000>No</FONT>"), 0);
     }
-    channel->mutex.unlock();
     theEngine->mutex.unlock();
     page.closeTable();
 }

@@ -53,7 +53,7 @@ stdString SampleMechanismMonitored::getDescription() const
     return stdString(desc);
 }
 
-void SampleMechanismMonitored::handleConnectionChange()
+void SampleMechanismMonitored::handleConnectionChange(Guard &guard)
 {
     stdList<GroupInfo *>::iterator g;
     if (channel->connected)
@@ -83,7 +83,7 @@ void SampleMechanismMonitored::handleConnectionChange()
     {
         LOG_MSG("%s: disconnected\n", channel->name.c_str());
         // Add a 'disconnected' value.
-        channel->addEvent(0, ARCH_DISCONNECT, channel->connection_time);
+        channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
         // Tell groups that we are disconnected
         for (g=channel->groups.begin(); g!=channel->groups.end(); ++g)
             -- (*g)->num_connected;
@@ -96,9 +96,9 @@ void SampleMechanismMonitored::value_callback(struct event_handler_args args)
     ArchiveChannel *channel = me->channel;
     epicsTime now = epicsTime::getCurrent();
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
-    channel->mutex.lock();
-    
-    if (channel->isDisabled())
+
+    Guard guard(channel->mutex);
+    if (channel->isDisabled(guard))
     {   // park the value so that we can write it ASAP after begin enabled
         RawValue::copy(channel->dbr_time_type, channel->nelements,
                        channel->pending_value, value);
@@ -109,8 +109,7 @@ void SampleMechanismMonitored::value_callback(struct event_handler_args args)
         LOG_MSG("SampleMechanismMonitored::value_callback %s\n",
                 channel->name.c_str());
         RawValue::show(stdout, channel->dbr_time_type,
-                       channel->nelements, value, &channel->ctrl_info);
-        
+                       channel->nelements, value, &channel->ctrl_info);   
         // Add every monitor to the ring buffer, only check for back-in-time
         epicsTime stamp = RawValue::getTime(value);
         if (me->isGoodTimestamp(stamp, now))
@@ -130,6 +129,5 @@ void SampleMechanismMonitored::value_callback(struct event_handler_args args)
             }
         }
     }
-    channel->handleDisabling(value);
-    channel->mutex.unlock();
+    channel->handleDisabling(guard, value);
 }

@@ -16,7 +16,7 @@ GroupInfo::GroupInfo (const stdString &name)
 	disable_count = 0;
 }
 
-void GroupInfo::addChannel(ArchiveChannel *channel)
+void GroupInfo::addChannel(Guard &channel_guard, ArchiveChannel *channel)
 {
 	// Is Channel already in group?
 	stdList<ArchiveChannel *>::iterator i;
@@ -25,7 +25,7 @@ void GroupInfo::addChannel(ArchiveChannel *channel)
 			return;
 	members.push_back(channel);
     if (disable_count > 0) // disable right away?
-        channel->disable(epicsTime::getCurrent());
+        channel->disable(channel_guard, epicsTime::getCurrent());
 }
 
 // called by ArchiveChannel while channel is locked
@@ -38,7 +38,10 @@ void GroupInfo::disable(ArchiveChannel *cause, const epicsTime &when)
 		return;
 	stdList<ArchiveChannel *>::iterator i;
 	for (i=members.begin(); i!=members.end(); ++i)
-		(*i)->disable(when);
+    {
+        Guard guard((*i)->mutex);
+		(*i)->disable(guard, when);
+    }
 }
 
 // called by ArchiveChannel while channel is locked
@@ -57,6 +60,9 @@ void GroupInfo::enable(ArchiveChannel *cause, const epicsTime &when)
 
 	stdList<ArchiveChannel *>::iterator i;
 	for (i=members.begin(); i!=members.end(); ++i)
-		(*i)->enable(when);
+    {
+        Guard guard((*i)->mutex);
+		(*i)->enable(guard, when);
+    }
 }
 

@@ -117,10 +117,9 @@ void Engine::shutdown()
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
-            (*ch)->mutex.lock();
-            (*ch)->addEvent(0, ARCH_STOPPED, now);
-            (*ch)->write(index);
-            (*ch)->mutex.unlock();
+            Guard guard((*ch)->mutex);
+            (*ch)->addEvent(guard, 0, ARCH_STOPPED, now);
+            (*ch)->write(guard, index);
         }
         DataFile::close_all();
         index.close();
@@ -205,18 +204,15 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
 {
     ArchiveChannel *channel = findChannel(channel_name);
     bool new_channel;
-
     if (!channel)
     {
         channel = new ArchiveChannel(channel_name, period,
                                      new SampleMechanismMonitored());
-        channel->mutex.lock();
         channels.push_back(channel);
         new_channel = true;
     }
     else
     {
-        channel->mutex.lock();
 #ifdef TODO
         // For existing channels: minimize period, maximize monitor feature
         if (channel_info->isMonitored())
@@ -229,9 +225,9 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
 #endif
     }
 
-    group->addChannel(channel);
-    channel->addToGroup(group, disabling);
-
+    Guard guard(channel->mutex);
+    group->addChannel(guard, channel);
+    channel->addToGroup(guard, group, disabling);
     if (new_channel)
     {
         // TODO: Check the locking of the file access
@@ -258,7 +254,7 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                             epicsTime last_stamp(header->data.end_time);
                             CtrlInfo ctrlinfo;
                             ctrlinfo.read(datafile, header->data.ctrl_info_offset);
-                            channel->init(header->data.dbr_type,
+                            channel->init(guard, header->data.dbr_type,
                                           header->data.dbr_count,
                                           &ctrlinfo,
                                           &last_stamp);
@@ -284,8 +280,7 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
     if (_configuration)
         _configuration->saveChannel(channel_info);
 #endif
-    channel->startCA();
-    channel->mutex.unlock();
+    channel->startCA(guard);
     return channel;
 }
 
@@ -352,9 +347,8 @@ void Engine::writeArchive()
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
-            (*ch)->mutex.lock();
-            (*ch)->write(index);
-            (*ch)->mutex.unlock();
+            Guard guard((*ch)->mutex);
+            (*ch)->write(guard, index);
         }
         index.close();
     }

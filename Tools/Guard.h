@@ -1,12 +1,14 @@
 // -*- c++ -*-
 
+#ifndef _GUARD_H_
+#define _GUARD_H_
+
 // Base
 #include <epicsMutex.h>
-
 // Tools
 #include <MsgLogger.h>
 
-/// Guard automatically takes and releases an epicsMutex.
+/// \ingroup Tools Guard automatically takes and releases an epicsMutex.
 
 /// Meant to be used like Jeff Hill's epicsGuard,
 /// but uses LOG_ASSERT instead of throwing exceptions.
@@ -30,8 +32,12 @@ public:
     /// Check if the guard is assigned to the correct mutex.
     void check(const epicsMutex &the_one_it_should_be)
     {
-        LOG_ASSERT(mutex == the_one_it_should_be);
+        LOG_ASSERT(&mutex == &the_one_it_should_be);
     }
 private:
+    Guard(const Guard &); // not impl.
+    Guard &operator = (const Guard &); // not impl.
     epicsMutex &mutex;
 };
+
+#endif

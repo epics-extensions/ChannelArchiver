@@ -19,7 +19,7 @@
 #endif
 
 // Convert a two-char hex string into the char it represents
-static char x2c (const char *what)
+static char x2c(const char *what)
 {
    char digit;
 
@@ -30,7 +30,7 @@ static char x2c (const char *what)
 }
 
 // Reduce any %xx escape sequences to the characters they represent
-static void unescape (char *url)
+void CGIDemangler::unescape(char *url)
 {
     int i,j;
 
@@ -45,7 +45,19 @@ static void unescape (char *url)
     url[i] = '\0' ;
 }
 
-void CGIDemangler::analyseVar (char *var)
+void CGIDemangler::unescape(stdString &text)
+{
+    size_t len = text.length() + 1;
+    char *buf = (char *)malloc(len);
+    if (!buf)
+        return;
+    memcpy(buf, text.c_str(), len);
+    unescape(buf);
+    text = buf;
+    free(buf);
+}
+
+void CGIDemangler::analyseVar(char *var)
 {
     char *eq;
 

@@ -15,6 +15,7 @@
 #include <cadef.h>
 // Tools
 #include "Bitset.h"
+#include "Guard.h"
 // Storage
 #include "CtrlInfo.h"
 #include "CircularBuffer.h"
@@ -52,33 +53,33 @@ public:
 
     /// A channel belongs to at least one group,
     /// and might disable some of the groups to which it belongs.
-    stdList<class GroupInfo *> groups;
-
+    stdList<class GroupInfo *> &getGroups(Guard &guard);
+    
     /// Add a channel to a group & keep track of disabling.
-    void addToGroup(class GroupInfo *group, bool disabling);
+    void addToGroup(Guard &guard, class GroupInfo *group, bool disabling);
     
     /// Get the current sample mechanism (never NULL).
-    const SampleMechanism *getMechanism() const;
+    const SampleMechanism *getMechanism(Guard &guard) const;
 
     /// Start CA communication: Get control info, maybe subscribe, ...
     /// Can be called repeatedly, e.g. after changing the
     /// SampleMechanism or to toggle a re-get of the control information.
-    void startCA();
+    void startCA(Guard &guard);
 
     /// Is the CA connection currently good?
-    bool isConnected() const;
+    bool isConnected(Guard &guard) const;
 
     /// A set bit indicates a group that this channel disables.
-    const BitSet &getGroupsToDisable() const;
+    const BitSet &getGroupsToDisable(Guard &guard) const;
 
     /// Is this channel disabled?
-    bool isDisabled() const;
+    bool isDisabled(Guard &guard) const;
 
     /// Disable this channel.
-    void disable(const epicsTime &when);
+    void disable(Guard &guard, const epicsTime &when);
 
     /// Enable this channel.
-    void enable(const epicsTime &when);
+    void enable(Guard &guard, const epicsTime &when);
 
     /// Initialize value type etc.
 
@@ -86,24 +87,25 @@ public:
     /// archive, so we know ASAP what we'd otherwis only learn from the
     /// CA connection.
     /// Pass 0 to ctrl_info or last_stamp if they're unknown.
-    void init(DbrType dbr_time_type, DbrCount nelements,
+    void init(Guard &guard, DbrType dbr_time_type, DbrCount nelements,
               const CtrlInfo *ctrl_info = 0, const epicsTime *last_stamp = 0);
     
     /// Write current ring buffer content to archive.
-    void write(class IndexFile &index);
+    void write(Guard &guard, class IndexFile &index);
 
     /// Add an event to the buffer (special status/severity)
 
     /// The time might be adjusted to be >= the last stamp
     /// in the archive.
     ///
-    void addEvent(dbr_short_t status, dbr_short_t severity,
+    void addEvent(Guard &guard, dbr_short_t status, dbr_short_t severity,
                   const epicsTime &time);
         
 private:
     stdString   name;
     double      period; // Sample period, max period, ..(see SampleMechanism)
     SampleMechanism *mechanism;
+    stdList<class GroupInfo *> groups;
 
     // CA Info and callbacks
     bool chid_valid;
@@ -134,7 +136,7 @@ private:
     int disabled_count; // See isDisabled()
     BitSet groups_to_disable; // Bit is set -> we disable that group
     bool currently_disabling; // Is this channel disabling its groups?
-    void handleDisabling(const RawValue::Data *value);
+    void handleDisabling(Guard &guard, const RawValue::Data *value);
 
     // Bookkeeping and value checking stuff, used between ArchiveChannel
     // and SampleMechanism
@@ -147,17 +149,35 @@ inline const stdString &ArchiveChannel::getName() const
 inline double ArchiveChannel::getPeriod() const
 {   return period; }    
     
-inline const SampleMechanism *ArchiveChannel::getMechanism() const
-{   return mechanism; }
+inline stdList<class GroupInfo *> &ArchiveChannel::getGroups(Guard &guard)
+{
+    guard.check(mutex);
+    return groups;
+}
 
-inline bool ArchiveChannel::isConnected() const
-{   return connected; }
+inline const SampleMechanism *ArchiveChannel::getMechanism(Guard &guard) const
+{
+    guard.check(mutex);
+   return mechanism;
+}
 
-inline const BitSet &ArchiveChannel::getGroupsToDisable() const
-{   return groups_to_disable; }
+inline bool ArchiveChannel::isConnected(Guard &guard) const
+{
+    guard.check(mutex);
+    return connected;
+}
 
-inline bool ArchiveChannel::isDisabled() const
-{   return disabled_count >= (int)groups.size(); }
+inline const BitSet &ArchiveChannel::getGroupsToDisable(Guard &guard) const
+{
+    guard.check(mutex);
+    return groups_to_disable;
+}
+
+inline bool ArchiveChannel::isDisabled(Guard &guard) const
+{
+    guard.check(mutex);
+    return disabled_count >= (int)groups.size();
+}
 
 #endif
 

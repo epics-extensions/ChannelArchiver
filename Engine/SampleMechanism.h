@@ -11,12 +11,15 @@
 #ifndef __SCAN_MECHANISM_H__
 #define __SCAN_MECHANISM_H__
 
+// System
 #include <cadef.h>
 #include <stdString.h>
+//Tools
+#include <Guard.h>
 
 class ArchiveChannel;
 
-/// Base class for all sampling mechanisms.
+/// \ingroup Engine Base class for all sampling mechanisms.
 
 /// SampleMechanism is used by the ArchiveChannel
 /// to handle the actual data sampling.
@@ -30,7 +33,7 @@ public:
     virtual stdString getDescription() const = 0;
 
     /// Invoked for connection changes
-    virtual void handleConnectionChange() = 0;
+    virtual void handleConnectionChange(Guard &guard) = 0;
 protected:
     ArchiveChannel *channel;
 
@@ -50,7 +53,7 @@ public:
     SampleMechanismMonitored();
     ~SampleMechanismMonitored();
     stdString getDescription() const;
-    void handleConnectionChange();
+    void handleConnectionChange(Guard &guard);
 private:
     bool   have_subscribed;
     evid   ev_id;

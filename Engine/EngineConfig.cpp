@@ -247,7 +247,7 @@ bool EngineConfig::handle_channel(Guard &engine_guard, Engine *engine,
     if (!parse_double((*els)->value, period))
     {
         LOG_MSG("EngineConfig '%s': Error in period for channel '%s'\n",
-                name.c_str());
+                group->getName().c_str(), name.c_str());
         return false;
     }
     ++els;

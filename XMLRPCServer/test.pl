@@ -3,10 +3,12 @@
 use Frontier::Client;
 
 # Setup URL
-#$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
-$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
+$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
+$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
+#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
 $server = Frontier::Client->new(url => $server_url);
 
+print("Info:\n");
 # { int32 ver, string desc } = archdat.info()
 $result = $server->call('archiver.info');
 printf("Archive Data Server V %d,\nDescription '%s'\n\n",
@@ -91,7 +93,7 @@ sub show_values($)
 	foreach $value ( @{$result->{values}} )
 	{
 	    $time = time2string($value->{secs}, $value->{nano});
-	    print("$time $value->{stat}/$value->{sevr} $value->{value}\n");
+	    print("$time $value->{stat}/$value->{sevr} @{$value->{value}}\n");
 	}
     }
 }

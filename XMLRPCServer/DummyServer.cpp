@@ -110,7 +110,8 @@ xmlrpc_value *get_values(xmlrpc_env *env,
                          void *user)
 {
     xmlrpc_value *names;
-    xmlrpc_value *name_val, *results, *result, *meta, *values, *value;
+    xmlrpc_value *name_val, *results, *result, *meta;
+    xmlrpc_value *values, *val_array, *value;
     xmlrpc_int32 start_sec, start_nano, end_sec, end_nano, count, how;
     xmlrpc_int32 secs, nano;
     xmlrpc_int32 name_count, name_index, name_len, i;
@@ -145,13 +146,16 @@ xmlrpc_value *get_values(xmlrpc_env *env,
         {
             secs = start_sec + i*(end_sec - start_sec)/count;
             nano = start_nano + i*(end_nano - start_nano)/count;
+            val_array = xmlrpc_build_value(env, STR("(d)"),
+                                           ((double)3.14+i));
             value = xmlrpc_build_value(env,
-                                       STR("{s:i,s:i,s:i,s:i,s:d}"),
+                                       STR("{s:i,s:i,s:i,s:i,s:V}"),
                                        "stat", (xmlrpc_int32)0,
                                        "sevr", (xmlrpc_int32)0,
                                        "secs", (xmlrpc_int32)secs,
                                        "nano", (xmlrpc_int32)nano,
-                                       "value", 3.14+i);
+                                       "value", val_array);
+            xmlrpc_DECREF(val_array);
             xmlrpc_array_append_item(env, values, value);
             xmlrpc_DECREF(value);
         }

@@ -10,10 +10,16 @@
 /// \defgroup DataServer
 /// Code related to the network data server
 
-
 // The version of this server
 // (We use 0 as long as we didn't really release anything)
 #define ARCH_VER 0
+
+// Code numbers for 'how'
+#define HOW_RAW      0
+#define HOW_SHEET    1
+#define HOW_INTERPOL 2
+#define HOW_PLOTBIN  3
+
 
 // XML-RPC does not define fault codes.
 // The xml-rpc-c library uses -500, -501, ... (up to -510)

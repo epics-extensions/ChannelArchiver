@@ -729,18 +729,18 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     // Build results
     switch (how)
     {
-        case 0:
+        case HOW_RAW:
             return get_channel_data(env, key, name_vector, start, end,
                                     actual_count, -1.0, false);
-        case 1:
+        case HOW_SHEET:
             return get_sheet_data(env, key, name_vector, start, end,
                                   actual_count, -1.0);
-        case 2:
+        case HOW_INTERPOL:
             if (count <= 1)
                 count = 1;
             return get_channel_data(env, key, name_vector, start, end,
                                     actual_count, (end-start)/count, false);
-        case 3:
+        case HOW_PLOTBIN:
             if (count <= 1)
                 count = 1;
             return get_channel_data(env, key, name_vector, start, end,

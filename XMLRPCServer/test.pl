@@ -1,26 +1,16 @@
-# THE perl script for testing the Archiver's XML-RPC server.
+# perl script for testing the Archiver's XML-RPC server.
 
 use English;
 use Time::Local;
 use Frontier::Client;
 
 # Setup URL
-#$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
-#$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyDataServer.cgi';
-#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyDataServer2.cgi';
-$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveDataServer2.cgi';
+$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
 
-if ($#ARGV == 0)
-{
-    $server_url = $ARGV[0];
-}
-
-print("==================================================================\n");
 print("Connecting to Archive Data Server URL '$server_url'\n");
 print("==================================================================\n");
 $server = Frontier::Client->new(url => $server_url);
 
-print("==================================================================\n");
 print("Info:\n");
 print("==================================================================\n");
 # { int32 ver, string desc } = archdat.info()
@@ -31,8 +21,6 @@ printf("-------------------------------\n");
 printf("%s", $result->{'desc'});
 printf("-------------------------------\n");
 
-
-print("==================================================================\n");
 print("Archives:\n");
 print("==================================================================\n");
 $results = $server->call('archiver.archives', "");
@@ -41,33 +29,11 @@ foreach $result ( @{$results} )
     $key = $result->{key};
     print("Key $key: '$result->{name}' in '$result->{path}'\n");
 }
+$key = 20;
 
-# string name[] = archdat.get_names(string pattern)
-if (0)
-{
-	print("==================================================================\n");
-	print("Request without pattern:\n");
-	print("==================================================================\n");
-	$results = $server->call('archiver.names', $key, "");
-	$count = 0;
-	foreach $result ( @{$results} )
-	{
-		$name = $result->{name};
-		$start = time2string($result->{start_sec}, $result->{start_nano});
-		$end   = time2string($result->{end_sec},   $result->{end_nano});
-		print("Channel $name, $start - $end\n");
-		++$count;
-	}
-	print("Altogether $count names\n");
-}
-
-print("Using key=$key for the following\n");
-
+print("Channels:\n");
 print("==================================================================\n");
-print("Request with pattern:\n");
-print("==================================================================\n");
-print("...IOC...\n");
-$results = $server->call('archiver.names', $key, "IOC");
+$results = $server->call('archiver.names', $key, "");
 foreach $result ( @{$results} )
 {
 	$name = $result->{name};
@@ -85,23 +51,16 @@ foreach $result ( @{$results} )
 	print("Channel $name, $start - $end\n");
 }
 
-
-
 # result = archiver.get_values(string name[],
 #                              int32 start_sec, int32 start_nano,
 #                              int32 end_sec, int32 end_nano, int32 count,
 #                              int32 how)
 # result = (look at spec, too complex for this comment)
-print("==================================================================\n");
 print("Get Values:\n");
 print("==================================================================\n");
-#@names = ( "fred", "freddy", "Jimmy", "James" );
-@names = ( "fred" );
-#@names = ( "Test_HPRF:IOC1:Load", "Test_HPRF:IOC1:FDAv" );
-@names = ( "Test_HPRF:Cath2:I" );
-
-($start, $startnano) = string2time("01/01/2003 00:00:00.000000000");
-($end, $endnano)   = string2time("02/28/2003 02:06:12.000000000");
+@names = ( "fred", "janet" );
+($start, $startnano) = string2time("01/01/2004 00:00:00.000000000");
+($end, $endnano)   = string2time("02/28/2004 02:06:12.000000000");
 $count = 50;
 $how = 0;
 # note: have to pass ref. to the 'names' array,
@@ -157,7 +116,7 @@ sub show_values($)
 	foreach $value ( @{$result->{values}} )
 	{
 	    $time = time2string($value->{secs}, $value->{nano});
-	    print("$time ($value->{secs}) $value->{stat}/$value->{sevr} @{$value->{value}}\n");
+	    print("$time $value->{stat}/$value->{sevr} @{$value->{value}}\n");
 	}
     }
 }

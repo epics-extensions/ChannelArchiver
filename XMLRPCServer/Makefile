@@ -24,12 +24,11 @@ ToolsObj_DIR   = $(INSTALL_LIB)
 
 # Compare to output of `xmlrpc-c-config cgi-server --libs`
 PROD_LIBS_DEFAULT  += xmlrpc_cgi xmlrpc xmlrpc_xmlparse xmlrpc_xmltok
-
-xmlrpc_cgi_DIR      = /usr/lib
-xmlrpc_DIR          = /usr/lib
-xmlrpc_xmlparse_DIR = /usr/lib
-xmlrpc_xmltok_DIR   = /usr/lib
-xmlrpc_client_DIR   = /usr/lib
+xmlrpc_cgi_DIR      = $(XMLRPCBASE)/lib
+xmlrpc_DIR          = $(XMLRPCBASE)/lib
+xmlrpc_xmlparse_DIR = $(XMLRPCBASE)/lib
+xmlrpc_xmltok_DIR   = $(XMLRPCBASE)/lib
+xmlrpc_client_DIR   = $(XMLRPCBASE)/lib
 
 # From xmlrpc-c-config libwww-client --libs
 bench_LDFLAGS=-L/usr/lib -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib

@@ -61,6 +61,7 @@ IndexFile *open_index(xmlrpc_env *env, int key)
                                        "Invalid key %d", key);
         return 0;
     } 
+    LOG_MSG("Open index, key %d = '%s'\n", key, index_name.c_str());
     IndexFile *index = new IndexFile(50);
     if (!index)
     {

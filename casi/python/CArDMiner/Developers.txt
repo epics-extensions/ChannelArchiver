@@ -1,0 +1,56 @@
+It is encouraged that you, the developer, extends this product past
+it's current potential.
+
+The code is commented on a method by method basis.  Nothing is really
+tricky.
+
+The ArchiveStructs classes are designed so that you can create a fully
+functioning archive creation engine with all of the features of CArDMiner
+without the GUI.  You could use these classes and build another GUI around
+it to suit your needs.  Here is a python script of minimal complexity that
+creates a new archive.
+
+Batch Processing with code snippets is slightly more complex.  Take a look
+at the BatchFrom class in ArchiveStructs.py, and the ApplySnippet function
+in BatchProcessor.py.  It should be pretty evident how that works.
+
+Like I promised, here is that sample code.
+
+Also, remember you need ....../ChannelArchiver/casi/python/O.Linux set as
+your PYTHONPATH environment variable.
+
+Okay, okay, some code...
+
+### Start sample code
+### This code will work if you change the filename
+### in line 8 to a real archive and the channel
+### list in line 15 to refelect real channels to 
+### copy out of the archive in line 8.
+### Note: you must run this from the ChannelArchiver/casi/python
+### directory.
+import sys							#1
+sys.path.append('./CArDMiner')					#2
+import ArchiveStructs						#3
+import casi							#4
+								#5
+archivePtr = casi.archive()					#6
+oldArchive = ArchiveStructs.ArchiveFrom()			#7
+oldArchive.open(archivePtr, '/tmp/dir')				#8
+oldArchive.get_info(archivePtr)					#9
+newArchive = ArchiveStructs.ArchiveTo(globals())		#10
+newArchive.setName('/home/Nick/dir')				#11
+import thread							#12
+myLock = thread.allocate_lock()					#13
+myLock.acquire()						#14
+newArchive.ToggleCopyChannel(('fred','jane', 'janet'))		#15
+newArchive.start_date = oldArchive.first_stamp			#16
+newArchive.end_date = oldArchive.last_stamp			#17	
+the_logger = ArchiveStructs.Logger('none', newArchive.log_name)	#18
+newArchive.RunInitProcCode(the_logger)				#19
+newArchive.CreateArchive(archivePtr, myLock, the_logger)	#20
+
+### End Sample Code
+
+
+
+Good Luck!

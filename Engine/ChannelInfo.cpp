@@ -53,10 +53,6 @@ static std::ostream & operator << (std::ostream &o, const chid &chid)
     return o;
 }
 
-#ifdef CA_STATISTICS
-size_t ChannelInfo::_missing_CA_values = 0;
-#endif
-
 // Locking:
 // 
 // The ChannelInfo list and the Circ. Buffers in there are
@@ -82,11 +78,6 @@ ChannelInfo::ChannelInfo()
     _previous_value = 0;
     _tmp_value = 0;
     _write_value = 0;
-
-#   ifdef CA_STATISTICS
-    _next_CA_value = -1;
-#   endif
-
     _had_null_time = false;
 }
 
@@ -370,20 +361,6 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
     //LOG_MSG (me->getName () << " : CA monitor      "
     //         << *me->_new_value << endl);
-#   ifdef CA_STATISTICS
-    double dv = me->_new_value->getDouble();
-    if (me->_next_CA_value < 0)
-        me->_next_CA_value = dv;
-    else if (me->_next_CA_value != dv)
-    {
-        ++me->_missing_CA_values;
-        me->_next_CA_value = dv;
-    }
-    ++me->_next_CA_value;
-    if (me->_next_CA_value > 10)
-        me->_next_CA_value = 0;
-#   endif
-
     me->handleNewValue();
 }
 
@@ -812,4 +789,12 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
     _buffer.resetOverwrites();
 }
 
+
+void ChannelInfo::shutdown(Archive &archive, ChannelIterator &channel,
+                           const osiTime &now)
+{
+    _buffer.reset();
+    addEvent(0, ARCH_STOPPED, now);
+    write(archive, channel);
+}
 

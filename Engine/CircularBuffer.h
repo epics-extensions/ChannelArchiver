@@ -16,6 +16,9 @@ public:
     CircularBuffer();
     ~CircularBuffer();
 
+    // Keep memory as is, but reset to have 0 entries
+    void reset();
+    
     CircularBuffer & operator = (const CircularBuffer &);
 
     void allocate(DbrType type, DbrCount count, double scan_period);
@@ -76,7 +79,7 @@ inline size_t CircularBuffer::getCount()
     if (_head >= _tail)
         count = _head - _tail;
     else    
-        //     #(tail .. end)     + #(start .. head)
+        //     #(tail .. end)      + #(start .. head)
         count = (_num - _tail - 1) + (_head + 1);
     _lock.give();
 
@@ -104,3 +107,4 @@ inline const RawValueI::Type *CircularBuffer::removeRawValue()
 }
 
 #endif //__CIRCULARBUFFER_H__
+

@@ -18,11 +18,6 @@
 
 class GroupInfo; // forward
 
-// For testing only,
-// expects all channels to be 0...10 ramps,
-// checks for missing values:
-// #define CA_STATISTICS
-
 //CLASS ChannelInfo
 // Information about an Engine's Channel to be archived
 // (class Channel represents a channel already in the Archive)
@@ -100,11 +95,8 @@ public:
     bool isDisabled() const            { return _disabled >= _groups.size(); }
 
     void write(class Archive &archive, ChannelIterator &channel);
-
-#ifdef CA_STATISTICS
-    int _next_CA_value;
-    static size_t _missing_CA_values;
-#endif
+    void shutdown(class Archive &archive, ChannelIterator &channel,
+                  const osiTime &now);
 
     // Check if Ring buffer is big enough, fits _value etc.
     void checkRingBuffer();

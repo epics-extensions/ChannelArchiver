@@ -7,7 +7,7 @@
 // valid entries:
 // tail+1, tail+2 .... head
 
-CircularBuffer::CircularBuffer ()
+CircularBuffer::CircularBuffer()
 {
 	_type = 0;
 	_count = 0;
@@ -19,9 +19,18 @@ CircularBuffer::CircularBuffer ()
 	_overwrites = 0;
 }
 
-CircularBuffer::~CircularBuffer ()
+CircularBuffer::~CircularBuffer()
 {
-	RawValueI::free (_buffer);
+	RawValueI::free(_buffer);
+}
+
+void CircularBuffer::reset()
+{
+    _lock.take();
+	_head = 0;
+	_tail = 0;
+	_overwrites = 0;
+    _lock.give();
 }
 
 CircularBuffer & CircularBuffer::operator = (const CircularBuffer &rhs)
@@ -37,11 +46,11 @@ CircularBuffer & CircularBuffer::operator = (const CircularBuffer &rhs)
 	_buffer = 0;
 
 	if (rhs._buffer)
-		allocate (_type, _count, _num);
+		allocate(_type, _count, _num);
 	return *this;
 }
 
-RawValueI::Type *CircularBuffer::getNextElement ()
+RawValueI::Type *CircularBuffer::getNextElement()
 {
 	// compute the place in the circular queue
 	if (++_head >= _num)
@@ -56,40 +65,40 @@ RawValueI::Type *CircularBuffer::getNextElement ()
 		if (++_tail >= _num)
 			_tail = 0;
 	}
-	return getElement (_buffer, _head);
+	return getElement(_buffer, _head);
 }
 
-void CircularBuffer::allocate (DbrType type, DbrCount count, double scan_period)
+void CircularBuffer::allocate(DbrType type, DbrCount count, double scan_period)
 {
 	size_t	num;
 
-	double write_period = theEngine->getWritePeriod ();
+	double write_period = theEngine->getWritePeriod();
 	if (write_period <= 0)
 		num = 100;
 	else
-		num = size_t (write_period * theEngine->getBufferReserve() / scan_period);
+		num = size_t(write_period * theEngine->getBufferReserve()
+                     / scan_period);
 	if (num < 3)
 		num = 3;
 
-	allocate (type, count, num);
+	allocate(type, count, num);
 }
 
-void CircularBuffer::allocate (DbrType type, DbrCount count, size_t num)
+void CircularBuffer::allocate(DbrType type, DbrCount count, size_t num)
 {
 	RawValueI::Type *buffer;
-	if (_type==type  &&  _count==count  &&  _num >= num) // can hold that much already
+	if (_type==type && _count==count && _num >= num) // can hold that already
 		return;
 
-	_lock.take ();
-	buffer = RawValueI::allocate (type, count, num);
-
-	if (_type!=type  &&  _count!=count  &&  _buffer) // old buffer, diff. type?
+	_lock.take();
+	buffer = RawValueI::allocate(type, count, num);
+	if (_type!=type && _count!=count && _buffer) // old buffer, diff. type?
 	{
-		RawValueI::free (_buffer);
+		RawValueI::free(_buffer);
 		_buffer = 0;
 	}
 
-	_element_size = RawValueI::getSize (type, count);
+	_element_size = RawValueI::getSize(type, count);
 	_type = type;
 	_count = count;
 
@@ -98,7 +107,8 @@ void CircularBuffer::allocate (DbrType type, DbrCount count, size_t num)
 		// buffer is bigger than old _buffer
 		if (_tail < _head)
 		{
-			memcpy (getElement (buffer, 1), getElement (_buffer, _tail+1), _head-_tail);
+			memcpy(getElement(buffer, 1),
+                   getElement(_buffer, _tail+1), _head-_tail);
 			_head -= _tail;
 			_tail = 0;
 		}
@@ -106,17 +116,18 @@ void CircularBuffer::allocate (DbrType type, DbrCount count, size_t num)
 		if (_tail > _head)
 		{
 			size_t tail_elems = _num - _tail - 1;
-			memcpy (getElement (buffer, 1), getElement (_buffer, _tail+1), tail_elems);
-			memcpy (getElement (buffer, tail_elems), _buffer, _head+1);
+			memcpy(getElement(buffer, 1),
+                   getElement(_buffer, _tail+1), tail_elems);
+			memcpy(getElement(buffer, tail_elems), _buffer, _head+1);
 			_tail = 0;
 			_head += tail_elems + 1;
 		}
 		// else: _head == _tail, empty _buffer
-		RawValueI::free (_buffer);
+		RawValueI::free(_buffer);
 	}
 
 	_num = num;
 	_buffer = buffer;
-	_lock.give ();
+	_lock.give();
 }
 

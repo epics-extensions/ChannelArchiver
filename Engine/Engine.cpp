@@ -86,12 +86,13 @@ static void caException(struct exception_handler_args args)
     if (CA_EXTRACT_SEVERITY(args.stat) >= 0  &&
         CA_EXTRACT_SEVERITY(args.stat) < 8)
     {
-        LOG_MSG("CA Exception received: stat " << severity[CA_EXTRACT_SEVERITY(args.stat)]
-            << ", op " << args.op << "\n");
+        LOG_MSG("CA Exception received: stat "
+                << severity[CA_EXTRACT_SEVERITY(args.stat)]
+                << ", op " << args.op << "\n");
     }
     else
         LOG_MSG("CA Exception received: stat " << args.stat
-            << ", op " << args.op << "\n");
+                << ", op " << args.op << "\n");
     if (args.chid)
         LOG_MSG("Channel '" << ca_name(args.chid) << "'\n");
     if (args.ctx)
@@ -104,7 +105,6 @@ static void caException(struct exception_handler_args args)
 // for each fd opened/closed
 static void fd_register(void *pfdctx, int fd, int opened)
 {
-    // LOG_MSG("CA " << (opened ? "registers" : "unregisters") << " fd " << fd << endl);
     if (opened)
     {
         LOG_MSG("CA registers fd " << fd << "\n");
@@ -227,17 +227,30 @@ void Engine::shutdown()
     if (code)
         LOG_MSG("WriteThread exit code: " << code << "\n");
 
-    LOG_MSG("Flushing unwritten values...\n");
+    LOG_MSG("Adding 'Archive_Off' events...\n");
     osiTime now;
     now = osiTime::getCurrent();
-    stdList<ChannelInfo *>::iterator channel = lockChannels().begin();
-    while (channel!=_channels.end())
+    Archive &archive = lockArchive();
+    ChannelIterator channel(archive);
+    lockChannels();
+    try
     {
-        (*channel)->addEvent(0, ARCH_STOPPED, now);
-        ++channel;
+        stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
+        while (channel_info != _channels.end())
+        {
+            (*channel_info)->shutdown(archive, channel, now);
+            ++channel_info;
+        }
+    }
+    catch (ArchiveException &e)
+    {
+        LOG_MSG(osiTime::getCurrent()
+                << ": " << "Engine::shutdown caught"
+                << e.what() << "\n");
     }
     unlockChannels();
-    writeArchive();
+    channel->releaseBuffer();
+    unlockArchive();
 
     LOG_MSG("Done.\n");
     theEngine = 0;
@@ -481,17 +494,14 @@ void Engine::setSecsPerFile(double secs_per_file)
 // Called by WriteThread as well as Engine on shutdown!
 void Engine::writeArchive()
 {
-#   ifdef CA_STATISTICS
-    size_t missing_CA = ChannelInfo::_missing_CA_values;
-#   endif
-
     Archive &archive = lockArchive();
     ChannelIterator channel(archive);
     lockChannels();
     try
     {
         stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
-        while (channel_info != _channels.end())
+        while (channel_info != _channels.end() &&
+               write_thread.isRunning())
         {
             (*channel_info)->write(archive, channel);
             ++channel_info;
@@ -506,12 +516,8 @@ void Engine::writeArchive()
     unlockChannels();
     channel->releaseBuffer();
     unlockArchive();
-
-#   ifdef CA_STATISTICS
-    if (missing_CA != ChannelInfo::_missing_CA_values)
-        LOG_MSG("Missing: " << ChannelInfo::_missing_CA_values
-                 << " CA monitors\n");
-#   endif
 }
+
+
 
 

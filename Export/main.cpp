@@ -247,6 +247,7 @@ bool dump_gnuplot(IndexFile &index,
 bool dump_spreadsheet(IndexFile &index,
                       stdVector<stdString> names,
                       epicsTime *start, epicsTime *end,
+                      bool raw_time,
                       bool status_text,
                       ReaderFactory::How how, double delta,
                       stdString output_name)
@@ -269,6 +270,8 @@ bool dump_spreadsheet(IndexFile &index,
     fprintf(f, "# Method: %s\n", ReaderFactory::toString(how, delta));
     fprintf(f, "\n");
     fprintf(f, "# Time                       ");
+    if (raw_time)
+        fprintf(f, "\tsecs");
     for (i=0; i<sheet.getNum(); ++i)
     {
         fprintf(f, "\t%s [%s]", sheet.getName(i).c_str(),
@@ -282,6 +285,11 @@ bool dump_spreadsheet(IndexFile &index,
         if (end && sheet.getTime() >= *end)
             break;
         fprintf(f, "%s", epicsTimeTxt(sheet.getTime(), time));
+        if (raw_time)
+        {
+            epicsTimeStamp stamp = sheet.getTime();
+            fprintf(f, "\t%lu", (unsigned long)stamp.secPastEpoch);
+        }
         for (i=0; i<sheet.getNum(); ++i)
         {
             value = sheet.getValue(i);
@@ -357,6 +365,8 @@ int main(int argc, const char *argv[])
                              "gnuplot", "Generate GNUPlot command file");
     CmdArgFlag   image      (parser,
                              "Gnuplot", "Generate GNUPlot output for Image");
+    CmdArgFlag   raw_time   (parser, "raw_time",
+                             "Include columns for EPICS time stamp");
     // defaults
     prec.set(-1);
     if (! parser.parse())
@@ -462,7 +472,7 @@ int main(int argc, const char *argv[])
                                   how, delta, output, image) ? 0 : -1;
         else
             result = dump_spreadsheet(index, names, start, end,
-                                      status_text, how, delta,
+                                      raw_time, status_text, how, delta,
                                       output) ? 0 : -1;
     }
     index.close();

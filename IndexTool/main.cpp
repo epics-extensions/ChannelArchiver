@@ -187,13 +187,16 @@ int main(int argc, const char *argv[])
     BenchTimer timer;
     if (!create_masterindex(RTreeM, parser.getArgument(0),
                             parser.getArgument(1)))
+    {
+        lock_file.Unlock();
         return -1;
+    }
     if (verbose > 0)
     {
         timer.stop();
         printf("Time: %s\n", timer.toString().c_str());
     }
-    lock_file.Unlock ();
+    lock_file.Unlock();
     
     return 0;
 }

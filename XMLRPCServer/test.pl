@@ -103,7 +103,7 @@ print("==================================================================\n");
 ($end, $endnano)   = string2time("01/31/2003 02:15:00.000000000");
 
 $count = 10;
-$how = 1;
+$how = 0;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:
 $results = $server->call('archiver.values', $key, \@names,

@@ -20,10 +20,10 @@
 
 // We read/write the contents ourself,
 // not including possible pad bytes of the structure
-static const long list_node_size = 12;
+static const FileOffset list_node_size = 12;
 
-long FileAllocator::minimum_size = 64;
-long FileAllocator::file_size_increment = 0;
+FileOffset FileAllocator::minimum_size = 64;
+FileOffset FileAllocator::file_size_increment = 0;
 
 FileAllocator::FileAllocator()
 {
@@ -36,7 +36,7 @@ FileAllocator::~FileAllocator()
         fprintf(stderr, "FileAllocator wasn't detached\n");
 }    
 
-bool FileAllocator::attach(FILE *f, long reserved_space)
+bool FileAllocator::attach(FILE *f, FileOffset reserved_space)
 {
     LOG_ASSERT(f != 0);
     this->f = f;
@@ -75,12 +75,12 @@ void FileAllocator::detach()
     f = 0;
 }
 
-long FileAllocator::allocate(long num_bytes)
+FileOffset FileAllocator::allocate(FileOffset num_bytes)
 {
     if (num_bytes < minimum_size)
         num_bytes = minimum_size;
     list_node node;
-    long node_offset;
+    FileOffset node_offset;
     // Check free list for a valid entry
     node_offset = free_head.next;
     while (node_offset)
@@ -107,7 +107,8 @@ long FileAllocator::allocate(long num_bytes)
                       write_node(reserved_space+list_node_size, &free_head)))
                     return 0;
                 // Create, insert & return new node
-                long new_offset = node_offset + list_node_size + node.bytes;
+                FileOffset new_offset =
+                    node_offset + list_node_size + node.bytes;
                 list_node new_node;
                 new_node.bytes = num_bytes;
                 if (!insert_node(reserved_space, &allocated_head,
@@ -145,7 +146,7 @@ long FileAllocator::allocate(long num_bytes)
     if (!write_node(reserved_space, &allocated_head))
         return false;
     // Update overall file size, return offset of new data block
-    long data_offset = file_size + list_node_size;
+    FileOffset data_offset = file_size + list_node_size;
     file_size = data_offset + num_bytes;
     if (file_size_increment > 0)
     {
@@ -166,7 +167,7 @@ long FileAllocator::allocate(long num_bytes)
     return data_offset;
 }
 
-bool FileAllocator::free(long block_offset)
+bool FileAllocator::free(FileOffset block_offset)
 {
     // list_node should precede the memory block,
     // so it cannot start before reserved_space + heads + 1st buffer node
@@ -180,7 +181,7 @@ bool FileAllocator::free(long block_offset)
     }
 
     list_node node;
-    long node_offset = block_offset - list_node_size;
+    FileOffset node_offset = block_offset - list_node_size;
     if (!read_node(node_offset, &node))
         return false;
     if (node_offset + node.bytes > file_size)
@@ -201,7 +202,7 @@ bool FileAllocator::free(long block_offset)
         return false;
     // Check if we can merge with the preceeding block
     list_node pred;
-    long pred_offset = node.prev;
+    FileOffset pred_offset = node.prev;
     if (pred_offset)
     {
         if (!read_node(pred_offset, &pred))
@@ -237,7 +238,7 @@ bool FileAllocator::free(long block_offset)
 
     // Check if we can merge with the succeeding block
     list_node succ;
-    long succ_offset = node.next;
+    FileOffset succ_offset = node.next;
     if (succ_offset)
     {
         if (node_offset + list_node_size + node.bytes == succ_offset)
@@ -274,11 +275,11 @@ bool FileAllocator::dump(int level)
 {
     bool ok = true;
     list_node allocated_node, free_node;
-    long allocated_offset, free_offset;
-    long allocated_prev = 0, free_prev = 0;
-    long allocated_mem = 0, allocated_blocks = 0;
-    long free_mem = 0, free_blocks = 0;
-    long next_offset = 0;
+    FileOffset allocated_offset, free_offset;
+    FileOffset allocated_prev = 0, free_prev = 0;
+    FileOffset allocated_mem = 0, allocated_blocks = 0;
+    FileOffset free_mem = 0, free_blocks = 0;
+    FileOffset next_offset = 0;
     if (level > 0)
         printf("bytes in file: %ld. Reserved/Allocated/Free: %ld/%ld/%ld\n",
                file_size,
@@ -360,7 +361,7 @@ bool FileAllocator::dump(int level)
     return ok;
 }
 
-bool FileAllocator::read_node(long offset, list_node *node)
+bool FileAllocator::read_node(FileOffset offset, list_node *node)
 {
     fseek(f, offset, SEEK_SET);
     return readLong(f, &node->bytes) &&
@@ -368,7 +369,7 @@ bool FileAllocator::read_node(long offset, list_node *node)
         readLong(f, &node->next);
 }
 
-bool FileAllocator::write_node(long offset, const list_node *node)
+bool FileAllocator::write_node(FileOffset offset, const list_node *node)
 {
     fseek(f, offset, SEEK_SET);
     return writeLong(f, node->bytes) &&
@@ -376,11 +377,11 @@ bool FileAllocator::write_node(long offset, const list_node *node)
         writeLong(f, node->next);
 }
 
-bool FileAllocator::remove_node(long head_offset, list_node *head,
-                                 long node_offset, const list_node *node)
+bool FileAllocator::remove_node(FileOffset head_offset, list_node *head,
+                                FileOffset node_offset, const list_node *node)
 {
     list_node tmp;
-    long tmp_offset;
+    FileOffset tmp_offset;
 
     if (head->next == node_offset)
     {   // first node; make head skip it
@@ -430,8 +431,8 @@ bool FileAllocator::remove_node(long head_offset, list_node *head,
     }
 }
 
-bool FileAllocator::insert_node(long head_offset, list_node *head,
-                                 long node_offset, list_node *node)
+bool FileAllocator::insert_node(FileOffset head_offset, list_node *head,
+                                 FileOffset node_offset, list_node *node)
 {
     // add node to list of free blocks
     if (head->next == 0)
@@ -464,7 +465,7 @@ bool FileAllocator::insert_node(long head_offset, list_node *head,
     }
     // find proper location in free list
     list_node pred;
-    long pred_offset = head->next;
+    FileOffset pred_offset = head->next;
     if (!read_node(pred_offset, &pred))
         return false;
     while (pred.next && pred.next < node_offset)

@@ -3,7 +3,10 @@
 #ifndef __FILE_ALLOCATOR_H__
 #define __FILE_ALLOCATOR_H__
 
+// System
 #include <stdio.h>
+// Storage
+#include <StorageTypes.h>
 
 /// \ingroup Storage
 /// @{
@@ -28,7 +31,7 @@ public:
     ~FileAllocator();
     
     /// <B>Must be</B> invoked to attach (& initialize) a file.
-    bool attach(FILE *f, long reserved_space);
+    bool attach(FILE *f, FileOffset reserved_space);
 
     /// After attaching to a file, this returns the file
     FILE *getFile() const { return f; }
@@ -41,7 +44,7 @@ public:
     /// \see free()
     ///
     ///
-    long allocate(long num_bytes);
+    FileOffset allocate(FileOffset num_bytes);
 
     /// Release a file block (will be placed in free list).
 
@@ -50,7 +53,7 @@ public:
     /// There is no 100% dependable way to check this,
     /// but free() will perform some basic test and return false
     /// for inknown memory regions.
-    bool free(long offset);
+    bool free(FileOffset offset);
 
     /// To avoid allocating tiny areas,
     /// also to avoid splitting free blocks into pieces
@@ -58,11 +61,11 @@ public:
     /// all memory regions are at least this big.
     /// Meaning: Whenever you allocate less than minimum_size,
     /// you will get a block that's actually minimum_size.
-    static long minimum_size;
+    static FileOffset minimum_size;
 
     /// Setting file_size_increment will cause the file size
     /// to jump in the given increments.
-    static long file_size_increment;
+    static FileOffset file_size_increment;
     
     /// Show ASCII-type info about the file structure.
 
@@ -77,14 +80,14 @@ public:
 private:
     typedef struct
     {
-        long bytes;
-        long prev;
-        long next;
+        FileOffset bytes;
+        FileOffset prev;
+        FileOffset next;
     } list_node;
     
     FILE *f;
-    long reserved_space; // Bytes we ignore in header
-    long file_size; // Total # of bytes in file
+    FileOffset reserved_space; // Bytes we ignore in header
+    FileOffset file_size; // Total # of bytes in file
     // For the head nodes,
     // 'prev' = last entry, tail of list,
     // 'next' = first entry, head of list!
@@ -92,14 +95,14 @@ private:
     //   of what's on the disk!
     list_node allocated_head, free_head;
     
-    bool read_node(long offset, list_node *node);
-    bool write_node(long offset, const list_node *node);
+    bool read_node(FileOffset offset, list_node *node);
+    bool write_node(FileOffset offset, const list_node *node);
     // Unlink node from list, node itself remains unchanged
-    bool remove_node(long head_offset, list_node *head,
-                     long node_offset, const list_node *node);
+    bool remove_node(FileOffset head_offset, list_node *head,
+                     FileOffset node_offset, const list_node *node);
     // Insert node (sorted), node's prev/next get changed
-    bool insert_node(long head_offset, list_node *head,
-                     long node_offset, list_node *node);
+    bool insert_node(FileOffset head_offset, list_node *head,
+                     FileOffset node_offset, list_node *node);
 };
 
 /// @}

@@ -22,7 +22,7 @@
 
 // List of all DataFiles currently open
 // We assume that there aren't that many open,
-// so a simple list is sufficient
+// so a simple list is sufficient.
 static stdList<DataFile *> open_data_files;
 
 DataFile::DataFile(const stdString &dirname,
@@ -50,32 +50,6 @@ DataFile::~DataFile ()
 #endif
     if (file)
         fclose(file);
-}
-
-// For synchr. with a file that's actively written
-// by another prog. is might help to reopen:
-bool DataFile::reopen ()
-{
-    if (file)
-        fclose(file);
-    if (file==0)
-    {
-        if (for_write)
-            file = fopen(filename.c_str(), "r+b");
-        else
-            file = fopen(filename.c_str(), "rb");
-    }
-    if (file==0  && for_write)
-        file = fopen(filename.c_str(), "w+b");
-    if (file == 0)
-    {
-        
-        LOG_MSG("Cannot %s DataFile '%s'\n",
-                (for_write ? "create" : "open"),
-                filename.c_str());
-        return false;
-    }
-    return true;
 }
 
 DataFile *DataFile::reference(const stdString &dirname,
@@ -128,6 +102,48 @@ void DataFile::release ()
 #endif
 }
 
+bool DataFile::getSize(FileOffset &size) const
+{
+    if (fseek(file, 0, SEEK_END) != 0)
+    {
+        LOG_MSG("DataFile::getSize(%s): Cannot seek to end\n",
+                filename.c_str());
+        return false;
+    }
+    long end = ftell(file);
+    if (end < 0)
+    {
+        LOG_MSG("DataFile::getSize(%s): ftell failed\n",
+                filename.c_str());
+        return false;
+    }
+    size = (FileOffset) end;
+    return true;
+}
+
+bool DataFile::reopen ()
+{
+    if (file)
+        fclose(file);
+    // Try existing
+    if (for_write)
+        file = fopen(filename.c_str(), "r+b");
+    else
+        file = fopen(filename.c_str(), "rb");
+    // Try to create a new one
+    if (file==0  && for_write)
+        file = fopen(filename.c_str(), "w+b");
+    // Got any?
+    if (file == 0)
+    {   
+        LOG_MSG("Cannot %s DataFile '%s'\n",
+                (for_write ? "create" : "open"),
+                filename.c_str());
+        return false;
+    }
+    return true;
+}
+
 bool DataFile::close_all(bool verbose)
 {
     DataFile *file;
@@ -176,12 +192,6 @@ DataHeader *DataFile::getHeader(FileOffset offset)
 DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
                                 double period, size_t num_samples)
 {
-    if (fseek(file, 0, SEEK_END) != 0)
-    {
-        LOG_MSG("DataFile::addHeader(%s): Cannot add new header\n",
-                filename.c_str());
-        return 0;
-    }
     AutoPtr<DataHeader> header(new DataHeader(this));
     if (! header)
     {
@@ -189,7 +199,8 @@ DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
                 filename.c_str());
         return 0;
     }
-    header->offset = ftell(file);
+    if (!getSize(header->offset))
+        return 0;
     size_t raw_value_size = RawValue::getSize(dbr_type, dbr_count);
     header->data.dbr_type = dbr_type;
     header->data.dbr_count = dbr_count;

@@ -1,33 +1,14 @@
+// DataWriter.cpp
 
 // Tools
-#include "MsgLogger.h"
-#include "Filename.h"
-#include "epicsTimeHelper.h"
+#include <MsgLogger.h>
+#include <Filename.h>
+#include <epicsTimeHelper.h>
 // Storage
 #include "DataFile.h"
 #include "DataWriter.h"
 
-// TODO: Switch to new data file after
-// time limit or file size limit
-
-static stdString makeDataFileName()
-{
-    int year, month, day, hour, min, sec;
-    unsigned long nano;
-    char buffer[80];
-    
-    epicsTime now = epicsTime::getCurrent();    
-    //    if (getSecsPerFile() == SECS_PER_MONTH)
-    //{
-    epicsTime2vals(now, year, month, day, hour, min, sec, nano);
-    sprintf(buffer, "%04d%02d%02d", year, month, day);
-    return stdString(buffer);
-    //}
-    //now = roundTimeDown(now, _secs_per_file);
-    //epicsTime2vals(now, year, month, day, hour, min, sec, nano);
-    //sprintf(buffer, "%04d%02d%02d-%02d%02d%02d", year, month, day, hour, min, sec);
-    //return stdString(buffer);
-}
+FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
 
 DataWriter::DataWriter(IndexFile &index,
                        const stdString &channel_name,
@@ -59,9 +40,8 @@ DataWriter::DataWriter(IndexFile &index,
     int idx;
     if (tree->getLastDatablock(node, idx, block))        
     {   // - There is a data file and buffer
-        datafile = DataFile::reference(index.getDirectory(),
-                                       block.data_filename, true);
-        if (!datafile)
+        if (! (datafile = DataFile::reference(
+                   index.getDirectory(), block.data_filename, true)))
         {
             LOG_MSG("DataWriter(%s) cannot open data file %s\n",
                     channel_name.c_str(), block.data_filename.c_str());
@@ -109,40 +89,9 @@ DataWriter::DataWriter(IndexFile &index,
         }
     }   
     else
-    {   // - There is no datafile, no buffer
-        // Create data file
-        stdString data_file_name = makeDataFileName();
-        datafile = DataFile::reference(index.getDirectory(),
-                                       data_file_name, true);
-        if (! datafile)
-        {
-             LOG_MSG ("DataWriter(%s): Cannot create data file '%s'\n",
-                 channel_name.c_str(), data_file_name.c_str());
-             return;
-        }        
-        // add CtrlInfo
-        FileOffset ctrl_info_offset;
-        if (!datafile->addCtrlInfo(ctrl_info, ctrl_info_offset))
-        {
-             LOG_MSG ("DataWriter(%s): Cannot add CtrlInfo to file '%s'\n",
-                 channel_name.c_str(), data_file_name.c_str());
-             datafile->release();
-             return;
-        }        
-        // add first header
-        header = datafile->addHeader(dbr_type, dbr_count,
-                                     period, next_buffer_size);
-        datafile->release(); // now ref'ed by header
-        if (!header)
-        {
-            LOG_MSG ("DataWriter(%s): Cannot add Header to data file '%s'\n",
-                    channel_name.c_str(), data_file_name.c_str());
-           return;
-        }    
-        header->data.ctrl_info_offset = ctrl_info_offset;
-        // Upp the buffer size
-        calc_next_buffer_size(next_buffer_size);
-        // Will add to index when we release the buffer
+    {
+        if (!addNewHeader(true))
+            return;
     }
     available = header->available();
 }
@@ -152,7 +101,6 @@ DataWriter::~DataWriter()
     // Update index
     if (header)
     {   
-        header->data.dir_offset = 0; // no longer used
         header->write();
         if (tree)
         {
@@ -161,7 +109,8 @@ DataWriter::~DataWriter()
                     header->offset, header->datafile->getBasename()))
             {
                 LOG_MSG("Cannot add %s @ 0x%lX to index\n",
-                        header->datafile->getBasename().c_str(), header->offset);
+                        header->datafile->getBasename().c_str(),
+                        header->offset);
             }
             delete tree;
             tree = 0;
@@ -203,72 +152,141 @@ bool DataWriter::add(const RawValue::Data *data)
     return true;
 }
 
-void DataWriter::calc_next_buffer_size(size_t start)
+// Create name "<today>[-serial]"
+void DataWriter::makeDataFileName(int serial, stdString &name)
 {
-    // We want the next power of 2:
-    int log2 = 0;
-    while (start > 0)
-    {
-        start >>= 1;
-        ++log2;
-    }
-    if (log2 < 6) // minumum: 2^6 == 64
-        log2 = 6;
-    if (log2 > 12) // maximum: 2^12 = 4096
-        log2 = 12;
-    next_buffer_size = 1 << log2;
+    int year, month, day, hour, min, sec;
+    unsigned long nano;
+    char buffer[30];    
+    epicsTime now = epicsTime::getCurrent();    
+    epicsTime2vals(now, year, month, day, hour, min, sec, nano);
+    if (serial > 0)
+        sprintf(buffer, "%04d%02d%02d-%d", year, month, day, serial);
+    else
+        sprintf(buffer, "%04d%02d%02d", year, month, day);
+    name = buffer;
 }
 
-// Helper: Assuming that we have
-// a valid header, we add a new one,
-// because the existing one is full or
-// has the wrong ctrl_info
-//
+// Create new DataFile that's below file_size_limit in size.
+DataFile *DataWriter::createNewDataFile()
+{
+    DataFile *datafile;
+    int serial=0;
+    stdString data_file_name;
+    FileOffset file_size;
+    while (true)
+    {
+        makeDataFileName(serial, data_file_name);
+        datafile = DataFile::reference(index.getDirectory(),
+                                       data_file_name, true);
+        if (! datafile)
+        {
+            LOG_MSG ("DataWriter(%s): Cannot create data file '%s'\n",
+                     channel_name.c_str(), data_file_name.c_str());
+            return 0;
+        }
+        if (!datafile->getSize(file_size))
+        {
+            datafile->release();
+            return 0;
+        }
+        if (file_size < file_size_limit)
+            return datafile;
+        ++serial;
+        datafile->release();
+    }
+}
+
+void DataWriter::calc_next_buffer_size(size_t start)
+{
+    if (start < 64)
+        next_buffer_size = 64;
+    else if (start > 4096)
+        next_buffer_size = 4096;
+    else
+    {   // We want the next power of 2:
+        int log2 = 0;
+        while (start > 0)
+        {
+            start >>= 1;
+            ++log2;
+        }
+        next_buffer_size = 1 << log2;
+    }
+}
+
+// Add a new header because
+// - there's none
+// - data type or ctrl_info changed
+// - the existing data buffer is full.
+// Might switch to new DataFile.
 // Will write ctrl_info out if new_ctrl_info is set,
-// otherwise the new header points to the existin ctrl_info
+// otherwise the new header tries to point to the existing ctrl_info.
 bool DataWriter::addNewHeader(bool new_ctrl_info)
 {
-    LOG_ASSERT(header != 0);
+    DataFile  *datafile;
     FileOffset ctrl_info_offset;
+    bool       new_datafile = false;    // Need to use new DataFile?
+    if (header == 0)
+        new_datafile = true;            // Yes, because there's none.
+    else
+    {
+        FileOffset file_size;
+        if (! header->datafile->getSize(file_size))
+            return false;
+        if (file_size >= file_size_limit) // Yes: reached max. size.
+            new_datafile = true;
+    }
+    if (new_datafile)
+    {
+        if (! (datafile = createNewDataFile()))
+            return false;
+        new_ctrl_info = true;
+    }
+    else
+        datafile = header->datafile;
     if (new_ctrl_info)
     {
-        if (!header->datafile->addCtrlInfo(ctrl_info, ctrl_info_offset))
+        if (!datafile->addCtrlInfo(ctrl_info, ctrl_info_offset))
         {
             LOG_MSG("DataWriter(%s): Cannot add CtrlInfo to file '%s'\n",
-                    channel_name.c_str(),
-                    header->datafile->getBasename().c_str());
+                    channel_name.c_str(), datafile->getBasename().c_str());
+            if (new_datafile)
+                datafile->release();
             return false;
         }        
     }
     else // use existing one
         ctrl_info_offset = header->data.ctrl_info_offset;
-        
     DataHeader *new_header =
-        header->datafile->addHeader(dbr_type, dbr_count, period,
-                                    next_buffer_size);
+        datafile->addHeader(dbr_type, dbr_count, period, next_buffer_size);
+    if (new_datafile)
+        datafile->release(); // now ref'ed by new_header
     if (!new_header)
         return false;
     new_header->data.ctrl_info_offset = ctrl_info_offset;
-    // Link old header to new one
-    header->set_next(new_header->datafile->getBasename(),
-                     new_header->offset);
-    header->write();
-    // back from new to old
-    new_header->set_prev(header->datafile->getBasename(),
-                         header->offset);        
-    // Update index entry for the old header
-    if (tree)
-    {
-        if (!tree->updateLastDatablock(
-                header->data.begin_time, header->data.end_time,
-                header->offset, header->datafile->getBasename()))
+    if (header)
+    {   // Link old header to new one
+        header->set_next(new_header->datafile->getBasename(),
+                         new_header->offset);
+        header->write();
+        // back from new to old
+        new_header->set_prev(header->datafile->getBasename(),
+                             header->offset);        
+        // Update index entry for the old header
+        if (tree)
         {
-            LOG_MSG("Cannot add %s @ 0x%lX to index\n",
-                    header->datafile->getBasename().c_str(), header->offset);
+            if (!tree->updateLastDatablock(
+                    header->data.begin_time, header->data.end_time,
+                    header->offset, header->datafile->getBasename()))
+            {
+                LOG_MSG("Cannot add %s @ 0x%lX to index\n",
+                        header->datafile->getBasename().c_str(), header->offset);
+            }
         }
-    }        
+        delete header;
+    }
     // Switch to new header
-    delete header;
     header = new_header;
     // Upp the buffer size
     calc_next_buffer_size(next_buffer_size);

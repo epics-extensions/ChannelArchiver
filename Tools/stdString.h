@@ -3,10 +3,11 @@
 
 #include <cstring>
 
-/// \ingroup Tools
-/// Meant to behave like std::string,
-/// was introduced when egcs implementation lead
+/// \ingroup Tools Meant to behave like std::string.
+
+/// The stdString was introduced when the egcs implementation lead
 /// to memory leak - and then kept.
+///
 class stdString
 {
 public:

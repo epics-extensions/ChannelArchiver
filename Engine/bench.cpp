@@ -46,6 +46,7 @@ bool write_samples(const stdString &index_name,
                      0.0, 1.0, 9.0, 10.0);
     DbrType dbr_type = DBR_TIME_DOUBLE;
     DbrCount dbr_count = 1;
+    DataWriter::file_size_limit = 10*1024*1024;
     DataWriter * writer =
         new DataWriter(index,
                        channel_name, info,

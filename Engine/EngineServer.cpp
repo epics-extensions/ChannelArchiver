@@ -8,23 +8,15 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-#ifdef WIN32
-#pragma warning (disable: 4786)
-#endif
-
-#ifdef solaris
-// silly clash with struct map on Solaris
-// as long as namespaces are not used by egcs C++ library:
-#define _NET_IF_H
-#endif
-
 // Base
 #include <cvtFast.h>
 // Tools
-#include "CGIDemangler.h"
-#include "NetTools.h"
-#include "epicsTimeHelper.h"
-#include "MsgLogger.h"
+#include <CGIDemangler.h>
+#include <NetTools.h>
+#include <epicsTimeHelper.h>
+#include <MsgLogger.h>
+// Storage
+#include <DataWriter.h>
 // Engine
 #include "Engine.h"
 #include "EngineConfig.h"
@@ -60,15 +52,14 @@ static void engineinfo(HTTPClientConnection *connection,
         epicsTime2string(theEngine->getStartTime(), s);
         page.tableLine("Started", s.c_str(), 0);
         
-        page.tableLine("Archive ", theEngine->getIndexName().c_str(), 0);
+        page.tableLine("Archive", theEngine->getIndexName().c_str(), 0);
         
         cvtUlongToString(theEngine->getChannels(guard).size(), line);
         page.tableLine("Channels", line, 0);
         
 #ifdef SHOW_DIR
-        char dir[100];
-        getcwd(dir, sizeof dir);                 
-        page.tableLine("Directory ", dir, 0);
+        getcwd(dir, sizeof line);                 
+        page.tableLine("Directory ", line, 0);
 #endif
         
         epicsTime2string(theEngine->getNextWriteTime(guard), s);
@@ -78,21 +69,17 @@ static void engineinfo(HTTPClientConnection *connection,
                        (const char *)
                        (theEngine->isWriting() ? "Yes" : "No"), 0);
         
-        sprintf(line, "%f sec", theEngine->getWritePeriod());
+        sprintf(line, "%.1f sec", theEngine->getWritePeriod());
         page.tableLine("Write Period", line, 0);
+
+        sprintf(line, "%lu MB", DataWriter::file_size_limit/1024/1024);
+        page.tableLine("File Size Limit", line, 0);
         
-        sprintf(line, "%f sec", theEngine->getGetThreshold());
+        sprintf(line, "%.1f sec", theEngine->getGetThreshold());
         page.tableLine("Get Threshold", line, 0);
     }
     else
-    {
-        page.tableLine("No Engine runnig!?", 0); 
-    }
-    
-    cvtUlongToString(
-        (unsigned long) connection->getServer()->getTotalClientCount(), line);
-    page.tableLine("Web Clients (total)", line, 0);
-    
+        page.tableLine("No Engine runnig!?", 0);
     page.closeTable();
 }
 
@@ -563,7 +550,7 @@ bool EngineServer::_nocfg = false;
 
 EngineServer::EngineServer()
 {
-    HTTPClientConnection::setPathHandlers(handlers);
+    HTTPClientConnection::handlers = handlers;
     _server = HTTPServer::create(_port);
     if (!_server)
     {

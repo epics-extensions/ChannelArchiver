@@ -24,7 +24,8 @@
 class IndexFile
 {
 public:
-    static const long cookie = 0x43414931; // == 'CAI1', Chan. Arch. Index 1
+    // == 'CAI1', Chan. Arch. Index 1
+    static const unsigned long cookie = 0x43414931;
 
     IndexFile(int RTreeM);
 
@@ -61,7 +62,7 @@ public:
         {    return entry.name; }
     private:
         friend class IndexFile;
-        long hashvalue;
+        unsigned long hashvalue;
         NameHash::Entry entry;
     };
 

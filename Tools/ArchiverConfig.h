@@ -12,6 +12,11 @@
 #ifndef _ARCHIVER_CONFIG_H__
 #define _ARCHIVER_CONFIG_H__
 
+/// \mainpage Channel Archiver
+///
+/// Documentation of the ChannelArchiver's libraries
+/// and classes.
+
 // Little-Endian Architectures require conversions
 // because the binary archive stores all data
 // in the big-endian (aka network or Motorola) format.

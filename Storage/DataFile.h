@@ -5,12 +5,14 @@
 // System
 #include <stdio.h>
 // Tools
-#include "Filename.h"
+#include <Filename.h>
 // Storage
-#include "RawValue.h"
+#include <RawValue.h>
 
 /// \addtogroup Storage
 /// @{
+
+/// Binary Data File.
 
 /// The DataFile class handles access to the binary data files.
 /// One important feature is reference counting.
@@ -49,6 +51,9 @@ public:
     bool is_writable() const
     { return for_write; }
 
+    /// Get current file size in bytes.
+    bool getSize(FileOffset &size) const;
+    
     /// For synchr. with a file that's actively written
     /// by another prog. is might help to reopen:
     ///
@@ -63,9 +68,14 @@ public:
 
     /// Check if any data files are still open (e.g. at end of program)
     static bool any_still_open();
-    
+
+    /// Get full name of data file.
     const stdString &getFilename() {   return filename; }
+
+    /// Get directory name of data file.
     const stdString &getDirname () {   return dirname;  }
+
+    /// Get base name of data file.
     const stdString &getBasename() {   return basename; }
 
     /// Read header at given offset
@@ -115,6 +125,8 @@ private:
     stdString dirname;
     stdString basename;
 };
+
+/// Used by DataFile.
 
 /// Each data block in the binary data files starts with
 /// a DataHeader.

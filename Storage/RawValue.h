@@ -32,9 +32,9 @@ enum RawValueSpecialSeverities
     ARCH_CHANGE_SIZE        = 0x0f01
 };
 
-/// RawValue:
-/// Helper class for the raw dbr_time_xxx values that the
-/// archiver stores.
+
+/// Helper class for raw dbr_time_xxx values.
+
 /// This class has all static methods, it always requires
 /// a hint for type, count and maybe CtrlInfo
 /// to properly handle the underlying value.

@@ -18,12 +18,12 @@ bool name_hash_test()
     LOG_ASSERT(names.insert("james", 2));
     LOG_ASSERT(names.insert("james", 3));
     LOG_ASSERT(names.insert("James", 4));
-    long ID;
+    FileOffset ID;
     LOG_ASSERT(names.find("freddy", ID));
     LOG_ASSERT(ID == 2);
 
     NameHash::Entry entry;
-    long hashvalue;
+    unsigned long hashvalue;
     bool valid = names.startIteration(hashvalue, entry);
     while (valid)
     {

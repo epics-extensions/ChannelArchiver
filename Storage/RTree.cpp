@@ -7,7 +7,7 @@
 #define RecordSize  (8+8+4)
 #define NodeSize(M)    (1+4+RecordSize*(M))
 
-long RTree::Datablock::getSize() const
+FileOffset RTree::Datablock::getSize() const
 {   //  next_ID, data offset, name size, name (w/o '\0')
     return 4 + 4 + 2 + data_filename.length();
 }
@@ -29,15 +29,16 @@ bool RTree::Datablock::read(FILE *f)
         LOG_MSG("Datablock seek error @ 0x%lX\n", offset);
         return false;
     }
-    short len;
+    unsigned short len;
     char buf[300];
-    if (!(readLong(f, &next_ID) && readLong(f, &data_offset) &&
+    if (!(readLong(f, &next_ID) &&
+          readLong(f, &data_offset) &&
           readShort(f, &len)))
     {
         LOG_MSG("Datablock read error @ 0x%lX\n", offset);
         return false;
     }
-    if (len >= (short)sizeof(buf)-1)
+    if (len >= sizeof(buf)-1)
     {
         LOG_MSG("Datablock::read: Filename exceeds buffer (%d)\n",len);
         return false;
@@ -49,7 +50,7 @@ bool RTree::Datablock::read(FILE *f)
     }
     buf[len] = '\0';
     data_filename.assign(buf, len);
-    if ((short)data_filename.length() != len)
+    if (data_filename.length() != len)
     {
         LOG_MSG("Datablock filename length error @ 0x%lX\n", offset);
         return false;
@@ -66,8 +67,8 @@ static bool writeEpicsTime(FILE *f, const epicsTime &t)
 static bool readEpicsTime(FILE *f, epicsTime &t)
 {
     epicsTimeStamp stamp;
-    if (! (readLong(f, (long *)&stamp.secPastEpoch) &&
-           readLong(f, (long *)&stamp.nsec)))
+    if (! (readLong(f, (unsigned long *)&stamp.secPastEpoch) &&
+           readLong(f, (unsigned long *)&stamp.nsec)))
         return false;
     t = stamp;
     return true;
@@ -87,15 +88,13 @@ void RTree::Record::clear()
 
 bool RTree::Record::write(FILE *f) const
 {
-    return writeEpicsTime(f, start) &&
-        writeEpicsTime(f, end) &&
+    return writeEpicsTime(f, start) && writeEpicsTime(f, end) &&
         writeLong(f, child_or_ID);
 }
 
 bool RTree::Record::read(FILE *f)
 {
-    return readEpicsTime(f, start) &&
-        readEpicsTime(f, end) &&
+    return readEpicsTime(f, start) && readEpicsTime(f, end) &&
         readLong(f, &child_or_ID);
 }
 
@@ -162,8 +161,7 @@ bool RTree::Node::read(FILE *f)
     if (fseek(f, offset, SEEK_SET))
         return false;
     char c;
-    if (! (readByte(f, &c) &&
-           readLong(f, &parent)))
+    if (! (readByte(f, &c) && readLong(f, &parent)))
         return false;
     isLeaf = c > 0;
     int i;
@@ -196,7 +194,7 @@ bool RTree::Node::getInterval(epicsTime &start, epicsTime &end) const
     return valid;
 }
 
-RTree::RTree(FileAllocator &fa, Offset anchor)
+RTree::RTree(FileAllocator &fa, FileOffset anchor)
         :  fa(fa), anchor(anchor), root_offset(0), M(-1)
 {
     cache_misses = cache_hits = 0;
@@ -231,7 +229,7 @@ bool RTree::init(int M)
 
 bool RTree::reattach()
 {
-    long RTreeM;
+    unsigned long RTreeM;
     if (!(fseek(fa.getFile(), anchor, SEEK_SET)==0 &&
           readLong(fa.getFile(), &root_offset)==true &&
           readLong(fa.getFile(), &RTreeM) == true))
@@ -302,7 +300,7 @@ bool RTree::getNextDatablock(Node &node, int &i, Datablock &block) const
 }
 
 bool RTree::updateLastDatablock(const epicsTime &start, const epicsTime &end,
-                                Offset data_offset, stdString data_filename)
+                                FileOffset data_offset, stdString data_filename)
 {
     Node node(M, true);
     int i;
@@ -372,7 +370,7 @@ bool RTree::write_node(const Node &node)
 }    
 
 bool RTree::self_test_node(unsigned long &nodes, unsigned long &records,
-                           Offset n, Offset p, epicsTime start, epicsTime end)
+                           FileOffset n, FileOffset p, epicsTime start, epicsTime end)
 {
     stdString txt1, txt2;
     epicsTime s, e;
@@ -438,7 +436,7 @@ bool RTree::self_test_node(unsigned long &nodes, unsigned long &records,
     return true;
 }
 
-void RTree::make_node_dot(FILE *dot, FILE *f, Offset node_offset)
+void RTree::make_node_dot(FILE *dot, FILE *f, FileOffset node_offset)
 {
     Datablock datablock;
     stdString txt1, txt2;
@@ -649,7 +647,7 @@ bool RTree::prev_next(Node &node, int &i, int dir) const
 // Insertion follows Guttman except as indicated
 RTree::YNE RTree::insertDatablock(const epicsTime &start,
                                   const epicsTime &end,
-                                  Offset data_offset,
+                                  FileOffset data_offset,
                                   const stdString &data_filename)
 {
     stdString txt1, txt2;
@@ -740,7 +738,7 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
 // No   : block with offset/filename was already there
 // Error: something's messed up
 RTree::YNE RTree::add_block_to_record(const Node &node, int i,
-                                      Offset data_offset,
+                                      FileOffset data_offset,
                                       const stdString &data_filename)
 {
     LOG_ASSERT(node.isLeaf);
@@ -766,7 +764,7 @@ RTree::YNE RTree::add_block_to_record(const Node &node, int i,
 
 // Configure block for data_offset/name,
 // allocate space in file and write.
-bool RTree::write_new_datablock(Offset data_offset,
+bool RTree::write_new_datablock(FileOffset data_offset,
                                 const stdString &data_filename,
                                 Datablock &block)
 {
@@ -851,7 +849,7 @@ bool RTree::choose_leaf(const epicsTime &start, const epicsTime &end,
 // Node gets written, overflow doesn't get written.
 bool RTree::insert_record_into_node(Node &node, int idx,
                                     const epicsTime &start,
-                                    const epicsTime &end, Offset ID,
+                                    const epicsTime &end, FileOffset ID,
                                     Node &overflow,
                                     bool &caused_overflow,
                                     bool &rec_in_overflow)
@@ -1020,7 +1018,7 @@ bool RTree::adjust_tree(Node &node, Node *new_node)
 
 // Follows Guttman except that we don't care about
 // half-filled nodes. Only empty nodes get removed.
-bool RTree::remove(const epicsTime &start, const epicsTime &end, Offset ID)
+bool RTree::remove(const epicsTime &start, const epicsTime &end, FileOffset ID)
 {
     int i;
     Node node(M, true);
@@ -1088,7 +1086,7 @@ bool RTree::condense_tree(Node &node)
                 }
             if (children==1)
             {   // only child_or_ID j left => make that one root
-                Offset old_root = node.offset;
+                FileOffset old_root = node.offset;
                 root_offset = node.offset = node.record[j].child_or_ID;
                 if (!read_node(node))
                 {
@@ -1150,7 +1148,8 @@ bool RTree::condense_tree(Node &node)
     return false;
 }
 
-bool RTree::updateLast(const epicsTime &start, const epicsTime &end, Offset ID)
+bool RTree::updateLast(const epicsTime &start, const epicsTime &end,
+                       FileOffset ID)
 {
     int i;
     Node node(M, true);

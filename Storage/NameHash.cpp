@@ -8,7 +8,7 @@
 bool NameHash::Entry::read(FILE *f)
 {
     char buffer[100];
-    short len;
+    unsigned short len;
     if (!(fseek(f, offset, SEEK_SET)==0 &&
           readLong(f, &next) &&
           readLong(f, &ID) &&
@@ -17,7 +17,7 @@ bool NameHash::Entry::read(FILE *f)
         LOG_MSG("NameHash: Cannot read entry @ 0x%lX\n", offset);
         return false;
     }
-    if (len >= (short)sizeof(buffer)-1)
+    if (len >= sizeof(buffer)-1)
     {
         LOG_MSG("NameHash: Entry's name (%d) exceeds buffer size\n",
                 (int)len);
@@ -29,7 +29,7 @@ bool NameHash::Entry::read(FILE *f)
         return false;
     }
     name.assign(buffer, len);
-    return (short)name.length() == len;
+    return name.length() == len;
 }
 
 bool NameHash::Entry::write(FILE *f) const
@@ -41,11 +41,11 @@ bool NameHash::Entry::write(FILE *f) const
         fwrite(name.c_str(), name.length(), 1, f) == 1;
 }
 
-NameHash::NameHash(FileAllocator &fa, Offset anchor)
+NameHash::NameHash(FileAllocator &fa, FileOffset anchor)
         : fa(fa), anchor(anchor), ht_size(0), table_offset(0)
 {}
 
-bool NameHash::init(long ht_size)
+bool NameHash::init(unsigned long ht_size)
 {
     this->ht_size = ht_size;
     if (!(table_offset = fa.allocate(4*ht_size)))
@@ -53,7 +53,7 @@ bool NameHash::init(long ht_size)
         LOG_MSG("NameHash::init: Cannot allocate hash table\n");
         return false;
     }
-    int i;
+    unsigned long i;
     if (fseek(fa.getFile(), table_offset, SEEK_SET))
     {
         LOG_MSG("NameHash::init: Cannot seek to hash table\n");
@@ -87,7 +87,7 @@ bool NameHash::reattach()
     return true;
 }
     
-bool NameHash::insert(const stdString &name, long ID)
+bool NameHash::insert(const stdString &name, FileOffset ID)
 {
     long h = hash(name);
     Entry entry;
@@ -134,7 +134,7 @@ bool NameHash::insert(const stdString &name, long ID)
     return new_entry.write(fa.getFile()) && entry.write(fa.getFile());
 }
 
-bool NameHash::find(const stdString &name, long &ID)
+bool NameHash::find(const stdString &name, FileOffset &ID)
 {
    long h = hash(name);
    Entry entry;
@@ -151,7 +151,7 @@ bool NameHash::find(const stdString &name, long &ID)
    return false;
 }
 
-bool NameHash::startIteration(long &hashvalue, Entry &entry)
+bool NameHash::startIteration(unsigned long &hashvalue, Entry &entry)
 {
     if (fseek(fa.getFile(), table_offset, SEEK_SET))
     {
@@ -171,7 +171,7 @@ bool NameHash::startIteration(long &hashvalue, Entry &entry)
     return entry.offset && entry.read(fa.getFile()); // return that entry
 }  
 
-bool NameHash::nextIteration(long &hashvalue, Entry &entry)
+bool NameHash::nextIteration(unsigned long &hashvalue, Entry &entry)
 {
     if (entry.next) // Is another entry in list for same hashvalue?
         entry.offset = entry.next;
@@ -201,7 +201,8 @@ long NameHash::hash(const stdString &name) const
 
 void NameHash::showStats(FILE *f)
 {
-    long l, used_entries = 0, total_list_length = 0, max_length = 0, hashvalue;
+    unsigned long l, used_entries = 0, total_list_length = 0, max_length = 0;
+    unsigned long hashvalue;
     Entry entry;
     for (hashvalue=0; hashvalue<ht_size; ++hashvalue)
     {
@@ -237,10 +238,10 @@ void NameHash::showStats(FILE *f)
     fprintf(f, "Maximum list length  : %ld entries\n", max_length);
 }
 
-bool NameHash::read_HT_entry(long hash_value, Offset &offset)
+bool NameHash::read_HT_entry(unsigned long hash_value, FileOffset &offset)
 {
     LOG_ASSERT(hash_value >= 0 && hash_value < ht_size);
-    Offset o = table_offset + hash_value*4;
+    FileOffset o = table_offset + hash_value*4;
     if (!(fseek(fa.getFile(), o, SEEK_SET)==0 &&
           readLong(fa.getFile(), &offset)))
     {
@@ -251,10 +252,11 @@ bool NameHash::read_HT_entry(long hash_value, Offset &offset)
     return true;
 }    
 
-bool NameHash::write_HT_entry(long hash_value, Offset offset) const
+bool NameHash::write_HT_entry(unsigned long hash_value,
+                              FileOffset offset) const
 {
     LOG_ASSERT(hash_value >= 0 && hash_value < ht_size);
-    Offset o = table_offset + hash_value*4;
+    FileOffset o = table_offset + hash_value*4;
     if (!(fseek(fa.getFile(), o, SEEK_SET)==0 &&
           writeLong(fa.getFile(), offset)))
     {

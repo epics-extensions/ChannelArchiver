@@ -54,7 +54,7 @@ bool IndexFile::open(const stdString &filename, bool readonly)
         goto open_error;
     }
     // Check existing file
-    long file_cookie;
+    unsigned long file_cookie;
     if (fseek(f, 0, SEEK_SET)  ||  !readLong(f, &file_cookie))
     {
         LOG_MSG("IndexFile::open(%s) cannot read cookie.\n",
@@ -109,7 +109,7 @@ RTree *IndexFile::addChannel(const stdString &channel)
 
 RTree *IndexFile::getTree(const stdString &channel)
 {
-    long tree_anchor;
+    FileOffset tree_anchor;
     if (!names.find(channel, tree_anchor))
         return 0;
     RTree *tree = new RTree(fa, tree_anchor);

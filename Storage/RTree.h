@@ -6,8 +6,8 @@
 // Tools
 #include <epicsTimeHelper.h>
 #include <AVLTree.h>
-// Index
-#include "FileAllocator.h"
+// Storage
+#include <FileAllocator.h>
 
 // When using the ArchiveDataTool to convert about 500 channels,
 // 230MB of data, 102K directory file into an index, these were the
@@ -39,8 +39,9 @@
 /// \ingroup Storage
 /// \@{
 
-/// Implements a file-based RTree as
-/// described in Antonin Guttman:
+/// Implements a file-based RTree as described in Antonin Guttman.
+
+/// See the Guttman paper
 /// "R-Trees: A Dynamic Index Structure for Spatial Searching"
 /// (Proc. 1984 ACM-SIGMOD Conference on Management of Data, pp. 47-57).
 ///
@@ -53,18 +54,16 @@
 class RTree
 {
 public:
-    typedef long Offset;
-
     class Datablock
     {
     public:
         Datablock() : next_ID(0), data_offset(0), offset(0) {}
-        Offset    next_ID;       
-        Offset    data_offset;   ///< This block's offset in DataFile
+        FileOffset    next_ID;       
+        FileOffset    data_offset;   ///< This block's offset in DataFile
         stdString data_filename; ///< DataFile for this block
         
-        Offset offset;  ///< Location of DataBlock in index file
-        long getSize() const;
+        FileOffset offset;  ///< Location of DataBlock in index file
+        FileOffset getSize() const;
         bool write(FILE *f) const;
         bool read(FILE *f);
     };
@@ -75,7 +74,7 @@ public:
         Record();
         void clear();
         epicsTime  start, end;  // Range
-        Offset     child_or_ID; // data block ID for leaf node; 0 if unused
+        FileOffset child_or_ID; // data block ID for leaf node; 0 if unused
         bool write(FILE *f) const;
         bool read(FILE *f);
     };
@@ -90,9 +89,9 @@ public:
         Node &operator = (const Node &);
         
         bool    isLeaf;  ///< Node or Leaf?        
-        Offset  parent;  ///< 0 for root
+        FileOffset  parent;  ///< 0 for root
         Record  *record; ///< index records of this node
-        Offset  offset;  ///< Location in file
+        FileOffset  offset;  ///< Location in file
         
         /// Write to file at offset (needs to be set beforehand)
         bool write(FILE *f) const;
@@ -113,9 +112,10 @@ public:
     /// Attach RTree to FileAllocator.
     
     /// \param anchor: The RTree will deposit its root pointer there.
-    ///                Caller needs to assert that there are RTree::anchor_size
+    ///                Caller needs to assert that there are
+    ///                RTree::anchor_size
     ///                bytes available at that location in the file.
-    RTree(FileAllocator &fa, Offset anchor);
+    RTree(FileAllocator &fa, FileOffset anchor);
     
     /// Initialize empty tree. Compare to reattach().
     bool init(int M);
@@ -142,7 +142,7 @@ public:
     ///       It is an error to insert the same offset/file again with
     ///       a different start and/or end time!
     YNE insertDatablock(const epicsTime &start, const epicsTime &end,
-                        Offset data_offset,
+                        FileOffset data_offset,
                         const stdString &data_filename);
     
     /// Locate entry after start time.
@@ -187,7 +187,7 @@ public:
     ///
     ///
     bool updateLastDatablock(const epicsTime &start, const epicsTime &end,
-                             Offset data_offset, stdString data_filename);
+                             FileOffset data_offset, stdString data_filename);
     
     /// Create a graphviz 'dot' file.
     void makeDot(const char *filename);
@@ -207,12 +207,12 @@ private:
     // This is the (fixed) offset into the file
     // where the RTree information starts.
     // It points to
-    // long current root offset
-    // long RTreeM
-    Offset anchor;
+    // FileOffset current root offset
+    // FileOffset RTreeM
+    FileOffset anchor;
     
-    // Offset to the root = content of what's at anchor
-    Offset root_offset;
+    // FileOffset to the root = content of what's at anchor
+    FileOffset root_offset;
 
     int M;
     
@@ -223,9 +223,10 @@ private:
     bool write_node(const Node &node);
     
     bool self_test_node(unsigned long &nodes, unsigned long &records,
-                        Offset n, Offset p, epicsTime start, epicsTime end);
+                        FileOffset n, FileOffset p,
+                        epicsTime start, epicsTime end);
     
-    void make_node_dot(FILE *dot, FILE *f, Offset node_offset);
+    void make_node_dot(FILE *dot, FILE *f, FileOffset node_offset);
 
     bool search(const epicsTime &start, Node &node, int &i) const;
 
@@ -246,10 +247,10 @@ private:
     bool prev_next(Node &node, int &i, int dir) const;
     
     YNE add_block_to_record(const Node &node, int i,
-                            Offset data_offset,
+                            FileOffset data_offset,
                             const stdString &data_filename);
     
-    bool write_new_datablock(Offset data_offset,
+    bool write_new_datablock(FileOffset data_offset,
                              const stdString &data_filename,
                              Datablock &block);
     
@@ -261,7 +262,7 @@ private:
                                  int idx,
                                  const epicsTime &start,
                                  const epicsTime &end,
-                                 Offset ID,
+                                 FileOffset ID,
                                  Node &overflow,
                                  bool &caused_overflow, bool &rec_in_overflow);
     
@@ -272,7 +273,7 @@ private:
     bool adjust_tree(Node &node, Node *new_node);
 
     /// Remove entry from tree.
-    bool remove(const epicsTime &start, const epicsTime &end, Offset ID);
+    bool remove(const epicsTime &start, const epicsTime &end, FileOffset ID);
 
     bool remove_record(Node &node, int i);
 
@@ -290,7 +291,7 @@ private:
     /// \return True if start & ID refer to the existing last block
     ///         and the end time was succesfully updated.
     bool updateLast(const epicsTime &start,
-                    const epicsTime &end, Offset ID);
+                    const epicsTime &end, FileOffset ID);
 };
 
 

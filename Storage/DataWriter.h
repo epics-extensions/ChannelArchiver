@@ -8,10 +8,7 @@
 // Index
 #include "IndexFile.h"
 
-/// \ingroup Storage
-/// @{
-
-/// Writes data to storage.
+/// \ingroup Storage Writes data to storage.
 
 /// The data writer interfaces between a series of
 /// RawValue values and the Index/DataFile.
@@ -24,7 +21,8 @@ public:
     /// \param ctrl_info: The meta information for the channel
     /// \param dbr_type: the dbr_time_xxx type
     /// \param dbr_count: array size
-    /// \param num_samples: estimated number of samples (helps w/ buffer allocation)
+    /// \param num_samples: estimated number of samples
+    ///                     (helps w/ buffer allocation)
     DataWriter(IndexFile &index,
                const stdString &channel_name,
                const CtrlInfo &ctrl_info,
@@ -33,11 +31,15 @@ public:
                double period,
                size_t num_samples);
 
+    /// Destructor
     ~DataWriter();
 
     /// Add a value, returns true for OK.
     bool add(const RawValue::Data *data);
 
+    /// Data file size limit.
+    static FileOffset file_size_limit;
+    
 private:
     IndexFile &index;
     RTree     *tree;
@@ -47,6 +49,9 @@ private:
     DbrCount dbr_count;
     double period;
     size_t raw_value_size;
+
+    void makeDataFileName(int serial, stdString &name);
+    DataFile *createNewDataFile();
 
     // Sets next_buffer_size to at least 'start',
     // so that buffers get bigger and bigger up to
@@ -60,6 +65,3 @@ private:
 
     bool addNewHeader(bool new_ctrl_info);
 };
-
-/// @}
-

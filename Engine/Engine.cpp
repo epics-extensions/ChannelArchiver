@@ -8,6 +8,12 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+
+// TODO:
+// What if we start and never connect,
+// but there is an archive.
+// -> write 'disconnected' ?
+
 // Base
 #include <cadef.h>
 // Tools

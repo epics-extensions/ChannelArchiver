@@ -26,7 +26,7 @@ enum RawValueSpecialSeverities
     ARCH_DISCONNECT         = 0x0f40,
     ARCH_STOPPED            = 0x0f20,
     ARCH_REPEAT             = 0x0f10,
-    ARCH_DISABLED           = 0x0f08,
+    ARCH_DISABLED           = 0x0f08
 };
 
 /// Helper class for raw dbr_time_xxx values.

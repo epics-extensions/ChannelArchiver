@@ -24,7 +24,7 @@ use IO::Handle;
 use Data::Dumper;
 use XML::Simple;
 use POSIX 'setsid';
-use vars qw($opt_h $opt_p $opt_f);
+use vars qw($opt_h $opt_p $opt_f $opt_i);
 use Getopt::Std;
 
 # ----------------------------------------------------------------
@@ -34,10 +34,11 @@ use Getopt::Std;
 # Setting this to 1 disables(!) caching and might help with debugging.
 # $OUTPUT_AUTOFLUSH=1;
 
-# Config file read by ArchiveDaemon
+# Config file read by ArchiveDaemon. If left empty,
+# one has to use the -f option.
 my ($config_file) = "";
 
-# Log file, created in current directory
+# Log file, created in current directory.
 my ($logfile) = "ArchiveDaemon.log";
 
 # TCP Port of ArchiveDaemon's HTTPD
@@ -46,44 +47,57 @@ my ($http_port) = 4610;
 # The master index configuration that this tool creates or updates
 my ($master_index_config) = "indexconfig.xml";
 
-# The DTD for that file
+# The default DTD for the index config file
+# (unless we could parse it from an existing one)
 my ($master_index_dtd) = "indexconfig.dtd";
 
-# The name of the master index to create/update
+# The name of the master index to create/update.
 my ($master_index) = "master_index";
 
 # What ArchiveEngine to use. Just "ArchiveEngine" works if it's in the path.
 my ($ArchiveEngine) = "ArchiveEngine";
 
-# Log file of the ArchiveEngine
+# Log file of the ArchiveEngine.
 my ($EngineLog) = "ArchiveEngine.log";
 
 # What ArchiveIndexTool to use. "ArchiveIndexTool" works if it's in the path.
 my ($ArchiveIndexTool) = "ArchiveIndexTool -v 1";
 
-# Log file of the Index Tool
+# Log file of the Index Tool.
 my ($ArchiveIndexLog) = "ArchiveIndexTool.log";
 
-# Seconds between "is the engine running?" checks
+# Seconds between "is the engine running?" checks.
+# We _hope_ that the engine is running all the time
+# and only want to restart e.g. once a day,
+# so checking every 30 seconds is more than enough
+# yet gives us a fuzzy feeling that the daemon's web
+# page shows the current state of things.
 my ($engine_check_period) = 30;
 
-# Seconds between runs of the ArchiveIndexTool
+# Seconds between runs of the ArchiveIndexTool.
+# 60*60 = 1 hour ?
+# This means data in the master index is up to 1 hour old.
+# Can be a smaller number. You need to check how long
+# the index tool runs. You don't want it running all the time.
 my ($index_update_period) = 60*60;
 
 # Timeout used for "is there a HTTP client request?"
+# 1 second gives good response yet daemon uses hardly any CPU.
 my ($http_check_timeout) = 1;
 
-# Timeout used when reading a HTTP client or ArchiveEngine
+# Timeout used when reading a HTTP client or ArchiveEngine.
+# 10 seconds is reasonable.
 my ($read_timeout) = 10;
 
 # This host. 'localhost' should work unless you have
 # more than one network card and a messed up network config.
 my ($host) = 'localhost';
 
-# Number of entries in the "Messages" log
+# Number of entries in the "Messages" log.
 my ($message_queue_length) = 20;
 
 # Detach from terminal etc. to run as a background daemon?
+# 1 should always be OK unless you're doing strange debugging.
 my ($daemonization) = 1;
 
 # ----------------------------------------------------------------
@@ -140,6 +154,25 @@ sub add_message($)
 # ----------------------------------------------------------------
 # Config File
 # ----------------------------------------------------------------
+
+sub get_DTD($)
+{
+    my ($file) = @ARG;
+    my ($dtd) = "";
+    if (open F, $file)
+    {
+	while (<F>)
+	{
+	    if ($_ =~ m'<!DOCTYPE[^<>]+SYSTEM "(.+)".*>')
+	    {
+		$dtd = $1;
+		last;
+	    }
+	}
+	close F;
+    }
+    return $dtd;
+}
 
 # Reads config file into @config
 sub read_config($)
@@ -345,7 +378,6 @@ sub handle_HTTP_main($)
 		    "Not Running</FONT></TD><TD></TD>";
 	    }
 	}
-       
 	print $client "</TR>\n";
     }
     print $client "</TABLE>\n";
@@ -394,6 +426,7 @@ sub handle_HTTP_info($)
     print $client "<TR><TD><B>Daemon start time:</B></TD><TD> $start_time_text</TD></TR>\n";
     print $client "<TR><TD><B>Check Period:</B></TD><TD> $engine_check_period secs</TD></TR>\n";
     print $client "<TR><TD><B>Last Check:</B></TD><TD> ", time_as_text($last_check), "</TD></TR>\n";
+    print $client "<TR><TD><B>Index DTD:</B></TD><TD> $master_index_dtd</TD></TR>\n";
     print $client "<TR><TD><B>Index Period:</B></TD><TD> $index_update_period secs</TD></TR>\n";
     print $client
 	"<TR><TD><B>Index Update:</B></TD><TD> ", time_as_text($last_index_update), "</TD></TR>\n";
@@ -727,7 +760,7 @@ sub start_engines($)
     $index_changed = 0;
     foreach $engine ( @config )
     {
-	next if ($engine->{started});
+	next if ($engine->{started} or $engine->{lockfile});
 	$index_changed += start_engine($now, $engine);
     }
     if ($index_changed > 0)
@@ -746,12 +779,13 @@ sub usage()
     print("Options:\n");
     print("\t-p <port>: TCP port number for HTTPD\n");
     print("\t-f file  : config. file\n");
+    print("\t-i URL   : path or URL to indexconfig.dtd\n");
     print("\n");
     print("This tool automatically starts, monitors and restarts\n");
     print("ArchiveEngines based on a config. file.\n");
     exit(-1);
 }
-if (!getopts('hp:f:')  ||  $#ARGV != -1  ||  $opt_h)
+if (!getopts('hp:f:i:')  ||  $#ARGV != -1  ||  $opt_h)
 {
     usage();
 }
@@ -763,12 +797,15 @@ if (length($config_file) <= 0)
     print("Need config file (option -f):\n");
     usage();
 }
-add_message("Started");
 read_config($config_file);
-if (length($master_index_config) > 0)
+if (length($master_index_config) > 0  and -f $master_index_config)
 {
+    my ($dtd) = get_DTD($master_index_config);
+    $master_index_dtd = $dtd if (length($dtd) > 0);
     @indices = read_indexconfig($master_index_config);
 }  
+$master_index_dtd = $opt_i if ($opt_i);
+add_message("Started");
 print("Read $config_file, will disassociate from terminal\n");
 print("and from now on only respond via\n");
 print("          http://localhost:$http_port\n");

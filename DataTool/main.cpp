@@ -15,6 +15,8 @@
 int verbose;
 
 // TODO: copy program that combines sub-archives
+// TODO: export/import: ASCII or XML
+// TODO: delete/rename channel
 
 void show_hash_info(const stdString &index_name)
 {

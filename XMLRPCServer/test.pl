@@ -98,11 +98,11 @@ print("==================================================================\n");
 #@names = ( "fred", "freddy", "Jimmy", "James" );
 @names = ( "fred" );
 #@names = ( "Test_HPRF:IOC1:Load", "Test_HPRF:IOC1:FDAv" );
-@names = ( "Test_HPRF:Xmtr2:Stdby3_Flt" );
+@names = ( "Test_HPRF:Cath2:I" );
 
-($start, $startnano) = string2time("01/01/2003 02:04:48.000000000");
-($end, $endnano)   = string2time("01/21/2003 02:06:12.000000000");
-$count = 1000;
+($start, $startnano) = string2time("01/01/2003 00:00:00.000000000");
+($end, $endnano)   = string2time("02/28/2003 02:06:12.000000000");
+$count = 50;
 $how = 0;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:
@@ -157,7 +157,7 @@ sub show_values($)
 	foreach $value ( @{$result->{values}} )
 	{
 	    $time = time2string($value->{secs}, $value->{nano});
-	    print("$time $value->{stat}/$value->{sevr} @{$value->{value}}\n");
+	    print("$time ($value->{secs}) $value->{stat}/$value->{sevr} @{$value->{value}}\n");
 	}
     }
 }

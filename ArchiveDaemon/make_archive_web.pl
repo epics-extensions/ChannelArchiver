@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # make_archive_web.pl
 #
-# This file creates a web page with archive info
+# Create web page with archive info
 # (daemons, engines, ...)
 # from tab-delimited configuration file.
 
@@ -63,7 +63,7 @@ sub parse_config_file($)
 {
     my ($filename) = @ARG;
     my ($in);
-    my ($type, $name, $port, $desc);
+    my ($type, $name, $port, $desc, $time, $freq);
     my ($di, $ei); # Index of current daemon and engine
     open($in, $filename) or die "Cannot open '$filename'\n";
     print("Reading $filename\n") if ($opt_d);
@@ -72,7 +72,7 @@ sub parse_config_file($)
 	chomp;                          # Chop CR/LF
 	next if ($ARG =~ '\A#');        # Skip comments
 	next if ($ARG =~ '\A[ \t]*\Z'); # ... and empty lines
-	($type,$name,$port,$desc) = split(/\t/, $ARG); # Get columns
+	($type,$name,$port,$desc,$time,$freq) = split(/\t/, $ARG); # Get columns
 	$desc = $name unless (length($desc) > 0); # Desc defaults to name
 	if ($type eq "DAEMON")
 	{
@@ -86,10 +86,12 @@ sub parse_config_file($)
 	}
 	elsif ($type eq "ENGINE")
 	{
-	    print("$NR: Engine '$name', Port $port, Desc '$desc'\n") if ($opt_d);
+	    print("$NR: Engine '$name', Port $port, Desc '$desc', Time '$time', Freq '$freq'\n") if ($opt_d);
 	    $daemons[$di]->{engines}[$ei]->{name} = $name;
 	    $daemons[$di]->{engines}[$ei]->{desc} = $desc;
 	    $daemons[$di]->{engines}[$ei]->{port} = $port;
+	    $daemons[$di]->{engines}[$ei]->{time} = $time;
+	    $daemons[$di]->{engines}[$ei]->{freq} = $freq;
 	    ++ $ei;
 	}
 	else
@@ -112,7 +114,7 @@ sub dump_config()
 	foreach $engine ( @{ $daemon->{engines} } )
 	{
 	    print("    Engine '$engine->{name}'");
-	    print(" Port $engine->{port}, '$engine->{desc}'\n");
+	    print(" Port $engine->{port}, '$engine->{desc}', '$engine->{time}', '$engine->{freq}'\n");
 	}
     }
     print("\n");
@@ -209,10 +211,12 @@ sub write_html($)
 
   <tr>
      <td width="15%" align="center"><b>DAEMON</b></td>
-     <td width="15%" align="center"><b>ENGINE</b></td>
+     <td width="10%" align="center"><b>ENGINE</b></td>
      <td width="5%"  align="center"><b>PORT</b></td>
-     <td width="25%" align="center"><b>DESCRIPTION</b></td>
-     <td width="40%" algin="center"><b>STATUS</b></td>
+     <td width="20%" align="center"><b>DESCRIPTION</b></td>
+     <td width="35%" align="center"><b>STATUS</b></td>
+     <td width="5%" align="center"><b>TIME</b></td>
+     <td width="10%" align="center"><b>FREQUENCY</b></td>
   </tr>
 XML
 
@@ -220,19 +224,23 @@ XML
     {
         print $out "  <tr>\n";
         print $out "     <td width=\"15%\"><A HREF=\"http://$localhost:$daemon->{port}\">$daemon->{name}</A></td>\n";
-        print $out "     <td width=\"15%\">&nbsp;</td>\n";
+        print $out "     <td width=\"10%\">&nbsp;</td>\n";
         print $out "     <td width=\"5%\">$daemon->{port}</td>\n";
-        print $out "     <td width=\"25%\">$daemon->{desc}</td>\n";
-        print $out "     <td width=\"40%\">$daemon->{status}</td>\n";
+        print $out "     <td width=\"20%\">$daemon->{desc}</td>\n";
+        print $out "     <td width=\"35%\">$daemon->{status}</td>\n";
+	print $out "	 <td width=\"5%\">&nbsp;</td>\n";
+	print $out "	 <td width=\"10%\">&nbsp;</td>\n";
         print $out "  </tr>\n";
 	foreach $engine ( @{ $daemon->{engines} } )
 	{
             print $out "  <tr>\n";
             print $out "     <td width=\"15%\">&nbsp;</td>\n";
-            print $out "     <td width=\"15%\"><A HREF=\"http://$localhost:$engine->{port}\">$engine->{name}</A></td>\n";
+            print $out "     <td width=\"10%\"><A HREF=\"http://$localhost:$engine->{port}\">$engine->{name}</A></td>\n";
             print $out "     <td width=\"5%\">$engine->{port}</td>\n";
-            print $out "     <td width=\"25%\">$engine->{desc}</td>\n";
-            print $out "     <td width=\"40%\">&nbsp;</td>\n";
+            print $out "     <td width=\"20%\">$engine->{desc}</td>\n";
+            print $out "     <td width=\"35%\">&nbsp;</td>\n";
+            print $out "     <td width=\"5%\">$engine->{time}</td>\n";
+            print $out "     <td width=\"10%\">$engine->{freq}</td>\n";
             print $out "  </tr>\n";
 	}
     }

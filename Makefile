@@ -9,6 +9,7 @@ DIRS += Storage
 DIRS += Engine
 DIRS += DataTool
 DIRS += IndexTool
+DIRS += ArchiveDaemon
 DIRS += XMLRPCServer
 
 DIRS += Manager

@@ -66,7 +66,11 @@ void GNUPlotExporter::post_scriptum (const vector<stdString> &channel_names)
 	image += imageExtension ();
 
 	ofstream script (_script_name.c_str ());
+#	ifdef __HP_aCC
+	if (script.fail())
+#	else
 	if (!script.is_open())
+#	endif
 		throwDetailedArchiveException (CreateError, _script_name);
 
 	script << "# This GNUPlot-script  has been generated\n";

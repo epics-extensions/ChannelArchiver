@@ -229,7 +229,11 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 	if (! _filename.empty())
 	{
 		file.open (_filename.c_str());
+#		ifdef __HP_aCC
+		if (file.fail ())
+#else
 		if (! file.is_open ())
+#endif
 			throwDetailedArchiveException (WriteError, _filename);
 		out = &file;
 	}
@@ -328,7 +332,7 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 
 	post_scriptum (channel_names);
 
-	if (file.is_open ())
+    if (out == &file)
 		file.close ();
 
 	for (i=0; i<num; ++i)

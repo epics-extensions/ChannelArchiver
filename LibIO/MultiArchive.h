@@ -97,7 +97,7 @@ public:
 	virtual bool addChannel (const stdString &name, ChannelIteratorI *channel);
 
 	// debugging only
-	void log ();
+	void log () const;
 
 	// To be used by MultiArchive intrinsics only:
 	// -------------------------------------------

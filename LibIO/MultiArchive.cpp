@@ -321,7 +321,7 @@ bool MultiArchive::investigateChannels ()
 
 	_channels.clear ();
 
-	list<stdString>::const_iterator archs = _archives.begin();
+	list<stdString>::iterator archs = _archives.begin();
 	for (/**/; archs != _archives.end(); ++archs)
 	{
 		Archive archive (new BinArchive (*archs));
@@ -349,7 +349,7 @@ bool MultiArchive::investigateChannels ()
 	return true;
 }
 
-void MultiArchive::log ()
+void MultiArchive::log () const
 {
 	LOG_MSG ("MultiArchive:\n");
 	list<stdString>::const_iterator archs = _archives.begin();

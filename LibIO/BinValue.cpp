@@ -108,6 +108,8 @@ BinValue *BinValue::create (DbrType type, DbrCount count)
 		return new BinValueDbrLong (count);
 	case DBR_TIME_STRING:
 		return new BinValueDbrString (count);
+	case DBR_TIME_CHAR:
+		return new BinValueDbrChar (count);
 	default:
 		LOG_MSG ("BinValue::create (" << type << ", " << count << "): Unsupported\n");
 		return 0;

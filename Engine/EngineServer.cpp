@@ -270,7 +270,7 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
         (channel->isConnected(guard) ? 
          "connected" :
          "<FONT COLOR=#FF0000>NOT CONNECTED</FONT>"),
-        channel->getMechanism(guard)->getDescription().c_str(),
+        channel->getMechanism(guard)->getDescription(guard).c_str(),
         disabling.c_str(),
         (channel->isDisabled(guard) ?
          "<FONT COLOR=#FFFF00>disabled</FONT>" :

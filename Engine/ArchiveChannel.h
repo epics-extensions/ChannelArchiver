@@ -31,9 +31,6 @@
 class ArchiveChannel
 {
 public:
-    friend class SampleMechanism;
-    friend class SampleMechanismMonitored;
-
     /// Create an ArchiveChannel
     ArchiveChannel(const stdString &name, double period);
     ~ArchiveChannel();
@@ -73,7 +70,10 @@ public:
 
     /// Is the CA connection currently good?
     bool isConnected(Guard &guard) const;
-
+    
+    /// Send a CA 'get callback'. 
+    void issueCaGet(Guard &guard);
+    
     /// A set bit indicates a group that this channel disables.
     const BitSet &getGroupsToDisable(Guard &guard) const;
 
@@ -111,6 +111,8 @@ public:
     const epicsTime &getLastStamp(Guard &guard) const;
 
 private:
+    friend class SampleMechanismMonitored;
+    friend class SampleMechanismGet;
     stdString   name;
     double      period; // Sample period, max period, ..(see SampleMechanism)
     SampleMechanism *mechanism;
@@ -122,6 +124,7 @@ private:
     static void connection_handler(struct connection_handler_args arg);
     bool setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx);
     static void control_callback(struct event_handler_args arg);
+    static void value_callback(struct event_handler_args);
 
     // All from here down to '---' are only valid if connected==true
     bool            connected;

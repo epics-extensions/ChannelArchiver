@@ -13,35 +13,51 @@
 #include <epicsTime.h>
 #include "ArchiveChannel.h"
 
+/// \ingroup Engine
+/// \@{
+
+/// List of channels to scan for one period.
 class SinglePeriodScanList
 {
 public:
     SinglePeriodScanList(double period);
+
+    void add(ArchiveChannel *channel);
+    void remove(ArchiveChannel *channel);
+    
     void scan();
 
     double                 period;    // Scan period in seconds
     epicsTime              next_scan; // Next time this list is due
+private:
     stdList<class ArchiveChannel *> channels;
 };
 
+/// List of SinglePeriodScanList classes, one per period.
 class ScanList
 {
 public:
     ScanList();
     ~ScanList();
 
-    // Add a channel to a ScanList.
-    // channel->getPeriod() must be valid
+    /// Add a channel to a ScanList.
+
+    /// channel->getPeriod() must be valid.
+    ///
+    ///
     void addChannel(Guard &channel_guard, class ArchiveChannel *channel);
 
-    // Scan all channels that are due at/after deadline
+    /// Remove channel from ScanList.
+    void removeChannel(class ArchiveChannel *channel);
+
+    /// Scan all channels that are due at/after deadline
     void scan(const epicsTime &deadline);
 
-    // Does the scan list contain anyting?
+    /// Does the scan list contain anyting?
     bool isDueAtAll()
     {   return is_due_at_all; }
     
-    // When should scan() be called ?
+    /// When should scan() be called ?
     const epicsTime &getDueTime() const
     {   return  next_list_scan; }
 
@@ -51,11 +67,6 @@ private:
     epicsTime                       next_list_scan;
 };
 
+/// \@}
+
 #endif //__SCANLIST_H__
-
-
-
-
-
-
-

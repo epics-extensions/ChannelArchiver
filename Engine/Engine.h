@@ -103,16 +103,20 @@ public:
     const epicsTime &getStartTime() const { return start_time; }
     const stdString &getIndexName() const { return index_name;  }
     const epicsTime &getNextWriteTime(Guard &guard) const
-    { return next_write_time; }
+    {
+        guard.check(mutex);
+        return next_write_time;
+    }
     bool isWriting() const        { return is_writing; }
     
-    /// Add channel to ScanList.
-    /// If result is false,
-    /// channel has to prepare a monitor.
-    bool addToScanList(Guard &guard, ArchiveChannel *channel);
-
-    stdString makeDataFileName();
+    /// Get Engine's scan list
+    ScanList &getScanlist(Guard &guard)
+    {
+        guard.check(mutex);
+        return scan_list;
+    }
     
+    stdString makeDataFileName();
 
 private:
     Engine(const stdString &index_name);

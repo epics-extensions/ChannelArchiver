@@ -12,25 +12,42 @@
 #include <epicsTimeHelper.h>
 #include "ScanList.h"
 
-#undef DEBUG_SCANLIST
+#define DEBUG_SCANLIST
 
 SinglePeriodScanList::SinglePeriodScanList(double period)
+        : period(period)
+{}
+
+void SinglePeriodScanList::add(ArchiveChannel *channel)
 {
-    period   = period;
+    channels.push_back(channel);
+}
+
+void SinglePeriodScanList::remove(ArchiveChannel *channel)
+{
+    stdList<ArchiveChannel *>::iterator ci;
+    for (ci = channels.begin(); ci != channels.end(); ++ci)
+    {
+        if (*ci == channel)
+        {
+            printf("SinglePeriodScanList(%g s): Removed '%s'\n",
+                   period, channel->getName().c_str());
+            ci = channels.erase(ci);
+        }
+    }
 }
 
 // returns false on timeout
 void SinglePeriodScanList::scan()
 {
-#ifdef TODO
-    // fetch channels
     stdList<ArchiveChannel *>::iterator channel;
     for (channel = channels.begin(); channel != channels.end(); ++channel)
     {
-        if ((*channel)->isConnected())
-            (*channel)->issueCaGetCallback();
+        ArchiveChannel *c = *channel;
+        Guard guard(c->mutex);
+        if (c->isConnected(guard))
+            c->issueCaGet(guard);
     }
-#endif
 }
 
 ScanList::ScanList()
@@ -52,41 +69,52 @@ ScanList::~ScanList()
 void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
 {
     stdList<SinglePeriodScanList *>::iterator li;
-    SinglePeriodScanList *list;
+    SinglePeriodScanList *period_list;
 
-    // find a scan list with suitable period
+    // Check it the channel is already on some
+    // list where it needs to be removed
+    removeChannel(channel);
+    
+    // Find a scan list with suitable period
     for (li = period_lists.begin(); li != period_lists.end(); ++li)
     {
         if ((*li)->period == channel->getPeriod(guard))
         {
-            list = *li; // found one!
+            period_list = *li; // found one!
             break;
         }
     }
     if (li == period_lists.end()) // create new list
     {
-        list = new SinglePeriodScanList(channel->getPeriod(guard));
-        period_lists.push_back(list);
+        period_list = new SinglePeriodScanList(channel->getPeriod(guard));
+        period_lists.push_back(period_list);
         // next scan time, rounded to period
-        list->next_scan = roundTimeUp(epicsTime::getCurrent(),
-                                      list->period);
+        period_list->next_scan = roundTimeUp(epicsTime::getCurrent(),
+                                             period_list->period);
     }
-    list->channels.push_back(channel);
-    if (next_list_scan == nullTime || next_list_scan > list->next_scan)
-        next_list_scan = list->next_scan;
+    period_list->add(channel);
+    if (next_list_scan == nullTime || next_list_scan > period_list->next_scan)
+        next_list_scan = period_list->next_scan;
     is_due_at_all = true;
 
 #   ifdef DEBUG_SCANLIST
-    char buf[30];
-    
-    list->_next_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
+    char buf[30];    
+    period_list->next_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
     LOG_MSG("Channel '%s' makes list %g due %s\n",
             channel->getName().c_str(),
-            list->_period,
+            period_list->period,
             buf);
-    _next_list_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
+    next_list_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
     LOG_MSG("->Whole ScanList due %s\n", buf);
 #   endif
+}
+
+void ScanList::removeChannel(ArchiveChannel *channel)
+{
+    stdList<SinglePeriodScanList *>::iterator li;
+    for (li = period_lists.begin(); li != period_lists.end(); ++li)
+        (*li)->remove(channel);
+    
 }
 
 // Scan all channels that are due at/after deadline
@@ -106,13 +134,12 @@ void ScanList::scan(const epicsTime &deadline)
     for (li = period_lists.begin(); li != period_lists.end(); ++li)
     {
         if (deadline >= (*li)->next_scan)
-        {
-            // Determine next scan time,
+        {   // Determine next scan time,
             // make sure it's in the future.
             rounded_period = (unsigned long) (*li)->period;
             while (deadline > (*li)->next_scan)
                 (*li)->next_scan += rounded_period;
-            // Scan list list
+            // Scan that list
             (*li)->scan();
 #ifdef DEBUG_SCANLIST
             (*li)->next_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");

@@ -223,16 +223,15 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     
     // For existing channels: minimize period, maximize monitor feature
     if (monitored)
-        mechanism = new SampleMechanismMonitored();
+        mechanism = new SampleMechanismMonitored(channel);
     else
     {
-        // TODO:
-        mechanism = new SampleMechanismMonitored();
+        // TODO: Pick correct mechanism
+        mechanism = new SampleMechanismGet(channel);
     }
     if (channel->getPeriod(guard) > period)
         channel->setPeriod(engine_guard, guard, period);
     channel->setMechanism(guard, mechanism);
-    
     group->addChannel(guard, channel);
     channel->addToGroup(guard, group, disabling);
     if (new_channel)

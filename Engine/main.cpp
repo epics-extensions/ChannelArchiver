@@ -13,6 +13,10 @@
 #include "EngineServer.h"
 #include <Filename.h>
 
+// wrongly defined for hp700 dce:
+#undef open
+#undef close
+
 USING_NAMESPACE_CHANARCH
 using namespace std;
 

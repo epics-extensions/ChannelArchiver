@@ -9,6 +9,10 @@
 using namespace std;
 USING_NAMESPACE_CHANARCH
 
+
+#define LOG_NSV(stuff)	LOG_MSG(stuff)
+//#define LOG_NSV(stuff)	{}
+
 // Helper:
 // print chid
 //
@@ -392,6 +396,13 @@ void ChannelInfo::addToRingBuffer (const ValueI *value)
 		return;
 	}
 
+	if (value->getTime () < _last_buffer_time)
+	{
+		LOG_MSG (osiTime::getCurrent() << ", " << _name << ": back in time\n");
+		LOG_MSG ("Prev:  " << _last_buffer_time << "\n");
+		LOG_MSG ("Value: " << *value << "\n");
+	}
+
 	size_t ow = _buffer.getOverWrites ();
 	_buffer.addRawValue (value->getRawValue ());
 	if (ow <= 0  &&  _buffer.getOverWrites () > 0)
@@ -400,6 +411,9 @@ void ChannelInfo::addToRingBuffer (const ValueI *value)
 	_last_buffer_time = value->getTime ();
 }
 
+// Event (value with special status/severity):
+// Add unconditionally to ring buffer,
+// maybe adjust time so that it can be added
 void ChannelInfo::addEvent (dbr_short_t status, dbr_short_t severity, const osiTime &time)
 {
 	static osiTime adjust (0.0l);
@@ -409,22 +423,29 @@ void ChannelInfo::addEvent (dbr_short_t status, dbr_short_t severity, const osiT
 		LOG_ASSERT (_tmp_value);
 		return;
 	}
+
+    if (_pending_value_set)
+	{
+		LOG_NSV (" Event!, unpending:            " << *_pending_value << "\n");
+		flushRepeats (_pending_value->getTime ());
+		addToRingBuffer (_pending_value);
+		_pending_value_set = false;
+	}
+
 	// Setup "event" Value. Clear, then set only common fields that archiver event uses:
 	memset (_tmp_value->getRawValue (), 0, _tmp_value->getRawValueSize());
 	_tmp_value->setStatus (status, severity);
-	_tmp_value->setTime (time);
 
-	if (_tmp_value->getTime() <= _last_buffer_time)
+	if (time > _last_buffer_time)
+		_tmp_value->setTime (time);
+	else
 	{	// adjust time because this event has to be added to archive somehow
 		_last_buffer_time += adjust;
 		_tmp_value->setTime (_last_buffer_time);
 	}
 	addToRingBuffer (_tmp_value);
+	_previous_value_set = false; // events are not repeat-counted, _previous_value is unset
 }
-
-
-//#define LOG_NSV(stuff)	LOG_MSG(stuff)
-#define LOG_NSV(stuff)	{}
 
 // To make handleNewValue more readable:
 // We are scanned, _new_value is OK,
@@ -494,7 +515,7 @@ inline void ChannelInfo::handleNewScannedValue ()
 	LOG_NSV (" next time:                " << _expected_next_time << "\n");
 }
 
-inline bool ChannelInfo::isDisabling(const GroupInfo *group) const
+bool ChannelInfo::isDisabling(const GroupInfo *group) const
 {	return _disabling[group->getID()];	}
 
 // To make handleNewValue more readable:

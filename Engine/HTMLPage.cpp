@@ -31,7 +31,7 @@ HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 	line ("</HEAD>");
 	line ("");
 	line ("<BODY BGCOLOR=#AEC9D2>");
-	line ("<FONT FACE=\"Arial, Comic Sans MS, Helvetica\" SIZE=1>");
+	line ("<FONT FACE=\"Arial, Comic Sans MS, Helvetica\">");
 	line ("<BLOCKQUOTE>");
 
 	line ("<TABLE BORDER=3>");
@@ -48,7 +48,6 @@ HTMLPage::~HTMLPage ()
 {
 	line ("");
 	line ("<BR>");
-	line ("<FONT SIZE=1>");
 	if (_refresh > 0)
 	{
 		strstream	linebuf;
@@ -58,7 +57,6 @@ HTMLPage::~HTMLPage ()
 	}
 	else
 		line ("(Use <I>Reload</I> from the Browser's menu for updates)");
-	line ("</FONT>");
 	line ("</BLOCKQUOTE>");
 	line ("</FONT>");
 	line ("</BODY>");

@@ -4,6 +4,7 @@ proc camGUI::mainWindow {} {
   wm protocol . WM_DELETE_WINDOW "after 1 camGUI::Exit"
   set descmenu {
     "&File" all file 0 {
+      {command "&New..." {} "New Configuration" {} -command {camGUI::aOpen Save}}
       {command "&Open..." {} "Open Configuration" {} -command camGUI::aOpen}
       {command "Open D&efault" {} "Open default Configuration" {} -command camGUI::aOpenDefault}
       {separator}

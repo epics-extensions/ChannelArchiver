@@ -1,7 +1,8 @@
 set ::MagicLine "# and now the settings.... (BTW: don't modify this line!!!)"
 
 proc camGUI::SaveSettings {} {
-  if {"$::tcl_platform(platform)" == "unix"} {
+  set wh 0
+  if {$camMisc::force_cfg_file} {
     if [catch {set wh [open $camMisc::cfg_file.N w+]}] exit
     set hadit 0
     for_file line $camMisc::cfg_file {
@@ -17,20 +18,22 @@ proc camGUI::SaveSettings {} {
     set l [luniq $::selected($k)]
     set ll [llength $l]
     set l [lrange $l [expr $ll - 20] end] 
-    save $wh ::selected($k) $l selected
+    save $wh ::selected($k) $l $k "\\selected"
   }
   save $wh ::_port $::_port _port
   save $wh ::dontCheckAtAll $::dontCheckAtAll dontCheckAtAll
   save $wh ::checkInt $::checkInt checkInt
   save $wh ::checkBgMan $::checkBgMan checkBgMan
-  close $wh
-  file rename -force $camMisc::cfg_file.N $camMisc::cfg_file
+  if {$wh != "0"} { 
+    close $wh 
+    file rename -force $camMisc::cfg_file.N $camMisc::cfg_file
+  }
 }
 
-proc save {wh var val desc} {
+proc save {wh var val desc {p ""}} {
   if {"$::tcl_platform(platform)" == "unix"} {
     puts $wh "set $var {$val}"
   } else {
-    registry set "$camMisc::reg_stem\\Settings" $desc $val
+    registry set "$camMisc::reg_stem\\Settings$p" $desc $val
   }
 }

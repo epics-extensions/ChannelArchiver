@@ -1,6 +1,11 @@
-proc bgerror {args} {
+if [info exists tk_version] {
+  set funame xxx
+} else {
+  set funame bgerror
+}
+
+proc $funame {args} {
   global errorInfo
-#  Puts $args error
   foreach l [split $errorInfo "\n"] {
     puts stderr $l
     Puts "$l" error

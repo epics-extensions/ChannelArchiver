@@ -1,8 +1,9 @@
-proc camGUI::aOpen {} {
+proc camGUI::aOpen {{mode Open}} {
   # open a fileselector
   # if there's a file selected -> open it
+  if {$mode == "Save"} {set ::Archivers {}}
   if {[info exists camMisc::rcdir]} {cd $camMisc::rcdir}
-  set fn [tk_getOpenFile]
+  set fn [tk_get${mode}File]
   if {"$fn" != ""} {
     set camMisc::force_cfg_file 1
     set camMisc::cfg_file $fn

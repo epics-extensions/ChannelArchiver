@@ -251,7 +251,12 @@ void do_export (const stdString &archive_name,
 			{
 				for (i=0;   values && i<chunk;   ++i, ++values)
 				{
-					if (isValidTime (last_stamp) && isValidTime(values->getTime()))	// time stamp checks
+					if (! isValidTime(values->getTime()))
+					{
+						cout << *values << "\tinvalid time stamp, skipped\n";
+						continue;
+					}
+					if (isValidTime (last_stamp))	// time stamp checks
 					{	
 						if (values->getTime() < last_stamp)
 						{

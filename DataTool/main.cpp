@@ -16,7 +16,10 @@ bool verbose;
 
 void convert_dir_index(const stdString &dir_name, const stdString &index_name)
 {
-    DirectoryFile dir(dir_name);
+    DirectoryFile dir;
+    if (!dir.open(dir_name))
+	return;
+	
     DirectoryFileIterator channels = dir.findFirst();
     archiver_Index index;
     
@@ -104,7 +107,9 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
         return;
     }
 
-    DirectoryFile dir(dir_name, true);
+    DirectoryFile dir;
+    if (!dir.open(dir_name, true))
+        return;
     
     char name[CHANNEL_NAME_LENGTH];
     key_AU_Iterator *aus;

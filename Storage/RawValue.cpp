@@ -17,7 +17,6 @@
 #include "ArrayTools.h"
 #include "epicsTimeHelper.h"
 #include "MsgLogger.h"
-#include "ArchiveException.h"
 #include "Conversions.h"
 // Storage
 #include "RawValue.h"
@@ -358,11 +357,11 @@ bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
             for (size_t i=0; i<count; ++i)  MACRO(data[i]);             \
         }                                                               \
         break;
-        FROM_DISK(DBR_TIME_DOUBLE, dbr_double_t, dbr_time_double, DoubleFromDisk)
-        FROM_DISK(DBR_TIME_FLOAT,  dbr_float_t,  dbr_time_float,  FloatFromDisk)
-        FROM_DISK(DBR_TIME_SHORT,  dbr_short_t,  dbr_time_short,  SHORTFromDisk)
-        FROM_DISK(DBR_TIME_ENUM,   dbr_enum_t,   dbr_time_enum,   USHORTFromDisk)
-        FROM_DISK(DBR_TIME_LONG,   dbr_long_t,   dbr_time_long,   LONGFromDisk)
+        FROM_DISK(DBR_TIME_DOUBLE,dbr_double_t,dbr_time_double, DoubleFromDisk)
+        FROM_DISK(DBR_TIME_FLOAT, dbr_float_t, dbr_time_float,  FloatFromDisk)
+        FROM_DISK(DBR_TIME_SHORT, dbr_short_t, dbr_time_short,  SHORTFromDisk)
+        FROM_DISK(DBR_TIME_ENUM,  dbr_enum_t,  dbr_time_enum,   USHORTFromDisk)
+        FROM_DISK(DBR_TIME_LONG,  dbr_long_t,  dbr_time_long,   LONGFromDisk)
     default:
         LOG_MSG("RawValue::read(%s @ 0x%lX): Unknown DBR_xx %d\n",
                 datafile->getFilename().c_str(), offset, type);
@@ -372,7 +371,8 @@ bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
     return true;
 }
 
-void RawValue::write(DbrType type, DbrCount count, size_t size, const Data *value,
+bool RawValue::write(DbrType type, DbrCount count, size_t size,
+                     const Data *value,
                      MemoryBuffer<dbr_time_string> &cvt_buffer,
                      DataFile *datafile, FileOffset offset)
 {
@@ -404,13 +404,19 @@ void RawValue::write(DbrType type, DbrCount count, size_t size, const Data *valu
         TO_DISK(DBR_TIME_ENUM,   dbr_enum_t,   dbr_time_enum,   USHORTToDisk)
         TO_DISK(DBR_TIME_LONG,   dbr_long_t,   dbr_time_long,   LONGToDisk)
     default:
-        throwDetailedArchiveException (Invalid, "Unknown DBR_xx");
+        LOG_MSG("RawValue::write: Unknown DBR_.. type %d\n",
+                type);
+        return false;
 #undef TO_DISK
     }
 
     if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(datafile->file) != offset  ||
         fwrite(buffer, size, 1, datafile->file) != 1)
-        throwArchiveException (WriteError);
+    {
+        LOG_MSG("RawValue::write write error\n");
+        return false;
+    }
+    return true;
 }
 

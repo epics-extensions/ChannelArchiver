@@ -50,8 +50,8 @@ public:
     void clear();
 
     void init(const char *name=0);
-    void read(FILE *fd, FileOffset offset);
-    void write(FILE *fd, FileOffset offset);
+    bool read(FILE *fd, FileOffset offset);
+    bool write(FILE *fd, FileOffset offset);
 };
 
 inline void DirectoryFileEntry::clear()
@@ -80,12 +80,14 @@ inline void DirectoryFileEntry::clear()
 class DirectoryFile
 {
 public:
+    DirectoryFile();
+    
     /// Attach DirectoryFile to disk file.
     
     /// Existing file is opened, otherwise new one is created
     /// for for_write==true.
     ///
-    DirectoryFile(const stdString &filename, bool for_write=false);
+    bool open(const stdString &filename, bool for_write=false);
 
     /// Close file.
     ~DirectoryFile();
@@ -129,10 +131,11 @@ private:
     DirectoryFile &operator =(const DirectoryFile &);
 
     // Read (first) FileOffset for given HashValue
+    // Returns INVALID_OFFSET for error
     FileOffset readHTEntry(HashTable::HashValue entry) const;
 
     // Write (first) FileOffset for given HashValue
-    void writeHTEntry(HashTable::HashValue entry, FileOffset offset);
+    bool writeHTEntry(HashTable::HashValue entry, FileOffset offset);
 
     // Search HT for the first non-empty entry:
     FileOffset lookForValidEntry(HashTable::HashValue start) const;

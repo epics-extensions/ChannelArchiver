@@ -114,10 +114,10 @@ public:
     
     /// Write a value to binary file
     /// Requires a buffer for the memory-to-disk format conversions
-    static void write(DbrType type, DbrCount count,
+    static bool write(DbrType type, DbrCount count,
                       size_t size, const Data *value,
-                       MemoryBuffer<dbr_time_string> &cvt_buffer,
-                       class DataFile *datafile, FileOffset offset);
+                      MemoryBuffer<dbr_time_string> &cvt_buffer,
+                      class DataFile *datafile, FileOffset offset);
 };
 
 /// @}

@@ -124,7 +124,6 @@ public:
 	void calcEnumeratedSize();
 
 	/// Format a double value according to precision<BR>
-	/// Throws Invalid if CtrlInfo is not for Numeric
 	void formatDouble(double value, stdString &result) const;
 
 	/// Enumerated: state string

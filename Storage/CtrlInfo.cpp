@@ -2,7 +2,6 @@
 #include <cvtFast.h>
 // Tools
 #include "string2cp.h"
-#include "ArchiveException.h"
 #include "Conversions.h"
 // Storage
 #include "CtrlInfo.h"
@@ -145,7 +144,7 @@ void CtrlInfo::setEnumeratedString(size_t state, const char *string)
     CtrlInfoData *info = _infobuf.mem();
     if (info->type != Enumerated  ||
         state >= (size_t)info->value.index.num_states)
-        throwArchiveException (Invalid);
+        return;
 
     char *enum_string = info->value.index.state_strings;
     size_t i;
@@ -173,13 +172,13 @@ void CtrlInfo::calcEnumeratedSize ()
     LOG_ASSERT(total <= _infobuf.getBufferSize());
 }
 
-// Convert a double value into text, formatted according to CtrlInfo
-// Throws Invalid if CtrlInfo is not for Numeric
 void CtrlInfo::formatDouble(double value, stdString &result) const
 {
     if (getType() != Numeric)
-        throwDetailedArchiveException(Invalid,
-                                      "CtrlInfo::formatDouble: Type not Numeric");
+    {
+        result = "<enumerated>";
+        return;
+    }
     char buf[200];
     if (cvtDoubleToString(value, buf, getPrecision()) >= 200)
         result = "<too long>";

@@ -1,7 +1,6 @@
 // DirectoryFile.cpp
 //////////////////////////////////////////////////////////////////////
 
-#include "ArchiveException.h"
 #include "MsgLogger.h"
 #include "Filename.h"
 #include "Conversions.h"
@@ -39,12 +38,12 @@ void DirectoryFileEntry::init(const char *name)
 		data.name[0] = '\0';
 }
 
-void DirectoryFileEntry::read(FILE *file, FileOffset offset)
+bool DirectoryFileEntry::read(FILE *file, FileOffset offset)
 {
 	if (fseek(file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(file) != offset  ||
 		fread(&data, DataSize, 1, file) != 1)
-		throwArchiveException(ReadError);
+        return false;
 	FileOffsetFromDisk(data.next_entry_offset);
 	FileOffsetFromDisk(data.last_offset);
 	FileOffsetFromDisk(data.first_offset);
@@ -52,9 +51,10 @@ void DirectoryFileEntry::read(FILE *file, FileOffset offset)
 	epicsTimeStampFromDisk(data.first_save_time);
 	epicsTimeStampFromDisk(data.last_save_time);
 	this->offset = offset;
+    return true;
 }
 
-void DirectoryFileEntry::write(FILE *file, FileOffset offset)
+bool DirectoryFileEntry::write(FILE *file, FileOffset offset)
 {
 	Data copy = data;
 
@@ -67,9 +67,12 @@ void DirectoryFileEntry::write(FILE *file, FileOffset offset)
 	if (fseek(file, offset, SEEK_SET) != 0  ||
         (FileOffset) ftell(file) != offset  ||
 		fwrite(&copy, DataSize, 1, file) != 1)
-		throwArchiveException(WriteError);
+    {
+        return false;
+    }
 	this->offset = offset;
     fflush(file);
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -80,7 +83,11 @@ void DirectoryFileEntry::write(FILE *file, FileOffset offset)
 // a) new file: setup Hash Table
 // b) existing file for read-only: check HT
 // c) existing file for read-write: check HT
-DirectoryFile::DirectoryFile(const stdString &filename, bool for_write)
+DirectoryFile::DirectoryFile()
+{
+}
+
+bool DirectoryFile::open(const stdString &filename, bool for_write)
 {
     _filename = filename;
     Filename::getDirname(_filename, _dirname);
@@ -89,7 +96,7 @@ DirectoryFile::DirectoryFile(const stdString &filename, bool for_write)
     if (_file==0 && for_write)
         _file = fopen(filename.c_str(), "w+b");
     if (_file == 0)
-        throwDetailedArchiveException(OpenError, filename);
+        return false;
 
     // Does file contain HT?
     fseek(_file, 0, SEEK_END);
@@ -97,8 +104,11 @@ DirectoryFile::DirectoryFile(const stdString &filename, bool for_write)
     if (_next_free_entry < FirstEntryOffset)
     {
         if (!for_write) // ... but it should
-            throwDetailedArchiveException(Invalid, "Missing HT");
-
+        {
+            LOG_MSG("DirectoryFile::open(%s): Missing HT\n",
+                    filename.c_str());
+            return false;
+        }
         // Initialize HT:
         for (HashTable::HashValue entry = 0;
              entry < HashTable::HashTableSize; ++entry)
@@ -120,6 +130,7 @@ DirectoryFile::DirectoryFile(const stdString &filename, bool for_write)
         LOG_MSG("(readonly) ");
     LOG_MSG("DirectoryFile %s\n", _filename);
 #endif
+    return true;
 }
 
 DirectoryFile::~DirectoryFile()
@@ -135,7 +146,7 @@ DirectoryFile::~DirectoryFile()
 
 DirectoryFileIterator DirectoryFile::findFirst()
 {
-    DirectoryFileIterator       i(this);
+    DirectoryFileIterator i(this);
     i.findValidEntry(0);
 
     return i;
@@ -161,7 +172,6 @@ DirectoryFileIterator DirectoryFile::find(const stdString &name)
 }
 
 // Add a new entry to HT.
-// Throws Invalid if that entry exists already.
 //
 // After calling this routine the current entry
 // is undefined. It must be initialized and
@@ -249,19 +259,20 @@ FileOffset DirectoryFile::readHTEntry(HashTable::HashValue entry) const
     if (fseek(_file, pos, SEEK_SET) != 0 ||
         (FileOffset) ftell(_file) != pos   ||
         fread(&offset, sizeof(FileOffset), 1, _file) != 1)
-        throwArchiveException(ReadError);
+        return INVALID_OFFSET;
     FileOffsetFromDisk(offset);
     return offset;
 }
 
-void DirectoryFile::writeHTEntry(HashTable::HashValue entry, FileOffset offset)
+bool DirectoryFile::writeHTEntry(HashTable::HashValue entry, FileOffset offset)
 {       // offset is value parm -> safe to convert in place
     FileOffsetToDisk (offset);
     FileOffset pos = entry * sizeof(FileOffset);
     if (fseek(_file, pos, SEEK_SET) != 0 ||
         (FileOffset) ftell(_file) != pos   ||
         fwrite(&offset, sizeof(FileOffset), 1, _file) != 1)
-        throwArchiveException(WriteError);
+        return false;
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////

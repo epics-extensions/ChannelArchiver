@@ -114,3 +114,5 @@ while { $go } {
 }
 
 closeSpreadsheetContext context
+
+exit 0

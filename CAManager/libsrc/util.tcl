@@ -78,7 +78,7 @@ if [info exists tk_version] {
 }
 
 proc $funame {args} {
-Puts "util: $funame $args" funcall
+Puts "util: bgerror $args" funcall
   global errorInfo
   foreach l [split $errorInfo "\n"] {
     Puts "$l" error
@@ -245,8 +245,8 @@ Puts "util: checkstate $arr \"$ind\" $op" funcall
     if {("[camMisc::arcGet $ind start]" == "NO")} return
     if {("[camMisc::arcGet $ind start]" != "timerange")} {
       if {[info exists ::sched($ind,start,job)]} {
+	Puts "canceling startjob [lindex [after info $::sched($ind,start,job)] 0] \"[camMisc::arcGet $ind descr]\"" debug2
 	after cancel $::sched($ind,start,job)
-	Puts "canceled startjob $::sched($ind,start,job) ($ind,start,job) \"[camMisc::arcGet $ind descr]\"" debug2
 	array unset ::sched $ind,start,job
       }
       set ::sched($ind,start,job) [after 10 "runArchiver $ind"]
@@ -362,8 +362,10 @@ Puts "util: readCFG" funcallX
     Puts "(re-)readCFG"
     foreach i [array names ::sched *,job] {
       regsub "job\$" $i "time" t
+      regexp "(.*),(.*),job" $i all num act
+
+      Puts "canceling $act job \"[lindex [after info $::sched($i)] 0]\" \"[camMisc::arcGet $num descr]\"" debug2
       after cancel $::sched($i)
-      Puts "canceled job \"[camMisc::arcGet $i descr]\"" debug2
       array unset ::sched $i
       array unset ::sched $t
     }
@@ -680,8 +682,8 @@ Puts "util: scheduleStop $i" funcall
   camMisc::arcSet $i stoptime $stoptime
   if {[info exists ::sched($i,stop,time)] && ($::sched($i,stop,time) == $stoptime)} return
   if {[info exists ::sched($i,stop,job)]} {
+    Puts "canceled job \"[after info $::sched($i,stop,job)]\" \"[camMisc::arcGet $i descr]\"" debug2
     after cancel $::sched($i,stop,job)
-    Puts "canceled job \"[camMisc::arcGet $i descr]\"" debug2
   }
   # schedule jobs at most 10 days ahead
   if {[expr $stoptime - $now] > 864000} {

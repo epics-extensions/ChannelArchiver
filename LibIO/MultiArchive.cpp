@@ -36,6 +36,9 @@ ValueI *MultiArchive::newValue(DbrType type, DbrCount count)
 
 bool MultiArchive::parseMasterFile(const stdString &master_file)
 {
+#ifdef DEBUG_MULTIARCHIVE
+    LOG_MSG("MultiArchive::parseMasterFile\n");
+#endif
     // Carefully check if "master_file" starts with the magic line:
     LowLevelIO file;
     if (! file.llopen (master_file.c_str()))
@@ -69,7 +72,12 @@ bool MultiArchive::parseMasterFile(const stdString &master_file)
         value == "1")
     {
         while (parser.nextLine())
-            _archives.push_back (parser.getLine());
+        {
+#ifdef DEBUG_MULTIARCHIVE
+            LOG_MSG("sub-archive: " << parser.getLine() << "\n");
+#endif
+            _archives.push_back(parser.getLine());
+        }
     }
     else
     {
@@ -77,9 +85,6 @@ bool MultiArchive::parseMasterFile(const stdString &master_file)
                 << "', maybe wrong version\n");
         return false;
     }
-#ifdef DEBUG_MULTIARCHIVE
-    LOG_MSG("MultiArchive::parseMasterFile\n");
-#endif
     return true;
 }
 
@@ -223,6 +228,9 @@ bool MultiArchive::getValueAfterTime(
     const osiTime &time,
     MultiValueIterator &value_iterator) const
 {
+#ifdef DEBUG_MULTIARCHIVE
+    LOG_MSG("MultiArchive::parseMasterFile\n");
+#endif
     if (channel_iterator._channel_index >= _channels.size())
         return false;
 
@@ -265,7 +273,7 @@ bool MultiArchive::getValueAfterTime(
     // Was there an archive where all is after time?
     if (!last_containing_archive.empty())
     {
-        Archive archive (new BinArchive(*archs));
+        Archive archive(new BinArchive(last_containing_archive));
         ChannelIterator channel(archive);
         if (!archive.findChannelByName(info._name, channel))
             return false;

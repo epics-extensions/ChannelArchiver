@@ -29,6 +29,7 @@ INC += RegularExpression.h
 INC += stdString.h 
 INC += string2cp.h
 INC += VectorHelper.h       
+INC += FUX.h       
 
 # Contents of library
 LIB_SRCS += ArchiveException.cpp
@@ -45,6 +46,7 @@ LIB_SRCS += MsgLogger.cpp
 LIB_SRCS += NetTools.cpp
 LIB_SRCS += RegularExpression.cpp
 LIB_SRCS += stdString.cpp
+LIB_SRCS += FUX.cpp
 #	on WIN32 only...
 LIB_SRCS_WIN32 := gnu_regex.c
 

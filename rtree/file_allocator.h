@@ -73,7 +73,7 @@ public:
      * When called with <i>level=0</i>, it will only perform
      * the tests and only report possible problems.
      */
-    void dump(int level=1);
+    bool dump(int level=1);
     
 private:
     typedef struct

@@ -11,8 +11,7 @@
 #ifndef __CHANNELARCHIVETYPES_H__
 #define __CHANNELARCHIVETYPES_H__
 
-#include <MsgLogger.h>
-#include <osiTimeHelper.h>
+#include<MsgLogger.h>
 
 // Safely (i.e. w/o overruns and '\0'-limited)
 // copy a std-string into a char [].

@@ -3,9 +3,9 @@
 #if !defined(_VALUEI_H_)
 #define _VALUEI_H_
 
-#include "ArchiveTypes.h"
-#include "CtrlInfoI.h"
-#include <db_access.h>
+#include"ArchiveTypes.h"
+#include"CtrlInfoI.h"
+#include<db_access.h>
 
 // Non-CA events to the archiver;
 // some are archived - some are directives.
@@ -26,7 +26,8 @@ enum
 //CLASS RawValueI
 //
 // Lightweight wrapper class for a raw Type (dbr_time_xxx).
-// All methods are static, they reqire the value ptr and a context hint of type/count.
+// All methods are static, they reqire the value ptr and a context hint
+// of type/count.
 //
 // This class doesn't hold the actual memory location of the value,
 // since it might be owned by e.g. the CA client library,
@@ -68,8 +69,8 @@ public:
     static bool parseStatus (const stdString &text, short &stat, short &sevr);
 
     //* and time
-    static const osiTime getTime (const Type *value);
-    static void setTime (Type *value, const osiTime &stamp);
+    static const epicsTime getTime (const Type *value);
+    static void setTime (Type *value, const epicsTime &stamp);
     static void getTime (const Type *value, stdString &time);
 private:
     friend class ValueI;
@@ -89,11 +90,11 @@ inline short RawValueI::getSevr(const Type *value)
 inline void RawValueI::setStatus(Type *value, short status, short severity)
 {   value->status = status; value->severity = severity; }
 
-inline const osiTime RawValueI::getTime(const Type *value)
-{   return TS_STAMP2osi(value->stamp);  }
+inline const epicsTime RawValueI::getTime(const Type *value)
+{   return epicsTime(value->stamp);  }
 
-inline void RawValueI::setTime (Type *value, const osiTime &stamp)
-{   value->stamp = osi2TS_STAMP(stamp); }
+inline void RawValueI::setTime (Type *value, const epicsTime &stamp)
+{   value->stamp = (epicsTimeStamp)stamp; }
 
 //////////////////////////////////////////////////////////////////////
 //CLASS ValueI
@@ -122,9 +123,9 @@ public:
     virtual void setDouble (double value, DbrCount index = 0) = 0;
 
     //* Get time stamp
-    const osiTime getTime () const;
+    const epicsTime getTime () const;
     void getTime (stdString &result) const;
-    void setTime (const osiTime &stamp);
+    void setTime (const epicsTime &stamp);
     
     //* Get status as raw value or string
     dbr_short_t getStat () const;
@@ -222,10 +223,10 @@ inline bool ValueI::isInfo () const
     return  s==ARCH_DISCONNECT || s==ARCH_STOPPED || s==ARCH_DISABLED;
 }
 
-inline const osiTime ValueI::getTime () const
+inline const epicsTime ValueI::getTime () const
 {   return RawValueI::getTime (_value); }
 
-inline void ValueI::setTime (const osiTime &stamp)
+inline void ValueI::setTime (const epicsTime &stamp)
 {   RawValueI::setTime (_value, stamp); }
 
 inline void ValueI::getTime (stdString &result) const

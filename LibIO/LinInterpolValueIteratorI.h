@@ -62,7 +62,7 @@ public:
 	bool next ();
 	bool prev ();
 
-	size_t determineChunk (const osiTime &until);
+	size_t determineChunk (const epicsTime &until);
 
 	//* This method will return <I>deltaT</I>,
 	// not the original scan period of the underlying
@@ -73,11 +73,11 @@ public:
 	//
 	// Use <I>++</I> or <I>-- operators</I> to get the next/prev.
 	// Value at a period of <I>deltaT</I>.
-	const ValueI * interpolate (const osiTime &time);
+	const ValueI * interpolate (const epicsTime &time);
 
 private:
 	ValueIteratorI *_base;
-	osiTime _time;
+	epicsTime _time;
 	double _deltaT;
 	double _maxDeltaT;
 	ValueI *_value;

@@ -38,7 +38,7 @@ public:
 
 	//* Implementation of pure virtuals from  CLASS ValueIteratorI
 	bool isValid() const;
-	size_t determineChunk(const osiTime &until);
+	size_t determineChunk(const epicsTime &until);
 	double getPeriod() const;
 	const ValueI *getValue() const;
 	bool next();

@@ -1,6 +1,9 @@
-// ChannelIteratorI.cc
-// Stub-file to handle different file-extension preferences
-// between MS Visual C++ and the EPICS make system
-//
+#include "ArchiveI.h"
 
-#include "ChannelIteratorI.cpp"
+ChannelIteratorI::~ChannelIteratorI ()
+{}
+
+ChannelIterator::ChannelIterator (const Archive &archive)
+{	_ptr = archive.getI()->newChannelIterator ();	}
+
+

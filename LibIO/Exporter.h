@@ -38,8 +38,8 @@ public:
     void setMaxChannelCount(size_t limit);
 
     //* Set start/end time. Default: dump from whole archive
-    void setStart(const osiTime &start);
-    void setEnd(const osiTime &end);
+    void setStart(const epicsTime &start);
+    void setEnd(const epicsTime &end);
 
     //* Switch on linear interpolation,
     // generating a value every "secs".
@@ -75,7 +75,7 @@ public:
 protected:
     ArchiveI *_archive;
     stdString _filename;
-    osiTime _start, _end;
+    epicsTime _start, _end;
     double _linear_interpol_secs;
     size_t _gap_factor;
     bool _fill;
@@ -92,18 +92,18 @@ protected:
 
     // Helpers for derived classes:
     // Print time in some human readable format
-    void printTime(FILE *f, const osiTime &time);
+    void printTime(FILE *f, const epicsTime &time);
     // Print value, handling status values (_show_status)
     // as well as arrays.
     // Uses CtrlInfoI->getPrecision() if > 0.
-    void printValue(FILE *f, const osiTime &time, const ValueI *v);
+    void printValue(FILE *f, const epicsTime &time, const ValueI *v);
 
 private:
     void init(ArchiveI *archive);
 };
 
-inline void Exporter::setStart(const osiTime &start) { _start = start; }
-inline void Exporter::setEnd(const osiTime &end)     { _end = end; }
+inline void Exporter::setStart(const epicsTime &start) { _start = start; }
+inline void Exporter::setEnd(const epicsTime &end)     { _end = end; }
 inline void Exporter::enableStatusText(bool yesno)   { _show_status = yesno; }
 
 inline void Exporter::setLinearInterpolation(double secs, size_t gap)

@@ -25,16 +25,16 @@ public:
 	MultiChannel (MultiChannelIterator *channel_iterator);
 
 	virtual const char *getName() const;
-	virtual osiTime getFirstTime()  const;
-	virtual osiTime getLastTime()   const;
+	virtual epicsTime getFirstTime()  const;
+	virtual epicsTime getLastTime()   const;
 
 	virtual bool getFirstValue(ValueIteratorI *values);
 	virtual bool getLastValue(ValueIteratorI *values);
-	virtual bool getValueAfterTime(const osiTime &time,
+	virtual bool getValueAfterTime(const epicsTime &time,
                                    ValueIteratorI *values);
-	virtual bool getValueBeforeTime(const osiTime &time,
+	virtual bool getValueBeforeTime(const epicsTime &time,
                                     ValueIteratorI *values);
-	virtual bool getValueNearTime(const osiTime &time,
+	virtual bool getValueNearTime(const epicsTime &time,
                                   ValueIteratorI *values);
 
 	virtual size_t lockBuffer(const ValueI &value, double period);

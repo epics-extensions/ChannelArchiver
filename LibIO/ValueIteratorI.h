@@ -33,7 +33,7 @@ public:
 	//  mechanism is implemented. Let me know if you depend on this call.
 	//  The result might also not be perfect,
 	//  e.g. a single 8000 chunk could be reported as two 4000-sized chunks etc.)
-	virtual size_t determineChunk(const osiTime &until) = 0;
+	virtual size_t determineChunk(const epicsTime &until) = 0;
 
 	//* Sampling period for current values in secs.
 	virtual double getPeriod() const = 0;
@@ -94,7 +94,7 @@ public:
 
 	//* Number of "similar" values that can be read
 	// as one chunk in a block operation:
-	size_t determineChunk(const osiTime &until);
+	size_t determineChunk(const epicsTime &until);
 
 	//* Sampling period for current values in secs.
 	double getPeriod() const;
@@ -150,7 +150,7 @@ inline ValueIterator& ValueIterator::operator ++ ()
 inline ValueIterator & ValueIterator::operator -- ()
 {	_ptr->prev (); return *this; }
 
-inline size_t ValueIterator::determineChunk(const osiTime &until)
+inline size_t ValueIterator::determineChunk(const epicsTime &until)
 {	return _ptr->determineChunk(until); }
 
 inline double ValueIterator::getPeriod() const

@@ -48,7 +48,7 @@ public:
 
 	void makeDataFileName (const ValueI &value, stdString &data_file_name);
 
-	void calcNextFileTime (const osiTime &time, osiTime &next_file_time);
+	void calcNextFileTime (const epicsTime &time, epicsTime &next_file_time);
 
 	bool makeFullFileName (const stdString &basename, stdString &full_name);
 

@@ -90,7 +90,8 @@ public:
 	// (sets Type to Numeric and then sets fields)
 	void setNumeric(long prec, const stdString &units,
 					float disp_low, float disp_high,
-					float low_alarm, float low_warn, float high_warn, float high_alarm);
+					float low_alarm, float low_warn,
+                    float high_warn, float high_alarm);
 
 	//* Initialize an Enumerated CtrlInfo
 	void setEnumerated(size_t num_states, char *strings[]);

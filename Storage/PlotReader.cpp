@@ -62,8 +62,7 @@ const RawValue::Data *PlotReader::fill_bin()
     printf("End of bin: %s\n", epicsTimeTxt(end_of_bin, txt));
 #endif
     if (RawValue::getTime(reader_data) > end_of_bin)
-    {
-        // Continue where the data is, skip bins that have nothing anyway
+    {   // Continue where the data is, skip bins that have nothing anyway
         end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
 #ifdef DEBUG_PLOTREAD
         printf("Adjusted: %s\n", epicsTimeTxt(end_of_bin, txt));

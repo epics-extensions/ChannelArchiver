@@ -35,7 +35,7 @@ protected:
     const RawValue::Data *reader_data;
 
     // Current value of this AverageReader
-    epicsTime time_slot;
+    epicsTime end_of_bin;
     DbrType type;
     DbrCount count;
     CtrlInfo info;

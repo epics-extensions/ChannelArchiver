@@ -17,9 +17,9 @@ const RawValue::Data *LinearReader::find(
     if (!(reader_data = reader.find(channel_name, start)))
         return 0;
     if (start)
-        time_slot = *start;
+        end_of_bin = *start;
     else
-        time_slot =
+        end_of_bin =
             roundTimeUp(RawValue::getTime(reader_data), delta);
     return next();
 }
@@ -30,14 +30,21 @@ const RawValue::Data *LinearReader::next()
         return 0;
 #ifdef DEBUG_LINREAD
     stdString txt;
-    printf("Next time slot: %s\n", epicsTimeTxt(time_slot, txt));
+    printf("Next time slot: %s\n", epicsTimeTxt(end_of_bin, txt));
 #endif
     // To interpolate onto the time slot, we need the last value before
     // and the first sample after the time slot.
     bool anything = false;
     epicsTime t0, t1;
     double d0, d1;
-    while (reader_data  &&  RawValue::getTime(reader_data) < time_slot)
+    if (RawValue::getTime(reader_data) > end_of_bin)
+    {   // Continue where the data is, skip bins that have nothing anyway
+        end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
+#ifdef DEBUG_LINREAD
+        printf("Adjusted: %s\n", epicsTimeTxt(end_of_bin, txt));
+#endif
+    }
+    while (reader_data  &&  RawValue::getTime(reader_data) < end_of_bin)
     {
 #ifdef DEBUG_LINREAD
         printf("Raw: ");
@@ -81,7 +88,7 @@ const RawValue::Data *LinearReader::next()
             reader.getCount()==1 &&
             RawValue::getDouble(reader.getType(), reader.getCount(),
                                 reader_data, d1))
-        {   // Have good pre- and post time_slot sample: Interpolate.
+        {   // Have good pre- and post end_of_bin sample: Interpolate.
 #ifdef DEBUG_LINREAD
             printf("Interpolating %g .. %g onto time slot\n", d0, d1);
 #endif
@@ -89,15 +96,15 @@ const RawValue::Data *LinearReader::next()
             double dT = t1-t0;
             if (dT > 0)
                 RawValue::setDouble(type, count, data,
-                                    d0 + (d1-d0)*((time_slot-t0)/dT));
+                                    d0 + (d1-d0)*((end_of_bin-t0)/dT));
             else // Use average if there's no time between t0..t1?
                 RawValue::setDouble(type, count, data, (d0 + d1)/2);
-            RawValue::setTime(data, time_slot);
+            RawValue::setTime(data, end_of_bin);
         }
-        // Else: Have only pre-time_slot sample: Return as is
+        // Else: Have only pre-end_of_bin sample: Return as is
     }
-    // Else: nothing pre-time_slot. See if we find anything in following slot
-    time_slot += delta;
+    // Else: nothing pre-end_of_bin. See if we find anything in following slot
+    end_of_bin += delta;
     if (anything)
         return data;
     return next();

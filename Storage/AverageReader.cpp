@@ -26,7 +26,7 @@ const RawValue::Data *AverageReader::find(
         return 0;
     if (start)
     {
-        time_slot = *start + delta;
+        end_of_bin = *start + delta;
         while (RawValue::getTime(reader_data) < *start)
         {
             if (!(reader_data = reader.next()))
@@ -34,7 +34,7 @@ const RawValue::Data *AverageReader::find(
         }
     }
     else
-        time_slot =
+        end_of_bin =
             roundTimeUp(RawValue::getTime(reader_data), delta);
     return next();
 }
@@ -45,14 +45,21 @@ const RawValue::Data *AverageReader::next()
         return 0;
 #ifdef DEBUG_AVGREAD
     stdString txt;
-    printf("Next time slot: %s\n", epicsTimeTxt(time_slot, txt));
+    printf("Next time slot: %s\n", epicsTimeTxt(end_of_bin, txt));
 #endif
     size_t N = 0;
     double d, sum = 0;
     short stat = 0, sevr = 0;
     bool anything = false;
-    while (reader_data  &&  RawValue::getTime(reader_data) < time_slot)
-    {   // iterate reader until just after time_slot
+    if (RawValue::getTime(reader_data) > end_of_bin)
+    {   // Continue where the data is, skip bins that have nothing anyway
+        end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
+#ifdef DEBUG_AVGREAD
+        printf("Adjusted: %s\n", epicsTimeTxt(end_of_bin, txt));
+#endif
+    }
+    while (reader_data  &&  RawValue::getTime(reader_data) < end_of_bin)
+    {   // iterate reader until just after end_of_bin
 #ifdef DEBUG_AVGREAD
         printf("Raw: ");
         RawValue::show(stdout, reader.getType(), reader.getCount(),
@@ -105,7 +112,7 @@ const RawValue::Data *AverageReader::next()
                                reader_data, &reader.getInfo());
 #endif
             }
-            while (reader_data && RawValue::getTime(reader_data) < time_slot);
+            while (reader_data && RawValue::getTime(reader_data) < end_of_bin);
         }   
     }
     if (N > 0)
@@ -115,9 +122,9 @@ const RawValue::Data *AverageReader::next()
 #endif
         RawValue::setStatus(data, stat, sevr);
         anything = RawValue::setDouble(type, count, data, sum/N);
-        RawValue::setTime(data, time_slot-delta/2);
+        RawValue::setTime(data, end_of_bin-delta/2);
     }
-    time_slot += delta;
+    end_of_bin += delta;
     if (anything)
         return data;
     return next();

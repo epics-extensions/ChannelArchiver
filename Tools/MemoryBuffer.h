@@ -19,7 +19,7 @@ public:
 	~MemoryBuffer()
 	{
 		if (memory)
-			delete [] memory;
+			free(memory);
 	}
 
 	/// Reserve or grow buffer.
@@ -28,8 +28,8 @@ public:
 		if (size < wanted)
 		{
 			if (memory)
-				delete [] memory;
-			memory = new char [wanted];
+				free(memory);
+			memory = (char *)calloc(wanted, 1);
 			size = wanted;
 		}
 	}

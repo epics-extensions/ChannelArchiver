@@ -34,17 +34,6 @@ public:
     /// Create an ArchiveChannel.
     ArchiveChannel(const stdString &name, double period);
 
-    /// Remove most of the channel's resources.
-
-    /// This one needs to be called before deleting the
-    /// ArchiveChannel. 
-    /// If we did all this in the destructor, we couldn't
-    /// pass the guards.
-    /// If we used a destroy() method that ends in 'delete *this',
-    /// then we'd also delete the channel's mutex,
-    /// which at the same time is still held by the guard...
-    void prepareToDie(Guard &engine_guard, Guard &guard);
-    
     /// Destructor. Call only after prepareToDie().
 
     /// For prepareToDie(), a Guard for the channel is required.
@@ -76,7 +65,8 @@ public:
     stdList<class GroupInfo *> &getGroups(Guard &guard);
     
     /// Add a channel to a group & keep track of disabling.
-    void addToGroup(Guard &guard, class GroupInfo *group, bool disabling);
+    void addToGroup(Guard &guard, class GroupInfo *group,
+                    bool disabling, bool disconnecting);
     
     /// Get the current sample mechanism (never NULL).
     const SampleMechanism *getMechanism(Guard &guard) const;
@@ -86,6 +76,17 @@ public:
     /// SampleMechanism or to toggle a re-get of the control information.
     void startCA(Guard &guard);
 
+    /// Remove most of the channel's resources.
+
+    /// This one needs to be called before deleting the
+    /// ArchiveChannel. 
+    /// If we did all this in the destructor, we couldn't
+    /// pass the guards.
+    /// If we used a destroy() method that ends in 'delete *this',
+    /// then we'd also delete the channel's mutex,
+    /// which at the same time is still held by the guard...
+    void stopCA(Guard &engine_guard, Guard &guard);
+    
     /// Is the CA connection currently good?
     bool isConnected(Guard &guard) const;
     
@@ -95,6 +96,8 @@ public:
     /// A set bit indicates a group that this channel disables.
     const BitSet &getGroupsToDisable(Guard &guard) const;
 
+    bool disconnectOnDisable() const;
+    
     /// Is this channel disabled?
     bool isDisabled(Guard &guard) const;
 
@@ -146,6 +149,9 @@ private:
     static void control_callback(struct event_handler_args arg);
     static void value_callback(struct event_handler_args);
 
+    void handleConnectionChange(Guard &engine_guard, Guard &guard,
+                                bool now_connected);
+    
     // All from here down to '---' are only valid if connected==true
     bool            connected;
     epicsTime       connection_time;
@@ -169,8 +175,9 @@ private:
     // to which this channel belongs might disable a group.
     // The group then comes back and disables all its channels.
     int disabled_count; // See isDisabled()
+    bool disconnect_on_disable;
     BitSet groups_to_disable; // Bit is set -> we disable that group
-    bool currently_disabling; // Is this channel disabling its groups?
+    bool currently_disabling; // Is this channel disabling/disconnecting its groups?
     void handleDisabling(Guard &guard, const RawValue::Data *value);
 
     // Bookkeeping and value checking stuff, used between ArchiveChannel
@@ -214,6 +221,11 @@ inline const BitSet &ArchiveChannel::getGroupsToDisable(Guard &guard) const
 {
     guard.check(mutex);
     return groups_to_disable;
+}
+
+inline bool ArchiveChannel::disconnectOnDisable() const
+{
+    return disconnect_on_disable;
 }
 
 inline bool ArchiveChannel::isDisabled(Guard &guard) const

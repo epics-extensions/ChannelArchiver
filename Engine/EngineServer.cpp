@@ -187,7 +187,9 @@ static void config(HTTPClientConnection *connection, const stdString &path)
     page.line("        <TD><input type=\"text\" name=\"PERIOD\" size=20></TD></TR>");
     page.line("    <TR><TD>Monitored:<input type=\"checkbox\" name=\"MONITOR\" value=1>");
     page.line("        <TD></TD></TR>");
-    page.line("    <TR><TD>Disabling:<input type=\"checkbox\" name=\"DISABLE\" value=1></TD>");
+    page.line("    <TR><TD>Disabling:<input type=\"checkbox\" name=\"DISABLE\" value=1>");
+    page.line("        <TD></TD></TR>");
+    page.line("    <TR><TD>Disconnecting:<input type=\"checkbox\" name=\"DISCONNECT\" value=1></TD>");
     page.line("        <TD><input TYPE=\"submit\" VALUE=\"Add Channel\"></TD></TR>");
     page.line("    </TABLE>");
     page.line("    </FORM>");
@@ -262,7 +264,7 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
     else
     {
         bool at_least_one = false;
-        disabling.reserve(bits.capacity() * 4);
+        disabling.reserve(bits.capacity() * 4+8);
         for (size_t i=0; i<bits.capacity(); ++i)
             if (bits.test(i))
             {
@@ -271,6 +273,8 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
                 cvtUlongToString((unsigned long)i, num);
                 disabling += num;
             }
+        if (channel->disconnectOnDisable())
+            disabling += " (Disc.)";
     }
     page.tableLine(
         channel_link.c_str(),
@@ -427,12 +431,15 @@ static void addChannel(HTTPClientConnection *connection,
     bool disabling = false;
     if (atoi(args.find("DISABLE").c_str()) > 0)
         disabling = true;
+    bool disconnecting = false;
+    if (atoi(args.find("DISCONNECT").c_str()) > 0)
+        disconnecting = true;
     HTMLPage page(connection->getSocket(), "Add Channel");
     page.out("Channel <I>");
     page.out(channel_name);
     theEngine->attachToCAContext(engine_guard);
     if (theEngine->addChannel(engine_guard, group, channel_name, period,
-                               disabling, monitored))
+                              disabling, disconnecting, monitored))
     {
         page.line("</I> was added");
         EngineConfig config;

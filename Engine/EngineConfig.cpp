@@ -252,22 +252,26 @@ bool EngineConfig::handle_channel(Guard &engine_guard, Engine *engine,
     }
     ++els;
     bool monitor = (*els)->name == "monitor";
-    bool disable = false;
+    bool disabling = false;
+    bool disconnecting = false;
     ++els;
     while (els != channel->children.end())
     {
         if ((*els)->name == "disable")
-            disable = true;
+            disabling = true;
+        else if ((*els)->name == "disconnect")
+            disconnecting = true;
         ++els;
     }
 #   ifdef DEBUG_ENGINECONFIG
-    printf("'%s' - '%s': period %g, %s%s\n",
+    printf("'%s' - '%s': period %g, %s%s%s\n",
            group->getName().c_str(), name.c_str(), period,
            (monitor ? "monitor" : "scan"),
-           (disable ? ", disable" : ""));
+           (disabling ? ", disabling" : ""),
+           (disconnecting ? ", disconnecting" : ""));
 #   endif
-    engine->addChannel(engine_guard, group, name, period, disable, monitor);
-    return true;
+    return engine->addChannel(engine_guard, group, name, period, disabling,
+                              disconnecting, monitor) != 0;
 }
 
 /// EOF EngineConfig

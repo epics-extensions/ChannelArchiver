@@ -120,7 +120,8 @@ public:
     ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);
     ArchiveChannel *addChannel(Guard &engine_guard, GroupInfo *group,
                                const stdString &channel_name,
-                               double period, bool disabling, bool monitored);
+                               double period, bool disabling,
+                               bool disconnecting, bool monitored);
     void incNumConnected(Guard &engine_guard);
     void decNumConnected(Guard &engine_guard);
     size_t getNumConnected(Guard &engine_guard);

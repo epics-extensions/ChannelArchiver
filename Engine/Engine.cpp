@@ -133,7 +133,8 @@ void Engine::shutdown()
             channels.pop_back();
             {
                 Guard guard(c->mutex);
-                c->prepareToDie(engine_guard, guard);
+                c->setMechanism(engine_guard, guard, 0);
+                c->stopCA(engine_guard, guard);
             }
             delete c;
         }
@@ -205,7 +206,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                                    GroupInfo *group,
                                    const stdString &channel_name,
                                    double period, bool disabling,
-                                   bool monitored)
+                                   bool disconnecting, bool monitored)
 {
     engine_guard.check(mutex);
     ArchiveChannel *channel = findChannel(engine_guard, channel_name);
@@ -233,7 +234,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
         channel->setPeriod(engine_guard, guard, period);
     channel->setMechanism(engine_guard, guard, mechanism);
     group->addChannel(guard, channel);
-    channel->addToGroup(guard, group, disabling);
+    channel->addToGroup(guard, group, disabling, disconnecting);
     IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
     {   // Is channel already in Archive?

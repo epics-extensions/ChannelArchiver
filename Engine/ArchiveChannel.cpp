@@ -22,45 +22,31 @@ ArchiveChannel::ArchiveChannel(const stdString &name, double period)
     pending_value = 0;
     disabled_count = 0;
     currently_disabling = false;
-}
-
-void ArchiveChannel::prepareToDie(Guard &engine_guard, Guard &guard)
-{
-    if (mechanism)
-    {
-        mechanism->destroy(engine_guard, guard);
-        mechanism = 0;
-    }
-    if (pending_value)
-    {
-        RawValue::free(pending_value);
-        pending_value = 0;
-    }
-    if (chid_valid)
-    {
-        //LOG_MSG("CA clear channel '%s'\n", name.c_str());
-        guard.unlock();
-        engine_guard.unlock();
-        ca_clear_channel(ch_id);
-        engine_guard.lock();
-        guard.lock();
-        chid_valid = false;
-    }
+    disconnect_on_disable = false;
 }
 
 ArchiveChannel::~ArchiveChannel()
 {
-    if (mechanism || pending_value || chid_valid)
+    if (mechanism || chid_valid)
     {
-        LOG_MSG("ArchiveChannel '%s' was deleted without prior prepareToDie()\n",
-                 name.c_str());
+        LOG_MSG("ArchiveChannel '%s' was deleted without prior "
+                "setMechanism(0) and stopCA()\n", name.c_str());
+    }
+    if (pending_value)
+    {
+        RawValue::free(pending_value);
+        pending_value_set = false;
+        pending_value = 0;
     }
 }
 
 void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
-                                  SampleMechanism *mechanism)
+                                  SampleMechanism *new_mechanism)
 {
     guard.check(mutex);
+    // We treat it like a disconnect/connect,
+    // so that both the old and (maybe) new mechanism
+    // can properly stop/start subscriptions etc. 
     bool was_connected = connected;
     if (this->mechanism)
     {
@@ -71,11 +57,11 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
         }
         this->mechanism->destroy(engine_guard, guard);
     }
-    this->mechanism = mechanism;
-    if (was_connected && mechanism)
+    this->mechanism = new_mechanism;
+    if (was_connected && new_mechanism)
     {
         connected = true;
-        mechanism->handleConnectionChange(engine_guard, guard);
+        this->mechanism->handleConnectionChange(engine_guard, guard);
     }
 }
 
@@ -89,12 +75,19 @@ void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard,
                         theEngine->suggestedBufferSize(engine_guard, period));
 }
 
-void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
+void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group,
+                                bool disabling, bool disconnecting)
 {
     guard.check(mutex);
+    size_t id = group->getID();
+    if (disconnecting)
+        disabling = disconnecting;
     // bit in 'disabling' indicates if we could disable that group
-    groups_to_disable.grow(group->getID() + 1);
-    groups_to_disable.set(group->getID(), disabling);
+    groups_to_disable.grow(id + 1);
+    groups_to_disable.set(id, disabling);
+    // Should channel disconnect instead of disable?
+    if (disconnecting)
+        disconnect_on_disable = true;
     // Is Channel already in group?
     stdList<GroupInfo *>::iterator i;
     for (i=groups.begin(); i!=groups.end(); ++i)
@@ -110,53 +103,47 @@ void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
     
 void ArchiveChannel::startCA(Guard &guard)
 {
+    guard.check(mutex);
     if (!theEngine)
         return;
+    if (chid_valid)
+        return;
+    // Unlock around CA lib. calls to prevent deadlocks in callbacks
+    guard.unlock();
+    //LOG_MSG("CA create channel '%s'\n", name.c_str());
+    // I have seen the first call to ca_create_channel take
+    // about 10 second when the EPICS_CA_ADDR_LIST pointed
+    // to a computer outside of my private office network.
+    // (Similarly, using ssh to get out of the office net
+    //  could sometimes take time, so this is probably outside
+    //  of the control of CA, definetely outside of the control
+    //  of the Engine)
+    int status = ca_create_channel(name.c_str(), connection_handler,
+                                   this, CA_PRIORITY_ARCHIVE, &ch_id);
+    guard.lock();
+    if (status != ECA_NORMAL)
+    {
+        LOG_MSG("'%s': ca_create_channel failed, status %s\n",
+                name.c_str(), ca_message(status));
+        return;
+    }
+    chid_valid = true;
+    theEngine->need_CA_flush = true;
+}
+
+void ArchiveChannel::stopCA(Guard &engine_guard, Guard &guard)
+{
     guard.check(mutex);
     if (!chid_valid)
-    {
-        //LOG_MSG("CA create channel '%s'\n", name.c_str());
-        // I have seen the first call to ca_create_channel take
-        // about 10 second when the EPICS_CA_ADDR_LIST pointed
-        // to a computer outside of my private office network.
-        // (Similarly, using ssh to get out of the office net
-        //  could sometimes take time, so this is probably outside
-        //  of the control of CA, definetely outside of the control
-        //  of the Engine)
-        guard.unlock();
-        int status = ca_create_channel(name.c_str(), connection_handler,
-                                       this, CA_PRIORITY_ARCHIVE, &ch_id);
-        guard.lock();
-        if (status != ECA_NORMAL)
-        {
-            LOG_MSG("'%s': ca_create_channel failed, status %s\n",
-                    name.c_str(), ca_message(status));
-            return;
-        }
-        chid_valid = true;
-        theEngine->need_CA_flush = true;
-    }
-    else
-    {
-        if (connected)
-        {   // Re-get control information for this channel
-            // Should use ca_element_count, but R3.13 CA
-            // doesn't handle that for arrays & DBR_CTRL_...
-            guard.unlock();
-            int status = ca_array_get_callback(
-                ca_field_type(ch_id)+DBR_CTRL_STRING,
-                1 /* ca_element_count(ch_id) */,
-                ch_id, control_callback, this);
-            guard.lock();
-            if (status != ECA_NORMAL)
-            {
-                LOG_MSG("'%s': ca_array_get_callback error in startCA: %s",
-                        name.c_str(), ca_message(status));
-                return;
-            }
-            theEngine->need_CA_flush = true;
-        }
-    }
+        return;
+    //LOG_MSG("CA clear channel '%s'\n", name.c_str());
+    chid_valid = false;
+    handleConnectionChange(engine_guard, guard, false);
+    guard.unlock(); // Unlock around CA lib calls.
+    engine_guard.unlock();
+    ca_clear_channel(ch_id);
+    engine_guard.lock();
+    guard.lock();
 }
 
 void ArchiveChannel::issueCaGet(Guard &guard)
@@ -299,19 +286,7 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 #endif
         Guard engine_guard(theEngine->mutex);
         Guard guard(me->mutex);
-        bool was_connected = me->connected;
-        me->connected = false;
-        me->connection_time = epicsTime::getCurrent();
-        me->pending_value_set = false;
-        if (was_connected  &&  me->mechanism)
-        {
-            theEngine->decNumConnected(engine_guard);
-            me->mechanism->handleConnectionChange(engine_guard, guard);
-            // Tell groups that we are disconnected
-            stdList<GroupInfo *>::iterator g;
-            for (g=me->groups.begin(); g!=me->groups.end(); ++g)
-                -- (*g)->num_connected;
-        }
+        me->handleConnectionChange(engine_guard, guard, false);
     }
 }
 
@@ -406,7 +381,6 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
     Guard engine_guard(theEngine->mutex);
     Guard guard(me->mutex);
-    bool was_connected = me->connected;
     if (arg.status != ECA_NORMAL)
     {
         LOG_MSG("%s: Control_callback failed: %s\n",
@@ -418,21 +392,10 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
 #ifdef  DEBUG_CHANNEL
         LOG_MSG("%s: Connected, received control info\n", me->name.c_str());
 #endif
-        me->connection_time = epicsTime::getCurrent();
         me->init(engine_guard, guard,
                  ca_field_type(arg.chid)+DBR_TIME_STRING,
                  ca_element_count(arg.chid));
-        me->connected = true;
-        if (was_connected == false)
-        {
-            theEngine->incNumConnected(engine_guard);
-            if (me->mechanism)
-                me->mechanism->handleConnectionChange(engine_guard, guard);
-            // Tell groups that we are connected
-            stdList<GroupInfo *>::iterator g;
-            for (g=me->groups.begin(); g!=me->groups.end(); ++g)
-                ++ (*g)->num_connected;
-        }
+        me->handleConnectionChange(engine_guard, guard, true);
     }
 }
 
@@ -464,6 +427,39 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
             me->mechanism->handleValue(guard, now, stamp, value);
     }
     me->handleDisabling(guard, value); // Even if time stamp was bad??
+}
+
+void ArchiveChannel::handleConnectionChange(Guard &engine_guard,
+                                            Guard &guard,
+                                            bool now_connected)
+{        
+    bool was_connected = connected;
+    stdList<GroupInfo *>::iterator g;
+    connected = now_connected;
+    connection_time = epicsTime::getCurrent();
+    if (mechanism)
+        mechanism->handleConnectionChange(engine_guard, guard);
+    if (now_connected)
+    {
+        if (was_connected == false)
+        {
+            theEngine->incNumConnected(engine_guard);
+            // Tell groups that we are connected
+            for (g=groups.begin(); g!=groups.end(); ++g)
+                ++ (*g)->num_connected;
+        }
+    }
+    else
+    {
+        pending_value_set = false;
+        if (was_connected  &&  mechanism)
+        {
+            theEngine->decNumConnected(engine_guard);
+            // Tell groups that we are disconnected
+            for (g=groups.begin(); g!=groups.end(); ++g)
+                -- (*g)->num_connected;
+        }
+    }
 }
 
 // called by SampleMechanism

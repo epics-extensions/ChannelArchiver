@@ -8,7 +8,7 @@
                          buffer_reserve|
                          max_repeat_count)*, group+)>
 <!ELEMENT group (name,channel+)>
-<!ELEMENT channel (name,period,(scan|monitor),disable?)>
+<!ELEMENT channel (name,period,(scan|monitor),(disable|disconnect)?)>
 <!ELEMENT write_period (#PCDATA)><!-- int seconds -->
 <!ELEMENT get_threshold (#PCDATA)><!-- int seconds -->
 <!ELEMENT file_size (#PCDATA)><!-- MB -->
@@ -20,3 +20,4 @@
 <!ELEMENT scan EMPTY>
 <!ELEMENT monitor EMPTY>
 <!ELEMENT disable EMPTY>
+<!ELEMENT disconnect EMPTY>

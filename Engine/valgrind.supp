@@ -1,13 +1,21 @@
 # Valgrind suppression file for the ArchiveEngine
 # under RedHat 9
 #
-# There is one remaining warning:
+# There is one warning that needs to be handled in CA (by using memmove instead of memcpy):
 # Source and destination overlap in memcpy(0x4223a5a0, 0x4223a5a0, 8)
 # memcpy (mac_replace_strmem.c:95)
 # cvrt_ctrl_double(void const*, void*, int, unsigned long) (convert.cpp:829)
 # cac::readNotifyRespAction(epicsGuard<callbackMutex>&, tcpiiu&, epicsTime const&, caHdrLargeArray const&, void*) (cac.cpp:1124)
 # cac::executeResponse(epicsGuard<callbackMutex>&, tcpiiu&, epicsTime const&, caHdrLargeArray&, char*) (cac.cpp:1399)
-#
+{
+   ignored_ca_client_memcpy_overlap
+   Memcheck:Overlap
+   fun:memcpy
+   fun:_Z16cvrt_ctrl_doublePKvPvim
+   fun:_ZN3cac20readNotifyRespActionER10epicsGuardI13callbackMutexER6tcpiiuRK9epicsTimeRK15caHdrLargeArrayPv
+   fun:_ZN3cac15executeResponseER10epicsGuardI13callbackMutexER6tcpiiuRK9epicsTimeR15caHdrLargeArrayPc
+}
+
 # There are other warnings about pthread routines that aren't
 # simulated by valgrind:
 # pthread_cond_destroy, pthread_attr_destroy

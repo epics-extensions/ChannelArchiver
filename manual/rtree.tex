@@ -35,7 +35,7 @@ master index needs to be recreated.
 
 The channel names are maintained in a hash table and the
 data block information is kept in an R*Tree structure.
-An R*Tree is a balanced tree taylored for holding
+An RTree \cite{guttman84} is a balanced tree taylored for holding
 multidimensional data like time ranges.
 The leaves of the tree contain the data block
 information (i.e.\ path to a data file and offset inside that data

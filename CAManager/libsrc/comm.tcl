@@ -24,7 +24,11 @@ proc camComm::CheckRunning {i rvar} {
     if {[file exists [file join [file dirname [camMisc::arcGet $i cfg]] BLOCKED]]} {
       condSet $rvar "BLOCKED"
     } else {
-      condSet $rvar "NO"
+      if {[info exists ::tk_version]} {
+	condSet $rvar "NO"
+      } else {
+	set $rvar "NO"
+      }
     }
     return
   }

@@ -1,4 +1,4 @@
-\chapter{Setup, Installation}
+\chapter{Setup, Installation} \label{sec:install}
 
 \section{Compilation}
 The archiver tools use the EPICS build system as for example described
@@ -44,8 +44,32 @@ With RedHat~6.2, xmlrpc-c compiled out of the box.
 Under RedHat~9.0, it ran into a compile-time error that could be fixed
 by un-commenting ``using namespace std;'' in the header file which
 reported the error.
-Under Mandrake~10, there were at additional errors that can be fixed
+Under Mandrake~10, there were additional errors that can be fixed
 by replacing includes for ``strstream.h'' with ``strstream'' in the affected files.
+
+\NOTE The default serialization code in xmlrpc-c-0.9.9 will serialize
+sufficiently small numbers as zero, which means that e.g.\ many of
+your archived vacuum pressure readings of $1.5 10^{-8}$ end up as $0$
+when accessed via XML-RPC (see also section \ref{sec:xml:tiny}).
+The ``ThirdParty'' subdirectory contains the sources for xmlrpc-c-0.9.9
+together with a patch file that corrects the ``using namespace std;'' and
+the serialization issue. Under RedHat 9, the complete installation would
+then look as follows:
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+cd ChannelArchiver/ThirdParty
+tar vzoxf xmlrpc-c-0.9.9.tar.gz
+cd xmlrpc-c-0.9.9
+./configure
+patch -p1 <../patch_xmlrpc-c-0.9.9
+make
+su
+make install
+\end{lstlisting}
+
+\noindent Since the patch also affects Makefiles which are created as a result
+of ``configure'', you might prefer to read the patch file and apply
+the changes manually when you're not on RedHat 9.
 
 \subsection{Xerces XML Library}
 The \INDEX{Xerces} library is used to parse the XML configuration files of the

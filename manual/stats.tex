@@ -167,6 +167,7 @@ We took a test archive consisting of 638 small sub-archives,
 where the data files totaled only a little over 400~MB.
 A master index was created as well as a ``multi archive'' file
 that lists the 638 sub-archives.
+Creation of that master index too 15~min.OB
 \begin{itemize}
 \item Time to list all  540 channel names: $<$1~second.\\
       This takes 40 seconds with the old ``multi archive'' file.
@@ -176,13 +177,14 @@ that lists the 638 sub-archives.
 
       The new index is clearly superior in this test case simply
       because the data is contained in one index, while the ``multi
-      archive'' file required access to all 638 sub-archives
+      archive'' file required access to all 638 sub-archives.
 \item The time to retrieve a few samples from the start, middle or end of the
-      archive is fairly constant around 0.1 seconds with the new index.
-      With the previous implementation, the lookup time for the samples
-      depends on where the respective sub-archive is positioned in the
-      multi-archive file. When the data is found in the first
-      sub-archive listed in the multi-archive file, the times compare
+      archive is fairly constant around 0.1 seconds with the new
+      index. With the previous implementation, the lookup time for
+      the samples depends on where the respective sub-archive is
+      positioned in the multi-archive file. In one test it ranged from
+      0.1 to 10 seconds.  When the data is found in the first few
+      sub-archives listed in the multi-archive file, the times compare
       to the new index. The further one goes down the list of
       sub-archives as they appeared in the multi-archive file, the
       longer it takes. A reproducible test is difficult because the
@@ -199,28 +201,42 @@ In the following tests, the output was redirected to a file.
 \begin{itemize}
 \item Use ArchiveExport to dump all the 143000 values for a channel:
       4~seconds, translating into 35700 values per second.
-\item Use ArchiveExport to dump values for 7 channels in a spreadsheet format,
-      which adds the effort for 'staircase' interpolation to the
-      previous test case:
+\item Use ArchiveExport to dump all the values of one month for 7
+      channels in a spreadsheet format, which adds the effort for
+      'staircase' interpolation to the previous test case:
       Each channel had 20000 to 30000 values. The interpolation generated
       a 95000 line spreadsheet in 11 secs, that is around 8600 lines/sec.
       On a second test run, the time was reduced to 7 seconds, again
       showing the impact of buffering by the operating system.
-\item Use Matlab to retrieve the data for the same 7 channels,
+\item Use Matlab to retrieve the first 500 raw samples of the same 7 channels:
+      The ArchiveServer ran 0.7 seconds, Matlab used a total of 1.7
+      seconds from sending the request to receiving the data.
+%     7*500/0.7 : 5000 samples/sec., probably governed by initial
+%     lookup. network etc. add 1 sec.
+\item Use Matlab to retrieve data for the same 7 channels,
       asking the network data server to reduce the raw data (which
       formed the 95000 line spreadsheet in the previous test) into
       500 ``Plot Bins'':
-      Around 1500 values per channel were retrieved in 6 seconds.
-      The ArchiveDataServer.cgi ran 4 seconds, so about two
+      Around 1500 values per channel were retrieved in 5 seconds.
+      The ArchiveDataServer.cgi ran 3 seconds, so about two
       seconds were added by the web server, network transfer, Matlab
-      MEX code and Matlab .
+      MEX code and Matlab.
+%     So 7*1500/5:  2100 values/sec. 2 sec overhead for network.
 \item Use the Java Archive Client to retrieve the same 7 channels into 800
       ``Plot Bins'':
       Around 2100 values per channel were retrieved and plotted in 12 seconds.
       (When using the alternate machine with the slower CPU but RAID disks as 
       the data server, the time was reduced to 8 seconds).
-      The Java client was still usable, but slow to respond with this amount of data:
-      Zoom requests took about 2 seconds.
+      The Java client was still usable, but slow to respond with this
+      amount of data: Zoom requests took about 2 seconds.
 \end{itemize}
 
+This shows that the initial lookup of a channel and the location
+of the samples in the data files requires a certain time.
+Reading the values can then be quite fast and reach more than 30000
+values per second when simply fetching the raw samples.
+Interpolation or binning can internally reach this speed when
+investigating the raw data, 
 
+
+The network data server typically adds about 1 second of overhead.

@@ -1,4 +1,4 @@
-# This is an example archive configuration file
+# This is the archive configuration file
 #
 # This is TAB delimited!
 # Careful when editing, don't disturb the TABS,
@@ -24,12 +24,13 @@ ENGINE	tim	4091	ICS Timing Engine	08:00	daily
 ENGINE	mps	4092	ICS MPS Engine	08:30	daily
 
 DAEMON	CRYO	4100	CRYO Daemon
-ENGINE	ioc20	4120	ioc20 Engine	08:00	daily
-ENGINE	ioc30	4130	ioc30 Engine	08:30	daily
+ENGINE	ioc20	4101	ioc20 Engine	08:00	daily
+ENGINE	ioc30	4102	ioc30 Engine	08:30	daily
+ENGINE	iocs50-55	4103	iocs 50 51 55 Engine	09:00	daily
 
 DAEMON	PPS	4150	PPS Daemon
-ENGINE	chmk	4151	Chipmunk Engine	08:00	daily
-ENGINE	pps	4152	PPS Engine	08:30	daily
+ENGINE	chmk	4201	Chipmunk Engine	08:00	daily
+ENGINE	pps	4202	PPS Engine	08:30	daily
 
 DAEMON	MAG	4160	MAG Daemon
 ENGINE	ps	4161	ps Engine	08:00	daily
@@ -43,7 +44,7 @@ ENGINE	llrf	4901	LLRF	10:20	weekly
 ENGINE	hprf	4902	HPRF	10:30	weekly
 
 DAEMON	Admin	4600	Admin Daemon
-#ENGINE	iocHealth	4601	iocHealth Engine	08:00	daily
+ENGINE	iocHealth	4601	iocHealth Engine	08:00	daily
 ENGINE	Network	4602	Network Engine	09:00	daily
 
 DAEMON	DIAG	4700	Beam Diagnostics

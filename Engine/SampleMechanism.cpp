@@ -33,7 +33,11 @@ void SampleMechanismMonitored::destroy(Guard &engine_guard, Guard &guard)
 #       ifdef DEBUG_SAMPLING
         LOG_MSG("'%s': Unsubscribing\n", channel->getName().c_str());
 #       endif
+        guard.unlock();
+        engine_guard.unlock();
         ca_clear_subscription(ev_id);
+        engine_guard.lock();
+        guard.lock();
     }
     SampleMechanism::destroy(engine_guard, guard);
 }
@@ -58,10 +62,14 @@ void SampleMechanismMonitored::handleConnectionChange(Guard &engine_guard,
 #       endif
         if (!have_subscribed)
         {
+            guard.unlock();
+            engine_guard.unlock();
             int status = ca_create_subscription(
                 channel->dbr_time_type, channel->nelements, channel->ch_id,
                 DBE_LOG | DBE_ALARM,
                 ArchiveChannel::value_callback, channel, &ev_id);
+            engine_guard.lock();
+            guard.lock();
             if (status != ECA_NORMAL)
             {
                 LOG_MSG("'%s' ca_create_subscription failed: %s\n",
@@ -314,7 +322,11 @@ void SampleMechanismMonitoredGet::destroy(Guard &engine_guard, Guard &guard)
 #       ifdef DEBUG_SAMPLING
         LOG_MSG("'%s': Unsubscribing\n", channel->getName().c_str());
 #       endif
+        guard.unlock();
+        engine_guard.unlock();
         ca_clear_subscription(ev_id);
+        engine_guard.lock();
+        guard.lock();
     }
     SampleMechanismGet::destroy(engine_guard, guard);
 }
@@ -336,10 +348,14 @@ void SampleMechanismMonitoredGet::handleConnectionChange(Guard &engine_guard,
 #       endif
         if (!have_subscribed)
         {
+            guard.unlock();
+            engine_guard.unlock();
             int status = ca_create_subscription(
                 channel->dbr_time_type, channel->nelements, channel->ch_id,
                 DBE_LOG | DBE_ALARM,
                 ArchiveChannel::value_callback, channel, &ev_id);
+            engine_guard.lock();
+            guard.lock();
             if (status != ECA_NORMAL)
             {
                 LOG_MSG("'%s' ca_create_subscription failed: %s\n",

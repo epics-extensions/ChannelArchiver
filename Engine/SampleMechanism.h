@@ -32,7 +32,6 @@ class ArchiveChannel;
 /// handle incoming values, repeat counts, ...
 class SampleMechanism
 {
-    friend class nobody_really_but_we_want_to_avoid_compiler_warnings;
 public:
     /// Constructor.
     SampleMechanism(class ArchiveChannel *channel);

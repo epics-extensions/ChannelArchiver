@@ -29,17 +29,24 @@ public:
         mutex.unlock();
     }
 
-    //void releaseBriefly()
-    //{
-    //    mutex.unlock();
-    //    mutex.lock();
-    //}
-
     /// Check if the guard is assigned to the correct mutex.
     void check(const epicsMutex &the_one_it_should_be)
     {
         LOG_ASSERT(&mutex == &the_one_it_should_be);
     }
+
+    /// Unlock, meant for temporary, manual unlock().
+    void unlock()
+    {
+        mutex.unlock();
+    }
+
+    /// Lock again after a temporary unlock.
+    void lock()
+    {
+        mutex.lock();
+    }
+
 private:
     Guard(const Guard &); // not impl.
     Guard &operator = (const Guard &); // not impl.

@@ -24,7 +24,6 @@
 #include "Engine.h"
 #include "EngineServer.h"
 
-epicsMutex CACallbackMutex;
 static EngineServer *engine_server = 0;
 Engine *theEngine = 0;
 
@@ -102,14 +101,12 @@ bool Engine::attachToCAContext(Guard &engine_guard)
 void Engine::shutdown()
 {
     LOG_MSG("Shutdown:\n");
-    CACallbackMutex.lock(); // prohibit callbacks
     LOG_ASSERT(this == theEngine);
     delete engine_server;
     engine_server = 0;
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now = epicsTime::getCurrent();
     {
-        CACallbackMutex.lock();
         Guard engine_guard(mutex);
         IndexFile index(RTreeM);
         if (index.open(index_name.c_str(), false))
@@ -117,9 +114,11 @@ void Engine::shutdown()
             stdList<ArchiveChannel *>::iterator ch;
             for (ch = channels.begin(); ch != channels.end(); ++ch)
             {
-                Guard guard((*ch)->mutex);
-                (*ch)->addEvent(guard, 0, ARCH_STOPPED, now);
-                (*ch)->write(guard, index);
+                ArchiveChannel *c = *ch;
+                Guard guard(c->mutex);
+                c->setMechanism(engine_guard, guard, 0);
+                c->addEvent(guard, 0, ARCH_STOPPED, now);
+                c->write(guard, index);
             }
             DataFile::close_all();
             index.close();
@@ -131,19 +130,20 @@ void Engine::shutdown()
         while (! channels.empty())
         {
             ArchiveChannel *c = channels.back();
-            c->destroy(engine_guard);
             channels.pop_back();
+            Guard guard(c->mutex);
+            c->destroy(engine_guard, guard);
         }
         while (! groups.empty())
         {
             delete groups.back();
             groups.pop_back();
         }
-        LOG_MSG("Stopping ChannelAccess:\n");
-        ca_context_destroy();
         theEngine = 0;
     }
     // engine unlocked
+    LOG_MSG("Stopping ChannelAccess:\n");
+    ca_context_destroy();
     delete this;
     LOG_MSG("Engine shut down.\n");
 }
@@ -371,7 +371,7 @@ bool Engine::process()
     epicsTime now = epicsTime::getCurrent();
     double scan_delay, write_delay;
     bool do_wait = true;
-    {
+    {   // Engine locked
         Guard engine_guard(mutex);
         if (scan_list.isDueAtAll())
         {
@@ -394,13 +394,13 @@ bool Engine::process()
                                           write_period);
             do_wait = false;
         }
-        if (need_CA_flush)
-        {
-            ca_flush_io();
-            need_CA_flush = false;
-        }
     }
     // Guard released
+    if (need_CA_flush)
+    {
+        ca_flush_io();
+        need_CA_flush = false;
+    }
     if (do_wait)
     {
         if (write_delay < scan_delay)

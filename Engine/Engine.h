@@ -18,7 +18,6 @@
 
 #undef ENGINE_DEBUG
 
-
 // The ArchiveEngine uses these locks:
 //
 // HTTPServer::client_list_mutex
@@ -31,28 +30,25 @@
 // Engine::mutex
 // -------------
 // Locks lists of channels, groups, ...
-// Allmost all of the Engine's methods require a Guard with this mutex.
+// Almost all of the Engine's methods require a Guard with this mutex.
 //
 // ArchiveChannel::mutex
 // ---------------------
 // Locks state & values of one channel.
-// Allmost all of the Channel's methods require a Guard with this mutex.
+// Almost all of the Channel's methods require a Guard with this mutex.
 //
-// The following situation created a deadlock:
+// The following situations created a deadlock:
 //
 // 1) Main thread was in Engine::process,
 //    locked engine->mutex,
 //    called writeArchive, trying to lock a channel for writing.
-//
 // 2) The same channel received new control info via ChannelAccess:
 //    ArchiveChannel::control_callback had locked the channel
-//    and was trying to lock the engine to init. the channel
-//
+//    and was trying to lock the engine to init. the channel.
 // ==> Whoever needs Engine & channel locks needs to first lock the
 //     engine, then the channel. Never the other way around!
-
-// Remaining Issue:
-// Some CA calls take a 'callback lock' to prohibit callbacks.
+//
+// Many CA library calls take a 'callback lock' to prohibit callbacks.
 // That same callback lock is taken inside a CA callback.
 // This lead to the following deadlock on Engine shutdown:
 // Thread 1: Engine::shutdown()->lock engine,channel
@@ -60,8 +56,8 @@
 // Thread 2: tcpRecvThread::run -> callback lock
 //           -> control_info_callback(janet641) -> lock engine
 // i.e. lock order engine, callback lock and then the reverse;
-// We use CACallbackMutex to stop our CA callbacks:
-extern epicsMutex CACallbackMutex;
+// ==> no locks are allowed when adding/removing
+//     a channel or a subscription! Use temporary release.
 
 /// \defgroup Engine
 /// Classes related to the ArchiveEngine

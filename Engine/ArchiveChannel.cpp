@@ -24,26 +24,28 @@ ArchiveChannel::ArchiveChannel(const stdString &name, double period)
     currently_disabling = false;
 }
 
-void ArchiveChannel::destroy(Guard &engine_guard)
+void ArchiveChannel::destroy(Guard &engine_guard, Guard &guard)
 {
+    if (mechanism)
     {
-        Guard guard(mutex);
-        if (mechanism)
-            mechanism->destroy(engine_guard, guard);
+        mechanism->destroy(engine_guard, guard);
         mechanism = 0;
-        if (pending_value)
-        {
-            RawValue::free(pending_value);
-            pending_value = 0;
-        }
-        if (chid_valid)
-        {
-            //LOG_MSG("CA clear channel '%s'\n", name.c_str());
-            ca_clear_channel(ch_id);
-            chid_valid = false;
-        }
     }
-    delete this;
+    if (pending_value)
+    {
+        RawValue::free(pending_value);
+        pending_value = 0;
+    }
+    if (chid_valid)
+    {
+        //LOG_MSG("CA clear channel '%s'\n", name.c_str());
+        guard.unlock();
+        engine_guard.unlock();
+        ca_clear_channel(ch_id);
+        engine_guard.lock();
+        guard.lock();
+        chid_valid = false;
+    }
 }
 
 void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
@@ -61,13 +63,12 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
         this->mechanism->destroy(engine_guard, guard);
     }
     this->mechanism = mechanism;
-    if (was_connected)
+    if (was_connected && mechanism)
     {
         connected = true;
         mechanism->handleConnectionChange(engine_guard, guard);
     }
 }
-
 
 void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard,
                                double period)
@@ -106,17 +107,21 @@ void ArchiveChannel::startCA(Guard &guard)
     if (!chid_valid)
     {
         //LOG_MSG("CA create channel '%s'\n", name.c_str());
-        // I have see the first call to ca_create_channel take
+        // I have seen the first call to ca_create_channel take
         // about 10 second when the EPICS_CA_ADDR_LIST pointed
         // to a computer outside of my private office network.
         // (Similarly, using ssh to get out of the office net
         //  could sometimes take time, so this is probably outside
         //  of the control of CA, definetely outside of the control
-        //  of the ArchiverEngine)
-        if (ca_create_channel(name.c_str(), connection_handler, this,
-                              CA_PRIORITY_ARCHIVE, &ch_id) != ECA_NORMAL)
+        //  of the Engine)
+        guard.unlock();
+        int status = ca_create_channel(name.c_str(), connection_handler,
+                                       this, CA_PRIORITY_ARCHIVE, &ch_id);
+        guard.lock();
+        if (status != ECA_NORMAL)
         {
-            LOG_MSG("'%s': ca_create_channel failed\n", name.c_str());
+            LOG_MSG("'%s': ca_create_channel failed, status %s\n",
+                    name.c_str(), ca_message(status));
             return;
         }
         chid_valid = true;
@@ -128,14 +133,15 @@ void ArchiveChannel::startCA(Guard &guard)
         {   // Re-get control information for this channel
             // Should use ca_element_count, but R3.13 CA
             // doesn't handle that for arrays & DBR_CTRL_...
+            guard.unlock();
             int status = ca_array_get_callback(
                 ca_field_type(ch_id)+DBR_CTRL_STRING,
                 1 /* ca_element_count(ch_id) */,
                 ch_id, control_callback, this);
+            guard.lock();
             if (status != ECA_NORMAL)
             {
-                LOG_MSG("'%s': ca_array_get_callback error in "
-                        "startCA: %s",
+                LOG_MSG("'%s': ca_array_get_callback error in startCA: %s",
                         name.c_str(), ca_message(status));
                 return;
             }
@@ -149,11 +155,14 @@ void ArchiveChannel::issueCaGet(Guard &guard)
     guard.check(mutex);
     if (connected)
     {
-        if (ca_array_get_callback(dbr_time_type, nelements,
-                                  ch_id, value_callback, this)
-            != ECA_NORMAL)
+        guard.unlock();
+        int status = ca_array_get_callback(dbr_time_type, nelements,
+                                           ch_id, value_callback, this);
+        guard.lock();
+        if (status != ECA_NORMAL)
         {
-            LOG_MSG("ca_array_get_callback (%s) failed\n", name.c_str());
+            LOG_MSG("%s: ca_array_get_callback failed: %s\n",
+                    name.c_str(), ca_message(status));
             return;
         }
         theEngine->need_CA_flush = true;
@@ -254,19 +263,10 @@ void ArchiveChannel::write(Guard &guard, IndexFile &index)
 void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
-    if (!CACallbackMutex.tryLock())
-    {
-#ifdef DEBUG_CHANNEL
-        LOG_MSG("ArchiveChannel::connection_handler(%s): No CACallbackMutex, skipping.\n", 
-                me->name.c_str());
-#endif
-        return;
-    }
-    Guard engine_guard(theEngine->mutex);
-    Guard guard(me->mutex);
     if (ca_state(arg.chid) == cs_conn)
     {
-        // Get control information for this channel
+        // Get control information for this channel.
+        // Gets only 1 array element because of R3.13 CA limitation.
         // TODO: This is only requested on connect
         // - similar to the previous engine or DM.
         // How do we learn about changes, since you might actually change
@@ -288,6 +288,8 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 #ifdef  DEBUG_CHANNEL
         LOG_MSG("%s: CA disconnected\n", me->name.c_str());
 #endif
+        Guard engine_guard(theEngine->mutex);
+        Guard guard(me->mutex);
         bool was_connected = me->connected;
         me->connected = false;
         me->connection_time = epicsTime::getCurrent();
@@ -302,7 +304,6 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
                 -- (*g)->num_connected;
         }
     }
-    CACallbackMutex.unlock();
 }
 
 // Fill crtl_info from raw dbr_ctrl_xx data
@@ -394,14 +395,6 @@ bool ArchiveChannel::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
 void ArchiveChannel::control_callback(struct event_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
-    if (!CACallbackMutex.tryLock())
-    {
-#ifdef  DEBUG_CHANNEL
-        LOG_MSG("ArchiveChannel::control_callback(%s): No CACallbackMutex, skipping.\n", 
-                me->name.c_str());
-#endif
-        return;
-    }
     Guard engine_guard(theEngine->mutex);
     Guard guard(me->mutex);
     bool was_connected = me->connected;
@@ -409,7 +402,6 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
     {
         LOG_MSG("%s: Control_callback failed: %s\n",
                 me->name.c_str(),  ca_message(arg.status));
-        CACallbackMutex.unlock();
         return;
     }
     if (me->setup_ctrl_info(arg.type, arg.dbr))
@@ -418,65 +410,51 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
         LOG_MSG("%s: Connected, received control info\n", me->name.c_str());
 #endif
         me->connection_time = epicsTime::getCurrent();
-        me->init(engine_guard, guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
+        me->init(engine_guard, guard,
+                 ca_field_type(arg.chid)+DBR_TIME_STRING,
                  ca_element_count(arg.chid));
         me->connected = true;
-        if (was_connected == false   &&   me->mechanism)
+        if (was_connected == false)
         {
             theEngine->incNumConnected(engine_guard);
-            me->mechanism->handleConnectionChange(engine_guard, guard);
+            if (me->mechanism)
+                me->mechanism->handleConnectionChange(engine_guard, guard);
             // Tell groups that we are connected
             stdList<GroupInfo *>::iterator g;
             for (g=me->groups.begin(); g!=me->groups.end(); ++g)
                 ++ (*g)->num_connected;
         }
     }
-    CACallbackMutex.unlock();
 }
 
 void ArchiveChannel::value_callback(struct event_handler_args args)
 {
     ArchiveChannel *me = (ArchiveChannel *) args.usr;
-    if (!CACallbackMutex.tryLock())
-    {
-#ifdef  DEBUG_CHANNEL
-        LOG_MSG("ArchiveChannel::value_callback(%s): No CACallbackMutex, skipping.\n", 
-                me->name.c_str());
-#endif
-        return;
-    }
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
     if (args.status != ECA_NORMAL  ||  value == 0)
     {
         LOG_MSG("ArchiveChannel::value_callback(%s): No value, CA error %s\n", 
                 me->name.c_str(), ca_message(args.status));
-        CACallbackMutex.unlock();
         return;
     }   
     epicsTime now = epicsTime::getCurrent();
     epicsTime stamp = RawValue::getTime(value);
-    if (!me->isGoodTimestamp(stamp, now))
-    {
-        CACallbackMutex.unlock();
-        return;
-    }
     Guard guard(me->mutex);
-    if (me->isDisabled(guard))
+    if (me->mechanism && me->isGoodTimestamp(stamp, now))
     {
-        if (me->pending_value)
-        {   // park the value for write ASAP after being re-enabled
-            RawValue::copy(me->dbr_time_type, me->nelements,
-                           me->pending_value, value);
-            me->pending_value_set = true;
+        if (me->isDisabled(guard))
+        {
+            if (me->pending_value)
+            {   // park the value for write ASAP after being re-enabled
+                RawValue::copy(me->dbr_time_type, me->nelements,
+                               me->pending_value, value);
+                me->pending_value_set = true;
+            }
         }
-    }
-    else
-    {
-        if (me->mechanism)
+        else
             me->mechanism->handleValue(guard, now, stamp, value);
     }
-    me->handleDisabling(guard, value);
-    CACallbackMutex.unlock();
+    me->handleDisabling(guard, value); // Even if time stamp was bad??
 }
 
 // called by SampleMechanism

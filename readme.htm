@@ -36,11 +36,19 @@
   <p>There are some variables to be set in Tools/ToolsConfig.h. Please read further,
   including the section about osiTime later on, to understand these settings.</p>
   <h3>Compiler</h3>
-  <p>You need a C++ compiler that is at least somehow up to the standard C++ library as
-  defined in the 1997 Stroustrup C++ book. The new C++ library contains classes for strings,
+  <p><I>You need a C++ compiler that is at least somehow up to the standard C++ library as
+  defined in the 1997 Stroustrup C++ book.</I><BR>
+  Let me rephrase this because it has lead to unnecessary problems:
+  You need a more recent C++ compiler than e.g. the old SUNWspro "CC"
+  that might be installed on your system.<BR>
+  <I>Why?</I><BR>
+  The "new" standard C++ library (as defined in 1997) contains classes for strings,
   vectors, maps, exceptions, etc., so you don't have to reinvent them as you had to before.
   In fact EPICS base has some similar classes for historical reasons, but I'd prefer to use
-  the standards ones.<br>
+  the standard ones.<br>
+  You can usually check for a conformant compiler by looking for include files with
+  names like "string", "vector", "list", "map", "iostream". There is no ".h" suffix
+  in these file names!<br>
   <small>(<a href="doc/libio/default.htm">Note on std::string</a>)</small></p>
   <p>The #defines in ToolsConfig.h concerning NAMESPACE and&nbsp; CPP_EDITION depend on the
   compiler that you have:<ul>
@@ -52,6 +60,12 @@
       RedHat 6.0 Linux comes with egcs-2.91.66,<br>
       RedHat5.2 with egcs-2.90.29 is also OK (but cannot do NAMESPACE).</li>
   </ul>
+  Unfortunately, C++ object files are rarely recognized by different compilers.
+  This means that you have to compile all the C++ code with the same compiler.
+  If you use g++ for the ChannelArchiver, the C++ part of EPICS base
+  (some files in base/src/libCom) has to be compiled with the same compiler.
+  Otherwise you'll see link errors like missing "osiTime" classes.
+ 
   <h3>Make system</h3>
   <p>The ChannelArchiver now uses the standard EPICS make system (Makefile, Makefile.Host)
   and can be build like an ordinary EPICS extension on WIN32 and UNIX. A master

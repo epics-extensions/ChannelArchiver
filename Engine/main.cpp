@@ -83,7 +83,7 @@ int main(int argc, const char *argv[])
     
     if (log.get().length() > 0)
     {
-        logfile = fopen(log.get().c_str(), "wt");
+        logfile = fopen(log.get().c_str(), "at");
         if (! logfile)
         {
             LOG_MSG("Cannot open logfile '%s'\n", log.get().c_str());

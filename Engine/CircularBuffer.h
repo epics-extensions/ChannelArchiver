@@ -61,16 +61,20 @@ inline RawValueI::Type *CircularBuffer::getElement (RawValueI::Type *buf, size_t
 {	return (RawValueI::Type *) (((char *)buf) + i * _element_size);	}
 
 inline void CircularBuffer::addRawValue (const RawValueI::Type *raw_value)
-{	
-	_lock.take ();
-	memcpy (getNextElement(), raw_value, _element_size);
-	_lock.give ();
+{
+    if (_lock.take ())
+    {
+        memcpy (getNextElement(), raw_value, _element_size);
+        _lock.give ();
+    }
 }
 
 inline size_t CircularBuffer::getCount ()
 {
 	size_t count;
-	_lock.take ();
+	if (! _lock.take ())
+        return 0;
+    
 	if (_head >= _tail)
 		count = _head - _tail;
 	else	
@@ -85,7 +89,9 @@ inline const RawValueI::Type *CircularBuffer::removeRawValue ()
 {
 	RawValueI::Type *val;
 
-	_lock.take ();
+	if (!_lock.take ())
+        return 0;
+    
 	if (_tail == _head)
 		val = 0;
 	else

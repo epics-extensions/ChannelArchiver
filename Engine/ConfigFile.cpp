@@ -66,7 +66,7 @@ void ConfigFile::setParameter(const ASCIIParser &parser,
 // The definition of "good" might be too tight.
 static inline bool good_character(char ch)
 {
-    return isalpha(ch) || isdigit(ch) || strchr("_:()-", ch);
+    return isalpha(ch) || isdigit(ch) || strchr("_:()-.", ch);
 }
 
 bool ConfigFile::getChannel(ASCIIParser &parser, stdString &channel,

@@ -35,10 +35,13 @@ bool add_tree_to_master(const stdString &index_name,
          ok = subtree->getPrevDatablock(node, idx, block))
     {
         // Data files in master need full path
-        if (Filename::containsPath(block.data_filename))
+        if (Filename::containsFullPath(block.data_filename))
             datafile = block.data_filename;
         else
             Filename::build(dirname, block.data_filename, datafile);
+        if (verbose > 3)
+            printf("Inserting '%s' as '%s'\n",
+                   block.data_filename.c_str(), datafile.c_str());
         if (verbose > 2)
             printf("'%s' @ 0x%lX: %s - %s\n",
                    datafile.c_str(), block.data_offset,

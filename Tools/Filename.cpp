@@ -36,6 +36,22 @@ bool Filename::containsPath(const stdString &filename)
     return false;
 }
 
+bool Filename::containsFullPath(const stdString &filename)
+{
+    if (filename.length() < 1)
+        return false;
+    if (filename[0] == '/')
+        return true;
+#ifdef WIN32
+    if (filename[0] == '\\')
+        return true;
+    if (filename.length() >= 3 &&
+        filename[1] == ':' && filename[2] == '\\')
+        return true;
+#endif
+    return false;
+}
+
 // Find the directory portion of given filename.
 void Filename::getDirname(const stdString &filename, stdString &dirname)
 {

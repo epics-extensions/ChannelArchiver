@@ -32,7 +32,10 @@ public:
 
     /// Returns true if filename contains a path/directory
     static bool containsPath(const stdString &filename);
-    
+
+    /// Returns true if filename contains a full path/directory
+    static bool containsFullPath(const stdString &filename);
+
 	/// Get directory (path) from full path/filename
 	static void getDirname(const stdString &filename, stdString &dirname);
 

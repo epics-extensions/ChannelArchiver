@@ -33,6 +33,7 @@
 #include "ExpandingValueIteratorI.h"
 #include "Filename.h"
 #include "ascii.h"
+#include "DirectoryFile.h"
 
 #ifdef MANAGER_USE_MULTI
 #   include "MultiArchive.h"
@@ -530,28 +531,71 @@ void test(const stdString &directory, const osiTime &start, const osiTime &end)
     std::cout << errors << " errors\n";
 }
 
+// Copy one channel name onto another new name
+void copy(const stdString &archive_name,
+          const stdString &channel_name, const stdString &new_name)
+{
+    DirectoryFile dir(archive_name, true /* for write */);
+    DirectoryFileIterator o_entry = dir.find(channel_name);
+    if (o_entry.isValid())
+    {
+        std::cout << "Found " << channel_name << "\n";
+        DirectoryFileIterator n_entry = dir.add(new_name);
+        BinChannel *o_ch = o_entry.getChannel();
+        BinChannel *n_ch = n_entry.getChannel();
+        
+        if (n_entry.isValid())
+            std::cout << "Added " << new_name << "\n";
+        n_ch->setFirstTime(o_ch->getFirstTime());
+        n_ch->setFirstFile(o_ch->getFirstFile());
+        n_ch->setFirstOffset(o_ch->getFirstOffset());
+        n_ch->setLastTime(o_ch->getLastTime());
+        n_ch->setLastFile(o_ch->getLastFile());
+        n_ch->setLastOffset(o_ch->getLastOffset());
+        n_ch->setNextEntryOffset(o_ch->getNextEntryOffset());
+        n_entry.save();
+    }
+    else
+    {
+        std::cout << "Cannot find " << channel_name << "\n";
+    }
+}
+
 #define EXPERIMENT
 #ifdef EXPERIMENT
 // Ever changing experimental routine,
 // usually empty in "useful" versions of the ArchiveManager
-void experiment (const stdString &archive_name,
-                 const stdString &channel_name,
-                 const osiTime &start)
+void experiment(const stdString &archive_name,
+                const stdString &channel_name,
+                const osiTime &start)
 {
-    Archive         archive (new MultiArchive(archive_name));
-    ChannelIterator channel(archive);
-    ValueIterator   value(archive);
+    DirectoryFile dir(archive_name, true /* for write */);
+    DirectoryFileIterator o_entry = dir.find(channel_name);
+
+    stdString new_name = "array";
     
-    if (! archive.findChannelByName(channel_name, channel))
-        return;
-    
-    std::cout << "Channel " << channel->getName() << "\n";
-    channel->getValueBeforeTime (start, value);
-    if (value)
-        std::cout << "Before: " << *value << "\n";
-    channel->getValueAfterTime (start, value);
-    if (value)
-        std::cout << "After: " << *value << "\n";
+    if (o_entry.isValid())
+    {
+        std::cout << "Found " << channel_name << "\n";
+        DirectoryFileIterator n_entry = dir.add(new_name);
+        BinChannel *o_ch = o_entry.getChannel();
+        BinChannel *n_ch = n_entry.getChannel();
+        
+        if (n_entry.isValid())
+            std::cout << "Added " << new_name << "\n";
+        n_ch->setFirstTime(o_ch->getFirstTime());
+        n_ch->setFirstFile(o_ch->getFirstFile());
+        n_ch->setFirstOffset(o_ch->getFirstOffset());
+        n_ch->setLastTime(o_ch->getLastTime());
+        n_ch->setLastFile(o_ch->getLastFile());
+        n_ch->setLastOffset(o_ch->getLastOffset());
+        n_ch->setNextEntryOffset(o_ch->getNextEntryOffset());
+        n_entry.save();
+    }
+    else
+    {
+        std::cout << "Cannot find " << channel_name << "\n";
+    }
 }
 #endif
 
@@ -584,6 +628,7 @@ int main(int argc, const char *argv[])
     CmdArgString ascii_input    (parser, "Input", "<ascii file>", "read ASCII dump for channel into archive");
     CmdArgString compare_target (parser, "Compare", "<target archive>", "Compare with target archive");
     CmdArgFlag   do_seek_test   (parser, "Seek", "Seek test (use with -start)");
+    CmdArgString copy_channel   (parser, "Copy", "<new name>", "Copy channel name");
 #ifdef EXPERIMENT
     CmdArgFlag   do_experiment  (parser, "Experiment", "Perform experiment (temporary option)");
 #endif
@@ -630,12 +675,21 @@ int main(int argc, const char *argv[])
             seek_time (archive_name, channel_name, start);
         else if (show_headers.get().length() > 0)
             headers (archive_name, show_headers);
+        else if (copy_channel.get().length() > 0)
+        {
+            if (channel_name.get().length() <= 0)
+            {
+                std::cerr << "Need channel name (option -c) for copy\n";
+                return -1;
+            }
+            copy(archive_name, channel_name.get(), copy_channel.get());
+        }
         else if (dump_channels.get().length() > 0)
             dump (archive_name, dump_channels, start, end);
         else if (export_archive.get().length () > 0)
         {
             if (channel_pattern.get().empty ())
-                channel_pattern.set (channel_name.get());
+                channel_pattern.set(channel_name.get());
             do_export (archive_name, channel_pattern, start, end, export_archive, (size_t) repeat_limit.get(), days_per_file.get());
         }
         else if (channel_name.get().empty ())

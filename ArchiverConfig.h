@@ -21,6 +21,24 @@
 #define VERSION 1
 #define RELEASE 2
 
+#define VERSION_TXT "1.2"
+
+// ----------------------------------------------------------
+// Engine
+// ----------------------------------------------------------
+
+// Config:
+//
+// Type of data format to use:
+#define ENGINE_ARCHIVE_TYPE BinArchive
+
+// Use password mechanism
+// (for stopping the engine over the web)
+#define USE_PASSWD
+
+#define DEFAULT_USER    "engine"
+#define DEFAULT_PASS    "password"   
+
 // ----------------------------------------------------------
 // CGIExport
 // ----------------------------------------------------------

@@ -19,6 +19,8 @@ int main(int argc, const char *argv[])
                              "fill", "fill columns w/ repeated values");
     CmdArgDouble interpol   (parser,
                              "interpolate", "<seconds>", "interpolate values");
+    CmdArgInt    reduce     (parser,
+                             "reduce", "<# of buckets>", "reduce data to # buckets");
     CmdArgFlag   verbose    (parser,
                              "verbose", "verbose mode");
     CmdArgFlag   GNUPlot    (parser,
@@ -62,7 +64,7 @@ int main(int argc, const char *argv[])
         
         if (GNUPlot)
         {
-            GNUPlotExporter *gnu = new GNUPlotExporter(archive, output);
+            GNUPlotExporter *gnu = new GNUPlotExporter(archive, output, int(reduce));
             if (image)
                 gnu->makeImage();
             if (pipe)

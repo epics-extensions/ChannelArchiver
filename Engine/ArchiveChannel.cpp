@@ -441,8 +441,8 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
         }
         else
             me->mechanism->handleValue(guard, now, stamp, value);
+        me->handleDisabling(guard, value);
     }
-    me->handleDisabling(guard, value); // Even if time stamp was bad??
 }
 
 void ArchiveChannel::handleConnectionChange(Guard &engine_guard,
@@ -478,7 +478,6 @@ void ArchiveChannel::handleConnectionChange(Guard &engine_guard,
     }
 }
 
-// called by SampleMechanism
 void ArchiveChannel::handleDisabling(Guard &guard, const RawValue::Data *value)
 {
     guard.check(mutex);

@@ -51,6 +51,7 @@ static void LoggerPrintRoutine(void *arg, const char *text)
 int main(int argc, const char *argv[])
 {
     initEpicsTimeHelper();
+
     TheMsgLogger.SetPrintRoutine(LoggerPrintRoutine);
 
     CmdArgParser parser (argc, argv);

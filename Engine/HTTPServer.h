@@ -34,13 +34,18 @@ public:
     void start();
 
     void run();
-
+    int getTotalClientCount()
+    {   return _total_clients; }
+    
 private:
     HTTPServer(SOCKET socket);
+    void cleanup();
 
-    epicsThread _thread;
-    bool        _go;
-    SOCKET      _socket;
+    epicsThread                           _thread;
+    bool                                  _go;
+    SOCKET                                _socket;
+    size_t                                _total_clients;
+    stdList<class HTTPClientConnection *> _clients;
 };
 
 typedef void (*PathHandler) (class HTTPClientConnection *connection,
@@ -64,40 +69,42 @@ typedef struct
 class HTTPClientConnection : public epicsThreadRunable
 {
 public:
-    HTTPClientConnection(SOCKET socket);
+    HTTPClientConnection(HTTPServer *server, SOCKET socket, int num);
     virtual ~HTTPClientConnection();
 
-    void start();
+    HTTPServer *getServer()
+    {   return _server; }
     
     SOCKET getSocket()
     {   return _socket; }
-
+            
+    int getNum()
+    {   return _num; }
+    
+    bool isDone()
+    {   return _done; }
+    
     static void setPathHandlers(PathHandlerList *handler)
     {   _handler = handler; }
-
-    // List of all open client connections
-    static size_t getClientCount()
-    {   return _clients;    }
-
-    // Total number of clients since started (for debugging)
-    static size_t getTotalClientCount()
-    {   return _total;  }
 
     // Predefined PathHandlers:
     void error(const stdString &message);
     void pathError(const stdString &path);
-
+ 
+    void start()
+    {  _thread.start(); }
     void run();
 
 private:
-    epicsThread              _thread;
+    HTTPServer              *_server;
+    epicsThread              _thread; // .. that handles this connection
+    int                      _num;    // unique sequence number of this conn.
+    bool                     _done;   // has run() finished running?
     SOCKET                   _socket;
     stdVector<stdString>     _input_line;
     char                     _line[2048];
-    unsigned int             _dest; // index in line
+    unsigned int             _dest;  // index of next unused char in _line
     static PathHandlerList  *_handler;
-    static size_t _total;
-    static size_t _clients;
 
     // Result: done, i.e. connection can be closed?
     bool handleInput();

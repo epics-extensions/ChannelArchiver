@@ -50,49 +50,53 @@ static void engineinfo(HTTPClientConnection *connection,
     page.tableLine("Name", "ArchiveEngine", 0);
     page.tableLine("Version", VERSION_TXT ", built " __DATE__, 0);
 
-    theEngine->lock();
-    
-    page.tableLine("Description", theEngine->getDescription().c_str(), 0);
-    
-    epicsTime2string(theEngine->getStartTime(), s);
-    page.tableLine("Started", s.c_str(), 0);
-
-    page.tableLine("Archive ", theEngine->getDirectory().c_str(), 0);
-
-    const stdList<ChannelInfo *> &channels = theEngine->getChannels();
-    cvtUlongToString(channels.size(), line);
-    page.tableLine("Channels", line, 0);
-    
+    if (theEngine)
+    {
+        theEngine->lock();
+        
+        page.tableLine("Description", theEngine->getDescription().c_str(), 0);
+        
+        epicsTime2string(theEngine->getStartTime(), s);
+        page.tableLine("Started", s.c_str(), 0);
+        
+        page.tableLine("Archive ", theEngine->getDirectory().c_str(), 0);
+        
+        const stdList<ChannelInfo *> &channels = theEngine->getChannels();
+        cvtUlongToString(channels.size(), line);
+        page.tableLine("Channels", line, 0);
+        
 #ifdef SHOW_DIR
-    char dir[100];
-    getcwd(dir, sizeof dir);                 
-    page.tableLine("Directory ", dir, 0);
+        char dir[100];
+        getcwd(dir, sizeof dir);                 
+        page.tableLine("Directory ", dir, 0);
 #endif
-
-    epicsTime2string(theEngine->getNextWriteTime(), s);
-    page.tableLine("Next write time", s.c_str(), 0);
-
-    page.tableLine("Currently writing",
-                   (const char *)
-                   (theEngine->isWriting() ? "Yes" : "No"), 0);
-
-    sprintf(line, "%f sec", theEngine->getDefaultPeriod());
-    page.tableLine("Default Period", line, 0);
-
-    sprintf(line, "%f sec", theEngine->getWritePeriod());
-    page.tableLine("Write Period", line, 0);
-
-    sprintf(line, "%f sec", theEngine->getGetThreshold());
-    page.tableLine("Get Threshold", line, 0);
-
-    cvtUlongToString((unsigned long) connection->getTotalClientCount(), line);
+        
+        epicsTime2string(theEngine->getNextWriteTime(), s);
+        page.tableLine("Next write time", s.c_str(), 0);
+        
+        page.tableLine("Currently writing",
+                       (const char *)
+                       (theEngine->isWriting() ? "Yes" : "No"), 0);
+        
+        sprintf(line, "%f sec", theEngine->getDefaultPeriod());
+        page.tableLine("Default Period", line, 0);
+        
+        sprintf(line, "%f sec", theEngine->getWritePeriod());
+        page.tableLine("Write Period", line, 0);
+        
+        sprintf(line, "%f sec", theEngine->getGetThreshold());
+        page.tableLine("Get Threshold", line, 0); 
+        theEngine->unlock();
+    }
+    else
+    {
+        page.tableLine("No Engine runnig!?", 0); 
+    }
+    
+    cvtUlongToString(
+        (unsigned long) connection->getServer()->getTotalClientCount(), line);
     page.tableLine("Web Clients (total)", line, 0);
-
-    cvtUlongToString((unsigned long) connection->getClientCount(), line);
-
-    theEngine->unlock();
-
-    page.tableLine("Web Clients (current)", line, 0);
+    
     page.closeTable();
 }
 
@@ -613,9 +617,6 @@ bool EngineServer::_nocfg = false;
 
 EngineServer::EngineServer()
 {
-#ifdef ENGINE_DEBUG
-    LOG_MSG("EngineServer starting up\n");
-#endif
     HTTPClientConnection::setPathHandlers(handlers);
     _server = HTTPServer::create(_port);
     if (!_server)
@@ -623,7 +624,7 @@ EngineServer::EngineServer()
         LOG_MSG("Cannot create EngineServer on port %d\n", _port);
         throwDetailedArchiveException(Fail, "HTTPServer::create failed");
     }
-#ifdef ENGINE_DEBUG
+#ifdef HTTPD_DEBUG
     LOG_MSG("EngineServer starting HTTPServer 0x%X\n", _server);
 #endif
     _server->start();
@@ -632,7 +633,7 @@ EngineServer::EngineServer()
 EngineServer::~EngineServer()
 {
     delete _server;
-#ifdef ENGINE_DEBUG
+#ifdef HTTPD_DEBUG
     LOG_MSG("EngineServer deleted\n");
 #endif
 }

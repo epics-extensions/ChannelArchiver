@@ -40,6 +40,7 @@
 // ----------------------------------------------------------
 
 #define ENGINE_DEBUG
+#define HTTPD_DEBUG
 
 // Config:
 //

@@ -13,6 +13,16 @@
 #include "Filename.h"
 #include <fstream>
 
+#ifdef WIN32
+#include <float.h>
+static int finite(double value)
+{
+    return _finite(value);
+}
+#else
+#include <math.h>
+#endif
+
 const char *GNUPlotExporter::imageExtension()
 {   return ".png"; }
 
@@ -29,6 +39,7 @@ static void printTimeAndValue(FILE *f, const osiTime &time,
                               const ValueI &value)
 {
     int prec;
+    double v;
 
     if (value.getCtrlInfo() &&
         value.getCtrlInfo()->getPrecision() > 0)
@@ -42,10 +53,13 @@ static void printTimeAndValue(FILE *f, const osiTime &time,
         {
             ::printTime(f, time);
             if (value.getCount() > 1) fprintf(f, "\t%d", ai);
+            v = value.getDouble(ai);
+            if (!finite(v))
+                v = 0.0;
             if (prec > 0)
-                fprintf(f, "\t%.*f\n", prec, value.getDouble(ai));
+                fprintf(f, "\t%.*f\n", prec, v);
             else
-                fprintf(f, "\t%g\n", value.getDouble(ai));
+                fprintf(f, "\t%g\n", v);
         }
         if (value.getCount() > 1) fprintf(f, "\n");
     }
@@ -54,10 +68,13 @@ static void printTimeAndValue(FILE *f, const osiTime &time,
         ::printTime(f, time);
         stdString txt;
         value.getStatus(txt);
+        v = value.getDouble();
+        if (!finite(v))
+            v = 0.0;
         if (prec > 0)
-            fprintf(f, "\t%.*f\t%s\n", prec, value.getDouble(), txt.c_str());
+            fprintf(f, "\t%.*f\t%s\n", prec, v, txt.c_str());
         else
-            fprintf(f, "\t%g\t%s\n", value.getDouble(), txt.c_str());
+            fprintf(f, "\t%g\t%s\n", v, txt.c_str());
     }
 }
 

@@ -1,3 +1,5 @@
+// $Id$
+//
 // main.cpp
 
 #ifdef WIN32

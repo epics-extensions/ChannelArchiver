@@ -103,11 +103,13 @@ void Exporter::printTime (std::ostream *out, const osiTime &time)
     unsigned long nano;
     osiTime2vals (time, year, month, day, hour, min, sec, nano);
 
-    *out << month << '/' << day << '/' << year << ' '
-        << std::setw(2) << std::setfill('0') << hour << ':'
-        << std::setw(2) << std::setfill('0') << min << ':'
-        << std::setw(2) << std::setfill('0') << sec << '.'
-        << std::setw(9) << std::setfill('0') << nano;
+    *out << std::setw(2) << std::setfill('0') << month << '/'
+         << std::setw(2) << std::setfill('0') << day   << '/'Ex
+         << std::setw(2) << std::setfill('0') << year  << ' '
+         << std::setw(2) << std::setfill('0') << hour  << ':'
+         << std::setw(2) << std::setfill('0') << min   << ':'
+         << std::setw(2) << std::setfill('0') << sec   << '.'
+         << std::setw(9) << std::setfill('0') << nano;
 }
 
 void Exporter::printValue (std::ostream *out, const osiTime &time, const ValueI *v)

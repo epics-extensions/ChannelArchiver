@@ -10,16 +10,17 @@ int main(int argc, const char *argv[])
 {
     CmdArgParser parser(argc, argv);
     parser.setArgumentsInfo(" <directory file> { channel }");
-    CmdArgFlag   verbose    (parser, "verbose", "Verbose mode");
+    CmdArgString start_time (parser, "start", "<time>", "Format: mm/dd/yy hh:mm:ss[.nano-secs]");
+    CmdArgString end_time   (parser, "end", "<time>", "(exclusive)");
+    CmdArgFlag   fill       (parser, "fill", "fill columns w/ repeated values");
+    CmdArgDouble round      (parser, "round", "<seconds>", "round time stamps within 'seconds'");
+    CmdArgDouble interpol   (parser, "interpolate", "<seconds>", "interpolate values");
+    CmdArgFlag   verbose    (parser, "verbose", "verbose mode");
     CmdArgFlag   GNUPlot    (parser, "gnuplot", "generate GNUPlot output mode");
     CmdArgFlag   GIFPlot    (parser, "GIF", "generate GNUPlot output for gif image");
-    CmdArgFlag   status_text(parser, "text", "include text column for status information");
+    CmdArgFlag   status_text(parser, "text", "include status information");
     CmdArgString output     (parser, "output", "<file>", "output to file instead of stdout");
     CmdArgString pattern    (parser, "match", "<pattern>", "reg. expr. pattern for channel names");
-    CmdArgString start_time (parser, "start", "<time>", "start time as mm/dd/yy hh:mm:ss[.nano-secs]pattern");
-    CmdArgString end_time   (parser, "end", "<time>", "end time (exclusive)");
-    CmdArgDouble round      (parser, "round", "<seconds>", "round time stamps if within 'seconds'");
-    CmdArgDouble interpol   (parser, "interpolate", "<seconds>", "interpolate values");
     if (! parser.parse())
         return -1;
     if (parser.getArguments().size() < 1)
@@ -58,6 +59,8 @@ int main(int argc, const char *argv[])
 
         if (status_text)
             exporter->enableStatusText();
+        if (bool(fill))
+            exporter->useFilledValues();
         if (double(round) > 0)
             exporter->setTimeRounding(round);
         if (double(interpol) > 0)

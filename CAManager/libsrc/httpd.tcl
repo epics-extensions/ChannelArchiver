@@ -44,6 +44,28 @@ proc httpd::Busy {ind msg} {
 
 proc httpd::connect {fd addr port} {
   variable _query
+  set _peer($fd) $addr
+  if {![regexp "$::allowedIPs" $addr]} {
+    set got [gets $fd]
+    while {"$got" != ""} {
+      set got [gets $fd]
+    }
+
+    puts $fd "HTTP/1.0 403 Forbidden"
+    puts $fd "Date: [clock format [clock seconds] -format %a,\ %d\ %b\ %Y\ %H:%M:%S\ %z]"
+    puts $fd "Content-Type: text/html"
+    puts $fd "Server: Channel Archiver bgManager $::tcl_platform(user)@$::_host:$::_port"
+
+    puts $fd "\n<HTML><HEAD>
+<TITLE>403 Forbidden</TITLE>
+</HEAD><BODY>
+<H1>Forbidden</H1>
+You don't have permission to access this server.<P>
+</BODY></HTML>"
+    close $fd
+    return
+  }
+  
   fconfigure $fd -blocking 0
   set _query($fd) {}
   fileevent $fd readable "httpd::getInput $fd"
@@ -266,11 +288,11 @@ proc httpd::sendOutput {fd} {
       if {[camMisc::arcGet $i busy] != ""} {
 	puts $fd "<td bgcolor=orange align=center>[camMisc::arcGet $i busy]</td>"
       } else {    
-	if {$run != "NO"} {
+	if {($run != "NO") && ($run != "BLOCKED")} {
 	  if 1 {
 	    # is running
 	    puts $fd "<td bgcolor=red align=center>"
-	    puts $fd "<a href=\"/stop?ind=$i\"><b>STOP</b></a>"
+	    puts $fd "<a href=\"/stop?ind=$i\"><b>STOP &amp; BLOCK</b></a>"
 	    puts $fd "</td>"
 	  } else {
 	    puts $fd "<td><form method=GET action=\"/stop\">"
@@ -281,7 +303,7 @@ proc httpd::sendOutput {fd} {
 	} else {
 	  # is NOT running
 	  puts $fd "<td bgcolor=green align=center>"
-	  puts $fd "<a href=\"/start?ind=$i\"><font color=black><b>START</b></font></a>"
+	  puts $fd "<a href=\"/start?ind=$i\"><font color=black><b>UNBLOCK &amp; START</b></font></a>"
 	  puts $fd "</td>"
 	}
       }

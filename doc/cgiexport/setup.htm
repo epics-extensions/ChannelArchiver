@@ -19,11 +19,22 @@
   Information Server/MS Personal Web Server).<br>
   If you don't understand the examples or happen to use a different
   server, please consider consulting the manual for your web server
-  first.
+  first.<br>
+  For any useful application of this CGI plugin you also have
+  to generate web pages. Some knowledge of HTML and CGI is required.
 
-  <h3>Access to the archive</h3>
+  <h3>Access to the archive: Users, permissions, paths</h3>
   The CGI Tool has to have access to the data files, either directly
-  or via NFS, SAMBA, ???
+  or via NFS, SAMBA, ???.<br>
+  Note that the web server runs any CGI program as a low priviliged
+  user (e.g. 'nobody' on Unix).
+  To verify archive access, switch user to this user and try to
+  access the data via e.g. the command-line ArchiveExport tool.
+  (On unix: "su" to become root, then "su - nobody" to logon as just
+  that).<br>
+  A special problem: The 'nobody' user might not have PATH,
+  LD_LIBRARY_PATH etc. configured, so it helps to build the CGIExport
+  tool without using shared libraries to simplify matters.
 
   <h3>GNU Plot</h3>
   For the plotting to work, you need GNU Plot. The path to GNU Plot
@@ -72,22 +83,32 @@
   The scripts are meant to test your web server setup because many CGI
   extensions are written in Perl and therefore every web administrator
   should be able to help you with this:<br>
-  If installed and configured correctly, you can access <a
-  href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">&quot;http://&lt;your
-  host&gt;/archive/cgi/Hi.pl&quot;</a> to verify that
+  If installed and configured correctly, you can access
+  <a href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">&quot;http://&lt;your
+  host&gt;/archive/cgi/Hi.pl&quot;</a>
+  to verify that
   <ul>
     <li>Your web server is running at all</li>
     <li>You managed to configure it correctly in order to execute the
         perl-CGI scripts
   </ul>
   The next step is to test if you can execute the CGIExport tool:<br>
-  Try &quot;<a href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">
+  Try &quot;<a href="http://localhost/archive/cgi/CGIExport.cgi">
   http://&lt;your host&gt;/archive/cgi/CGIExport.cgi&quot;</a>.<br>
   You should see some HTML page, no error message.
-  For examples on how to call the CGIExport tool to actually access
-  your archived data, look at the example start page.<br>
-  When your WWW server setup was successful, you should be able to
-  point your web browser to http://localhost/archive/Default.htm and
+
+  <h2>Usage</h2>
+  When called with COMMAND=HELP like this:<br>
+  <a href="http://localhost/archive/cgi/CGIExport.cgi?COMMAND=HELP">
+  http://&lt;your
+  host&gt;/archive/cgi/CGIExport.cgi?COMMAND=HELP&quot;</a><br>
+  the CGIExport Tool will display the commands and parameters that
+  it understands.<br>
+  The example web page ChannelArchiver/CGIExport/Tests/Default.htm
+  shows some links that call the tool with a specific archive
+  directory, channel list, commands etc.<br>
+  When your WWW server setup was successful as explained in there,
+  you should be able to point your web browser to http://localhost/archive/Default.htm and
   see that initial test page.
 
   <h2>Troubleshooting</h2>

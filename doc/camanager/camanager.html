@@ -10,7 +10,7 @@
   <body background="../blueback.jpg">
       <h1>The Channel Archive Manager</h1>
       <p>
-	is basically a frontend to the ChannelArchiver.
+	... is basically a frontend to the ChannelArchiver.
       </p>
       <p>
 	It manages and observes <em>ArchiveEngine</em> processes and their
@@ -29,7 +29,7 @@
 	  <ul>
 	    <li><a href="#creat">Creating/Configuring an Archiver</a></li>
 	    <li><a href="#edit">Editing an ArchiveEngine configuration file</a></li>
-	    <li><a href="#block">Blocking an archiver</a> - from being started/restarted/stopped automatically</li>
+	    <li><a href="#block">Blocking an Archiver</a> - from being started/restarted/stopped automatically</li>
 	    <li><a href="#info">Info</a> - get basic information for an archive</li>
 	    <li><a href="#test">Test</a> - test integrity of an archive </li>
 	    <li><a href="#export">Export</a> - export data from an archive</li>
@@ -67,10 +67,14 @@
 	<tr>
 	  <td width="20%" valign=top><tt>-log&nbsp;&lt;logfile&gt;<br>-log+&nbsp;&lt;logfile&gt;</tt></td>
 	  <td width="80%" valign=top>
-	    A log of important messages is written to &lt;logfile&gt;.
+	    <p>A log of important messages is written to &lt;logfile&gt;.
 	    If &lt;logfile&gt; is <tt>-</tt>, the messages are written to stdout.
 	    The environment-variable <tt>CAMANAGER_DEBUG</tt> can be set to increase 
-	    verbosity (see <a href="#problems">Help when Problems occur</a>).
+	    verbosity (see <a href="#problems">Help when Problems
+	    occur</a>).</p>
+	    <p>The <tt>-log+</tt> variant is to append to a probably
+	    existing logfile as opposed to <tt>-log</tt> which overwrites
+	    an existing file.</p>
 	  </td>
 	</tr>
 	<tr>
@@ -123,7 +127,7 @@
 	</tr>
       </table>
       <p>
-	Any occurance of <em>CA*Manager</em> in this documentation means,
+	Any occurrence of <em>CA*Manager</em> in this documentation means,
 	that the described functionality is covered by both
 	<em>CAManager</em> and <em>CAbgManager</em>.
       </p>
@@ -164,10 +168,10 @@
       <dl>
 	<dt><b>CAManager: Check for running CAbgManager</b>
 	<dd><em>CAManager</em> checks whether an appropriate
-	  <em>CAbgManager</em> is running. If none is runing, or the one that
+	  <em>CAbgManager</em> is running. If none is running, or the one that
 	  is running seems to have a different configuration, a warning is
 	  presented on the screen. This check is performed when
-	  <em>CAManager</em> checks for running Archivers.<br>&nbsp;
+	  <em>CAManager</em> checks for running archivers.<br>&nbsp;
 	<dt><b>CAManager: Check for running Archivers regularly</b>
 	<dd><em>CAManager</em> checks in certain intervals the status of
 	  the configured archivers. The status is displayed in the main-window.<br>&nbsp;
@@ -229,7 +233,7 @@
 	<dd>The host on which the ArchiveEngine should run.</dd>
       <hr noshade size=1>
       <dt><b>Port</b></dt>
-      <dd>The portnumber for the ArchiveEngine web interface<br>
+      <dd>The port number for the ArchiveEngine web interface<br>
 	<b>Note:</b> You have to ensure, that there are no collisions with other
 	  applications using the same port!</dd>
       <hr noshade size=1>
@@ -282,7 +286,7 @@ master_version=1
 	archiver directory, <em>CA*Manager</em> will check configuration
 	changes into the CVS repository.</p><p><b>Note:</b><br>As this
 	cvs-operation is executed without any user-interaction, you are
-	advised to make shure that it won't hang e.g. asking for a
+	advised to make sure that it won't hang e.g. asking for a
 	password!</p></dd>
       <hr noshade size=1>
       <dt><b>force remove of bogus lockfile</b></dt>
@@ -297,7 +301,7 @@ master_version=1
       <dd>
 	<p>This is the name of the archive directory file - the central
 	  register of what is archived in this archive. This parameter
-	  shouldn't be an abslolute pathname but a filename relative to the
+	  shouldn't be an absolute pathname but a filename relative to the
 	  directory of the configuration file.
 	</p>
 	<p>
@@ -375,13 +379,13 @@ master_version=1
 	Clicking and holding the right mouse button over an archiver entry
 	pops up a menu where you can select <tt>View/Edit Configuration</tt>.
       <br>
-	Do so and a new window will popup, where you can see and edit the
+	Do so and a new window will pop up, where you can see and edit the
 	main configuration file. Included configuration files can be
 	clicked and the contents of the window will change to the contents
 	of the selected file.
       </p>
       <hr noshade size=1>
-      <a name="block"><h2>Blocking an archiver</h2></a>
+      <a name="block"><h2>Blocking an Archiver</h2></a>
       <p>
 	When an archiver that is supposed to run terminates (either
 	intentionally or not), the archiver is automatically restarted by
@@ -389,7 +393,7 @@ master_version=1
 	you might want to prevent this archiver from being restarted
 	(e.g. for reconfiguration, during a special shutdown...).
       </p><p>
-	In this case you may <em>block</em> such an archive. Just popup the
+	In this case you may <em>block</em> such an archive. Just pop up the
 	functions-menu by clicking and holding the right mouse button and
 	select <tt>Block/Unblock</tt> from the list.<br>See <a
 	href="#blocked">CAbgManager / Blocked Archivers</a> for further
@@ -519,7 +523,7 @@ master_version=1
       <a name="cycling"><h1>Cycling Archives</h1></a>
       <p>
 	If a "<tt>%</tt>" followed by a number appears in the archive-file configuration
-	parameter of an archiver, this archive recieves special treatment.
+	parameter of an archiver, this archive receives special treatment.
       </p>
       <p>
 	The corresponding archive is <em>cycled</em>, that means a certain
@@ -593,7 +597,7 @@ master_version=1
 	before starting <em>CAbgManager</em>, <em>CAbgManager</em> will
 	create more verbose output in its log. The value of the
 	Environment-Variable should be an integer value, that represents a
-	bitvector:
+	bit-vector:
       </p>
       <div align=center>
 	<table border=1><tr><th>Bit #</th><th>Bit value</th><th>Debug-messages</th></tr>
@@ -618,7 +622,7 @@ master_version=1
       <div align=right>
 	<i>
 	  <!-- hhmts start -->
-		  Latest modification: 16 Jan 02 13:37:23 Thomas Birke
+		  Latest modification: 16 Jan 02 13:58:09 Thomas Birke
 		  <!-- hhmts end -->
 	</i>
 	<address>

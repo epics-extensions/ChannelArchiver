@@ -325,9 +325,7 @@ void BinChannel::addBuffer(const ValueI &value_arg, double period,
                                           true /* for write */);
 	if (! _append_buffer)
 		_append_buffer = new DataHeaderIterator();
-
-	// cannot use dynamic_cast because it might really be only a CtrlInfoI
-	const BinCtrlInfo *ctrl_info = (const BinCtrlInfo*) value->getCtrlInfo();
+	const CtrlInfo *ctrl_info = value->getCtrlInfo();
 	LOG_ASSERT(ctrl_info);
 	*_append_buffer = data->addHeader (header, *ctrl_info, prev);
 	data->release (); // now ref'ed by _append_buffer

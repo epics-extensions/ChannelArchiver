@@ -5,7 +5,7 @@
 
 #include "BinTypes.h"
 #include "ValueI.h"
-#include "BinCtrlInfo.h"
+#include "CtrlInfo.h"
 #include <iostream>
 
 //////////////////////////////////////////////////////////////////////
@@ -40,8 +40,8 @@ public:
 
     ValueI *clone () const;
 
-    void setCtrlInfo (const CtrlInfoI *info);
-    const CtrlInfoI *getCtrlInfo () const;
+    void setCtrlInfo (const CtrlInfo *info);
+    const CtrlInfo *getCtrlInfo () const;
     
     // Read/write & convert single value/array
     void read (FILE *filefd, FileOffset offset);
@@ -54,7 +54,7 @@ protected:
     BinValue (const BinValue &); // not allowed
     BinValue &operator = (const BinValue &rhs);
 
-    const CtrlInfoI *_ctrl_info;// precision, units, limits, ...
+    const CtrlInfo *_ctrl_info;// precision, units, limits, ...
     mutable MemoryBuffer<dbr_time_string> _write_buffer;
 };
 

@@ -83,14 +83,14 @@ void Exporter::printValue(FILE *f, const epicsTime &time, const ValueI *v)
     }
     else
     {
-        const CtrlInfoI *info = v->getCtrlInfo();
+        const CtrlInfo *info = v->getCtrlInfo();
         
         // Format according to precision.
         // Unfortuately that is usually configured wrongly
         // and then people complain about not seeing their data...
         // -> use prec. if > 0
         if (v->getType() == DBR_TIME_STRING  ||
-            (info && info->getType() == CtrlInfoI::Enumerated))
+            (info && info->getType() == CtrlInfo::Enumerated))
         {
             v->getValue(txt);
             fprintf(f, "\t%s", txt.c_str());

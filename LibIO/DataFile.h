@@ -129,7 +129,7 @@ public:
 
     DataHeaderIterator addHeader(
         DataHeader &new_header,
-        const BinCtrlInfo &ctrl_info,
+        const CtrlInfo &ctrl_info,
         DataHeaderIterator *prev_header // may be 0
         );
 

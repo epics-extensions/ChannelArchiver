@@ -194,7 +194,7 @@ bool DataFile::addNewValue (DataHeaderIterator &header, const BinValue &value,
 // Will not update directory file.
 DataHeaderIterator DataFile::addHeader (
     DataHeader &new_header,
-    const BinCtrlInfo &ctrl_info,
+    const CtrlInfo &ctrl_info,
     DataHeaderIterator *prev_header // may be 0
     )
 {
@@ -208,7 +208,7 @@ DataHeaderIterator DataFile::addHeader (
         new_header.setPrev (prev_header->getOffset ());
         if (prev_file == _basename)
         {   // check if we have the same CtrlInfo in this file
-            BinCtrlInfo prev_info;
+            CtrlInfo prev_info;
             prev_info.read (_file, (*prev_header)->getConfigOffset ());
             if (prev_info == ctrl_info)
                 need_ctrl_info = false;

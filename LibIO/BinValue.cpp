@@ -133,12 +133,12 @@ BinValue::~BinValue()
     _ctrl_info = 0;
 }
 
-const CtrlInfoI *BinValue::getCtrlInfo() const
+const CtrlInfo *BinValue::getCtrlInfo() const
 {
 	return _ctrl_info; 
 }
 
-void BinValue::setCtrlInfo(const CtrlInfoI *info)
+void BinValue::setCtrlInfo(const CtrlInfo *info)
 {
     _ctrl_info = info;
 }

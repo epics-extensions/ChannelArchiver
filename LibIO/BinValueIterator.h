@@ -65,7 +65,7 @@ protected:
 
 	class BinChannel	*_channel;
 	DataHeaderIterator	_header;
-	BinCtrlInfo			_ctrl_info;
+	CtrlInfo			_ctrl_info;
 	FileOffset			_ctrl_info_offset;
 	BinValue			*_value;
 	size_t				_value_index;	// Index of current value: 0 .. _header->getNumSamples ()-1

@@ -4,7 +4,7 @@
 #define _VALUEI_H_
 
 #include"ArchiveTypes.h"
-#include"CtrlInfoI.h"
+#include"CtrlInfo.h"
 #include<db_access.h>
 
 // Non-CA events to the archiver;
@@ -116,8 +116,8 @@ public:
     virtual bool parseValue(const stdString &text) = 0;
 
     //* Access to CLASS CtrlInfoI : units, precision, limits, ...
-    virtual const CtrlInfoI *getCtrlInfo() const = 0;
-    virtual void setCtrlInfo(const CtrlInfoI *info);
+    virtual const CtrlInfo *getCtrlInfo() const = 0;
+    virtual void setCtrlInfo(const CtrlInfo *info);
 
     //* Get/set one array element as double
     virtual double getDouble(DbrCount index = 0) const = 0;

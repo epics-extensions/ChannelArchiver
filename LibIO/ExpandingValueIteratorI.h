@@ -66,7 +66,7 @@ public:
 private:
 	ValueIteratorI *_base;
 
-    CtrlInfoI *_info;
+    CtrlInfo  *_info;
     ValueI    *_repeat_value;
     epicsTime  _until;
 };

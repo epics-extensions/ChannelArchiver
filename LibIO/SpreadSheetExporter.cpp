@@ -53,7 +53,7 @@ void SpreadSheetExporter::exportChannelList(
     ValueIteratorI   **base = 0;
     ValueIteratorI   **values = 0;
     ValueI           **prev_values = 0;
-    CtrlInfoI        **infos = 0;
+    CtrlInfo         **infos = 0;
     const ValueI *v;
     char info[300];
 
@@ -83,7 +83,7 @@ void SpreadSheetExporter::exportChannelList(
     base = new ValueIteratorI *[num];
     values = new ValueIteratorI *[num];
     prev_values = new ValueI *[num];
-    infos = new CtrlInfoI *[num];
+    infos = new CtrlInfo *[num];
     // Open Channel & ValueIterator
     for (i=0; i<num; ++i)
     {
@@ -97,7 +97,7 @@ void SpreadSheetExporter::exportChannelList(
         }
         base[i] = _archive->newValueIterator();
         prev_values[i] = 0;
-        infos[i] = new CtrlInfoI();
+        infos[i] = new CtrlInfo();
         values[i] = 0;
 
         if (! channels[i]->getChannel()->getValueBeforeTime(_start, base[i]))
@@ -225,7 +225,7 @@ void SpreadSheetExporter::exportChannelList(
         if (! values[i]->isValid())
             continue;
         if (values[i]->getValue()->getCtrlInfo()->getType()
-            == CtrlInfoI::Numeric)
+            == CtrlInfo::Numeric)
             fprintf(f, " [%s]",
                     values[i]->getValue()->getCtrlInfo()->getUnits());
         // Array columns

@@ -58,7 +58,7 @@ void ExpandingValueIteratorI::attach(ValueIteratorI *base)
             _until = _repeat_value->getTime();
             if (value->getCtrlInfo())
             {
-                _info = new CtrlInfoI(*value->getCtrlInfo());
+                _info = new CtrlInfo(*value->getCtrlInfo());
                 if (_info)
                     _repeat_value->setCtrlInfo(_info);
             }
@@ -114,7 +114,7 @@ bool ExpandingValueIteratorI::next()
                 if (_info)
                     *_info = *last->getCtrlInfo();
                 else
-                    _info = new CtrlInfoI(*last->getCtrlInfo());
+                    _info = new CtrlInfo(*last->getCtrlInfo());
                 last->setCtrlInfo(_info);
             }
     }

@@ -42,12 +42,12 @@ static void output_header(const ValueIterator &value)
     printf("# ------------------------------------------------------\n");
 }
 
-static void output_info(const CtrlInfoI *info)
+static void output_info(const CtrlInfo *info)
 {
     printf("# ------------------------------------------------------\n");
     printf("CtrlInfo\n");
     printf("{\n");
-    if (info->getType() == CtrlInfoI::Numeric)
+    if (info->getType() == CtrlInfo::Numeric)
     {
         printf("\ttype=Numeric\n");
         printf("\tprecision=%ld\n",    info->getPrecision());
@@ -59,7 +59,7 @@ static void output_info(const CtrlInfoI *info)
         printf("\tlow_warning=%g\n",  info->getLowWarning());
         printf("\tlow_alarm=%g\n",    info->getLowAlarm());
     }
-    else if (info->getType() == CtrlInfoI::Enumerated)
+    else if (info->getType() == CtrlInfo::Enumerated)
     {
         printf("\ttype=Enumerated\n");
         printf("\tstates=%d\n", info->getNumStates());
@@ -100,7 +100,7 @@ void output_ascii(const stdString &archive_name,
         return;
     }
 
-    CtrlInfoI   info;
+    CtrlInfo   info;
     double period=-1;
     epicsTime last_time = nullTime;
     while (value && (!isValidTime(end)  ||  value->getTime() < end))
@@ -151,7 +151,7 @@ private:
     double _period;
     ValueI *_value;
     epicsTime _last_time;
-    CtrlInfoI _info;
+    CtrlInfo _info;
     bool _new_ctrl_info;
     size_t  _buffer_alloc;
     enum
@@ -241,7 +241,7 @@ bool ArchiveParser::handleCtrlInfo(ChannelIterator &channel)
     float disp_low=0, disp_high=0;
     float low_alarm=0, low_warn=0, high_warn=0, high_alarm=0;   
     stdString parameter, value;
-    CtrlInfoI::Type type;
+    CtrlInfo::Type type;
     size_t states = 0;
     stdVector<stdString> state;
     
@@ -261,9 +261,9 @@ bool ArchiveParser::handleCtrlInfo(ChannelIterator &channel)
             if (parameter == "type")
             {
                 if (value == "Numeric")
-                    type = CtrlInfoI::Numeric;
+                    type = CtrlInfo::Numeric;
                 else if (value == "Enumerated")
-                    type = CtrlInfoI::Enumerated;
+                    type = CtrlInfo::Enumerated;
                 else
                 {
                     printf("Line %d: Unknown type %s\n",
@@ -296,10 +296,10 @@ bool ArchiveParser::handleCtrlInfo(ChannelIterator &channel)
             printf("Line %d skipped\n", getLineNo());
     }
 
-    if (type == CtrlInfoI::Numeric)
+    if (type == CtrlInfo::Numeric)
         _info.setNumeric (prec, units, disp_low, disp_high,
             low_alarm, low_warn, high_warn, high_alarm);                     
-    else if (type == CtrlInfoI::Enumerated)
+    else if (type == CtrlInfo::Enumerated)
     {
         if (state.size() != states)
         {

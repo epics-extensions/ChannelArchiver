@@ -497,7 +497,7 @@ void headers(const stdString &directory, const stdString &channel_name)
     printf("Channel '%s'\n", channel->getName());
 
     BinValueIterator *bvi = dynamic_cast<BinValueIterator *>(value.getI());
-    const CtrlInfoI *info;
+    const CtrlInfo *info;
     stdString t;
     do
     {

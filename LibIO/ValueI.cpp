@@ -204,7 +204,7 @@ ValueI::ValueI (DbrType type, DbrCount count)
 ValueI::~ValueI ()
 {   RawValueI::free (_value);   }
 
-void ValueI::setCtrlInfo (const CtrlInfoI *info)
+void ValueI::setCtrlInfo (const CtrlInfo *info)
 {}
 
 bool ValueI::parseStatus (const stdString &text)

@@ -205,7 +205,7 @@ size_t BinValueIterator::determineChunk (const epicsTime &until)
     try
     {
         BinValueIterator tmp (*this);
-        CtrlInfoI info = *tmp._value->getCtrlInfo ();
+        CtrlInfo info = *tmp._value->getCtrlInfo ();
         double period = tmp._header->getPeriod ();
 
         epicsTime next_file_time;
@@ -291,7 +291,7 @@ bool BinValueIterator::readCtrlInfo ()
     {
         if (e.getErrorCode() == ArchiveException::Invalid)
         {
-            if (_ctrl_info.getType() == CtrlInfoI::Invalid)
+            if (_ctrl_info.getType() == CtrlInfo::Invalid)
             {
                 _ctrl_info_offset = INVALID_OFFSET;
                 return false;

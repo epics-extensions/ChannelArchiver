@@ -31,10 +31,6 @@ inline void string2cp(char *dest, const stdString &src, size_t maxlen)
 		strncpy(dest, src.c_str(), maxlen);
 }
 
-#ifndef CPP_EDITION
-#error Define CPP_EDITION in ToolsConfig.h
-#endif
-
 typedef char Byte;
 typedef unsigned long FileOffset;
 typedef unsigned short DbrType;

@@ -216,7 +216,7 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
     me->unlock();
 }
 
-static bool setup_CtrlInfo(DbrType type, CtrlInfoI &info, const void *raw)
+static bool setup_CtrlInfo(DbrType type, CtrlInfo &info, const void *raw)
 {
     switch (type)
     {

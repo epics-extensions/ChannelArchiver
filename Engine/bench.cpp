@@ -52,7 +52,7 @@ int main ()
     ValueI *value = archive->newValue (DBR_TIME_DOUBLE, 1);
     ChannelI *channel;
 
-    CtrlInfoI info;
+    CtrlInfo info;
 
     info.setNumeric (2, "socks",
                      0.0, 10.0,

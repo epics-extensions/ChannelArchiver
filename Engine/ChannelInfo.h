@@ -54,7 +54,7 @@ public:
     // Define the type of value for this ChannelInfo.
     // Result: has the type changed ?
     bool setValueType(DbrType type, DbrCount count);
-    void setCtrlInfo(const CtrlInfoI *info);
+    void setCtrlInfo(const CtrlInfo *info);
 
     void setLastArchiveStamp(const epicsTime &stamp)
         { _last_archive_stamp = stamp; }
@@ -63,7 +63,7 @@ public:
     const epicsTime& getExpectedNextTime() const
         { return _expected_next_time; }
     
-    const CtrlInfoI &getCtrlInfo() const       { return _ctrl_info; }
+    const CtrlInfo &getCtrlInfo() const        { return _ctrl_info; }
     size_t getValsPerBuffer() const            { return _vals_per_buffer; }
 
     // Channel Access
@@ -141,7 +141,7 @@ private:
     epicsTime           _connect_time; // when did _connected change?
     Mechanism           _mechanism;    // scanned via get or monitor?
 
-    CtrlInfoI           _ctrl_info;    // has to be copy, not * !
+    CtrlInfo            _ctrl_info;    // has to be copy, not * !
 
     bool                _new_value_set;
     bool                _pending_value_set;
@@ -179,7 +179,7 @@ private:
     void handleDisabling();
 };
 
-inline void ChannelInfo::setCtrlInfo(const CtrlInfoI *info)
+inline void ChannelInfo::setCtrlInfo(const CtrlInfo *info)
 {
     LOG_ASSERT(info);
     _ctrl_info = *info;

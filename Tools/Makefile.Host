@@ -8,7 +8,7 @@
 # Kay-Uwe Kasemir, kasemir@lanl.gov
 # --------------------------------------------------------
 
-TOP = ../../..
+TOP = ../../../..
 include $(TOP)/config/CONFIG_EXTENSIONS
 
 # These are overrides for CONFIG_SITE....

@@ -76,7 +76,7 @@ private:
    	double _max;
    	double _last;
         dbr_short_t _status, _sevr;
-        const CtrlInfoI *_ctrlinfo;
+        const CtrlInfo *_ctrlinfo;
 
         //* The <em>bucketing</em> algorithm is based on 2 nested state
         //  machines.

@@ -26,6 +26,18 @@
 	<li><a href="#CAbgManager">CAbgManager</a> - The backend that starts/restarts archivers
       </ul>
 
+      <p>
+	Both programs optionally take one argument on the
+	command-line. This argument is interpreted as the
+	configuration-file to use.
+      </p>
+
+      <p>
+	Any occurance of <em>CA*Manager</em> in this documentation means,
+	that the described functionality is covered by both
+	<em>CAManager</em> and <em>CAbgManager</em>.
+      </p>
+
       <hr noshade size=1>
       <img align=right src="main.jpg" width=375 height=125 hspace=8 vspace=8>
       <a name="CAManager"><h1>CAManager</h1></a>
@@ -44,8 +56,8 @@
       <ul>
 	<li><a href="#creat">Creating/Configuring an Archiver</a>
 	<li><a href="#block">Blocking an Archiver</a>
-	<li><a href="#test">Test</a>
 	<li><a href="#info">Info</a>
+	<li><a href="#test">Test</a>
 	<li><a href="#export">Export</a>
 	<li><a href="#modify">Modify</a>
       </ul>
@@ -64,7 +76,7 @@
       <p>
 	A button with three dots in it opens a file-selection dialog. Most
 	other string entries have a list of suggestions and settings, that
-	are in available in another configuration, attached to it.
+	are available in another configuration, attached to it.
       </p>
       <p>
 	The space below the Run/Rerun configuration option changes it's
@@ -77,117 +89,130 @@
       <dl>
 	<dt><b>Host</b></dt>
 	<dd>The host on which the ArchiveEngine should run.</dd>
-	<hr noshade size=1>
-	<dt><b>Port</b></dt>
-	<dd>The portnumber for the ArchiveEngine web interface<br>
-	  <b>You have to ensure, that there are no collisions with other
-	    applications using the same port!</b></dd>
-	<hr noshade size=1>
-	<dt><b>Configuration-file</b></dt>
-	<dd>The <em>main</em> configuration file containing
-	  archiving-parameters and channel names as well as <tt>!group</tt>
-	  statements to include other files.<br>
-	  <b>This parameter has to be a full pathname (starting with a "<tt>/</tt>"
-	    or e.g. "<tt>C:/</tt>" resp.)</b></dd>
-	<hr noshade size=1>
-	<dt><b>disable configuration changes ...</b></dt>
-	<dd>check this flag if you want to disable the online configuration
-	  interface of the <em>ArchiveEngine</em>. This is especially
-	  useful to avoid conflicting changes, if you create your
-	  configuration from a different source.</dd>
-	<hr noshade size=1>
-	<dt><b>Archive-file</b></dt>
-	<dd>
-	  <p>This is the name of the archive directory file - the central
-	    register of what is archived in this archive. This parameter
-	    shouldn't be an abslolute pathname but a filename relative to the
-	    directory of the configuration file.
-	  </p>
-	  <p>
-	    The filename may contain directory components as well, but
-	    shouldn't start with a "<tt>/</tt>".
-	  </p>
-	  <p>
-	    It may also contain special components (starting with a
-	    "<tt>%</tt>") that are replaced by strings depending on the current time.
-	  </p>
-	  <p>These components are:</p>
-	  <table>
-	    <tr><th align=left valign=top>%Y</th><td>current year (e.g. 2001)</td></tr>
-	    <tr><th align=left valign=top>%m</th><td>current month (e.g. 10)</td></tr>
-	    <tr><th align=left valign=top>%B</th><td>abbreviated name of the current month (e.g. October)</td></tr>
-	    <tr><th align=left valign=top>%b</th><td>abbreviated name of the current month (e.g. Oct)</td></tr>
-	    <tr><th align=left valign=top>%V</th><td>current weeknumber (e.g. 41)</td></tr>
-	    <tr><th align=left valign=top>%d</th><td>day of month (e.g. 09)</td></tr>
-	    <tr><th align=left valign=top>%p</th><td>AM or PM</td></tr>
-	    <tr><th align=left valign=top>%H</th><td>hour (24h format)</td></tr>
-	    <tr><th align=left valign=top>%I</th><td>hour (12h format)</td></tr>
-	    <tr><th align=left valign=top>%M</th><td>minute</td></tr>
-	    <tr><th align=left valign=top>%S</th><td>second</td></tr>
-	    <tr><th align=left valign=top>%%</th><td>a single percent sign</td></tr>
-	    <tr><th align=left valign=top>...</th><td>(see <tt>man strftime</tt> for details)</td></tr>
-	  </table>
-	  <p>
-	    If this parameter contains a directory-component that is
-	    different from the current directory, the
-	    <em>CAbgManager</em> will create the appropriate directories
-	    before starting the archiver. All configuration files are
-	    then copied into this new directory. As the archiver
-	    terminates all configuration files are copied back into the
-	    main configuration directory and (if a directory named
-	    <tt>CVS</tt> is available) checked into <em>cvs</em>
-	    automatically to make online configuration changes persistent.
-	  </p></dd>
-	<hr noshade size=1>
-	<dt><b>Log-file</b></dt>
-	<dd><p>The ArchiveEngine logs it's output to this file.</p>
-	  <p>This should also be a filename relative to the directory of
-	    the configuration file.</p>
-	  <p>"<tt>%</tt>"-rules are applied like with the Archive-file option.</p></dd>
-	<hr noshade size=1>
-	<dt><b>Run/Rerun</b></dt>
-	<dd><p>The <em>CAbgManager</em> is able to stop and restart archivers based on
-	    a certain schedule.
-	  </p><p>
-	    This is especially useful, if you automatically want archives
-	    to be switched e.g. every week. In this case, set the
-	    Run/Rerun mode to <tt>weekly</tt>, select the appropriate
-	    weekday and time, when archives should be switched and set
-	    the Archive-file configuration option to e.g. "<tt>%Y/%V/directory</tt>".
-	  </p><p>
-	    In this case the archiver would create one archive per week
-	    in a directory named
-	    <tt>[year]/[weeknumber]/directory</tt>. This directory will
-	    also be added to a <em>Multi-Archive</em> directory file in the
-	    directory of the main configuration file which may then
-	    e.g. look like this for an archiver rerun daily:</p>
-	  <pre>
+      <hr noshade size=1>
+      <dt><b>Port</b></dt>
+      <dd>The portnumber for the ArchiveEngine web interface<br>
+	<b>You have to ensure, that there are no collisions with other
+	  applications using the same port!</b></dd>
+      <hr noshade size=1>
+      <dt><b>Configuration-file</b></dt>
+      <dd>The <em>main</em> configuration file containing
+	archiving-parameters and channel names as well as <tt>!group</tt>
+	statements to include other files.<br>
+	<b>This parameter has to be a full pathname (starting with a "<tt>/</tt>"
+	  or e.g. "<tt>C:/</tt>" resp.)</b></dd>
+      <hr noshade size=1>
+      <dt><b>disable configuration changes ...</b></dt>
+      <dd>check this flag if you want to disable the online configuration
+	interface of the <em>ArchiveEngine</em>. This is especially
+	useful to avoid conflicting changes, if you create your
+	configuration from a different source.</dd>
+      <hr noshade size=1>
+      <dt><b>Archive-file</b></dt>
+      <dd>
+	<p>This is the name of the archive directory file - the central
+	  register of what is archived in this archive. This parameter
+	  shouldn't be an abslolute pathname but a filename relative to the
+	  directory of the configuration file.
+	</p>
+	<p>
+	  The filename may contain directory components as well, but
+	  shouldn't start with a "<tt>/</tt>".
+	</p>
+	<p>
+	  It may also contain special components (starting with a
+	  "<tt>%</tt>") that are replaced by strings depending on the current time.
+	</p>
+	<p>These components are:</p>
+	<table>
+	  <tr><th align=left valign=top>%Y</th><td>current year (e.g. 2001)</td></tr>
+	  <tr><th align=left valign=top>%m</th><td>current month (e.g. 10)</td></tr>
+	  <tr><th align=left valign=top>%B</th><td>abbreviated name of the current month (e.g. October)</td></tr>
+	  <tr><th align=left valign=top>%b</th><td>abbreviated name of the current month (e.g. Oct)</td></tr>
+	  <tr><th align=left valign=top>%V</th><td>current weeknumber (e.g. 41)</td></tr>
+	  <tr><th align=left valign=top>%d</th><td>day of month (e.g. 09)</td></tr>
+	  <tr><th align=left valign=top>%p</th><td>AM or PM</td></tr>
+	  <tr><th align=left valign=top>%H</th><td>hour (24h format)</td></tr>
+	  <tr><th align=left valign=top>%I</th><td>hour (12h format)</td></tr>
+	  <tr><th align=left valign=top>%M</th><td>minute</td></tr>
+	  <tr><th align=left valign=top>%S</th><td>second</td></tr>
+	  <tr><th align=left valign=top>%%</th><td>a single percent sign</td></tr>
+	  <tr><th align=left valign=top>...</th><td>(see <tt>man strftime</tt> for details)</td></tr>
+	</table>
+	<p>
+	  A component consisting of a "<tt>%</tt>" followed by a number has
+	  a special meaning (see <a href="#cycling">cycling archives</a>).
+	</p>
+	<p>
+	  If this parameter contains a directory-component that is
+	  different from the current directory, <em>CA*Manager</em> will
+	  create the appropriate directories before starting the
+	  archiver. As the archiver
+	  terminates all configuration files are copied from the
+	  temporary directory, where <em>ArchiveEngine</em> puts online
+	  changes, into the
+	  main configuration directory and (if a directory named
+	  <tt>CVS</tt> is available) checked into <em>cvs</em>
+	  automatically to make online configuration changes persistent.
+	</p></dd>
+      <hr noshade size=1>
+      <dt><b>Multi-Archive-file</b></dt>
+      <dd>
+	<p>
+	  After an archiver is started, <em>CA*Manager</em> can add an
+	  appropriate line to another Multi-Archive.
+	</p>
+	<p>
+	  Several archivers may share a single Multi-Archive. The entries
+	  in the 
+	  Multi-Archive are made in the order, the archivers appear in the
+	  configuration window.
+	</p>
+      </dd>
+      <hr noshade size=1>
+      <dt><b>Log-file</b></dt>
+      <dd><p>The ArchiveEngine logs it's output to this file.</p>
+	<p>This should also be a filename relative to the directory of
+	  the configuration file.</p>
+	<p>"<tt>%</tt>"-rules are applied like with the Archive-file option.</p></dd>
+      <hr noshade size=1>
+      <dt><b>Run/Rerun</b></dt>
+      <dd><p>The <em>CAbgManager</em> is able to stop and restart archivers based on
+	  a certain schedule.
+	</p><p>
+	  This is especially useful, if you automatically want archives
+	  to be switched e.g. every week. In this case, set the
+	  Run/Rerun mode to <tt>weekly</tt>, select the appropriate
+	  weekday and time, when archives should be switched and set
+	  the Archive-file configuration option to e.g. "<tt>%Y/%V/directory</tt>".
+	</p><p>
+	  In this case the archiver would create one archive per week
+	  in a directory named
+	  <tt>[year]/[weeknumber]/directory</tt>. This directory will
+	  also be added to a <em>Multi-Archive</em> directory file in the
+	  directory of the main configuration file which may then
+	  e.g. look like this for an archiver rerun daily:</p>
+	<pre>
 master_version=1
-# added by CAbgManager @ Thu Oct 09 06:00:02 MDT 2001
-/cs/epics/extensions/src/ChannelArchiver/CAManager/sampleArchives/another example/2001/10/09/directory
-# added by CAbgManager @ Thu Oct 08 06:00:02 MDT 2001
-/cs/epics/extensions/src/ChannelArchiver/CAManager/sampleArchives/another example/2001/10/08/directory
-# added by CAbgManager @ Thu Oct 07 06:00:02 MDT 2001
-/cs/epics/extensions/src/ChannelArchiver/CAManager/sampleArchives/another example/2001/10/07/directory
-# added by CAbgManager @ Thu Oct 06 06:00:02 MDT 2001
-/cs/epics/extensions/src/ChannelArchiver/CAManager/sampleArchives/another example/2001/10/06/directory
-# added by CAbgManager @ Thu Oct 05 06:00:02 MDT 2001
-/cs/epics/extensions/src/ChannelArchiver/CAManager/sampleArchives/another example/2001/10/05/directory
-# added by CAbgManager @ Thu Oct 04 06:00:02 MDT 2001
-/cs/epics/extensions/src/ChannelArchiver/CAManager/sampleArchives/another example/2001/10/04/directory
+/home/birke/Archives/another example/2001/10/09/directory
+/home/birke/Archives/another example/2001/10/08/directory
+/home/birke/Archives/another example/2001/10/07/directory
+/home/birke/Archives/another example/2001/10/06/directory
+/home/birke/Archives/another example/2001/10/05/directory
+/home/birke/Archives/another example/2001/10/04/directory
 ...
-	  </pre>
-	  <p>
-	    This <em>Multi-Archive</em> directory file can then be used
-	    to access the whole archive at once.
-	  </p></dd>
-      </dl>
+	</pre>
+	<p>
+	  This <em>Multi-Archive</em> directory file can then be used
+	  to access the whole archive at once.
+	</p></dd>
+    </dl>
       <hr noshade size=1>
       <a name="block"><h2>Blocking an archiver</h2></a>
       <p>
 	When an archiver that is supposed to run terminates (either
 	intentionally or not)), the archiver is automatically restarted by
-	the <a href="#CAbgManager">CAbgManager</a>.<br> In certain cases,
+	<a href="#CAbgManager">CAbgManager</a>.<br> In certain cases,
 	you might want to prevent this archiver from being restarted
 	(e.g. for reconfiguration, during a special shutdown...).
       </p><p>
@@ -196,18 +221,6 @@ master_version=1
 	the main window.<br>See <a href="#blocked">CAbgManager / Blocked Archivers</a> for
 	further details.
       </p>
-      <hr noshade size=1>
-      <a name="test"><h2>Test</h2></a>
-      <p>
-      A simple frontend to the command
-      </p>
-      <pre>
-    ArchiveManager -test &lt;archive&gt;
-      </pre>
-      <p>
-	The test-command test an archive for errors.
-      </p>
-
       <hr noshade size=1>
       <a name="info"><h2>Info</h2></a>
       <p>
@@ -219,6 +232,18 @@ master_version=1
       <p>
 	The info-command counts the number of channels in the archive and prints
 	the min and max timestamps in the archive.
+      </p>
+
+      <hr noshade size=1>
+      <a name="test"><h2>Test</h2></a>
+      <p>
+	A simple frontend to the command
+      </p>
+      <pre>
+    ArchiveManager -test &lt;archive&gt;
+      </pre>
+      <p>
+	The test-command test an archive for errors.
       </p>
 
       <hr noshade size=1>
@@ -261,8 +286,8 @@ master_version=1
       </p>
       <p>
 	This way, you can rename channels in the archive by copying <em>old
-	channel</em> to <em>new channel</em> and deleting <em>old
-	channel</em> afterwards.
+	  channel</em> to <em>new channel</em> and deleting <em>old
+	  channel</em> afterwards.
       </p>
 
       <hr noshade size=1>
@@ -312,14 +337,54 @@ master_version=1
 	(stop) the automatic restart of an archiver.
       </p>
       <p>
-	If you query the page "http://&lt;hostname&gt;:&lt;port&gt;/stop", the <em>CAbgManager</em> is
+	If you query the page "http://&lt;hostname&gt;:&lt;port&gt;/exit", the <em>CAbgManager</em> is
 	stopped.
       </p>
+      <hr noshade size=1>
+      <a name="cycling"><h1>Cycling Archives</h1></a>
+      <p>
+	If a "<tt>%</tt>" followed by a number appears in the archive-file configuration
+	parameter of an archiver, this archive recieves special treatment.
+      </p>
+      <p>
+	The corresponding archive is <em>cycled</em>, that means a certain
+	number (the number after the "<tt>%</tt>") of archives is used like
+	a circular buffer of archives.
+      </p>
+      <dl>
+	<dt><b>Example</b></dt>
+	<dd>
+	  <p>
+	    Assume the archive-file parameter is <tt>%3/directory</tt> and the
+	    configuration-file parameter is
+	    <tt>/some/dir/archive/config</tt>.
+	    The schedule-mode should be <tt>hour</tt> set to
+	    <tt>06:00:00</tt> every 8 hours.
+	  </p>
+	  <p>
+	    That way actually three different archives</p>
+	    <pre>
+	    /some/dir/archive/0/directory
+	    /some/dir/archive/1/directory
+	    /some/dir/archive/2/directory
+            </pre>
+	  <p>
+	    will be used.
+	  </p>
+	  <p>
+	    One will be used from 6am to 2pm, the next one from 2pm to 10pm
+	    and the last one from 10pm to 6am. The next <em>shift</em> from
+	    6am to 2pm will then overwrite the first one...
+	  </p>
+	  <p>
+	    The Multi-Archive files will be updated accordingly.
+	  </p>
+	</dd>
       <hr>
       <div align=right>
 	<i>
 	  <!-- hhmts start -->
-		  Latest modification: 19 Oct 01 13:38:54 Thomas Birke
+		  Latest modification: 25 Oct 01 16:56:25 Thomas Birke
 		  <!-- hhmts end -->
 	</i>
 	<address>

@@ -8,6 +8,15 @@ New  "versions"  are  marked  by some additional functionality. The
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 02/01/2005 --- Version 2.1.8:\\
+At the SNS, one ArchiveEngine running a configuration with
+'disabling' channels tended to hang up just after a channel
+'disabled' a group.
+While I was never able to capture this in the debugger or
+otherwise reproduce it, I did find a violation of the lock
+order in the code related to 'disabling' a group, so this
+might have been the reason.
+
 \item 10/26/2004 --- Version 2.1.7:\\
 In monitored mode, engine will always try to add two initial
 samples: One with the original time stamp, one with the host

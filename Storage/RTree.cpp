@@ -299,23 +299,28 @@ bool RTree::getNextDatablock(Node &node, int &i, Datablock &block) const
     return block.read(fa.getFile());
 }
 
-bool RTree::updateLastDatablock(const epicsTime &start, const epicsTime &end,
-                                FileOffset data_offset, stdString data_filename)
+RTree::YNE RTree::updateLastDatablock(const epicsTime &start,
+                                      const epicsTime &end,
+                                      FileOffset data_offset,
+                                      stdString data_filename)
 {
     Node node(M, true);
     int i;
-    if (getLast(node, i) &&
-        node.record[i].start == start)
+    if (getLast(node, i)  &&  node.record[i].start == start)
     {
         Datablock block;
         block.offset = node.record[i].child_or_ID;
         if (!block.read(fa.getFile()))
-            return false;
+            return YNE_Error;
         if (block.data_offset == data_offset &&
             block.data_filename == data_filename)
         {
+            if (node.record[i].end == end)
+                return YNE_No;
             node.record[i].end = end;
-            return write_node(node) && adjust_tree(node, 0);
+            if (write_node(node) && adjust_tree(node, 0))
+                return YNE_Yes;
+            return YNE_Error;
         }
     }
     return insertDatablock(start, end, data_offset, data_filename);

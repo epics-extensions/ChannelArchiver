@@ -183,11 +183,15 @@ public:
     
     /// Tries to update existing datablock.
 
-    /// Tries to use updateLatest, will then fall back to insertDatablock.
+    /// Tries to update the end time of the last datablock,
+    /// in case start, data_offset and data_filename all match.
+    /// Will otherwise fall back to insertDatablock.
     ///
-    ///
-    bool updateLastDatablock(const epicsTime &start, const epicsTime &end,
-                             FileOffset data_offset, stdString data_filename);
+    /// Returns Yes if anything was done,
+    /// No if there was nothing to do (start, end, ... all already in tree),
+    /// Error if anything fails.
+    YNE updateLastDatablock(const epicsTime &start, const epicsTime &end,
+                            FileOffset data_offset, stdString data_filename);
     
     /// Create a graphviz 'dot' file.
     void makeDot(const char *filename);

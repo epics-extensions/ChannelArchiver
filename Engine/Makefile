@@ -3,7 +3,7 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
-USR_CXXFLAGS += -I ../../Index -I ../../rtree
+USR_CXXFLAGS += -I ../../Index
 
 ArchiveEngine_SRCS += CircularBuffer.cpp
 ArchiveEngine_SRCS += ArchiveChannel.cpp
@@ -18,8 +18,8 @@ ArchiveEngine_SRCS += EngineServer.cpp
 ArchiveEngine_SRCS += Engine.cpp
 ArchiveEngine_SRCS += main.cpp
 PROD_HOST := ArchiveEngine
-PROD_LIBS_DEFAULT := Storage rtree Tools ca Com
-PROD_LIBS_WIN32 := StorageObj TrtreeObj oolsObj ca Com
+PROD_LIBS_DEFAULT := Storage Tools ca Com
+PROD_LIBS_WIN32 := StorageObj ToolsObj ca Com
 SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
 rtree_DIR = $(INSTALL_LIB)
 rtreeObj_DIR = $(INSTALL_LIB)

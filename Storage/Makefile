@@ -11,6 +11,7 @@ INC += StorageTypes.h
 INC += HashTable.h
 INC += DirectoryFile.h
 INC += OldDataWriter.h
+INC += OldDataReader.h
 # Current
 INC += CtrlInfo.h
 INC += RawValue.h
@@ -47,7 +48,7 @@ LIB_SRCS += SpreadsheetReader.cpp
 LIBRARY_HOST := Storage
 
 # Build "ToolsTest" but don't install it
-PROD_LIBS_DEFAULT :=  Storage rtree Tools ca Com
+PROD_LIBS_DEFAULT :=  Storage  Tools ca Com
 PROD_LIBS_WIN32 :=  StorageObj rtreeObj ToolsObj ca Com
 Storage_DIR = $(INSTALL_LIB)
 StorageObj_DIR = $(INSTALL_LIB)

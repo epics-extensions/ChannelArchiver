@@ -3,7 +3,7 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
-USR_CXXFLAGS += -I ../../Storage -I ../../rtree
+USR_CXXFLAGS += -I ../../Storage
 
 # Compare to output of `xmlrpc-c-config cgi-server --cflags`
 USR_CXXFLAGS += -I/usr/local/include
@@ -25,14 +25,14 @@ ToolsObj_DIR   = $(INSTALL_LIB)
 # Compare to output of `xmlrpc-c-config cgi-server --libs`
 PROD_LIBS_DEFAULT  += xmlrpc_cgi xmlrpc xmlrpc_xmlparse xmlrpc_xmltok
 
-xmlrpc_cgi_DIR      = /usr/local/lib
-xmlrpc_DIR          = /usr/local/lib
-xmlrpc_xmlparse_DIR = /usr/local/lib
-xmlrpc_xmltok_DIR   = /usr/local/lib
-xmlrpc_client_DIR   = /usr/local/lib
+xmlrpc_cgi_DIR      = /usr/lib
+xmlrpc_DIR          = /usr/lib
+xmlrpc_xmlparse_DIR = /usr/lib
+xmlrpc_xmltok_DIR   = /usr/lib
+xmlrpc_client_DIR   = /usr/lib
 
 # From xmlrpc-c-config libwww-client --libs
-bench_LDFLAGS=-L/usr/lib -L/home/kasemir/lib -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib
+bench_LDFLAGS=-L/usr/lib -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib
 
 include $(TOP)/configure/RULES
 

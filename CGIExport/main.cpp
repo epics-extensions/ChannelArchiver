@@ -86,7 +86,12 @@ static void showEnvironment(HTMLPage &page, const char *envp[])
 
 // "visitor" for BinaryTree of channel names
 static void cmdListTraverser(const stdString &item, void *arg)
-{   std::cout << "<TR><TD>" << item.c_str() << "</TR></TD>\n"; }
+{  
+   static int namesCnt = 0;
+   HTMLPage *pagep = (HTMLPage*)arg;
+   if (++namesCnt <= 100) pagep->_names.push_back(item);
+   if (namesCnt == 101) std::cout << "<b>List truncated to first 100 names!</b><p>\n";
+}
 
 // COMMAND==LIST
 static void cmdList(HTMLPage &page)
@@ -95,22 +100,23 @@ static void cmdList(HTMLPage &page)
 	page.start();
 	try
 	{
-		Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory));
-		ChannelIterator channel(archive);
-
-        if (page._glob)
-        {
-            stdString expr = RegularExpression::fromGlobPattern(page._pattern);
-            archive.findChannelByPattern(expr, channel);
-        }
-        else
-            archive.findChannelByPattern(page._pattern, channel);
-
-		while (channel)
-		{
-			channels.add(channel->getName());
-			++channel;
-		}
+	   Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory));
+	   ChannelIterator channel(archive);
+	   
+	   if (page._glob)
+	   {
+	      stdString expr = RegularExpression::fromGlobPattern(page._pattern);
+	      archive.findChannelByPattern(expr, channel);
+	   }
+	   else
+	      archive.findChannelByPattern(page._pattern, channel);
+	   
+	   page._names.clear();
+	   while (channel)
+	   {
+	      channels.add(channel->getName());
+	      ++channel;
+	   }
 	}
 	catch (GenericException &e)
 	{
@@ -120,9 +126,7 @@ static void cmdList(HTMLPage &page)
 		std::cout << "</PRE>\n";
 	}
 	page.header("Channel List", 2);
-	std::cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
-	channels.traverse(cmdListTraverser);
-	std::cout << "</TABLE>\n";
+	channels.traverse(cmdListTraverser, &page);
 	page.interFace();
 }
 

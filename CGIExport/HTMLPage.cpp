@@ -90,7 +90,11 @@ void HTMLPage::interFace() const
     int year, month, day, hour, min, sec;
     unsigned long nano;
 
-    std::cout << "<FORM METHOD=\"GET\" ACTION=\"" << _cgi_path << "\">\n";
+    std::cout << "<SCRIPT LANGUAGE=\"JavaScript\">\n";
+    std::cout << "function clrNames () { document.f.NAMES.value=\"\"; }\n";
+    std::cout << "</SCRIPT>\n";
+
+    std::cout << "<FORM METHOD=\"GET\" ACTION=\"" << _cgi_path << "\" NAME=\"f\">\n";
     std::cout << "  <INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\""
               << _directory << "\">\n";
     std::cout << "  <TABLE cellpadding=1>\n";
@@ -113,6 +117,7 @@ void HTMLPage::interFace() const
     for (i=0; i<_names.size(); ++i)
         std::cout << _names[i] << "\n";
     std::cout << "</TEXTAREA>\n";
+    std::cout << "<input type=button value=\"CLEAR\" onClick=\"clrNames()\">\n";
     std::cout << "      </TD>\n";
     std::cout << "  </TR>\n";
 

@@ -17,10 +17,8 @@
 #include <fdManager.h>
 #include "HTMLPage.h"
 
-#ifdef USE_NAMESPACE_STD
-using std::list;
-using std::vector;
-#endif
+using stdList;
+using stdVector;
 
 //CLASS
 // A HTTPServer creates a CLASS HTTPClientConnection

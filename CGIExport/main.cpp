@@ -547,7 +547,7 @@ void cmdDebug(HTMLPage &page, const CGIInput &cgi, const char *envp[])
     page.header("DEBUG Information",1);
     
     printf("<I>CGIExport Version " VERSION_TXT
-           ", built " __DATE__ "</I>\n");
+           ", built " __DATE__ ", " __TIME__ "</I>\n");
     
     page.header("Variables parsed from CGI input",2);
     const stdMap<stdString, stdString> &var_map = cgi.getVars ();
@@ -650,7 +650,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	}
 	if (!command_line)
 	{
-		if (!cgi.parse(std::cin, std::cout))
+		if (!cgi.parse(stdin, stdout))
 		{
 			page._title = "CGI Error";
 			page.start();

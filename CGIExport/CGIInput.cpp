@@ -12,7 +12,7 @@
 #include <strings.h>
 #endif
 
-bool CGIInput::parse(std::istream &in, std::ostream &error)
+bool CGIInput::parse(FILE *in, FILE *out)
 {
     char *input = 0;
 
@@ -21,16 +21,18 @@ bool CGIInput::parse(std::istream &in, std::ostream &error)
     const char *request_method = getenv("REQUEST_METHOD") ;
     if (!request_method)
     {
-        error << "REQUEST_METHOD is not provided\n";
+        fprintf(out, "REQUEST_METHOD is not provided\n");
         return false;
     }
     
-    if (!strcasecmp(request_method, "GET") || !strcasecmp(request_method, "HEAD"))
+    if (!strcasecmp(request_method, "GET") ||
+        !strcasecmp(request_method, "HEAD"))
     {
         const char *query = getenv("QUERY_STRING");
         if (! query)
         {
-            error << "GET/HEAD request but QUERY_STRING is not provided\n";
+            fprintf(out,
+                    "GET/HEAD request but QUERY_STRING is not provided\n");
             return false;
         }
         size_t len = strlen(query);
@@ -40,25 +42,28 @@ bool CGIInput::parse(std::istream &in, std::ostream &error)
     else if (!strcasecmp(request_method, "POST"))
     {
         if (!getenv("CONTENT_TYPE")  || 
-            strcasecmp(getenv("CONTENT_TYPE"), "application/x-www-form-urlencoded"))
+            strcasecmp(getenv("CONTENT_TYPE"),
+                       "application/x-www-form-urlencoded"))
         {
-            error << "CONTENT_TYPE must be application/x-www-form-urlencoded\n" ;
+            fprintf(out, "CONTENT_TYPE must be "
+                    "application/x-www-form-urlencoded\n");
             return false;
         }
         const char *len_str = getenv("CONTENT_LENGTH");
         size_t content_length = len_str ? atoi(len_str) : 0;
         if (! content_length)
         {
-            error << "No CONTENT_LENGTH was sent with the POST request.\n";
+            fprintf(out,
+                    "No CONTENT_LENGTH was sent with the POST request.\n");
             return false;
         }
         input = new char [content_length+1];
-        in.read (input, content_length);
+        fread(input, 1, 100, in);
         input[content_length]='\0' ;
     }
     else
     {
-        error << "unsupported REQUEST_METHOD\n";
+        fprintf(out, "unsupported REQUEST_METHOD\n");
         return false;
     }
 

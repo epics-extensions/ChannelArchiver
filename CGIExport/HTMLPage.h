@@ -15,9 +15,7 @@
 #include "osiTime.h"
 #include "ToolsConfig.h"
 
-#ifdef USE_NAMESPACE_STD
-using std::vector;
-#endif
+using stdVector;
 
 class HTMLPage
 {

@@ -106,7 +106,7 @@
 #define URL_PATH "/tmp/"
 
 // ----------------------------------------------------------
-// Atac
+// Atac - note that this will be replaced by casi!
 // ----------------------------------------------------------
 
 // (The tcl extension has to be compiled seperately,

@@ -10,7 +10,37 @@
 
 <blockquote>
   <h1>Channel Archiver Changes</h1>
+  As you might notice, new "versions" are marked by some
+  additional functionality.
+  The "patches" are then used to debug those new things.
+  
   <ul>
+    <li>07/28/2000<br>
+      <font color="#0000A0">Version 1.5</font>:<br>
+      With the helpful work of Nick Pattengale,
+      a summer student at LANSCE-8, LANL,
+      <ul>
+      <li>the SWIG-based scripting interface has undergone more testing
+      <li>simple write support (copy really) has been added
+      <li>CArDMiner, a python GUI tool for archive management
+          has been added.<br>
+	  It can be used as a replacement for the command-line
+	  ArchiveManager tool:<br>
+	  extract subarchives, repair/remove invalid entries.<br>
+	  While certainly slower than a compiled program,
+	  it is much easier to extend,
+	  which is very useful since "broken" archives
+	  are usually broken in a way not anticipated,
+	  hence not considered in a compiled program.
+	  CArDMiner allows to apply "snippets" of python code
+	  to the channels/values being copied,
+	  which are much quicker to write/modify than
+	  a complete code/recompile/install cycle for
+	  the ArchiveManager would be.<br>
+	  Later additions will hopefully turn CArDMiner
+	  into a real "data mining" tool.
+      </ul>
+
     <li>07/24/2000<br>
       Patch #3:<br>
       Investigated performace differences on Win32 and Linux,

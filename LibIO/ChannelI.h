@@ -13,14 +13,6 @@
 
 #include "ValueIteratorI.h"
 
-class ChannelIInfo
-{
-public:
-	stdString	_name;			// name of the channel
-	osiTime		_first_time;	// Time stamp of first value
-	osiTime		_last_time;		// Time stamp of last value
-};
-
 //////////////////////////////////////////////////////////////////////
 //CLASS ChannelI
 //
@@ -43,9 +35,6 @@ public:
 
 	//* Time stamp of last value
 	virtual osiTime getLastTime ()   const = 0;
-
-	//* Get the above information at once by filling a ChannelIInfo structure
-	virtual void getChannelInfo (ChannelIInfo &info) const;
 
 	//* Move CLASS ValueIterator for current Channel
 	// to first, last, ... value

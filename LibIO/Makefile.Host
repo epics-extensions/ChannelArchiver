@@ -1,4 +1,4 @@
-#	Makefile.Host
+#	Makefile.Host -*- makefile -*-
 
 include ../../Make.cfg
 
@@ -70,5 +70,7 @@ LIBSRCS += GNUPlotExporter.cc
 #       lib$(LIBRARY).a  or   ..dll/..exp/..lib
 #
 LIBRARY := ChanArchIO
+
+TESTPROD = test
 
 include ../../Make.end

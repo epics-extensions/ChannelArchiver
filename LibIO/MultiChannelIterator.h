@@ -23,46 +23,41 @@ class MultiValueIterator;
 class MultiChannelIterator : public ChannelIteratorI
 {
 public:
-    MultiChannelIterator (const MultiArchive *archive);
-    virtual ~MultiChannelIterator ();
+    MultiChannelIterator(MultiArchive *archive);
+    virtual ~MultiChannelIterator();
 
-    virtual bool isValid () const;
-    virtual ChannelI *getChannel ();
-    virtual bool next ();
+    virtual bool isValid() const;
+    virtual ChannelI *getChannel();
+    virtual bool next();
 
     // ---------------------------------------
     // To be called by MultiArchive:
-    void clear ();
+    bool assign(MultiArchive *a, size_t channel_index)
+    {
+        _multi_archive = a;
+        _channel_index = channel_index;
+        _is_valid = _channel_index < _multi_archive->_channels.size();
+        return _is_valid;
+    }
+    
+    void clear();
+
     bool moveToMatchingChannel(const stdString &pattern);
-    void position(size_t index, ArchiveI *archive,
-                  ChannelIteratorI *channel_iterator);
-
-    // To be called by MultiChannel:
-    const MultiArchive *getArchive();
-    const ChannelIInfo &getChannelInfo() const;
-    size_t getChannelIndex() const;
-
-    // To be called by MultiValueIterator:
-    bool getNextValue(MultiValueIterator &value_iterator);
-    bool getPrevValue(MultiValueIterator &value_iterator);
+    void position(ArchiveI *archive, ChannelIteratorI *channel_iterator);
 
 private:
-    bool _is_valid;
-    const MultiArchive *_multi_archive; // Associated MultiArchive
+    friend class MultiArchive;
+    friend class MultiChannel;
+    friend class MultiValueIterator;
+    
+    MultiArchive *_multi_archive;       // Associated MultiArchive
     size_t _channel_index;              // Index of channel in that archive
-    ArchiveI *_base_archive;            // If valid: the current archive...
-    ChannelIteratorI *_base_channel_iterator; // and channeliterator
-    MultiChannel _channel;              // current Channel (if _is_valid)
     RegularExpression *_regex;
+
+    bool _is_valid;                     // Rest only set if is_valid:
+    ArchiveI *_base_archive;            // the current archive,
+    ChannelIteratorI *_base_channel_iterator; // channeliterator and
+    MultiChannel _channel;              // channel.
 };
-
-inline const MultiArchive *MultiChannelIterator::getArchive ()
-{   return _multi_archive;  }
-
-inline const ChannelIInfo &MultiChannelIterator::getChannelInfo () const
-{   return _multi_archive->getChannelInfo (_channel_index); }
-
-inline size_t MultiChannelIterator::getChannelIndex () const
-{   return _channel_index;  }
 
 #endif //__MULTICHANNELITERATORI_H__

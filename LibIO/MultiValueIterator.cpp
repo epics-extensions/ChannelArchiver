@@ -11,64 +11,102 @@
 #include "MultiValueIterator.h"
 #include "MultiChannelIterator.h"
 
-MultiValueIterator::MultiValueIterator ()
+// Implementation:
+//
+// MultiValueIterator passes almost everything
+// on to the underlying base_value_iterator.
+//
+// Exception:
+// If iteration hits an end using the base iterator,
+// the MultiArchive is asked for a new subarchive
+// from which we can continue.
+
+MultiValueIterator::MultiValueIterator()
 {
 	_is_valid = false;
 	_channel_iterator = 0;
 	_base_value_iterator = 0;
 }
 
-MultiValueIterator::~MultiValueIterator ()
+MultiValueIterator::~MultiValueIterator()
 {
 	clear ();
 }
 
-bool MultiValueIterator::isValid () const
+bool MultiValueIterator::isValid() const
 {
 	return _is_valid;
 }
 
-const ValueI * MultiValueIterator::getValue () const
+const ValueI * MultiValueIterator::getValue() const
 {
 	return _base_value_iterator->getValue ();
 }
 
-bool MultiValueIterator::next ()
+bool MultiValueIterator::next()
 {
-	if (_base_value_iterator->next ())
+	if (_base_value_iterator->next())
 	{
 		_is_valid = true;
 		return true;
 	}
-	_is_valid =  _channel_iterator->getNextValue (*this);
+    
+    if (_channel_iterator && _channel_iterator->isValid() &&
+        _channel_iterator->_base_channel_iterator &&
+        _channel_iterator->_base_channel_iterator->isValid())
+	{
+		// last time stamp current archive has for this channel:
+		osiTime next_time = _channel_iterator->
+            _base_channel_iterator->getChannel()->getLastTime();
+		_is_valid = _channel_iterator->_multi_archive->getValueAtOrAfterTime
+            (*_channel_iterator, next_time,
+             false /* == not OK, has to be later */,
+             *this);
+	}
+    else
+        _is_valid = false;
 
 	return _is_valid;
 }
 
-bool MultiValueIterator::prev ()
+bool MultiValueIterator::prev()
 {
-    if (_base_value_iterator->prev ())
+	if (_base_value_iterator->prev())
 	{
 		_is_valid = true;
 		return true;
 	}
-	_is_valid = _channel_iterator->getPrevValue (*this);
+    
+    if (_channel_iterator && _channel_iterator->isValid() &&
+        _channel_iterator->_base_channel_iterator &&
+        _channel_iterator->_base_channel_iterator->isValid())
+	{
+		// last time stamp current archive has for this channel:
+		osiTime next_time = _channel_iterator->
+            _base_channel_iterator->getChannel()->getFirstTime();
+		_is_valid = _channel_iterator->_multi_archive->getValueAtOrBeforeTime
+            (*_channel_iterator,
+             next_time, false /* '==' is not OK */,
+             *this);
+	}
+    else
+        _is_valid = false;
 
 	return _is_valid;
 }     
 
-size_t MultiValueIterator::determineChunk (const osiTime &until)
+size_t MultiValueIterator::determineChunk(const osiTime &until)
 {
-	return _base_value_iterator->determineChunk (until);
+	return _base_value_iterator->determineChunk(until);
 }
 
-double MultiValueIterator::getPeriod () const
+double MultiValueIterator::getPeriod() const
 {
-	return _base_value_iterator->getPeriod ();
+	return _base_value_iterator->getPeriod();
 }
 
 // To be called by MultiArchive classes only:
-void MultiValueIterator::clear ()
+void MultiValueIterator::clear()
 {
 	_is_valid = false;
 	if (_base_value_iterator)
@@ -78,9 +116,10 @@ void MultiValueIterator::clear ()
 	}
 }
 
-void MultiValueIterator::position (MultiChannelIterator *channel, ValueIteratorI *value)
+void MultiValueIterator::position(MultiChannelIterator *channel,
+                                  ValueIteratorI *value)
 {
-	clear ();
+	clear();
 	_channel_iterator = channel;
 	_base_value_iterator = value;
 	_is_valid = _base_value_iterator && _base_value_iterator->isValid();

@@ -12,14 +12,14 @@
 #include "MultiChannelIterator.h"
 #include "MultiValueIterator.h"
 
-MultiChannelIterator::MultiChannelIterator (const MultiArchive *archive)
+MultiChannelIterator::MultiChannelIterator(MultiArchive *archive)
+        : _channel(this)
 {
 	_is_valid = false;
 	_multi_archive = archive;
 	_channel_index = 0;
 	_base_archive = 0;
 	_base_channel_iterator = 0;
-	_channel.setMultiChannelIterator (this);
 	_regex = 0;
 }
 
@@ -34,23 +34,20 @@ MultiChannelIterator::~MultiChannelIterator ()
 }
 
 bool MultiChannelIterator::isValid () const
-{
-	return _is_valid;
-}
+{   return _is_valid; }
 
 ChannelI *MultiChannelIterator::getChannel ()
-{
-	return & _channel;
-}
+{   return & _channel; }
 
 bool MultiChannelIterator::next ()
 {
 	do
 	{
 		++_channel_index;
-		_is_valid = _multi_archive->getChannel (_channel_index, *this);
+		_is_valid = _channel_index < _multi_archive->_channels.size();
 	}
-	while (_is_valid && _regex && _regex->doesMatch (_channel.getName())==false);
+	while (_is_valid &&
+           _regex && _regex->doesMatch(_channel.getName())==false);
 
 	return _is_valid;
 }
@@ -86,38 +83,13 @@ bool MultiChannelIterator::moveToMatchingChannel (const stdString &pattern)
 	return _is_valid;
 }
 
-void MultiChannelIterator::position (size_t index, ArchiveI *archive, ChannelIteratorI *channel_iterator)
+void MultiChannelIterator::position(ArchiveI *archive,
+                                    ChannelIteratorI *channel_iterator)
 {
 	clear ();
-	_channel_index = index;
 	_base_archive = archive;
 	_base_channel_iterator = channel_iterator;
-	_is_valid = _base_channel_iterator->isValid ();
+	_is_valid = _base_channel_iterator && _base_channel_iterator->isValid ();
 }
 
-bool MultiChannelIterator::getNextValue (MultiValueIterator &value_iterator)
-{
-    if (_is_valid && _base_channel_iterator && _base_channel_iterator->isValid())
-	{
-		// last time stamp current archive has for this channel:
-		osiTime next_time = _base_channel_iterator->getChannel()->getLastTime ();
-		return _multi_archive->getValueAtOrAfterTime (_channel_index, *this,
-			next_time, true /* has to be later */, value_iterator);
-	}
-
-	return false;  
-}
-
-bool MultiChannelIterator::getPrevValue (MultiValueIterator &value_iterator)
-{
-    if (_is_valid && _base_channel_iterator && _base_channel_iterator->isValid())
-	{
-		// first time stamp current archive has for this channel:
-		osiTime next_time = _base_channel_iterator->getChannel()->getFirstTime ();
-		return _multi_archive->getValueAtOrBeforeTime (_channel_index, *this,
-			next_time, true /* has to be earlier */, value_iterator);
-	}
-
-	return false;
-}
 

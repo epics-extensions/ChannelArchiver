@@ -1,3 +1,4 @@
+// -*- c++ -*-
 // --------------------------------------------------------
 // $Id$
 //
@@ -12,6 +13,8 @@
 #define __MULTI_ARCHIVEI_H__
 
 #include "ArchiveI.h"
+
+#define DEBUG_MULTIARCHIVE
 
 class MultiChannelIterator;
 class MultiValueIterator;
@@ -43,13 +46,15 @@ class MultiValueIterator;
 // <P>
 // This type of archive is read-only!
 // <P>
-// For now, each individual archive is in the binary data format (CLASS BinArchive).
+// For now, each individual archive is in the binary data format
+// (CLASS BinArchive).
 // Later, it might be necessary to specify the type together with the name
 // for each archive. The master_version will then be incremented.
 // <BR>
-// If the "master" file is invalid, it is considered an ordinary BinArchive directory file,
-// i.e. Tools based on the MultiArchive should work just like BinArchive-based Tools
-// when operating on a single archive.
+// If the "master" file is invalid, it is considered an ordinary BinArchive
+// directory file,
+// i.e. Tools based on the MultiArchive should work just like BinArchive-based
+// Tools when operating on a single archive.
 //
 // <H2>Details</H2>
 // No sophisticated merging technique is used.
@@ -73,6 +78,14 @@ class MultiValueIterator;
 class MultiArchive : public ArchiveI
 {
 public:
+    class ChannelInfo
+    {
+    public:
+        stdString	_name;			// name of the channel
+        osiTime		_first_time;	// Time stamp of first value
+        osiTime		_last_time;		// Time stamp of last value
+    };
+
     //* Open a MultiArchive for the given master file
     MultiArchive(const stdString &master_file);
 
@@ -83,46 +96,49 @@ public:
     virtual ValueIteratorI *newValueIterator() const;
     virtual ValueI *newValue(DbrType type, DbrCount count);
     virtual bool findFirstChannel(ChannelIteratorI *channel);
-    virtual bool findChannelByName(const stdString &name, ChannelIteratorI *channel);
-    virtual bool findChannelByPattern(const stdString &regular_expression, ChannelIteratorI *channel);
+    virtual bool findChannelByName(const stdString &name,
+                                   ChannelIteratorI *channel);
+    virtual bool findChannelByPattern(const stdString &regular_expression,
+                                      ChannelIteratorI *channel);
     virtual bool addChannel(const stdString &name, ChannelIteratorI *channel);
 
     // debugging only
     void log() const;
 
-    // To be used by MultiArchive intrinsics only:
-    // -------------------------------------------
-    bool getChannel(size_t channel_index, MultiChannelIterator &iterator) const; 
-    const ChannelIInfo & getChannelInfo(size_t channel_index) const; 
-
     // For given channel, set value_iterator to value at-or-after time.
     // For has_to_be_later = true, the archive must contain more values,
-    // i.e. it won't position on the very last value that's stamped at "time" exactly
+    // i.e. it won't position on the very last value that's stamped at
+    // "time" exactly
     //
     // For result=false, value_iterator could not be set.
     // These routines will not clear() the value_iterator
     // to allow stepping back when used from within next()/prev()!
-    bool getValueAtOrAfterTime(size_t channel_index, MultiChannelIterator &channel_iterator,
-                               const osiTime &time, bool has_to_be_later,
+    bool getValueAtOrAfterTime(MultiChannelIterator &channel_iterator,
+                               const osiTime &time, bool exact_time_ok,
                                MultiValueIterator &value_iterator) const;
-    bool getValueAtOrBeforeTime(size_t channel_index, MultiChannelIterator &channel_iterator,
-                                const osiTime &time, bool has_to_be_earlier,
-        MultiValueIterator &value_iterator) const;
-    bool getValueNearTime(size_t channel_index, MultiChannelIterator &channel_iterator,
-                          const osiTime &time, MultiValueIterator &value_iterator) const;
+
+    bool getValueAtOrBeforeTime(MultiChannelIterator &channel_iterator,
+                                const osiTime &time, bool exact_time_ok,
+                                MultiValueIterator &value_iterator) const;
+
+    bool getValueNearTime(MultiChannelIterator &channel_iterator,
+                          const osiTime &time,
+                          MultiValueIterator &value_iterator) const;
 
 private:
+    friend class MultiChannelIterator;
+    friend class MultiChannel;
+    
     bool parseMasterFile(const stdString &master_file);
 
     // Fill _channels from _archives
-    bool investigateChannels();
-    bool findChannelInfo(const stdString &name, ChannelIInfo **info);
+    void queryAllArchives();
+    // Get/insert ChannelInfo for given name
+    size_t getChannelInfoIndex(const stdString &name);
 
-    stdList<stdString>      _archives; // names of archives
-    stdVector<ChannelIInfo> _channels; // info of channels, summarized over all archives
+    stdList<stdString>     _archives; // names of archives
+    bool _queriedAllArchives;
+    stdVector<ChannelInfo> _channels; // summarized over all archives
 };
-
-inline const ChannelIInfo &MultiArchive::getChannelInfo(size_t channel_index) const
-{   return _channels[channel_index];    }
 
 #endif

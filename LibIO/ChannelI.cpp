@@ -10,24 +10,18 @@
 
 #include "ChannelI.h"
 
-ChannelI::~ChannelI ()
+ChannelI::~ChannelI()
 {}
 
-void ChannelI::getChannelInfo (ChannelIInfo &info) const
-{
-	info._name       = getName ();
-	info._first_time = getFirstTime ();
-	info._last_time  = getLastTime ();
-}
-
-size_t ChannelI::lockBuffer (const ValueI &value, double period)
+size_t ChannelI::lockBuffer(const ValueI &value, double period)
 {	return 0; }
 	
-void ChannelI::addBuffer (const ValueI &value_arg, double period, size_t value_count)
+void ChannelI::addBuffer(const ValueI &value_arg, double period,
+                         size_t value_count)
 {}
 
 // Call after adding all values to that buffer
-void ChannelI::releaseBuffer ()
+void ChannelI::releaseBuffer()
 {}
 
 

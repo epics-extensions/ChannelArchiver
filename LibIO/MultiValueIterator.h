@@ -31,11 +31,13 @@ public:
     virtual size_t determineChunk(const osiTime &until);
     virtual double getPeriod() const;
 
+private:
+    friend class MultiArchive;
+    friend class MultiChannel;
     // To be called by MultiArchive classes only:
     void clear();
     void position(MultiChannelIterator *channel, ValueIteratorI *value);
-
-private:
+    
     bool _is_valid;
     MultiChannelIterator *_channel_iterator;
     ValueIteratorI *_base_value_iterator;

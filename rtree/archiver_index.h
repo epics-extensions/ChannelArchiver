@@ -1,6 +1,7 @@
 #ifndef _ARCHIVER_INDEX_H_
 #define _ARCHIVER_INDEX_H_
 
+#include <stdString.h>
 #include "r_tree.h"
 #include "au_list.h"
 #include "aup_iterator.h"
@@ -20,16 +21,29 @@ public:
 	~archiver_Index();
 
 	/**
-	*	Affects only addDataFromAnotherIndex()
+	*	Is used only inside addDataFromAnotherIndex()
 	*	@see addDataFromAnotherIndex()
 	*	@param value is read from the master index configuration file
 	*/
-	void setGlobalPriority(short value)	{global_Priority = value;}
-    short getGlobalPriority()            {return global_Priority;}
+    short getGlobalPriority() const     {return global_Priority;}
+    void setGlobalPriority(short value) {global_Priority = value;}
 
+    /**
+    *  A work around  for addDataFromAnotherIndex() if the original index
+    *  doesn't store the directory of the AUs
+    *  @see addDataFromAnotherindex()
+    */
+    const stdString&  getDirectory() const {return dir;}
+    const stdString& getFileName() const {return file_Name;}
+    const stdString& getFullPath() const {return full_Path;}
+    
 	/**
 	*	Open the file with the specified path and check, if it is a valid index file
-	*	@return False, if the file is not valid, or errors occured; true otherwise.
+    *   If the file doesn't exist, but read_Only is set to false, create is called with standard parameters
+    *   @param file_Path MUST be an absolute path (the class stores the directory
+    *   @see create()
+    *   @see getDirectory()
+	*	@return false, if the file was tried to be opened in "read only" mode, but it doesn't exist; or if the file is not valid, or errors occured; true otherwise.
 	*/
 	bool open(const char * file_Path, bool read_Only = true);
 
@@ -122,7 +136,16 @@ public:
     
 	//Iterate through ALL AUs in the corresponding R tree
 	aup_Iterator * getAUPIterator(const char * channel_Name);
-
+    /**
+    *   The AUP iterator returns the addresses of the AUs;
+    *   <i>this</i> method reads an AU from the index file
+    *   @see getAUPIterator()
+    *   @param result is the pointer to an au object which attributes
+    *   are set according to the values in the index file
+    *   return false, if errors occured; true otherwise
+    */
+    bool readAU(long au_Address, archiver_Unit * result);
+    
     //Iterate through the KEY AUs in the corresponding R tree, i.e.
 	//the ones that are eventually used to lookup the data!!!
 	key_AU_Iterator * getKeyAUIterator(const char * channel_Name);
@@ -157,6 +180,9 @@ private:
 	r_Tree r;	
 	short m;	
 	bool read_Only;
+    stdString dir;
+    stdString full_Path;
+    stdString file_Name;
 	short global_Priority;
 };
 

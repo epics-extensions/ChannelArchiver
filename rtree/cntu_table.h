@@ -40,6 +40,7 @@ public:
 	/**
 	*	If the unit is there, the function acts exactly like findCNTU()
 	*	@see findCNTU()
+    *   @param new_Name MUST be less than CHANNEL_NAME_LENGTH characters
 	*	@param root_Pointer is the pointer to the memory block to which the address of the root 
 	*	pointer is written
 	*	@param au_List_Pointer is the pointer to the memory block to which the address of

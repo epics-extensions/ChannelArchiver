@@ -2,6 +2,7 @@
 #define _CNTU_H_
 
 #include <stdio.h>
+#include <stdString.h>
 #include "rtree_constants.h"
 
 class cntu
@@ -26,7 +27,7 @@ public:
 	*	name == 0 or *result < 1 means there is no such construct
 	*	@return False if i/o errors occured, or attach() was not called before; true otherwise
 	*/
-	bool readName(char * name) const;
+	bool readName(stdString * name) const;
 	bool readRootPointer(long * value) const;
 	bool readAUListPointer(long * value) const;
 	bool readNextCNTUAddress(long * address) const;

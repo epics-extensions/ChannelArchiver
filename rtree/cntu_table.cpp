@@ -1,6 +1,7 @@
 #include "cntu_table.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdString.h>
 #include <string.h>
 #include "bin_io.h"
 #include "rtree_constants.h"
@@ -94,28 +95,37 @@ bool cntu_Table::addCNTU(const char * new_Name, long * root_Pointer, long * au_L
 	
 	current_CNTU.attach(f, current_CNTU_Address);
 	long next_CNTU_Address;
-	char current_Name[CHANNEL_NAME_LENGTH];
-
+    stdString current_Name;
 	do
 	{
 		current_CNTU_Address = current_CNTU.getAddress();
-
 		
-		if(current_CNTU.readName(current_Name) == false) return false;
-		if(strcmp(current_Name, new_Name) == 0)
+		if(current_CNTU.readName(&current_Name) == false)
+        {
+            return false;
+        }
+            
+		if(strcmp(current_Name.c_str(), new_Name) == 0)
 		{
 			*root_Pointer = current_CNTU_Address + CNTU_ROOT_OFFSET;
 			*au_List_Pointer = current_CNTU_Address + CNTU_AU_LIST_OFFSET;
 			return true;
 		}
-
-		if(current_CNTU.readNextCNTUAddress(&next_CNTU_Address) == false) return false;
+        //not needed below
+        
+		if(current_CNTU.readNextCNTUAddress(&next_CNTU_Address) == false)
+        {
+            return false;
+        }
 		if(next_CNTU_Address < 0)
 		{
 			long new_CNTU_Address = fa->allocate(CNTU_SIZE);
 			//set the next pointer of the previous cntu
 			current_CNTU.attach(f, current_CNTU_Address);
-			if(current_CNTU.writeNextCNTUAddress(new_CNTU_Address) == false) return false;
+			if(current_CNTU.writeNextCNTUAddress(new_CNTU_Address) == false)
+            {
+                return false;
+            }
 
 			current_CNTU.attach(f, new_CNTU_Address);
 			*root_Pointer = new_CNTU_Address + CNTU_ROOT_OFFSET;
@@ -143,18 +153,22 @@ bool cntu_Table::deleteCNTU(long cntu_Address) const
 
 	long next_CNTU_Address;
 	long previous_CNTU_Address;
-	char name[CHANNEL_NAME_LENGTH];
-	if(	!current_CNTU.readName(name)						||
+	stdString name;
+	if(	!current_CNTU.readName(&name)						||
 		!current_CNTU.readNextCNTUAddress(&next_CNTU_Address)		||
-		!current_CNTU.readPreviousCNTUAddress(&previous_CNTU_Address)) return false;
+		!current_CNTU.readPreviousCNTUAddress(&previous_CNTU_Address))
+    {
+        return false;
+    }
+        
 	
 	//free the cntu
 	fa->free(current_CNTU.getAddress());
-
+    long hashed_Address = 4 * hash(name.c_str()) + table_Address;
+    
 	if(previous_CNTU_Address < 0 && next_CNTU_Address < 0)
 	{
 		//means -1 must be written to the hash table
-		long hashed_Address = 4 * hash(name) + table_Address;
 		fseek(f, hashed_Address, SEEK_SET);
 		return writeLong(f, -1);
 	}
@@ -162,9 +176,11 @@ bool cntu_Table::deleteCNTU(long cntu_Address) const
 	{
 		//means the next unit's address must be written to the table
 		//the next unit must be updated
-		long hashed_Address = 4 * hash(name) + table_Address;
 		fseek(f, hashed_Address, SEEK_SET);
-		if(writeLong(f, next_CNTU_Address) == false) return false;
+		if(writeLong(f, next_CNTU_Address) == false)
+        {
+            return false;
+        }
 		current_CNTU.attach(f, next_CNTU_Address);
 		return current_CNTU.writePreviousCNTUAddress(-1);
 	}
@@ -202,20 +218,21 @@ long cntu_Table::findCNTU(const char * name, long * root_Pointer, long * au_List
 	}
 
 	cntu current_CNTU;
-	
-	char current_Name[CHANNEL_NAME_LENGTH];
-	
+    stdString current_Name;
 	while(true)
-	{	
+	{
 		current_CNTU.attach(f, current_CNTU_Address);
 
-		if(current_CNTU.readName(current_Name) == false) return -1;
-		if(strcmp(current_Name, name) == 0)
+		if(current_CNTU.readName(&current_Name) == false)
+        {
+            return -1;
+        }
+		if(strcmp(current_Name.c_str(), name) == 0)
 		{
 			
 			if(root_Pointer != 0) *root_Pointer = current_CNTU.getAddress() + CNTU_ROOT_OFFSET;
 			if(au_List_Pointer != 0) *au_List_Pointer = current_CNTU.getAddress() + CNTU_AU_LIST_OFFSET;
-			return current_CNTU.getAddress();
+            return current_CNTU.getAddress();
 		}
 		if(current_CNTU.readNextCNTUAddress(&current_CNTU_Address) == false) return -1;
 		if(current_CNTU_Address < 0) return -1;		

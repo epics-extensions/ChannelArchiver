@@ -1,6 +1,7 @@
 #ifndef _CHANNEL_NAME_ITERATOR_H_
 #define _CHANNEL_NAME_ITERATOR_H_
 
+#include <stdString.h>
 #include "cntu_table.h"
 #include "cntu_address_iterator.h"
 
@@ -14,20 +15,22 @@ public:
 	channel_Name_Iterator(const cntu_Table * t);
 	
 	/**
-	*	@param result is the pointer to a memory block of the EXACTLY "CHANNEL_NAME_LENGTH" bytes!
+	*	@param result is a pointer to an object which attributes are
+    *   set according to the values from the index file
 	*	Note: The memory handling is user's problem.
 	*	@return false, if there are no channel names, or errors occured; true otherwise
 	*/
-	bool getFirst(char * result);
+	bool getFirst(stdString * result);
 
 	/**
 	*	getFirst() must be called before
 	*	@see getFirst()
-	*	@param result is the pointer to a memory block of the EXACTLY "CHANNEL_NAME_LENGTH" bytes!
+	*	@param result is a pointer to an object which attributes are
+    *   set according to the values from the index file
 	*	Note: The memory handling is user's problem.
 	*	@return false, if there are no more channel names, or errors occured; true otherwise
 	*/
-	bool getNext(char * result);
+	bool getNext(stdString * result);
 private:
 	FILE * f;
 	cntu_Address_Iterator cai;

@@ -26,6 +26,23 @@ interval::interval(long start_Sec, long start_Nsec, long end_Sec, long end_Nsec)
 	end.nsec = end_Nsec;
 }
 
+void interval::print(FILE * text_File) const
+{
+#ifdef _MSC_VER
+	{
+		fprintf(text_File, "[%-2d.%-2d , %-2d.%-2d]", start.secPastEpoch, start.nsec, end.secPastEpoch, end.nsec);
+	}
+#else
+	{
+		stdString start_Str, end_Str;
+        initEpicsTimeHelper();
+        epicsTime2string(start, start_Str);
+        epicsTime2string(end, end_Str);
+		fprintf(text_File, "[%s , %s]", start_Str.c_str(), end_Str.c_str());
+	}
+#endif
+}
+
 bool interval::isIntervalOver(const interval& other) const
 {
 	//special treatment for 0 end time values

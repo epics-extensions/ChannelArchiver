@@ -38,7 +38,7 @@ public:
 	*	@see attach()	
 	*	@return False if errors occured, or attach() was not called before; true otherwise
 	*/
-	bool writeNullTreeInterval() const;	//writes the NULL_INTERVAL defined in constants.h
+	bool writeNullTreeInterval() const;	//writes the NULL_INTERVAL defined in rtree_constants.h
 	bool writeTreeInterval(interval & value) const;	
 	bool writeChildIndex(long value) const;
 	bool writeLatestLeafIndex(long value) const;

@@ -113,19 +113,19 @@ int run()
 	archiver_Index new_Index; 
 	new_Index.create("new_index.dat", 3, 1007);
 	channel_Name_Iterator * ci = my_Index.getChannelNameIterator();
-	char channel_Name[CHANNEL_NAME_LENGTH];
-	if(ci->getFirst(channel_Name) == false) delete ci;
-	
-	//add units from one index to another (change m of the tree :-)	
-	do
-	{	
-		new_Index.setGlobalPriority(2);
-		new_Index.addDataFromAnotherIndex(channel_Name, my_Index);
-		new_Index.dump("new_tree.txt", "w");
-	}
-	while(ci->getNext(channel_Name));
-	delete ci;	
-
+    if(ci != 0)
+    {
+        stdString channel_Name;
+        bool result = ci->getFirst(&channel_Name);
+        while(result)
+        {
+            new_Index.setGlobalPriority(2);
+            new_Index.addDataFromAnotherIndex(channel_Name.c_str(), my_Index);
+            new_Index.dump("new_tree.txt", "w");
+            result = ci->getNext(&channel_Name);
+        }
+        delete ci;
+    }
 
 	//add two aus that have the same start time and end time as two other leaves
 	au = archiver_Unit(key_Object("10.dat", 8), interval(16, 5, 21, 0), 1);
@@ -136,8 +136,9 @@ int run()
 	my_Index.addAU("James_Bond", au);
 	my_Index.dump("tree.txt", "a");
 
-	//add enough AUs so that the tree is moved 
-	for (int i=0; i< 32;i++)
+	//add enough AUs so that the tree is moved
+    int i=0;
+	for (i=0; i< 32;i++)
 	{
 		//offset 0..9 is used above
 		au = archiver_Unit(key_Object("10.dat", i+10), interval(12 + i, 0, 14 + i, 0), 0);
@@ -183,27 +184,66 @@ int run()
 	new_Index.close();
 	
 
-	/*my_Index.create("names_test.dat");
+    //2 AUs per channel
+    char channel[100];
+    my_Index.create("names_test.dat");
 	FILE * names = fopen("names.txt", "r");
+    if(names == 0)
+    {
+        printf("names.txt not in this directory\n");
+        return 0;
+    }
 	while(!feof(names))
 	{
-		fscanf(names, "%s", channel_Name);
-		for (int i=0; i< 1200;i++)
+		fscanf(names, "%s", channel);
+		for (int i=0; i< 2;i++)
 		{
 			au = archiver_Unit(key_Object("10.dat", i), interval(12 + i, 0, 14 + i, 0), 0);
-			my_Index.addAU(channel_Name, au);
-			printf("%d\n", i);
+			my_Index.addAU(channel, au);
 		}
-	my_Index.dump("big_tree.txt", "a");
 	}
 	fclose(names);
 
 	FILE * names_File = fopen("names2.txt", "w+");
 	my_Index.dumpNames(names_File);
-	my_Index.dump("all_channels.txt", "w+");
 	fclose(names_File);
-	*/
+    my_Index.close();
+	////////////////////////////////
+	//	The stuff for the documentation
+	////////////////////////////////
 
+    ko.setPath("file path");
+	my_Index.open("index1.dat", false);
+    for(i = 1; i < 7; i++)
+    {
+        au = archiver_Unit(key_Object("file path A", i), interval(2 * i, 0,  2*i +2, 0), 0);
+        if(!my_Index.addAU("channelX", au)) return 0;
+    }
+    my_Index.createDotFile("channelX", "index1_dot.txt");    
+	my_Index.close();
+
+	my_Index.open("index2.dat", false);
+    for(i = 1; i < 7; i++)
+    {
+        au = archiver_Unit(key_Object("file path B", i), interval(3 * i, 0,  3 * i +3, 0), 0);
+        if(!my_Index.addAU("channelX", au)) return 0;
+    }
+    au = archiver_Unit(key_Object("file path B", 7), interval(2, 0, 20, 0), 0);
+    if(!my_Index.addAU("channelX", au)) return 0;
+    my_Index.createDotFile("channelX", "index2_dot.txt");
+    aup_Iterator * ai = my_Index.getAUPIterator("channelX");
+   
+    if(ai != 0)
+    {
+        long au_Address;
+        bool result = ai->getFirstAUAddress(interval(COMPLETE_TIME_RANGE), &au_Address);
+        while(result && (au_Address > 0) && my_Index.readAU(au_Address, &au))
+        {
+            printf("%s @ %ld\n", au.getKey().getPath(), au.getKey().getOffset());
+            result = ai->getNextAUAddress(&au_Address);
+        }
+    }
+	my_Index.close();
 	return 0;
 }
 

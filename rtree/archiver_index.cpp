@@ -1,4 +1,5 @@
 #include "archiver_index.h"
+#include <Filename.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,9 +21,17 @@ bool archiver_Index::open(const char * file_Path, bool read_Only)
     else f = fopen(file_Path, "r+b");
 	if(f==0) 
 	{
-		printf("Could not open the file %s\n", file_Path);
-		return false;
+        if(read_Only)
+        {
+            printf("Could not open the file %s\n", file_Path);
+      		return false;
+        }
+        else return create(file_Path);
 	}
+    //create() does it, too
+    full_Path = stdString(file_Path);
+    Filename::getDirname(full_Path, dir);
+    Filename::getBasename(full_Path, file_Name);
 	if(fa.attach(f, HEADER_SIZE) == false)	return false;
 	//check if the file is an index file
 	char buffer[MAGIC_ID_SIZE + 1];
@@ -80,7 +89,7 @@ bool archiver_Index::create(const char * file_Path, short m, short hash_Table_Si
 		return false;
 	}
 	if(file_Path == 0) return false;
-	read_Only = false;
+    read_Only = false;
 	this->m = m;
 	t.setSize(hash_Table_Size);
 
@@ -90,6 +99,9 @@ bool archiver_Index::create(const char * file_Path, short m, short hash_Table_Si
 		printf("Couldn't create the file %s\n", file_Path);
 		return false;
 	}
+    full_Path = stdString(file_Path);
+    Filename::getDirname(full_Path, dir);
+    Filename::getBasename(full_Path, file_Name);
 
 	if(fa.attach(f, HEADER_SIZE) == false) return false;	
 	
@@ -134,6 +146,7 @@ bool archiver_Index::close()
 	r.detach();
 	t.detach();
 	global_Priority = -1;
+    dir = 0;
 	return true;
 }
 
@@ -182,6 +195,15 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 			delete ai;
 			return false;
 		}
+        stdString path_Str = stdString(au.getKey().getPath());
+        if(!Filename::containsPath(path_Str))
+        {
+            //append the directory path of the original index
+            stdString full_Path_Str;
+            Filename::build(other.getDirectory(), path_Str, full_Path_Str);
+            key_Object ko = key_Object(full_Path_Str.c_str(), au.getKey().getOffset());
+            au.setKey(ko);
+        }
 		if(other.getGlobalPriority() > -1)	au.setPriority(other.getGlobalPriority());
 		//we know its unique
 		if(addAU(channel_Name, au) == false) 
@@ -212,7 +234,8 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 	l.init(au_List_Pointer);
 	long au_Address;
 	bool result = l.addAU(&au, &au_Address);
-	if(au_Address > 0)
+    //what if we want to update
+    if(au_Address > 0)
 	{	
 		if(	r.getRootPointer() != root_Pointer &&
 		r.attach(&fa, root_Pointer) == false) return false;
@@ -365,6 +388,12 @@ aup_Iterator * archiver_Index::getAUPIterator(const char * channel_Name)
 	return new aup_Iterator(&r);
 }
 
+bool archiver_Index::readAU(long au_Address, archiver_Unit * result)
+{
+    result->attach(f, au_Address);
+    return result->readAU();
+}
+
 key_AU_Iterator * archiver_Index::getKeyAUIterator(const char * channel_Name)
 {
 	if(isInstanceValid() == false) return 0;
@@ -438,37 +467,32 @@ void archiver_Index::createDotFile(const char * channel_Name, const char * file_
 void archiver_Index::dumpNames(FILE * text_File)
 {
 	if(text_File == 0) return;
-	struct bin_Tree_Item
+	class bin_Tree_Item
 	{
-		char name[CHANNEL_NAME_LENGTH];
+    public:
+		stdString name;
 		bin_Tree_Item * left;	//<
 		bin_Tree_Item * right;  //>=
 	};
 
 	channel_Name_Iterator cni = channel_Name_Iterator(&t);
-	struct bin_Tree_Item * bti = (bin_Tree_Item *) malloc(sizeof(bin_Tree_Item));
-	if(cni.getFirst(bti->name) == false) return;
-	if(strcmp(bti->name, "no more channels") == 0) 
+	bin_Tree_Item * bti_Root = new bin_Tree_Item();
+	if(cni.getFirst(&(bti_Root->name)) == false)
 	{
-		free (bti);
+		delete bti_Root;
 		return;
 	}
-	bti->left = 0;
-	bti->right = 0;
+	bti_Root->left = 0;
+	bti_Root->right = 0;
 	
-	struct bin_Tree_Item ** root = &bti;	//root is the pointer to the root node
-	struct bin_Tree_Item * current_Node;
-	do
+	bin_Tree_Item ** root = &bti_Root;	//root is the pointer to the root node
+	bin_Tree_Item * current_Node;
+    do
 	{
-		struct bin_Tree_Item * bti = (bin_Tree_Item *) malloc(sizeof(bin_Tree_Item));
-		if(cni.getNext(bti->name) == false)
+		bin_Tree_Item * bti = new bin_Tree_Item();
+		if(cni.getNext(&bti->name) == false)
             {
-                free (bti);
-                break;
-            }
-		if(strcmp(bti->name, "no more channels") == 0)
-            {
-                free (bti);
+                delete bti;
                 break;
             }
 		bti->left = 0;
@@ -476,7 +500,7 @@ void archiver_Index::dumpNames(FILE * text_File)
 		current_Node = *root;
 		do
 		{
-			if(strcmp(bti->name, current_Node->name) >= 0)
+			if(bti->name >= current_Node->name)
 			{
 				if(current_Node->right == 0)	
 				{
@@ -516,7 +540,7 @@ void archiver_Index::dumpNames(FILE * text_File)
 	//	set its parent's left pointer to the right child
 
 	//in any way the node is FREED (-> no memory leaks)
-	struct bin_Tree_Item * parent_Node;
+    bin_Tree_Item * parent_Node;
 	while(true)
 	{
 		parent_Node	= 0;
@@ -535,14 +559,14 @@ void archiver_Index::dumpNames(FILE * text_File)
 				}
 				if(text_File == 0) 
 				{
-					printf("%s\n", current_Node->name);
+					printf("%s\n", current_Node->name.c_str());
 				}
 				else 
 				{
-					fprintf(text_File, "%s\n", current_Node->name);
+					fprintf(text_File, "%s\n", current_Node->name.c_str());
 				}
 
-				free (current_Node);
+				delete current_Node;
 				break;
 			}
 			parent_Node = current_Node;

@@ -1,7 +1,8 @@
 #include "cntu.h"
 #include "bin_io.h"
 #include <stdio.h>
-
+#include <stdlib.h>
+#include <stdString.h>
 
 cntu::cntu()
 :	f(0), cntu_Address(-1) {}
@@ -13,11 +14,11 @@ long cntu::getAddress() const
 
 void cntu::print(FILE * text_File)
 {
-	char buffer[CHANNEL_NAME_LENGTH];
-	if(readName(buffer) == false) return;
+	stdString buffer;
+	if(readName(&buffer) == false) return;
 	long value;
 	if(readRootPointer(&value) == false) return;
-	fprintf(text_File, "The tree for channel %s is @ the address %ld ", buffer, value);
+	fprintf(text_File, "The tree for channel %s is @ the address %ld ", buffer.c_str(), value);
 	return;
 }
 
@@ -28,20 +29,22 @@ void cntu::attach(FILE * f, long cntu_Address)
 }
 
 
-bool cntu::readName(char * name) const
+bool cntu::readName(stdString * name) const
 {
 	const long ADDRESS = cntu_Address + CNTU_NAME_OFFSET;
 	fseek(f, ADDRESS, SEEK_SET);
-	if(fread(name, CHANNEL_NAME_LENGTH, 1, f)!=1)
+    char temp[CHANNEL_NAME_LENGTH];
+	if(fread(temp, CHANNEL_NAME_LENGTH, 1, f)!=1)
 	{
 		printf("Couldn't read the channel name from the address %ld\n", ADDRESS);
 		return false;
 	}
+    *name = stdString(temp);
 	return true;
 }
 
 bool cntu::readRootPointer(long * value) const
-{
+{    
 	const long ADDRESS = cntu_Address + CNTU_ROOT_OFFSET;
 	fseek(f, ADDRESS, SEEK_SET);
 	if(readLong(f, value) == false)

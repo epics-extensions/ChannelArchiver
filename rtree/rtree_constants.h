@@ -2,8 +2,8 @@
  *	This file contains all the parameters that are used by individual index classes
 */
 
-#ifndef _CONSTANTS_H_
-#define _CONSTANTS_H_
+#ifndef _R_TREE_CONSTANTS_H_
+#define _R_TREE_CONSTANTS_H_
 
 //general
 #define MAX_RAM					100000	//RAM memory in bytes that can be allocated	
@@ -91,5 +91,5 @@
 
 inline long twoToThePowerOf(int i)	{return (1 << i);	}
 
-#endif //constants.h
+#endif //rtree_constants.h
 

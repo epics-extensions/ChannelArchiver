@@ -12,8 +12,8 @@
 
 	#else 
 
-		#include <epicsTime.h>
-
+		#include <epicsTimeHelper.h>
+	
 	#endif // _MSC_VER
 
 

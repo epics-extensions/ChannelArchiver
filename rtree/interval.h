@@ -7,7 +7,7 @@
 #include "rtree_constants.h"
 #include "my_epics_time.h"
 
-/*
+/**
 *	Start time {0, 0} means NULL
 *	End time {0, 0} means INFINITY
 */
@@ -23,14 +23,14 @@ public:
 	void setStart(const epicsTimeStamp & s)		{start = s;	}
 	void setEnd(const epicsTimeStamp & e)		{end = e;	}
 
-	/*
+	/**
 	*	If the validity of the intervals is not certain, the user should call isIntervalValid() first
 	*	@see isIntervalValid()
 	*	@return True, if <i>this</i> interval intersects the "other"; false, otherwise
 	*/
 	bool isIntervalOver(const interval & other) const;
 
-	/*
+	/**
 	*	If the validity of the intervals is not certain, the user should call isIntervalValid() first
 	*	@return 
 	*		 0, if intervals are identical
@@ -41,36 +41,40 @@ public:
 	*/
 	long compareIntervals(const interval & othert) const;  // <0 ~ <, ==0 ~ ==, > 0 ~ >
 	
-	/*
+	/**
 	*	@return True if end time and start time are valid, and if end time is "later" than start time;
 	*	false otherwise
 	*/
 	bool isIntervalValid() const;
 
-	/*
+	/**
 	*	@return True, if all attributes are 0; false otherwise
 	*/
 	bool isNull() const;
 
 	void operator=(const interval & other);
 
-	void print(FILE * text_File) const	{fprintf(text_File, "[%-2d.%-2d,%-2d.%-2d]", start.secPastEpoch, start.nsec, end.secPastEpoch, end.nsec);}
+	/**
+	*	When used in Visual Studio, prints only the long values; otherwise converts 
+	*	epicsTimeStamp to a string
+	*/
+	void print(FILE * text_File) const;	
 	
-	/*
+	/**
 	*	Only the file pointer is copied into the object; NO memcpy or similar
 	*	MUST be called before invoking any i/o methods
 	*	Does not check if the file pointer is valid (see archiver_Index::open())	
 	*/
 	void attach(FILE * f, long interval_Address);
 	
-	/*
+	/**
 	*	Set the object attributes according to the values from the file this object was attached to
 	*	@see attach()	
 	*	@return False if errors occured, or attach() was not called before; true otherwise
 	*/
 	bool readInterval();	
 
-	/*
+	/**
 	*	Write the object attributes to the file this object was attached to
 	*	@see attach()	
 	*	@return False if errors occured, or attach() was not called before; true otherise

@@ -8,7 +8,7 @@ channel_Name_Iterator::channel_Name_Iterator(const cntu_Table * t)
 	f = t->getFile();
 }
 
-bool channel_Name_Iterator::getFirst(char * result)
+bool channel_Name_Iterator::getFirst(stdString * result)
 {
 	long cntu_Address;
 	if(cai.getFirst(&cntu_Address) == false) return false;
@@ -17,7 +17,7 @@ bool channel_Name_Iterator::getFirst(char * result)
 	return current_CNTU.readName(result);
 }
 
-bool channel_Name_Iterator::getNext(char * result)
+bool channel_Name_Iterator::getNext(stdString * result)
 {
 	long cntu_Address;
 	if(cai.getNext(&cntu_Address) == false) return false;

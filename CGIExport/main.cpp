@@ -140,10 +140,10 @@ static bool operator < (const class Info &a, const class Info &b)
 // Visitor routine for BinaryTree<Info>
 static void cmdInfoTraverser(const Info &info, void *arg)
 {
-	std::cout << "<TR><TD>" << info.channel
-		<< "</TD><TD>" << info.first
-		<< "</TD><TD>" << info.last
-		<< "</TD></TR>\n";
+   std::cout << "<TR><TD>" << info.channel
+	     << "</TD><TD>" << info.first
+	     << "</TD><TD>" << info.last
+	     << "</TD></TR>\n";
 }
 
 // COMMAND==INFO
@@ -460,7 +460,9 @@ static void getFilenames(stdString &data,
 static bool cmdPlot(HTMLPage &page)
 {
     stdString data, dataURL, imageURL;
+
     getFilenames(data, dataURL, imageURL);
+
     
     page.start();
     page.header("Channel Plot", 2);

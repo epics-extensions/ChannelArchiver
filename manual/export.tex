@@ -1,5 +1,4 @@
 \chapter{ArchiveExport}
-
 ArchiveExport is a command-line tool for local tests, i.e. it does
 \emph{not} connect to the archive data server but requires that
 yuo have direct read access to the index and data files.
@@ -10,19 +9,31 @@ description similar to this:
 
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
 USAGE: ArchiveExport [Options] <index file> {channel}
-
+ 
 Options:
-  -verbose           Verbose mode
-  -list              List all channels
-  -info              Time-range info on channels
-  -start <time>      Format:
-                     "mm/dd/yyyy[ hh:mm:ss[.nano-secs]]"
-  -end <time>        (exclusive)
-  -text              Include text column for status/severity
-  -match <reg. exp.> Channel name pattern   
+  -verbose                Verbose mode
+  -list                   List all channels
+  -info                   Time-range info on channels
+  -start <time>           Format:
+                          "mm/dd/yyyy[ hh:mm:ss[.nano-secs]]"
+  -end <time>             (exclusive)
+  -text                   Include text column for status/severity
+  -match <reg. exp.>      Channel name pattern
+  -interpolate <seconds>  interpolate values
+  -output <file>          output to file
+  -gnuplot                generate GNUPlot command file
+  -Gnuplot                generate GNUPlot output for Image
 \end{lstlisting}
 
-\noindent Assuming that your current working directory contains an
+\noindent ArchiveExport produces spreadsheet-type output in
+TAB-separated ASCII text, suitable for import into most spreadsheet
+programs for further analysis. Per default, ArchiveExport uses
+Staircase Interpolation to map the data for the requested channels
+onto matching time stamps, but one can select Linear Interpolation via
+the ``-interpolate'' option. See section \ref{sec:timestampcorr} on
+page~\pageref{sec:timestampcorr} for details.
+
+Assuming that your current working directory contains an
 archive index file that is aptly named ``index'', the following
 invocation will generate a spreadsheet file ``data.txt'' with the data
 of all channels that match the pattern ``IOC'' for the date of January

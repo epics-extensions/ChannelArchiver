@@ -6,9 +6,9 @@ use Frontier::Client;
 
 # Setup URL
 #$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
-$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
 $server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
 $server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveServer0.cgi';
+$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
 
 if ($#ARGV == 0)
 {
@@ -18,7 +18,6 @@ if ($#ARGV == 0)
 print("==================================================================\n");
 print("Connecting to Archive Data Server URL '$server_url'\n");
 print("==================================================================\n");
-
 $server = Frontier::Client->new(url => $server_url);
 
 print("==================================================================\n");
@@ -26,25 +25,28 @@ print("Info:\n");
 print("==================================================================\n");
 # { int32 ver, string desc } = archdat.info()
 $result = $server->call('archiver.info');
-printf("Archive Data Server V %d,\nDescription '%s'\n",
+printf("Archive Data Server V %d\nDescription:\n%s\n",
        $result->{'ver'},
        $result->{'desc'});
 
 # string name[] = archdat.get_names(string pattern)
-#print("==================================================================\n");
-#print("Request without pattern:\n");
-#print("==================================================================\n");
-#$results = $server->call('archiver.get_names', "");
-#$count = 0;
-#foreach $result ( @{$results} )
-#{
-#	$name = $result->{name};
-#	$start = time2string($result->{start_sec}, $result->{start_nano});
-#	$end   = time2string($result->{end_sec},   $result->{end_nano});
-#	print("Channel $name, $start - $end\n");
-#	++$count;
-#}
-#print("Altogether $count names\n");
+if (0)
+{
+	print("==================================================================\n");
+	print("Request without pattern:\n");
+	print("==================================================================\n");
+	$results = $server->call('archiver.get_names', "");
+	$count = 0;
+	foreach $result ( @{$results} )
+	{
+		$name = $result->{name};
+		$start = time2string($result->{start_sec}, $result->{start_nano});
+		$end   = time2string($result->{end_sec},   $result->{end_nano});
+		print("Channel $name, $start - $end\n");
+		++$count;
+	}
+	print("Altogether $count names\n");
+}
 
 print("==================================================================\n");
 print("Request with pattern:\n");
@@ -71,19 +73,15 @@ print("==================================================================\n");
 #@names = ( "fred" );
 @names = ( "Test_HPRF:IOC1:Load", "Test_HPRF:IOC1:FDAv" );
 
-$end = time();
-$start = $end - $count;
+($start, $startnano) = string2time("01/31/2003 02:05:00.000000000");
+($end, $endnano)   = string2time("01/31/2003 02:15:00.000000000");
 
-$start = string2time("01/01/2003 02:04:45.579346999");
-$start = string2time("01/31/2003 02:04:45.579346999");
-$end = string2time("01/31/2003 22:58:05.579346999");
-
-$count = 5;
-$how = 0;
+$count = 10;
+$how = 1;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:
 $results = $server->call('archiver.get_values', \@names,
-			 $start, 579346999, $end, 0, $count, $how);
+			 $start, $startnano, $end, $endnano, $count, $how);
 show_values($result);
 
 sub time2string($$)
@@ -99,8 +97,10 @@ sub time2string($$)
 sub string2time($)
 {
     my ($text) = @_;
+    my ($secs, $nano);
     ($mon, $mday, $year, $hour, $min, $sec, $nano) = split '[/ :.]', $text;
-    return timelocal($sec, $min, $hour, $mday, $mon-1, $year-1900);
+    $secs=timelocal($sec, $min, $hour, $mday, $mon-1, $year-1900);
+    return ( $secs, $nano );
 }
 
 sub show_values($)

@@ -3,6 +3,9 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
+# Profiling:
+USR_CXXFLAGS += -pg -g
+USR_LDFLAGS  += -pg
 #INC +=
 
 # Contents of library

@@ -1,9 +1,18 @@
+// -*- c++ -*-
 #include "ArchiverConfig.h"
 
 #ifdef CONVERSION_REQUIRED
 #include<osiSock.h>
 #include<db_access.h>
 
+// TODO: remove ntohx/htonx calls!
+// Profiling Engine/bench.cpp showed that
+// the conversion calls consume quite some time.
+// Changing USHORTToDisk from htons to a custom
+// implementation improved it:
+// In a test run writing 1200000 values,
+// the htons version took 0.15 seconds,
+// the custom code only   0.04 seconds!
 inline void ULONGFromDisk(unsigned long &item)
 {	item = ntohl (item);	}
 
@@ -14,7 +23,13 @@ inline void USHORTFromDisk(unsigned short &item)
 {	item = ntohs (item);	}
 
 inline void USHORTToDisk(unsigned short &item)
-{	item = htons (item);	}
+{ //	item = htons(item);
+	unsigned short big_endian;
+	unsigned char *p = (unsigned char *)&big_endian;
+	p[0] = item >> 8;
+	p[1] = item & 0xFF;
+	item = big_endian;
+}
 
 inline void DoubleFromDisk(double &d)
 {

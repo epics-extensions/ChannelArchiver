@@ -4,6 +4,9 @@ include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
 USR_CXXFLAGS += -I ../../rtree
+# Profiling:
+USR_CXXFLAGS += -pg
+USR_LDFLAGS  += -pg
 
 # Includes to be installed
 INC += StorageTypes.h

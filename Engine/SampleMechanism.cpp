@@ -364,6 +364,12 @@ void SampleMechanismMonitoredGet::handleValue(
         LOG_MSG("SampleMechanismMonitoredGet: no pend buffer\n");
         return;
     }
+
+    // TODO:
+    // One of the important features here is that data that is coming from something 
+    // like a BPM being read at 60 Hz and says to archive it at 10 Hz - that all BPMs 
+    // should come from the same time slice. Does this work?
+
     // TODO: Use now or stamp for next_sample_time comparison?
     const epicsTime &trigger = stamp;
     // now: matches what we do in SampleMechanismGet

@@ -61,7 +61,12 @@ sub parse($$)
     my ($group,$fh) = @ARG;
     my ($channel, $period, $options);
     $fh++;
-    open $fh, "$directory/$group" or die "Cannot open $group\n";
+    if (not open $fh, "$group")
+    {
+	open $fh, "$directory/$group"
+	    or die "Cannot open $group nor $directory/$group\n";
+    }
+    $group = basename($group);
     while (<$fh>)
     {
 	chomp;

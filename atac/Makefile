@@ -11,6 +11,8 @@
 # as well as on Linux,
 # but on solaris I wasn't successful so far....
 # -> build standalone TCL shell instead of loadable module
+#
+# $Id$
 
 include ../Make.ver
 
@@ -35,8 +37,8 @@ ifdef LINUX
 #	TCLLIBS+=/usr/local/lib/libtk8.2.so
 
 # PSI configuration:
-	TCLLIBS=/usr/lib/libtcl8.0.so
-	BASE=/work/epics/base
+#	TCLLIBS=/usr/lib/libtcl8.0.so
+#	BASE=/work/epics/base
 endif
 
 # solaris @ LEDA/LANL

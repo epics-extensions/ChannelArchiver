@@ -8,6 +8,8 @@
 // * ??
 //
 // Right now it's more a collection of API tests.
+//
+// $Id$
 
 // Warning: names too long for debug info
 #ifdef WIN32

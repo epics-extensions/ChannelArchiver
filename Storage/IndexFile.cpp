@@ -132,3 +132,42 @@ void IndexFile::showStats(FILE *f)
 {
     names.showStats(f);
 }
+
+bool IndexFile::check(int level)
+{
+    printf("Checking FileAllocator...\n");
+    if (fa.dump(level))
+        printf("FileAllocator OK\n");
+    else
+    {
+        printf("FileAllocator ERROR\n");
+        return false;
+    }
+    NameIterator names;
+    RTree *tree;
+    bool have_name;
+    for (have_name = getFirstChannel(names);
+         have_name;
+         have_name = getNextChannel(names))
+    {
+        tree = getTree(names.getName());
+        if (!tree)
+        {
+            printf("Cannot get tree for channel '%s'\n",
+                   names.getName().c_str());
+            return false;
+        }
+        printf(".");
+        fflush(stdout);
+        if (!tree->selfTest())
+        {
+            printf("RTree for channel '%s' is broken\n",
+                   names.getName().c_str());
+            delete tree;
+            return false;
+        }
+        delete tree;
+    }
+    printf("\nAll RTree self-tests check out fine\n");
+    return true;
+}

@@ -303,6 +303,20 @@ void dot_index(const stdString &index_name, const stdString channel_name,
     index.close();
 }
 
+bool check (const stdString &index_name)
+{
+    IndexFile index;
+    if (!index.open(index_name))
+    {
+        fprintf(stderr, "Cannot open index '%s'\n",
+                index_name.c_str());
+        return false;
+    }
+    bool ok = index.check((verbose?1:0));
+    index.close();
+    return ok;
+}
+
 int main(int argc, const char *argv[])
 {
     initEpicsTimeHelper();
@@ -325,6 +339,7 @@ int main(int argc, const char *argv[])
                           "Dump contents of RTree index into dot file");
     CmdArgString channel_name (parser, "channel", "<name>", "Channel name");
     CmdArgFlag hashinfo(parser, "hashinfo", "Show Hash table info");
+    CmdArgFlag test(parser, "test", "Perform some consitency tests");
     if (! parser.parse())
         return -1;
     if (help   ||   parser.getArguments().size() != 1)
@@ -365,6 +380,10 @@ int main(int argc, const char *argv[])
     {
         dot_index(index_name, channel_name, dotindex);
         return 0;
+    }
+    else if (test)
+    {
+        return check(index_name) ? 0 : -1;
     }
     else
     {

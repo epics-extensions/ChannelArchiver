@@ -10,7 +10,7 @@ USR_CXXFLAGS += -I/usr/local/include
 
 DummyServer_SRCS += DummyServer.cpp
 ArchiveServer_SRCS += main.cpp
-TESTPROD_HOST := DummyServer ArchiveServer bench
+TESTPROD_HOST := DummyServer ArchiveServer bench xmltest
 
 PROD_LIBS_DEFAULT := rtree Storage Tools ca Com
 PROD_LIBS_WIN32 := rtreeObj StorageObj ToolsObj ca Com

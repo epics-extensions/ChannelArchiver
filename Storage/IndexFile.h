@@ -79,6 +79,8 @@ public:
 
     void showStats(FILE *f);   
 
+    bool check(int level);
+    
 private:
     FILE *f;
     FileAllocator fa;

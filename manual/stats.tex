@@ -1,35 +1,35 @@
 \section{Statistics}
 It is impossible to provide universal performance numbers for the
 components of the ChannelArchiver toolset. Tests of a realistic setup
-(IOCs communicate with ArchiveEngines, data client tools query data
-from the network data server) are always influenced by network delays.
-The CPU seems a little less important, but hard disk performance is:
-Access to data that is on NFS-mounted disks is by orders of magnitude
+are always influenced by network delays: IOCs communicate with ArchiveEngines,
+data client tools query data from the network data server.
+The CPU speed is less important than hard disk performance:
+Access to data on NFS-mounted disks is by orders of magnitude
 slower than access to data on local disks.
 
 The following are some arbitrary performance values obtained on a computer
-with an 800MHz AMD Athlon CPU and a Mylex DAC960PTL1 PCI RAID Controller,
-Atlas 10K discs.
-% That's bogart.ta53.lanl.gov
+with an 1~GHz CPU and ordinary IDE disk.
+% That's blitz.ta53.lanl.gov
 \subsection{Write Speed}
 As a baseline for raw data writing speed, the 'bench' program that can
 be found in the ChannelArchiver/Engine directory consistently writes
-around 100000 values per second on that computer.
+at least 80000 values per second on that computer.
 
 \subsection{Index}
 % LANL Xmtr Data 2002:
 Converting old directory files into index files,
-1.2MB dir files into 12MB index files: 2 minutes.
+1.2~MB dir files into 12~MB index files: Just under 2 minutes.
 
 Creating a master index for 12 sub-archives,
-about 1.4GB of data files: 1min, 40 sec.
+about 1.4GB of data files: 32~seconds.
 Re-run of the ArchiveMegaindex tool where there was
-little to do because the sub-archives didn't overlap: 8 secs.
+little to do because the sub-archives didn't overlap: 3 secs.
 
 % LANL Xmtr Data 2003:
 Same tests for a bigger collection of 92 sub-archives,
-converting 12MB dir files into 60MB index files: 5 min, 20 sec.
+converting 12MB dir files into 60MB index files: About 10 minutes.
 
 Creating a master index for the 92 sub-archives,
-about 2.3GB of data files: about 40min.
+about 2.3GB of data files: about 30~minutes, the resulting
+index uses about 1.1~GB.
 Re-run (nothing to do): ? secs.

@@ -3,7 +3,7 @@
 include Make.ver
 
 all:
-	$(MAKE) -C ../Tools
+	$(MAKE) -C Tools
 	$(MAKE) -C LibIO
 	$(MAKE) -C Manager
 	$(MAKE) -C Export
@@ -11,7 +11,7 @@ all:
 	$(MAKE) -C Engine
 
 clean:
-	@$(MAKE) -C ../Tools clean
+	@$(MAKE) -C Tools clean
 	@$(MAKE) -C LibIO clean
 	@$(MAKE) -C Manager clean
 	@$(MAKE) -C Export clean
@@ -24,18 +24,14 @@ cleanCGITest:
 
 SRCZIP=channelarchiver-$(VERSION).$(RELEASE).$(PATCH).src.zip
 
-zip:	cleanCGITest
+brokenzip:	cleanCGITest
 	(cd /tmp; \
-	 rm -rf /tmp/Tools;\
 	 rm -rf /tmp/ChannelArchiver;\
-         cvs -d :ext:kasemir@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot\
-	    export -r Tools-$(VERSION)-$(RELEASE)-$(PATCH) \
-	    -d Tools epics/supTop/extensions/1.1/src/Tools;\
          cvs -d :ext:kasemir@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot\
 	    export -r ChannelArchiver-$(VERSION)-$(RELEASE)-$(PATCH) \
 	    -d ChannelArchiver epics/supTop/extensions/1.1/src/ChannelArchiver;\
 	 rm $(SRCZIP);\
-	 zip -r $(SRCZIP) Tools ChannelArchiver\
+	 zip -r $(SRCZIP) ChannelArchiver\
 	)  
 
 

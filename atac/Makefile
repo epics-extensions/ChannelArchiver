@@ -1,3 +1,5 @@
+# $Id$
+#
 # Problems:
 #
 # Building a shared library
@@ -11,8 +13,6 @@
 # as well as on Linux,
 # but on solaris I wasn't successful so far....
 # -> build standalone TCL shell instead of loadable module
-#
-# $Id$
 
 include ../Make.ver
 
@@ -22,6 +22,9 @@ CFLAGS+=-DATAC_VERSION_STRING=\"$(VERSION).$(RELEASE)\"
 
 LINUX=1
 # SOLARIS=1
+
+# PSI configuration for Linux
+#PSI=1
 
 BASE=../../../../base
 EXTENSIONS=../../..
@@ -33,12 +36,9 @@ ifdef LINUX
 	LD=g++ -shared
 	TARGET=module
 	TCLLIBS=/usr/local/lib/libtcl8.2.so
+	TCLLIBS=/usr/lib/libtcl8.0.so
 # Only needed for TARGET==shell:
 #	TCLLIBS+=/usr/local/lib/libtk8.2.so
-
-# PSI configuration:
-#	TCLLIBS=/usr/lib/libtcl8.0.so
-#	BASE=/work/epics/base
 endif
 
 # solaris @ LEDA/LANL
@@ -49,6 +49,11 @@ ifdef SOLARIS
 	TARGET=shell
 	TCLLIBS=/usr/local/lib/libtcl8.1.so /usr/local/lib/libtk8.1.so
 	LIBS = -ldl  -lsocket -lnsl -lm
+endif
+
+ifdef PSI
+     TCLLIBS=/usr/lib/libtcl8.0.so
+     BASE=/work/epics/base  
 endif
 
 CFLAGS+=-I $(EXTENSIONS)/include -I $(BASE)/include

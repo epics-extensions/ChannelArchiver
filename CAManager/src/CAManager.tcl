@@ -38,12 +38,10 @@ proc init {} {
   lappend ::auto_path [file dirname [info nameofexecutable]]
   namespace inscope :: package require Tclx
 
-  foreach dir {{} /GUI /Misc /Comm} {
-    set script $INCDIR$dir/_init.tcl
-    cd [file dirname $script]
+  foreach dir {util gui misc comm} {
+    set script $INCDIR/$dir.tcl
     namespace inscope :: source $script
   }
-  cd $pwd
 }
 
 ::init
@@ -54,5 +52,5 @@ wm title . "Channel Archive Manager"
 wm geom . [wm geom .]
 set ::status "Channel Archive Manager - $CVS(Version) - $CVS(Date)"
 after 1 checkForBgManager
-after 10000 checkJob
+after 10000 camGUI::checkJob
 after 3000 {set ::status ""}

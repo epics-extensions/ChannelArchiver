@@ -50,9 +50,8 @@ bind .go <Key-Return> {.go invoke}
 set srcfiles [glob -nocomplain src/*.tcl]
 incr ::prog [llength $srcfiles]
 set libfiles {}
-foreach dir [concat libsrc [glob -nocomplain -types d libsrc/*]] {
-  set lib [glob -nocomplain $dir/*.tcl]
-  set libfiles [concat $libfiles $lib]
+foreach file [glob -nocomplain libsrc/*.tcl] {
+  lappend libfiles $file
 }
 incr ::prog [llength $libfiles]
 
@@ -73,7 +72,7 @@ Puts "Installing CAManager Version 1.0\n\n" error
 Puts "Searching Tcl/TK interpreters:\n" action
 set wish [info nameofexecutable]
 foreach pat "tcl$ext tclsh$ext tcl\[0-9\\.\]+$ext tclsh\[0-9\\.\]+$ext" {
-  set l [lmatch -regexp [glob -nocomplain [file dirname $wish]/*] [file dirname $wish]/$pat\$]
+  set l [lmatch -regexp [glob -nocomplain "[file dirname $wish]/*"] "[file dirname $wish]/$pat\$"]
   if {[llength $l] > 0} {
     set dt 0
     foreach f $l {
@@ -91,11 +90,11 @@ Puts "\n"
 
 Puts "Searching for proper installation-root:\n" action
 foreach p $path {
-  if [file exists [file join $p ArchiveEngine$ext]] {
+  if {[file exists [file join $p ArchiveEngine$ext]]} {
     Puts "Found \"ArchiveEngine$ext\" in [file join $p]\n"
     # try to guess a proper installation-root
     set instdir [file dirname $p]
-    if [regexp "bin$" $instdir] {
+    if {[regexp "bin$" $instdir]} {
       set instdir [file dirname $instdir]
     }
     regsub $instdir/ [file join $p] "" bininfix 
@@ -123,7 +122,7 @@ array set required {
 
 set terminate 0
 foreach package [array names required] {
-  if [catch {package require $package} result] {
+  if {[catch {package require $package} result]} {
     Puts "ERROR: " error
     Puts "Package \"$package\" is not installed!\n"
     set terminate 1
@@ -222,8 +221,8 @@ if {!$terminate} {
     foreach d {"All Users" $tcl_platform(user)} {
       if {![file isdirectory "C:/Documents and Settings/$d/Start Menu/Programs"]} continue
       if {[catch {file mkdir "C:/Documents and Settings/$d/Start Menu/Programs/Channel Archive Manager"}]} continue
-      if [catch {exec ln -sf "$instdir/$bininfix/CAManager$tclext" "C:/Documents and Settings/$d/Start Menu/Programs/Channel Archive Manager/Channel Archive Manager"}] continue
-      if [catch {exec ln -sf "$instdir/$bininfix/CAbgManager$tclext" "C:/Documents and Settings/$d/Start Menu/Programs/Channel Archive Manager/Channel Archive Background Manager"}] continue
+      if {[catch {exec ln -sf "$instdir/$bininfix/CAManager$tclext" "C:/Documents and Settings/$d/Start Menu/Programs/Channel Archive Manager/Channel Archive Manager"}]} continue
+      if {[catch {exec ln -sf "$instdir/$bininfix/CAbgManager$tclext" "C:/Documents and Settings/$d/Start Menu/Programs/Channel Archive Manager/Channel Archive Background Manager"}]} continue
       Puts "Menu entries added to Startmenu.\n"
       Puts "\n"
     }

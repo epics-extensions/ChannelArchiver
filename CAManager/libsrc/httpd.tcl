@@ -1,3 +1,156 @@
+namespace eval httpd {
+  variable ::_port 4610
+  variable _starttime
+  variable _proto
+  variable _page
+  variable _query
+  variable _method
+  variable _gotargs
+  variable _timefmt "%Y/%m/%d %H:%M:%S"
+#  catch {source $camMisc::rcdir/settings}
+}
+
+proc httpd::init {} {
+  variable _starttime [clock seconds]
+  if [catch {socket -server httpd::connect $::_port}] {
+    puts "Couldn't use port $::_port, port is already in use or privileged!"
+    exit
+  } else {
+    puts "Info on http://[info hostname]:$::_port/"
+  }
+}
+
+proc httpd::time {{time 0}} {
+  variable _timefmt
+  if {$time == 0} {set time [clock seconds]}
+  return [clock format $time -format $_timefmt]
+}
+
+proc httpd::Busy {ind msg} {
+  camMisc::arcSet $ind busy $msg
+  after 5000 "camMisc::arcSet $ind busy \"\""
+}
+
+proc httpd::connect {fd addr port} {
+  variable _query
+  fconfigure $fd -blocking 0
+  set _query($fd) {}
+  fileevent $fd readable "httpd::getInput $fd"
+}
+
+proc httpd::getInput {fd} {
+  variable _query
+  variable _proto
+  variable _page
+  variable _method
+  variable _gotargs
+
+  gets $fd lastline
+  lappend _query($fd) "$lastline"
+
+  set lQ [llength $_query($fd)]
+  if {$lQ == 1} {
+    set _proto($fd) ""
+    if {![regexp "^(GET|POOP) (/\[^ 	\]*)(.*)" [lindex $_query($fd) 0] all _method _page($fd) _proto($fd)]} {
+      fileevent $fd readable {}
+      sendError $fd "invalid request"
+      return
+    }
+    set _proto($fd) [string trim $_proto($fd)]
+    set _gotargs 0
+  }
+
+  if {($lQ > 2) && ([lindex $_query($fd) [expr [llength $_query($fd)] - 2]] == "")} {
+    set $_query($fd) "$_query($fd)?$lastline"
+    set _gotargs 1
+  }
+
+  if {(($_method == "GET") && 
+       (($_proto($fd) == "") || (($lQ >= 2) && ("$lastline" == "")))) ||
+      (($_method == "POST") && $_gotargs)} {
+    if {"$_page($fd)" == "/exit"} {
+      puts stderr "terminating on user-request."
+      puts $fd "<html><head><title>CAbgManager exit</title></head>"
+      puts $fd "<body bgcolor=\"\#aec9d2\">"
+      puts $fd "<TABLE BORDER=3>"
+      puts $fd "<TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>"
+      puts $fd "Channel Archiver - bgManager terminated!"
+      puts $fd "</FONT></TD></TR>"
+      puts $fd "</TABLE>"
+      puts $fd "</body></html>"
+      close $fd
+      exit
+    }
+    if [regexp "(.*)\\?(.*)" $_page($fd) all page args] {
+#      puts stderr [join $_query($fd) "\n"]
+      foreach arg [split $args "&"] {
+	if [regexp "(.*)=(.*)" $arg all name val] {
+	  set var($name) $val
+	}
+      }
+      if {![info exists var(ind)]} {
+	sendError $fd "index for command missing"
+	return
+      }
+      switch $page {
+	"/start" {
+	  Puts "manually starting \"[camMisc::arcGet $var(ind) descr]\""
+	  Busy $var(ind) "start in progress"
+	  camMisc::Release $var(ind)
+	  runArchiver $var(ind)
+	}
+	"/stop" {
+	  Puts "manually stopping \"[camMisc::arcGet $var(ind) descr]\""
+	  Busy $var(ind) "stop in progress"
+	  stopArchiver $var(ind)
+	  camMisc::Block $var(ind)
+	}
+	default {
+	  sendError $fd "illegal command \"$page\""
+	  return
+	}
+      }
+      sendCmdResponse $fd $page $var(ind)
+    } else {
+      sendOutput $fd
+    }
+  }
+  array unset var ind
+}
+
+proc httpd::ed {p} {
+  switch $p {
+    stop {return stopped}
+    start {return started}
+  }
+}
+
+proc httpd::sendCmdResponse {fd page ind} {
+  puts $fd "<HTML><HEAD>
+<meta http-equiv=refresh content=\"0; URL=http://[info hostname]:$::_port/\">
+<TITLE>ArchiveEngine \"[camMisc::arcGet $ind descr]\" ${page}ed</TITLE>
+</HEAD><BODY bgcolor=\"\#aec9d2\">
+<TABLE BORDER=3><TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5><em>[camMisc::arcGet $ind descr]</em> [ed ${page}]</FONT></TD></TR></TABLE>
+<p>You'll be taken back to the main-page automatically in a few seconds...
+</BODY></HTML>
+"
+  close $fd
+}
+
+proc httpd::sendError {fd msg} {
+  variable _proto
+  variable _query
+  puts $fd "<HTML><HEAD>
+<TITLE>$msg</TITLE>
+</HEAD><BODY bgcolor=\"\#aec9d2\">
+<TABLE BORDER=3><TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>$msg</FONT></TD></TR></TABLE>
+<PRE>
+$_query($fd)
+</PRE>
+</BODY></HTML>"
+  close $fd
+}
+
 proc httpd::sendOutput {fd} {
   global tcl_platform
   variable _starttime

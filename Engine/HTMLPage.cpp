@@ -30,7 +30,7 @@ HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 		strstream	linebuf;
 		linebuf << "<META HTTP-EQUIV=\"Refresh\" CONTENT=" << refresh << ">" << '\0';
 		line (linebuf.str());
-		linebuf.freeze (false);
+		linebuf.rdbuf()->freeze (false);
 	}
 
 	line ("");
@@ -68,7 +68,7 @@ HTMLPage::~HTMLPage ()
 		strstream	linebuf;
 		linebuf << "This page will update every " << _refresh << " seconds..." << '\0';
 		line (linebuf.str());
-		linebuf.freeze (false);
+		linebuf.rdbuf()->freeze (false);
 	}
 	else
 		line ("(Use <I>Reload</I> from the Browser's menu for updates)");

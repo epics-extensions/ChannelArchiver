@@ -48,7 +48,7 @@ static void engineinfo (HTTPClientConnection *connection, const stdString &path)
 		strstream line;
 		line << theEngine->getStartTime () << '\0';
 		page.tableLine ("Started", line.str(), 0);
-		line.freeze (false);
+		line.rdbuf()->freeze (false);
 	}
 	page.tableLine ("Archive ", theEngine->getDirectory().c_str(), 0);
 #ifdef SHOW_DIR
@@ -60,44 +60,44 @@ static void engineinfo (HTTPClientConnection *connection, const stdString &path)
 		strstream line;
 		line << theEngine->getWriteTime () << '\0';
 		page.tableLine ("Last write check", line.str(), 0);
-		line.freeze (false);
+		line.rdbuf()->freeze (false);
 	}
 	{
 		strstream line;
 		line << theEngine->lockChannels ().size() << '\0';
 		theEngine->unlockChannels ();
 		page.tableLine ("Channels", line.str(), 0);
-		line.freeze (false);
+		line.rdbuf()->freeze (false);
 	}
 	{
 		strstream line;
 		line << theEngine->getDefaultPeriod() << " sec" << '\0';
 		page.tableLine ("Default Period", line.str(), 0);
-		line.freeze (false);
+		line.rdbuf()->freeze (false);
 	}
 	{
 		strstream line;
 		line << theEngine->getWritePeriod() << " sec" << '\0';
 		page.tableLine ("Write Period", line.str(), 0);
-		line.freeze (false);
+		line.rdbuf()->freeze (false);
 	}
 	{
 		strstream line;
 		line << theEngine->getGetThreshold() << " sec" << '\0';
 		page.tableLine ("'Get' Threshold", line.str(), 0);
-		line.freeze (false);
+		line.rdbuf()->freeze (false);
 	}
 	{
 		strstream line;
 		line << connection->getTotalClientCount() << '\0';
 		page.tableLine ("Clients (total)", line.str(), 0);
-		line.freeze (false);
+		line.rdbuf()->freeze (false);
 	}
 	{
 		strstream line;
 		line << connection->getClients().size () << '\0';
 		page.tableLine ("Clients (current)", line.str(), 0);
-		line.freeze (false);
+		line.rdbuf()->freeze (false);
 	}
 	page.closeTable ();
 }
@@ -306,10 +306,10 @@ static void channelInfoLine (HTMLPage &page, const ChannelInfo *channel)
 		get_mechanism,
 		disabling.str(),
 		0);
-	disabling.freeze (false);
-	ca_state.freeze (false);
-	period.freeze (false);
-	bufsize.freeze (false);
+	disabling.rdbuf()->freeze (false);
+	ca_state.rdbuf()->freeze (false);
+	period.rdbuf()->freeze (false);
+	bufsize.rdbuf()->freeze (false);
 }
 
 static void channelInfo (HTTPClientConnection *connection, const stdString &path)
@@ -367,9 +367,9 @@ void groups (HTTPClientConnection *connection, const stdString &path)
 			channels.str(),
 			connected.str(),
 			0);
-		id.freeze (false);
-		channels.freeze (false);
-		connected.freeze (false);
+		id.rdbuf()->freeze (false);
+		channels.rdbuf()->freeze (false);
+		connected.rdbuf()->freeze (false);
 	}
 	page.closeTable ();
 }
@@ -392,7 +392,7 @@ static void groupInfo (HTTPClientConnection *connection, const stdString &path)
 	page.tableLine ("Name", group_name.c_str(), 0);
 	page.tableLine ("ID", id.str(), 0);
 	page.closeTable ();
-	id.freeze (false);
+	id.rdbuf()->freeze (false);
 
 	const list<ChannelInfo *>& channels = group->getChannels ();
 	if (channels.empty())

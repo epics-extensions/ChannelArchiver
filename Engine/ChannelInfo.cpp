@@ -715,19 +715,18 @@ void ChannelInfo::enable (ChannelInfo *cause)
     }
 }
 
-
 // Dump circular buffer into archive
 void ChannelInfo::write (Archive &archive, ChannelIterator &channel)
 {
+    size_t count = _buffer.getCount();
+    if (count <= 0)
+        return;
+
     if (! archive.findChannelByName (_name, channel))
     {
         LOG_MSG ("ChannelInfo::write: Cannot find " << _name << "\n");
         return;
     }
-
-    size_t count = _buffer.getCount();
-    if (count <= 0)
-        return;
 
     const RawValueI::Type *raw = _buffer.removeRawValue ();
     _write_lock.take ();
@@ -758,3 +757,5 @@ void ChannelInfo::write (Archive &archive, ChannelIterator &channel)
     _write_lock.give ();
     _buffer.reset ();
 }
+
+

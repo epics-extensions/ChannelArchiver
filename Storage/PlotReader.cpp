@@ -16,6 +16,9 @@ PlotReader::PlotReader(IndexFile &index, double delta)
     have_initial_final = have_mini_maxi = false;
     initial = final = 0;
     state = s_dunno;
+#ifdef DEBUG_PLOTREAD
+    printf("Plot Reader, delta %g\n", delta);
+#endif
 }
 
 PlotReader::~PlotReader()
@@ -45,6 +48,7 @@ const RawValue::Data *PlotReader::fill_bin()
     end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
 #ifdef DEBUG_PLOTREAD
     stdString txt;
+    printf("Raw time stamp: %s\n", epicsTimeTxt(RawValue::getTime(reader_data), txt));
     printf("End of bin: %s\n", epicsTimeTxt(end_of_bin, txt));
 #endif
     while (reader_data   &&   RawValue::getTime(reader_data) < end_of_bin)

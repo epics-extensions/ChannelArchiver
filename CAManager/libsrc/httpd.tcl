@@ -207,6 +207,7 @@ proc httpd::sendOutput {fd} {
   variable _timefmt
   variable _proto
   variable _query
+ catch {
   if {$_proto($fd) != ""} {
     puts $fd "$_proto($fd) 200 OK"
     puts $fd "Server: Channel Archiver bgManager $tcl_platform(user)@$::_host:$::_port:$camMisc::cfg_file"
@@ -359,4 +360,5 @@ proc httpd::sendOutput {fd} {
   puts $fd "</body>"
   puts $fd "</html>"
   close $fd
+ }
 }

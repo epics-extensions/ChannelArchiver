@@ -204,7 +204,7 @@
 	  for details on the two versions.
       </dl>
       <hr noshade size=1>
-      <img src="prop.jpg" width=200 height=287 align=right hspace=8 vspace=8>
+      <img src="prop.jpg" width=202 height=310 align=right hspace=8 vspace=8>
       <a name="creat"><h2>Creating/Configuring an Archiver</h2></a>
       <p>
 	A double-click on an archiver (an entry of the table in the main
@@ -237,12 +237,32 @@
 	<b>Note:</b> You have to ensure, that there are no collisions with other
 	  applications using the same port!</dd>
       <hr noshade size=1>
-      <dt><b>Configuration-file</b></dt>
+      <dt><b>Master-directory</b> (must be writable)</dt>
+      <dd><p>This directory is used as a base for all other
+	filenames/directories if they are specified as relative filenames.</p>
+	<p>Secondly, this directory is the one where the <em>ArchiveEngine</em> is
+	running in - so you'll need write-permission in this directory to
+	create at least the <tt>archive_active.lck</tt></p>
+      </dd>
+      <hr noshade size=1>
+      <dt><b>Configuration-file</b> (may be read-only)</dt>
       <dd>The <em>main</em> configuration file containing
 	archiving-parameters and channel names as well as <tt>!group</tt>
 	statements to include other files.<br>
 	<b>Note:</b> This parameter has to be a full pathname (starting with a "<tt>/</tt>"
-	  or e.g. "<tt>C:/</tt>" resp.)</dd>
+	or e.g. "<tt>C:/</tt>" resp.)</dd>
+      <hr noshade size=1>
+      <cite>
+      <p><b>Hint:</b> If your original config-files for the
+	<em>ArchiveEngine</em> are read-only (or at least stored in a
+	read-only directory), you should set the <b>Configuration-file</b>
+	to the filename of the original configuration file and set
+	<b>Master-directory</b> to a directory, where you have
+	write-access.</p>
+      <p>
+	<em>CAManager</em> will then <b>copy</b> the original files to the
+	<b>Master-directory</b>, and run the <em>ArchiveEngine</em> from there.</p>
+    </cite>
       <hr noshade size=1>
       <dt><b>Schedule</b></dt>
       <dd><p>The <em>CAbgManager</em> is able to stop and restart archivers based on
@@ -297,7 +317,7 @@ master_version=1
 	  system crash.</p><p>Nevertheless deleting the lockfile is
 	  something that should be well considered.</p></dd>
       <hr noshade size=1>
-      <dt><b>Archive-file</b></dt>
+      <dt><b>Archive-file</b> (must be writable)</dt>
       <dd>
 	<p>This is the name of the archive directory file - the central
 	  register of what is archived in this archive. This parameter
@@ -353,7 +373,7 @@ master_version=1
 	  automatically to make online configuration changes persistent.
 	</p></dd>
       <hr noshade size=1>
-      <dt><b>Multi-Archive-file</b></dt>
+      <dt><b>Multi-Archive-file</b> (must be writable)</dt>
       <dd>
 	<p>
 	  After an archiver is started, <em>CA*Manager</em> can add an
@@ -366,7 +386,7 @@ master_version=1
 	</p>
       </dd>
       <hr noshade size=1>
-      <dt><b>Log-file</b></dt>
+      <dt><b>Log-file</b> (must be writable)</dt>
       <dd><p>The ArchiveEngine logs it's output to this file.</p>
 	<p>This should also be a filename relative to the directory of
 	  the configuration file.</p>
@@ -637,7 +657,7 @@ master_version=1
       <div align=right>
 	<i>
 	  <!-- hhmts start -->
-		  Latest modification: 16 Jan 02 13:58:09 Thomas Birke
+		  Latest modification: 19 Feb 03 14:20:50 Thomas Birke
 		  <!-- hhmts end -->
 	</i>
 	<address>

@@ -26,11 +26,12 @@
       <LI>
 	<P>Pick an already existing archive-directory or create a new
 	  directory (let's say <tt>/tmp/TestArchive</tt>) and create a
-	  configuration file in there (for now it's ok, if it's
+	  configuration file in there (for now it's ok if it's
 	  empty).
+	</P>
 	  <IMG SRC="qMain.png" ALT="CAManager Main Window" ALIGN=right
 	       WIDTH=496 HEIGHT=187 HSPACE=8 VSPACE=8 BORDER=0>
-	  
+	<P>
 	  <BR><BR>
 	  <TT>&gt; mkdir /tmp/TestArchive</TT><BR>
 	  <TT>&gt; touch /tmp/TestArchive/main.cfg</TT>
@@ -44,22 +45,24 @@
 	  <TT>[New]</TT> button and the following dialog will pop
 	  up.</P><p>Note that the entry in the Host-field will reflect the
 	  hostname of the machine CAManager is currently running on.
-	  <IMG SRC="qProps1.png" ALT="Properties Window" ALIGN=right
-	       WIDTH=266 HEIGHT=381 HSPACE=8 VSPACE=8 BORDER=0></P>
+	  <IMG SRC="prop.jpg" ALT="Properties Window" ALIGN=right
+	       WIDTH=202 HEIGHT=310 HSPACE=8 VSPACE=8 BORDER=0></P>
 	<hr noshade size=1>
       <LI><P>Enter proper configuration values</P>
 	<ul>
 	  <li>Select a <b>port</b> the ArchiveEngine should use for it's
 	    status/configuration-interface
 	  <li>Select a meaningful <b>description</b>
-	  <li>Select a <b>configuration file</b> either by
+	  <li>Select a <b>Master-directory</b> This is usually the
+	    directory where the configuration files reside. So in this
+	    example, it should be <tt>/tmp/TestArchive</tt>.
+	  <li>Select a <b>Configuration file</b> either by
 	    <ul type="square">
 	      <li>entering the filename or
 	      <li>opening the file-selector (<tt>[...]</tt> button) and
 		selecting the configuration file
 	    </ul>
-	    In this example, it should be
-	    <tt>/tmp/TestArchive/main.cfg</tt>
+	    In this example, it should be <tt>main.cfg</tt>
 	  <li><p>Select a <b>schedule</b></p>
 	    <p><b>example A:</b><br>
 	      If you for example want that our archiver is restarted every 8
@@ -159,7 +162,7 @@
       <div align=right>
 	<i>
 	  <!-- hhmts start -->
-		  Latest modification: 12 Dec 01 14:54:20 Thomas Birke
+		  Latest modification: 19 Feb 03 14:25:12 Thomas Birke
 		  <!-- hhmts end -->
 	</i>
 	<address>

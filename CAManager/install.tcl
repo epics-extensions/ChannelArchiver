@@ -87,7 +87,7 @@ if {[regexp "Windows" $tcl_platform(os)]} {
 
 package require Tclx
 
-Puts "Installing CAManager Version 1.1\n\n" error
+Puts "Installing CAManager Version 1.3\n\n" error
 
 Puts "Searching Tcl/TK interpreters:\n" action
 set interp [info nameofexecutable]
@@ -154,24 +154,29 @@ array set required {
 }
 
 set terminate 0
-foreach package [array names required] {
-  if {[catch {package require $package} result]} {
-    Puts "ERROR: " error
-    Puts "Package \"$package\" is not installed!\n"
-    set terminate 1
-  } elseif {"$result" != "$required($package)"} {
-    Puts "WARNING: " warning
-    Puts "Version of \"$package\" is not tested version!\n"
-    Puts "  Found version $result, tested version is $required($package)\n"
-    if {"$result" > "$required($package)"} {
-      Puts "  Installed version is newer, so CAManager should work properly\n"
+if {[catch {package require Tk}]} {
+  Puts "DISABLED!" warning
+} else {
+  foreach package [array names required] {
+    if {[catch {package require $package} result]} {
+      Puts "ERROR: " error
+      Puts "Package \"$package\" is not installed!\n"
+      set terminate 1
+    } elseif {"$result" != "$required($package)"} {
+      Puts "WARNING: " warning
+      Puts "Version of \"$package\" is not tested version!\n"
+      Puts "  Found version $result, tested version is $required($package)\n"
+      if {"$result" > "$required($package)"} {
+	Puts "  Installed version is newer, so CAManager should work properly\n"
+      } else {
+	Puts "  Installed version is older, so CAManager may not work properly\n" warning
+      }
     } else {
-      Puts "  Installed version is older, so CAManager may not work properly\n" warning
+      Puts "Package \"$package\" found (version $result)\n"
     }
-  } else {
-    Puts "Package \"$package\" found (version $result)\n"
   }
 }
+Puts "\n"
 
 if {!$terminate} {
   if {$interactive} {

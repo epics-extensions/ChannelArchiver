@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML><HEAD><TITLE>Channel Archive Manager - Installation Guide</TITLE></HEAD><BODY>
-    <div align=right> Time-stamp: <12 Dec 01 14:52:35 Thomas Birke>
+    <div align=right> Time-stamp: <19 Feb 03 14:32:01 Thomas Birke>
     </div>
     <hr>
     <h1>PREREQUISITES</h1>
@@ -45,6 +45,48 @@
 
     <hr>
     <h1>INSTALLATION</h1>
+    <h2>on Unix-Systems (locally and on remote systems)</h2>
+    <hr>
+    <ol>
+      <li>Change to the CAManager directory</li>
+
+      <li>On the command-line issue the command:
+	<p>
+	<tt>&gt; make</tt>
+	</p>
+	This will create a single sh-script <tt>install.sh</tt> containing all the
+	necessary files to install CAManager
+
+	This process needs a program called <tt>shar</tt> to appear somewhere in your
+	<tt>PATH</tt>. That shouldn't be a problem since <tt>shar</tt> is a basic part of every
+	Unix-system.
+      </li>
+
+    <li>Either
+	<ol type=a>
+	  <li>Execute the just created <tt>install.sh</tt> locally to install CAManager on
+	    the local machine or</li>
+	  
+	  <li> Copy <tt>install.sh</tt> to any other Unix-machine and execute it there to
+	    install CAManager on this machine</li>
+	</ol>
+	
+	If you see a message like "./install.sh[3184]: wish: not found." or
+	similar, it seems that the path to the Tcl-interpreter 'wish' does not
+	appear in your path environment-variable.
+      </li>
+    </ol>
+
+<b>Please have the following in mind!</b>
+<p>
+    If you have no DISPLAY environment-variable set, the installation
+    script would fail the checks for necesseray Tk-extensions (see above),
+    hence the tests are disabled when running without a proper
+    DISPLAY environment-variable.
+   </p>     
+    <hr>
+    <h1>INSTALLATION</h1>
+    <h2>fallback solution (Unix and Windows, old way)</h2>
     <hr>
 
     <p>Once having an proper Tcl/Tk installation (or to try your pre-installed or

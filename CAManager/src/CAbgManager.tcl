@@ -24,7 +24,7 @@ regsub ": (.*) \\$" $CVS(Revision,bgManager) "\\1" CVS(Revision,bgManager)
 regsub ": (.*) \\$" $CVS(Date,bgManager) "\\1" CVS(Date,bgManager)
 regsub ": (.*) \\$" $CVS(Author,bgManager) "\\1" CVS(Author,bgManager)
 
-set CVS(Version) "Version: 1.1"
+set CVS(Version) "Version: 1.3"
 
 proc init {} {
   global INCDIR
@@ -83,6 +83,16 @@ readCFG
 httpd::init
 
 update
+
+set null [open /dev/null r+]
+
+close stdin
+close stdout
+#close stderr
+
+dup $null stdout
+#dup $null stderr
+dup $null stdin
 
 # "dontsetit" mustn't ever be set!!!
 vwait dontsetit

@@ -27,7 +27,7 @@ proc camComm::CheckRunning {i rvar} {
 	condSet $rvar "NO"
       } else {
 	Puts "setting $rvar to \"NO\"" debug3
-	set $rvar "NO"
+	catch {set $rvar "NO"}
       }
     }
     return

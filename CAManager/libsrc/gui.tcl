@@ -239,7 +239,7 @@ proc camGUI::aConfig {w} {
     break
   }
 
-  set show [list [camMisc::arcGet $row cfg]]
+  set show [list [mkAbsPath [camMisc::arcGet $row mstr] [camMisc::arcGet $row cfg]]]
   set sidx 0
   while 1 {
     if {[llength $show] > [expr $sidx + 1]} {
@@ -384,7 +384,7 @@ array set suggested {
 }
 
 
-proc camGUI::checkentry {val Descr descr w tl {absFn 0}} {
+proc camGUI::checkentry {val Descr descr w tl} {
   if {[regexp "^<.*>$" $val]} {
     MessageBox error "Invalid $Descr" \
 	"Hmmm!" \
@@ -397,12 +397,10 @@ proc camGUI::checkentry {val Descr descr w tl {absFn 0}} {
   if {"$descr" == "filename"} {
     set fnchars "\[^/<>\]+"
     set re "^"
-    if {$absFn} {
-      if {[regexp "Windows" $::tcl_platform(os)]} {
-	append re "(.:)?"
-      }
-      append re "/"
+    if {[regexp "Windows" $::tcl_platform(os)]} {
+      append re "(.:)?"
     }
+    append re "/?"
     append re "($fnchars/)*$fnchars"
     append re "$"
     if {![regexp $re $val]} {
@@ -424,7 +422,7 @@ proc camGUI::aEdit {w} {
   set tl .t$row
   if {![catch {raise $tl}]} return
 
-  foreach param {host port descr cfg cfgc cvs rmlock archive log start timespec multi} {
+  foreach param {host port descr mstr cfg cfgc cvs rmlock archive log start timespec multi} {
     set var($row,$param) [camMisc::arcGet $row $param]
   }
 
@@ -450,11 +448,21 @@ proc camGUI::aEdit {w} {
   entrybox $f.de Description: top var($row,descr)
   set ww(descr) $f.de.e
   $ww(descr) configure -helptext "A description for the Archiver.\nThe Archiver's web-interface will have this description as well."
+
+  frame $f.m -bd 0
+  entrybox $f.m.mstr "Master-directory: (should be an absolute pathname!)" \
+      top var($row,mstr) -expand t
+  set ww(mstr) $f.m.mstr.e
+  $ww(mstr) configure -helptext "The full pathname of the master-directory for this Archiver.\nCAbgManager and the ArchiveEngine need write-access to this directory!\n\nAny relative pathname given below is relative to this master-directory!!!"
+  button  $f.m.fs -text "..." -padx 0 -pady 0 -width 2 -bd 1 -command "
+      set fn \[camGUI::getCfgFile $tl $row\]
+      if {\"\$fn\" != \"\"} {set var($row,mstr) \[file dirname \$fn\]}"
+
   frame $f.c -bd 0
-  entrybox $f.c.cfg "Configuration-file: (absolute pathname)" \
+  entrybox $f.c.cfg "Configuration-file:" \
       top var($row,cfg) -expand t
   set ww(cfg) $f.c.cfg.e
-  $ww(cfg) configure -helptext "The full pathname of the\nmain configuration file\nfor this Archiver."
+  $ww(cfg) configure -helptext "The name of the\nmain configuration file\nfor this Archiver."
   button  $f.c.fs -text "..." -padx 0 -pady 0 -width 2 -bd 1 -command "
       set fn \[camGUI::getCfgFile $tl $row\]
       if {\"\$fn\" != \"\"} {set var($row,cfg) \$fn}"
@@ -469,17 +477,17 @@ proc camGUI::aEdit {w} {
   foreach k [camMisc::arcIdx] {
     lappend af [camMisc::arcGet $k archive]
   }
-  combobox $f.af "Archive-file: (rel. to path of Configuration file)" top \
+  combobox $f.af "Archive-file:" top \
       var($row,archive) {} -side top -fill x
   set ww(archive) $f.af.e
-  $ww(archive) configure -helptext "The filename of the archive file.\nShould not be an absolute pathname (starting with /).\nNever put more than one archive in a single directory!\nDirectories will be created.\nSubject to %-expansion.\n$::percentDoc"
+  $ww(archive) configure -helptext "The filename of the archive file.\nNever put more than one archive in a single directory!\nDirectories will be created.\nSubject to %-expansion.\n$::percentDoc"
   set ::arcsel($row) $f.af.e
 
   set ma [list [file dirname [file dirname $var($row,cfg)]]/directory]
   foreach k [camMisc::arcIdx] {
     lappend ma [camMisc::arcGet $k multi]
   }
-  combobox $f.ma "Multi-Archive file: (absolute path, may be empty)" top \
+  combobox $f.ma "Multi-Archive file:" top \
       var($row,multi) $ma -side top -fill x
   $f.ma.e configure -helptext "The Filename of an additional (external) Multi-Archive file,\nthese archives should be appended to.\n\nNOTE:\nIf \"Archive-file\" is a directory containing '%', a Multi-Archive\nin the main-directory of the archiver is automatically created!"
 
@@ -487,10 +495,10 @@ proc camGUI::aEdit {w} {
   foreach k [camMisc::arcIdx] {
     lappend ll [camMisc::arcGet $k log]
   }
-  combobox $f.lf "Log-file: (rel. to path of Configuration file)" top \
+  combobox $f.lf "Log-file:" top \
       var($row,log) $ll -side top -fill x
   set ww(log) $f.lf.e
-  $ww(log) configure -helptext "The filename of the Archiver's log file.\nShould not be an absolute pathname (starting with /).\nDirectories will be created.\nSubject to %-expansion.\n$::percentDoc"
+  $ww(log) configure -helptext "The filename of the Archiver's log file.\nDirectories will be created.\nSubject to %-expansion.\n$::percentDoc"
 ###
   set of $f
   set tf [TitleFrame $f.sched -text Schedule -font [$f.c.fs cget -font]]
@@ -620,9 +628,11 @@ proc camGUI::aEdit {w} {
 
   pack $f.h.hf -side left -fill x
   pack $f.h.port -side right -fill x
+  pack $f.m.mstr -side left -fill x -expand t
+  pack $f.m.fs -side bottom
   pack $f.c.cfg -side left -fill x -expand t
   pack $f.c.fs -side bottom
-  pack $f.h $f.de $f.c $tf $f.olcfgc $f.olcvs $f.rmlock $f.af $f.ma $f.lf -fill x -padx 4 -pady 4
+  pack $f.h $f.de $f.m $f.c $tf $f.olcfgc $f.olcvs $f.rmlock $f.af $f.ma $f.lf -fill x -padx 4 -pady 4
   pack $lf -side top -fill both -expand t -padx 4 -pady 4
 
   $sch.nb raise $var($row,start)
@@ -726,7 +736,7 @@ proc camGUI::aEdit {w} {
     }
 
     if {[checkentry $var($row,descr) Description description $ww(descr) $tl]} continue
-    if {[checkentry $var($row,cfg) Configuration-Filename filename $ww(cfg) $tl 1]} continue
+    if {[checkentry $var($row,cfg) Configuration-Filename filename $ww(cfg) $tl]} continue
     if {[checkentry $var($row,archive) Archive-Filename filename $ww(archive) $tl]} continue
     if {[checkentry $var($row,log) Log-Filename filename $ww(log) $tl]} continue
     break
@@ -735,7 +745,7 @@ proc camGUI::aEdit {w} {
   destroy $tl
   if {$var($row,close) == 0} {setButtons $w; return 0}
   
-  foreach param {host port descr cfg cvs cfgc rmlock archive log start timespec multi} {
+  foreach param {host port descr mstr cfg cvs cfgc rmlock archive log start timespec multi} {
     camMisc::arcSet $row $param $var($row,$param)
   }
   set camGUI::aEngines($row,$::iHost) $var($row,host)

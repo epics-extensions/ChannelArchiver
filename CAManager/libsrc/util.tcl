@@ -50,11 +50,12 @@ array set colorname {
 
 if {$::debug} {
   if {[expr $::debug & 1]} { set colormap(schedule) green }
-  if {[expr $::debug & 6]} { set colormap(debug1) brown }
-  if {[expr $::debug & 4]} { set colormap(debug2) orange }
-  if {[expr $::debug & 24]} { set colormap(funcall) no }
-  if {[expr $::debug & 16]} { set colormap(funcallX) no }
-  if {[expr $::debug & 32]} { set colormap(console) no }
+  if {[expr $::debug & 2]} { set colormap(debug1) brown }
+  if {[expr $::debug & 4]} { set colormap(debug2) orange2 }
+  if {[expr $::debug & 8]} { set colormap(debug3) orange }
+  if {[expr $::debug & 16]} { set colormap(funcall) white }
+  if {[expr $::debug & 32]} { set colormap(funcallX) gray80 }
+  if {[expr $::debug & 64]} { set colormap(console) no }
 }
 
 set yesno {NO YES}
@@ -89,7 +90,7 @@ Puts "util: bgerror $args" funcall
 proc Exit {{code 0}} {
 Puts "util: Exit $code" funcall
   if {[llength $::socks] > 0} {
-    puts stderr "waiting for open connections to close..."
+#    puts stderr "waiting for open connections to close..."
   }
   set ::nextLoop 0
   while {[llength $::socks] > 0} {
@@ -99,7 +100,7 @@ Puts "util: Exit $code" funcall
     if {$::nextLoop >= 10} {break}
   }
   if {[llength $::socks] > 0} {
-    puts stderr "connections still open - terminating anyway!"
+#    puts stderr "connections still open - terminating anyway!"
   }
   exit $code
 }
@@ -124,6 +125,14 @@ proc Puts {s {color normal}} {
   }
   set ::_msg [lrange [linsert $::_msg 0 "$now$s"] 0 99]
   return 1
+}
+
+proc mkAbsPath {pref path} {
+  if {[regexp "^/" $path]} {
+    return $path
+  } else {
+    return "$pref/$path"
+  }
 }
 
 proc checkArchivers {args} {
@@ -238,14 +247,14 @@ Puts "util: checkForBgManager $force" funcall
 }
 
 proc checkstate {arr ind op} {
-Puts "util: checkstate $arr \"$ind\" $op" funcall
+  Puts "util: checkstate $arr \"$ind\" $op" funcall
   Puts "${arr}($ind) was set to [array get $arr $ind]" debug3
   trace vdelete ::_run($ind) w checkstate
   if {"$::_run($ind)" == "NO"} {
     if {("[camMisc::arcGet $ind start]" == "NO")} return
     if {("[camMisc::arcGet $ind start]" != "timerange")} {
       if {[info exists ::sched($ind,start,job)]} {
-	Puts "canceling startjob [lindex [after info $::sched($ind,start,job)] 0] \"[camMisc::arcGet $ind descr]\"" debug2
+#	Puts "canceling startjob [lindex [after info $::sched($ind,start,job)] 0] \"[camMisc::arcGet $ind descr]\"" debug2
 	after cancel $::sched($ind,start,job)
 	array unset ::sched $ind,start,job
       }
@@ -410,7 +419,7 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
 
   # Each archiver has a root-directory ROOT
   # ArchiveEngine runs in ROOT
-  #     ArchiveEngine -p ... -l x/y/z/log cfg a/b/c/directory
+  #     ArchiveEngine -p ... -l logdir/log cfgdir/cfg archivedir/directory
   # files/dirs:
   #            /ROOT/CVS/
   #                  cfg/
@@ -429,35 +438,44 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
 
   array unset ::sched $i,start
   set now [clock seconds]
-  foreach attr {descr port cfg cvs cfgc rmlock start multi timespec} {
+  foreach attr {descr port mstr cfg cvs cfgc rmlock start multi timespec} {
     set $attr [camMisc::arcGet $i $attr]
   }
   foreach attr {log archive} {
     set $attr [clock format $now -format [camMisc::arcGet $i $attr]]
   }
+  foreach attr {cfg log archive} {
+    if {![regexp "^/" $attr]} {
+      set attr "$mstr/$attr"
+      regsub -all "//" "$attr" "/" attr
+      regsub -all "/./" "$attr" "/" attr
+    }
+  }
+
   if {"$cfgc" == ""} {set cfgc 0}
   if {"$cvs" == ""} {set cvs 0}
   if {"$rmlock" == ""} {set rmlock 0}
 
   set logtxt [list "Started by [file tail [file rootname [info script]]] ($::CVS(Version)) @ [clock format $now]\n"]
   lappend logtxt " Description:\t\"$descr\""
+  lappend logtxt " Master-directory:\t$mstr"
   lappend logtxt " Config file:\t$cfg"
   lappend logtxt " Schedule:\t$start, $timespec"
   lappend logtxt " URL:\t\thttp://$::_host:$port/"
   lappend logtxt " Archive:\t[camMisc::arcGet $i archive]"
   lappend logtxt " Logfile:\t[camMisc::arcGet $i log]"
   if {"[file dirname $archive]" != "."} {
-    lappend logtxt " MultiArchive:\t[file dirname $cfg]/[file tail $archive]"
+    lappend logtxt " MultiArchive:\t$mstr/[file tail $archive]"
   }
   if {"$multi" != ""} {
     lappend logtxt " MasterArchive:\t$multi\n"
   }
 
-  set ROOT "[file dirname $cfg]"
+  set ROOT "$mstr"
 
   semTake
 
-  if {![file exists $cfg]} {
+  if {![file exists [mkAbsPath $ROOT $cfg]]} {
     if {![info exists ::wasError($i)] || ($::wasError($i) != 1)} {
       Puts "Config file of \"$descr\" doesn't exist!" error
     }
@@ -547,7 +565,7 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
 
   # if it's a toggle-archive, delete the one to overwrite
   if {$toggle && ("$::lastArc($i)" != "$archive")} {
-    set files [glob -nocomplain $ROOT/[file dirname $archive]/*]
+    set files [glob -nocomplain [file dirname $archive]/*]
     if {[llength $files] > 0} {
       eval file delete -force $files
     }
@@ -565,24 +583,44 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
   set ::wasError($i) 0
 
   # create all directories that are necessary
-  file mkdir "$ROOT/[file dirname $log]"
-  file mkdir "$ROOT/[file dirname $archive]"
-  if {!$cfgc} {file mkdir "$ROOT/cfg"} else {file delete -force $ROOT/cfg}
+  file mkdir "[file dirname $log]"
+  set ARC [mkAbsPath $ROOT $archive]
+  set LOG [mkAbsPath $ROOT $log]
+  set CFG [mkAbsPath $ROOT $cfg]
+  set ARCDIR [file dirname $ARC]
+  set LOGDIR [file dirname $LOG]
+  set CFGDIR [file dirname $CFG]
+  file mkdir $ARCDIR
+  file mkdir $LOGDIR
+
+  cd $ROOT
+  if {![file writable $cfg]} {set cfgc 1}
+  if {!$cfgc} {file mkdir "cfg"} else {file delete -force cfg}
 
   # Save the (eventually) modified cfg-files in ROOT/cfg/
   if {!$cfgc} {
     set cfgfiles {}
     set X 1
-    foreach f [glob -nocomplain $ROOT/cfg/*] {
+    foreach f [glob -nocomplain cfg/*] {
       if {$X} {Puts "Saving config-files of \"$descr\""}
       set X 0
       set f [file tail $f]
-      if {![file exists $ROOT/$f] ||
-	  ([file mtime $ROOT/cfg/$f] > [file mtime $ROOT/$f])} {
-	file copy -force $ROOT/cfg/$f $ROOT/$f
+      if {![file exists $f] ||
+	  ([file mtime cfg/$f] > [file mtime $f])} {
+	file copy -force cfg/$f $f
 	lappend cfgfiles $f
       } else {
-	Puts "Conflict copying \"$f\" - $ROOT/$f is newer!" error
+	Puts "Conflict copying \"$f\" - destination is newer!" error
+      }
+
+      if {"$CFGDIR" != "$ROOT"} {
+	if {![file exists $CFGDIR/$f] ||
+	    ([file mtime $f] > [file mtime $CFGDIR/$f])} {
+	  file copy -force $f $CFGDIR/$f
+#	  lappend cfgfiles $f
+	} else {
+	  Puts "Conflict copying \"$f\" to main config - destination is newer!" error
+	}
       }
     }
   }
@@ -590,18 +628,22 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
   set logtxt [linsert $logtxt 6 " act. archive:\t$archive"]
   set logtxt [linsert $logtxt 8 " act. logfile:\t$log"]
 
+  # copy the config-files from $CFGDIR (probably non-writeable) to $ROOT (writeable)
+  if {"$CFGDIR" != "$ROOT"} {
+    camMisc::recCopyCfg $cfg $ROOT
+  }
+
   # Start the Archiver
   set cfg "[file tail $cfg]"
-  cd $ROOT
   if {$verbose} {
     Puts "start \"$descr\" ($ROOT)" command
   }
   catch {file rename -force runmsg.txt runmsg-old.txt}
   write_file runmsg.txt [join $logtxt "\n"]
   if {$cfgc} {
-    exec ArchiveEngine -p $port -description "$descr" -log $log -nocfg $cfg $archive >&runlog &
+    exec ArchiveEngine -p $port -description "$descr" -log $LOG -nocfg $cfg $ARC >&runlog &
   } else {
-    exec ArchiveEngine -p $port -description "$descr" -log $log $cfg $archive >&runlog &
+    exec ArchiveEngine -p $port -description "$descr" -log $LOG $cfg $ARC >&runlog &
   }
 
   semGive
@@ -610,10 +652,10 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
 
   # Check the changed cfg-files into cvs.
   if {!$cfgc && $cvs} {
-    if {[file isdir $ROOT/CVS]} {
-      set ee [split [read_file $ROOT/CVS/Entries]]
+    if {[file isdir $cfg/CVS]} {
+      set ee [split [read_file $cfg/CVS/Entries]]
       foreach f $cfgfiles {
-	cd $ROOT
+	cd $CFGDIR
 	if {[lsearch -regex $ee "^/[file tail $f]/"] < 0} {
 	  exec cvs add -m "automatic add by CAManager" [file tail $f]
 	}
@@ -631,7 +673,7 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
   }
   set md [split $master_txt "\n"]
   if {$toggle} {
-    set j [lsearch -regex $md "^(.* )?$ROOT/$archive"]
+    set j [lsearch -regex $md "^(.* )?[mkAbsPath $ROOT $archive]"]
     if {$j > 0} {
       if {[regexp "^\#" [lindex $md [expr $j - 1]]]} {incr j -1}
       set md [lrange $md 0 [expr $j - 1]]
@@ -640,20 +682,20 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
 
   if {"[file dirname $archive]" != "."} {
     if {"[lindex $md 0]" == "master_version=$::multiVersion"} {
-      if {[lsearch -regex $md "^(.* )?$ROOT/$archive"] < 0} {
+      if {[lsearch -regex $md "^(.* )?[mkAbsPath $ROOT $archive]"] < 0} {
 	set ts ""
 	if {$::multiVersion == 2} {
 	  if {$starttime == 0} {
-	    lassign [getTimes $ROOT/$archive] starttime stoptime
+	    lassign [getTimes [mkAbsPath $ROOT $archive]] starttime stoptime
 	    if {"$starttime" != "0"} {
 	      set starttime [clock scan $starttime]
 	      set stoptime [clock scan $stoptime]
 	    }
 	  }
 	  set ts "[clock format $starttime -format %m/%d/%Y\ %H:%M:%S] [clock format $stoptime -format %m/%d/%Y\ %H:%M:%S] "
-	  set md [linsert $md 1 "$ts$ROOT/$archive"]
+	  set md [linsert $md 1 "$ts[mkAbsPath $ROOT $archive]"]
 	} else {
-	  set md [linsert $md 1 "$ROOT/$archive"]
+	  set md [linsert $md 1 "[mkAbsPath $ROOT $archive]"]
 	}
 	write_file $master_dir [join $md "\n"]
       }
@@ -738,7 +780,7 @@ Puts "util: restartArchiver $i" funcall
 proc stopArchiver {i {forceStop 0} {action stop}} {
 Puts "util: stopArchiver $i $forceStop $action" funcall
   array unset ::sched $i,stop,*
-  if {!$forceStop && [file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]} {
+  if {!$forceStop && [file exists [camMisc::arcGet $i mstr]/BLOCKED]} {
     Puts "$action of \"[camMisc::arcGet $i descr]\" blocked" error
     return 0
   }
@@ -753,7 +795,7 @@ Puts "util: stopArchiver $i $forceStop $action" funcall
     puts $sock ""
     flush $sock
   }
-  set w [open [file dirname [camMisc::arcGet $i cfg]]/runmsg.txt a+]
+  set w [open [camMisc::arcGet $i mstr]/runmsg.txt a+]
   puts $w "Stopped by [file tail [file rootname [info script]]] ($::CVS(Version)) @ [clock format [clock seconds]]\n"
   close $w
   return 1
@@ -809,7 +851,7 @@ Puts "util: updateMultiArchive $arch" funcall
   puts $wh "master_version=$::multiVersion"
   foreach i [camMisc::arcIdx] {
     if {[camMisc::arcGet $i multi] == $arch} {
-      set archive "[file dirname [camMisc::arcGet $i cfg]]/[file tail [camMisc::arcGet $i archive]]"
+      set archive "[camMisc::arcGet $i mstr]/[file tail [camMisc::arcGet $i archive]]"
       puts $wh "\# from $archive"
       if {![file exists $archive]} {
 	puts $wh "\#  nothing..."

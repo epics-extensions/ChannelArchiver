@@ -24,7 +24,7 @@ regsub ": (.*) \\$" $CVS(Revision,Manager) "\\1" CVS(Revision,Manager)
 regsub ": (.*) \\$" $CVS(Date,Manager) "\\1" CVS(Date,Manager)
 regsub ": (.*) \\$" $CVS(Author,Manager) "\\1" CVS(Author,Manager)
 
-set CVS(Version) "Version: 1.1"
+set CVS(Version) "Version: 1.3"
 
 proc init {} {
   global INCDIR tcl_platform

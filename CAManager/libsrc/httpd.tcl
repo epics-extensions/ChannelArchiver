@@ -115,7 +115,7 @@ proc httpd::getInput {fd} {
 	 (($_proto($fd) == "") || (($lQ >= 2) && ("$lastline" == "")))) ||
 	(($_method == "POST") && $_gotargs)} {
       if {"$_page($fd)" == "/exit"} {
-	puts stderr "terminating on user-request."
+#	puts stderr "terminating on user-request."
 	puts $fd "<html><head><title>CAbgManager exit</title><META HTTP-EQUIV=\"Pragma\" CONTENT=\"no-cache\"></head>"
 	puts $fd "<body bgcolor=\"\#aec9d2\">"
 	puts $fd "<TABLE BORDER=3>"
@@ -225,7 +225,7 @@ proc httpd::sendOutput {fd} {
   puts $fd "</TABLE>"
 
   if {$::debug} {
-    puts $fd "<p>is running since [time $_starttime] (currently [llength $::socks] open sockets)</p>"
+    puts $fd "<p>is running since [time $_starttime] (currently [llength $::socks] open sockets, [llength [after info]] jobs queued)</p>"
   }
   puts $fd "<table border=0 cellpadding=5>"
   puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>Configured ArchiveEngines for config<br><font color=yellow><em>$camMisc::cfg_file</em></font><br>of user <font color=yellow><em>$tcl_platform(user)</em></font> on host <font color=yellow><em>$::_host</em></font></font></th></tr>"

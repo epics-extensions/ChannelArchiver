@@ -29,12 +29,14 @@ namespace eval camMisc {
   variable cfg_file $cfg_file_d
   variable force_cfg_file $force_cfg_file_d
 
-  package require cmdline
-  array set ::args [cmdline::getoptions ::argv {
+  set argList {
     {log.arg "" "create logfile"}
     {log+.arg "" "append to logfile"}
     {nocmd "" "without start/stop-interface (CAbgManager only)"}
-  }]
+  }
+
+  package require cmdline
+  array set ::args [cmdline::getoptions ::argv $argList]
   if {($::args(log) != "-") && [regexp "^\[^/\]" $::args(log)]} {
     set ::args(log) [pwd]/$::args(log)
   }
@@ -122,6 +124,11 @@ Puts "camMisc::init" funcall
     foreach param [array names arcs] {
       camMisc::arcSet $row $param $arcs($param)
     }
+    # special HACK for change (+=mstr)!
+    if {"[arcGet $row mstr]" == ""} {
+      arcSet $row mstr [file dirname [arcGet $row cfg]]
+      arcSet $row cfg  [file tail [arcGet $row cfg]]
+    }
   }
   set ArchiversSet 1
   if {![info exists ::allowedIPs]} {
@@ -180,13 +187,13 @@ Puts "camMisc::arcIdx" funcall
 
 proc camMisc::Block {row {var x}} {
 Puts "camMisc::Block $row $var" funcall
-  write_file [file join [file dirname [camMisc::arcGet $row cfg]] BLOCKED] ""
+  write_file [file join [camMisc::arcGet $row mstr] BLOCKED] ""
   set $var [lindex $::yesno 1]
 }
 
 proc camMisc::Release {row {var x}} {
 Puts "camMisc::Release $row $var" funcall
-  file delete -force [file join [file dirname [camMisc::arcGet $row cfg]] BLOCKED]
+  file delete -force [file join [camMisc::arcGet $row mstr] BLOCKED]
   set $var  [lindex $::yesno 0]
 }
 
@@ -207,7 +214,8 @@ Puts "camMisc::recCopyCfg \"$file\" \"$dir\"" funcall
   file copy -force $file $dir
   for_file line $file {
     if {[regexp "^!group\[ 	\]*(.*)\[ 	\]*$" $line all nfile]} {
-      recCopyCfg $sdir/$nfile $dir
+      file mkdir [file dirname $dir/$nfile]
+      recCopyCfg $sdir/$nfile $dir/$nfile
     }
   }
 }

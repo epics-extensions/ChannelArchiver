@@ -1,8 +1,8 @@
 \section{XML-RPC Protocol} \label{sec:xmlprotocol}
 The following is a description of the calls implemented by the archive
 data server based on the XML-RPC protocol.
-For details on XML-RPC, including the specifications and examples of
-how to use it from within C, C++, Java, perl, please refer to
+For details on XML-RPC,  including the specifications and examples of
+how to use it from within C,  C++, Java, perl, please refer to
 \href{http://www.xmlrpc.com}{http://www.xmlrpc.com}.
 
 Users of Java should probably utilize the Java archive data client
@@ -15,7 +15,7 @@ whoever cares. It will allow future compatibility
 if clients check for the correct version numbers.
 
 \begin{lstlisting}[keywordstyle=\sffamily]
-{ int32 ver, string desc } = archiver.info()
+{ int32 ver,  string desc } = archiver.info()
 \end{lstlisting}
 
 \begin{description}
@@ -32,8 +32,8 @@ and "desc".
 Returns the archives that this data server can access.
 
 \begin{lstlisting}[keywordstyle=\sffamily]
-{ int32 key,
-  string name,
+{ int32 key, 
+  string name, 
   string path }[] = archiver.archives()
 \end{lstlisting}
 
@@ -43,10 +43,10 @@ Returns the archives that this data server can access.
 \item[\sffamily name:] A description of the archive that one could
                        e.g.\ use in a drop-down selector in a GUI
                        application for allowing the user to select an archive.
-\item[\sffamily path:] The path to the index file, valid on the file
+\item[\sffamily path:] The path to the index file,  valid on the file
                        system where the data server runs.
                        It might be meaningful to a few users who want to
-                       know exactly where the data resides, but it is
+                       know exactly where the data resides,  but it is
                        seldom essential for XML-RPC clients to look at this.
 \end{description}
 
@@ -54,33 +54,33 @@ Returns the archives that this data server can access.
 member and strings "name" and "path".
 An example result could be:
 \begin{lstlisting}[keywordstyle=\sffamily]
-{ key=1, name="Vacuum", path="/home/data/vac/index" },
-{ key=2, name="RF",     path="/home/data/RF/index" }
+{ key=1,  name="Vacuum", path="/home/data/vac/index" },
+{ key=2,  name="RF",     path="/home/data/RF/index" }
 \end{lstlisting}
 
 \noindent So in the following one would then use key=1 to access
-vacuum data etc. One can expect the keys to be small, positive
-numbers, but they are not guaranteed to be consecutive as 1, 2, 3,
-... Since the keys could be something like 10, 20, 30 or 1, 17, 42,
+vacuum data etc. One can expect the keys to be small,  positive
+numbers,  but they are not guaranteed to be consecutive as 1, 2, 3,
+... Since the keys could be something like 10,  20, 30 or 1, 17, 42,
 they are not useful as array indices.
 
 \subsection{archiver.names} % ------------------------------------------
 Returns channel names and start/end times.
 The key must be a valid key obtained from archiver.keys.
 Pattern is a regular expression;
-if left empty, all names are returned.
+if left empty,  all names are returned.
 
-\NOTE The Time Stamps are \emph{not} the raw EPICS time stamps with 1990 epoch,
+\NOTE The Time Stamps are \emph{not} the raw EPICS time stamps with 1990 epoch, 
 but use the time\_t data type based on a 1970 epoch.
 
 \begin{lstlisting}[keywordstyle=\sffamily]
-{string name,
- int32 start_sec, int32 start_nano,
- int32 end_sec,   int32 end_nano}[] 
-         = archiver.names(int32 key, string pattern)
+{string name, 
+ int32 start_sec,  int32 start_nano,
+ int32 end_sec,    int32 end_nano}[] 
+         = archiver.names(int32 key,  string pattern)
 \end{lstlisting}
 
-\noindent The result is an array of structures, one structure
+\noindent The result is an array of structures,  one structure
 per channel that matches the pattern.
 Start/end gives an idea of the time range that can
 be found in the archive for that channel.
@@ -94,10 +94,10 @@ given list of channel names and a common time range.
 
 \begin{lstlisting}[keywordstyle=\sffamily]
 result = archiver.values(
-         int key,
-         string name[],
-         int32 start_sec, int32 start_nano,
-         int32 end_sec, int32 end_nano, int32 count,
+         int key, 
+         string name[], 
+         int32 start_sec,  int32 start_nano,
+         int32 end_sec,  int32 end_nano, int32 count,
          int32 how)
 \end{lstlisting}
 
@@ -105,65 +105,132 @@ result = archiver.values(
 channels get arranged to meet the requested time range and count:
 \begin{description}
 \item[\sffamily how = 0:]
-  Get raw data from archive, starting w/ start,
+  Get raw data from archive,  starting w/ start,
   up to either 'end' time or max. 'count' samples.
 \item[\sffamily how = 1:]
-  Get interpolated data from archive, starting w/ start,
+  Get interpolated data from archive,  starting w/ start,
   up to either 'end' time or max. 'count' samples.
   The data is interpolated with time slots that are multiples
   of (end-start)/count.
-  For details, refer to section \ref{sec:timestampcorr} and following,
+  For details,  refer to section \ref{sec:timestampcorr} and following,
   beginning on page \pageref{sec:timestampcorr}.
 \end{description}
 
-\noindent The result is an array of structures, one structure per
+\noindent The result is an array of structures,  one structure per
 requested channel:
 
 \begin{lstlisting}[keywordstyle=\sffamily]
-result := { string name, meta, int32 type,
-            int32 count, values }[]
+result := { string name,  meta, int32 type,
+            int32 count,  values }[]
 \end{lstlisting}
 
 \begin{description}
 \item[\sffamily name:]
    The channel name.
-   Result[i].name should match name[i] of the request,
-   so this is a waste of electrons, but it's sure convenient
-   to have the name in the result, and we're talking XML-RPC,
+   Result[i].name should match name[i] of the request, 
+   so this is a waste of electrons,  but it's sure convenient
+   to have the name in the result,  and we're talking XML-RPC,
    so forget about the electrons.
 \item[\sffamily meta:]
    The meta information for the channel. This is itself a structure 
    with the following entries:
    \begin{lstlisting}[keywordstyle=\sffamily]
 meta := { int32 type;
-          type==0: string states[],
-          type==1: double disp_high,
-                   double disp_low,
-	           double alarm_high,
-                   double alarm_low,
-                   double warn_high,
-                   double warn_low,
-                   int prec, string units
+          type==0: string states[], 
+          type==1: double disp_high, 
+                   double disp_low, 
+	           double alarm_high, 
+                   double alarm_low, 
+                   double warn_high, 
+                   double warn_low, 
+                   int prec,  string units
         }
    \end{lstlisting}
 \item[\sffamily type:]
    Describes the data type of this channel's values:
-  \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+  \begin{lstlisting}[frame=none, keywordstyle=\sffamily]
   string   0
   enum	   1 (XML int32)
   int      2
   double   3
   \end{lstlisting}
 \item[\sffamily count:]
-  Describes the array size of this channel's values, using 1 for
+  Describes the array size of this channel's values,  using 1 for
   scalar values. Note that even scalar values are returned as an array
   with one element!
 \item[\sffamily values:]
   This is an array where each entry is a structure of the following
   layout:
-  \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-  values := { int32 stat, int32 sevr,
-              int32 secs, int32 nano,
+  \begin{lstlisting}[frame=none, keywordstyle=\sffamily]
+  values := { int32 stat,  int32 sevr,
+              int32 secs,  int32 nano,
               <type> value[] } []
   \end{lstlisting}
 \end{description}
+
+\noindent The values for status and severity are in part those that the EPICS
+IOC databases use. For the current definition,  refer to the IOC
+Application Developer's Guide~\cite{iocappdev04}. Tables
+\ref{tab:sevr} and \ref{tab:stat} list some common values.
+In addition,  the archiver toolset uses special severity values to
+indicate a disconnected channel or the fact that the ArchiveEngine
+was shut down. These values are listed in table \ref{tab:archsevr};
+they can be found ``or-ed'' together with the ordinary EPICS severity values. 
+
+\begin{table}[htbp]
+  \begin{center}
+    \sffamily
+    \begin{tabular}[t]{l|l}
+    Value & Definition \\
+    \hline
+      0   & NO\_ALARM   \\
+      1   & MINOR      \\
+      2   & MAYOR      \\
+      3   & INVALID
+    \end{tabular}
+    \caption{Alarm Severities}
+    \label{tab:sevr}
+  \end{center}
+\end{table}
+
+\begin{table}[htbp]
+  \begin{center}
+    \sffamily
+    \begin{tabular}[t]{l|l}
+    Value & Definition \\
+    \hline
+      0   & NO\_ALARM   \\
+      1   & READ ALARM   \\
+      2   & WRITE ALARM \\
+      3   & HIHI ALARM  \\
+      4   & HIGH ALARM  \\
+      5   & LOLO ALARM  \\
+      6   & LOW ALARM  \\
+      7   & STATE ALARM  \\
+      \ldots   & \ldots  \\
+    \end{tabular}
+    \caption{Alarm Status Values}
+    \label{tab:stat}
+  \end{center}
+\end{table}
+
+\begin{table}[htbp]
+  \begin{center}
+    \sffamily
+    \begin{tabular}[t]{l|l|l}
+    Value & Definition                 & Description \\
+    \hline
+    0x0f00 & ARCH\_NO\_VALUE           & Mask for any of the following \\
+    0x0f80 & ARCH\_EST\_REPEAT         & Repeat count \\
+    0x0f40 & ARCH\_DISCONNECT          & Channel is disconnected \\
+    0x0f20 & ARCH\_STOPPED             & ArchiveEngine shut down \\
+    0x0f10 & ARCH\_REPEAT              & Repeat count \\
+    0x0f08 & ARCH\_DISABLED            & Channel is disabled \\
+    0x0f04 & ARCH\_CHANGE\_WRITE\_FREQ & no longer used \\
+    0x0f02 & ARCH\_CHANGE\_PERIOD      & no longer used \\
+    0x0f01 & ARCH\_CHANGE\_SIZE        & no longer used \\
+    \end{tabular}
+    \caption{Channel Archiver Alarm Severities}
+    \label{tab:archsevr}
+  \end{center}
+\end{table}

@@ -4,10 +4,8 @@
 #include <iostream>
 #include <vector>
 
+USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
-
-using std::ostream;
-using std::vector;
 
 //CLASS Exporter
 // Exporter is the virtual base class for

@@ -4,7 +4,6 @@
 #include "ArchiveException.h"
 #include <strstream>
 
-using std::strstream;
 
 static const char *error_text[] =
 {
@@ -18,6 +17,7 @@ static const char *error_text[] =
 /* Unsupported */	"Not Supported",
 };
 
+USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
 
 const char *ArchiveException::what() const

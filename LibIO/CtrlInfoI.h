@@ -6,6 +6,46 @@
 
 BEGIN_NAMESPACE_CHANARCH
 
+// ! Binary layout of CtrlInfo must be maintained !
+class NumericInfo
+{
+public:
+	float	disp_high;	// high display range
+	float	disp_low;	// low display range
+	float	low_warn;
+	float	low_alarm;
+	float	high_warn;
+	float	high_alarm;
+	long	prec;		// display precision
+	char	units[1];	// actually as long as needed,
+};
+
+class EnumeratedInfo
+{
+public:
+	short	num_states;		// state_strings holds num_states strings
+	short	pad;			// one after the other, separated by '\0'
+	char	state_strings[1];
+};
+
+// Info::size includes the "size" and "type" field.
+// The original archiver read/wrote "Info" that way,
+// but didn't properly inilialize it:
+// size excluded size/type and was then rounded up by 8 bytes... ?!
+class CtrlInfoData
+{
+public:
+	unsigned short	size;
+	unsigned short	type;
+	union
+	{
+		NumericInfo		analog;
+		EnumeratedInfo	index;
+	}				value;
+	// class will be as long as necessary
+	// to hold the units or all the state_strings
+};
+
 //////////////////////////////////////////////////////////////////////
 //CLASS CtrlInfoI
 // A value is archived with control information.
@@ -88,47 +128,7 @@ public:
 protected:
 	const char *getState (size_t state, size_t &len) const;
 
-	// ! Binary layout of CtrlInfo must be maintained !
-	class NumericInfo
-	{
-	public:
-		float	disp_high;	// high display range
-		float	disp_low;	// low display range
-		float	low_warn;
-		float	low_alarm;
-		float	high_warn;
-		float	high_alarm;
-		long	prec;		// display precision
-		char	units[1];	// actually as long as needed,
-	};
-
-	class EnumeratedInfo
-	{
-	public:
-		short	num_states;		// state_strings holds num_states strings
-		short	pad;			// one after the other, separated by '\0'
-		char	state_strings[1];
-	};
-
-	// Info::size includes the "size" and "type" field.
-	// The original archiver read/wrote "Info" that way,
-	// but didn't properly inilialize it:
-	// size excluded size/type and was then rounded up by 8 bytes... ?!
-	class Info
-	{
-	public:
-		unsigned short	size;
-		unsigned short	type;
-		union
-		{
-			NumericInfo		analog;
-			EnumeratedInfo	index;
-		}				value;
-		// class will be as long as necessary
-		// to hold the units or all the state_strings
-	};
-
-	MemoryBuffer<Info>	_infobuf;
+	MemoryBuffer<CtrlInfoData>	_infobuf;
 };
 
 inline CtrlInfoI::Type CtrlInfoI::getType () const

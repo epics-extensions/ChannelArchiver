@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include "ValueI.h"
 
+USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
-using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 // RawValueI

@@ -15,8 +15,8 @@
 #include "ArchiveException.h"
 #include <fstream>
 
+USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
-using namespace std;
 
 inline double fabs (double x)
 { return x>=0 ? x : -x; }

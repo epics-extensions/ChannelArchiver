@@ -1,8 +1,8 @@
 #include "ArchiveException.h"
 #include "BinCtrlInfo.h"
 
+USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
-using namespace std;
 
 // Read CtrlInfo for Binary format
 //
@@ -26,7 +26,7 @@ void BinCtrlInfo::read (FILE *fd, FileOffset offset)
 	}
 	SHORTFromDisk (size);
 
-	if (size < offsetof (Info, value) + sizeof (EnumeratedInfo))
+	if (size < offsetof (CtrlInfoData, value) + sizeof (EnumeratedInfo))
 	{
 		if (getType() == Enumerated)
 		{
@@ -44,7 +44,7 @@ void BinCtrlInfo::read (FILE *fd, FileOffset offset)
 	}
 
 	_infobuf.reserve (size+1); // +1 for possible unit string hack, see below
-	Info *info = _infobuf.mem();
+	CtrlInfoData *info = _infobuf.mem();
 	info->size = size;
 	if (info->size > _infobuf.getBufferSize ())
 	{
@@ -77,7 +77,7 @@ void BinCtrlInfo::read (FILE *fd, FileOffset offset)
 		LONGFromDisk (info->value.analog.prec);
 		{
 			// Hack: some old archives are written with nonterminated unit strings:
-			int end = info->size - offsetof (Info, value.analog.units);
+			int end = info->size - offsetof (CtrlInfoData, value.analog.units);
 			for (int i=0; i<end; ++i)
 			{
 				if (info->value.analog.units[i] == '\0')
@@ -102,8 +102,8 @@ void BinCtrlInfo::read (FILE *fd, FileOffset offset)
 void BinCtrlInfo::write (FILE *fd, FileOffset offset) const
 {	// Attention:
 	// copy holds only the fixed CtrlInfo portion,  not enum strings etc.!
-	const Info *info = _infobuf.mem();
-	Info copy = *info;
+	const CtrlInfoData *info = _infobuf.mem();
+	CtrlInfoData copy = *info;
 	size_t converted;
 
 	switch (copy.type) // convert to disk format
@@ -116,11 +116,11 @@ void BinCtrlInfo::write (FILE *fd, FileOffset offset) const
 		FloatToDisk(copy.value.analog.high_warn);
 		FloatToDisk(copy.value.analog.high_alarm);
 		LONGToDisk (copy.value.analog.prec);
-		converted = offsetof (Info, value) + sizeof (NumericInfo);
+		converted = offsetof (CtrlInfoData, value) + sizeof (NumericInfo);
 		break;
 	case Enumerated:
 		SHORTToDisk (copy.value.index.num_states);
-		converted = offsetof (Info, value) + sizeof (EnumeratedInfo);
+		converted = offsetof (CtrlInfoData, value) + sizeof (EnumeratedInfo);
 		break;
 	default:
 		throwArchiveException (Invalid);
@@ -132,7 +132,7 @@ void BinCtrlInfo::write (FILE *fd, FileOffset offset) const
 		fwrite (&copy, converted, 1, fd) != 1)
 		throwArchiveException (WriteError);
 
-	// only the common, minimal Info portion was converted,
+	// only the common, minimal CtrlInfoData portion was converted,
 	// the remaining strings are written from 'this'
 	if (info->size > converted &&
 		fwrite (reinterpret_cast<const char *>(info) + converted,

@@ -15,8 +15,8 @@
 
 //#define LOG_DATAFILE
 
+USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
-using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 // DataHeader

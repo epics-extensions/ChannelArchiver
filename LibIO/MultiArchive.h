@@ -15,7 +15,7 @@
 #include <list>
 #include <vector>
 
-using namespace std;
+USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
 
 class MultiChannelIterator;

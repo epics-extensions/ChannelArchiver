@@ -1,32 +1,32 @@
 #include "ArchiveException.h"
 #include "CtrlInfoI.h"
 
+USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
-using namespace std;
 
 CtrlInfoI::CtrlInfoI ()
 {
 	size_t additional_buffer = 10;
 
-	_infobuf.reserve (sizeof(Info) + additional_buffer);
-	Info *info = _infobuf.mem();
+	_infobuf.reserve (sizeof(CtrlInfoData) + additional_buffer);
+	CtrlInfoData *info = _infobuf.mem();
 	info->type = Invalid;
 	info->size = sizeof (DbrCount) + sizeof(DbrType);
 }
 
 CtrlInfoI::CtrlInfoI (const CtrlInfoI &rhs)
 {
-	const Info *rhs_info = rhs._infobuf.mem();
+	const CtrlInfoData *rhs_info = rhs._infobuf.mem();
 	_infobuf.reserve (rhs_info->size);
-	Info *info = _infobuf.mem();
+	CtrlInfoData *info = _infobuf.mem();
 	memcpy (info, rhs_info, rhs_info->size);
 }
 
 CtrlInfoI & CtrlInfoI::operator = (const CtrlInfoI &rhs)
 {
-	const Info *rhs_info = rhs._infobuf.mem();
+	const CtrlInfoData *rhs_info = rhs._infobuf.mem();
 	_infobuf.reserve (rhs_info->size);
-	Info *info = _infobuf.mem();
+	CtrlInfoData *info = _infobuf.mem();
 	memcpy (info, rhs_info, rhs_info->size);
 	return *this;
 }
@@ -36,8 +36,8 @@ CtrlInfoI::~CtrlInfoI ()
 
 bool CtrlInfoI::operator == (const CtrlInfoI &rhs) const
 {
-	const Info *rhs_info = rhs._infobuf.mem();
-	const Info *info = _infobuf.mem();
+	const CtrlInfoData *rhs_info = rhs._infobuf.mem();
+	const CtrlInfoData *info = _infobuf.mem();
 	
 	// will compare "size" element first:
 	return memcmp (info, rhs_info, rhs_info->size) == 0;
@@ -49,9 +49,9 @@ void CtrlInfoI::setNumeric (
 	float low_alarm, float low_warn, float high_warn, float high_alarm)
 {
 	size_t len = units.length();
-	size_t size = sizeof (Info) + len;
+	size_t size = sizeof (CtrlInfoData) + len;
 	_infobuf.reserve (size);
-	Info *info = _infobuf.mem();
+	CtrlInfoData *info = _infobuf.mem();
 
 	info->type = Numeric;
 	info->size = size;
@@ -78,9 +78,9 @@ void CtrlInfoI::setEnumerated (size_t num_states, char *strings[])
 
 void CtrlInfoI::allocEnumerated (size_t num_states, size_t string_len)
 {
-	size_t size = sizeof (Info) + string_len; // actually this is too big...
+	size_t size = sizeof (CtrlInfoData) + string_len; // actually this is too big...
 	_infobuf.reserve (size);
-	Info *info = _infobuf.mem();
+	CtrlInfoData *info = _infobuf.mem();
 
 	info->type = Enumerated;
 	info->size = size;
@@ -95,7 +95,7 @@ void CtrlInfoI::allocEnumerated (size_t num_states, size_t string_len)
 //      setEnumeratedString (1, ..
 void CtrlInfoI::setEnumeratedString (size_t state, const char *string)
 {
-	Info *info = _infobuf.mem();
+	CtrlInfoData *info = _infobuf.mem();
 	if (info->type != Enumerated  ||  state >= (size_t)info->value.index.num_states)
 		throwArchiveException (Invalid);
 
@@ -111,8 +111,8 @@ void CtrlInfoI::setEnumeratedString (size_t state, const char *string)
 // and checks if the buffer is sufficient (Debug version only)
 void CtrlInfoI::calcEnumeratedSize ()
 {
-	size_t i, len, total=sizeof (Info);
-	Info *info = _infobuf.mem();
+	size_t i, len, total=sizeof (CtrlInfoData);
+	CtrlInfoData *info = _infobuf.mem();
 	char *enum_string = info->value.index.state_strings;
 	for (i=0; i<(size_t)info->value.index.num_states; i++)
 	{
@@ -145,7 +145,7 @@ const char *CtrlInfoI::getState (size_t state, size_t &len) const
 	if (getType() != Enumerated)
 		return 0;
 
-	const Info *info = _infobuf.mem();
+	const CtrlInfoData *info = _infobuf.mem();
 	const char *enum_string = info->value.index.state_strings;
 	size_t i=0;
 
@@ -173,7 +173,7 @@ void CtrlInfoI::getState (size_t state, stdString &result) const
 		return;
 	}
 
-	const Info *info = _infobuf.mem();
+	const CtrlInfoData *info = _infobuf.mem();
 	LOG_MSG ("CtrlInfo::getState: Cannot decode state " << state
 		<< ", only " << info->value.index.num_states << " states defined");
 	strstream tmp;

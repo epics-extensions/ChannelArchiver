@@ -8,8 +8,8 @@ USR_CXXFLAGS += -I/usr/local/include
 
 USR_CXXFLAGS += -I ../../Storage -I ../../rtree
 
-SRCS_DummyServer += DummyServer.cpp
-SRCS_ArchiveServer += main.cpp
+DummyServer_SRCS += DummyServer.cpp
+ArchiveServer_SRCS += main.cpp
 PROD := DummyServer ArchiveServer
 
 PROD_LIBS_DEFAULT := rtree Storage Tools ca Com

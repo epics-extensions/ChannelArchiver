@@ -3,8 +3,8 @@
 use Frontier::Client;
 
 # Setup URL
-#$server_url = 'http://localhost/archdat/ArchiveServer.cgi';
-$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
+$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
+#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
 $server = Frontier::Client->new(url => $server_url);
 
 # { int32 ver, string desc } = archdat.info()

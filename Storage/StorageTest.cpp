@@ -35,7 +35,7 @@ void add(const stdString &index_name)
     DataWriter *writer;
 
     DirectoryFile *index = new DirectoryFile(index_name, true);
-    stdString channel_name = "fred";
+    stdString channel_name = "jane";
     CtrlInfo ctrl_info;
     ctrl_info.setNumeric(3, "Volt",
                          -10.0, 10.0,
@@ -47,7 +47,7 @@ void add(const stdString &index_name)
 
     writer = new DataWriter(*index,
                             channel_name, ctrl_info,
-                            dbr_type, dbr_count, num_samples);
+                            dbr_type, dbr_count, 2.0, num_samples);
 
     dbr_time_double *data =  RawValue::allocate(dbr_type, dbr_count, 1);
 

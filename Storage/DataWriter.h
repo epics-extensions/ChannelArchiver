@@ -16,7 +16,7 @@ class DataWriter
 {
 public:
     /// Create a writer for the given index.
-    /// \param channel_name: Needs to be known to index.
+    /// \param channel_name: Name of the channel
     /// \param ctrl_info: The meta information for the channel
     /// \param dbr_type: the dbr_time_xxx type
     /// \param dbr_count: array size
@@ -26,6 +26,7 @@ public:
                const CtrlInfo &ctrl_info,
                DbrType dbr_type,
                DbrCount dbr_count,
+               double period,
                size_t num_samples);
 
     ~DataWriter();
@@ -39,6 +40,7 @@ private:
     const CtrlInfo &ctrl_info;
     DbrType dbr_type;
     DbrCount dbr_count;
+    double period;
     size_t raw_value_size;
 
     // Sets next_buffer_size to at least 'start',

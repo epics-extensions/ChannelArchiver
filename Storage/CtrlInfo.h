@@ -135,9 +135,11 @@ public:
 	/// position 'next' on character following the recognized state text
 	bool parseState(const char *text, const char **next, size_t &state) const;
 
-    /// Read/write a CtrlInfo from/to a binary data file
-    void read(class DataFile *datafile, FileOffset offset);
-	void write(class DataFile *datafile, FileOffset offset) const;
+    /// Read a CtrlInfo from a binary data file
+    bool read(class DataFile *datafile, FileOffset offset);
+
+    /// Write a CtrlInfo to a binary data file
+    bool write(class DataFile *datafile, FileOffset offset) const;
 
     void show(FILE *f) const;
 

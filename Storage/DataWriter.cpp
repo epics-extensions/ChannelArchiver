@@ -6,15 +6,38 @@
 #include "DataFile.h"
 #include "DataWriter.h"
 
+// TODO: Switch to new data file after
+// time limit or file size limit
+
+static stdString makeDataFileName()
+{
+    int year, month, day, hour, min, sec;
+    unsigned long nano;
+    char buffer[80];
+                                                                                    
+    epicsTime now = epicsTime::getCurrent();    
+    //    if (getSecsPerFile() == SECS_PER_MONTH)
+    //{
+    epicsTime2vals(now, year, month, day, hour, min, sec, nano);
+    sprintf(buffer, "%04d%02d%02d", year, month, day);
+    return stdString(buffer);
+    //}
+    //now = roundTimeDown(now, _secs_per_file);
+    //epicsTime2vals(now, year, month, day, hour, min, sec, nano);
+    //sprintf(buffer, "%04d%02d%02d-%02d%02d%02d", year, month, day, hour, min, sec);
+    //return stdString(buffer);
+}
+
 DataWriter::DataWriter(DirectoryFile &index,
                        const stdString &channel_name,
                        const CtrlInfo &ctrl_info,
                        DbrType dbr_type,
                        DbrCount dbr_count,
+                       double period,
                        size_t num_samples)
         : index(index), channel_name(channel_name),
           ctrl_info(ctrl_info), dbr_type(dbr_type),
-          dbr_count(dbr_count)
+          dbr_count(dbr_count), period(period)
 {
     DataFile *datafile;
 
@@ -24,19 +47,52 @@ DataWriter::DataWriter(DirectoryFile &index,
     available = 0;    
     dfi = index.find(channel_name);
     if (!dfi.isValid())
+        dfi = index.add(channel_name);
+    if (!dfi.isValid())
     {
-        LOG_MSG ("DataWriter: Cannot find '%s' in index\n",
+        LOG_MSG ("DataWriter: Cannot add '%s' to index\n",
                  channel_name.c_str());
         return;
     }
     if (!Filename::isValid(dfi.entry.data.last_file))
-    {
-        // TODO: Add new header
-        LOG_MSG("%s NEVER WRITTEN. NOT YET\n", channel_name.c_str());
-        return;
+    {   // - There is no datafile, no buffer
+        // Create data file
+        stdString data_file_name = makeDataFileName();
+        datafile = DataFile::reference(index.getDirname(),
+                                       data_file_name, true);
+        if (! datafile)
+        {
+             LOG_MSG ("DataWriter(%s): Cannot create data file '%s'\n",
+                 channel_name.c_str(), data_file_name.c_str());
+             return;
+        }        
+        // add CtrlInfo
+        FileOffset ctrl_info_offset;
+        if (!datafile->addCtrlInfo(ctrl_info, ctrl_info_offset))
+        {
+             LOG_MSG ("DataWriter(%s): Cannot add CtrlInfo to data file '%s'\n",
+                 channel_name.c_str(), data_file_name.c_str());
+             datafile->release();
+             return;
+        }        
+        // add first header
+        header = datafile->addHeader(dbr_type, dbr_count,
+                                     period, next_buffer_size);
+        if (!header)
+        {
+            LOG_MSG ("DataWriter(%s): Cannot add Header to data file '%s'\n",
+                    channel_name.c_str(), data_file_name.c_str());
+           datafile->release();
+           return;
+        }    
+        header->data.ctrl_info_offset = ctrl_info_offset;
+        // Upp the buffer size
+        calc_next_buffer_size(next_buffer_size);
+        datafile->release(); // now ref'ed by header
+        // Will add to index when we release the buffer
     }
     else
-    {
+    {   // - There is a data file and buffer
         datafile = DataFile::reference(index.getDirname(),
                                        dfi.entry.data.last_file, true);
         if (!datafile)
@@ -46,8 +102,7 @@ DataWriter::DataWriter(DirectoryFile &index,
             return;
         } 
         header = datafile->getHeader(dfi.entry.data.last_offset);
-        // Header should now ref. the datafile, we no longer need it.
-        datafile->release();
+        datafile->release(); // now ref'ed by header
         if (!header)
         {
             LOG_MSG("ArchiveChannel::write(%s): cannot get header %s @ 0x%lX\n",
@@ -81,16 +136,15 @@ DataWriter::~DataWriter()
         {
             header->data.dir_offset = dfi.entry.offset;
             header->write();
+            // if this is the first buffer, update the index's start
             if (dfi.entry.data.first_offset == INVALID_OFFSET ||
                 !Filename::isValid(dfi.entry.data.first_file))
-            {   // Update the index's 'first' pointer
-                dfi.entry.setFirst(header->datafile->getBasename(),
-                                   header->offset);
+            {
+                dfi.entry.setFirst(header->datafile->getBasename(), header->offset);
                 dfi.entry.data.first_save_time = header->data.begin_time;
             }
-            // Always update the index's 'last' pointer
-            dfi.entry.setLast(header->datafile->getBasename(),
-                              header->offset);
+            // Always update the index's end
+            dfi.entry.setLast(header->datafile->getBasename(), header->offset);
             dfi.entry.data.last_save_time = header->data.end_time;
             dfi.save();
         }
@@ -105,29 +159,37 @@ DataWriter::~DataWriter()
 
 bool DataWriter::add(const RawValue::Data *data)
 {
-    // In here, we should always have a valid header, but
-    // it might be full.
-    if (!header)
+    if (!header) // In here, we should always have a header
         return false;
-    if (available <= 0)
+    if (available <= 0) // though it might be full
     {
         DataHeader *new_header =
-            header->datafile->addHeader(dbr_type, dbr_count,
+            header->datafile->addHeader(dbr_type, dbr_count, period,
                                         next_buffer_size);
         if (!new_header)
             return false;
-        // Pointers from old header to new one
+        new_header->data.ctrl_info_offset = header->data.ctrl_info_offset;
+        // Link old header to new one
         header->set_next(new_header->datafile->getBasename(),
                          new_header->offset);
         header->write();
         // back from new to old
         new_header->set_prev(header->datafile->getBasename(),
-                             header->offset);
+                             header->offset);        
+        // Update index's start if this was the first header
+        if (dfi.entry.data.first_offset == INVALID_OFFSET ||
+            !Filename::isValid(dfi.entry.data.first_file))
+        {
+            dfi.entry.setFirst(header->datafile->getBasename(), header->offset);
+            dfi.entry.data.first_save_time = header->data.begin_time;
+        }        
         // Switch to new header
         delete header;
         header = new_header;
+        // Upp the buffer size
         calc_next_buffer_size(next_buffer_size);
     }
+    // Add the value
     available -= 1;
     FileOffset offset = header->offset
         + sizeof(DataHeader::DataHeaderData)
@@ -136,15 +198,16 @@ bool DataWriter::add(const RawValue::Data *data)
                     raw_value_size, data,
                     cvt_buffer,
                     header->datafile, offset);
+    // Update the header
     header->data.curr_offset += raw_value_size;
     header->data.num_samples += 1;
     header->data.buf_free    -= raw_value_size;
-    
     epicsTime time = RawValue::getTime(data);
     if (header->data.num_samples == 1) // first entry?
         header->data.begin_time = time;
     header->data.end_time = time;
-    // Note: we don't write the header nor dfi!
+    // Note: we didn't write the header nor the dfi,
+    // that'll happen when we close the DataWriter!
     return true;
 }
 

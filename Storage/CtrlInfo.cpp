@@ -218,7 +218,7 @@ bool CtrlInfo::parseState(const char *text,
 // For other types, the current info is maintained
 // so that the reader can decide to ignore the problem.
 // In other cases, the type is set to Invalid
-void CtrlInfo::read(DataFile *datafile, FileOffset offset)
+bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
 {
     // read size field only
     unsigned short size;
@@ -227,9 +227,9 @@ void CtrlInfo::read(DataFile *datafile, FileOffset offset)
         fread(&size, sizeof size, 1, datafile->file) != 1)
     {
         _infobuf.mem()->type = Invalid;
-        throwDetailedArchiveException(
-            ReadError, "Cannot read size of CtrlInfo");
-        return;
+        LOG_MSG("Datafile %s: Cannot read size of CtrlInfo @ 0x%lX\n",
+                datafile->getBasename().c_str(), offset);
+        return false;
     }
     SHORTFromDisk(size);
     if (size < offsetof(CtrlInfoData, value) + sizeof(EnumeratedInfo))
@@ -239,36 +239,32 @@ void CtrlInfo::read(DataFile *datafile, FileOffset offset)
             LOG_MSG("CtrlInfo too small: %d, "
                     "forcing to empty enum for compatibility\n", size);
             setEnumerated (0, 0);
-            return;
+            return false;
         }
         // keep current values for _infobuf!
-        char buffer[100];
-        sprintf(buffer, "CtrlInfo too small: %d", size);
-        throwDetailedArchiveException(Invalid, buffer);
-        return;
+        LOG_MSG("Datafile %s: Incomplete CtrlInfo @ 0x%lX\n",
+                datafile->getBasename().c_str(), offset);
+        return false;
     }
-
     _infobuf.reserve (size+1); // +1 for possible unit string hack, see below
     CtrlInfoData *info = _infobuf.mem();
     info->size = size;
     if (info->size > _infobuf.getBufferSize ())
     {
         info->type = Invalid;
-        char buffer[100];
-        sprintf(buffer, "CtrlInfo too big: %d", info->size);
-        throwDetailedArchiveException(Invalid, buffer);
-        return;
+        LOG_MSG("Datafile %s: CtrlInfo @ 0x%lX is too big\n",
+                datafile->getBasename().c_str(), offset);
+        return false;
     }
     // read remainder of CtrlInfo:
     if (fread (((char *)info) + sizeof size,
                info->size - sizeof size, 1, datafile->file) != 1)
     {
         info->type = Invalid;
-        throwDetailedArchiveException (ReadError,
-                                       "Cannot read remainder of CtrlInfo");
-        return;
+        LOG_MSG("Datafile %s: Cannot read remainder of CtrlInfo @ 0x%lX\n",
+                datafile->getBasename().c_str(), offset);
+        return false;
     }
-
     // convert rest from disk format
     SHORTFromDisk (info->type);
     switch (info->type)
@@ -288,7 +284,7 @@ void CtrlInfo::read(DataFile *datafile, FileOffset offset)
                 for (int i=0; i<end; ++i)
                 {
                     if (info->value.analog.units[i] == '\0')
-                        return; // OK, string is terminated
+                        return true; // OK, string is terminated
                 }
                 ++info->size; // include string terminator
                 info->value.analog.units[end] = '\0';
@@ -298,17 +294,17 @@ void CtrlInfo::read(DataFile *datafile, FileOffset offset)
             SHORTFromDisk (info->value.index.num_states);
             break;
         default:
-            LOG_MSG("CtrlInfo::read @offset 0x%X:\n", (void *) offset);
-            LOG_MSG("Invalid CtrlInfo, type %d, size %d\n",
-                    info->type, info->size);
+            LOG_MSG("Datafile %s: CtrlInfo @ 0x%lX has invalid  type %d, size %d\n",
+                    datafile->getBasename().c_str(),
+                    offset, info->type, info->size);
             info->type = Invalid;
-            throwDetailedArchiveException(Invalid,
-                                          "Archive: Invalid CtrlInfo");
+            return false;
     }
+    return true;
 }
 
 // Write CtrlInfo to file.
-void CtrlInfo::write(DataFile *datafile, FileOffset offset) const
+bool CtrlInfo::write(DataFile *datafile, FileOffset offset) const
 {   // Attention:
     // copy holds only the fixed CtrlInfo portion,  not enum strings etc.!
     const CtrlInfoData *info = _infobuf.mem();
@@ -333,22 +329,32 @@ void CtrlInfo::write(DataFile *datafile, FileOffset offset) const
                 + sizeof (EnumeratedInfo);
             break;
         default:
-            throwArchiveException (Invalid);
+            LOG_MSG("Datafile %s: CtrlInfo for 0x%lX has invalid  type %d, size %d\n",
+                    datafile->getBasename().c_str(),
+                    offset, info->type, info->size);
+            return false;
     }
     SHORTToDisk (copy.size);
     SHORTToDisk (copy.type);
-
     if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(datafile->file) != offset ||
         fwrite(&copy, converted, 1, datafile->file) != 1)
-        throwArchiveException (WriteError);
-
+    {
+        LOG_MSG("Datafile %s: Cannot write CtrlInfo @ 0x%lX\n",
+                datafile->getBasename().c_str(), offset);
+        return false;
+    }
     // only the common, minimal CtrlInfoData portion was converted,
     // the remaining strings are written from 'this'
     if (info->size > converted &&
         fwrite(((char *)info) + converted,
                info->size - converted, 1, datafile->file) != 1)
-        throwArchiveException (WriteError);
+    {
+        LOG_MSG("Datafile %s: Cannot write rest of CtrlInfo @ 0x%lX\n",
+                datafile->getBasename().c_str(), offset);
+        return false;
+    }
+    return true;
 }
 
 void CtrlInfo::show(FILE *f) const

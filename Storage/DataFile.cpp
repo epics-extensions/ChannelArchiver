@@ -15,6 +15,7 @@
 #include "string2cp.h"
 // Storage
 #include "DataFile.h"
+#include "CtrlInfo.h"
 
 #define LOG_DATAFILE
 
@@ -149,7 +150,7 @@ DataHeader *DataFile::getHeader(FileOffset offset)
 }
 
 DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
-                                size_t num_samples)
+                                double period, size_t num_samples)
 {
     if (fseek(file, 0, SEEK_END) != 0)
     {
@@ -168,6 +169,7 @@ DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
     size_t raw_value_size = RawValue::getSize(dbr_type, dbr_count);
     header->data.dbr_type = dbr_type;
     header->data.nelements = dbr_count;
+    header->data.period = period;
     header->data.buf_free = num_samples * raw_value_size;
     header->data.buf_size = header->data.buf_free + sizeof(DataHeader::DataHeaderData);
     if (!header->write())
@@ -191,6 +193,14 @@ DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
         return 0;
     }
     return header;
+}
+
+bool DataFile::addCtrlInfo(const CtrlInfo &info, FileOffset &offset)
+{
+    if (fseek(file, 0, SEEK_END) != 0)
+        return false;
+    offset = ftell(file);
+    return info.write(this, offset);
 }
 
 DataHeader::DataHeader(DataFile *datafile)

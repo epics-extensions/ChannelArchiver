@@ -71,7 +71,14 @@ public:
     /// will be initialized.
     /// Links (dir, prev, next) need to be configured and saved.
     class DataHeader *addHeader(DbrType dbr_type, DbrCount dbr_count,
-                                size_t num_samples);
+                                double period, size_t num_samples);
+
+    /// Add CtrlInfo to the data file
+
+    /// \return true for OK
+    /// \param offset is set to offset of the info
+    ///
+    bool addCtrlInfo(const CtrlInfo &info, FileOffset &offset);
 private:
     friend class DataHeader;
     friend class CtrlInfo;

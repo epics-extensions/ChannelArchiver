@@ -1,0 +1,136 @@
+<html>
+<head>
+<title>ChannelArchiver Overview</title>
+<link REL="STYLESHEET" HREF="../style.css" TYPE="text/css">
+</head>
+
+<body BACKGROUND="../blueback.jpg">
+
+<blockquote>
+  <h1>ChannelArchiver Overview</h1>
+  The ChannelArchiver is an archiving system for EPICS.
+  It is available for Win32 (Microsoft Windows 98, NT, 2000)
+  as well as Linux and many other Unix platforms.
+  <p>
+  <img src="components.gif" width=686 height=354><br>
+
+  Initially, the collection of tools might seem overwhelming,
+  but note that you only have to use those that you need.
+  They are now described in the order of importance.
+  
+  <h2>ArchiveEngine</h2>
+  The ArchiveEngine is the main component of the ChannelArchiver.
+  Even if you are not using the ArchiveEngine itself but only
+  interested in the collected data, you might still want to understand a
+  little bit about how the ArchiveEngine operates in order to make
+  best use of the data.<br>
+  The ArchiveEngine is an EPICS ChannelAccess client. It can save any
+  channel served by any ChannelAccess server. The most common ChannelAccess
+  servers are EPICS IOCs (Input/Output controllers) running the EPICS
+  database.
+  <br>
+  The ArchiveEngine saves the full information available via
+  ChannelAccess: The value, time stamp and status as well as
+  with control information like units, display and alarm limits, ...
+  <br>
+  The ArchiveEngine is configured with a text file that lists
+  what channels to archive and how.
+  It can scan the given channels periodically as well as archive
+  them on change.
+  The data is written to local disk files.
+  <br>
+  <a href="../engine/default.htm">More on the ArchiveEngine...</a>
+
+  <A NAME=retrieval><h2>Retrieval</h2></a>
+  There are several options for
+  <a href="../retrieval/default.htm">data retrieval</a>.
+  To get to the archived
+  data, you only have to use <i>one</i> of the following options. Depending
+  on the case at hand, you might prefer one tool over the other or
+  pick a different tool for different situations.
+  
+  <dl>
+  <dt><a href="../cgiexport/index.htm">CGIExport</a></dt>
+  <dd>This seems to be the <i>most popular option</i>.
+      CGIExport is a plugin for web servers.
+      It is  definetely <i>not</i> the easiest to setup, because
+      you have to configure the security of your network and web
+      server, install GNUplot and finally create and maintain web
+      pages that use this tool.
+      <br>
+      But once this has been done by a suitable expert, users can access
+      ChannelArchiver data with any web browser (Netscape, Internet
+      Explorer, ...) from any computer (Windows PC, Linux, Solaris,
+      Macintosh, ...) on the local network or even the whole
+      Internet.
+      CGIExport allows you to browse archived channel names,
+      view online plots, download spreadsheets of the selected data
+      as well as <a href="../matlab/default.htm">Matlab</a> files.
+  </dd>
+
+  <dt><a href="../winbrowser/index.htm">WinBrowser</a></dt>
+  <dd>This is a Win32 program that offers the same options as the
+      CGIExport tool: View the data, export it in spreadsheet
+      or Matlab files... In addition, it allows interactive
+      browing (zooming, panning) and is usually faster than
+      the CGIExport tool. On the flipside, it is only
+      available for PCs.
+  </dd>
+
+  <dt>xarr</dt>
+  <dd>xarr (by Chris Larrieu, JLab) is similar to the WinBrowser
+      but for Unix platforms. It might not support all ChannelArchiver
+      features because it was originally developed for a different
+      type of archiver.
+  </dd>
+
+  <dt><a href="../export/default.htm">ArchiveExport</a></dt>
+  <dd>ArchiveExport is a simple command-line tool.
+      It can create Spreadsheets, GNUPlot and Matlab data files.
+      It does not have a graphical user interface,
+      it cannot plot data itself. It can be a building block
+      for shell scripts or if you only have telnet/ssh access
+      to the archive files and want to look at the data.
+  </dd>
+
+  <dt>Striptool</dt>
+  <dd>Also developed by Chris Larrieu (JLab),
+      Striptool is well known in the EPICS community
+      as a scope-like real-time ChannelAccess client.
+      With help of a ChannelArchiver plugin you can use
+      Striptool on a "life" channel and then scroll back-in-time
+      to archived data.
+  </dd>
+
+  <dt><a href="../casi/default.htm">casi: TCL, Python, Perl</a></dt>
+  <dd>The "Channel Archiver Scripting Interface"
+      provides scripting languages with access to archive data. 
+      If you already know e.g. python, you'll understand what this
+      allows you to do.
+      If instead you are looking for a data analysis or plotting beyond
+      what you get from the generic tools (WinBrowser, CGIExport,
+      ...), learning Matlab might be a better option.
+   </dd>
+
+   <dt><a href="../manager/default.htm">ArchiveManager</a></dt>
+   <dd>A command-line tool to maintain the archive files:
+       View what's in the archive, copy a seleted time range of
+       channels into a new archive, perform basic repairs.
+       Somebody who needs to take care of archived data,
+       perform backups and arrange the available disk space
+       has to use this tool. It is not useful for data retrieval
+       and most end users.
+   </dd>
+
+   <dt><a href="../libio/default.htm">LibIO</a> </dt>
+   <dd>All the ChannelArchiver tools are built on this C++ library.
+       If you want to write C++ programs that access the raw
+       data files, you have to understand this API.
+   </dd>
+  </dl>
+
+  <hr>
+  <a href="../default.htm">ChannelArchiver Manual</a>
+</blockquote>
+</body>
+</html>

@@ -17,7 +17,7 @@
     <li>06/21/2001<br>
       Patch #1:<br>
        <ul>
-       <li>ArchiveEngine: Exploring possible NFS problems
+       <li>ArchiveEngine: Exploring possible problems
            when writing to a disk that is NFS-mounted.
            Fixed EngineServer, the engine's HTTP server,
            to run on even if the write thread hangs because
@@ -32,12 +32,12 @@
            <li>Didn't really handle multiple archives until now.
                Hopefully not too many bugs left.
            <li>No longer investigates all subarchives
-               unless necessary.<br>
-               For find-channel and get-value-after-timestamp
-               this can be skipped -> <font color=red>much faster!</font>
-               When a list of channels and/or times is requested,
-               the sub archives are still queried.
-           </ul>
+	       unless necessary.<br>
+	       For find-channel and get-value-after-timestamp
+	       this can be skipped -> much faster!<br>
+	       When a list of channels and/or times is requested,
+	       the sub archives are still queried.
+	   </ul>
        <li>GNUPlotExporter:<br>
            <ul>
            <li>Use two Y-axes if exporting excactly two channels
@@ -398,5 +398,4 @@
 </font>
 </body>
 </html>
-
 

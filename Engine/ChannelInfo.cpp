@@ -341,6 +341,8 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
 
     if (!was_connected  &&  me->_connected)
     {
+        LOG_MSG(osiTime::getCurrent() << ", " << me->_name
+                << ": Connected\n");
         stdList<GroupInfo *>::iterator g;
         for (g=me->_groups.begin(); g!=me->_groups.end(); ++g)
             (*g)->incConnectedChannels();

@@ -335,11 +335,11 @@ static void channelInfo (HTTPClientConnection *connection, const stdString &path
     page.closeTable ();
 }
 
-void groups (HTTPClientConnection *connection, const stdString &path)
+void groups(HTTPClientConnection *connection, const stdString &path)
 {
-    HTMLPage page (connection->getSocket(), "Groups");
-    const stdList<GroupInfo *> &group_list = theEngine->getGroups ();
-    if (group_list.empty ())
+    HTMLPage page(connection->getSocket(), "Groups");
+    const stdList<GroupInfo *> &group_list = theEngine->getGroups();
+    if (group_list.empty())
     {
         page.line ("<I>no groups</I>");
         return;
@@ -347,9 +347,11 @@ void groups (HTTPClientConnection *connection, const stdString &path)
 
     stdList<GroupInfo *>::const_iterator group;
     size_t  channel_count, connect_count;
+    size_t  total_channel_count=0, total_connect_count=0;
     stdString name;
     name.reserve(80);
-    page.openTable (1, "Name", 1, "ID", 1, "Enabled", 1, "Channels", 1, "Connected", 0);
+    page.openTable (1, "Name", 1, "ID", 1, "Enabled", 1, "Channels",
+                    1, "Connected", 0);
     for (group=group_list.begin(); group!=group_list.end(); ++group)
     {
         name = "<A HREF=\"group/";
@@ -361,21 +363,39 @@ void groups (HTTPClientConnection *connection, const stdString &path)
         id << (*group)->getID() << '\0';
         channel_count = (*group)->getChannels().size();
         connect_count = (*group)->getConnectedChannels ();
+        total_channel_count += channel_count;
+        total_connect_count += connect_count;
         channels << channel_count << '\0';
         if (channel_count != connect_count)
-            connected << "<FONT COLOR=#FF0000>" << connect_count << "</FONT>" << '\0';
+            connected << "<FONT COLOR=#FF0000>"
+                      << connect_count << "</FONT>" << '\0';
         else
             connected << connect_count << '\0';
         page.tableLine (name.c_str(),
-            id.str(),
-            ((*group)->isEnabled() ? "Yes" : "<FONT COLOR=#FF0000>No</FONT>"),
-            channels.str(),
-            connected.str(),
-            0);
-        id.rdbuf()->freeze (false);
-        channels.rdbuf()->freeze (false);
-        connected.rdbuf()->freeze (false);
+                        id.str(),
+                        ((*group)->isEnabled() ?
+                         "Yes" : "<FONT COLOR=#FF0000>No</FONT>"),
+                        channels.str(),
+                        connected.str(),
+                        0);
+        id.rdbuf()->freeze(false);
+        channels.rdbuf()->freeze(false);
+        connected.rdbuf()->freeze(false);
     }
+
+    std::strstream total_channels, total_connected;
+    total_channels << total_channel_count << '\0';
+    if (total_channels != total_connected)
+        total_connected << "<FONT COLOR=#FF0000>"
+                        << total_connect_count << "</FONT>" << '\0';
+    else
+        total_connected << total_connect_count << '\0';
+    page.tableLine("Total", " ", " ",
+                   total_channels.str(),
+                   total_connected.str(), 0);
+    total_channels.rdbuf()->freeze(false);
+    total_connected.rdbuf()->freeze(false);
+        
     page.closeTable ();
 }
 

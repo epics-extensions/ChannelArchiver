@@ -111,6 +111,10 @@ int main (int argc, const char *argv[])
     else
         directory_name = parser.getArgument (1);
 
+    LOG_MSG(osiTime::getCurrent()
+            << " Starting Engine with configuration file "
+            << config_file << "\n");
+
     Lockfile lock_file("archive_active.lck");
     if (! lock_file.Lock (argv[0]))
         return -1;
@@ -152,7 +156,6 @@ int main (int argc, const char *argv[])
 
         std::cerr << "\n------------------------------------------\n"
              << "Engine Running.\n"
-             << "Started " << osiTime::getCurrent() << "\n"
              << "Stop via web browser at http://localhost:"
              << EngineServer::_port << "/stop\n"
              << "------------------------------------------\n";

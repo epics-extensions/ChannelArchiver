@@ -90,7 +90,24 @@ HTMLPage::~HTMLPage()
 	line("</FONT>");
 	line("</BODY>");
 	line("</HTML>");
+    // Mozilla would quite often not display the full page.
+    // Did these empty lines at the end of the document fix that?!
+	out("\r\n", 2);
+	out("\r\n", 2);
+	out("\r\n", 2);
 }
+
+void HTMLPage::out(const char *line, size_t length)
+{	
+	::send(_socket, line, length, 0);
+}
+
+void HTMLPage::out(const char *line)
+{	out(line, strlen(line));	}
+
+void HTMLPage::out(const stdString &line)
+{	out(line.c_str(), line.length ());	}
+
 
 void HTMLPage::line(const char *line)
 {

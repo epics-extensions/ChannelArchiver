@@ -41,7 +41,10 @@
 
 // >5: all
 #define ENGINE_DEBUG 4
-#define HTTPD_DEBUG  4
+#define HTTPD_DEBUG  5
+// HTTP clients older than this timeout
+// are killed
+#define HTTPD_CLIENT_TIMEOUT 30
 
 // Config:
 //
@@ -53,7 +56,7 @@
 
 // Use password mechanism
 // (for stopping the engine over the web)
-#define USE_PASSWD
+#undef USE_PASSWD
 
 #define DEFAULT_USER    "engine"
 #define DEFAULT_PASS    "password"   

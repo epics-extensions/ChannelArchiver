@@ -172,7 +172,7 @@ static void config(HTTPClientConnection *connection, const stdString &path)
 
     page.line("<H3>Groups</H3>");
     page.line("<UL>");
-    page.line("<LI><A HREF=\"/groups\">List groups</A><br>");
+    page.line("<LI><A HREF=\"/groups\">List groups</A>");
     page.line("<LI><FORM METHOD=\"GET\" ACTION=\"/addgroup\">");
     page.line("    Group Name:");
     page.line("    <input type=\"text\" name=\"GROUP\" size=20>");
@@ -210,6 +210,10 @@ static void config(HTTPClientConnection *connection, const stdString &path)
     page.line("    </TABLE>");
     page.line("    </FORM>");
     page.line("</UL>");
+#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
+    LOG_MSG("EngineServer::config printed to socket %d\n",
+            connection->getSocket());
+#   endif
 }
 
 static void channels(HTTPClientConnection *connection, const stdString &path)
@@ -329,7 +333,8 @@ static void channelInfoLine(HTMLPage &page, const ChannelInfo *channel)
         0);
 }
 
-static void channelInfo(HTTPClientConnection *connection, const stdString &path)
+static void channelInfo(HTTPClientConnection *connection,
+                        const stdString &path)
 {
     stdString channel_name = path.substr(9);
 

@@ -140,17 +140,54 @@ void HTTPServer::cleanup()
     LOG_MSG("-----------------------------------------------------\n");
 #   endif
 
-    for (clients = _clients.begin(); clients != _clients.end(); ++clients)
+    clients = _clients.begin();
+    epicsTime now = epicsTime::getCurrent();
+    while (clients != _clients.end())
     {
         client = *clients;
         if (client->isDone())
         {
             clients = _clients.erase(clients);
-            LOG_MSG("HTTPClientConnection cleanup of #%d\n", client->getNum());
+            LOG_MSG("HTTPClientConnection cleanup of #%d (done)\n",
+                    client->getNum());
             delete client;
         }
+        else if ((now - client->getBirthTime()) > HTTPD_CLIENT_TIMEOUT)
+        {
+            clients = _clients.erase(clients);
+            LOG_MSG("HTTPClientConnection cleanup of #%d (timeout)\n",
+                    client->getNum());
+            delete client;
+        }
+        else
+            ++clients;
     }
 }
+
+void HTTPServer::serverinfo(SOCKET socket)
+{
+    HTMLPage page(socket, "Server Info");
+    
+    HTTPClientConnection *  client;
+    stdList<HTTPClientConnection *>::iterator clients;
+
+    page.openTable(3, "Clients", 0);
+    page.tableLine("Client Number", "Status", "Age [secs]", 0);
+    char num[20], age[50];
+    const char *status;
+    epicsTime now = epicsTime::getCurrent();
+    for (clients = _clients.begin(); clients != _clients.end(); ++clients)
+    {
+        client = *clients;
+
+        sprintf(num, "%d", client->getNum());
+        status = (client->isDone() ? "done" : "running");
+        sprintf(age, "%f", now - client->getBirthTime());
+        page.tableLine(num, status, age, 0);
+    }
+    page.closeTable();
+}
+
 
 // HTTPClientConnection -----------------------------------------
 
@@ -168,13 +205,25 @@ HTTPClientConnection::HTTPClientConnection(HTTPServer *server,
     _done = false;
     _socket = socket;
     _dest = 0;
+    _birthtime = epicsTime::getCurrent();
+#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
+    LOG_MSG("new HTTPClientConnection #%d on socket %d\n", _num, _socket);
+#   endif
 }
 
 HTTPClientConnection::~HTTPClientConnection()
 {
 #ifdef HTTPD_DEBUG
-    LOG_MSG("HTTPClientConnection::~HTTPClientConnection #%d\n", _num);
+    LOG_MSG("HTTPClientConnection::~HTTPClientConnection #%d "
+            "(used socket %d)\n", _num, _socket);
 #endif
+
+    if (! _done)
+    {
+        LOG_MSG("HTTPClientConnection: Shutdown of #%d",_num);
+        shutdown(_socket, SHUT_RDWR);
+        socket_close(_socket);
+    }
 }
 
 void HTTPClientConnection::run()
@@ -186,12 +235,28 @@ void HTTPClientConnection::run()
             _num, epicsThreadGetIdSelf(),
             local_info.c_str(), peer_info.c_str());
 #endif
+
+    // Unclear:
+    // The final 'socket_close' call should flush
+    // queued write requests.
+    // But especially with Mozilla, some pages show up
+    // incomplete even though this thread has printed
+    // all the data.
+    // SO_LINGER makes us hang in the close call for 30 seconds.
+    // Seems to help some but doesn't solve the problem 100% of the time.
+    struct linger linger;
+    linger.l_onoff = 1;
+    linger.l_linger = 30;
+    setsockopt(_socket, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger));
+
     while (!handleInput())
     {
     }
-        
     socket_close(_socket);
     _done = true;
+#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
+    LOG_MSG("HTTPClientConnection::run #%d closed socket %d\n", _num, _socket);
+#   endif
 }
 
 // Result: done, i.e. connection can be closed?
@@ -288,11 +353,16 @@ bool HTTPClientConnection::analyzeInput()
     stdString path = _input_line[0].substr(4, pos-5);
     stdString protocol = _input_line[0].substr(pos+5);
     try
-    {   // Linear search ?!
+    {
+        // Linear search ?!
         // Hash or map lookup isn't straightforward
         // because path has to be cut for parameters first...
+        if (strcmp(path.c_str(), "/server") == 0)
+        {
+            _server->serverinfo(_socket);
+            return true;
+        }
         PathHandlerList *h;
-        
         for (h = _handler; h && h->path; ++h)
         {
             if ((h->path_len > 0  &&
@@ -307,6 +377,9 @@ bool HTTPClientConnection::analyzeInput()
                         path.c_str(), peer.c_str());
 #               endif
                 h->handler(this, path);
+#               ifdef HTTPD_DEBUG
+                LOG_MSG("HTTP invoked handler for '%s'\n", path.c_str());
+#               endif
                 return true;
             }
         }

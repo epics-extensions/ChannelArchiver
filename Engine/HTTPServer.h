@@ -10,6 +10,7 @@
 #if !defined(HTTP_SERVER_H_)
 #define HTTP_SERVER_H_
 
+#include <epicsTime.h>
 #include <epicsThread.h>
 #include <ToolsConfig.h>
 #include <NetTools.h>
@@ -36,6 +37,8 @@ public:
     void run();
     int getTotalClientCount()
     {   return _total_clients; }
+
+    void serverinfo(SOCKET socket);
     
 private:
     HTTPServer(SOCKET socket);
@@ -95,8 +98,12 @@ public:
     {  _thread.start(); }
     void run();
 
+    const epicsTime &getBirthTime()
+    {   return _birthtime; }
+
 private:
     HTTPServer              *_server;
+    epicsTime                _birthtime;
     epicsThread              _thread; // .. that handles this connection
     int                      _num;    // unique sequence number of this conn.
     bool                     _done;   // has run() finished running?

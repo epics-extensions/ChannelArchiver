@@ -45,16 +45,4 @@ protected:
 	int _refresh;
 };
 
-inline void HTMLPage::out (const char *line, size_t length)
-{	
-	// un-const for compatibility w/ HP_aCC
-	::send (_socket, (char *)line, length, 0);
-}
-
-inline void HTMLPage::out (const char *line)
-{	out (line, strlen(line));	}
-
-inline void HTMLPage::out (const stdString &line)
-{	out (line.c_str(), line.length ());	}
-
 #endif //__HTMLPAGE_H__

@@ -12,8 +12,3 @@ perl ../MakeDoc.pl -v ../../LibIO/*I.h ../../LibIO/BinArchive.h ../../LibIO/Mult
 cd ..
 cd engine
 perl ../MakeDoc.pl -v ../../Engine/Engine.h ../../Engine/Configuration.h ../../Engine/ConfigFile.h
-
-cd ..
-cd atac
-perl ../MakeDoc.pl -v ../../atac/atac.cpp ../../atac/atacTools.tcl ../../atac/atacGraph.tk
-cd ..

@@ -1,5 +1,5 @@
-// --------------------------------------------------------
-// $Id$
+// ------------- -*- c++ -*- ------------------------------
+// $Id$ 
 //
 // Please refer to NOTICE.txt,
 // included as part of this distribution,
@@ -81,15 +81,27 @@ public:
 // <UL>
 // <LI> List all the channels in an archive (BinArchive in this case):
 //	<PRE>
-//	Archive         archive (new BinArchive (archive_name));
-//	ChannelIterator channel (archive);
-//	
-//	archive.findFirstChannel (channel);
-//	while (channel)
-//	{
-//		cout << channel->getName() << endl;
-//		++ channel;
-//	}                             
+//  #include&lt;BinArchive.h&gt;
+//  #include&lt;ArchiveException.h&gt;
+//  int main(int argc, const char argv[])
+//  {
+//      try
+//      {
+//          Archive archive(new BinArchive(argv[1]));
+//          ChannelIterator channel(archive);
+//          archive.findFirstChannel(channel);
+//          while (channel)
+//          {
+//              cout << channel->getName() << endl;
+//              ++ channel;
+//          }
+//      }
+//      catch (ArchiveException &e)
+//      {
+//          cout << "Error: " << e.what() << "\n";
+//      }
+//      return 0;
+//  }
 //	</PRE>
 // <LI> Find channels that match a given regular expression:
 //	<PRE>

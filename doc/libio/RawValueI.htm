@@ -24,18 +24,18 @@ All values hold status, severity, time.
 dbr_time_double has RISC pads
 but it's used here because it's most common (my opinion)
 <PRE>
-typedef dbr_time_double	Type;
+   typedef dbr_time_double Type;
 </PRE>
 <LI>
 Allocate/free space for num samples of type/count.
 <PRE>
-static Type * allocate (DbrType type, DbrCount count, size_t num);
-static void free (Type *value);
+   static Type * allocate (DbrType type, DbrCount count, size_t num);
+   static void free (Type *value);
 </PRE>
 <LI>
 Calculate size of a single value of type/count
 <PRE>
-static size_t getSize (DbrType type, DbrCount count);
+   static size_t getSize (DbrType type, DbrCount count);
 </PRE>
 <LI>
 Compare the value part of two RawValues, not the time stamp or status!
@@ -43,30 +43,30 @@ Compare the value part of two RawValues, not the time stamp or status!
 <BR>
 Both lhs, rhs must have the same type.
 <PRE>
-static bool hasSameValue (DbrType type, DbrCount count, size_t size, const Type *lhs, const Type *rhs);
+   static bool hasSameValue (DbrType type, DbrCount count, size_t size, const Type *lhs, const Type *rhs);
 </PRE>
 <LI>
 Only valid for Values of same type:
 <PRE>
-static void copy (DbrType type, DbrCount count, Type *lhs, const Type *rhs);
+   static void copy (DbrType type, DbrCount count, Type *lhs, const Type *rhs);
 </PRE>
 <LI>
 Access to status...
 <PRE>
-static short getStat (const Type *value);
-static short getSevr (const Type *value);
-static void getStatus (const Type *value, stdString &status);
-static void setStatus (Type *value, short status, short severity);
+   static short getStat (const Type *value);
+   static short getSevr (const Type *value);
+   static void getStatus (const Type *value, stdString &status);
+   static void setStatus (Type *value, short status, short severity);
 </PRE>
 <LI>
 and time
 <PRE>
-static const osiTime getTime (const Type *value);
-static void setTime (Type *value, const osiTime &stamp);
-static void getTime (const Type *value, stdString &time);
+   static const osiTime getTime (const Type *value);
+   static void setTime (Type *value, const osiTime &stamp);
+   static void getTime (const Type *value, stdString &time);
 private:
-friend class ValueI;
-static Type * allocate (size_t size);
+   friend class ValueI;
+   static Type * allocate (size_t size);
 };
 </PRE>
 </UL>

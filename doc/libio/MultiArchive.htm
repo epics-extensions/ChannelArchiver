@@ -15,19 +15,19 @@ an ASCII file with the following format:
 <UL>
 <LI>Comments (starting with a number-sign) and empty lines are ignored
 <LI>The very first line must be<BR>
-   <PRE>master_version=1</PRE>
-   There must be no comments preceding this line!
+    <PRE>master_version=1</PRE>
+    There must be no comments preceding this line!
 <LI>All remaining lines list one archive name per line
 </UL>
 <H2>Example</H2>
 <PRE>
-master_version=1
-# First check the "fast" archive
-/archives/fast/dir
-# Then check the "main" archive
-/archives/main/dir
-# Then check Fred's "xyz" archive
-/home/fred/xyzarchive/dir
+ master_version=1
+ # First check the "fast" archive
+ /archives/fast/dir
+ # Then check the "main" archive
+ /archives/main/dir
+ # Then check Fred's "xyz" archive
+ /home/fred/xyzarchive/dir
 </PRE>
 <P>
 This type of archive is read-only!
@@ -63,7 +63,7 @@ listed first.
 <LI>
 Open a MultiArchive for the given master file
 <PRE>
-MultiArchive (const stdString &master_file);
+   MultiArchive(const stdString &master_file);
 </PRE>
 <LI>
 All virtuals from <A HREF="ArchiveI.htm#Main">ArchiveI</A> are implemented,

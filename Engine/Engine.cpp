@@ -364,11 +364,16 @@ void Engine::writeArchive()
 
 bool Engine::process()
 {
+    // When there's nothing to scan or write, we
+    // sleep a little. But not too long, because
+    // that e.g. determines the max. response time
+    // to a shutdown request (via CTRL-C or HTTPD)
+    // or a need_CA_flush
+#define MAX_DELAY 1.0
     // scan, write or wait?
     epicsTime now = epicsTime::getCurrent();
     double scan_delay, write_delay;
     bool do_wait = true;
-
     if (scan_list.isDueAtAll())
     {
         scan_delay = scan_list.getDueTime() - now;
@@ -377,14 +382,11 @@ bool Engine::process()
             scan_list.scan(now);
             do_wait = false;
         }
+        if (scan_delay > MAX_DELAY)
+            scan_delay = MAX_DELAY;
     }
     else
-    {
-        // Wait a little while....
-        // This determines the _need_CA_flush delay
-        scan_delay = 0.5;
-    }
-    
+        scan_delay = MAX_DELAY; 
     write_delay = next_write_time - now;            
     if (write_delay <= 0.0)
     {

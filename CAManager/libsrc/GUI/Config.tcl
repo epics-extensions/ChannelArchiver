@@ -4,7 +4,7 @@ proc camGUI::aConfig {w} {
   if {![regexp (\[0-9\]*), [$w cursel] all row]} return
   set tl .c
   toplevel $tl
-  wm title $tl "ArchiveEngine Config"
+  wm title $tl "Archiver Config"
   wm protocol $tl WM_DELETE_WINDOW {after 1 $::w(close) invoke}
   set lnk 0
   

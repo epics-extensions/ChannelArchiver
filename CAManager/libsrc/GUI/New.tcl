@@ -16,7 +16,7 @@ proc camGUI::aNew {w} {
       -command "toggleBlock $row"
   $w.f$row.c config -activebackground [$w.f$row.c cget -background]
   bind $w.f$row.c <Enter> {
-    set ::status "inhibit restart of ArchiveEngine"
+    set ::status "inhibit restart of Archiver"
   }
   bind $w.f$row.c <Leave> {
     set ::status ""

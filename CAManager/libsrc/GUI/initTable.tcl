@@ -28,7 +28,7 @@ proc camGUI::initTable {table} {
 	-command "toggleBlock $i"
     $table.f$i.c config -activebackground [$table.f$i.c cget -background]
     bind $table.f$i.c <Enter> {
-      set ::status "inhibit restart of ArchiveEngine"
+      set ::status "inhibit restart of Archiver"
     }
     bind $table.f$i.c <Leave> {
       set ::status ""

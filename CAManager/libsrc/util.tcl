@@ -10,10 +10,10 @@ regsub ": (.*) \\$" $CVS(Revision,Util) "\\1" CVS(Revision,Util)
 regsub ": (.*) \\$" $CVS(Date,Util) "\\1" CVS(Date,Util)
 regsub ": (.*) \\$" $CVS(Author,Util) "\\1" CVS(Author,Util)
 
-# EnvVar DEBUG should be numeric
+# EnvVar CAMANAGER_DEBUG should be numeric
 set ::debug 0
-if {[info exists env(DEBUG)]} {
-  if {[catch {set ::debug [expr $env(DEBUG)]}]} {
+if {[info exists env(CAMANAGER_DEBUG)]} {
+  if {[catch {set ::debug [expr $env(CAMANAGER_DEBUG)]}]} {
     set ::debug 1
   }
 }
@@ -52,7 +52,7 @@ if {$::debug} {
   if {[expr $::debug & 1]} { set colormap(schedule) green }
   if {[expr $::debug & 6]} { set colormap(debug1) brown }
   if {[expr $::debug & 4]} { set colormap(debug2) orange }
-  if {[expr $::debug & 8]} { set colormap(funcall) no }
+  if {[expr $::debug & 24]} { set colormap(funcall) no }
   if {[expr $::debug & 16]} { set colormap(funcallX) no }
   if {[expr $::debug & 32]} { set colormap(console) no }
 }

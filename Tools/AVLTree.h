@@ -268,6 +268,7 @@ void AVLTree<Item>::make_dotfile(const char *name)
     i=0;
     print_dot_node(f, root, i);
     fprintf(f, "}\n");
+    fclose(f);
 }
 
 #endif

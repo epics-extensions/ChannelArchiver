@@ -17,15 +17,17 @@ class Guard
 {
 public:
     /// Constructor attaches to mutex and locks.
-    Guard(epicsMutex &mutex)
-            : mutex(mutex)
+    Guard(epicsMutex &mutex) : mutex(mutex)
     {
         mutex.lock();
+        is_locked = true;
     }
 
     /// Destructor unlocks.
     ~Guard()
     {
+        if (!is_locked)
+            LOG_MSG("Warning: Found a released lock in Guard::~Guard()\n");
         mutex.unlock();
     }
 
@@ -39,18 +41,21 @@ public:
     void unlock()
     {
         mutex.unlock();
+        is_locked = false;
     }
 
     /// Lock again after a temporary unlock.
     void lock()
     {
         mutex.lock();
+        is_locked = true;
     }
 
 private:
     Guard(const Guard &); // not impl.
     Guard &operator = (const Guard &); // not impl.
     epicsMutex &mutex;
+    bool is_locked;
 };
 
 #endif

@@ -21,7 +21,7 @@ public:
 	// Print the interface stuff
 	void interFace (const stdString &cgi, const stdString &directory, const stdString &pattern,
 		const vector<stdString> &names, double round, bool fill, bool status,
-		osiTime &start, osiTime &end, bool today = false);
+		osiTime &start, osiTime &end);
 
 private:
 	bool _started;

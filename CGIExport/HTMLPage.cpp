@@ -73,7 +73,7 @@ static void makeSelect (const char *name, int start, int end, int select)
 // Print the interface stuff
 void HTMLPage::interFace (const stdString &cgi, const stdString &directory, const stdString &pattern,
 	const vector<stdString> &names, double round, bool fill, bool status,
-	osiTime &start, osiTime &end, bool today)
+	osiTime &start, osiTime &end)
 {
 	size_t i;
 	int year, month, day, hour, min, sec;
@@ -97,10 +97,6 @@ void HTMLPage::interFace (const stdString &cgi, const stdString &directory, cons
 	cout << "></TD></TR>\n";
 
 	osiTime2vals (start, year, month, day, hour, min, sec, nano);
-	if (today)
-	{
-		hour = min = sec = 0;
-	}
 	cout << "<TR><TD>Start:</TD><TD>Day (m/d/y)\n";
 	makeSelect ("STARTMONTH",    1,   12, month);
 	makeSelect ("STARTDAY"  ,    1,   31, day);
@@ -112,11 +108,6 @@ void HTMLPage::interFace (const stdString &cgi, const stdString &directory, cons
 	cout << "</TD></TR>\n";
 
 	osiTime2vals (end, year, month, day, hour, min, sec, nano);
-	if (today)
-	{
-		hour = 23;
-		min = sec = 59;
-	}
 	cout << "<TR><TD>End:</TD><TD>Day (m/d/y)\n";
 	makeSelect ("ENDMONTH",    1,   12, month);
 	makeSelect ("ENDDAY"  ,    1,   31, day);

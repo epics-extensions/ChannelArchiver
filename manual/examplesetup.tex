@@ -14,25 +14,24 @@ In there, a file ``\INDEX{archiveconfig.csv}'' describes the top-level layout:
 # because this file fails to parse unless
 # everything is perfect.
 
-# Type Name Port Desc       Time     Frequency
+# Type Name Port Desc       Restart  Time
 DAEMON ICS  4090 ICS Daemon
-ENGINE tim  4091 Timing     08:00    daily
-ENGINE mps  4092 Mach.Prot. 08:30    daily
+ENGINE tim  4091 Timing     daily    08:00
+ENGINE mps  4092 Mach.Prot. daily    08:30
 
 DAEMON RF   4900 RF
-ENGINE llrf 4901 LowLvl.    We 10:20 weekly
-ENGINE hprf 4902 HiPwr.     We 10:30 weekly
+ENGINE llrf 4901 LowLvl.    weekly   We 10:20
+ENGINE hprf 4902 HiPwr.     weekly   We 10:30
 \end{lstlisting}
 
 \noindent This reads as follows:
 We intend to run one ``ArchiveDaemon'' for the Integrated Control
 System (ICS) and one for the channels related to Radio Frequency (RF).
-More on the ArchiveDaemon follows, for now let it suffice that a
-daemon starts archive engines and monitors their operation.
-The ICS daemon should maintain one ArchiveEngine for the timing system
-(tim) and one for the machine protection system (mps),
-while the RF daemon has one engine for the low-level and one for the
-high power RF (llrf, hprf).
+ArchiveDaemon, described in full detail in chapter \ref{ch:daemon},
+starts archive engines and monitors their operation. The ICS daemon
+should maintain one ArchiveEngine for the timing system (tim) and one
+for the machine protection system (mps), while the RF daemon has one
+engine for the low-level and one for the high power RF (llrf, hprf).
 
 This separation is somewhat arbitrary. We could have made ``llrf'' and
 ``hprf'' channel groups under one and the same engine. In fact all the above
@@ -46,21 +45,21 @@ per month, one DVD per year, or whatever you plan to do for data
 maintenance. Another reason is data safety: You can reduce the damage
 caused by crashes of the engine by limiting the number of channels per engine.
 
-\section{Current Archive Status}
+\section{Current Archive Status} \label{sec:makearchweb}
 The perl script ``\INDEX{make\_archive\_web.pl}'' creates a web page
 displaying the current status of all the archive daemons and engines
 that are listed in the file ``archiveconfig.csv''
 (you could use other names for the main configuration file, but we
 will stick with ``archiveconfig.csv'' in this manual).
-For the SNS, this script it run periodically with the result being
+For the SNS, this script is periodically executed with the result being
 redirected into the web server's document tree, so you can usually
 reach the recent status from this web page:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
     http://ics-srv-archive1/archive
 \end{lstlisting}
-\noindent and the result then looks somewhat like
-Fig.~\ref{fig:archcfgstat}, showing you what engines are running, how
-many channels are connected, and more.
+\noindent  Fig.~\ref{fig:archcfgstat} shows one example of that web
+page: A tabular display of what engines are running, how many channels are
+connected, and more.
 
 \medskip
 
@@ -76,24 +75,28 @@ many channels are connected, and more.
 The perl script ``\INDEX{make\_archive\_dirs.pl}'' creates or updates a
 directory tree based on the file ``archiveconfig.csv''. For the preceding
 example, it would create subdirectories ``ICS'' and ``RF'' for the two
-daemons, and the following engine directories:
+daemons, plus the following engine directories:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
   ICS/tim
   ICS/mps
   RF/llrf
   RF/hprf
 \end{lstlisting}
-\noindent Each daemon directory contains a daemon configuration file,
-as well as start/stop scripts, all explained in the following section.
-Each engine directory contains an ASCIIConfig subdirectory with an
-example script that you might use to create an XML configuration file for the
-ArchiveEngine, though the engineer responsible for the subsystem is
-free to use any method of his/her choice as long as the result is a
-configuration file for the engine that follows the naming convention
+\noindent Each daemon directory contains a daemon configuration file
+as well as start/stop scripts. Each engine directory contains a script
+to stop the engine. Note the absence of a script to start the engine:
+You should not manually start engines which are under the control of
+an archive daemon.  Each engine directory also contains an
+``ASCIIConfig'' subdirectory with a script ``convert\_example.sh''
+that you might use to create the XML configuration file for the
+ArchiveEngine from ASCII configuration files, though the engineer
+responsible for the subsystem is free to use any method of his/her
+choice as long as the result is a configuration file for the engine
+that follows the naming convention
 \begin{center}
 {\it Daemon-Name} / {\it Engine-Name} / {\it Engine-Name}-group.xml~,\\
 \end{center}
-resulting in these for the prementioned example:
+resulting in these for our example:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
   ICS/tim/tim-group.xml
   ICS/mps/mps-group.xml
@@ -103,33 +106,12 @@ resulting in these for the prementioned example:
 As long as you end up with engine configuration files of these names,
 you can employ any text editor, a copy of the example script, or a
 sophisticated toolset utilizing a relational database.
+If you want to use the ASCIIConfig directory, check section
+\ref{sec:ASCIIConfig} for the format of the ASCII configuration files.
 
-\section{ArchiveDaemon, Sub-Archives}
-The ArchiveDaemon.pl perl script automates the operation of archive
-engines. It requires a configuration file according to
-ArchiveDaemon.dtd. In most cases, we use the configuration created by
-make\_archive\_dirs.pl, which would look like this for the case of the
-RF:
-\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE engines SYSTEM "/arch/ArchiveDaemon.dtd">
-<engines>
-  <engine>
-    <desc>llrf</desc>
-    <port>4901</port>
-    <config>/arch/RF/llrf/llrf-group.xml</config>
-    <weekly>We 10:20</weekly>
-  </engine>
-  <engine>
-    <desc>hprf</desc>
-    <port>4902</port>
-    <config>/arch/RF/hprf/hprf-group.xml</config>
-    <weekly>We 10:30</weekly>
-  </engine>
-</engines>
-\end{lstlisting}
-
-\noindent Based on this configuration, the daemon will 
+\section{Sub-Archives}
+Based on the configuration from the beginning of this chapter,
+the daemon will 
 \begin{enumerate}
 \item Start an ArchiveEngine in ``RF/llrf'' that writes to
       a sub-archive named after the current day,
@@ -150,9 +132,9 @@ RF:
 
 \noindent As a result, we create separate sub-archives for the LLRF
 and HPRF, a new one once per week, which provides some insurance
-against crashes of an ArchiveEngine. (If you are paranoid, you can
+against crashes of an ArchiveEngine. If you are paranoid, you can
 choose daily sub-archives; compare the ICS setup from the beginning of
-chapter \ref{ch:examplesetup}).
+chapter \ref{ch:examplesetup}.
 After running for a while, we will have created sub-archives like these:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
   RF/llrf/2004/02_11/index
@@ -164,82 +146,100 @@ After running for a while, we will have created sub-archives like these:
   RF/hprf/2004/02_25/index
   ...
 \end{lstlisting}
-\noindent In addition to each index file, there will also be
-associated data files, but in most cases we identify an archive solely
-by its index file.
-For data retrieval, we can invoke e.g.\ ArchiveExport with the path to
-any of the index files. This is, however, inconvenient because we will
-only see data for one week of one subsystem at a time.
-The periodic invocation of the ArchiveIndexTool allows us to view all
-the RF data as a whole via the RF/master\_index.
+\noindent In addition to each index file, there will of course also be
+associated data files, but for retrieval purposes we identify an
+archive solely by its index file: We can invoke e.g.\ ArchiveExport
+with the path to any of the index files. This is, however,
+inconvenient because we will only see data for one week of that one
+subsystem at a time. The periodic invocation of the ArchiveIndexTool
+allows us to view all the RF data as a whole via the RF/master\_index.
 
-\section{Master Indices}
-The Index Tool allows creation of a master index
-that covers more than one sub archive. For example, we can create
-these two configuration files for the index tool, either manually or
-with the help of make\_indexconfig.pl:
-\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-/data/vacuum/indexconfig.xml:
-   Lists 2004/02_19/index and 2004/02_20/index
-/data/cooling/indexconfig.xml:
-   Lists 2004/02_19/index and 2004/02_20/index
-\end{lstlisting}
+\subsection{ArchiveDaemon Details}
+The ``Restart'' and ``Time'' columns of the ``archiveconfig.csv'' file
+are passed on to the ArchiveDaemon, which is explained in more detail
+in chapter \ref{ch:daemon}. In many cases it might be sufficient to
+know these two options:
+\begin{itemize}
+\item Restart=``daily'', Time set to the time of day in 24-hour
+      format HH:MM, e.g.\ 08:00 for 8'o clock in the morning.
+      The daemon will stop and restart the engine in a new sub-archive
+      each day at the given time.
+\item Restart=``weekly'', Time set to a string that combines the day
+      of the week (Mo, Tu,  We, Th, Fr, Sa, Su) with the time of day in 24-hour
+      format into ``DD HH:MM'', e.g.\ ``We 08:00'' for Wednesdays, 8'o
+      clock in the morning. Similar to the daily setup, but reduced to
+      once a week.
+\end{itemize}
+\noindent It is advisable to stagger the restart times of your engines
+such that they don't all restart at the same day and time in order to
+reduce the CPU and network load for the ChannelAccess re-connects.
 
-\noindent After running ArchiveIndexTool in /data/vacuum and /data/cooling,
-we will have two new indices. One refers to all the vacuum data, the
-other to all the cooling data:
-\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-/data/vacuum/index
-/data/cooling/index
-\end{lstlisting}
-\noindent Note that these are only index files. There are no new data
-files because the new ``master'' index files will point to data blocks
-in the existing data files, e.g. the one under /data/vacuum/2004/02\_19. 
-It is also important to remember that the master index files include the
-paths to the data files as instructed in the indexconfig.xml files.
-According to the previous example,  
-/data/vacuum/index was created from
-/data/vacuum/indexconfig.xml which included the relative path
-``2004/02\_19/index''. The vacuum master index will therefore point to
-data files with a relative path like ``2004/02\_19/20040219''.
-Whenever we use ``/data/vacuum/index'', the retrieval tools will prepend
-the path to the index, ``/data/vacuum'', to the relative data 
-file path found in the index, for example ``2004/02\_19/20040219'', and thus
-find the data under its full path of
- e.g.\ ``/data/vacuum/2004/02\_19/20040219''.
-We cannot move ``/data/vacuum/index'' to another location like
-``/tmp/index''. The retrieval tools would then try to access
-``/tmp/2004/02\_19/20040219'' and fail.
+\section{Common Tasks}
 
-Having said that, it \emph{is} possible to generate master indices
-that use the full, absolute paths to their data files by simply listing
-the full paths to the sub-archives in indexconfig.xml. This is,
-however, not recommended because it will increase the size of the
-index files simply because the full path names are longer than the
-relative paths. For the same reason it is advisable to use short path
-names: When an index file points to many data blocks in many data
-files, it makes quite some difference if you used a short-named
-directory tree with paths like ``/data/vac/...'' as opposed to
-``/user/data/channel-archiver/data/subsystems/vacuum-system/...''.
+\subsection{Check Daemon, Engine, Connected Channels, ...}
+See section \ref{sec:makearchweb}. That web page links to all
+the ArchiveDaemons, which in turn link to all the ArchiveEngines.
 
-As a second step, we can further combine the master indices for vacuum
-and cooling data into one index that covers all out data. By creating
-``/data/indexconfig.xml'' in which we list ``vacuum/index'' and
-``cooling/index'', and running the ArchiveIndexTool in
-``/data'', we create ``/data/index'' which points to all our data.
-Alternatively, we could have skipped the intermediate indices for
-vacuum and cooling and created ``/data/indexconfig.xml'' from the
-beginning like this:
-\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-/data/indexconfig.xml: Lists
-   vacuum/2004/02_19/index
-   vacuum/2004/02_20/index
-   cooling/2004/02_19/index
-   cooling/2004/02_20/index
-\end{lstlisting}
+\subsection{Modify Engine's Request Files}
+Locate your archive engine on either the main archive status page
+(section  \ref{sec:makearchweb}) or in /arch/archiveconfig.csv.
+According to the example at the beginning of this chapter, the ``High
+Power RF'' engine would be run by the ``RF'' daemon and be called
+``hprf'', so we need to modify /arch/RF/hprf/hprf-group.xml.
+This is often done via a conversion script in
+/arch/RF/hprf/ASCIIConfig. If you used another method to create the
+engine configuration, this is a good time to remember what you did.
 
-\noindent In any case we end up with ``/data/index'' as an index for
-all our vacuum and cooling data.
+Then, to actually use that new config file, the engine needs to
+restart. We could simply wait for the next scheduled restart, in our
+example the next Wednesday, 10:30. Alternatively, we can run the
+script /arch/RF/hprf/stop-engine.sh.
+Watch the RF daemon via the link on the main archive status page.
+Within a few minutes, it ought to detect that the engine had stopped
+and then restart it.
+
+\subsection{Add Engine or Daemon}
+Add a line to archiveconfig.csv to define the new engine under an
+existing demon. Or add a line for a new daemon, then add the new
+engine under it. Invoke  make\_archive\_dirs.pl. Per default, it will
+re-create all daemon and engine directories, so you might want to use
+the ``-s'' option to limit its operation to the new or modified
+subsystem.
+Invoke the ``run-daemon.sh'' script in the daemon directory to start
+the daemon (which will then start any missing engines).
+
+\subsection{An Engine isn't running}
+Check the process list to assert that the engine in question is really not
+running (on UNIX, try ``ps -aux''). Look again. If the engine is
+actually running but not responding via its HTTPD, remove the process.
+Check the log file of the engine, generated in the engine
+subdirectory, for any clues. If you are convinced that the engine is
+not running, but find an ``archive\_active.lck'' lock file in the
+engine directory, remove it. Now the daemon should be able to start
+your engine.  
+
+\subsection{I want to stop a Daemon}
+Run stop-daemon.sh in the daemon directory, or check chapter
+\ref{ch:daemon} for more on the daemon's HTTPD.
+
+\subsection{A Daemon isn't running}
+Run start-daemon.sh in the daemon directory. If the daemon keeps quitting,
+check its log file for clues.
+
+\subsection{Re-building a Master Index}
+Whenever you add or remove a sub-archive, the master index in the
+daemon directory could be obsolete: It might still list data in a
+sub-archive that you removed, or it might not yet include the new
+sub-archive. Another szenario: you suspect that the master index is
+broken, because you can retrieve data from the individual sub-archive
+but not via the master index. The recipe:
+\begin{itemize}
+\item Stop the daemon
+\item Check, maybe rebuild indexconfig.xml, either manually or by
+  using the helper script make\_indexconfig.pl
+  (see section  \ref{sec:makeindexconfig}).
+\item Start the daemon, which causes it to invoke the ArchiveIndexTool.
+\end{itemize}
 
 \section{Data Management}
 The generation of daily sub-archives reduces the amount of data that
@@ -256,7 +256,7 @@ In the following example, we assume that it's March 2004 and we want
 to combine the two daily vacuum sub-archives from the previous section
 into one for the month of February 2004:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-cd /data/vacuum/2004
+cd vacuum/2004
 mkdir 02_xx
 ArchiveDataTool -copy 02_xx/index 02_19/index \
     -e "02/20/2004 02:00:00"
@@ -269,19 +269,16 @@ where we expect the sub-archives to have data. This practice somewhat
 helps us to remove samples with wrong time stamps that result from
 Channel Access servers with ill-configured clocks.
 
-At this time, there is no better tool nor a wrapper around the
-ArchiveDataTool available, so a typical monthly data management run
-will involve about 30 invocations of the ArchiveDataTool where one
-needs to carefully adjust the sub archive paths, start times and end
-times to suit the current month and year.
-
+There is a perl command \INDEX{make\_compress\_script.pl} that aids in the
+creation of a shell script for the ArchiveDataTool, but you need to
+review it carefully before invokation.
 After successfully combining the daily sub-archives for February 2004
 into a monthly 2004/02\_xx, we need to
 \begin{enumerate}
 \item Stop the ArchiveDaemon because we are about to edit
       indexconfig.xml.
       The ArchiveEngines controlled by the daemon can run on.
-\item Edit /data/indexconfig.xml that listed the daily sub-archives for
+\item Edit indexconfig.xml that listed the daily sub-archives for
       Feb.\ 2004 and replace them with the single 2004/02\_xx/index.
 \item Remove or rename the master index file and re-create it with the new
       indexconfig.xml. This step is required because the ArchiveIndexTool

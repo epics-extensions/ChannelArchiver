@@ -65,8 +65,8 @@ sub write_html($)
      <td width="5%"  align="center"><b>PORT</b></td>
      <td width="20%" align="center"><b>DESCRIPTION</b></td>
      <td width="35%" align="center"><b>STATUS</b></td>
+     <td width="10%" align="center"><b>RESTART</b></td>
      <td width="5%" align="center"><b>TIME</b></td>
-     <td width="10%" align="center"><b>FREQUENCY</b></td>
   </tr>
 XML
 
@@ -89,8 +89,8 @@ XML
             print $out "     <td width=\"5%\">$engine->{port}</td>\n";
             print $out "     <td width=\"20%\">$engine->{desc}</td>\n";
             print $out "     <td width=\"35%\">&nbsp;</td>\n";
+            print $out "     <td width=\"10%\">$engine->{restart}</td>\n";
             print $out "     <td width=\"5%\">$engine->{time}</td>\n";
-            print $out "     <td width=\"10%\">$engine->{freq}</td>\n";
             print $out "  </tr>\n";
 	}
     }

@@ -152,7 +152,8 @@ make install
 \begin{lstlisting}[keywordstyle=\sffamily]
 cd w3c-libwww-5.4.0
 patch <../w3c-libwww-5.4.0_osx_patch
-./configure --enable-shared --enable-static --with-zlib --with-ssl
+./configure --enable-shared --enable-static \
+    --with-zlib --with-ssl
 make
 \end{lstlisting}
 
@@ -279,12 +280,13 @@ In practice, there are at least three ways to accomplish this:
   \noindent Not the best idea because you need multiple copies of the
   DTD and this is hard to maintain in case the DTD gets updated.
 \item You install the DTD files in a common location in the local file
-  system, e.g.\ in ``/archiver/dtd''. Then you can refer to the DTD like this: 
+  system, e.g.\ in ``/arch''. Then you can refer to the DTD like this: 
   \begin{lstlisting}[keywordstyle=\sffamily]
   <!DOCTYPE engineconfig
-  SYSTEM "/archiver/dtd/engineconfig.dtd">
+  SYSTEM "/archr/engineconfig.dtd">
   \end{lstlisting}
-  \noindent This might still require copies of the DTD on multiple computers.
+  \noindent This setup is in use at the SNS. If you use the archive tools
+  on more than one computer, each machine might require a copy of the DTDs.
 \item You install the DTD files in the directory tree of a web server
   that is accessible to all your computers.
   Then you can refer to the DTD via a URL like this: 
@@ -292,4 +294,6 @@ In practice, there are at least three ways to accomplish this:
   <!DOCTYPE engineconfig
   SYSTEM "http://webserver/archdtd/engineconfig.dtd">
   \end{lstlisting}
+  This centralizes the installation, but you now have the added dependency on
+  the web server.
 \end{enumerate}

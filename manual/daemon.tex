@@ -1,4 +1,4 @@
-\chapter{ArchiveDaemon}
+\chapter{ArchiveDaemon} \label{ch:daemon}
 \begin{figure}[htb]
 \begin{center}
 \InsertImage{width=0.8\textwidth}{daemon}
@@ -13,13 +13,15 @@ meant to run on a host in the ArchiveDaemon's configuration file, one
 can check the status of all these engines on a single web page as
 shown in Fig.~\ref{fig:daemon}.
 
-The daemon will attempt to start any ArchiveEngine that it does not
-find running. In addition, the daemon can periodically stop and
-restart ArchiveEngines in order to create e.g.\ daily sub-archives.
-Furthermore, it adds each sub-archive of newly created ArchiveEngines
-to a configuration file for the ArchiveIndexTool and runs the latter
-periodically, so that all the sub-archives can be accessed as if they
-were one big archive.
+Chapter \ref{ch:examplesetup}, ``Example Setup'', on page
+\pageref{ch:examplesetup}, gives more details on the suggested use of
+the ArchiveDaemon. The daemon will attempt to start any ArchiveEngine
+that it does not find running. In addition, the daemon can
+periodically stop and restart ArchiveEngines in order to create
+e.g.\ daily sub-archives.  Furthermore, it adds each sub-archive of
+newly created ArchiveEngines to a configuration file for the
+ArchiveIndexTool and runs the latter periodically, so that all the
+sub-archives can be accessed as if they were one big archive.
 
 Before using the ArchiveDaemon, one should be familiar
 with the configuration of the ArchiveEngine (sec.\ \ref{sec:engine}),
@@ -69,6 +71,21 @@ ArchiveEngine periodically. The element must contain a time in the
 format ``HH:MM'' with 24-hour hours HH and minutes MM. One example
 would be ``02:00'' for a restart at 2~am each morning.
 
+\subsubsection{weekly}
+Weekly is similar to daily, but using an element that contains the day
+of the week (Mo, Tu,  We, Th, Fr, Sa, Su) in addition to the time
+on that day in 24-hour format, e.g.\ ``We 08:00''. In this example,
+the daemon will attempt a restart every Wednesday, 8'o clock in the morning.
+
+\subsubsection{timed}
+In this case, the element needs to contain a start/duration time pair
+in the format ``HH:MM/HH:MM''. The first, pre-slash 24-hour time stamp
+indicates the start time, and the second 24-hour time, trailing the
+slash, specifies the runtime. The engine will be launched at the
+requested start time and run for the duration of the runtime. As an
+example, ``08:00/01:00'' requests that the daemon starts the engine at
+08:00 and stops it after one hour, probably around 09:00.
+
 \subsubsection{hourly}
 This optional element configures the ArchiveDaemon to restart the
 ArchiveEngine periodically. The element must contain a number
@@ -98,18 +115,20 @@ ArchiveEngine needs a different TCP port number.
 \begin{lstlisting}[keywordstyle=\sffamily]
 USAGE: ArchiveDaemon [options] 
 Options:
-        -p <port>: TCP port number for HTTPD
-        -f file  : config. file
+  -p <port>    : TCP port number for HTTPD
+  -f <file>    : config. file
+  -i <URL>     : path or URL to indexconfig.dtd
+  -u <minutes> : Update period for master index
+  -d           : debug mode (stay in foreground etc.)
 \end{lstlisting}
 
 \noindent The first few lines of the ArchiveDaemon.pl script contain
-numerous configuration variables. They allow fine tuning of e.g.\ the
-time period between runs of the ArchiveIndexTool, how often the daemon
-queries the Archive Engines and other customization options. In there
-you can also change many of the file names from their defaults up to
-the point where none of the following applies. With the original
-settings, the ArchiveDaemon will create or use the following files in
-the directory in which it was started:
+numerous configuration variables. They allow fine tuning of e.g.\ how
+often the daemon queries the Archive Engines and other customization
+options. In there you can also change many of the file names from
+their defaults up to the point where none of the following
+applies. With the original settings, the ArchiveDaemon will create or
+use the following files in the directory in which it was started:
 \begin{itemize}
 \item ArchiveDaemon.log\\
   The log file of the ArchiveDaemon.

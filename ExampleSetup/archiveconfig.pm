@@ -27,8 +27,8 @@ package archiveconfig;
 # $daemons[0]->{engines}[0]->{name} = "engine1";
 # $daemons[0]->{engines}[0]->{desc} = "Test Engine 1";
 # $daemons[0]->{engines}[0]->{port} = 4001;
+# $daemons[0]->{engines}[0]->{restart} = "daily";
 # $daemons[0]->{engines}[0]->{time} = "08:00";
-# $daemons[0]->{engines}[0]->{freq} = "daily";
 #
 # kasemirk@ornl.gov
 
@@ -55,7 +55,7 @@ sub parse_config_file($$)
     my ($filename, $opt_d) = @ARG;
     my (@daemons);
     my ($in);
-    my ($type, $name, $port, $desc, $time, $freq);
+    my ($type, $name, $port, $desc, $time, $restart);
     my ($di, $ei); # Index of current daemon and engine
     open($in, $filename) or die "Cannot open '$filename'\n";
     print("Reading $filename\n") if ($opt_d);
@@ -64,7 +64,7 @@ sub parse_config_file($$)
 	chomp;                          # Chop CR/LF
 	next if ($ARG =~ '\A#');        # Skip comments
 	next if ($ARG =~ '\A[ \t]*\Z'); # ... and empty lines
-	($type,$name,$port,$desc,$time,$freq) = split(/\t/, $ARG); # Get columns
+	($type,$name,$port,$desc,$time,$restart) = split(/\t/, $ARG); # Get columns
 	$desc = $name unless (length($desc) > 0); # Desc defaults to name
 	if ($type eq "DAEMON")
 	{
@@ -79,13 +79,13 @@ sub parse_config_file($$)
 	}
 	elsif ($type eq "ENGINE")
 	{
-	    print("$NR: Engine '$name', Port $port, Desc '$desc', Time '$time', Freq '$freq'\n")
+	    print("$NR: Engine '$name', Port $port, Desc '$desc', Time '$time', Restart '$restart'\n")
 		if ($opt_d);
 	    $daemons[$di]->{engines}[$ei]->{name} = $name;
 	    $daemons[$di]->{engines}[$ei]->{desc} = $desc;
 	    $daemons[$di]->{engines}[$ei]->{port} = $port;
 	    $daemons[$di]->{engines}[$ei]->{time} = $time;
-	    $daemons[$di]->{engines}[$ei]->{freq} = $freq;
+	    $daemons[$di]->{engines}[$ei]->{restart} = $restart;
 	    ++ $ei;
 	}
 	else
@@ -114,7 +114,7 @@ sub dump_config($)
 	    printf("    Engine '%s', port %d, description '%s'\n",
 		  $engine->{name}, $engine->{port}, $engine->{desc});
 	    printf("     restart %s %s\n",
-		   $engine->{time}, $engine->{freq});
+		   $engine->{time}, $engine->{restart});
 	}
     }
     print("\n");

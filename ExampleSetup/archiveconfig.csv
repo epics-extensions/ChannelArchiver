@@ -5,11 +5,11 @@
 #
 # There needs to be exactly one TAB between Type, Name, Port, Desc, ...
 
-# Type  Name    Port    Desc    Time    Frequency
+# Type	Name	Port	Desc	Restart	Time 
 DAEMON	ICS	4090	ICS Daemon
-ENGINE	tim	4091	ICS Timing Engine	08:00	daily
-ENGINE	mps	4092	ICS MPS Engine	08:30	daily
+ENGINE	tim	4091	ICS Timing Engine	daily	08:00
+ENGINE	mps	4092	ICS MPS Engine	daily	08:30
 
 DAEMON	RF	4900	RF
-ENGINE	llrf	4901	LLRF	We 10:20	weekly
-ENGINE	hprf	4902	HPRF	We 10:30	weekly
+ENGINE	llrf	4901	LLRF	weekly	We 10:20
+ENGINE	hprf	4902	HPRF

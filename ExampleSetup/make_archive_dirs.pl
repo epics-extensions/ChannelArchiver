@@ -120,8 +120,11 @@ sub create_stuff()
 		printf("    <port>%d</port>\n", $engine->{port}); 
 		printf("    <config>%s/%s/%s/%s-group.xml</config>\n",
 		       $path, $daemon->{name}, $engine->{name}, $engine->{name});
-		printf("    <%s>%s</%s>\n",
-		       $engine->{freq}, $engine->{time}, $engine->{freq});
+		if (length($engine->{restart}) > 0)
+                {
+		    printf("    <%s>%s</%s>\n",
+		           $engine->{restart}, $engine->{time}, $engine->{restart});
+                }
 		printf("  </engine>\n");
 	    }
 	    printf("</engines>\n");

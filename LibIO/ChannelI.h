@@ -68,6 +68,24 @@ public:
 	virtual bool getValueNearTime (const osiTime &time, ValueIteratorI *values) = 0;
 	bool getValueNearTime (const osiTime &time, ValueIterator &values);
 
+    // This is not copied into the HTML docs. because
+    // I'm not certain about the interface:
+    // A binary buffer has value type/count,
+    // CtrlInfo and scan period.
+    // So I could pass in
+    // - ValueI *
+    // - CtrlInfoI *
+    // - period
+    // but the ValueI already knows about the CtrlInfo,
+    // so this is the interface.
+    //
+    // Alternative: only pass in ValueIteratorI.
+    // But why would you require an iterator,
+    // when in principle a single value and the other info
+    // is enough?
+    //
+    // Tell me if you use this interface,
+    // beware of possible changes!
 	virtual size_t lockBuffer (const ValueI &value, double period);
 
 	virtual void addBuffer (const ValueI &value_arg, double period, size_t value_count);

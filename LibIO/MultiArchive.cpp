@@ -250,7 +250,7 @@ bool MultiArchive::parseMasterFile (const stdString &master_file)
 	else
 	{
 		// LOG_MSG ("Expecting master_version=1 in '" << master_file
-			<< "', line " << parser.getLineNo() << "\n");
+		//	<< "', line " << parser.getLineNo() << "\n");
 		// LOG_MSG ("Assuming '" << master_file << "' is a BinArchive\n");
 		_archives.push_back (master_file);
 	}

@@ -9,12 +9,14 @@
 
 <blockquote>
   <h1><a name="Main">Archive Manager</a></h1>
-  <p><a href="#usage">Usage</a> - <a href="#Background">Background</a> - <a href="#Examples">Examples</a>
-  - <a href="#Note">Creating new archives</a></p>
+  <p><a href="#usage">Usage</a> - <a href="#Examples">Examples</a> - <a href="#Note">Creating
+  new archives</a></p>
   <p>The ArchiveManager tool started as a test for the archive I/O library.<br>
   It can be used for basic archive data file maintainance.</p>
   <p>It evolved into command-line monster, but archive repairs on GB files take time and
   this tool can run batch-driven over weekends.</p>
+  <p>(Be sure to read and understand the information about the <a
+  href="../binarchive/default.htm">binary archive format</a>.)</p>
   <h2><a name="usage">Usage</a></h2>
   <p>The tool displays an option summary like this: </p>
   <pre>USAGE:  ArchiveManager [Options] &lt;archive&gt;
@@ -34,31 +36,9 @@ Options:
         -Input &lt;ascii file&gt;            read ASCII dump for channel into archive
         -Compare &lt;target archive&gt;      Compare with target archive
         -Seek                          Seek test (use with -start)</pre>
-  <h2><a name="Background">Background</a> Info on the Binary Storage Format:</h2>
-  <p>An easy approach for archiving would be this:</p>
-  <p>For each channel, create an ASCII file and append new values to that file.<br>
-  This format is easy to maintain.</p>
-  <p>Problem: The number of open files is quite limited on all operating systems.<br>
-  The archiver would have to open each file, append values, close it and move on to the next
-  channel. This is much too slow!</p>
-  <p>Idea of the ChannelArchiver: All channels are written into a single file. The list of
-  channel names, the first and last position for each channel etc. is kept in a disk-based
-  hash table. Furthermore, a binary format is used to save space and time.</p>
-  <p>The disk-based hash-table is the &quot;directory&quot; file, by default called
-  &quot;freq_directory&quot;.<br>
-  As for a the data, one file per day (default) is used.<br>
-  (A data file will be updated until all the buffers in there are filled. The filename
-  mostly reflects the date of creation, not the time regime of samples therein) </p>
-  <p>Advantage: This format allows archiving of up to 10000 values per second on a 450 Mhz
-  machine, 100baseT network. Fast retrival to the most recent values is accomplished via the
-  hash table and a pointer to the last entries.</p>
-  <p>Disadvantage: The combination of directory- and data-files must not be disturbed!<br>
-  <font color="#FF0000">Under no circumstances must any single data file be removed or
-  altered, since this will break the interlinked sequence of samples.</font><br>
-  This is not uncommon for database systems, but unfortunately the data management tools for
-  the ChannelArchiver are limited for the time being.</p>
   <h2><a name="Examples">Examples</a>:</h2>
-  <p><em>ARCH=../../../CATests/LEDA/dir</em></p>
+  <p>Suppose &quot;ARCH&quot; is set to some valid archive:<em><br>
+  ARCH=/home/fred/Epics/extensions/src/ChannelArchiver/Engine/Test/freq_directory</em></p>
   <h3>Show time range of archive</h3>
   <p><em>ArchiveManager $ARCH -i</em></p>
   <h3>Test archive</h3>
@@ -68,11 +48,11 @@ Options:
   uncomplete, but if the test succeeds, retrival tools should have no problem looking at the
   samples.</p>
   <h3>Show time of first/last sample for specific channel</h3>
-  <p><em>ArchiveManager $ARCH -c is_hvps_actv -i</em></p>
+  <p><em>ArchiveManager $ARCH -c jane -i</em></p>
   <h3>List all channel names</h3>
   <p><em>ArchiveManager $ARCH</em></p>
   <h3>List all values for specific channel</h3>
-  <p><em>ArchiveManager $ARCH -c is_hvps_actv</em></p>
+  <p><em>ArchiveManager $ARCH -c janet</em></p>
   <h3>... between given times</h3>
   <p><em>ArchiveManager $ARCH -c is_hvps_actv -s &quot;02/10/2000 17:21:17&quot; -e
   &quot;02/10/2000 17:43:22&quot;</em></p>

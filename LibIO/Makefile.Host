@@ -30,6 +30,7 @@ INC += BinValue.h
 INC += BinValueIterator.h
 
 INC += MultiArchive.h
+INC += MultiChannelIterator.h
 
 #	Contents of library:
 LIBSRCS += HashTable.cc
@@ -51,6 +52,7 @@ LIBSRCS += BinValue.cc
 LIBSRCS += BinValueIterator.cc
 
 LIBSRCS += MultiArchive.cc
+LIBSRCS += MultiChannelIterator.cc
 
 LIBSRCS += ExpandingValueIteratorI.cc
 LIBSRCS += LinInterpolValueIteratorI.cc

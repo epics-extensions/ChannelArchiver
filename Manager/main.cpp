@@ -7,7 +7,7 @@
 //
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
-
+//
 // Manager:
 //
 // Could end up being a command-line tool
@@ -19,7 +19,6 @@
 //
 // Right now it's more a collection of API tests.
 //
-// $Id$
 
 // Warning: names too long for debug info
 #ifdef WIN32
@@ -28,6 +27,7 @@
 
 #include "../ArchiverConfig.h"
 #include "BinArchive.h"
+#include "MultiArchive.h"
 #include "ArgParser.h"
 #include "BinValueIterator.h"
 #include <signal.h>
@@ -500,6 +500,21 @@ void test (const stdString &directory, const osiTime &start, const osiTime &end)
 	cout << errors << " errors\n";
 }
 
+void do_experiment (const stdString &archive_name)
+{
+	Archive archive (new MultiArchive (archive_name));
+	ChannelIterator	channel (archive);
+
+	cout << "List channels via ChannelIterator:\n";
+
+	archive.findFirstChannel (channel);
+	while (run && channel)
+	{
+		cout << channel->getName() << endl;
+		++ channel;
+	}
+}
+
 void Usage ()
 {
 	cerr << "Archive Manager version " VERSION_TXT ", built " __DATE__ "\n";
@@ -520,6 +535,7 @@ void Usage ()
 	cerr << "\t-C <target>            : Compare: test if all in archive is found in target\n";
 	cerr << "\t-S <time>              : Seek test\n";
 	cerr << "\t-T                     : Test archive\n";
+//	cerr << "\t-E                     : Experiment w/ MultiArchive\n";
 }
 
 static void PrintRoutine (void *arg, const stdString &text)
@@ -544,7 +560,7 @@ int main (int argc, const char *argv[])
 	size_t repeat_limit = 0;
 
 	ArgParser	parser;
-	if (! parser.parse (argc, argv, "ivET", "cmsexIShCMOrj"))
+	if (! parser.parse (argc, argv, "ivTE", "cmsexIShCMOrj"))
 	{
 		Usage ();
 		return -1;
@@ -552,8 +568,8 @@ int main (int argc, const char *argv[])
 	// Create nicely named refs for flags/parms/args
 	bool do_info = parser.getFlag (0);
 	be_verbose = parser.getFlag (1);
-	bool expand_test = parser.getFlag (2);
-	bool the_test = parser.getFlag (3);
+	bool the_test = parser.getFlag (2);
+	bool experiment_test = parser.getFlag (3);
 	stdString channel_name = parser.getParameter(0);
 	stdString channel_pattern = parser.getParameter(1);
 	stdString start_text = parser.getParameter(2);
@@ -605,7 +621,9 @@ int main (int argc, const char *argv[])
 
 	try
 	{
-		if (the_test)
+		if (experiment_test)
+			do_experiment (archive_name);
+		else if (the_test)
 			test (archive_name, start, end);
 		else if (dump_ascii)
 			output_ascii (archive_name, channel_name, start, end);
@@ -638,15 +656,11 @@ int main (int argc, const char *argv[])
 			list_channels (archive_name, channel_pattern);
 		else
 		{
-			if (expand_test)
-				expand (archive_name, channel_name, start, end);
-			else
-				list_values (archive_name, channel_name, start, end);
+			list_values (archive_name, channel_name, start, end);
 		}
 	}
 	catch (GenericException &e)
 	{
-		LOG_MSG ("Error:\n" << e.what () << "\n");
 		cerr <<  "Error:\n" << e.what () << "\n";
 		return -1;
 	}

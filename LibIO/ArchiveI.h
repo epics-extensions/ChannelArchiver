@@ -1,3 +1,13 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __ARCHIVEI_H__
 #define __ARCHIVEI_H__
 
@@ -83,11 +93,10 @@ public:
 class Archive
 {
 public:
-	Archive (ArchiveI *archive)
-	{	_ptr = archive; }
+	Archive (ArchiveI *archive);
+	~Archive ();
 
-	~Archive ()
-	{	delete _ptr; _ptr=0; }
+	void detach ();
 
 	//* Set CLASS ChannelIterator on first channel.
 	// Iterator allows access to next channel,
@@ -111,6 +120,7 @@ public:
 	//* Create a value suitable for the given DbrType/Count
 	ValueI *newValue (DbrType type, DbrCount count);
 
+	// After transfering "ownership", remember to detach() Archive from ArchiveI !
 	ArchiveI *getI()				{ return _ptr; }
 	const ArchiveI *getI() const	{ return _ptr; }
 
@@ -120,6 +130,21 @@ private:
 
 	ArchiveI *_ptr;
 };
+
+inline Archive::Archive (ArchiveI *archive)
+{	_ptr = archive; }
+
+inline Archive::~Archive ()
+{
+	if (_ptr)
+	{
+		delete _ptr;
+		_ptr=0;
+	}
+}
+
+inline void Archive::detach ()
+{	_ptr = 0;	}
 
 inline bool Archive::findFirstChannel (ChannelIterator &channel)
 {	return _ptr->findFirstChannel (channel.getI()); }

@@ -1,8 +1,19 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __CHANNELARCHIVETYPES_H__
 #define __CHANNELARCHIVETYPES_H__
 
 #include <MsgLogger.h>
 #include <osiTimeHelper.h>
+
 USING_NAMESPACE_TOOLS
 
 // Safely (i.e. w/o overruns and '\0'-limited)

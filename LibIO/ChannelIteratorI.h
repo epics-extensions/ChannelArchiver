@@ -1,3 +1,13 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __CHANNELITERATORI_H__
 #define __CHANNELITERATORI_H__
 
@@ -56,6 +66,7 @@ public:
 	~ChannelIterator ();
 
 	void attach (ChannelIteratorI *iter);
+	void detach ();
 
 	//* Does Iterator hold valid channel ?
 	operator bool () const;
@@ -85,7 +96,22 @@ inline ChannelIterator::ChannelIterator ()
 {	_ptr = 0;	}
 
 inline ChannelIterator::~ChannelIterator ()
-{	delete _ptr; }
+{
+	if (_ptr)
+	{
+		delete _ptr;
+		_ptr = 0;
+	}
+}
+
+inline void ChannelIterator::attach (ChannelIteratorI *iter)
+{
+	delete _ptr;
+	_ptr = iter;
+}
+
+inline void ChannelIterator::detach ()
+{	_ptr = 0; }
 
 inline ChannelIterator::operator bool () const
 {	return _ptr->isValid ();	}
@@ -99,12 +125,6 @@ inline ChannelI &ChannelIterator::operator * ()
 inline ChannelIterator &ChannelIterator::operator ++ ()
 {	_ptr->next (); return *this; }
 	
-inline void ChannelIterator::attach (ChannelIteratorI *iter)
-{
-	delete _ptr;
-	_ptr = iter;
-}
-
 END_NAMESPACE_CHANARCH
 
 #endif //__CHANNELITERATORI_H__

@@ -8,11 +8,14 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-#ifndef __ARCHIVEI_H__
-#define __ARCHIVEI_H__
+#ifndef __MULTI_ARCHIVEI_H__
+#define __MULTI_ARCHIVEI_H__
 
 #include "ArchiveI.h"
+#include <list>
+#include <vector>
 
+using namespace std;
 BEGIN_NAMESPACE_CHANARCH
 
 //CLASS MultiArchive
@@ -66,16 +69,22 @@ public:
 	// debugging only
 	void log ();
 
+	// To be used by MultiArchive intrinsics only:
+	// -------------------------------------------
+	bool getChannel (size_t channel_index, class MultiChannelIterator *iterator) const; 
+	bool getChannel (const stdString &channel_name, class MultiChannelIterator *iterator) const;
+
 private:
 	bool parseMasterFile (const stdString &master_file);
 
 	// Fill _channels from _archives
 	bool listChannels ();
+	static void fill_channels_traverser (const class stdString &, void *); // helper for this
 
 	list<stdString>	_archives; // names of archives
-	list<stdString>	_channels; // names of channels in all archives
+	vector<stdString>	_channels; // names of channels in all archives
 };
 
 END_NAMESPACE_CHANARCH
 
-#endif //__ARCHIVEI_H__
+#endif

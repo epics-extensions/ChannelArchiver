@@ -21,6 +21,7 @@ INC += MsgLogger.h
 INC += RegularExpression.h 
 INC += NetTools.h       
 INC += BinaryTree.h
+INC += AVLTree.h
 INC += epicsTimeHelper.h       
 INC += VectorHelper.h       
 INC += ArchiveException.h

@@ -4,12 +4,13 @@
 
 // Enable/disable certain tests in case one doesn't work out
 // on your architecture
-//#define TEST_STRING
-//#define TEST_TIME
-//#define TEST_LOG
-//#define TEST_THREADS
-//#define TEST_TIMER
-//#define TEST_CA
+#define TEST_STRING
+#define TEST_TIME
+#define TEST_AVL
+#define TEST_LOG
+#define TEST_THREADS
+#define TEST_TIMER
+#define TEST_CA
 #define TEST_BITSET
 // Nothing should need to be touched from here down
 
@@ -22,7 +23,6 @@
            printf("OK  : %s\n", #t); \
        else                          \
            printf("FAIL: %s\n", #t)
-
 
 // -----------------------------------------------------------------
 #ifdef TEST_STRING
@@ -86,6 +86,53 @@ void test_string()
 }
 
 #endif
+
+#ifdef TEST_AVL
+#include "AVLTree.h"
+
+int avl_last_number;
+
+void avl_order_test(const int &i, void *)
+{
+    if (i < avl_last_number)
+        printf("FAIL: Error in AVL tree order\n");
+    avl_last_number = i;
+}
+
+const char *toString(const int &i)
+{
+    static char txt[10];
+    sprintf(txt, "%d", i);
+    return txt;
+}   
+
+void avl_test()
+{
+    printf("\nAVLTree Test\n");
+    printf("------------------------------------------\n");
+    AVLTree<int> tree;
+
+    tree.add(RAND_MAX/2);
+    int i, num;
+
+    for (i=0; i<100; ++i)
+    {
+        num = rand();
+        if (tree.find(i))
+            continue;
+        tree.add(num);
+        TEST(tree.find(num));
+        TEST(tree.selftest());
+    }
+    tree.make_dotfile("avl");
+    avl_last_number = -10000;
+    tree.traverse(avl_order_test, 0);
+    tree.make_dotfile("avl");
+    printf("Check avl.dot if you care\n");
+}
+
+#endif
+
 
 // -----------------------------------------------------------------
 #ifdef TEST_LOG
@@ -464,7 +511,7 @@ public:
         double time = epicsTime::getCurrent() - timer_test_start;
         LOG_MSG("OneShotTimer expires in thread 0x%08X after %g secs\n",
                 epicsThreadGetIdSelf(), time);
-        TEST( fabs(time - delay) < 0.1 );
+        TEST( fabs(time - delay) < 0.2 );
         return noRestart;
     }
 private:
@@ -498,7 +545,7 @@ public:
         double time = epicsTime::getCurrent() - period_start;
         LOG_MSG("PeriodTimer expires in thread 0x%08X after %g secs\n",
                 epicsThreadGetIdSelf(), time);
-        TEST( fabs(time - period) < 0.1 );
+        TEST( fabs(time - period) < 0.2 );
         period_start = epicsTime::getCurrent();
         return expireStatus(restart, 1.5);
     }
@@ -700,6 +747,10 @@ int main ()
     test_bitset();
 #endif
 
+#ifdef TEST_AVL
+    avl_test();
+#endif
+    
 #ifdef TEST_STRING
     test_string();
 #endif

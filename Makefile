@@ -34,7 +34,7 @@ cleanCGITest:
 new:	clean all
 
 zip:	cleanCGITest
-	(cd ..;rm $(SRCZIP);zip -r $(SRCZIP) Tools ChannelArchiver -x \*/O.\* \*/Debug/\*)
+	(cd ..;rm $(SRCZIP);zip -r $(SRCZIP) Tools ChannelArchiver -x \*/O.\* \*/Debug/\* \*/CVS/\*)
 
 install:
 	$(INSTAPP) ../../bin/$(HOST_ARCH)/ArchiveExport$(EXE) $(INSTALLDIR)

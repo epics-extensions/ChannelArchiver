@@ -17,11 +17,10 @@ CDlgExport::CDlgExport(CWnd* pParent /*=NULL*/)
 	if (tmp)
 		m_filename.Format ("%s\\data.xls", tmp);
 	//{{AFX_DATA_INIT(CDlgExport)
-	m_round = 1.0;
+	m_round = 0.0;
 	m_type = SpeadSheet;
 	m_fill = TRUE;
 	//}}AFX_DATA_INIT
-	//CheckRadioButton (IDC_SPREADSHEET, IDC_GNUPLOT, IDC_SPREADSHEET);
 }
 
 // How Radiobuttons work:
@@ -56,9 +55,10 @@ void CDlgExport::OnPickExportName()
 		"Spreadsheet (*.xls)|*.xls|All Files (*.*)|*.*||"
 		);
 
-	if (dlg.DoModal () != IDOK)
+	int result = dlg.DoModal ();
+	if (result != IDOK)
 		return;
 
 	m_filename = dlg.m_ofn.lpstrFile;
-	UpdateData ();
+	UpdateData (FALSE);
 }

@@ -748,6 +748,8 @@ void CBrowserDlg::OnExport()
 			export = new SpreadSheetExporter (archive, filename);
 		else
 			export = new GNUPlotExporter (archive, filename);
+		export->setMaxChannelCount (1000);
+
 		if (dlg.m_round > 0.0)
 			export->setTimeRounding (dlg.m_round);
 		if (dlg.m_fill)

@@ -17,10 +17,25 @@ You cannot instantiate an ArchiveI class but only obtain
 a pointer to one from a factory class that
 implements the actual routines.
 <P>
-For the original, binary data format, <A HREF="BinArchive.htm#Main">BinArchive</A> handles this.
+<UL>
+<LI><A HREF="BinArchive.htm#Main">BinArchive</A> handles access to the original, binary data format.
+<LI><A HREF="MultiArchive.htm#Main">MultiArchive</A> allows simultaneous read-access to multiple archives
+</UL>
 <P>
 Client programs might prefer to use the "smart pointer" <A HREF="Archive.htm#Main">Archive</A>
 instead of the raw ArchiveI interface pointer.
+<P>
+<H2>Multiple, Simultaneous Access</H2>
+The ChannelArchiver API is not thread-safe,
+additional semaphores are needed for multi-threaded access.
+<BR>
+Within a single thread, multiple archives can be used.
+For each <A HREF="Archive.htm#Main">Archive</A>, more than one CLASS ChannelIterator can be obtained.
+For each ChannelIterator, a single <A HREF="ValueIterator.htm#Main">ValueIterator</A> can be used.
+This allows to read multiple channels from many archives at once.
+To access values for the <I>same</I> channel from different points in time,
+multiple ChannelIterators (each set to the same channel) must be used.
+<BR>
 <H2>Interface</H2>
 <UL>
 <LI>

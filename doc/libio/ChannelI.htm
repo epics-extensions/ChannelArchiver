@@ -21,19 +21,19 @@ Name of this channel
 virtual const char *getName () const = 0;
 </PRE>
 <LI>
-Time when Channel was added to archive.
-<PRE>
-virtual osiTime getCreateTime () const = 0;
-</PRE>
-<LI>
-Time when first value was written.
+Time stamp of first value
 <PRE>
 virtual osiTime getFirstTime ()  const = 0;
 </PRE>
 <LI>
-Time when last value was written.
+Time stamp of last value
 <PRE>
 virtual osiTime getLastTime ()   const = 0;
+</PRE>
+<LI>
+Get the above information at once by filling a ChannelInfo structure
+<PRE>
+virtual void getChannelInfo (ChannelInfo &info) const;
 </PRE>
 <LI>
 Move <A HREF="ValueIterator.htm#Main">ValueIterator</A> for current Channel
@@ -54,8 +54,12 @@ bool getValueAfterTime (const osiTime &time, ValueIterator &values);
 Get value stamped <= time
 <PRE>
 virtual bool getValueBeforeTime (const osiTime &time, ValueIteratorI *values) = 0;
-virtual bool getValueNearTime (const osiTime &time, ValueIteratorI *values) = 0;
 bool getValueBeforeTime (const osiTime &time, ValueIterator &values);
+</PRE>
+<LI>
+Get value stamped near time (whatever's next: before or after time)
+<PRE>
+virtual bool getValueNearTime (const osiTime &time, ValueIteratorI *values) = 0;
 bool getValueNearTime (const osiTime &time, ValueIterator &values);
 </PRE>
 </UL>

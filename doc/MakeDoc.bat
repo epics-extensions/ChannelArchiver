@@ -6,7 +6,8 @@
 
 mkdir libio
 cd libio
-perl ../MakeDoc.pl -v ../../LibIO/*I.h ../../LibIO/BinArchive.h
+perl ../MakeDoc.pl -v ../../LibIO/*I.h ../../LibIO/BinArchive.h ../../LibIO/MultiArchive.h
+#perl ../MakeDoc.pl -v ../../LibIO/*I.h ../../LibIO/BinArchive.h
 
 cd ..
 cd engine

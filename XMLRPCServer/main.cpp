@@ -496,6 +496,8 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
 #endif
     sprintf(txt,
             "Channel Archiver Data Server V%d\n"
+            "ArchiveEngine Version " ARCH_VERSION_TXT
+            ", built " __DATE__ ", " __TIME__ "\n"
             "Config '%s'\n",
             ARCH_VER, config);
     xmlrpc_value *how = xmlrpc_build_value(env, STR("(ssss)"),

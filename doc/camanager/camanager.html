@@ -8,13 +8,14 @@
   </head>
 
   <body background="../blueback.jpg">
-      <h1>Channel Archive Manager</h1>
+      <h1>The Channel Archive Manager</h1>
       <p>
-	This is a simple frontend to the ChannelArchiver.
+	is basically a frontend to the ChannelArchiver.
       </p>
       <p>
 	It manages and observes <em>ArchiveEngine</em> processes and their
-	corresponding directories.
+	corresponding directories and configurations. It also has very
+	little capability to access the actual archived data.
       </p>
 
       <h2>Contents</h2>
@@ -75,7 +76,7 @@
 	<tr>
 	  <td valign=top><tt>-nocmd</tt></td>
 	  <td valign=top>
-	    Use this option to switch off the commnd-buttons of the web-interface of 
+	    Use this option to switch off the command-buttons of the web-interface of 
 	    <em>CAbgManager</em>.
 	  </td>
 	</tr>
@@ -143,6 +144,7 @@
 	functions/tools.
       </p>
       <ul>
+	<li><a href="#prefs">The Preferences Dialog</a>
 	<li><a href="#creat">Creating/Configuring an Archiver</a>
 	<li><a href="#edit">Editing an ArchiveEngine configuration file</a>
 	<li><a href="#block">Blocking an Archiver</a> - from being started/restarted/stopped automatically
@@ -151,6 +153,52 @@
 	<li><a href="#export">Export</a> - export data from an archive
 	<li><a href="#modify">Modify</a> - rename/delete channels in an archive
       </ul>
+
+      <hr noshade size=1>
+      <img src="prefs.png" align=right width=156 height=517 hspace=8 vspace=8>
+      <a name="prefs"><h2>The Preferences Dialog</h2></a>
+      <p>
+	The Preferences dialog comes in a threefold tabbed dialog.
+      </p>
+      <a name="pGeneral"><h3>General</h3></a>
+      <dl>
+	<dt><b>CAManager: Check for running CAbgManager</b>
+	<dd><em>CAManager</em> checks whether an appropriate
+	  <em>CAbgManager</em> is running. If none is runing, or the one that
+	  is running seems to have a different configuration, a warning is
+	  presented on the screen. This check is performed when
+	  <em>CAManager</em> checks for running Archivers.<br>&nbsp;
+	<dt><b>CAManager: Check for running Archivers regularly</b>
+	<dd><em>CAManager</em> checks in certain intervals the status of
+	  the configured archivers. The status is displayed in the main-window.<br>&nbsp;
+	<dt><b>CAManager: check interval</b>
+	<dd>The time interval in which checks are performed.
+      </dl>
+      <a name="pbgManager"><h3>bgManager</h3></a>
+      <dl>
+	<dt><b>general: check interval</b>
+	<dd>The interval <em>CAbgManager</em> uses to check for running archivers<br>&nbsp;
+	<dt><b>Web-Interface: Port</b>
+	<dd>The port, the <em>CAbgManager</em> should have his
+	  mini-web-server listen on<br>&nbsp;
+	<dt><b>Web-Interface: update-interval</b>
+	<dd>The update interval of the web-page (auto-reload)<br>&nbsp;
+	<dt><b>access-control: IPs allowed to access (regexp)</b>
+	<dd>A regular expression that every IP-address connecting to the
+	  web-interface is matched to. If the match fails, access is
+	  denied.<br>
+	  <b>Note:</b> Every IP-address matches an empty regular expression!
+      </dl>
+      <a name="pMultiArchive"><h3>MultiArchive</h3></a>
+      <dl>
+	<dt><b>MultiArchive-Version: version 1 (exact but slower)</b>
+	<dd>
+	<dt><b>MultiArchive-Version: version 2 (may be fuzzy, but is faster)</b>
+	<dd>specifies the version of each MultiArchive created by
+	  <em>CA*Manager</em>. Please refer to the <a
+	  href="../libio/MultiArchive.htm">LibIO/MultiArchive</a>-documentation
+	  for details on the two versions.
+      </dl>
       <hr noshade size=1>
       <img src="prop.jpg" width=200 height=287 align=right hspace=8 vspace=8>
       <a name="creat"><h2>Creating/Configuring an Archiver</h2></a>
@@ -182,15 +230,15 @@
       <hr noshade size=1>
       <dt><b>Port</b></dt>
       <dd>The portnumber for the ArchiveEngine web interface<br>
-	<b>You have to ensure, that there are no collisions with other
-	  applications using the same port!</b></dd>
+	<b>Note:</b> You have to ensure, that there are no collisions with other
+	  applications using the same port!</dd>
       <hr noshade size=1>
       <dt><b>Configuration-file</b></dt>
       <dd>The <em>main</em> configuration file containing
 	archiving-parameters and channel names as well as <tt>!group</tt>
 	statements to include other files.<br>
-	<b>This parameter has to be a full pathname (starting with a "<tt>/</tt>"
-	  or e.g. "<tt>C:/</tt>" resp.)</b></dd>
+	<b>Note:</b> This parameter has to be a full pathname (starting with a "<tt>/</tt>"
+	  or e.g. "<tt>C:/</tt>" resp.)</dd>
       <hr noshade size=1>
       <dt><b>Schedule</b></dt>
       <dd><p>The <em>CAbgManager</em> is able to stop and restart archivers based on
@@ -324,7 +372,7 @@ master_version=1
       <img src="edit1.jpg" width=292 height=192 align=right hspace=8 vspace=8>
       <a name="edit"><h2>Editing an ArchiveEngine configuration file</h2></a>
       <p>
-	Clocking and holding the right mouse button over an archiver entry
+	Clicking and holding the right mouse button over an archiver entry
 	pops up a menu where you can select <tt>View/Edit Configuration</tt>.
       <br>
 	Do so and a new window will popup, where you can see and edit the
@@ -369,7 +417,7 @@ master_version=1
     ArchiveManager -test &lt;archive&gt;
       </pre>
       <p>
-	The test-command test an archive for errors.
+	The test-command test the integrity of an archive.
       </p>
 
       <hr noshade size=1>
@@ -391,15 +439,22 @@ master_version=1
 	for exporting to a spreadsheet/matlab/gnuplot-file.
       </p>
       <p>
-	The first version <em>Exporting to another archive</em> can be used to 
+	The first version <em>Export to an archive</em> can be used to 
       </p>
       <ul>
 	<li>extract a certain slice from an archive (by channel or by time or both)</li>
 	<li> merge an archive into another one</li>
       </ul>
       <p>
-	The second version is mainly for further processing with e.g. Excel,
+	The other options are mainly for further processing with e.g. Excel,
 	Origin, Matlab...
+      </p>
+      <p>
+	Depending on the export-target selected, additional options can be set.
+      </p>
+      <p>
+	Last but not least a regular expression to match the channelnames
+	against and a timerange can/should be specified.
       </p>
 
       <a name="modify"><h2>Modify</h2></a>
@@ -409,11 +464,6 @@ master_version=1
       <p>
 	With this feature you can rename a channel in the archive or delete
 	a channel from the archive (removing the directory entry).
-      </p>
-      <p>
-	This way, you can rename channels in the archive by copying <em>old
-	  channel</em> to <em>new channel</em> and deleting <em>old
-	  channel</em> afterwards.
       </p>
 
       <hr noshade size=1>
@@ -505,6 +555,7 @@ master_version=1
 	    The Multi-Archive files will be updated accordingly.
 	  </p>
 	</dd>
+      </dl>
       <hr noshade size=1>
       <a name="plugins"><h1>Plugins</h1></a>
       <p>
@@ -539,10 +590,10 @@ master_version=1
       <a name="problem"><h1>Help when Problems occur</h1></a>
       <p>
 	If the Environment-Variable <B><TT>CAMANAGER_DEBUG</tt></b> is set
-	during startup of <em>CAbgManager</em>, <em>CAbgManager</em> will
-	create more verbose output in its log.  The value of the
+	before starting <em>CAbgManager</em>, <em>CAbgManager</em> will
+	create more verbose output in its log. The value of the
 	Environment-Variable should be an integer value, that represents a
-	bitmap:
+	bitvector:
       </p>
       <div align=center>
 	<table border=1><tr><th>Bit #</th><th>Bit value</th><th>Debug-messages</th></tr>
@@ -555,7 +606,9 @@ master_version=1
 	</table>
       </div>
       <p>
-	Just sum up the appropriate Bit values to get the corresponding messages.
+	Just sum up the appropriate Bit values and set
+	<B><TT>CAMANAGER_DEBUG</tt></b> to that value to get the
+	corresponding messages.
       </p>
       <p>
 	<b>Note:</b> Debug messages for for Bit # 3 or higher won't appear in the web-interface. 
@@ -565,7 +618,7 @@ master_version=1
       <div align=right>
 	<i>
 	  <!-- hhmts start -->
-		  Latest modification: 16 Jan 02 11:14:40 Thomas Birke
+		  Latest modification: 16 Jan 02 13:37:23 Thomas Birke
 		  <!-- hhmts end -->
 	</i>
 	<address>

@@ -412,6 +412,9 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
     ok = sheet->find(names, &start);
     for (i=0; i<name_count; ++i)
     {
+#ifdef LOGFILE
+        LOG_MSG("Handling '%s'\n", names[i].c_str());
+#endif
         values[i] = xmlrpc_build_value(env, "()");            
         if (env->fault_occurred)
             goto exit_get_sheet_data;
@@ -454,6 +457,9 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         xmlrpc_array_append_item(env, results, result);
         xmlrpc_DECREF(result);
     }
+#ifdef LOGFILE
+    LOG_MSG("%d values total\n", num_vals);
+#endif
   exit_get_sheet_data:
     index->close();
     for (i=0; i<name_count; ++i)

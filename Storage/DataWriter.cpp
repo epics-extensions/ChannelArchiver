@@ -28,7 +28,7 @@ static stdString makeDataFileName()
     //return stdString(buffer);
 }
 
-DataWriter::DataWriter(DirectoryFile &index,
+DataWriter::DataWriter(archiver_Index &index,
                        const stdString &channel_name,
                        const CtrlInfo &ctrl_info,
                        DbrType dbr_type,
@@ -36,6 +36,7 @@ DataWriter::DataWriter(DirectoryFile &index,
                        double period,
                        size_t num_samples)
         : index(index), channel_name(channel_name),
+          priority(0),
           ctrl_info(ctrl_info), dbr_type(dbr_type),
           dbr_count(dbr_count), period(period), header(0), available(0)
 {
@@ -44,22 +45,14 @@ DataWriter::DataWriter(DirectoryFile &index,
     // Size of next buffer should at least hold num_samples
     calc_next_buffer_size(num_samples);
     raw_value_size = RawValue::getSize(dbr_type, dbr_count);
-    // Find or add channel name
-    dfi = index.find(channel_name);
-    if (!dfi.isValid())
-        dfi = index.add(channel_name);
-    if (!dfi.isValid())
-    {
-        LOG_MSG ("DataWriter: Cannot add '%s' to index\n",
-                 channel_name.c_str());
-        return;
-    }
+
     // Find or add appropriate data buffer
-    if (!Filename::isValid(dfi.entry.data.last_file))
+    archiver_Unit au;
+    if (!index.getLatestAU(channel_name.c_str(), &au))
     {   // - There is no datafile, no buffer
         // Create data file
         stdString data_file_name = makeDataFileName();
-        datafile = DataFile::reference(index.getDirname(),
+        datafile = DataFile::reference("", // TODO index.getDirname(),
                                        data_file_name, true);
         if (! datafile)
         {
@@ -93,21 +86,23 @@ DataWriter::DataWriter(DirectoryFile &index,
     }
     else
     {   // - There is a data file and buffer
-        datafile = DataFile::reference(index.getDirname(),
-                                       dfi.entry.data.last_file, true);
+        stdString data_file_name = au.getKey().getPath();
+        FileOffset offset = au.getKey().getOffset();
+        datafile = DataFile::reference("", // TODO index.getDirname(),
+                                       data_file_name, true);
         if (!datafile)
         {
             LOG_MSG("DataWriter(%s) cannot open data file %s\n",
-                    channel_name.c_str(), dfi.entry.data.last_file);
+                    channel_name.c_str(), data_file_name.c_str());
             return;
         } 
-        header = datafile->getHeader(dfi.entry.data.last_offset);
+        header = datafile->getHeader(offset);
         datafile->release(); // now ref'ed by header
         if (!header)
         {
             LOG_MSG("DataWriter(%s): cannot get header %s @ 0x%lX\n",
                     channel_name.c_str(),
-                    dfi.entry.data.last_file, dfi.entry.data.last_offset);
+                    data_file_name.c_str(), offset);
             return;
         }
         // See if anything has changed
@@ -148,30 +143,19 @@ DataWriter::DataWriter(DirectoryFile &index,
 DataWriter::~DataWriter()
 {
     // Update index
-    if (header)
-    {
-        if (dfi.isValid())
+    if (header && index.isInstanceValid())
+    {   
+        header->data.dir_offset = 0; // no longer used
+        header->write();
+        archiver_Unit au(
+            key_Object(header->datafile->getBasename().c_str(), header->offset),
+            interval(header->data.begin_time, header->data.end_time),
+            priority);
+        if (!index.addAU(channel_name.c_str(), au))
         {
-            header->data.dir_offset = dfi.entry.offset;
-            header->write();
-            // if this is the first buffer, update the index's start
-            if (dfi.entry.data.first_offset == INVALID_OFFSET ||
-                !Filename::isValid(dfi.entry.data.first_file))
-            {
-                dfi.entry.setFirst(header->datafile->getBasename(),
-                                   header->offset);
-                dfi.entry.data.first_save_time = header->data.begin_time;
-            }
-            // Always update the index's end
-            dfi.entry.setLast(header->datafile->getBasename(), header->offset);
-            dfi.entry.data.last_save_time = header->data.end_time;
-            dfi.save();
-        }
-        else
-        {
-            LOG_MSG("DataWriter(%s): Cannot update index, it's invalid\n",
-                    channel_name.c_str());
-        }
+            LOG_MSG("Cannot add %s @ 0x%lX to index\n",
+                    header->datafile->getBasename().c_str(), header->offset);
+        }   
         delete header;
     }
 }
@@ -261,19 +245,25 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
     // back from new to old
     new_header->set_prev(header->datafile->getBasename(),
                          header->offset);        
-    // Update index's start if this was the first header
-    if (dfi.entry.data.first_offset == INVALID_OFFSET ||
-        !Filename::isValid(dfi.entry.data.first_file))
-    {
-        dfi.entry.setFirst(header->datafile->getBasename(),
-                           header->offset);
-        dfi.entry.data.first_save_time = header->data.begin_time;
+    // Update index entry for the old header
+    if (index.isInstanceValid())
+    {   
+        archiver_Unit au(
+            key_Object(header->datafile->getBasename().c_str(), header->offset),
+            interval(header->data.begin_time, header->data.end_time),
+            priority);
+        if (!index.addAU(channel_name.c_str(), au))
+        {
+            LOG_MSG("Cannot add %s @ 0x%lX to index\n",
+                    header->datafile->getBasename().c_str(), header->offset);
+        }   
     }        
     // Switch to new header
     delete header;
     header = new_header;
     // Upp the buffer size
     calc_next_buffer_size(next_buffer_size);
+    // new header will be added to index when it's closed
     return true;
 }
     

@@ -7,13 +7,15 @@
 #include "DataFile.h"
 #include "DataReader.h"
 
-DataReader::DataReader(DirectoryFile &index)
-        : index(index), data(0), header(0)
+DataReader::DataReader(archiver_Index &index)
+        : index(index), au_iter(0), valid_datablock(false), data(0), header(0)
 {
 }
 
 DataReader::~DataReader()
 {
+    if (au_iter)
+        delete au_iter;
     if (data)
         RawValue::free(data);
     if (header)
@@ -22,59 +24,69 @@ DataReader::~DataReader()
 }
 
 const RawValue::Data *DataReader::find(
-    const stdString &channel_name, const epicsTime *start)
+    const stdString &channel_name,
+    const epicsTime *start,
+    const epicsTime *end)
 {
     this->channel_name = channel_name;
-    DirectoryFileIterator dfi = index.find(channel_name);
-    if (!dfi.isValid())
+    // default: all that's in archive
+    interval range;
+    if (start==0  ||  end==0)
+    {
+        if (!index.getEntireIndexedInterval(channel_name.c_str(), &range))
+        {
+            LOG_MSG("Cannot get interval for '%s' in index\n",
+                    channel_name.c_str());
+            return 0;
+        }   
+    }
+    // adjust time range to requested start & end
+    if (start)
+        range.setStart(*start);
+    if (end)
+        range.setEnd(*end);
+    // --
+    {
+        stdString txt;
+        epicsTime2string(range.getStart(), txt);
+        printf("DataReader::find: %s ...", txt.c_str());
+        epicsTime2string(range.getEnd(), txt);
+        printf("%s\n", txt.c_str());
+    }
+    // --
+    au_iter = index.getKeyAUIterator(channel_name.c_str());
+    if (!au_iter)
     {
         LOG_MSG ("DataReader: Cannot find '%s' in index\n",
                  channel_name.c_str());
         return 0;
     }
-    if (start)
-    {   // look for time, start at end
-        header = getHeader(index.getDirname(),
-                           dfi.entry.data.last_file,
-                           dfi.entry.data.last_offset);
-        if (!header)
-        {
-            LOG_MSG("DataReader: No data for '%s'\n",
-                    channel_name.c_str());
-            return 0;
-        }
-        ///
-        stdString txt;
-        epicsTime2string(epicsTime(header->data.begin_time), txt);
-        printf("header: %s\n", txt.c_str());
-        ///
-        while (epicsTime(header->data.begin_time) > *start)
-        {
-            if (!header->read_prev())
-            {
-                delete header;
-                header = 0;
-                LOG_MSG("DataReader: No data for '%s'\n",
-                        channel_name.c_str());
-                return 0;
-            }
-            epicsTime2string(epicsTime(header->data.begin_time), txt);
-            printf("header: %s\n", txt.c_str());
-
-        }
-        // Have header <= *start
+    // Get 1st data block
+    valid_datablock = au_iter->getFirst(range, &datablock, &valid_interval);
+    if (! valid_datablock)
+    {
+        LOG_MSG ("DataReader: No values for '%s' in index\n",
+                 channel_name.c_str());
+        return 0;
     }
-    else
-    {   // Start at first buffer
-        header = getHeader(index.getDirname(),
-                           dfi.entry.data.first_file,
-                           dfi.entry.data.first_offset);
-        if (!header)
-        {
-            LOG_MSG("DataReader: No data for '%s'\n",
-                    channel_name.c_str());
-            return 0;
-        }
+    // --
+    stdString s, e;
+    epicsTime2string(valid_interval.getStart(), s);
+    epicsTime2string(valid_interval.getEnd(), e);
+    printf("%s @ 0x%lX: %s - %s\n",
+           datablock.getPath(),
+           datablock.getOffset(),
+           s.c_str(), e.c_str());
+    // --
+    // Get the buffer for that data block
+    header = getHeader("", // TODO: index.getDirname(),
+                       datablock.getPath(),
+                       datablock.getOffset());
+    if (!header)
+    {
+        LOG_MSG("DataReader: No data for '%s'\n",
+                channel_name.c_str());
+        return 0;
     }
     dbr_type = header->data.dbr_type;
     dbr_count = header->data.dbr_count;
@@ -100,78 +112,80 @@ const RawValue::Data *DataReader::find(
         header = 0;
         return 0;
     }
-    val_idx = 0;
     type_changed = false;
     ctrl_info_changed = false;
-    if (start)
+
+    
+    // Binary search for best matching sample.
+#error somewhere in here
+    epicsTime goal = valid_interval.getStart();
+    epicsTime stamp;
+    size_t low = 0, high = header->data.num_samples - 1;
+    FileOffset offset0 =
+        header->offset + sizeof(DataHeader::DataHeaderData);
+    FileOffset offset;
+    // --
+    stdString goal_txt;
+    epicsTime2string(goal, goal_txt);
+    printf("Goal: %s\n", goal_txt.c_str());
+    // --
+    while (true)
     {
-        // Binary search for best matching sample.
-        size_t low = 0, high = header->data.num_samples - 1;
-        FileOffset offset0 =
-            header->offset + sizeof(DataHeader::DataHeaderData);
-        FileOffset offset;
-        epicsTime stamp;
-        ///
-        stdString start_txt;
-        epicsTime2string(*start, start_txt);
-        printf("Start: %s\n", start_txt.c_str());
-        ///
-        while (true)
+        // Pick middle value, rounded up
+        val_idx = low+high;
+        if (val_idx & 1)
+            ++val_idx;
+        val_idx /= 2;   
+        offset = offset0 + val_idx * raw_value_size;
+        if (! RawValue::read(this->dbr_type, this->dbr_count,
+                             raw_value_size, data,
+                             header->datafile, offset))
         {
-            // Pick middle value, rounded up
-            val_idx = low+high;
-            if (val_idx & 1)
-                ++val_idx;
-            val_idx /= 2;
-            
-            offset = offset0 + val_idx * raw_value_size;
-            if (! RawValue::read(this->dbr_type, this->dbr_count,
-                                 raw_value_size, data,
-                                 header->datafile, offset))
+            delete header;
+            header = 0;
+            return 0;
+        }
+        stamp = RawValue::getTime(data);
+        // --
+        stdString stamp_txt;
+        epicsTime2string(stamp, stamp_txt);
+        printf("Index %d: %s\n", val_idx, stamp_txt.c_str());
+        // --
+        if (high-low <= 1)
+        {   // The intervall can't shrink further,
+            // idx = (low+high)/2 == high.
+            // Which value's best?
+            LOG_ASSERT(val_idx == high);
+            if (stamp > goal)
             {
-                delete header;
-                header = 0;
-                return 0;
+                val_idx = low;
+                return next();
             }
-            stamp = RawValue::getTime(data);
-            ///
-            stdString stamp_txt;
-            epicsTime2string(stamp, stamp_txt);
-            printf("Index %d: %s\n", val_idx, stamp_txt.c_str());
-            ///
-            if (high-low <= 1)
-            {   // The intervall can't shrink further,
-                // idx = (low+high)/2 == high.
-                // Which value's best?
-                LOG_ASSERT(val_idx == high);
-                if (stamp > *start)
-                {
-                    val_idx = low;
-                    return next();
-                }
-                // else: val_idx == high is good & already in data
-                break;
-            }
-            if (stamp == *start)
-                break;
-            else if (stamp > *start)
-                high = val_idx;
-            else
-                low = val_idx;
-        }   
-        ++val_idx;
-        return data;
-    }
-    else
-        return next();
+            // else: val_idx == high is good & already in data
+            break;
+        }
+        if (stamp == goal)
+            break;
+        else if (stamp > goal)
+            high = val_idx;
+        else
+            low = val_idx;
+    }   
+    ++val_idx;
+    return data;
+#endif
+    return 0;
 }    
 
 const RawValue::Data *DataReader::next()
 {
+#if 0
     if (!header)
         return 0;    
     if (val_idx >= header->data.num_samples)
     {
+                valid_datablock = au_iter->getNext(&datablock, &valid_interval);
+
         val_idx = 0;
         DataHeader *new_header =
             getHeader(header->datafile->getDirname(),
@@ -250,6 +264,8 @@ const RawValue::Data *DataReader::next()
     }
     ++val_idx;
     return data;
+#endif
+    return 0;
 }
 
 // Either sets header to new dirname/basename/offset
@@ -279,5 +295,3 @@ DataHeader *DataReader::getHeader(const stdString &dirname,
     }
     return new_header;
 }
-
-

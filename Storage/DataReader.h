@@ -3,9 +3,10 @@
 // Tools
 #include "stdString.h"
 // Storage
-#include "DirectoryFile.h"
 #include "CtrlInfo.h"
 #include "RawValue.h"
+// rtree
+#include "archiver_index.h"
 
 /// \ingroup Storage
 /// @{
@@ -19,7 +20,7 @@ class DataReader
 {
 public:
     /// Create a reader for an index.
-    DataReader(DirectoryFile &index);
+    DataReader(archiver_Index &index);
 
     ~DataReader();
     
@@ -34,9 +35,11 @@ public:
     ///
     /// \param channel_name: Name of the channel
     /// \param start: start time or 0 for first value
+    /// \param end: end time or 0 for last value
     /// \return Returns value or 0
     const RawValue::Data *find(const stdString &channel_name,
-                               const epicsTime *start);
+                               const epicsTime *start,
+                               const epicsTime *end);
 
     /// Returns next value or 0.
     const RawValue::Data *next();
@@ -59,9 +62,12 @@ public:
     double period;    
 
 private:
-    DirectoryFile &index;
-    DataFile *datafile;
+    archiver_Index &index;
     stdString channel_name;
+    key_AU_Iterator *au_iter; // iterator for index & channel_name
+    bool valid_datablock; // is au_iter on valid datablock? 
+    key_Object datablock; // the current datablock
+    interval   valid_interval;    // the valid interval in there
     RawValue::Data *data;
     size_t raw_value_size;
     class DataHeader *header;

@@ -3,9 +3,10 @@
 // Tools
 #include "stdString.h"
 // Storage
-#include "DirectoryFile.h"
 #include "CtrlInfo.h"
 #include "RawValue.h"
+// rtree
+#include "archiver_index.h"
 
 /// \ingroup Storage
 /// @{
@@ -24,7 +25,7 @@ public:
     /// \param dbr_type: the dbr_time_xxx type
     /// \param dbr_count: array size
     /// \param num_samples: estimated number of samples (helps w/ buffer allocation)
-    DataWriter(DirectoryFile &index,
+    DataWriter(archiver_Index &index,
                const stdString &channel_name,
                const CtrlInfo &ctrl_info,
                DbrType dbr_type,
@@ -34,12 +35,16 @@ public:
 
     ~DataWriter();
 
+    /// Set the 'priority' of what's entered into the index.
+    void setPriority(int p);
+
     /// Add a value, returns true for OK.
     bool add(const RawValue::Data *data);
 
 private:
-    DirectoryFile &index;
+    archiver_Index &index;
     const stdString &channel_name;
+    int priority;
     const CtrlInfo &ctrl_info;
     DbrType dbr_type;
     DbrCount dbr_count;
@@ -52,12 +57,17 @@ private:
     void calc_next_buffer_size(size_t start);
     size_t next_buffer_size;
 
-    DirectoryFileIterator dfi;
     class DataHeader *header;
     size_t available;
     MemoryBuffer<dbr_time_string> cvt_buffer;
 
     bool addNewHeader(bool new_ctrl_info);
 };
+
+inline void DataWriter::setPriority(int p)
+{
+    priority = p;
+}
+
 /// @}
 

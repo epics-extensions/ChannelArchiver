@@ -664,13 +664,13 @@ int main(int argc, const char *argv[], const char *envp[])
 	// ----------------------------------------------------
 	// Dispatch commands
 	// ----------------------------------------------------
-	if (page._command.empty() || page._command == "HELP")
+	if ((page._command.empty() && page._directory.empty()) || page._command == "HELP")
 	{
 		cmdHelp(page);
 		return 0;
 	}
 
-	if (page._command == "START")
+	if (page._command.empty() || page._command == "START")
 	{   // Show empty interface which has most of the buttons etc.
 		page.start();
 		page.header("Channel Archive CGI Interface", 1);

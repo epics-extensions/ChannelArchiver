@@ -323,7 +323,7 @@ sub update_schedule($)
                 # Running: Determine stop time
 		($hour, $minute) = split ':', $engine->{daily};
 		$engine->{next_start} = 0;
-		if defined($engine->{day})
+		if (defined($engine->{day}))
 		{
 		    # Today's daynum: $n_wday
 		    # Target:         $engine->{day}

@@ -20,6 +20,7 @@
 #include "EngineServer.h"
 #include "HTMLPage.h"
 #include <Filename.h>
+#include <epicsTimeHelper.h>
 
 // No clue what's needed here....
 //#ifndef __HP_aCC
@@ -58,7 +59,7 @@ int main (int argc, const char *argv[])
 {
     TheMsgLogger.SetPrintRoutine (LoggerPrintRoutine);
 
-    initOsiHelpers ();
+    initEpicsTimeHelper();
 
     CmdArgParser parser (argc, argv);
     parser.setArgumentsInfo ("<config-file> [<directory-file>]");

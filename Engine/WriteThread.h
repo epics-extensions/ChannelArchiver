@@ -41,8 +41,7 @@ public:
             LOG_MSG("Warning: WriteThread called while busy\n");
             return;
         }
-        if (! _wait.unlock())
-            LOG_MSG("WriteThread::write: cannot give semaphore\n");
+        _wait.unlock();
     }
 
     virtual void run();

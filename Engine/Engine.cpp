@@ -20,7 +20,6 @@
 
 static EngineServer *engine_server = 0;
 static WriteThread  write_thread;
-static class CaPoller *ca_poller = 0;
 Engine *theEngine;
 
 // some time values for timeouts

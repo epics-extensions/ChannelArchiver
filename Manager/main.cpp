@@ -8,7 +8,7 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 //
-// Manager:
+// ArchiveManager:
 //
 // Could end up being a command-line tool
 // for simple ChannelArchive management:
@@ -43,10 +43,6 @@
 
 USING_NAMESPACE_CHANARCH
 using namespace std;
-
-stdString prog_name;
-
-static bool be_verbose = false;
 
 // For communication sigint_handler -> main loop
 static bool run = true;
@@ -323,8 +319,8 @@ void compare (const stdString &archive_name, const stdString &target_name)
 			if (*src_val != *dst_val)
 			{
 				cout << "difference:\n";
-				cout << *src_val << "\n";
-				cout << *dst_val << "\n";
+				cout << "< " << *src_val << "\n";
+				cout << "> " << *dst_val << "\n";
 			}
 			++src_val;
 			++dst_val;
@@ -506,34 +502,14 @@ void test (const stdString &directory, const osiTime &start, const osiTime &end)
 	cout << errors << " errors\n";
 }
 
+//#define EXPERIMENT
+#ifdef EXPERIMENT
 // Ever changing experimental routine,
 // usually empty in "useful" versions of the ArchiveManager
-void do_experiment (const stdString &archive_name)
+void experiment (const stdString &archive_name)
 {
 }
-
-void Usage ()
-{
-	cerr << "Archive Manager version " VERSION_TXT ", built " __DATE__ "\n";
-	cerr << "\n";
-	cerr << "Usage: " << prog_name << " [options] <archive>\n";
-	cerr << "\toptions:\n";
-	cerr << "\t-i                     : show archive information\n";
-	cerr << "\t-m <regular expression>: list matching names\n";
-	cerr << "\t-M <regular expression>: dump values for matching names\n";
-	cerr << "\t-c <channel name>      : use given channel\n";
-	cerr << "\t-s <time>              : start time as mm/dd/yyyy hh:mm:ss[.nano-secs]\n";
-	cerr << "\t-e <time>              : end time (exclusive)\n";
-	cerr << "\t-x <new directory file>: export data into new archive\n";
-	cerr << "\t-r <repeat count limit>: for export: remove all 'repeat' entries beyond limit\n";
-	cerr << "\t-h <channel name>      : show headers for channel\n";
-	cerr << "\t-O <channel name>      : output ASCII dump for channel\n";
-	cerr << "\t-I <dump file>         : read ASCII dump for channel into archive\n";
-	cerr << "\t-C <target>            : Compare: test if all in archive is found in target\n";
-	cerr << "\t-S <time>              : Seek test\n";
-	cerr << "\t-T                     : Test archive\n";
-//	cerr << "\t-E                     : Experiment\n";
-}
+#endif
 
 static void PrintRoutine (void *arg, const stdString &text)
 {
@@ -545,116 +521,82 @@ int main (int argc, const char *argv[])
 	TheMsgLogger.SetPrintRoutine (PrintRoutine);
 	initOsiHelpers ();
 
-	signal (SIGINT, signal_handler);
-	signal (SIGTERM, signal_handler);
+	CmdArgParser parser (argc, argv);
+	parser.setHeader ("Archive Manager version " VERSION_TXT ", built " __DATE__ "\n\n");
+	parser.setArgumentsInfo ("<archive>");
 
-	bool seek_test = false;
-	bool show_headers = false;
-	bool dump_values = false;
-	bool dump_ascii = false;
-	bool read_ascii = false;
-	Filename::getBasename (argv[0], prog_name);
-	size_t repeat_limit = 0;
+	CmdArgFlag   do_show_info   (parser, "info", "Show archive information");
+	CmdArgFlag   do_test        (parser, "test", "Test archive for errors");
+	CmdArgString channel_name   (parser, "channel", "<channel>", "Specify channel name");
+	CmdArgString channel_pattern(parser, "match", "<regular expression>", "List matching channels");
+	CmdArgString dump_channels  (parser, "Match", "<regular expression>", "Dump values for matching channels");
+	CmdArgString start_text     (parser, "start", "<time>", "Start time as mm/dd/yyyy hh:mm:ss[.nano-secs]");
+	CmdArgString end_text       (parser, "end", "<time>", "End time (exclusive)");
+	CmdArgString export_archive (parser, "xport", "<new archive>", "export data into new archive");
+	CmdArgInt    repeat_limit   (parser, "repeat_limit", "<seconds>", "remove 'repeat' entries beyond limit (export)");
+	CmdArgString show_headers   (parser, "headers", "<channel>", "show headers for channel");
+	CmdArgString ascii_output   (parser, "Output", "<channel>", "output ASCII dump for channel");
+	CmdArgString ascii_input    (parser, "Input", "<ascii file>", "read ASCII dump for channel into archive");
+	CmdArgString compare_target (parser, "Compare", "<target archive>", "Compare with target archive");
+	CmdArgFlag   do_seek_test   (parser, "Seek", "Seek test (use with -start)");
+#ifdef EXPERIMENT
+	CmdArgFlag   do_experiment  (parser, "Experiment", "Perform experiment (temprary option)");
+#endif
 
-	ArgParser	parser;
-	if (! parser.parse (argc, argv, "ivTE", "cmsexIShCMOrj"))
-	{
-		Usage ();
+	if (! parser.parse ())
 		return -1;
-	}
-	// Create nicely named refs for flags/parms/args
-	bool do_info = parser.getFlag (0);
-	be_verbose = parser.getFlag (1);
-	bool the_test = parser.getFlag (2);
-	bool experiment_test = parser.getFlag (3);
-	stdString channel_name = parser.getParameter(0);
-	stdString channel_pattern = parser.getParameter(1);
-	stdString start_text = parser.getParameter(2);
-	const stdString &end_text = parser.getParameter(3);
-	const stdString &new_dir_name = parser.getParameter(4);
-	if (! parser.getParameter(11).empty ())
-	{
-		repeat_limit = (size_t) atol(parser.getParameter(11).c_str());
-	}
-	stdString file_name;
-	if (! parser.getParameter(6).empty ())
-	{
-		start_text = parser.getParameter(6);
-		seek_test = true;
-	}
-	if (! parser.getParameter(7).empty ())
-	{
-		channel_name = parser.getParameter(7);
-		show_headers = true;
-	}
-	stdString compare_target = parser.getParameter(8);
-	if (! parser.getParameter(9).empty ())
-	{
-		channel_pattern = parser.getParameter(9);
-		dump_values = true;
-	}
-	if (! parser.getParameter(10).empty ())
-	{
-		channel_name = parser.getParameter(10);
-		dump_ascii = true;
-	}
-	if (! parser.getParameter(5).empty ())
-	{
-		file_name = parser.getParameter(5);
-		read_ascii = true;
-	}
 
 	if (parser.getArguments().size () != 1)
 	{
-		cerr << "No Directory file specified\n";
-		Usage ();
+		parser.usage ();
 		return -1;
 	}
-	const stdString &archive_name = parser.getArgument (0);
+	stdString archive_name = parser.getArgument (0);
 
 	osiTime start, end;
 	string2osiTime (start_text, start);
 	string2osiTime (end_text, end);
 
+	signal (SIGINT, signal_handler);
+	signal (SIGTERM, signal_handler);
+
 	try
 	{
-		if (experiment_test)
-			do_experiment (archive_name);
-		else if (the_test)
-			test (archive_name, start, end);
-		else if (dump_ascii)
-			output_ascii (archive_name, channel_name, start, end);
-		else if (read_ascii)
-			input_ascii (archive_name, file_name);
-		else if (do_info)
+		if (do_show_info)
 		{
-			if (channel_name.empty ())
-				show_info (archive_name, channel_pattern);
-			else
+			if (channel_name.get().length () > 0)
 				show_channel_info (archive_name, channel_name);
+			else
+				show_info (archive_name, channel_pattern);
 		}
-		else if (! compare_target.empty())
+#ifdef EXPERIMENT
+		else if (do_experiment)
+			experiment (archive_name);
+#endif
+		else if (do_test)
+			test (archive_name, start, end);
+		else if (ascii_output.get().length() > 0)
+			output_ascii (archive_name, ascii_output.get(), start, end);
+		else if (ascii_input.get().length() > 0)
+			input_ascii (archive_name, ascii_input);
+		else if (compare_target.get().length() > 0)
 			compare (archive_name, compare_target);
-		else if (seek_test)
+		else if (do_seek_test)
 			seek_time (archive_name, channel_name, start);
-		else if (show_headers)
-			headers (archive_name, channel_name);
-		else if (dump_values)
-			dump (archive_name, channel_pattern, start, end);
-		else if (new_dir_name.length ())
+		else if (show_headers.get().length() > 0)
+			headers (archive_name, show_headers);
+		else if (dump_channels.get().length() > 0)
+			dump (archive_name, dump_channels, start, end);
+		else if (export_archive.get().length () > 0)
 		{
-			if (channel_pattern.empty ())
-			{
-				channel_pattern = channel_name;
-			}
-			export (archive_name, channel_pattern, start, end, new_dir_name, repeat_limit);
+			if (channel_pattern.get().empty ())
+				channel_pattern.set (channel_name.get());
+			export (archive_name, channel_pattern, start, end, channel_pattern, (size_t) repeat_limit.get());
 		}
-		else if (channel_name.empty ())
+		else if (channel_name.get().empty ())
 			list_channels (archive_name, channel_pattern);
 		else
-		{
 			list_values (archive_name, channel_name, start, end);
-		}
 	}
 	catch (GenericException &e)
 	{

@@ -11,6 +11,7 @@
 // ASCII read/write routines
 //
 
+#include "../ArchiverConfig.h"
 #include "BinArchive.h"
 #include <ASCIIParser.h>
 #include <vector>
@@ -18,6 +19,13 @@
 
 USING_NAMESPACE_CHANARCH
 using namespace std;
+
+#ifdef MANAGER_USE_MULTI
+#	include "MultiArchive.h"
+#	define ARCHIVE_TYPE	MultiArchive
+#else
+#	define ARCHIVE_TYPE	BinArchive
+#endif
 
 // -------------------------------------------------------------------
 // write
@@ -78,7 +86,7 @@ static void output_info (const CtrlInfoI *info)
 void output_ascii (const stdString &archive_name, const stdString &channel_name,
 	const osiTime &start, const osiTime &end)
 {
-	Archive			archive (new BinArchive (archive_name));
+	Archive			archive (new ARCHIVE_TYPE (archive_name));
 	ChannelIterator	channel (archive);
 	ValueIterator	value (archive);
 	if (! archive.findChannelByName (channel_name, channel))

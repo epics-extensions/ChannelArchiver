@@ -5,33 +5,42 @@
 
 use English;
 #use strict;
-use vars qw($opt_d);
+use vars qw($opt_d $opt_o);
 use Getopt::Std;
 use File::Basename;
 
 sub usage()
 {
-    print("USAGE: ConvertEngineConfig [-d DTD] old-config new-config\n");
+    print("USAGE: ConvertEngineConfig [options] ASCII-config { ASCII-config }\n");
     print("\n");
-    print("This tool reads an old-type ArchiveEngine ASCII configuration\n");
-    print("file and converts it into the current XML config file.\n");
+    print("Options:\n");
+    print("  -d <DTD>       :  Specify DTD\n");
+    print("  -o <filename>  :  Set output file name\n");
+    print("\n");
+    print("This tool reads an ArchiveEngine's ASCII configuration\n");
+    print("file and converts it into the XML config file.\n");
+    print("\n");
+    print("One can use either one ASCII config file (with !group entries)\n");
+    print("or supply a list of ASCII files, where each one will then\n");
+    print("define a group.\n");
     exit(-1);
 }
 
-if (!getopts('d:')  ||  $#ARGV != 1)
+if (!getopts('d:o:')  ||  $#ARGV < 0)
 {
     usage();
 }
-my ($infile) = $ARGV[0];
-my ($outfile) = $ARGV[1];
+my ($outfile) = "";
+$outfile = $opt_o if (length($opt_o) > 0);
+
 unless (length($opt_d) > 0)
 {
     $opt_d = "engineconfig.dtd";
-    printf ("\nUsing '$opt_d' as the DTD\n");
-    printf ("You should use the '-d DTD' option\n");
-    printf ("to provide the path to your DTD.\n\n");
+    printf STDERR ("\nUsing '$opt_d' as the DTD\n");
+    printf STDERR ("You should use the '-d DTD' option\n");
+    printf STDERR ("to provide the path to your DTD.\n\n");
 }
-my (%params, %groups, $directory, $filesize_warning);
+my (%params, %groups, $filename, $directory, $file, $filesize_warning);
 # Defaults for the global options
 %params = 
 (
@@ -43,9 +52,13 @@ my (%params, %groups, $directory, $filesize_warning);
  max_repeat_count => 120
 );
 $filesize_warning = 0;
-$directory = dirname($infile);
-$infile = basename($infile);
-parse($infile,'fh00');
+
+foreach $filename ( @ARGV )
+{
+    $directory = dirname($filename);
+    $file = basename($filename);
+    parse($file,'fh00');
+}
 dump_xml();
 
 # parse(<group file name>, file handle to use)
@@ -169,30 +182,39 @@ sub parse($$)
 
 sub dump_xml()
 {
-    my ($parm, $group, $channel);
-    open OUT, ">$outfile" or die "Cannot create $outfile\n";
-    printf OUT ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
-    printf OUT ("<!DOCTYPE engineconfig SYSTEM \"$opt_d\">\n");
-    printf OUT ("<engineconfig>\n");
+    my ($parm, $group, $channel, $ofh);
+    if (length($outfile) > 0)
+    {
+	open OUT, ">$outfile" or die "Cannot create $outfile\n";
+	$ofh = select(OUT);
+    }
+    printf("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
+    printf("<!DOCTYPE engineconfig SYSTEM \"$opt_d\">\n");
+    printf("<engineconfig>\n");
     foreach $parm ( sort keys %params )
     {
-	printf OUT ("\t<$parm>$params{$parm}</$parm>\n");
+	printf("\t<$parm>$params{$parm}</$parm>\n");
     }
     
     foreach $group ( sort keys %groups )
     {
-	printf OUT ("\t<group>\n");
-	printf OUT ("\t\t<name>$group</name>\n");
+	printf("\t<group>\n");
+	printf("\t\t<name>$group</name>\n");
 	foreach $channel ( sort keys %{$groups{$group}} )
 	{
-	    printf OUT ("\t\t<channel><name>$channel</name>");
-	    printf OUT ("<period>$groups{$group}{$channel}{period}</period>");
-	    printf OUT ("<monitor/>") if ($groups{$group}{$channel}{monitor});
-	    printf OUT ("<scan/>") if ($groups{$group}{$channel}{scan});
-	    printf OUT ("<disable/>") if ($groups{$group}{$channel}{disable});
-	    printf OUT ("</channel>\n");
+	    printf("\t\t<channel><name>$channel</name>");
+	    printf("<period>$groups{$group}{$channel}{period}</period>");
+	    printf("<monitor/>") if ($groups{$group}{$channel}{monitor});
+	    printf("<scan/>") if ($groups{$group}{$channel}{scan});
+	    printf("<disable/>") if ($groups{$group}{$channel}{disable});
+	    printf("</channel>\n");
 	}
-	printf OUT ("\t</group>\n");
+	printf("\t</group>\n");
     }
-    printf OUT ("</engineconfig>\n");
+    printf("</engineconfig>\n");
+    if (length($outfile) > 0)
+    {
+	select($ofh);
+	close(OUT);
+    }
 }

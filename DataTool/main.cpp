@@ -34,12 +34,17 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
     }
     if (verbose)
         printf("Created index '%s'\n", index_name.c_str());
-    
-    while (channels.isValid())
+
+    for (/**/;  channels.isValid();  channels.next())
     {
         if (verbose)
             printf("Channel '%s':\n", channels.entry.data.name);
-
+        if (! Filename::isValid(channels.entry.data.first_file))
+        {
+            if (verbose)
+                printf("No values\n");
+            continue;
+        }
         DataFile *datafile =
             DataFile::reference(dir.getDirname(),
                                 channels.entry.data.first_file, false);
@@ -72,8 +77,6 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
             header->read_next();
         }
         delete header;
-                
-        channels.next();
     }
     DataFile::close_all();
 }

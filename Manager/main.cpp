@@ -171,7 +171,7 @@ void seek_time (const stdString &archive_name, const stdString &channel_name, co
 		return;
 	}
 
-	cout << "Channel '" << channel->getName() << "\n";
+	cout << "Channel '" << channel->getName() << "'\n";
 
 	channel->getValueNearTime (start, value);
 	if (value)

@@ -2,25 +2,29 @@
 
 <head>
 <title>Export: Time Stamps</title>
+<link REL="STYLESHEET" HREF="../style.css" TYPE="text/css">
 </head>
 
-<body bgcolor="#FFFFFF" vlink="#0000FF" background="blueback.jpg">
-<font face="Comic Sans MS, Arial, Helvetica">
+<body background="blueback.jpg">
 
 <blockquote>
   <h1>Export: Time Stamps</h1>
   <h2>Problem</h2>
-  <p>The EPICS time stamps provide accuracy up to the nanosecond level and the
-  ChannelArchiver saves those stamps without loss. The clocks of multiple I/O controllers
-  can be synchronized to a high degree, so time stamps remain comparable even if the
-  channels originate from different machines. <br>
-  A problem arises when you compare different channels. The time stamps might differ
-  slightly because a single CPU cannot scan several channels exactly at once. In addition,
-  scan tasks on different machines are not synchronized, you might also want to compare
-  channels that were scanned at different rates or were archived on change ('monitored'). <br>
-  The net result is that for a given exact point in time the archiver will seldom find more
-  than one value. When exporting in a spreadsheet format, '#N/A' is used to indicate this: </p>
-  <div align="center"><center><table BORDER="1">
+  <p>The EPICS time stamps provide accuracy up to the nanosecond level
+  and the  ChannelArchiver saves those stamps without loss. The clocks
+  of multiple I/O controllers can be synchronized to a high degree, so
+  time stamps remain comparable even if the channels originate from
+  different machines. <br>
+  A problem arises when you compare different channels. The time
+  stamps might differ slightly because a single CPU cannot scan
+  several channels exactly at once. In addition, scan tasks on
+  different machines are not synchronized, you might also want to
+  compare channels that were scanned at different rates or were
+  archived on change ('monitored'). <br>
+  The net result is that for a given exact point in time the archiver
+  will seldom find more than one value. When exporting in a
+  spreadsheet format, '#N/A' is used to indicate this:
+  <center><table BORDER="1">
     <tr>
       <th>Time</th>
       <th>A</th>
@@ -52,16 +56,21 @@
       <td>&nbsp;</td>
     </tr>
   </table>
-  </center></div><p>In the example, the time stamps of channels A and B are obviously
-  &quot;close&quot;, but since they are still different and cannot simply be put on a single
-  line in a spreadsheet format.<br>
-  You can still plot this data, even with interpolated lines, but calculations like
-  &quot;A-B&quot; will always yield '#N/A' for the example above since either A or B is
-  undefined. </p>
+  </center>
+  In the example, the time stamps of channels A and B are obviously
+  &quot;close&quot;, but since they are still different and cannot
+  simply be put on a single line in a spreadsheet format.<br>
+  You can still plot this data, even with interpolated lines, but
+  calculations like &quot;A-B&quot; will always yield '#N/A' for the
+  example above since either A or B is undefined.
+
   <h2>Filling</h2>
-  <p>When the &quot;Fill&quot; option is enabled, the previous value of a channel will be
-  repeated, filling what used to end up as &quot;#N/A&quot; in the original data: </p>
-  <div align="center"><center><table BORDER="1">
+  When the &quot;Fill&quot; option is enabled, the previous value of a
+  channel will be repeated, filling what used to end up as
+  &quot;#N/A&quot; in the original data:
+
+  <center>
+  <table BORDER="1">
     <tr>
       <th>Time</th>
       <th>A</th>
@@ -98,17 +107,23 @@
       <td>&nbsp;</td>
     </tr>
   </table>
-  </center></div><p>The remaining '#N/A' entries are caused by special conditions, e.g. a
-  disconnected channel. An initial undefined value appears because the filling mechanism
-  starts only after the channel has a valid value.</p>
-  <p>To remind you that these time stamps are not the exact ones from the archive, a comment
-  is added to the header of the exported data. (A similar remark is added for the following,
-  time-stamp-changing operations) </p>
+  </center>
+  The remaining '#N/A' entries are caused by special conditions,
+  e.g. a disconnected channel. An initial undefined value appears
+  because the filling mechanism starts only after the channel has a
+  valid value.<br>
+  To remind you that these time stamps are not the exact ones from the
+  archive, a comment is added to the header of the exported data. (A
+  similar remark is added for the following, time-stamp-changing
+  operations)
+
   <h2>Linear Interpolation</h2>
-  <p>With linear interpolation, time stamps will be chosen with a fixed period as specified
-  in the &quot;Interpolate&quot; field. The values are then interpolated from the raw
-  values: </p>
-  <div align="center"><center><table BORDER="1">
+  With linear interpolation, time stamps will be chosen with a fixed
+  period as specified in the &quot;Interpolate&quot; field. The values
+  are then interpolated from the raw values:
+
+  <center>
+  <table BORDER="1">
     <tr>
       <th>Time</th>
       <th>A</th>
@@ -145,13 +160,17 @@
       <td>-0.107357</td>
     </tr>
   </table>
-  </center></div><p>Again some undefined values remain initially and whenever special
-  conditions don't allow interpolation. </p>
+  </center>
+  Again some undefined values remain initially and whenever special
+  conditions don't allow interpolation.
+
   <h2>Rounding</h2>
-  <p>When it's not imperative to know the exact time stamps, the export module can round
-  adjacent time stamps. If the data from the example is rounded to be within 2 seconds, the
-  result becomes: </p>
-  <div align="center"><center><table BORDER="1">
+  When it's not imperative to know the exact time stamps, the export
+  module can round adjacent time stamps. If the data from the example
+  is rounded to be within 2 seconds, the result becomes:
+
+  <center>
+  <table BORDER="1">
     <tr>
       <th>Time</th>
       <th>A</th>
@@ -198,12 +217,8 @@
       <td>-0.086564</td>
     </tr>
   </table>
-  </center></div><hr WIDTH="80%">
-  <address>
-    Requests/comments?<br>
-    <a href="mailto:kasemir@lanl.gov">E-Mail: Kay-Uwe Kasemir</a><br>
-  </address>
+  </center>
+  <hr WIDTH="80%">
+
 </blockquote>
-</font>
-</body>
 </html>

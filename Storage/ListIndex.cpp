@@ -111,7 +111,7 @@ class RTree *ListIndex::getTree(const stdString &channel,
 static int sort_compare(const stdString &a,
                         const stdString &b)
 {
-    return a.compare(b);
+    return b.compare(a);
 }
 
 void ListIndex::name_traverser(const stdString &name,
@@ -163,6 +163,9 @@ bool ListIndex::getFirstChannel(NameIterator &iter)
             index.close();
         }
         // Copy dump tree into list
+#ifdef DEBUG_LISTINDEX
+        printf("Converling to list\n");
+#endif
         known_names.traverse(name_traverser, this);
     }
     if (names.empty())
@@ -174,6 +177,9 @@ bool ListIndex::getFirstChannel(NameIterator &iter)
     iter.entry.offset = 0;
     iter.hashvalue = 0;
     ++current_name;
+#ifdef DEBUG_LISTINDEX
+    printf("getFirstChannel: '%s'\n", iter.entry.name.c_str());
+#endif
     return true;
 }
 
@@ -183,6 +189,9 @@ bool ListIndex::getNextChannel(NameIterator &iter)
     {
         iter.entry.name = *current_name;
         ++current_name;
+#ifdef DEBUG_LISTINDEX
+        printf("getNextChannel: '%s'\n", iter.entry.name.c_str());
+#endif
         return true;
     }
     return false;

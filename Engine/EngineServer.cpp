@@ -345,7 +345,8 @@ void groups(HTTPClientConnection *connection, const stdString &path)
         total_connect_count += connect_count;
         cvtUlongToString((unsigned long) channel_count, channels);
         if (channel_count != connect_count)
-            sprintf(connected, "<FONT COLOR=#FF0000>%d</FONT>", connect_count);
+            sprintf(connected, "<FONT COLOR=#FF0000>%u</FONT>",
+                    (unsigned int)connect_count);
         else
             cvtUlongToString((unsigned long)connect_count, connected);
         
@@ -354,10 +355,10 @@ void groups(HTTPClientConnection *connection, const stdString &path)
                          "Yes" : "<FONT COLOR=#FF0000>No</FONT>"),
                         channels, connected, 0);
     }    
-    sprintf(channels, "%d", total_channel_count);
+    sprintf(channels, "%u", (unsigned int)total_channel_count);
     if (total_channel_count != total_connect_count)
-        sprintf(connected, "<FONT COLOR=#FF0000>%d</FONT>",
-                total_connect_count);
+        sprintf(connected, "<FONT COLOR=#FF0000>%u</FONT>",
+                (unsigned int)total_connect_count);
     else
         cvtUlongToString((unsigned long) total_connect_count, connected);
     page.tableLine("Total", " ", " ", channels, connected, 0);

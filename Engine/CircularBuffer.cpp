@@ -137,7 +137,7 @@ void CircularBuffer::dump() const
            (int)type, (int)count, (int)getCapacity());
     for (i=0; i<num; ++i)
     {
-        printf("#%3d: ", i);
+        printf("#%3u: ", (unsigned int)i);
         RawValue::show(stdout, type, count, getRawValue(i));
     }
 }

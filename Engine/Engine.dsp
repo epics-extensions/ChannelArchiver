@@ -67,7 +67,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MDd /W3 /Gm /GX /Zi /Od /Ob2 /I "..\LibIO" /I "..\..\Tools" /I "..\..\..\base\include" /I "..\..\..\base\include\os\Win32" /I "..\..\..\base\src\ca" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D OLD_osiTime=1 /D CPP_EDITION=3 /YX /FD /GZ /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /Ob2 /I "..\LibIO" /I "..\..\Tools" /I "..\..\..\..\base\include" /I "..\..\..\..\base\include\os\Win32" /I "..\..\..\..\base\src\ca" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D OLD_osiTime=1 /D CPP_EDITION=3 /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /Ob2 /I "..\LibIO" /I "..\..\Tools" /I "s:\cs\epics\R3.13.3\base\include" /I "s:\cs\epics\R3.13.3\base\include\os\Win32" /I "s:\cs\epics\R3.13.3\base\src\ca" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D OLD_osiTime=1 /D CPP_EDITION=3 /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -75,7 +75,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib ca.lib Com.lib /nologo /subsystem:console /profile /debug /machine:I386 /out:"Debug/ArchiveEngine.exe" /libpath:"..\..\..\base\lib\WIN32"
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib ca.lib Com.lib /nologo /subsystem:console /profile /machine:I386 /out:"Debug/ArchiveEngine.exe" /libpath:"..\..\..\..\base\lib\WIN32"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib ca.lib Com.lib /nologo /subsystem:console /profile /machine:I386 /out:"Debug/ArchiveEngine.exe" /libpath:"s:\cs\epics\R3.13.3\base\lib\WIN32"
 # SUBTRACT LINK32 /debug
 
 !ENDIF 

@@ -182,7 +182,7 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
     }
     return  xmlrpc_build_value(env, "{s:i,s:(s)}",
                                "type", (xmlrpc_int32)META_TYPE_ENUM,
-                               "states", "<undefined>");
+                               "states", "<NO DATA or WRONG NAME>");
 }
 
 void dbr_type_to_xml_type(DbrType dbr_type, DbrCount dbr_count,

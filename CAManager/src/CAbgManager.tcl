@@ -28,8 +28,7 @@ set CVS(Version) "Version: 1.0 (Rev. $CVS(Revision))"
 
 proc init {} {
   global INCDIR
-  set pwd [pwd]
-
+  set ::pwd [pwd]
   cd [file dirname [info script]]
   set script [pwd]/[file tail [info script]]
   regsub /src/[file tail $script] $script "" INCDIR
@@ -42,13 +41,17 @@ proc init {} {
     set script $INCDIR/$dir.tcl
     namespace inscope :: source $script
   }
-  cd $pwd
+  cd $::pwd
 
   set ::_host [info hostname]
   regsub "\\..*" $::_host "" ::_host
 
-  signal trap * {}
-  signal trap SIGINT {exit}
+  signal ignore *
+  catch {signal trap SIGTERM {puts stderr "Terminating(TERM)..."; after 1 {exit -15}}}
+  catch {signal trap SIGINT {puts stderr "Terminating(INT)..."; after 1 {Exit -2}}}
+  catch {signal trap SIGQUIT {puts stderr "Terminating(QUIT)..."; after 1 {Exit -3}}}
+  catch {signal default SIGTSTP}
+  catch {signal default SIGCONT}
 
   catch {wm withdraw .}
   Puts "Channel Archiver bgManager startup"

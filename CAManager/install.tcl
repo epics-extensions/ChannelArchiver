@@ -1,51 +1,68 @@
-proc Puts {msg {hilit normal}} {
-  .f.t configure -state normal
-  .f.t insert end $msg $hilit
-#  .f.t insert end \n
-  .f.t configure -state disabled
-  .f.t yview end
-  update
+if {[catch {package require Tk}]} {
+  set interactive 0
+} else {
+  set interactive 1
 }
+
+if {([llength $argv] > 0) && ([lindex $argv 0] == "-i")} {
+  set interactive 0
+}
+
+proc Puts {msg {hilit normal}} {
+  if {$::interactive} {
+    .f.t configure -state normal
+    .f.t insert end $msg $hilit
+    #  .f.t insert end \n
+    .f.t configure -state disabled
+    .f.t yview end
+    update
+  } else {
+    puts -nonewline $msg
+  }
+}
+
 
 set ::prog 0
 
-wm title . "Install Channel Archive Manager"
-frame .f -bd 8 -relief flat
-text .f.t -width 80 -height 20 -yscrollcommand {.f.v set} -wrap none
-.f.t tag add error end; .f.t tag configure error -foreground red
-.f.t tag add ok end; .f.t tag configure ok -foreground forestgreen
-.f.t tag add warning end; .f.t tag configure warning -foreground brown
-.f.t tag add action end; .f.t tag configure action -foreground blue
-.f.t tag add normal end;
-scrollbar .f.v -command {.f.t yview}
-pack .f.v -side right -fill y
-pack .f.t -side right -fill both -expand t
-pack .f -side top -fill both -expand t
-
-frame .i -bd 8 -relief flat
-label .i.l -text "Installation directory:" -anchor w
-entry .i.e -textvariable instdir -bd 1 -bg white
-pack .i.l .i.e -side top -fill x
-pack .i -side top -fill x
-
-if {![regexp "Windows" $tcl_platform(os)]} {
-  frame .t -bd 8 -relief flat
-  label .t.l -text "Tclsh executable:" -anchor w
-  entry .t.e -textvariable tclsh -bd 1 -bg white
-  pack .t.l .t.e -side top -fill x
-  pack .t -side top -fill x
+if {$interactive} {
+  wm title . "Install Channel Archive Manager"
+  frame .f -bd 8 -relief flat
+  text .f.t -width 80 -height 20 -yscrollcommand {.f.v set} -wrap none
+  .f.t tag add error end; .f.t tag configure error -foreground red
+  .f.t tag add ok end; .f.t tag configure ok -foreground forestgreen
+  .f.t tag add warning end; .f.t tag configure warning -foreground brown
+  .f.t tag add action end; .f.t tag configure action -foreground blue
+  .f.t tag add normal end;
+  scrollbar .f.v -command {.f.t yview}
+  pack .f.v -side right -fill y
+  pack .f.t -side right -fill both -expand t
+  pack .f -side top -fill both -expand t
   
-  frame .w -bd 8 -relief flat
-  label .w.l -text "Wish executable:" -anchor w
-  entry .w.e -textvariable wish -bd 1 -bg white
-  pack .w.l .w.e -side top -fill x
-  pack .w -side top -fill x
+  frame .i -bd 8 -relief flat
+  label .i.l -text "Installation directory:" -anchor w
+  entry .i.e -textvariable instdir -bd 1 -bg white
+  pack .i.l .i.e -side top -fill x
+  pack .i -side top -fill x
+  
+  if {![regexp "Windows" $tcl_platform(os)]} {
+    frame .t -bd 8 -relief flat
+    label .t.l -text "Tclsh executable:" -anchor w
+    entry .t.e -textvariable tclsh -bd 1 -bg white
+    pack .t.l .t.e -side top -fill x
+    pack .t -side top -fill x
+    
+    frame .w -bd 8 -relief flat
+    label .w.l -text "Wish executable:" -anchor w
+    entry .w.e -textvariable wish -bd 1 -bg white
+    pack .w.l .w.e -side top -fill x
+    pack .w -side top -fill x
+  }
+  button .go -command {set go 1} -text Install
+  button .cancel -command exit -text Close
+  pack .go .cancel -side right -padx 8 -pady 8
+  focus .go
+  bind .go <Key-Return> {.go invoke}
 }
-button .go -command {set go 1} -text Install
-button .cancel -command exit -text Close
-pack .go .cancel -side right -padx 8 -pady 8
-focus .go
-bind .go <Key-Return> {.go invoke}
 
 set srcfiles [glob -nocomplain src/*.tcl]
 incr ::prog [llength $srcfiles]
@@ -70,9 +87,22 @@ package require Tclx
 Puts "Installing CAManager Version 1.0\n\n" error
 
 Puts "Searching Tcl/TK interpreters:\n" action
-set wish [info nameofexecutable]
+set interp [info nameofexecutable]
+foreach pat "wish$ext wish\[0-9\\.\]+$ext" {
+  set l [lmatch -regexp [glob -nocomplain "[file dirname $interp]/*"] "[file dirname $interp]/$pat\$"]
+  if {[llength $l] > 0} {
+    set dt 0
+    foreach f $l {
+      if {[file mtime $f] > $dt} {
+	set wish $f
+	set dt [file mtime $f]
+      }
+    }
+    break
+  }
+}
 foreach pat "tcl$ext tclsh$ext tcl\[0-9\\.\]+$ext tclsh\[0-9\\.\]+$ext" {
-  set l [lmatch -regexp [glob -nocomplain "[file dirname $wish]/*"] "[file dirname $wish]/$pat\$"]
+  set l [lmatch -regexp [glob -nocomplain "[file dirname $interp]/*"] "[file dirname $interp]/$pat\$"]
   if {[llength $l] > 0} {
     set dt 0
     foreach f $l {
@@ -141,15 +171,18 @@ foreach package [array names required] {
 }
 
 if {!$terminate} {
-  ProgressBar .progress -maximum $::prog -variable ::prog -bd 1
-  pack .progress -fill both -expand t -padx 12 -pady 12
-  set ::prog 0
+  if {$interactive} {
+    ProgressBar .progress -maximum $::prog -variable ::prog -bd 1
+    pack .progress -fill both -expand t -padx 12 -pady 12
+    set ::prog 0
 
-  vwait go
-  catch {
-    .i.e configure -state disabled
-    .t.e configure -state disabled
-    .w.e configure -state disabled
+    vwait go
+
+    catch {
+      .i.e configure -state disabled
+      .t.e configure -state disabled
+      .w.e configure -state disabled
+    }
   }
   Puts "\n"
   Puts "Install programs in $instdir/$bininfix:\n" action
@@ -235,6 +268,10 @@ if {!$terminate} {
   Puts "Installation terminated with errors!\n" error
   Puts "Check and eliminate the above problems and rerun installation\n" error
 }
-.go configure -text Close -command exit
-destroy .progress
-destroy .cancel
+if {$interactive} {
+  .go configure -text Close -command exit
+  destroy .progress
+  destroy .cancel
+} else {
+  exit
+}

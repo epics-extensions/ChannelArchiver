@@ -1,7 +1,8 @@
 proc checkstate {arr ind op} {
   if {"$::_run($ind)" == "NO"} {
     trace vdelete ::_run($ind) w checkstate
-    if {"[camMisc::arcGet $ind start]" != "timerange"} {
+    if {("[camMisc::arcGet $ind start]" == "NO")} {return}
+    if {("[camMisc::arcGet $ind start]" != "timerange")} {
       set ::sched($ind,start,job) [after 1 "runArchiver $ind"]
     } else {
       set timespec [camMisc::arcGet $ind timespec]

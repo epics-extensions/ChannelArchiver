@@ -1,6 +1,7 @@
 proc camGUI::aOpen {} {
   # open a fileselector
   # if there's a file selected -> open it
+  if {[info exists camMisc::rcdir]} {cd $camMisc::rcdir}
   set fn [tk_getOpenFile]
   if {"$fn" != ""} {
     set camMisc::force_cfg_file 1

@@ -7,6 +7,8 @@ proc camGUI::setButtons {w} {
     $topf.bf.stop configure -state disabled
     $topf.bf.edit configure -state disabled
     $topf.bf.delete configure -state disabled
+    $topf.bf.up configure -state disabled
+    $topf.bf.down configure -state disabled
     return
   }
   if {[regexp "since" $camGUI::aEngines($row,$::iRun)]} {
@@ -20,6 +22,16 @@ proc camGUI::setButtons {w} {
   }
   if {$camGUI::aEngines($row,$::iHost) != "$::_host"} {
     $topf.bf.start configure -state disabled
+  }
+  if {$row > 0} {
+    $topf.bf.up configure -state normal
+  } else {
+    $topf.bf.up configure -state disabled
+  }
+  if {$row < [expr [$w cget -rows] - 4]} {
+    $topf.bf.down configure -state normal
+  } else {
+    $topf.bf.down configure -state disabled
   }
   $topf.bf.edit configure -state normal
   $topf.bf.delete configure -state normal

@@ -23,7 +23,7 @@ proc httpd::sendOutput {fd} {
 
   puts $fd "<p>is running since [time $_starttime]</p>"
   puts $fd "<table border=0 cellpadding=5>"
-  puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>Configured ArchiveEngines for user <font color=yellow><em>$tcl_platform(user)</em></font> on host <font color=yellow><em>$::_host</em></font></font></th></tr>"
+  puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>Configured ArchiveEngines for config <font color=yellow><em>[file tail $camMisc::cfg_file]</em></font> of user <font color=yellow><em>$tcl_platform(user)</em></font> on host <font color=yellow><em>$::_host</em></font></font></th></tr>"
   puts $fd "<tr><th bgcolor=white>ArchiveEngine</th><th bgcolor=white>Port</th><th bgcolor=white>running?</th><th bgcolor=white>run/rerun</th><th bgcolor=white>command</th></tr>"
   foreach i [camMisc::arcIdx] {
     if {"[camMisc::arcGet $i host]" != "$::_host"} continue
@@ -58,18 +58,39 @@ proc httpd::sendOutput {fd} {
 	regsub -- "- [lindex $ts 0]" $ts "-" ts
 	puts -nonewline $fd "$ts"
       }
-      weekly {
-	puts -nonewline $fd "[lindex $ts 0]s @ [lindex $ts 1]"
+      month {
+	puts -nonewline $fd "every [lindex $ts 0]. of a month @ [lindex $ts 1]"
       }
-      monthly {
-	puts -nonewline $fd "$start: [lindex $ts 0]. @ [lindex $ts 1]"
+      week {
+	lassign $ts day time ev
+	if {$ev > 1} {
+	  puts -nonewline $fd "every $ev weeks, "
+	}
+	puts -nonewline $fd "${day}s @ $time"
       }
-      hourly {
-	puts -nonewline $fd "$start"
-	if {$ts != 0} { puts -nonewline $fd " @ $ts. minute" }
+      day {
+	lassign $ts time ev
+	if {$ev > 1} {
+	  puts -nonewline $fd "every $ev days @ $time"
+	} else {
+	  puts -nonewline $fd "daily @ $time"
+	}
       }
-      default {
-	puts -nonewline $fd "$start: @ $ts"
+      hour {
+	lassign $ts time h
+	if {$h > 1} {
+	  puts -nonewline $fd "@ $time + every $h hours" 
+	} else {
+	  puts -nonewline $fd "@ *[string range $time 2 end]" 
+	}
+      }
+      minute {
+	lassign $ts m ev
+	if {$ev > 1} {
+	  puts -nonewline $fd "@ $m. min. + every $ev minutes"
+	} else {
+	  puts -nonewline $fd "every minute"
+	}
       }
     }
     puts $fd "</td>"

@@ -43,10 +43,17 @@ proc camGUI::mainWindow {} {
   set row [expr max([llength [camMisc::arcIdx]]+2, 8)]
 
   set table [table $f.t -rows $row -cols 5 -titlerows 1 \
+		 -rowheight -22 \
 		 -colstretchmode all -rowstretchmode none -roworigin -1 \
 		 -yscrollcommand "$f.sy set" -flashmode 1 \
 		 -borderwidth 1 -state disabled -selecttype row]
   pack $table -side right -expand t -fill both
+  frame $table.f -bd 0
+  frame $table.f.b -bd 1 -relief sunken
+  pack $table.f.b -side bottom -expand t -fill both
+  $table spans 0,4 $row,1
+  $table window config 0,4 -sticky news -window $table.f
+
 
   initTable $table
   $table config -variable camGUI::aEngines 
@@ -77,16 +84,18 @@ proc camGUI::mainWindow {} {
       -command "camGUI::aCheck $table" \
       -helptype variable -helpvar ::status \
       -helptext "manually check which Archivers are running"
-  Button $f.xport -text Export -bd 1 -relief $brel \
-      -command "camGUI::aXport $table" \
+  ArrowButton $f.up -type button -dir top -bd 1 \
+      -command "camGUI::aSwap up $table" \
       -helptype variable -helpvar ::status \
-      -helptext "export the selected archive (excel/Matlab/gnuplot...)"
-  Button $f.manager -text Manager -bd 1 -relief $brel \
-      -command "camGUI::aManage $table" \
+      -helptext "move selected Archiver up in list" \
+      -width 25 -height 25 -ipadx 4 -ipady 4
+  ArrowButton $f.down -type button -dir bottom -bd 1 \
+      -command "camGUI::aSwap down $table" \
       -helptype variable -helpvar ::status \
-      -helptext "test integrity / export to another archive"
+      -helptext "move selected Archiver down in list" \
+      -width 25 -height 25 -ipadx 4 -ipady 4
 
-  pack $f.delete $f.new $f.edit $f.stop $f.start $f.check -padx 8 -pady 8 -side right
+  pack $f.delete $f.new $f.edit $f.stop $f.start $f.check $f.down $f.up -padx 8 -pady 8 -side right
 
 #  event add <<B1>> <1>
 #  event add <<B1>> <Button1-Motion>

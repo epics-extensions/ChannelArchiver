@@ -20,6 +20,10 @@ set ::dontCheckAtAll 0
 set ::checkBgMan 1
 set ::checkInt 10
 
+set ::selected(archive) {}
+set ::selected(misc) {}
+set ::selected(regex) {}
+
 namespace eval camGUI {
   variable aEngines
   variable row
@@ -38,12 +42,7 @@ proc camGUI::init {} {
   
   wm withdraw .
 
-  set ::selected(archive) {}
-  set ::selected(misc) {}
-  set ::selected(regex) {}
-  if {"$::tcl_platform(platform)" == "unix"} {
-    catch {source $camMisc::rcdir/settings}
-  } else {
+  if {"$::tcl_platform(platform)" != "unix"} {
     registry set "$camMisc::reg_stem\\Settings"
     foreach v [registry values "$camMisc::reg_stem\\Settings"] {
       set ::$v [registry get "$camMisc::reg_stem\\Settings" $v]
@@ -72,8 +71,10 @@ source Open.tcl
 source Prefs.tcl
 source Save.tcl
 source SaveSettings.tcl
+source Select.tcl
 source Start.tcl
 source Stop.tcl
+source Swap.tcl
 source Test.tcl
 source actionDialog.tcl
 source checkJob.tcl

@@ -24,14 +24,15 @@ proc camGUI::aSave {} {
     foreach idx [camMisc::arcIdx] {
       set arc [camMisc::arcGet $idx]
       global $arc
-      puts $o "{"
+      puts $o " {"
       foreach k [array names $arc] {
-	puts $o "  $k \"[camMisc::arcGet $idx $k]\""
+	puts $o "   $k \"[camMisc::arcGet $idx $k]\""
       }
-      puts $o "}"
+      puts $o " }"
     }
-    puts $o "}"
+    puts $o "}\n"
     close $o
+    SaveSettings
   } else {
     
     set stem $camMisc::reg_stem

@@ -4,7 +4,7 @@ proc camGUI::aEdit {w} {
   set tl .t$row
   if {![catch {raise $tl}]} return
 
-  foreach param {host port descr cfg cfgc archive log start timespec} {
+  foreach param {host port descr cfg cfgc archive log start timespec multi} {
     set var($row,$param) [camMisc::arcGet $row $param]
   }
 
@@ -35,7 +35,7 @@ proc camGUI::aEdit {w} {
       set fn \[getCfgFile $tl $row\]
       if {\"\$fn\" != \"\"} {set var($row,cfg) \$fn}"
   checkbutton $f.olcfgc -text "disable configuration changes via Archiver's web interface" \
-      -variable var($row,cfgc)
+      -variable var($row,cfgc) -onvalue 1 -offvalue 0
 
   set af {"" freq_directory dir directory catalog %Y/%V/directory %Y/%m/%d/directory}
   foreach k [camMisc::arcIdx] {
@@ -45,6 +45,14 @@ proc camGUI::aEdit {w} {
       var($row,archive) $af -side top -fill x
   $f.af.e configure -helptext "The filename of the archive file.\nShould not be an absolute pathname (starting with /).\nNever put more than one archive in a single directory!\nDirectories will be created.\nSubject to %-expansion (see documentation)."
 
+  set ma [list [file dirname [file dirname $var($row,cfg)]]/directory]
+  foreach k [camMisc::arcIdx] {
+    lappend ma [camMisc::arcGet $k multi]
+  }
+  combobox $f.ma "Multi-Archive file: (absolute path)" top \
+      var($row,multi) $ma -side top -fill x
+  $f.ma.e configure -helptext "The Filename of a Multi-Archive file,\nwhere these archives should be appended to."
+
   set ll {log log/%Y/%m/%d/%H%M%S}
   foreach k [camMisc::arcIdx] {
     lappend ll [camMisc::arcGet $k log]
@@ -53,8 +61,13 @@ proc camGUI::aEdit {w} {
       var($row,log) $ll -side top -fill x
   $f.lf.e configure -helptext "The filename of the Archiver's log file.\nShould not be an absolute pathname (starting with /).\nDirectories will be created.\nSubject to %-expansion (see documentation)."
 
-  combobox $f.run Run/Rerun: left var($row,start) \
-      {NO hourly daily weekly monthly timerange always}
+  if {$::debug} {
+    combobox $f.run Run/Rerun: left var($row,start) \
+	{NO minute hour day week month timerange always}
+  } else {
+    combobox $f.run Run/Rerun: left var($row,start) \
+	{NO hour day week month timerange always}
+  }
   $f.run.e configure -helptext "A schedule of how this Archiver should be started/restarted.\nDirectories are changed/created on each restart."
   proc showpage($row) {args} "$f.nb raise \$::var($row,start)"
   trace variable var($row,start) w camGUI::showpage($row)
@@ -62,34 +75,88 @@ proc camGUI::aEdit {w} {
       -insertontime 0 -selectborderwidth 0 
   PagesManager $f.nb
 
+  set var(minute) 0
+  set var(time) 02:00:00
+  set var(day) Monday
+  set var(dayofmonth) 1
+  set var(start) 0
+  set var(every) 1
+
+  switch $var($row,start) {
+    minute {
+      lassign $var($row,timespec) var(start) var(every)
+    }
+    hour {
+      lassign $var($row,timespec) var(time) var(every)
+    }
+    day {
+      lassign $var($row,timespec) var(time) var(every)
+    }
+    week {
+      lassign $var($row,timespec) var(day) var(time) var(every)
+    }
+    month {
+      lassign $var($row,timespec) var(dayofmonth) var(time)
+    }
+    default {
+    }
+  }
+
   set page [$f.nb add NO]
 
-  set page [$f.nb add hourly]
-  spinbox $page.m Minute left var(minute) {0 59 1} {}
-  $page.m.e configure -editable 0 -width 3
-  set var(minute) 42
-  pack $page.m
+  set page [$f.nb add minute]
+  frame $page.rep -bd 0
+  spinbox $page.rep.st "at minute" left var(start) {0 59 1} {}
+  $page.rep.st.e configure -width 3
+  combobox $page.rep.ev "every" left var(every) {1 2 3 4 5 6 10 12 15 20 30}
+  $page.rep.ev.e configure -editable 0 -width 3
+  label $page.rep.lb -text "minutes"
+  pack $page.rep.st $page.rep.ev $page.rep.lb -side left -padx 4 -pady 4
+  pack $page.rep -side top
 
-  set page [$f.nb add daily]
-  spintime $page.t var(hour) var(minute)
-  pack $page.t
+  set page [$f.nb add hour]
+  frame $page.rep -bd 0
+  spintime $page.rep.t var(time)
+  combobox $page.rep.ev "every" left var(every) {1 2 3 4 6 8 12}
+  $page.rep.ev.e configure -editable 0 -width 3
+  label $page.rep.lb -text "hours,"
+  pack $page.rep.t $page.rep.ev $page.rep.lb -side left -padx 4 -pady 4
+  pack $page.rep -side top
 
-  set page [$f.nb add weekly]
-  combobox $page.w "Weekday" left var(day) $::weekdays
-  $page.w.e configure -editable 0 -insertontime 0 -selectborderwidth 0
-  spintime $page.t var(hour) var(minute)
-  pack $page.w $page.t
+  set page [$f.nb add day]
+  frame $page.rep -bd 0
+  spinbox $page.rep.ev "every" left var(every) {1 30 1} {}
+  $page.rep.ev.e configure -width 3
+  label $page.rep.lb -text "days"
+  pack $page.rep.ev $page.rep.lb -side left -padx 4 -pady 4
+  spintime $page.rep.t var(time)
+  pack $page.rep.t -side left -padx 4 -pady 4
+  pack $page.rep -side top
 
-  set page [$f.nb add monthly]
-  spintime $page.t var(hour) var(minute)
-  spinbox $page.t.d "Day of Month" left var(dayofmonth) {1 28 1} {}
-  $page.t.d.e configure -width 3
-  $page.t.d.e configure -editable 0
-  pack $page.t.d.e -side bottom -fill none -expand 0
-  pack $page.t.d -side left
-  pack $page.t
+  set page [$f.nb add week]
+  frame $page.rep -bd 0
+  spinbox $page.rep.ev "every" left var(every) {1 52 1} {}
+  $page.rep.ev.e configure -width 3
+  label $page.rep.lb -text "weeks,"
+  pack $page.rep.ev $page.rep.lb -side left -padx 4 -pady 4
+  combobox $page.rep.w "" left var(day) $::weekdays
+  $page.rep.w.e configure -width 10
+  $page.rep.w.e configure -editable 0 -insertontime 0 -selectborderwidth 0
+  spintime $page.rep.t var(time)
+  pack $page.rep.w $page.rep.t -side left -padx 4 -pady 4
+  pack $page.rep -side top
+
+  set page [$f.nb add month]
+  frame $page.rep -bd 0
+  spinbox $page.rep.d "day" left var(dayofmonth) {1 28 1} {}
+  $page.rep.d.e configure -width 3
+  $page.rep.d.e configure -editable 0
+  spintime $page.rep.t var(time)
+  pack $page.rep.d $page.rep.t -side left -padx 4 -pady 4
+  pack $page.rep -side top
 
   set page [$f.nb add timerange]
+  set page [frame $page.tr]
   frame $page.f
   label $page.f.l -text From: -anchor w
   iwidgets::dateentry $page.f.d -iq high
@@ -102,7 +169,8 @@ proc camGUI::aEdit {w} {
 
   pack $page.f.l $page.f.d $page.f.t -fill x
   pack $page.t.l $page.t.d $page.t.t -fill x
-  pack $page.f $page.t -side left -fill both -expand t
+  pack $page.f $page.t -side left -fill both
+  pack $page -side top
 
   set page [$f.nb add always]
   $f.nb compute_size
@@ -111,43 +179,14 @@ proc camGUI::aEdit {w} {
   pack $f.h.port -side right -fill x
   pack $f.c.cfg -side left -fill x -expand t
   pack $f.c.fs -side bottom
-  pack $f.h $f.de $f.c $f.olcfgc $f.af $f.lf -fill x -padx 4 -pady 4
+  pack $f.h $f.de $f.c $f.olcfgc $f.af $f.ma $f.lf -fill x -padx 4 -pady 4
   pack $f.run -side top -padx 4 -pady 4
   pack $f.nb -side top -fill x -padx 4 -pady 4
   pack $lf -side top -fill both -expand t -padx 4 -pady 4
 
   $f.nb raise $var($row,start)
   
-#  if {"$var($row,timespec)" == "-"} {
-#    set var($row,timespec) [clock seconds]
-#  }
-
-  set var(minute) 0
-  set var(hour) 2
-  set var(day) Monday
-  set var(dayofmonth) 1
-
   switch $var($row,start) {
-    hourly {
-      set var(minute) $var($row,timespec)
-    }
-    daily {
-      set due [clock scan $var($row,timespec)]
-      set var(minute) [clock format $due -format %M]
-      set var(hour) [clock format $due -format %H]
-    }
-    weekly {
-      set due [clock scan [lindex $var($row,timespec) 1]]
-      set var(day) [lindex $var($row,timespec) 0]
-      set var(minute) [clock format $due -format %M]
-      set var(hour) [clock format $due -format %H]
-    }
-    monthly {
-      set var(dayofmonth) [lindex $var($row,timespec) 0]
-      set due [clock scan [lindex $var($row,timespec) 1]]
-      set var(minute) [clock format $due -format %M]
-      set var(hour) [clock format $due -format %H]
-    }
     timerange {
       $ft.f.d show [lindex $var($row,timespec) 0]
       $ft.f.t show [lindex $var($row,timespec) 1]
@@ -174,6 +213,7 @@ proc camGUI::aEdit {w} {
     $f.c.cfg.e configure -state disabled
     $f.c.fs configure -state disabled
     $f.af.e configure -state disabled
+    $f.ma.e configure -state disabled
     $f.lf.e configure -state disabled
     $f.olcfgc configure -state disabled
   }
@@ -182,17 +222,20 @@ proc camGUI::aEdit {w} {
     vwait var($row,close)
     if {$var($row,close) == 0} break
     switch $var($row,start) {
-      hourly {
-	set var($row,timespec) $var(minute)
+      minute {
+	set var($row,timespec) [list $var(start) $var(every)]
       }
-      daily {
-	set var($row,timespec) [format "%02d:%02d" $var(hour) $var(minute)]
+      hour {
+	set var($row,timespec) [list $var(time) $var(every)]
       }
-      weekly {
-	set var($row,timespec) [format "%s %02d:%02d" $var(day) $var(hour) $var(minute)]
+      day {
+	set var($row,timespec) [list $var(time) $var(every)]
       }
-      monthly {
-	set var($row,timespec) [format "%d %02d:%02d" $var(dayofmonth) $var(hour) $var(minute)]
+      week {
+	set var($row,timespec) [list $var(day) $var(time) $var(every)]
+      }
+      month {
+	set var($row,timespec) [list $var(dayofmonth) $var(time)]
       }
       timerange {
 	set f [clock scan "[$ft.f.d get] [$ft.f.t get]"]
@@ -219,7 +262,7 @@ proc camGUI::aEdit {w} {
   destroy $tl
   if {$var($row,close) == 0} {setButtons $w; return 0}
   
-  foreach param {host port descr cfg cfgc archive log start timespec} {
+  foreach param {host port descr cfg cfgc archive log start timespec multi} {
     camMisc::arcSet $row $param $var($row,$param)
   }
   set camGUI::aEngines($row,$::iHost) $var($row,host)

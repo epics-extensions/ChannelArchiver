@@ -68,6 +68,8 @@ if {[regexp "Windows" $tcl_platform(os)]} {
 
 package require Tclx
 
+Puts "Installing CAManager Version 1.0\n\n" error
+
 Puts "Searching Tcl/TK interpreters:\n" action
 set wish [info nameofexecutable]
 foreach pat "tcl$ext tclsh$ext tcl\[0-9\]*$ext tclsh\[0-9\]*$ext" {

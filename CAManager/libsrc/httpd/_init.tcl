@@ -7,7 +7,7 @@ namespace eval httpd {
   variable _method
   variable _gotargs
   variable _timefmt "%Y/%m/%d %H:%M:%S"
-  catch {source $camMisc::rcdir/settings}
+#  catch {source $camMisc::rcdir/settings}
 }
 
 proc httpd::init {} {

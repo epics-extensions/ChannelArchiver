@@ -32,7 +32,7 @@ proc camGUI::aPrefs {} {
   set w [.prefs.nb insert end "bgman" -text "bgManager"]
   packTree $w {
     {LabelFrame head {-side left -anchor w -text "Port for CAbgManager: "} {-fill x -padx 4 -pady 4} {
-      {entry port {-textvariable ::_port -bg white} {-fill x} {} ::_entry}
+      {entry port {-textvariable ::T_port -bg white} {-fill x} {} ::_entry}
     }}
     {checkbutton check {-variable ::TcheckBgMan \
 			    -text "Check for running CAbgManager on startup"} {-pady 4} {}}

@@ -13,9 +13,14 @@ namespace eval camMisc {
   variable cfg_file $cfg_file_d
   variable force_cfg_file $force_cfg_file_d
 
-  foreach k $argv {
-    set cfg_file $k
-    set force_cfg_file 1
+  foreach k $::argv {
+    if {[file exists "$k"]} {
+      set cfg_file $k
+      set force_cfg_file 1
+    } elseif {[info exists camMisc::rcdir]} {
+      set cfg_file "$rcdir/$k"
+      set force_cfg_file 1
+    }
   }
 
   variable _Archiver {}

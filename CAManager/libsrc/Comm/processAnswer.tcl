@@ -33,6 +33,12 @@ proc camComm::processAnswer {sock} {
 	set fstate($sock) started
       }
     }
+    started {
+      if [regexp ".*Archive.*>(\[^<\]+)<" $line all archive] {
+	condSet $fsvar($sock,arc) "$archive"
+	set fstate($sock) end
+      }
+    }
     default {
       if [eof $sock] {
 	fileevent $sock readable ""
@@ -41,5 +47,4 @@ proc camComm::processAnswer {sock} {
       }
     }
   }
-  update
 }

@@ -21,26 +21,26 @@ proc camGUI::initTable {table} {
     set aEngines($i,$::iBlocked) Dunno
 
     set camGUI::aEngines($i,$::iBlocked) [file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]
-    catch {destroy $table.f$i}
-    frame $table.f$i -bd 1 -relief sunken
-    label $table.f$i.l -text " "
-    checkbutton $table.f$i.c -variable camGUI::aEngines($i,$::iBlocked) \
+    catch {destroy $table.f.f$i}
+    set f [frame $table.f.f$i -bd 1 -relief sunken]
+    label $f.l -text " "
+    checkbutton $f.c -variable camGUI::aEngines($i,$::iBlocked) -bd 1 \
 	-command "toggleBlock $i"
-    $table.f$i.c config -activebackground [$table.f$i.c cget -background]
-    bind $table.f$i.c <Enter> {
+    $f.c config -activebackground [$f cget -background]
+    bind $f.c <Enter> {
       set ::status "inhibit restart of Archiver"
     }
-    bind $table.f$i.c <Leave> {
+    bind $f.c <Leave> {
       set ::status ""
     }
-    pack $table.f$i.l -side left
-    pack $table.f$i.c -fill both -expand t
-    $table window config $i,4 -sticky news -window $table.f$i
+    pack $f.l -side left
+    pack $f.c -fill both -expand t
+    pack $f -side top -fill x
 
     after 1 "camComm::CheckRunning $i camGUI::aEngines($i,$::iRun)"
   }
   for {set i [llength [camMisc::arcIdx]]} {$i < $row} {incr i} {
-    catch {destroy $table.f$i}
+    catch {destroy $table.f.f$i}
   }
   $table configure -rows $row
   setDT

@@ -24,7 +24,7 @@ regsub ": (.*) \\$" $CVS(Revision) "\\1" CVS(Revision)
 regsub ": (.*) \\$" $CVS(Date) "\\1" CVS(Date)
 regsub ": (.*) \\$" $CVS(Author) "\\1" CVS(Author)
 
-set CVS(Version) "Version: 0.9 (Rev. $CVS(Revision))"
+set CVS(Version) "Version: 1.0 (Rev. $CVS(Revision))"
 
 proc init {} {
   global INCDIR

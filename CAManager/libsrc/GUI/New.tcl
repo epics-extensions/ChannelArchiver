@@ -10,20 +10,23 @@ proc camGUI::aNew {w} {
   if {[expr [.tf.t cget -rows] - 2] > [llength [camMisc::arcIdx]]} {
     $w delete row [expr [.tf.t cget -rows] - 2]
   }
-  frame $w.f$row -bd 1 -relief sunken
-  label $w.f$row.l -text " "
-  checkbutton $w.f$row.c -variable camGUI::aEngines($row,$::iBlocked) \
-      -command "toggleBlock $row"
-  $w.f$row.c config -activebackground [$w.f$row.c cget -background]
-  bind $w.f$row.c <Enter> {
+  set lst [expr [llength [camMisc::arcIdx]] - 1]
+
+  set f [frame $w.f.f$lst -bd 1 -relief sunken]
+  label $f.l -text " "
+  checkbutton $f.c -variable camGUI::aEngines($lst,$::iBlocked) \
+      -command "toggleBlock $lst"
+  $f.c config -activebackground [$f.c cget -background]
+  bind $f.c <Enter> {
     set ::status "inhibit restart of Archiver"
   }
-  bind $w.f$row.c <Leave> {
+  bind $f.c <Leave> {
     set ::status ""
   }
-  pack $w.f$row.l -side left
-  pack $w.f$row.c -fill both -expand t
-  $w window config $row,4 -sticky news -window $w.f$row
+  pack $f.l -side left
+  pack $f.c -fill both -expand t
+  pack $f -side top -fill x
+
   set camGUI::aEngines($row,$::iHost) "$::_host"
   set ::var($row,port) 4711
   set ::ports [getPorts -1]
@@ -36,6 +39,7 @@ proc camGUI::aNew {w} {
   camMisc::arcSet $row port $camGUI::aEngines($row,$::iPort)
   camMisc::arcSet $row descr $camGUI::aEngines($row,$::iDescr)
   camMisc::arcSet $row cfg [file join [pwd] "ENTER FILENAME"]
+  camMisc::arcSet $row cfgc 0
   camMisc::arcSet $row archive "<enter filename>"
   camMisc::arcSet $row log "<enter filename>"
   camMisc::arcSet $row start NO
@@ -51,6 +55,7 @@ proc camGUI::aNew {w} {
     $w delete row $row
     $w configure -state disabled
     camMisc::arcDel $row
+    destroy $f
   }
   setButtons $w
 }

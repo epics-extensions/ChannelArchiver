@@ -1,10 +1,10 @@
-proc spintime {w hvar mvar} {
+proc spintime {w tvar} {
+  global var
   frame $w -bd 0
-  spinbox $w.h Hour left $hvar {0 23 1} {}
-  $w.h.e configure -width 2 -editable 0
-  spinbox $w.m Minute left $mvar {0 59 1} {}
-  $w.m.e configure -width 2 -editable 0
-  pack $w.m $w.h -side right -fill both -padx 4
+  label $w.at -text at
+  iwidgets::timeentry $w.te -format military -seconds off
+  [$w.te component time] configure -textvariable $tvar
+  pack $w.at $w.te -side left -fill both
 }
 
 proc spinbox {w label labelside var vals cmd args} {

@@ -19,9 +19,9 @@
 
 // This should match Make.ver
 #define VERSION 1
-#define RELEASE 6
+#define RELEASE 7
 
-#define VERSION_TXT "1.6.3"
+#define VERSION_TXT "1.7.0"
 
 // ----------------------------------------------------------
 // ArchiveEngine

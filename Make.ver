@@ -1,6 +1,6 @@
 # Compare to ArchiverConfig.h
 
 VERSION=1
-RELEASE=6
-PATCH=3
+RELEASE=7
+PATCH=0
 

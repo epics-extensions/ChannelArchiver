@@ -48,7 +48,7 @@ const size_t COUNT=10000;
 int main ()
 {
     BinArchive *archive = new BinArchive ("dir", true /* for write */);
-   	ChannelIteratorI *channels = archive->newChannelIterator ();
+    ChannelIteratorI *channels = archive->newChannelIterator ();
     ValueI *value = archive->newValue (DBR_TIME_DOUBLE, 1);
     ChannelI *channel;
 
@@ -62,7 +62,7 @@ int main ()
     
     stdString name = "fred";
     
-	if (! archive->findChannelByName (name, channels))
+    if (! archive->findChannelByName (name, channels))
     {
         archive->addChannel (name, channels);
     }
@@ -82,7 +82,7 @@ int main ()
             channel->addBuffer (*value, 10.0, 100);
             if (! channel->addValue (*value))
             {
-                cout << "Cannot add value\n";
+                std::cout << "Cannot add value\n";
                 return -1;
             }
         }
@@ -92,7 +92,8 @@ int main ()
     osiTime stop = osiTime::getCurrent ();
     double secs = double (stop) - double (start);
     
-    cout << COUNT << " values in " << secs << " seconds: " << COUNT/secs << " vals/sec\n";
+    std::cout << COUNT << " values in " << secs << " seconds: "
+              << COUNT/secs << " vals/sec\n";
     
     delete channels;
     delete value;

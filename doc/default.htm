@@ -17,15 +17,21 @@
   This includes all data types available via Channel Access:
   float, double, int, string, enumerated types,
   scalars as well as arrays.
-
-  <h2>Components</h2>
-  The ChannelArchiver has these components:
+  <p>
+  <img src="components.gif" width=627 height=468><br>
+  
   <dl>
     <dt><a href="engine/default.htm">Engine</a> </dt>
     <dd>Archiver engine, collects data via Channel Access
-        and stores it in disk files.
+        and stores it in disk files.<br>
     </dd>
-
+  </dl>
+  There are several options for data retrieval. Since all
+  tools use the archiver I/O library, they currently need
+  access to the data files, be it on a local file system
+  or via NFS or Samba.
+  
+  <dl>
     <dt><a href="winbrowser/index.htm">WinBrowser</a></dt>
     <dd>WIN32 archive browser, allows interactive browing
         or archived data as well as spreadsheet export.

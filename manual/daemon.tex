@@ -72,7 +72,7 @@ ArchiveEngine periodically. The element must contain a number
 specifying hours: A value of 2.0 will cause a restart every 2
 hours. The hourly restart is quite inefficient and primarily meant for testing.
 
-\subsection{Operation}
+\subsection{Starting and Running}
 The ArchiveDaemon is a perl script that is typically started like this:
 
 \begin{lstlisting}[keywordstyle=\sffamily]
@@ -141,5 +141,12 @@ following files will be created:
   uses the year, month and day to build the path name.
 \end{itemize}
 
-\noindent To stop the ArchiveDaemon, access the ``/stop'' URL
-of the daemon's HTTPD, e.g. ``http://localhost:4610/stop''.
+\subsection{Stopping and More}
+To stop the ArchiveDaemon, access the ``/stop'' URL of the daemon's
+HTTPD, e.g. ``http://localhost:4610/stop''.  Similar to the
+ArchiveEngine's HTTPD, this URL is not accessible by following links
+on the HTTPD's web pages. You will have to type the URL. This is to
+prevent web robots or a monkey who is sitting in front of the computer
+and clicking on every link from accidentally stopping the daemon.
+Finally, the daemon will respond to the URL ``/postal'' by stopping every
+ArchiveEngine controlled by the daemon, followed by stopping itself.

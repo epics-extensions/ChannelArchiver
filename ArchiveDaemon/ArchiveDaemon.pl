@@ -436,6 +436,24 @@ sub handle_HTTP_info($)
     html_stop($client);
 }
 
+sub handle_HTTP_postal($)
+{
+    my ($client) = @ARG;
+    my ($engine);
+    html_start($client, 0);
+    print $client "<H1>Postal Archive Daemon</H1>\n";
+    foreach $engine ( @config )
+    {
+	next unless ($engine->{started});
+	print $client "Stopping " .
+	    "<A HREF=\"http://$host:$engine->{port}\">" .
+	    "$engine->{desc}</A> on port $engine->{port}<br>\n";
+	stop_engine($host, $engine->{port});
+    }
+    print $client "Quitting<br>\n";
+    html_stop($client);
+}
+
 # Used by check_HTTPD to dispatch requests
 sub handle_HTTP_request($$)
 {
@@ -464,6 +482,11 @@ sub handle_HTTP_request($$)
 	    html_start($client, 0);
 	    print $client "Quitting.\n";
 	    html_stop($client);
+	    return 0;
+	}
+	elsif ($URL eq '/postal')
+	{
+	    handle_HTTP_postal($client);
 	    return 0;
 	}
 	else
@@ -688,6 +711,7 @@ sub check_restart($$)
     my ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$wday,$yday,$isdst);
     my ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec, $nano);
     my ($engine_secs, $restart_secs);
+    my ($stopped) = 0;
     
     ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$wday,$yday,$isdst)
 	= localtime($now);
@@ -703,6 +727,8 @@ sub check_restart($$)
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
 	    stop_engine($host, $engine->{port});
+	    $engine->{started} = $engine->{lockfile} = 0;
+	    ++ $stopped;
 	}
     }
     elsif (defined($engine->{hourly}))
@@ -714,8 +740,11 @@ sub check_restart($$)
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
 	    stop_engine($host, $engine->{port});
+	    $engine->{started} = $engine->{lockfile} = 0;
+	    ++ $stopped;
 	}
     }
+    return $stopped;
 }
 
 # For all engines marked in the config as running, check when to restart
@@ -832,10 +861,17 @@ while (1)
     $now = time;
     if (($now - $last_check) > $engine_check_period)
     {
-	check_restarts($now);
 	check_engines($now);
 	start_engines($now);
-	$last_check = time;
+	if (check_restarts($now) > 0)
+	{
+	    # We stopped engines. Check again soon for restarts.
+	    $last_check += 10;
+	}
+	else
+	{
+	    $last_check = time;
+	}
     }
     if (($now - $last_index_update) > $index_update_period)
     {

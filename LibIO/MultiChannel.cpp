@@ -61,9 +61,8 @@ bool MultiChannel::getValueAfterTime(const osiTime &time,
 
     if (!isValidTime(t))
         t = getFirstTime();
-	if (_channel_iterator->_multi_archive->getValueAtOrAfterTime(
-        *_channel_iterator, t, true /* == is ok */,
-        *multi_values))
+	if (_channel_iterator->_multi_archive->getValueAfterTime(
+        *_channel_iterator, t, *multi_values))
         return true;
     multi_values->clear();
     return false;

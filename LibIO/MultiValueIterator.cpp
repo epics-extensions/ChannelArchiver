@@ -43,6 +43,8 @@ const ValueI * MultiValueIterator::getValue() const
 	return _base_value_iterator->getValue ();
 }
 
+static const osiTime epsilon_time(0L, 1L);
+
 bool MultiValueIterator::next()
 {
 	if (_base_value_iterator->next())
@@ -58,9 +60,9 @@ bool MultiValueIterator::next()
 		// last time stamp current archive has for this channel:
 		osiTime next_time = _channel_iterator->
             _base_channel_iterator->getChannel()->getLastTime();
-		_is_valid = _channel_iterator->_multi_archive->getValueAtOrAfterTime
+        next_time += epsilon_time;
+		_is_valid = _channel_iterator->_multi_archive->getValueAfterTime
             (*_channel_iterator, next_time,
-             false /* == not OK, has to be later */,
              *this);
 	}
     else

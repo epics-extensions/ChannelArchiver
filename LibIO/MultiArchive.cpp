@@ -56,8 +56,6 @@ bool MultiArchive::parseMasterFile(const stdString &master_file)
         _archives.push_back(master_file);
         return true;
     }
-
-    // ------------------------------------------------
     // OK, looks like a master file.
     // Now read it again as ASCII:
     ASCIIParser parser;
@@ -82,7 +80,6 @@ bool MultiArchive::parseMasterFile(const stdString &master_file)
 #ifdef DEBUG_MULTIARCHIVE
     LOG_MSG("MultiArchive::parseMasterFile\n");
 #endif
-
     return true;
 }
 
@@ -126,7 +123,6 @@ void MultiArchive::queryAllArchives()
 {
     if (_queriedAllArchives)
         return;
-
 #ifdef DEBUG_MULTIARCHIVE
     LOG_MSG("MultiArchive::queryAllArchives\n");
 #endif
@@ -222,26 +218,34 @@ bool MultiArchive::addChannel(const stdString &name,
 }
 
 // See comment in header file
-bool MultiArchive::getValueAtOrAfterTime(
+bool MultiArchive::getValueAfterTime(
     MultiChannelIterator &channel_iterator,
-    const osiTime &time, bool exact_time_ok,
+    const osiTime &time,
     MultiValueIterator &value_iterator) const
 {
     if (channel_iterator._channel_index >= _channels.size())
         return false;
 
+    stdString last_containing_archive;
     const ChannelInfo &info = _channels[channel_iterator._channel_index];
     stdList<stdString>::const_iterator archs = _archives.begin();
+    // Find archive with first stamp <= time <= last stamp
     for (/**/; archs != _archives.end(); ++archs)
     {
         Archive archive (new BinArchive(*archs));
         ChannelIterator channel(archive);
         if (archive.findChannelByName(info._name, channel))
         {
-            // getValueAfterTime() could succeed for '=='.
-            // Do we allow '=='?
-            if (!exact_time_ok && channel->getLastTime() <= time)
+            if (channel->getLastTime() < time)
+                continue; // can't be in here
+            if (channel->getFirstTime() >= time)
+            {
+                // ALL values in here are "after" time,
+                // but maybe there is a better archive
+                // that contains values close to given time
+                last_containing_archive = *archs;
                 continue;
+            }
             ValueIterator value(archive);
             // Does this archive have values after "time"?
             if (! channel->getValueAfterTime(time, value))
@@ -253,11 +257,30 @@ bool MultiArchive::getValueAtOrAfterTime(
             channel_iterator.position(archive.getI(), channel.getI());
 
             value.detach();    // Now ref'd by MultiValueIterator
-            archive.detach();   // Now ref'd by MultiChannelIterator
-            channel.detach();   // dito
+            archive.detach();  // Now ref'd by MultiChannelIterator
+            channel.detach();  // dito
             return value_iterator.isValid();
         }                    
     }
+    // Was there an archive where all is after time?
+    if (!last_containing_archive.empty())
+    {
+        Archive archive (new BinArchive(*archs));
+        ChannelIterator channel(archive);
+        if (!archive.findChannelByName(info._name, channel))
+            return false;
+        ValueIterator value(archive);
+        // Does this archive have values after "time"?
+        if (! channel->getValueAfterTime(time, value))
+            return false;
+        value_iterator.position(&channel_iterator, value.getI());
+        channel_iterator.position(archive.getI(), channel.getI());
+        value.detach();    // Now ref'd by MultiValueIterator
+        archive.detach();   // Now ref'd by MultiChannelIterator
+        channel.detach();   // dito
+        return value_iterator.isValid();
+    }                    
+        
     return false;
 }
 
@@ -270,10 +293,8 @@ bool MultiArchive::getValueAtOrBeforeTime(
         return false;
 
     const ChannelInfo &info = _channels[channel_iterator._channel_index];
-    // Note: searches archives in reverse order
-    // to be more predictable when going back and forth
-    stdList<stdString>::const_reverse_iterator archs = _archives.rbegin();
-    for (/**/; archs != _archives.rend(); ++archs)
+    stdList<stdString>::const_iterator archs = _archives.begin();
+    for (/**/; archs != _archives.end(); ++archs)
     {
         Archive archive (new BinArchive(*archs));
         ChannelIterator channel(archive);

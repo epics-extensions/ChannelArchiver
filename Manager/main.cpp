@@ -530,12 +530,28 @@ void test(const stdString &directory, const osiTime &start, const osiTime &end)
     std::cout << errors << " errors\n";
 }
 
-//#define EXPERIMENT
+#define EXPERIMENT
 #ifdef EXPERIMENT
 // Ever changing experimental routine,
 // usually empty in "useful" versions of the ArchiveManager
-void experiment (const stdString &archive_name)
+void experiment (const stdString &archive_name,
+                 const stdString &channel_name,
+                 const osiTime &start)
 {
+    Archive         archive (new MultiArchive(archive_name));
+    ChannelIterator channel(archive);
+    ValueIterator   value(archive);
+    
+    if (! archive.findChannelByName(channel_name, channel))
+        return;
+    
+    std::cout << "Channel " << channel->getName() << "\n";
+    channel->getValueBeforeTime (start, value);
+    if (value)
+        std::cout << "Before: " << *value << "\n";
+    channel->getValueAfterTime (start, value);
+    if (value)
+        std::cout << "After: " << *value << "\n";
 }
 #endif
 
@@ -569,7 +585,7 @@ int main(int argc, const char *argv[])
     CmdArgString compare_target (parser, "Compare", "<target archive>", "Compare with target archive");
     CmdArgFlag   do_seek_test   (parser, "Seek", "Seek test (use with -start)");
 #ifdef EXPERIMENT
-    CmdArgFlag   do_experiment  (parser, "Experiment", "Perform experiment (temprary option)");
+    CmdArgFlag   do_experiment  (parser, "Experiment", "Perform experiment (temporary option)");
 #endif
 
     if (! parser.parse ())
@@ -600,7 +616,7 @@ int main(int argc, const char *argv[])
         }
 #ifdef EXPERIMENT
         else if (do_experiment)
-            experiment (archive_name);
+            experiment (archive_name, channel_name, start);
 #endif
         else if (do_test)
             test (archive_name, start, end);

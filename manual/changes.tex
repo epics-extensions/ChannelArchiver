@@ -8,6 +8,16 @@ New  "versions"  are  marked  by some additional functionality. The
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 08/26/2004 --- Version 2.1.5:\\
+Fixed bug in the engine code: PVs which never change
+were never written when sampling with period < get\_threshold.
+
+Working on a ``ListIndex'', allowing the retrieval
+tools to use an indexconfig.dtd-type list of
+sub-archives, querying them one by one.
+The result is slower than using a ``real'' index,
+but much easier to setup and maintain.
+
 \item 07/26/2004 --- Version 2.1.4:\\
 Bug in DataReader that affected all the retrieval code:
 The ``find'' uses the start time in an at-or-before sense,

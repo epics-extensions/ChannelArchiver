@@ -5,7 +5,7 @@
 // Storage
 #include "ListIndex.h"
 
-#define DEBUG_LISTINDEX
+#undef DEBUG_LISTINDEX
 
 ListIndex::ListIndex()  :  index(50), is_open(false)
 {

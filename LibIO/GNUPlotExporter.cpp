@@ -73,6 +73,7 @@ void GNUPlotExporter::exportChannelList(
     fprintf(f, "#\n");
   
     stdVector<stdString> plotted_channels;
+    stdString channel_desc;
     Archive         archive(_archive);
     ChannelIterator channel(archive);
     ValueIterator   value(archive);
@@ -108,9 +109,19 @@ void GNUPlotExporter::exportChannelList(
         }
         
         // Header: Channel name [units]
-        fprintf(f, "# %s [%s]\n",
-                channel->getName(),
-                value->getCtrlInfo()->getUnits());
+        if (value->getCtrlInfo() &&
+            value->getCtrlInfo()->getUnits())
+        {
+            channel_desc = channel->getName();
+            channel_desc += " [";
+            channel_desc += value->getCtrlInfo()->getUnits();
+            channel_desc += "]";
+        }
+        else
+        {
+            channel_desc = channel->getName();
+        }
+        fprintf(f, "# %s\n", channel_desc.c_str());
         
         // Dump values for this channel
         osiTime time;
@@ -153,7 +164,8 @@ void GNUPlotExporter::exportChannelList(
             ++value;
         }
         if (have_anything)
-            plotted_channels.push_back(channel->getName());
+            plotted_channels.push_back(channel_desc);
+        
         fprintf(f, "\n\n\n");
     }
     archive.detach();

@@ -28,6 +28,7 @@ LIB_SRCS += OldDataWriter.cpp
 LIB_SRCS += DataWriter.cpp
 LIB_SRCS += OldDataReader.cpp
 LIB_SRCS += DataReader.cpp
+LIB_SRCS += LinearReader.cpp
 LIB_SRCS += SpreadsheetReader.cpp
 
 # Library to build

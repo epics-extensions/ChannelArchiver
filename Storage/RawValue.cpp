@@ -214,7 +214,7 @@ void RawValue::getTime(const Data *value, stdString &time)
 
 void RawValue::getValueString(stdString &txt,
                               DbrType type, DbrCount count, const Data *value,
-                              const class CtrlInfo *info=0)
+                              const class CtrlInfo *info)
 {
     int i;
     txt.assign(0,0);

@@ -6,7 +6,7 @@
 #include "OldDataWriter.h"
 #include "DataWriter.h"
 #include "OldDataReader.h"
-#include "DataReader.h"
+#include "LinearReader.h"
 #include "SpreadsheetReader.h"
 
 bool verbose;
@@ -209,7 +209,7 @@ void value_dump(const stdString &index_name,
         fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
         return;
     }
-    DataReader *reader = new DataReader(index);
+    DataReader *reader = new RawDataReader(index);
 
     const RawValue::Data *data = reader->find(channel_name, start, end);
     while (data  &&   (!end  ||  RawValue::getTime(data) < *end))
@@ -223,14 +223,14 @@ void value_dump(const stdString &index_name,
             else
                 printf("==");   
         }
-        RawValue::show(stdout, reader->dbr_type, reader->dbr_count,
-                       data, &reader->ctrl_info);
+        RawValue::show(stdout, reader->getType(), reader->getCount(),
+                       data, &reader->getInfo());
         data = reader->next();
     }
     delete reader;
 }
 
-void run_test(const stdString &index_name)
+void spreadsheet_test(const stdString &index_name)
 {
     archiver_Index index;
     if (!index.open(index_name.c_str()))
@@ -280,6 +280,24 @@ void run_test(const stdString &index_name)
         ok = sheet.next();
     }
 }   
+
+void run_test(const stdString &index_name)
+{
+    archiver_Index index;
+    if (!index.open(index_name.c_str()))
+    {
+        fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
+        return;
+    }
+    LinearReader reader(index, 10);
+    const RawValue::Data *data = reader.find("fred", 0, 0);
+    while (data)
+    {
+        RawValue::show(stdout, reader.getType(), reader.getCount(),
+                       data, &reader.getInfo());
+        data = reader.next();
+    }    
+}
 
 int main(int argc, const char *argv[])
 { 

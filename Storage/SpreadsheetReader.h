@@ -29,37 +29,37 @@ class SpreadsheetReader
     /// Returns true if values are valid.
     /// It's a severe error to invoke any of the following
     /// after find() returns false.
-    bool find(const stdVector<stdString> &channel_names,
-              const epicsTime *start);
+    virtual bool find(const stdVector<stdString> &channel_names,
+                      const epicsTime *start);
 
     /// Time stamp for the current slice of data
-    const epicsTime &getTime() const;
+    virtual const epicsTime &getTime() const;
     
     /// Number of entries in the following arrays.
 
     /// Should match the size of the channel_names array passed to find().
     /// It is a severe error to invoke getName(), getValue() etc.
     /// with an index outside of 0...getNum()-1.
-    size_t getNum() const;
+    virtual size_t getNum() const;
 
     /// Returns name of channel i=0...getNum()-1.
-    const stdString &getName(size_t i) const;
+    virtual const stdString &getName(size_t i) const;
 
     /// Returns value of channel i=0...getNum()-1.
 
     /// The result might be 0 in case a channel
     /// does not have a valid value for the current
     /// time slice.
-    const RawValue::Data *getValue(size_t i) const;
+    virtual const RawValue::Data *getValue(size_t i) const;
 
     /// The dbr_time_xxx type
-    DbrType getType(size_t i) const;
+    virtual DbrType getType(size_t i) const;
     
     /// array size
-    DbrCount getCount(size_t i) const;
+    virtual DbrCount getCount(size_t i) const;
     
     /// The meta information for the channel
-    const CtrlInfo &getCtrlInfo(size_t i) const;
+    virtual const CtrlInfo &getCtrlInfo(size_t i) const;
     
     /// Get the next time slice
     bool next();  
@@ -105,12 +105,12 @@ inline const RawValue::Data *SpreadsheetReader::getValue(size_t i) const
 {   return value[i]; }
 
 inline DbrType SpreadsheetReader::getType(size_t i) const
-{   return reader[i]->dbr_type; }
+{   return reader[i]->getType(); }
     
 inline DbrCount SpreadsheetReader::getCount(size_t i) const
-{   return reader[i]->dbr_count; }
+{   return reader[i]->getCount(); }
 
 inline const CtrlInfo &SpreadsheetReader::getCtrlInfo(size_t i) const
-{   return reader[i]->ctrl_info; }
+{   return reader[i]->getInfo(); }
 
 

@@ -22,9 +22,6 @@
 class DataReader
 {
 public:
-    /// Create a reader for an index.
-    DataReader(archiver_Index &index);
-
     virtual ~DataReader();
     
     /// Locate data.
@@ -42,37 +39,75 @@ public:
     /// \return Returns value or 0
     virtual const RawValue::Data *find(const stdString &channel_name,
                                        const epicsTime *start,
-                                       const epicsTime *end);
+                                       const epicsTime *end) = 0;
 
     /// Returns next value or 0.
-    virtual const RawValue::Data *next();
+    virtual const RawValue::Data *next() = 0;
 
     /// Name of the channel, i.e. the one passed to find()
     stdString channel_name;
     
     /// The dbr_time_xxx type
-    DbrType dbr_type;
+    virtual DbrType getType() const = 0;
     
     /// array size
-    DbrCount dbr_count;
+    virtual DbrCount getCount() const = 0;
     
     /// The meta information for the channel
-    CtrlInfo ctrl_info;
+    virtual const CtrlInfo &getInfo() const = 0;
 
     /// next() updates this if dbr_type/count changed.
-    bool type_changed;
+
+    /// Returns whether the type changed or not AND!!
+    /// resets the flag!!
+    ///
+    virtual bool changedType() = 0;
 
     /// next() updates this if ctrl_info changed.
-    bool ctrl_info_changed;
-    
-    double period;    
 
+    /// Returns whether the ctrl_info  changed or not
+    /// AND(!) resets the flag!!
+    ///
+    virtual bool changedInfo() = 0;
+};
+
+/// An implementation of the DataReader for the raw data
+class RawDataReader : public DataReader
+{
+public:
+    RawDataReader(archiver_Index &index);
+
+    virtual ~RawDataReader();
+    
+    virtual const RawValue::Data *find(const stdString &channel_name,
+                                       const epicsTime *start,
+                                       const epicsTime *end);
+
+    virtual const RawValue::Data *next();
+
+    virtual DbrType getType() const;
+    
+    virtual DbrCount getCount() const;
+    
+    virtual const CtrlInfo &getInfo() const;
+
+    virtual bool changedType();
+
+    virtual bool changedInfo();
 private:
     archiver_Index &index;
     key_AU_Iterator *au_iter; // iterator for index & channel_name
     bool valid_datablock; // is au_iter on valid datablock? 
     key_Object datablock; // the current datablock
     interval   valid_interval;    // the valid interval in there
+
+    DbrType dbr_type;
+    DbrCount dbr_count;
+    CtrlInfo ctrl_info;
+    bool type_changed;
+    bool ctrl_info_changed;    
+    double period;    
+
     RawValue::Data *data;
     size_t raw_value_size;
     class DataHeader *header;

@@ -58,7 +58,7 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
     }
     for (i=0; i<num; ++i)
     {
-        reader[i] = new DataReader(index);
+        reader[i] = new RawDataReader(index);
         if (!reader[i])
         {
             LOG_MSG("SpreadsheetReader::find cannot allocate reader %d\n", i);
@@ -67,7 +67,7 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
         read_data[i] = reader[i]->find(channel_names[i], start, 0);
         if (read_data[i])
         {
-            info[i] = new CtrlInfo(reader[i]->ctrl_info);
+            info[i] = new CtrlInfo(reader[i]->getInfo());
             if (!info[i])
             {
                 LOG_MSG("SpreadsheetReader::find cannot allocate info %d\n", i);
@@ -104,15 +104,15 @@ bool SpreadsheetReader::next()
         {
             if (RawValue::getTime(read_data[i]) <= time)
             {
-                if (reader[i]->ctrl_info_changed)
-                    *info[i] = reader[i]->ctrl_info;
+                if (reader[i]->changedInfo())
+                    *info[i] = reader[i]->getInfo();
                 if (value[i]==0 ||
-                    type[i] != reader[i]->dbr_type ||
-                    count[i] != reader[i]->dbr_count)
+                    type[i] != reader[i]->getType() ||
+                    count[i] != reader[i]->getCount())
                 {
                     RawValue::free(value[i]);
-                    type[i] = reader[i]->dbr_type;
-                    count[i] = reader[i]->dbr_count;
+                    type[i] = reader[i]->getType();
+                    count[i] = reader[i]->getCount();
                     value[i] = RawValue::allocate(type[i],
                                                   count[i], 1);
                     if (!value[i])

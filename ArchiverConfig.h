@@ -21,7 +21,7 @@
 #define VERSION 1
 #define RELEASE 7
 
-#define VERSION_TXT "1.7.0"
+#define VERSION_TXT "1.7.1"
 
 // ----------------------------------------------------------
 // ArchiveEngine

@@ -98,6 +98,15 @@
 
   <h2>Design Decisions</h2>
   There are several options for exporting data to Matlab.
+  The one chosen so far offers:
+  <pre>
+  + Human readable
+  + comments, explanations can be included
+  + full archive information
+  + no Matlab libraries required
+  - slow
+  - big
+  </pre>
 
   The most interesting part is the handling of time/date.
 
@@ -111,19 +120,17 @@
                    0.0  == start time
                    1.0  == end time.
   </pre>
-
-  This format is most compact and very quick to import,
-  especially when directly generating binary Matlab files.
-  <br>
-  
-  Drawback:<br>
-  It's not trivial to get the 'real' time stamp for a value.
-  The meaning of a time 'x.y' depends on the chosen start and end time.
-  Time values from different exports are not comparable without
-  translation, so correlation between channels is difficult.
-  <br>
-  -> The ChannelArchiver tools export the full time stamp as a string.
-   Matlab date/time numbers are used for plotting.
+  This format, then written in binary format, offers:
+  <pre>
+  + speed
+  + compact size
+  - not easily Human readable, especially the time stamp
+    is now channel specific, relative to the start time
+    chosen for this export run
+  - no comments
+  - full time stamp info is lost
+  - might require Matlab libraries
+  </pre>
 
 </blockquote>
 </body>

@@ -13,7 +13,6 @@
 #endif
 
 #include "HTMLPage.h"
-#include "osiTimeHelper.h"
 
 static const char *start_file = "cgi_body_start.txt";
 static const char *end_file = "cgi_body_end.txt";
@@ -113,7 +112,7 @@ void HTMLPage::interFace() const
     printf("      </TD>\n");
     printf("  </TR>\n");
 
-    osiTime2vals(_start, year, month, day, hour, min, sec, nano);
+    epicsTime2vals(_start, year, month, day, hour, min, sec, nano);
     printf("  <TR>\n");
     printf("      <TD>Start:</TD><TD colspan=4>Day (m/d/y)\n");
     makeSelect("STARTMONTH",    1,   12, month);
@@ -126,7 +125,7 @@ void HTMLPage::interFace() const
     printf("      </TD>\n");
     printf("  </TR>\n");
 
-    osiTime2vals(_end, year, month, day, hour, min, sec, nano);
+    epicsTime2vals(_end, year, month, day, hour, min, sec, nano);
     printf("  <TR>\n");
     printf("      <TD>End:</TD><TD colspan=4>Day (m/d/y)\n");
     makeSelect("ENDMONTH",    1,   12, month);

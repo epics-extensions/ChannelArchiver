@@ -1,12 +1,18 @@
-#	Makefile.Host
+#	Makefile.Host -*- makefile -*-
 
 include ../../Make.cfg
 include ../../Make.ver
 
-SRCS += CGIInput.cc
-SRCS += HTMLPage.cc
-SRCS += main.cc
+SRCS += CGIInput.cpp
+SRCS += HTMLPage.cpp
+SRCS += main.cpp
 
 PROD := CGIExport
+PROD_LIBS_DEFAULT := ChanArchIO Tools ca Com
+PROD_LIBS_WIN32 := ChanArchIOObj ToolsObj ca Com
+ChanArchIO_DIR = $(INSTALL_LIB)
+ChanArchIOObj_DIR = $(INSTALL_LIB)
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
 
 include ../../Make.end

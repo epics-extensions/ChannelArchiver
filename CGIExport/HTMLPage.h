@@ -11,11 +11,8 @@
 #ifndef HTML_PAGE_H
 #define HTML_PAGE_H
 
-#include <vector>
-#include "osiTime.h"
-#include "ToolsConfig.h"
-
-using stdVector;
+#include <ToolsConfig.h>
+#include <epicsTimeHelper.h>
 
 class HTMLPage
 {
@@ -43,8 +40,8 @@ public:
     bool _status;
     bool _reduce;
     bool _use_logscale;
-    osiTime _start;
-    osiTime _end;
+    epicsTime _start;
+    epicsTime _end;
     double _y0, _y1;
 
 private:

@@ -12,14 +12,15 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include"../ArchiverConfig.h"
-#include"Exporter.h"
-#include"GNUPlotExporter.h"
-#include"MatlabExporter.h"
+#include <epicsVersion.h>
 #include<ArgParser.h>
 #include<Filename.h>
 #include<BinaryTree.h>
 #include<RegularExpression.h>
+#include"../ArchiverConfig.h"
+#include"Exporter.h"
+#include"GNUPlotExporter.h"
+#include"MatlabExporter.h"
 #include"HTMLPage.h"
 #include"CGIInput.h"
 #include"BinArchive.h"
@@ -35,11 +36,14 @@
 
 static stdString script_dir, script;
 
-
 // Called on error (after setting title) or as part of cmdHelp
 static void usage(HTMLPage &page)
 {
-	page.header("Usage", 2);
+	page.header("CGIExport", 2);
+    printf("CGIExport version " VERSION_TXT ", "
+           EPICS_VERSION_STRING
+           ", built " __DATE__ ", " __TIME__);
+    page.header("Usage", 2);
     printf("This program uses the CGI interface,\n");
 	printf("both GET/HEAD and POST are supported.\n");
 	printf("<P>\n");
@@ -137,8 +141,8 @@ class Info
 {
 public:
 	stdString channel;
-	osiTime first;
-	osiTime last;
+	epicsTime first;
+	epicsTime last;
 };
 
 static bool operator < (const class Info &a, const class Info &b)
@@ -149,8 +153,8 @@ static void cmdInfoTraverser(const Info &info, void *arg)
 {
     stdString f, l;
 
-    osiTime2string(info.first, f);
-    osiTime2string(info.last, l);
+    epicsTime2string(info.first, f);
+    epicsTime2string(info.last, l);
     printf("<TR><TD>%s</TD><TD>%s</TD><TD>%s</TD></TR>\n",
            info.channel.c_str(), f.c_str(), l.c_str());
 }
@@ -159,6 +163,7 @@ static void cmdInfoTraverser(const Info &info, void *arg)
 static void cmdInfo(HTMLPage &page)
 {
 	page.start();
+
 	BinaryTree<Info> infos;
 	Info			 info;
 	try
@@ -219,6 +224,7 @@ static void cmdInfo(HTMLPage &page)
 	printf("<TR><TH>Channel</TH><TH>First archived</TH><TH>Last archived</TH></TR>\n");
 	infos.traverse(cmdInfoTraverser);
 	printf("</TABLE>\n");
+
 	page.interFace ();
 }
 
@@ -249,55 +255,36 @@ static void getNames(const stdString &input_string,
 }
 
 // Get start/end time from CGIInput
-static bool decodeTimes (const CGIInput &cgi, osiTime &start, osiTime &end)
+static bool decodeTimes(const CGIInput &cgi, epicsTime &start, epicsTime &end)
 {
 	int year, month, day, hour, min, sec; 
 	unsigned long nano;
 
-	osiTime2vals(osiTime::getCurrent(), year, month, day, hour, min, sec, nano);
-	vals2osiTime(year, month, day, 0, 0, 0, 0, start);
-	vals2osiTime(year, month, day, 23, 59, 59, 0, end);
+	epicsTime2vals(epicsTime::getCurrent(), year, month, day, hour, min, sec, nano);
+	vals2epicsTime(year, month, day, 0, 0, 0, 0, start);
+	vals2epicsTime(year, month, day, 23, 59, 59, 0, end);
 
 	if (!cgi.find("STARTMONTH").empty())
 	{
-		stdString start_txt;
-        start_txt.reserve(25);
-		// 12/22/1998 11:50:00
-        start_txt  = cgi.find("STARTMONTH");
-        start_txt += '/';
-        start_txt += cgi.find("STARTDAY");
-        start_txt += '/';
-        start_txt += cgi.find("STARTYEAR");
-        start_txt += ' ';
-        start_txt += cgi.find("STARTHOUR");
-        start_txt += ':';
-        start_txt += cgi.find("STARTMINUTE");
-        start_txt += ':';
-        start_txt +=  cgi.find("STARTSECOND");
-		if (! string2osiTime(start_txt, start))
-			return false;
+        vals2epicsTime(atoi(cgi.find("STARTYEAR").c_str()),
+                       atoi(cgi.find("STARTMONTH").c_str()),
+                       atoi(cgi.find("STARTDAY").c_str()),
+                       atoi(cgi.find("STARTHOUR").c_str()),
+                       atoi(cgi.find("STARTMINUTE").c_str()),
+                       atoi(cgi.find("STARTSECOND").c_str()), 0, start);
 	}
 	if (!cgi.find("ENDMONTH").empty())
 	{
-		stdString end_txt;
-        end_txt.reserve(25);
-        end_txt  = cgi.find("ENDMONTH");
-        end_txt += '/';
-        end_txt += cgi.find("ENDDAY");
-        end_txt += '/';
-        end_txt += cgi.find("ENDYEAR");
-        end_txt += ' ';
-        end_txt += cgi.find("ENDHOUR");
-        end_txt += ':';
-        end_txt += cgi.find("ENDMINUTE");
-        end_txt += ':';
-        end_txt +=  cgi.find("ENDSECOND");
-		if (! string2osiTime(end_txt, end))
-			return false;
+        vals2epicsTime(atoi(cgi.find("ENDYEAR").c_str()),
+                       atoi(cgi.find("ENDMONTH").c_str()),
+                       atoi(cgi.find("ENDDAY").c_str()),
+                       atoi(cgi.find("ENDHOUR").c_str()),
+                       atoi(cgi.find("ENDMINUTE").c_str()),
+                       atoi(cgi.find("ENDSECOND").c_str()), 0, end);
 	}
     if (start > end)
     {
-        osiTime t = start;
+        epicsTime t = start;
         start = end;
         end = t;
     }
@@ -439,8 +426,8 @@ static void getTimeTxt(char *result)
 {
 	int year, month, day, hour, min, sec;
 	unsigned long nano;
-	osiTime2vals(osiTime::getCurrent(),
-                 year, month, day, hour, min, sec, nano);
+	epicsTime2vals(epicsTime::getCurrent(),
+                   year, month, day, hour, min, sec, nano);
 	sprintf(result, "%02d%02d%02d%02d%02d", month, day, hour, min, sec);
 }
 
@@ -546,7 +533,8 @@ void cmdDebug(HTMLPage &page, const CGIInput &cgi, const char *envp[])
     page.start();
     page.header("DEBUG Information",1);
     
-    printf("<I>CGIExport Version " VERSION_TXT
+    printf("<I>CGIExport version " VERSION_TXT ", "
+           EPICS_VERSION_STRING
            ", built " __DATE__ ", " __TIME__ "</I>\n");
     
     page.header("Variables parsed from CGI input",2);
@@ -605,6 +593,7 @@ static void PrintRoutine(void *arg, const char *text)
 
 int main(int argc, const char *argv[], const char *envp[])
 {
+    initEpicsTimeHelper();
 	TheMsgLogger.SetPrintRoutine(PrintRoutine);
 #ifdef WEB_DIRECTORY
 	chdir(WEB_DIRECTORY);

@@ -71,10 +71,10 @@ if __name__ == '__main__':
         channelName = "fred"
     else:
         argc = len(sys.argv)
-        if argc != 2:
+        if argc != 3:
             usage()
-            archiveName = sys.argv[1]
-            channelName = sys.argv[2]
+        archiveName = sys.argv[1]
+        channelName = sys.argv[2]
         
     root = None
     ChannelInfo (Tk(), archiveName, channelName)

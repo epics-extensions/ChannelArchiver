@@ -8,6 +8,7 @@ import tkFileDialog
 import Pmw
 import sys
 import casi
+from ListBrowser import ListBrowser
 
 class Browser:
     def showError (self, text):
@@ -27,12 +28,13 @@ class Browser:
             self.listChannels()
 
     def menuShowChannel (self):
-        if len(self.channelNames.curselection()) < 1:
-            self.showError ("No channel selected in channel list")
+        if len(self.channelNames.curselection()) != 1:
+            self.showError ("Please select single channel in channel list")
             return
-        channels = []
-        for i in self.channelNames.curselection():
-            channels.append (self.channelNames.get(i))
+        i = self.channelNames.curselection()[0]
+        channelName = self.channelNames.get(i)
+        dlg = ListBrowser (self.root, self.archiveName.get(), channelName)
+        dlg.activate ()
 
     def listChannels (self):
         self.channelNames.delete(0,END)

@@ -214,6 +214,12 @@ bool RawValue::getDouble(DbrType type, DbrCount count,
         return false;
     switch (type)
     {
+        case DBR_TIME_ENUM:
+        {
+            const dbr_enum_t *v = &((const dbr_time_enum *)value)->value;
+            d = v[i];
+            return true;
+        }
         case DBR_TIME_SHORT:
         {
             const dbr_short_t *v = &((const dbr_time_short *)value)->value;

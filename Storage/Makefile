@@ -23,6 +23,7 @@ INC += IndexFile.h
 INC += DataWriter.h
 INC += DataReader.h
 INC += LinearReader.h
+INC += PlotReader.h
 INC += SpreadsheetReader.h
 
 # Contents of library
@@ -42,6 +43,7 @@ LIB_SRCS += IndexFile.cpp
 LIB_SRCS += DataWriter.cpp
 LIB_SRCS += DataReader.cpp
 LIB_SRCS += LinearReader.cpp
+LIB_SRCS += PlotReader.cpp
 LIB_SRCS += SpreadsheetReader.cpp
 
 # Library to build
@@ -58,6 +60,7 @@ Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 TESTPROD_HOST += FileAllocatorTest FileAllocatorTool
 TESTPROD_HOST += NameHashTest RTreeTest
+TESTPROD_HOST += Test
 
 include $(TOP)/configure/RULES
 

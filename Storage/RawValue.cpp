@@ -31,7 +31,8 @@ RawValue::Data * RawValue::allocate(DbrType type, DbrCount count, size_t num)
 
 void RawValue::free(Data *value)
 {
-    ::free(value);
+    if (value)
+        ::free(value);
 }
 
 size_t RawValue::getSize(DbrType type, DbrCount count)

@@ -34,7 +34,7 @@ RawDataReader::~RawDataReader()
 
 const RawValue::Data *RawDataReader::find(
     const stdString &channel_name,
-    const epicsTime *start, const epicsTime *end)
+    const epicsTime *start)
 {
     this->channel_name = channel_name;
     // Get tree

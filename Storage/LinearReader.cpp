@@ -20,11 +20,10 @@ LinearReader::~LinearReader()
 
 const RawValue::Data *LinearReader::find(
     const stdString &channel_name,
-    const epicsTime *start,
-    const epicsTime *end)
+    const epicsTime *start)
 {
     this->channel_name = channel_name;
-    reader_data = reader.find(channel_name, start, end);
+    reader_data = reader.find(channel_name, start);
     if (reader_data)
     {
 #ifdef DEBUG_LINREAD

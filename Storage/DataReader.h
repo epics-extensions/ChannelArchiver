@@ -35,11 +35,9 @@ public:
     ///
     /// \param channel_name: Name of the channel
     /// \param start: start time or 0 for first value
-    /// \param end: end time or 0 for last value
     /// \return Returns value or 0
     virtual const RawValue::Data *find(const stdString &channel_name,
-                                       const epicsTime *start,
-                                       const epicsTime *end) = 0;
+                                       const epicsTime *start) = 0;
 
     /// Returns next value or 0.
     virtual const RawValue::Data *next() = 0;
@@ -78,8 +76,7 @@ public:
     RawDataReader(IndexFile &index);
     virtual ~RawDataReader();
     virtual const RawValue::Data *find(const stdString &channel_name,
-                                       const epicsTime *start,
-                                       const epicsTime *end);
+                                       const epicsTime *start);
     virtual const RawValue::Data *next();
     virtual DbrType getType() const;
     virtual DbrCount getCount() const;

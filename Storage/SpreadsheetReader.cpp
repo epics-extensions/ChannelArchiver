@@ -74,7 +74,7 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
             LOG_MSG("SpreadsheetReader::find cannot allocate reader %d\n", i);
             return false;
         }
-        read_data[i] = reader[i]->find(channel_names[i], start, 0);
+        read_data[i] = reader[i]->find(channel_names[i], start);
         if (read_data[i])
         {
             info[i] = new CtrlInfo(reader[i]->getInfo());

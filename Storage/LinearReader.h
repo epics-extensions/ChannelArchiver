@@ -47,8 +47,7 @@ public:
     LinearReader(IndexFile &index, double delta);
     ~LinearReader();
     const RawValue::Data *find(const stdString &channel_name,
-                               const epicsTime *start,
-                               const epicsTime *end);
+                               const epicsTime *start);
     const RawValue::Data *next();
     DbrType getType() const;
     DbrCount getCount() const;

@@ -71,6 +71,6 @@ LIBSRCS += GNUPlotExporter.cc
 #
 LIBRARY := ChanArchIO
 
-TESTPROD = test
+#TESTPROD = test
 
 include ../../Make.end

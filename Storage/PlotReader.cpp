@@ -5,7 +5,7 @@
 // Storage
 #include "PlotReader.h"
 
-#define DEBUG_PLOTREAD
+#undef DEBUG_PLOTREAD
 
 PlotReader::PlotReader(IndexFile &index, double delta)
         : reader(index), delta(delta)

@@ -15,6 +15,7 @@
 // Storage
 #include <SpreadsheetReader.h>
 #include <LinearReader.h>
+#include <PlotReader.h>
 // XMLRPCServer
 #include "DataServer.h"
 #include "ServerConfig.h"
@@ -286,12 +287,15 @@ void encode_value(xmlrpc_env *env,
 // as get_values() is supposed to return them.
 //
 // Returns raw values if interpol <= 0.0.
+// Uses PlotReader if plot_binnnig is set
+// (requires interpol > 0).
+// Uses LinearReader for interpol > 0.0.
 // Returns 0 on error.
 xmlrpc_value *get_channel_data(xmlrpc_env *env,
                                int key,
                                const stdVector<stdString> names,
                                const epicsTime &start, const epicsTime &end,
-                               long count, double interpol)
+                               long count, double interpol, bool plot_binnnig)
 {
     xmlrpc_value   *results = 0;
 #ifdef LOGFILE
@@ -307,6 +311,8 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
         return 0;
     if (interpol <= 0.0)
         reader = new RawDataReader(*index);
+    else if (plot_binnnig)
+        reader = new PlotReader(*index, interpol);
     else
         reader = new LinearReader(*index, interpol);
     if (!reader)
@@ -345,9 +351,10 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
             dbr_type_to_xml_type(reader->getType(), reader->getCount(),
                                  xml_type, xml_count);
             num_vals = 0;
-            while (data && num_vals < count &&
-                   RawValue::getTime(data) < end)
+            while (data && RawValue::getTime(data) < end)
             {
+                if (!plot_binnnig && num_vals >= count)
+                    break;
                 encode_value(env,
                              reader->getType(), reader->getCount(),
                              RawValue::getTime(data), data,
@@ -496,7 +503,8 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
     sprintf(txt,
             "Channel Archiver Data Server V%d\n"
             "Config '%s'\n"
-            "Supports how=0 (raw), 1 (spreadsheet), 2 (interpol/average)\n",
+            "Supports how=0 (raw), 1 (spreadsheet), "
+            "2 (interpol/average), 3 (plot-binning)\n",
             ARCH_VER, config);
     return xmlrpc_build_value(env, STR("{s:i,s:s}"),
                               STR("ver"), ARCH_VER,
@@ -652,7 +660,7 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     {
         case 0:
             return get_channel_data(env, key, name_vector, start, end,
-                                    actual_count, -1.0);
+                                    actual_count, -1.0, false);
         case 1:
             return get_sheet_data(env, key, name_vector, start, end,
                                   actual_count, -1.0);
@@ -660,7 +668,12 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
             if (count <= 1)
                 count = 1;
             return get_channel_data(env, key, name_vector, start, end,
-                                    actual_count, (end-start)/count);
+                                    actual_count, (end-start)/count, false);
+        case 3:
+            if (count <= 1)
+                count = 1;
+            return get_channel_data(env, key, name_vector, start, end,
+                                    actual_count, (end-start)/count, true);
     }
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_ARG_ERROR,
                                    "Invalid how=%d", how);

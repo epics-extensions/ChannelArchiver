@@ -60,7 +60,6 @@ Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 TESTPROD_HOST += FileAllocatorTest FileAllocatorTool
 TESTPROD_HOST += NameHashTest RTreeTest
-TESTPROD_HOST += Test
 
 include $(TOP)/configure/RULES
 

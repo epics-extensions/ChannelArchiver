@@ -46,6 +46,7 @@ public:
     bool _reduce;
     osiTime _start;
     osiTime _end;
+    double _y0, _y1;
 
 private:
     bool _started;

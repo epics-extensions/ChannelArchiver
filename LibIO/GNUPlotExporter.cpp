@@ -84,6 +84,8 @@ GNUPlotExporter::GNUPlotExporter(Archive &archive, const stdString &filename,
 {
     _make_image = false;
     _use_pipe = false;
+    _y0 = 0.0;
+    _y1 = 0.0;
     if (filename.empty())
         throwDetailedArchiveException(Invalid, "empty filename");
 }           
@@ -94,6 +96,8 @@ GNUPlotExporter::GNUPlotExporter(ArchiveI *archive, const stdString &filename,
 {
     _make_image = false;
     _use_pipe = false;
+    _y0 = 0.0;
+    _y1 = 0.0;
     if (filename.empty())
         throwDetailedArchiveException(Invalid, "empty filename");
 }           
@@ -320,6 +324,9 @@ void GNUPlotExporter::exportChannelList(
     fprintf(f, "set key title \"Channels:\"\n");
     fprintf(f, "set key box\n");
 
+    if (_y0 != 0.0  ||  _y1 != 0.0)
+        fprintf(f, "set yrange [ %g:%g ]\n", _y0, _y1);
+    
     num = plotted_channels.size();
     if (num == 2)
     {
@@ -327,6 +334,8 @@ void GNUPlotExporter::exportChannelList(
         fprintf(f, "set ylabel '%s'\n", plotted_channels[0].c_str());
         fprintf(f, "set y2label '%s'\n", plotted_channels[1].c_str());
         fprintf(f, "set y2tics\n");
+        if (_y0 != 0.0  && _y1 != 0.0)
+            fprintf(f, "set y2range [ %g,%g ]\n", _y0, _y1);
     }
     
     if (_is_array)

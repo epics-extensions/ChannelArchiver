@@ -323,7 +323,8 @@ static bool exportFunc(HTMLPage &page, Format format,
 
 	try
 	{
-		ArchiveI *archive = new CGIEXPORT_ARCHIVE_TYPE(page._directory, page._start, page._end);
+		ArchiveI *archive =
+            new CGIEXPORT_ARCHIVE_TYPE(page._directory, page._start,page._end);
 		Exporter *exporter;
 
 		if (format == fmt_GNUPlot)
@@ -331,9 +332,11 @@ static bool exportFunc(HTMLPage &page, Format format,
 			GNUPlotExporter *gnu = 
 			   new GNUPlotExporter(archive, tempfilebase, page._reduce?600:0);
 			gnu->makeImage();
+            gnu->setY0(page._y0);
+            gnu->setY1(page._y1);
 #ifndef WIN32
             // Pipe based on _pipe call only works for console apps.
-            // Within the web server it doesn't seem to function.
+            // Within the WIN32 web server it doesn't seem to function.
 			gnu->usePipe();
 #endif
 			exporter = gnu;
@@ -666,6 +669,8 @@ int main(int argc, const char *argv[], const char *envp[])
 	page._glob = cgi.find("GLOB").length()>0;
 	page._fill = cgi.find("FILL").length()>0;
 	page._status = cgi.find("STATUS").length()>0;
+	page._y0 = atof(cgi.find ("Y0").c_str());
+	page._y1 = atof(cgi.find ("Y1").c_str());
 	getNames(cgi.find("NAMES"), page._names);
 	if (! decodeTimes(cgi, page._start, page._end))
 	{

@@ -98,6 +98,7 @@ void HTMLPage::interFace() const
     std::cout << "<FORM METHOD=\"GET\" ACTION=\"" << _cgi_path << "\" NAME=\"f\">\n";
     std::cout << "  <INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\""
               << _directory << "\">\n";
+    // Table: 5 columns!
     std::cout << "  <TABLE cellpadding=1>\n";
     std::cout << "  <TR valign=top>\n";
     std::cout << "      <TD>Pattern:<br>\n";
@@ -153,11 +154,16 @@ void HTMLPage::interFace() const
     std::cout << "      <TD><input type=radio name=FORMAT ";
     if (_format == "PLOT")
         std::cout << "checked=1 ";
-    std::cout <<            "value=PLOT>Plot</TD>\n";
+    std::cout <<            "value=PLOT>Plot, y limits\n";
+    std::cout << "<input maxLength=10 name=Y0 size=3 value=" << _y0 << ">\n";
+    std::cout << "<input maxLength=10 name=Y1 size=3 value=" << _y1 << ">\n";
+    std::cout << "      </TD>\n";
     std::cout << "      <TD align=right>All Data:</TD>\n";
     std::cout << "      <TD><input name=REDUCE type=checkbox value=ON"
-	      << (!_reduce?" checked=1":"") << "> (plot data is reduced otherwise)</TD>\n";
-    std::cout << "      <TD></TD>\n";
+              << (!_reduce?" checked=1":"")
+              << "> (default: reduced to plot size)</TD>\n";
+    std::cout << "      <TD>\n";
+    std::cout << "      </TD>\n";
     std::cout << "  </TR>\n";
     std::cout << "  <TR>\n";
     std::cout << "      <TD></TD>\n";
@@ -222,7 +228,8 @@ HTMLPage::~HTMLPage()
             std::cout << "</BLOCKQUOTE>\n";
             std::cout << "</FONT>\n";
             std::cout << "</BODY>\n";
-            std::cout << "<! create '" << end_file << "' to replace this default footer ---->\n\n";
+            std::cout << "<! create '" << end_file
+                      << "' to replace this default footer ---->\n\n";
         }
         std::cout << "</HTML>\n";
     }

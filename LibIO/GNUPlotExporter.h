@@ -35,14 +35,19 @@ public:
     //* Call GNUPlot and run the command script via pipe
     // instead of dumping script to disk
     void usePipe()        { _use_pipe = true; }
+
+    //* Set Y scale limits. Default: auto
+    void setY0(double y0) { _y0 = y0; }
+    void setY1(double y1) { _y1 = y1; }
     
 private:
     bool _make_image;
     bool _use_pipe;
 
     //* # of buckets to reduce data into, 0 -> don't reduce
-    int _reduce; 
+    int _reduce;
 
+    double _y0, _y1;
 };
 
 #endif //__GNUPLOTEXPORTER_H__

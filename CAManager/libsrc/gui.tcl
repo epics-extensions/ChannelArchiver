@@ -277,7 +277,6 @@ proc camGUI::aConfig {w} {
       $::w(txt) insert end "\# Enter contents and press \"Save\"!" comment
       $::w(txt) insert end "\n\n"
     }
-#    $::w(txt) configure -state disabled
     vwait ::continue($tl)
     switch $::continue($tl) {
       close { destroy $tl; return }
@@ -313,7 +312,6 @@ proc camGUI::aDelete {w} {
   camMisc::arcDel $row
   catch {$w selection set anchor}
   setButtons $w
-#  ClearSel $w
 }
 
 set percentDoc "The following is a list of suggested %-rules to use:"
@@ -942,6 +940,7 @@ proc camGUI::initTable {table} {
   variable aEngines
   array unset aEngines
 
+  set row [expr max([llength [camMisc::arcIdx]]+2, 8)]
   set ::busyIndicator "@"
   $table width 0 15 1 8 2 50 3 25 4 5
   lassign {0 1 2 3 4 5} ::iHost ::iPort ::iDescr ::iRun ::iBlocked
@@ -967,6 +966,7 @@ proc camGUI::initTable {table} {
     catch {destroy $table.f.f$i}
   }
   $table configure -rows $row
+puts $row
   setDT
   after 500 {set ::busyIndicator ""}
 }
@@ -1014,9 +1014,7 @@ proc camGUI::mainWindow {} {
   scrollbar $f.sy -command "$f.t yview"
   pack $f.sy -side right -fill y
 
-  set row [expr max([llength [camMisc::arcIdx]]+2, 8)]
-
-  set table [table $f.t -rows $row -cols 5 -titlerows 1 \
+  set table [table $f.t -cols 5 -titlerows 1 \
 		 -rowheight -22 \
 		 -colstretchmode all -rowstretchmode none -roworigin -1 \
 		 -yscrollcommand "$f.sy set" -flashmode 1 \
@@ -1069,8 +1067,6 @@ proc camGUI::mainWindow {} {
 
   pack $f.delete $f.new $f.edit $f.stop $f.start $f.check $f.down $f.up -padx 8 -pady 8 -side right
 
-#  event add <<B1>> <1>
-#  event add <<B1>> <Button1-Motion>
   bind $table <<B1>> {
     camGUI::mouseSelect %W %x %y
     break
@@ -1252,8 +1248,6 @@ proc camGUI::mouseSelect {w x y} {
   $w selection set @$x,$y
   set cursel [$w cursel]
   if {$oldsel == $cursel} {
-#    $w selection clear all
-#    return 0
     return 1
   }
   regexp (\[0-9\]*), $cursel all row
@@ -1660,11 +1654,9 @@ proc camGUI::setButtons {w} {
   }
   if {[regexp "since" $camGUI::aEngines($row,$::iRun)]} {
     $topf.bf.start configure -state disabled
-#    $topf.bf.edit configure -state disabled
     $topf.bf.stop configure -state normal
   } else {
     $topf.bf.start configure -state normal
-#    $topf.bf.edit configure -state normal
     $topf.bf.stop configure -state disabled
   }
   if {$camGUI::aEngines($row,$::iHost) != "$::_host"} {

@@ -68,7 +68,8 @@ sub parse_config_file($$)
 	$desc = $name unless (length($desc) > 0); # Desc defaults to name
 	if ($type eq "DAEMON")
 	{
-	    print("$NR: Daemon '$name', Port $port, Desc '$desc'\n") if ($opt_d);
+	    print("$NR: Daemon '$name', Port $port, Desc '$desc'\n")
+		if ($opt_d);
 	    $di = $#daemons + 1;
 	    $daemons[$di]->{name} = $name;
 	    $daemons[$di]->{desc} = $desc;
@@ -78,7 +79,8 @@ sub parse_config_file($$)
 	}
 	elsif ($type eq "ENGINE")
 	{
-	    print("$NR: Engine '$name', Port $port, Desc '$desc', Time '$time', Freq '$freq'\n") if ($opt_d);
+	    print("$NR: Engine '$name', Port $port, Desc '$desc', Time '$time', Freq '$freq'\n")
+		if ($opt_d);
 	    $daemons[$di]->{engines}[$ei]->{name} = $name;
 	    $daemons[$di]->{engines}[$ei]->{desc} = $desc;
 	    $daemons[$di]->{engines}[$ei]->{port} = $port;

@@ -6,7 +6,7 @@
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c);
+use vars qw($opt_d $opt_h $opt_c $opt_s);
 use Cwd;
 use File::Path;
 use Getopt::Std;
@@ -31,6 +31,8 @@ sub usage()
     print("Options:\n");
     print(" -h          : help\n");
     print(" -c <config> : Use given config file instead of $config_name\n");
+    print(" -s <system> : Handle only the given system daemon, not whole config file\n");
+    print("               (Regular expression for daemon name)\n");
     print(" -d          : debug\n");
 }
 
@@ -50,21 +52,23 @@ sub check_filename($)
     return $filename;
 }
 
-# Input: Reference to @daemons
-sub create_stuff($)
+sub create_stuff()
 {
-    my ($daemons) = @ARG;
     my ($path) = cwd();
     my ($filename, $daemonfile, $daemon, $engine, $old_fd);
-    foreach $daemon ( @{ $daemons } )
+    foreach $daemon ( @daemons )
     {
+	if (length($opt_s) > 0)
+	{   # Skip daemons/systems that don't match the supplied reg.ex.
+	    next unless $daemon->{name} =~ $opt_s;
+	}
 	$daemonfile = "$daemon->{name}-daemon.xml";
 
 	# Daemon Directory
 	mkpath($daemon->{name}, 1);
 
 	# Daemon Start Script
-	$filename = check_filename("$daemon->{name}/run-daemon.sh");
+	$filename = "$daemon->{name}/run-daemon.sh";
 	if (length($filename) > 0)
 	{
 	    open OUT, ">$filename" or die "Cannot open $filename\n";
@@ -81,7 +85,7 @@ sub create_stuff($)
 	}
 
 	# Daemon Stop Script
-	$filename = check_filename("$daemon->{name}/stop-daemon.sh");
+	$filename = "$daemon->{name}/stop-daemon.sh";
 	if (length($filename) > 0)
 	{
 	    open OUT, ">$filename" or die "Cannot open $filename\n";
@@ -91,7 +95,7 @@ sub create_stuff($)
 	    printf("# Stop the %s daemon (%s)\n",
 		   $daemon->{name}, $daemon->{desc});
 	    printf("\n");
-	    printf("lynx -dump http://%s:%d\n",   
+	    printf("lynx -dump http://%s:%d/stop\n",
 		   $hostname, $daemon->{port});
 	    select $old_fd;
 	    close OUT;
@@ -118,15 +122,33 @@ sub create_stuff($)
 		       $engine->{freq}, $engine->{time}, $engine->{freq});
 		printf("  </engine>\n");
 	    }
-	    printf("(</engines>\n");
+	    printf("</engines>\n");
 	    select $old_fd;
 	    close OUT;
 	}
 
-	# Engine's ASCIIConfig dirs with convert_example.sh
 	foreach $engine ( @{ $daemon->{engines} } )
 	{
 	    mkpath("$daemon->{name}/$engine->{name}/ASCIIConfig", 1);    
+
+	    # Engine Stop Script
+	    $filename = "$daemon->{name}/$engine->{name}/stop-engine.sh";
+	    if (length($filename) > 0)
+	    {
+		open OUT, ">$filename" or die "Cannot open $filename\n";
+		$old_fd = select OUT;
+		printf("#!/bin/sh\n");
+		printf("#\n");
+		printf("# Stop the %s engine (%s)\n",
+		       $engine->{name}, $engine->{desc});
+		printf("\n");
+		printf("lynx -dump http://%s:%d/stop\n",   
+		       $hostname, $engine->{port});
+		select $old_fd;
+		close OUT;
+	    }
+
+	    # ASCIIConfig/convert_example.sh
 	    $filename = "$daemon->{name}/$engine->{name}/ASCIIConfig/convert_example.sh";
 	    open OUT, ">$filename" or die "Cannot open $filename\n";
 	    $old_fd = select OUT;
@@ -139,12 +161,16 @@ sub create_stuff($)
 	    printf("# modify the copy to suit your needs.\n");
 	    printf("#\n");
 	    printf("\n");
-	    printf("echo \"fred 5\"          >example\n");
-	    printf("echo \"janet 1 Monitor\" >>example\n");
+	    printf("echo \"Creating 'example' channel list...\"\n");
+	    printf("echo \"# Example channel list\"  >example\n");
+	    printf("echo \"\"                        >>example\n");
+	    printf("echo \"fred 5\"                  >>example\n");
+	    printf("echo \"janet 1 Monitor\"         >>example\n");
 	    printf("\n");
 	    printf("REQ=\"\"\n");
 	    printf("REQ=\"\$REQ example\"\n");
 	    printf("\n");
+	    printf("echo \"Converting to engine config file...\"\n");
 	    printf("ConvertEngineConfig.pl -v -d %s -o ../%s-group.xml \$REQ\n",
 		   $engine_dtd, $engine->{name});
 	    print("\n");
@@ -157,7 +183,7 @@ sub create_stuff($)
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("dhc:") ||  $opt_h)
+if (!getopts("dhc:s:") ||  $opt_h)
 {
     usage();
     exit(0);
@@ -173,4 +199,4 @@ $config_name = $opt_c;
 
 @daemons = parse_config_file($config_name, $opt_d);
 dump_config(\@daemons) if ($opt_d);
-create_stuff(\@daemons);
+create_stuff();

@@ -3,8 +3,6 @@
 include ../../Make.cfg
 include ../../Make.ver
 
-CXXFLAGS += -DMANAGER_VERSION=\"$(VERSION).$(RELEASE)\"
-
 SRCS += ascii.cc
 SRCS += main.cc
 

@@ -1,3 +1,13 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 // Manager:
 //
 // Could end up being a command-line tool
@@ -16,6 +26,7 @@
 #pragma warning (disable: 4786)
 #endif
 
+#include "../ArchiverConfig.h"
 #include "BinArchive.h"
 #include "ArgParser.h"
 #include "BinValueIterator.h"
@@ -23,10 +34,6 @@
 #include "ExpandingValueIteratorI.h"
 #include "Filename.h"
 #include "ascii.h"
-
-#ifndef MANAGER_VERSION
-#define MANAGER_VERSION "?.?"
-#endif
 
 USING_NAMESPACE_CHANARCH
 using namespace std;
@@ -495,7 +502,7 @@ void test (const stdString &directory, const osiTime &start, const osiTime &end)
 
 void Usage ()
 {
-	cerr << "Archive Manager version " MANAGER_VERSION ", built " __DATE__ "\n";
+	cerr << "Archive Manager version " VERSION_TXT ", built " __DATE__ "\n";
 	cerr << "\n";
 	cerr << "Usage: " << prog_name << " [options] <archive>\n";
 	cerr << "\toptions:\n";

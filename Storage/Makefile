@@ -3,9 +3,7 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
-USR_CXXFLAGS += -I ../../Tools -I ../../rtree
-
-# Includes to be installed
+# Library to build
 INC += StorageTypes.h
 # Old
 INC += HashTable.h
@@ -25,8 +23,6 @@ INC += DataReader.h
 INC += LinearReader.h
 INC += PlotReader.h
 INC += SpreadsheetReader.h
-
-# Contents of library
 # Old
 LIB_SRCS += HashTable.cpp
 LIB_SRCS += DirectoryFile.cpp
@@ -45,21 +41,17 @@ LIB_SRCS += DataReader.cpp
 LIB_SRCS += LinearReader.cpp
 LIB_SRCS += PlotReader.cpp
 LIB_SRCS += SpreadsheetReader.cpp
-
-# Library to build
 LIBRARY_HOST := Storage
 
-# Build "ToolsTest" but don't install it
-PROD_LIBS_DEFAULT :=  Storage  Tools ca Com
-PROD_LIBS_WIN32 :=  StorageObj rtreeObj ToolsObj ca Com
-Storage_DIR = $(INSTALL_LIB)
-StorageObj_DIR = $(INSTALL_LIB)
-rtree_DIR = $(INSTALL_LIB)
-rtreeObj_DIR = $(INSTALL_LIB)
-Tools_DIR = $(INSTALL_LIB)
-ToolsObj_DIR = $(INSTALL_LIB)
+# Tools to build but not install
 TESTPROD_HOST += FileAllocatorTest FileAllocatorTool
 TESTPROD_HOST += NameHashTest RTreeTest
+PROD_LIBS_DEFAULT := Storage    Tools    $(EPICS_BASE_IOC_LIBS)
+PROD_LIBS_WIN32   := StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
+Storage_DIR    = $(INSTALL_LIB)
+StorageObj_DIR = $(INSTALL_LIB)
+Tools_DIR      = $(INSTALL_LIB)
+ToolsObj_DIR   = $(INSTALL_LIB)
 
 include $(TOP)/configure/RULES
 

@@ -18,22 +18,18 @@ ArchiveEngine_SRCS += EngineServer.cpp
 ArchiveEngine_SRCS += Engine.cpp
 ArchiveEngine_SRCS += main.cpp
 PROD_HOST := ArchiveEngine
-PROD_LIBS_DEFAULT := Storage Tools ca Com
-PROD_LIBS_WIN32 := StorageObj ToolsObj ca Com
+PROD_LIBS_DEFAULT := Storage    Tools    $(EPICS_BASE_IOC_LIBS)
+PROD_LIBS_WIN32   := StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
 SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
-rtree_DIR = $(INSTALL_LIB)
-rtreeObj_DIR = $(INSTALL_LIB)
-Storage_DIR = $(INSTALL_LIB)
+Storage_DIR    = $(INSTALL_LIB)
 StorageObj_DIR = $(INSTALL_LIB)
-Tools_DIR = $(INSTALL_LIB)
-ToolsObj_DIR = $(INSTALL_LIB)
+Tools_DIR      = $(INSTALL_LIB)
+ToolsObj_DIR   = $(INSTALL_LIB)
 
 # Only for benchmarking the read/write routines:
-bench_SRCS := bench.cpp
 TESTPROD_HOST := bench
 
 # Install script to convert old request files.
 SCRIPTS += ConvertEngineConfig.pl
-
 
 include $(TOP)/configure/RULES

@@ -3,7 +3,7 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
-# Includes to install from this subproject
+# Library to build
 INC += ToolsConfig.h 
 INC += AutoPtr.h
 INC += ArchiveException.h
@@ -33,8 +33,6 @@ INC += stdString.h
 INC += string2cp.h
 INC += VectorHelper.h       
 INC += FUX.h       
-
-# Contents of library
 LIB_SRCS += ArchiveException.cpp
 LIB_SRCS += ArgParser.cpp
 LIB_SRCS += ASCIIParser.cpp
@@ -51,18 +49,16 @@ LIB_SRCS += NetTools.cpp
 LIB_SRCS += RegularExpression.cpp
 LIB_SRCS += stdString.cpp
 LIB_SRCS += FUX.cpp
-#	on WIN32 only...
+# WIN32 only...
 LIB_SRCS_WIN32 := gnu_regex.c
-
-# Library to build:
 LIBRARY_HOST := Tools
 # In case of shared lib, link these:
-Tools_LIBS += Com ca
+Tools_LIBS += $(EPICS_BASE_IOC_LIBS)
 
-# Build "ToolsTest" w/o installation
-PROD_LIBS_DEFAULT := Tools ca Com
-PROD_LIBS_WIN32 := ToolsObj ca Com
-Tools_DIR = $(INSTALL_LIB)
+# Build locally w/o installation
+PROD_LIBS_DEFAULT := Tools    $(EPICS_BASE_IOC_LIBS)
+PROD_LIBS_WIN32   := ToolsObj $(EPICS_BASE_IOC_LIBS)
+Tools_DIR    = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 TESTPROD_HOST += ToolsTest
 

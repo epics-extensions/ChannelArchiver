@@ -102,7 +102,7 @@ sub stat2string($$)
 # local: dump meta info (prefix, meta-hash reference)
 sub show_meta($$)
 {
-    my ($pfx, $meta) = @ARG;
+    my ($pfx, $meta, $i, $num) = @ARG;
     if ($meta->{type} == 1)
     {
 	print($pfx, "Display : $meta->{disp_low} ... $meta->{disp_high}\n");
@@ -111,10 +111,11 @@ sub show_meta($$)
 	print($pfx, "Units   : '$meta->{units}', Precision: $meta->{prec}\n");
     }
     elsif ($meta->{type} == 0)
-    {   # Didn't test this case
-	foreach my $state ( @{$meta->{states}} )
-	{
-	    print($pfx, "State: '$state'\n");
+    { 
+        $num = $#{$meta->{states}};
+	for ($i=0; $i<=$num; ++$i)
+        {
+	    print($pfx, "State $i: '$meta->{states}->[$i]'\n");
 	}
     }
 }

@@ -8,8 +8,7 @@
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
-#undef DEBUG_CHANNEL
-
+#define DEBUG_CHANNEL
 
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
 {
@@ -257,9 +256,6 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
     Guard guard(me->mutex);
     if (ca_state(arg.chid) == cs_conn)
     {
-#ifdef  DEBUG_CHANNEL
-        LOG_MSG("%s: cs_conn, getting control info\n", me->name.c_str());
-#endif
         // Get control information for this channel
         // TODO: This is only requested on connect
         // - similar to the previous engine or DM.
@@ -279,6 +275,9 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
     }
     else
     {
+#ifdef  DEBUG_CHANNEL
+        LOG_MSG("%s: CA disconnected\n", me->name.c_str());
+#endif
         bool was_connected = me->connected;
         me->connected = false;
         me->connection_time = epicsTime::getCurrent();
@@ -395,7 +394,9 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
     }
     if (me->setup_ctrl_info(arg.type, arg.dbr))
     {
-        //LOG_MSG("%s: received control info\n", me->name.c_str());
+#ifdef  DEBUG_CHANNEL
+        LOG_MSG("%s: Connected, received control info\n", me->name.c_str());
+#endif
         me->connection_time = epicsTime::getCurrent();
         me->init(engine_guard, guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
                  ca_element_count(arg.chid));

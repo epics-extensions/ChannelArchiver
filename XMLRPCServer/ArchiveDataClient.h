@@ -70,8 +70,16 @@ public:
 
     /// getValues will use this type of callback.
 
+    /// arg : The callback_arg from getValues()
+    /// name: Current channel name
+    /// i   : Index of current samle (0, 1, 2, ....)
+    /// info: CtrlInfo for current sample.
+    /// type/count/value: The current sample.
+    ///
     /// Return true if you want to continue, otherwise false.
     typedef bool (*value_callback)(void *arg,
+                                   const char *name,
+                                   size_t i,
                                    const CtrlInfo &info,
                                    DbrType type, DbrCount count,
                                    const RawValue::Data *value);
@@ -93,7 +101,8 @@ private:
     bool decode_channel(xmlrpc_value *channel,
                         value_callback callback, void *callback_arg);
     bool decode_meta(xmlrpc_value *meta, CtrlInfo &ctrlinfo);
-    bool decode_data(xmlrpc_int32 type, xmlrpc_int32 count,
+    bool decode_data(const char *name,
+                     xmlrpc_int32 type, xmlrpc_int32 count,
                      xmlrpc_value *data_array, CtrlInfo &ctrlinfo,
                      value_callback callback, void *callback_arg);
 };

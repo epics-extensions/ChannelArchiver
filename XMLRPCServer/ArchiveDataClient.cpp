@@ -239,7 +239,7 @@ bool ArchiveDataClient::decode_channel(xmlrpc_value *channel,
     CtrlInfo ctrlinfo;
     if (!decode_meta(meta, ctrlinfo))
         return false;
-    return decode_data(type, count, data, ctrlinfo, callback, callback_arg);
+    return decode_data(name, type, count, data, ctrlinfo, callback, callback_arg);
 }
 
 // Dump 'meta' part of returned value
@@ -304,11 +304,11 @@ bool ArchiveDataClient::decode_meta(xmlrpc_value *meta, CtrlInfo &ctrlinfo)
         LOG_MSG("unknown meta type %d\n", type);
         return false;
     }
-    ctrlinfo.show(stdout);
     return true;
 }
 
-bool ArchiveDataClient::decode_data(xmlrpc_int32 type, xmlrpc_int32 count,
+bool ArchiveDataClient::decode_data(const char *name,
+                                    xmlrpc_int32 type, xmlrpc_int32 count,
                                     xmlrpc_value *data_array,
                                     CtrlInfo &ctrlinfo,
                                     value_callback callback,
@@ -324,6 +324,7 @@ bool ArchiveDataClient::decode_data(xmlrpc_int32 type, xmlrpc_int32 count,
     {
         case XML_STRING: dbr_type = DBR_TIME_STRING;  break;
         case XML_ENUM:   dbr_type = DBR_TIME_ENUM;    break;
+        case XML_INT:    dbr_type = DBR_TIME_LONG;    break;
         case XML_DOUBLE: dbr_type = DBR_TIME_DOUBLE;  break;
         default:
             LOG_MSG("Cannot decode data type %d\n", type);
@@ -383,6 +384,16 @@ bool ArchiveDataClient::decode_data(xmlrpc_int32 type, xmlrpc_int32 count,
                         return false;
                 }
                 break;
+                case DBR_TIME_LONG:
+                {
+                    dbr_long_t *val = &((dbr_time_long *)raw_value)->value;
+                    xmlrpc_int32 ival;
+                    xmlrpc_parse_value(&env, value, "i", &ival);
+                    val[v] = ival;
+                    if (log_fault())
+                        return false;
+                }
+                break;
                 case DBR_TIME_DOUBLE:
                 {
                     double *val = &((dbr_time_double *)raw_value)->value;
@@ -393,86 +404,10 @@ bool ArchiveDataClient::decode_data(xmlrpc_int32 type, xmlrpc_int32 count,
                 break;
             }
         }
-        if (!callback(callback_arg, ctrlinfo, dbr_type, count, raw_value))
+        if (!callback(callback_arg, name, i, ctrlinfo, dbr_type, count, raw_value))
             break;
     }
     RawValue::free(raw_value);
     return true;
 }
 
-#define URL "http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi"
-
-bool printer(void *arg, const CtrlInfo &info,
-             DbrType type, DbrCount count,
-             const RawValue::Data *value)
-{
-    RawValue::show(stdout, type, count, value, &info);
-    return true;
-}
-
-void run_test()
-{
-    LOG_MSG("ArchiveDataClient test, URL %s\n", URL);
-    ArchiveDataClient       client(URL);
-    int                     version;
-    size_t                  i;
-    stdString               description;
-    stdVector<stdString>    hows, stats;
-    stdVector<ArchiveDataClient::SeverityInfo> sevrs;
-    if (client.getInfo(version, description, hows, stats, sevrs))
-    {
-        printf("Version %d:\n%s\n",
-               version, description.c_str());
-        printf("Request Types:\n");
-        for (i=0; i<hows.size(); ++i)
-            printf("%3d: %s\n", i, hows[i].c_str());
-        printf("Status Strings:\n");
-        for (i=0; i<stats.size(); ++i)
-            printf("%3d: %s\n", i, stats[i].c_str());
-        printf("Severity Info:\n");
-        for (i=0; i<sevrs.size(); ++i)
-            printf("0x%04X: %-22s %-13s %s\n",
-                   sevrs[i].num,
-                   sevrs[i].text.c_str(),
-                   (sevrs[i].has_value ? "use value," : "ignore value,"),
-                   (sevrs[i].txt_stat  ? "use stat" : "stat is count"));
-    }
-    stdVector<ArchiveDataClient::ArchiveInfo> archives;
-    if (client.getArchives(archives))
-    {
-        printf("Available Archives:\n");
-        for (i=0; i<archives.size(); ++i)
-            printf("Key %d: '%s' (%s)\n",
-                   archives[i].key,
-                   archives[i].name.c_str(),
-                   archives[i].path.c_str());
-    }
-    stdVector<ArchiveDataClient::NameInfo> name_infos;
-    stdString start_txt, end_txt;
-    if (client.getNames(1, "IOC", name_infos))
-    {
-        printf("Names:\n");
-        for (i=0; i<name_infos.size(); ++i)
-            printf("'%s': %s - %s\n",
-                       name_infos[i].name.c_str(),
-                   epicsTimeTxt(name_infos[i].start, start_txt),
-                   epicsTimeTxt(name_infos[i].end, end_txt));
-        }
-    
-    
-        stdVector<stdString> names;
-        names.push_back(stdString("Test_HPRF:IOC1:Load"));
-        names.push_back(stdString("Test_HPRF:KlyWin1:T_Flt"));
-        names.push_back(stdString("Test_HPRF:Xmtr1:FltLog0"));
-        names.push_back(stdString("Test_HPRF:Xmtr1:PLCRev"));
-        epicsTime start, end;
-        string2epicsTime("03/01/2004", start);
-        string2epicsTime("03/02/2004", end);
-        client.getValues(1, names, start, end, 10, 0, printer, 0);
-}
-
-int main (int argc, char** argv)
-{
-    run_test();
-    return 0;
-}

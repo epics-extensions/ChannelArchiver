@@ -321,6 +321,15 @@ void test_time()
 
     vals2epicsTime(1990, 3, 18, 01, 13, 44, 800000019L, now);
     epicsTime2string(roundTimeUp(now, 60*60*1), txt);        TEST(txt == "03/18/1990 02:00:00.000000000");
+
+    printf("Rounding up by 15 minutes:\n");
+    vals2epicsTime(1990, 3, 18, 01, 13, 44, 800000019L, now);
+    now = roundTimeUp(now, 900);    printf("%s\n", epicsTimeTxt(now, txt));
+    now = roundTimeUp(now, 900);    printf("%s\n", epicsTimeTxt(now, txt));
+    now = roundTimeUp(now, 900);    printf("%s\n", epicsTimeTxt(now, txt));
+    now = roundTimeUp(now, 900);    printf("%s\n", epicsTimeTxt(now, txt));
+    now = roundTimeUp(now, 900);    printf("%s\n", epicsTimeTxt(now, txt));
+    now = roundTimeUp(now, 900);    printf("%s\n", epicsTimeTxt(now, txt));
 }
 
 #endif

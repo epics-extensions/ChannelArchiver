@@ -1,4 +1,4 @@
-
+// -*- c++ -*-OB
 #ifndef __CTRLINFO_H__
 #define __CTRLINFO_H__
 
@@ -6,8 +6,10 @@
 #include "MemoryBuffer.h"
 #include "StorageTypes.h"
 
-// This is the CtrlInfo for numeric values
-// as it's in the binary data files.
+/// \addtogroup Storage
+/// @{
+
+// NumericInfo is the CtrlInfo for numeric values.
 // So far, the structure's layout matches the binary
 // layout (except for the byte order of the individual elements),
 // so this strcuture must not be changed!
@@ -28,8 +30,8 @@ public:
 class EnumeratedInfo
 {
 public:
-	short	num_states;		// state_strings holds num_states strings
-	short	pad;			// one after the other, separated by '\0'
+	short	num_states;     // state_strings holds num_states strings
+	short	pad;	 	// one after the other, separated by '\0'
 	char	state_strings[1];
 };
 
@@ -149,45 +151,7 @@ protected:
 	MemoryBuffer<CtrlInfoData>	_infobuf;
 };
 
-inline CtrlInfo::Type CtrlInfo::getType() const
-{	return (CtrlInfo::Type) (_infobuf.mem()->type);}
-
-inline long CtrlInfo::getPrecision() const
-{
-	return (getType() == Numeric) ? _infobuf.mem()->value.analog.prec : 0;
-}
-
-inline const char *CtrlInfo::getUnits() const
-{
-    if (getType() == Numeric)
-        return _infobuf.mem()->value.analog.units;
-    return "";
-}
-
-inline float CtrlInfo::getDisplayHigh() const
-{	return _infobuf.mem()->value.analog.disp_high; }
-
-inline float CtrlInfo::getDisplayLow() const
-{	return _infobuf.mem()->value.analog.disp_low; }
-
-inline float CtrlInfo::getHighAlarm() const
-{	return _infobuf.mem()->value.analog.high_alarm; }
-
-inline float CtrlInfo::getHighWarning() const
-{	return _infobuf.mem()->value.analog.high_warn; }
-
-inline float CtrlInfo::getLowWarning() const
-{	return _infobuf.mem()->value.analog.low_warn; }
-
-inline float CtrlInfo::getLowAlarm() const
-{	return _infobuf.mem()->value.analog.low_alarm; }
-
-inline size_t CtrlInfo::getNumStates() const
-{
-	if (getType() == Enumerated)
-		return _infobuf.mem()->value.index.num_states;
-	return 0;
-}
+/// @}
 
 #endif
 

@@ -87,54 +87,6 @@ bool au_List::addAU(archiver_Unit * au, long * au_Address)
 	
 }
 
-bool au_List::detachUnit(const key_Object& au_Key, long * au_Address)
-{
-	if(au_List_Pointer < 0)
-	{
-		printf("The archiver units list was not initialized\n");
-		return false;
-	}
-
-
-	archiver_Unit au;
-	au.setKey(au_Key);
-	//search the whole list
-	interval temp = interval(COMPLETE_TIME_RANGE);
-	au.setInterval(temp);	
-	long next;
-	long previous;
-	*au_Address = findUnit(au, &next, &previous);
-	if(*au_Address < 1)
-	{
-		//there is no such unit in the list
-		return false;
-	}
-	else
-	{
-
-		//!!!!inform about the free space AFTER deleting in the tree, NOT here
-		if(next > 0)
-		{
-			//update the next archiver unit
-			au.attach(f, next);
-			if(au.writePreviousPointer(previous) == false) return false;
-		}
-
-		if(previous < 1)
-		{
-			//update the head
-			if(updateAUListPointer(next) == false) return false;
-		}
-		else
-		{
-			//update the previous archiver unit
-			au.attach(f, previous);
-			if(au.writeNextPointer(next) == false) return false;
-		}
-		return true;
-	}
-}
-
 long au_List::findUnit(const key_Object& au_Key)
 {
 	archiver_Unit au;
@@ -145,6 +97,10 @@ long au_List::findUnit(const key_Object& au_Key)
 	long xyz;
 	return findUnit(au, &xyz, &xyz);
 }
+
+//if unit is in the list, its address is returned
+//if not, -1 is returned, 
+//and the addresses of the two units between which it is to be added are set
 
 long au_List::findUnit(const archiver_Unit& au, long * next_AU_Address, long * previous_AU_Address) const
 {

@@ -13,12 +13,6 @@ ArrayList::~ArrayList()
 	free (elements);
 }
 
-void ArrayList::reset()
-{
-	number_Of_Elements = 0;
-	memory_Space = 256;
-}
-
 void ArrayList::insertElement(long e)
 {
 	if (number_Of_Elements == memory_Space)

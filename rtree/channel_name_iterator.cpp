@@ -12,11 +12,7 @@ bool channel_Name_Iterator::getFirst(char * result)
 {
 	long cntu_Address;
 	if(cai.getFirst(&cntu_Address) == false) return false;
-	if(cntu_Address < 0) 
-	{
-		strcpy(result, "no more channels");
-		return true;
-	}
+	if(cntu_Address < 0) return false;
 	current_CNTU.attach(f, cntu_Address);
 	return current_CNTU.readName(result);
 }
@@ -25,11 +21,7 @@ bool channel_Name_Iterator::getNext(char * result)
 {
 	long cntu_Address;
 	if(cai.getNext(&cntu_Address) == false) return false;
-	if(cntu_Address < 0) 
-	{
-		strcpy(result, "no more channels");
-		return true;
-	}
+	if(cntu_Address < 0) return false;
 	current_CNTU.attach(f, cntu_Address);
 	return current_CNTU.readName(result);	
 }

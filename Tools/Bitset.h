@@ -4,6 +4,7 @@
 
 #include<stdString.h>
 
+/// \ingroup Tools
 /// BitSet, inspired by STL bitset.
 ///
 /// Reasons for reinventing this type of class:

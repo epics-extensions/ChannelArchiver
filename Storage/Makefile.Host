@@ -10,6 +10,7 @@ INC += RawValue.h
 INC += DirectoryFile.h
 INC += DataFile.h
 INC += DataWriter.h
+INC += DataReader.h
 
 # Contents of library
 LIBSRCS += HashTable.cpp
@@ -18,6 +19,7 @@ LIBSRCS += RawValue.cpp
 LIBSRCS += DirectoryFile.cpp
 LIBSRCS += DataFile.cpp
 LIBSRCS += DataWriter.cpp
+LIBSRCS += DataReader.cpp
 
 # Library to build
 LIBRARY := Storage

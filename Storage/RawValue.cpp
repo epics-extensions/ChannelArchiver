@@ -301,13 +301,28 @@ void RawValue::show(FILE *file,
         case DBR_TIME_DOUBLE:
         {
             dbr_double_t *val = &((dbr_time_double *)value)->value;
-            for (i=0; i<count; ++i)
+            if (info)
             {
-                if (i+1 >= count)
-                    fprintf(file, "%f\n", (double)*val);
+                int prec = info->getPrecision();
+                for (i=0; i<count; ++i)
+                {
+                    if (i+1 >= count)
+                        fprintf(file, "%.*f\n", prec,(double)*val);
+                else
+                    fprintf(file, "%.*f\t", prec, (double)*val);
+                    ++val;
+                }
+            }
+            else
+            {
+                for (i=0; i<count; ++i)
+                {
+                    if (i+1 >= count)
+                        fprintf(file, "%f\n", (double)*val);
                 else
                     fprintf(file, "%f\t", (double)*val);
-                ++val;
+                    ++val;
+                }
             }
             return;
         }
@@ -316,13 +331,13 @@ void RawValue::show(FILE *file,
     }
 }   
 
-void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
+bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
                     DataFile *datafile, FileOffset offset)
 {
     if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(datafile->file) != offset   ||
         fread(value, size, 1, datafile->file) != 1)
-        throwArchiveException(ReadError);
+        return false;
     
     SHORTFromDisk(value->status);
     SHORTFromDisk(value->severity);
@@ -349,9 +364,12 @@ void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
         FROM_DISK(DBR_TIME_ENUM,   dbr_enum_t,   dbr_time_enum,   USHORTFromDisk)
         FROM_DISK(DBR_TIME_LONG,   dbr_long_t,   dbr_time_long,   LONGFromDisk)
     default:
-        throwDetailedArchiveException(Invalid, "Unknown DBR_xx");
+        LOG_MSG("RawValue::read(%s @ 0x%lX): Unknown DBR_xx %d\n",
+                datafile->getFilename().c_str(), offset, type);
+        return false;
 #undef FROM_DISK
     }
+    return true;
 }
 
 void RawValue::write(DbrType type, DbrCount count, size_t size, const Data *value,

@@ -22,12 +22,6 @@ bool au_Pointer_List::init(long entry_Address)
 	return true;
 }
 
-bool au_Pointer_List::isEmpty() const
-{
-	return is_Empty;
-}
-
-
 bool au_Pointer_List::insertAUPointer(long new_Archiver_Unit_Address)//SORTED!!!
 {	
 	if(entry_Address < 0)

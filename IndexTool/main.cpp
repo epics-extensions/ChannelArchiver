@@ -18,7 +18,7 @@ int main(int argc, const char *argv[])
                      );
     parser.setArgumentsInfo("<archive list file> <output index>");
     CmdArgFlag help  (parser, "help", "Show Help");
-    CmdArgFlag debug (parser, "debug", "Enable Debug Info");
+    CmdArgFlag verbose (parser, "verbose", "Show more info");
     CmdArgFlag redo  (parser, "redo", "Rebuild index from scratch");
     if (! parser.parse())
         return -1;
@@ -44,6 +44,10 @@ int main(int argc, const char *argv[])
     stdString output_name = parser.getArgument(1);
 
     // read archive_list_name, ...
+    if (verbose)
+        printf("Reading archive list %s, generating %s\n",
+               archive_list_name.c_str(),
+               output_name.c_str());
 
     return 0;
 }

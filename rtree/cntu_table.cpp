@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bin_io.h"
-#include "constants.h"
+#include "rtree_constants.h"
 #include "cntu_address_iterator.h"
 
 cntu_Table::cntu_Table()

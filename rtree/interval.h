@@ -4,7 +4,7 @@
 #define _INTERVAL_H_
 
 #include <stdio.h>
-#include "constants.h"
+#include "rtree_constants.h"
 #include "my_epics_time.h"
 
 /*

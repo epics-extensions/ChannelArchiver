@@ -1,6 +1,6 @@
 #include "r_tree.h"
 #include <stdlib.h>
-#include "constants.h"
+#include "rtree_constants.h"
 
 r_Tree::r_Tree()
 :	f(0), fa(0), offset(-1), m(0){}

@@ -36,6 +36,7 @@ TESTPROD += file_allocator_test archiver_index_test
 PROD_LIBS_DEFAULT := rtree
 PROD_LIBS_WIN32 := rtreeObj
 rtree_DIR = $(INSTALL_LIB)
+rtreeObj_DIR = $(INSTALL_LIB)
 #Tools_DIR = $(INSTALL_LIB)
 #ToolsObj_DIR = $(INSTALL_LIB)
 #TESTPROD += StorageTest

@@ -71,6 +71,11 @@ bool key_AU_Iterator::getNext(key_Object * result, interval * lookup_Interval)
 	while(true)
 	{
 		if(current_Entry.readNextIndex(&next_Leaf) == false) return false;
+        if (next_Leaf < 0)
+            {
+                leaf_Address = -1;
+                break;
+            }
 		next_Address = source->index2address(next_Leaf);
 		if(	!getKey(next_Address, &temp)	||
 			!(temp == *result)) break;

@@ -17,7 +17,7 @@
 #include "DataFile.h"
 #include "CtrlInfo.h"
 
-#define LOG_DATAFILE
+//#define LOG_DATAFILE
 
 // List of all DataFiles currently open
 // We assume that there aren't that many open,
@@ -168,7 +168,7 @@ DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
     header->offset = ftell(file);
     size_t raw_value_size = RawValue::getSize(dbr_type, dbr_count);
     header->data.dbr_type = dbr_type;
-    header->data.nelements = dbr_count;
+    header->data.dbr_count = dbr_count;
     header->data.period = period;
     header->data.buf_free = num_samples * raw_value_size;
     header->data.buf_size = header->data.buf_free + sizeof(DataHeader::DataHeaderData);
@@ -230,7 +230,7 @@ size_t DataHeader::available()
 {
     if (!isValid()  ||  data.buf_free <= 0)
         return 0;
-    size_t val_size = RawValue::getSize(data.dbr_type, data.nelements);
+    size_t val_size = RawValue::getSize(data.dbr_type, data.dbr_count);
     if (val_size > 0)
         return data.buf_free / val_size;
     return 0;
@@ -238,7 +238,7 @@ size_t DataHeader::available()
 
 size_t DataHeader::capacity()
 {
-    size_t val_size = RawValue::getSize(data.dbr_type, data.nelements);
+    size_t val_size = RawValue::getSize(data.dbr_type, data.dbr_count);
     if (val_size > 0)
         return (data.buf_size - sizeof(DataHeader::DataHeaderData))
             / val_size;
@@ -265,7 +265,7 @@ bool DataHeader::read(FileOffset offset)
     ULONGFromDisk(data.buf_size);
     ULONGFromDisk(data.buf_free);
     USHORTFromDisk(data.dbr_type);
-    USHORTFromDisk(data.nelements);
+    USHORTFromDisk(data.dbr_count);
     DoubleFromDisk(data.period);
     epicsTimeStampFromDisk(data.begin_time);
     epicsTimeStampFromDisk(data.next_file_time);
@@ -286,7 +286,7 @@ bool DataHeader::write() const
     ULONGToDisk(copy.buf_size);
     ULONGToDisk(copy.buf_free);
     USHORTToDisk(copy.dbr_type);
-    USHORTToDisk(copy.nelements);
+    USHORTToDisk(copy.dbr_count);
     DoubleToDisk(copy.period);
     epicsTimeStampToDisk(copy.begin_time);
     epicsTimeStampToDisk(copy.next_file_time);
@@ -300,18 +300,30 @@ bool DataHeader::read_next()
 {
     if (offset == INVALID_OFFSET)
         return false;
-    if (data.next_offset == INVALID_OFFSET ||
-        !Filename::isValid(data.next_file))
+    return get_prev_next(data.next_file, data.next_offset);
+}
+
+bool DataHeader::read_prev()
+{
+    if (offset == INVALID_OFFSET)
+        return false;
+    return get_prev_next(data.prev_file, data.prev_offset);
+}
+
+bool DataHeader::get_prev_next(const char *name, FileOffset new_offset)
+{
+    if (new_offset == INVALID_OFFSET ||
+        !Filename::isValid(name))
     {
         clear();
         return false;
     }
     // Do we need to switch data files?
-    if (strcmp(datafile->basename.c_str(), data.next_file))
+    if (strcmp(datafile->basename.c_str(), name))
     {
         DataFile *next = DataFile::reference(
             datafile->dirname,
-            data.next_file, datafile->for_write);
+            name, datafile->for_write);
         if (! next)
         {
             clear();
@@ -320,7 +332,7 @@ bool DataHeader::read_next()
         datafile->release();
         datafile = next;
     }
-    return read(data.next_offset);
+    return read(new_offset);
 }
 
 void DataHeader::set_prev(const stdString &basename, FileOffset offset)
@@ -349,7 +361,7 @@ void DataHeader::show(FILE *f)
     epicsTime2string(data.next_file_time, t);
     fprintf(f, "New File: %s\n", t.c_str());
     fprintf(f, "DbrType : %d, %d elements\n",
-            data.dbr_type, data.nelements);
+            data.dbr_type, data.dbr_count);
     fprintf(f, "Samples : %ld\n", data.num_samples);
     fprintf(f, "Size    : %ld bytes, free: %ld bytes\n",
             data.buf_size, data.buf_free);

@@ -32,8 +32,7 @@ Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 
 # Only for benchmarking the write routines:
-#bench_SRCS := bench.cpp
-#TESTPROD := bench
+TESTPROD := bench
 
 include ../../Make.end
 

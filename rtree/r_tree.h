@@ -10,7 +10,9 @@
 #include "r_tree_free_space_manager.h"
 
 
-//r_Entries on each level are sorted in the natural ascending way
+/**
+*	For any menaing, see user's manual
+*/
 
 
 class r_Tree
@@ -21,33 +23,74 @@ public:
 	bool setM(short _m);
 
 	FILE * getFile() const				{return f;}
+	/**
+	*	@return the address to where the root address is written
+	*/
 	long getRootPointer() const			{return root.getRootPointer();}
 
+	/**
+	*	@return true if errors occured, or the tree is indeed empty; false otherwise
+	*/
 	bool isEmpty() const;
 	
+	/**
+	*	Only the file pointer is copied into the object; NO memcpy or similar
+	*	MUST be called before invoking any methods!
+	*	@param read_Only tells if RTFSM must be instantiated ("false") or not ("true")
+	*	Does not check if the file pointer is valid (see archiver_Index::open())	
+	*/
 	bool attach(file_allocator * fa, long root_Pointer, bool read_Only = false);
+	
+	/**
+	*	Necessary for class archiver_Index in order to be able to reuse the archiver_Index object
+	*/
 	void detach();
 	
 	long index2address(long index) const;
 	long address2index(long address) const;
 
-	bool findFirstLeaf(const interval * i, long * result) const;	//returns the index of the leaf
+	/**
+	*	@param result is the pointer to the memory black the index of the first leaf is written to
+	*	(-1 means the R tree does not store data from the specified interval)
+	*	@return false if errors occured; true otherwise
+	*/
+	bool findFirstLeaf(const interval * i, long * result) const;
 
+	/**
+	*	@param au is the pointer to the AU object which parameters are set according to the values
+	*	in the index file
+	*	@return false if errors occured, a "latest AU" does not exist; true otherwise
+	*/
 	bool getLatestAU(archiver_Unit * au) const;
+	
+	/**
+	*	@param i is the pointer to the interval object which parameters are set according to the values
+	*	in the index file
+	*	@return false if errors occured; true otherwise
+	*/
 	bool getTreeInterval(interval * i) const;
 
-	//these functions DO NOT touch the AUs in the AU list
-	
-	//pre condition: AU is not in the tree
+	/**
+	*	The three next methods DO NOT touch the AUs in the AU list; only the entries in the R tree
+	*/
 	bool addAU(long au_Address);
-	//does not touch the AU itself only the entries
 	bool removeAU(long au_Address);
-	//pre condition: AU is in the tree; checks if it is really the latest
+	
+	/**
+	*	@return false if the latest leaf's only key is not the AU with the specified address, or
+	*	errors occured; true otherwise
+	*/
 	bool updateLatestLeaf(long au_Address, const epicsTimeStamp& end_Time);
 	
-	//NOT NEEDED, but implemented bool isAUInTheTree(long au_Address);
 	void dump(FILE * text_File) const;
+	/**
+	*	see archiver_Index::writeDotFile()
+	*/
 	void writeDotFile(const char * name = "dot.txt") const;
+	
+	/**
+	*	@return true if the tree is consistent; false otherwise
+	*/
 	bool test() const;
 	
 

@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include "key_object.h"
 #include "interval.h"
-#include "constants.h"
-
 
 class archiver_Unit
 {
@@ -28,7 +26,7 @@ public:
 
 	bool operator ==(const archiver_Unit& other) const	{return key == other.getKey();}
 	
-	/*
+	/**
 	*	@return False, if the key offset or the priority is negative, or interval is not valid;
 	*	true otherwise
 	*/
@@ -36,14 +34,14 @@ public:
 	
 	void print(FILE * text_File) const;
 	
-	/*
+	/**
 	*	Only the file pointer is copied into the object; NO memcpy or similar
 	*	MUST be called before invoking any i/o methods
 	*	Does not check if the file pointer is valid (see archiver_Index::open())	
 	*/
 	void attach(FILE * f, long au_Address);
 
-	/*
+	/**
 	*	Set the object attributes according to the values from the file this object was attached to
 	*	@see attach()	
 	*	@return False if errors occured, or attach() was not called before; true otherwise
@@ -53,7 +51,7 @@ public:
 	bool readInterval();
 	bool readPriority();
 	
-	/*
+	/**
 	*	Determine the address of the next/previous AU
 	*	In the index file, AUs are stored inside a list.
 	*	@param result is a pointer which the address of the next/previous AU is read to from the file;
@@ -63,7 +61,7 @@ public:
 	bool readNextPointer(long * result);
 	bool readPreviousPointer(long * result);
 	
-	/*
+	/**
 	*	Write the object attributes to the file this object was attached to
 	*	@see attach()	
 	*	@return False if errors occured, or attach() was not called before; true otherwise
@@ -73,10 +71,8 @@ public:
 	bool writeInterval() const;
 	bool writePriority() const;
 
-	/*
+	/**
 	*	Store the address of the next/previous AU in the index file
-	*	@param value is the address of the next/previous AU;
-	*	a not positive value means there is no next/previous AU
 	*	@return False if i/o errors occured, or attach() was not called before; true otherwise
 	*/
 	bool writeNextPointer(long value) const;
@@ -91,3 +87,4 @@ private:
 };
 
 #endif
+

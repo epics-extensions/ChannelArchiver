@@ -6,8 +6,8 @@
 	#ifdef _MSC_VER
 
 		typedef struct epicsTimeStamp {
-			long    secPastEpoch;   /* seconds since 0000 Jan 1, 1990 */
-			long    nsec;           /* nanoseconds within second */
+			long    secPastEpoch;   /** seconds since 0000 Jan 1, 1990 */
+			long    nsec;           /** nanoseconds within second */
 		} epicsTimeStamp;
 
 	#else 
@@ -17,7 +17,7 @@
 	#endif // _MSC_VER
 
 
-/*
+/**
 *	If not sure whether time stamps are valid, isTimeStampValid() should be called
 *	@see isTimeStampValid();
 *	@return 
@@ -28,13 +28,13 @@
 long compareTimeStamps(const epicsTimeStamp & a, const epicsTimeStamp & b);
 
 
-/*
+/**
 *	End time stamp zero means the AU is active; treated in comparisons as "infinity"
 *	@return True, if seconds AND nanoseconds of the time stamp are 0; false otherwise
 */
 bool isTimeStampZero(const epicsTimeStamp & a);
 
-/*
+/**
 *	No negative time stamps allowed
 *	@return True, if seconds and nanoseconds are not negative; false otherwise
 */

@@ -117,13 +117,12 @@ int run()
 	if(ci->getFirst(channel_Name) == false) delete ci;
 	
 	//add units from one index to another (change m of the tree :-)	
-	while(true)
+	do
 	{	
-		if(strcmp(channel_Name, "no more channels") == 0) break;
 		new_Index.addDataFromAnotherIndex(channel_Name, my_Index);
 		new_Index.dump("new_tree.txt", "w");
-		if(ci->getNext(channel_Name) == false) break;
 	}
+	while(ci->getNext(channel_Name));
 	delete ci;	
 
 

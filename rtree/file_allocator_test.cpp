@@ -2,8 +2,6 @@
 #include <string.h>
 #include "file_allocator.h"
 
-#undef random
-
 #define TEST(call,test)              \
 if ((call))                          \
     printf("OK: %s\n", test);        \

@@ -11,6 +11,9 @@
 #include "HashTable.h"
 #include "StorageTypes.h"
 
+/// \addtogroup Storage
+/// @{
+
 class DirectoryFileIterator;
 
 class DirectoryFileEntry
@@ -181,5 +184,7 @@ private:
     DirectoryFile           *_dir;
     HashTable::HashValue    _hash;  // ... for _entry
 };
+
+/// @}
 
 #endif

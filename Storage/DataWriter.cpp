@@ -130,7 +130,7 @@ DataWriter::DataWriter(DirectoryFile &index,
                 return;
         }
         else if (header->data.dbr_type != dbr_type  ||
-                 header->data.nelements != dbr_count)
+                 header->data.dbr_count != dbr_count)
         {   // Add new header because type has changed
             if (!addNewHeader(false))
                 return;

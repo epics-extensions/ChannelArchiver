@@ -5,39 +5,38 @@
 #include<GenericException.h>
 #include<epicsMutex.h>
 
-//CLASS MsgLogger
-// Tracer class:
-//
-// System-independent logging tool, e.g.
-// <PRE>
-//  LOG_MSG("in init()\n");
-//  LOG_MSG("Value of i is %d\n", i);
-//  LOG_ASSERT(i > 2);
-// </PRE>
-//
-// LOG_... calls will print to
-// <UL>
-// <LI> Debug Window        (WIN32)
-// <LI> clog                (other architecture)
-// <LI> user defined target (if set)
-// </UL>
+/// \ingroup Tools
+/// The MsgLogger is a trace or logging helper.
+///
+/// Note that it is not necessary to instantiate
+/// another logger. Instead, one can use the following
+/// printf and assert-like macros that call a predefined,
+/// global MsgLogger:
+/// \code
+///  LOG_MSG("in init()\n");
+///  LOG_MSG("Value of i is %d\n", i);
+///  LOG_ASSERT(i > 2);
+/// \endcode
 class MsgLogger
 {
 public:
+    /// Constructor
     MsgLogger();
 
+    /// Type for user-defined output routine.
     typedef void (*PrintRoutine) (void *arg, const char *text);
     
-    // Call to override default output routine
+    /// Override default output routine.
     void SetPrintRoutine(PrintRoutine print, void *arg = 0)
     {
         _print = print;
         _print_arg = arg;
     }
 
-    // Restore default output routine
+    /// Restore default output routine
     void SetDefaultPrintRoutine();
 
+    /// Log some text.
     void Print(const char *s);
 
     void Lock()

@@ -8,7 +8,8 @@
 #include "r_entry.h"
 
 /**
-*	Returns pointers the key objects for the specific interval 
+*	To be used for looking up the data
+*	
 */
 class key_AU_Iterator
 {
@@ -16,10 +17,10 @@ public:
 	key_AU_Iterator(const r_Tree * source);
 
 	/**
-	*	Check if the interval is valid, 
+	*	Check if "search interval" is valid, 
 	*	if yes, attach to the first leaf of the tree that intersects the desired interval;
 	*	get the key AU of the leaf; also look if it's the key of the next leaf, 
-	*	and so on, to "return" the lookup definitive interval
+	*	and so on, to calculate the definitive "lookup interval"
 	*	@param result is the pointer to the key object which attributes are set according to the 
 	*	stored values
 	*	@param lookup_Interval is the pointer to the memory where the interval- that is to be 
@@ -31,7 +32,7 @@ public:
 	
 	/**
 	*	Get the key that is the key of the next leaf; also look if it's the key of the next leaf, 
-	*	and so on, to "return" the definitive lookup interval
+	*	and so on, to calculate the definitive "lookup interval"
 	*	getFirst() must have been called before!
 	*	@param result is the pointer to the key object which attributes are set according to the 
 	*	stored values

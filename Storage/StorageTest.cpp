@@ -1,7 +1,10 @@
-
+// Tools
+#include "ArgParser.h"
+// Storage
 #include "DirectoryFile.h"
 #include "DataFile.h"
 #include "DataWriter.h"
+#include "DataReader.h"
 
 void header_dump(const stdString &index_name)
 {
@@ -68,14 +71,61 @@ void add(const stdString &index_name)
     delete index;
 }
 
-int main(int argc, const char *argv[])
+void value_dump(const stdString &index_name, const stdString &channel_name, epicsTime *start)
 {
-    stdString *index_name = new stdString(argv[1]);
+    DirectoryFile index(index_name);
+    DataReader *reader = new DataReader(index);
+
+    const RawValue::Data *data = reader->find(channel_name, start);
+    while (data)
+    {
+        if (start)
+        {
+            if (RawValue::getTime(data) < *start)
+                printf("< ");
+            else if (RawValue::getTime(data) > *start)
+                printf("> ");
+            else
+                printf("==");   
+        }
+        RawValue::show(stdout, reader->dbr_type, reader->dbr_count,
+                       data, &reader->ctrl_info);
+        data = reader->next();
+    }
+    delete reader;
+}
+
+int main(int argc, const char *argv[])
+{ 
+    CmdArgParser parser(argc, argv);
+    parser.setHeader("Strorage lib. test");
+    parser.setArgumentsInfo("<index>");
+    CmdArgFlag   dump (parser, "dump",
+                       "Dump values");
+    CmdArgString start(parser, "start", "<mm/dd/yyyy hh:mm:ss.nnnnnnnn>",
+                       "Start time");
+    if (parser.parse() == false)
+        return -1;
+    if (parser.getArguments().size() != 1)
+    {
+        parser.usage();
+        return -1;
+    }
+    stdString index_name = parser.getArgument(0);
+
+    epicsTime *start_time = 0;
+
+    if (start.isSet())
+    {
+        start_time = new epicsTime;
+        string2epicsTime(start.get(), *start_time);
+    }
 
     //header_dump(*index_name);
+    //add(*index_name);
 
-    add(*index_name);
-    delete index_name;
+    if (dump)
+        value_dump(index_name, "jane", start_time);
 
     return 0;
 }

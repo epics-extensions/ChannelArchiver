@@ -4,7 +4,9 @@ include Make.ver
 
 all:
 	$(MAKE) -C Tools
+	$(MAKE) -C StorageLib
 	$(MAKE) -C LibIO
+	$(MAKE) -C DataTool
 	$(MAKE) -C Manager
 	$(MAKE) -C Export
 	$(MAKE) -C CGIExport
@@ -13,6 +15,7 @@ all:
 clean:
 	@$(MAKE) -C Tools clean
 	@$(MAKE) -C LibIO clean
+	@$(MAKE) -C DataTool clean
 	@$(MAKE) -C Manager clean
 	@$(MAKE) -C Export clean
 	@$(MAKE) -C CGIExport clean

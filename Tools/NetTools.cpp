@@ -64,7 +64,7 @@ bool CreateBroadcastSocket(int port /*I*/, SOCKET &sock /*O*/,
 						   int peer_port, sockaddr_in &broadcast /*O*/)
 {
 	// Create Socket
-    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    sock = epicsSocketCreate(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock == INVALID_SOCKET)
 		return false;
 
@@ -73,7 +73,7 @@ bool CreateBroadcastSocket(int port /*I*/, SOCKET &sock /*O*/,
     if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST,
 		(const char*)&on, sizeof(on)) != 0)
 	{
-		socket_close(sock);
+		epicsSocketDestroy(sock);
 		return false;
 	}
 
@@ -84,7 +84,7 @@ bool CreateBroadcastSocket(int port /*I*/, SOCKET &sock /*O*/,
     if (bind(sock, (const sockaddr *)&broadcast, sizeof(struct sockaddr_in))
 			== SOCKET_ERROR)
 	{
-		socket_close(sock);
+		epicsSocketDestroy(sock);
 		return false;
 	}
 

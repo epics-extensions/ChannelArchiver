@@ -6,7 +6,6 @@
 #include <stdio.h> 
 #include "interval.h"
 #include "file_allocator.h"
-#include "constants.h"
 
 class r_Tree_Root
 {
@@ -15,7 +14,7 @@ public:
 	long getAddress() const		{return root_Address;	}
 	long getRootPointer() const	{return root_Pointer;	}
 	
-	/*
+	/**
 	*	Only the file pointer is copied into the object; NO memcpy or similar
 	*	MUST be called before invoking any i/o methods
 	*	Does not check if the file pointer is valid (see archiver_Index::open())	
@@ -24,7 +23,7 @@ public:
 
 	void detach();
 	
-	/*
+	/**
 	*	Set the object attributes according to the values from the file this object was attached to
 	*	@see attach()	
 	*	@return False if errors occured, or attach() was not called before; true otherwise
@@ -34,7 +33,7 @@ public:
 	bool readLatestLeafIndex(long * result) const;
 	bool readI(short * result) const;
 	
-	/*
+	/**
 	*	Write the object attributes to the file this object was attached to
 	*	@see attach()	
 	*	@return False if errors occured, or attach() was not called before; true otherwise
@@ -45,7 +44,7 @@ public:
 	bool writeLatestLeafIndex(long value) const;
 	bool writeI(short value) const;
 
-	/*
+	/**
 	*	Copy the adjusted root values to the specified address	
 	*	@return False if errors occured; true otherwise.
 	*/
@@ -62,3 +61,4 @@ private:
 };
 
 #endif
+

@@ -9,29 +9,46 @@
 #include "au_pointer.h"
 #include "r_entry.h"
 
-//criteria for being the key:
-//if my priority is the biggest 
-//OR 
-//if my priority is the same as the currently biggest AND "if the current key is NOT the previous key" 
-//AND 
-//("I reach longer into future" OR "I am the key of the previous AU")
+/**
+*	Is used inside the class r_Tree only!
+*	-------------------------------------
+*	Criteria for being the key:
+*	- if my priority is the biggest 
+*	- OR 
+*	- (if my priority is the same as the currently biggest AND "if the current key is NOT the previous key") 
+*	- AND 
+*	- ("I reach longer into future" OR "I am the key of the previous AU")
+*/
+
 class au_Pointer_List 
 {
 public:
 	au_Pointer_List(file_allocator * fa, long r_Tree_Offset);
-	bool init(long entry_Address);
-	bool isEmpty() const;
 
-	//don't forget to set previous_Key_Compared to true, after comparing the keys
+	/**
+	*	Loads the key AUP address
+	*	@return false if errors occured; true otherwise
+	*/
+	bool init(long entry_Address);
+	bool isEmpty() const	{return is_Empty;}
+
+	/**
+	*	The standard list operations; for insert criteria, see above
+	*/
 	bool insertAUPointer(long au_Address); 
 	bool deleteAUPointer(long au_Address);		
-	long copyList();						//returns the address of the new list head (= key) or -1
 	
-	void dump(FILE * text_File);			//writes a line of the au keys 
-private:
+	/**
+	*	Copies AU pointers one by one
+	*	@return the address of the copied AUP list, or -1 if errors occured
+	*/
+	long copyList();						
+	
+	void dump(FILE * text_File);
 
+private:
 	bool isTheSameAsPreviousKey(long au_Address);
-	FILE * f;				//pointers to the outside
+	FILE * f;				//f & fa are pointers to the outside
 	file_allocator * fa;
 	const long r_Tree_Offset;
 	long entry_Address;

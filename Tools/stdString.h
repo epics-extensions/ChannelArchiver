@@ -3,6 +3,7 @@
 
 #include <cstring>
 
+/// \ingroup Tools
 /// Meant to behave like std::string,
 /// was introduced when egcs implementation lead
 /// to memory leak - and then kept.

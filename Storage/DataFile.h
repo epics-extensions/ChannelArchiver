@@ -9,6 +9,9 @@
 // Storage
 #include "RawValue.h"
 
+/// \addtogroup Storage
+/// @{
+
 /// The DataFile class handles access to the binary data files.
 /// One important feature is reference counting.
 /// When the ArchiveEngine adds samples, it is very likely
@@ -140,7 +143,7 @@ public:
         unsigned long   buf_size;       ///< disk space alloc. for this channel including sizeof(DataHeader)
         unsigned long   buf_free;       ///< remaining space f. channel in this file
         DbrType         dbr_type;       ///< ca type of data
-        DbrCount        nelements;      ///< array dimension of this data type
+        DbrCount        dbr_count;      ///< array dimension of this data type
         char            pad[4];         ///< to align double period...
         double          period;         ///< period at which the channel is archived (secs)
         epicsTimeStamp  begin_time;     ///< first time stamp of data in this file
@@ -177,6 +180,9 @@ public:
     /// Read the next data header.
     bool read_next();
 
+    /// Read the previous data header.
+    bool read_prev();
+
     /// Helper to set data.prev_file/offset
     void set_prev(const stdString &basename, FileOffset offset);
      
@@ -184,6 +190,11 @@ public:
     void set_next(const stdString &basename, FileOffset offset);
 
     void show(FILE *f);
+
+private:
+    bool get_prev_next(const char *name, FileOffset new_offset);
 };
+
+/// @}
 
 #endif // !defined(_DATAFILE_H_)

@@ -1,0 +1,10 @@
+O.*
+*.ncb
+*.opt
+*.plg
+Debug
+Release
+2003*
+dir
+index
+

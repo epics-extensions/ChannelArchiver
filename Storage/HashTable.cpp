@@ -1,7 +1,6 @@
 // HashTable.cpp
-//////////////////////////////////////////////////////////////////////
 
-#include <cstring>
+#include <string.h>
 #include "HashTable.h"
 #include "MsgLogger.h"
 

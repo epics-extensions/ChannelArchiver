@@ -7,6 +7,9 @@
 #include "CtrlInfo.h"
 #include "RawValue.h"
 
+/// \ingroup Storage
+/// @{
+
 /// Writes data to storage.
 
 /// The data writer interfaces between a series of
@@ -56,3 +59,5 @@ private:
 
     bool addNewHeader(bool new_ctrl_info);
 };
+/// @}
+

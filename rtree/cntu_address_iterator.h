@@ -3,13 +3,13 @@
 
 #include "cntu_table.h"
 
+/**
+*	For internal use only; serves the channel_Name_Iterator => see there
+*/
 class cntu_Address_Iterator
 {
 public:
 	cntu_Address_Iterator(const cntu_Table * t);
-	//returns 0 if there is none (more)
-	//for result, CHANNEL_NAME_LENGTH must be allocated
-	//getFirst() must be ALWAYS called before getNext()
 	bool getFirst(long * result);
 	bool getNext(long * result);
 private:

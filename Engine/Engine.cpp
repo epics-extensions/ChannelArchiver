@@ -252,7 +252,7 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                         CtrlInfo ctrlinfo;
                         ctrlinfo.read(datafile, header->data.ctrl_info_offset);
                         channel->init(header->data.dbr_type,
-                                      header->data.nelements,
+                                      header->data.dbr_count,
                                       &ctrlinfo,
                                       &last_stamp);
                         stdString stamp_txt;

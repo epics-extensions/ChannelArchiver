@@ -27,7 +27,7 @@
 //for printing
 //CAUTION! If changed, must be changed in interval::print()
 #define TIME_STRING_LENGTH		2
-#define IV_STRING_LENGTH		TIME_STRING_LENGTH * 4 + 5	
+#define IV_STRING_LENGTH		(TIME_STRING_LENGTH * 4 + 5)
 
 //r_tree_root
 #define ROOT_IV_OFFSET			0
@@ -35,7 +35,7 @@
 #define	ROOT_LATEST_OFFSET		20
 #define ROOT_I_OFFSET			24	//short
 
-#define ROOT_SIZE				ROOT_I_OFFSET + 2
+#define ROOT_SIZE				(ROOT_I_OFFSET + 2)
 
 //rtfsm
 #define RTFSM_HEADER_OFFSET		0
@@ -83,11 +83,13 @@
 #define MAGIC_ID					0
 #define MAGIC_ID_SIZE				4
 #define CNTU_TABLE_POINTER			MAGIC_ID_SIZE
-#define HASH_TABLE_SIZE				MAGIC_ID_SIZE + 4
-#define R_TREE_M					MAGIC_ID_SIZE + 6
+#define HASH_TABLE_SIZE				(MAGIC_ID_SIZE + 4)
+#define R_TREE_M					(MAGIC_ID_SIZE + 6)
 
-#define HEADER_SIZE					MAGIC_ID + MAGIC_ID_SIZE + 8
+#define HEADER_SIZE					(MAGIC_ID + MAGIC_ID_SIZE + 8)
+
 
 inline long twoToThePowerOf(int i)	{return (1 << i);	}
 
 #endif //constants.h
+

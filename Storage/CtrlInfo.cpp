@@ -48,6 +48,47 @@ bool CtrlInfo::operator == (const CtrlInfo &rhs) const
     return memcmp (info, rhs_info, rhs_info->size) == 0;
 }
 
+CtrlInfo::Type CtrlInfo::getType() const
+{	return (CtrlInfo::Type) (_infobuf.mem()->type);}
+
+long CtrlInfo::getPrecision() const
+{
+	if (getType() == Numeric)
+        return _infobuf.mem()->value.analog.prec;
+    return 0;
+}
+
+const char *CtrlInfo::getUnits() const
+{
+    if (getType() == Numeric)
+        return _infobuf.mem()->value.analog.units;
+    return "";
+}
+
+float CtrlInfo::getDisplayHigh() const
+{	return _infobuf.mem()->value.analog.disp_high; }
+
+float CtrlInfo::getDisplayLow() const
+{	return _infobuf.mem()->value.analog.disp_low; }
+
+float CtrlInfo::getHighAlarm() const
+{	return _infobuf.mem()->value.analog.high_alarm; }
+
+float CtrlInfo::getHighWarning() const
+{	return _infobuf.mem()->value.analog.high_warn; }
+
+float CtrlInfo::getLowWarning() const
+{	return _infobuf.mem()->value.analog.low_warn; }
+
+float CtrlInfo::getLowAlarm() const
+{	return _infobuf.mem()->value.analog.low_alarm; }
+
+size_t CtrlInfo::getNumStates() const
+{
+	if (getType() == Enumerated)
+		return _infobuf.mem()->value.index.num_states;
+	return 0;
+}
 void CtrlInfo::setNumeric(
     long prec, const stdString &units,
     float disp_low, float disp_high,

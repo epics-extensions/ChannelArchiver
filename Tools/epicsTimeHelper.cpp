@@ -32,9 +32,7 @@ bool isValidTime(const epicsTime &t)
 // Result: true for OK
 bool string2epicsTime(const stdString &txt, epicsTime &time)
 {
-    // TODO: handle fractional seconds!
     // TODO: number check ("ab/cd/efgh" not caught here)
-
     size_t tlen = txt.length();
     //  0123456789
     // "mm/dd/yyyy" ?
@@ -59,6 +57,19 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
         tm.ansi_tm.tm_min  = (txt[14]-'0')*10 + (txt[15]-'0');
         tm.ansi_tm.tm_sec  = (txt[17]-'0')*10 + (txt[18]-'0');
     }
+    //  01234567890123456789012345678
+    // "mm/dd/yyyy 00:00:00.000000000"
+    if (tlen == 29 && txt[19] == '.')
+        tm.nSec =
+            (txt[20]-'0')*100000000 +
+            (txt[21]-'0')*10000000 +
+            (txt[22]-'0')*1000000 +
+            (txt[23]-'0')*100000 +
+            (txt[24]-'0')*10000 +
+            (txt[25]-'0')*1000 +
+            (txt[26]-'0')*100 +
+            (txt[27]-'0')*10 +
+            (txt[28]-'0');   
     
 	time = tm;
 

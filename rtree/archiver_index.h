@@ -6,7 +6,7 @@
 #include "aup_iterator.h"
 #include "channel_name_iterator.h"
 #include "cntu_table.h"
-#include "constants.h"
+#include "rtree_constants.h"
 #include "key_au_iterator.h"
 
 
@@ -23,6 +23,7 @@ public:
 	*	Open the file with the specified path and check, if it is a valid index file
 	*	@return False, if the file is not valid, or errors occured; true otherwise.
 	*/
+	//bool open(const char * file_Path, bool read_only=true);
 	bool open(const char * file_Path);
 
 	/***
@@ -111,9 +112,11 @@ public:
 	*/
 	//Iterate through the channel names in the index file
 	channel_Name_Iterator * getChannelNameIterator() const;
+    
 	//Iterate through ALL AUs in the corresponding R tree
 	aup_Iterator * getAUPIterator(const char * channel_Name);
-	//Iterate through the KEY AUs in the corresponding R tree, i.e.
+
+    //Iterate through the KEY AUs in the corresponding R tree, i.e.
 	//the ones that are eventually used to lookup the data!!!
 	key_AU_Iterator * getKeyAUIterator(const char * channel_Name);
 	
@@ -135,11 +138,13 @@ public:
 	*/
 	void dumpNames(FILE * text_File = 0);
 	
-
+	/**
+	*	@return True if the index file was accessed using open() or create(); false otherwise
+	*/
+	bool isInstanceValid() const;	
 private:
 
-	bool isInstanceValid() const;	//the instance of the index class is only valid when a file was accessed using open() or create()
-									//inside the class
+	
 	FILE * f;						
 	file_allocator fa;
 	cntu_Table t;

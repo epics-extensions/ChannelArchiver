@@ -7,6 +7,8 @@
 
 #include <ToolsConfig.h>
 
+/// \ingroup Tools
+
 /// The Filename class provides basename, dirname and other
 /// file name related helpers.
 /// 

@@ -15,6 +15,7 @@ archiver_Index::~archiver_Index()
 
 bool archiver_Index::open(const char * file_Path)
 {
+	if(file_Path == 0) return false;
 	f = fopen(file_Path, "r+b");
 	if(f==0) 
 	{
@@ -77,6 +78,7 @@ bool archiver_Index::create(const char * file_Path, short m, short hash_Table_Si
 		printf("The size of the hash table must be greater than or equal 2\n");
 		return false;
 	}
+	if(file_Path == 0) return false;
 	this->m = m;
 	t.setSize(hash_Table_Size);
 
@@ -134,7 +136,7 @@ bool archiver_Index::close()
 
 bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver_Index& other, bool only_New_Data)
 {	
-	if(isInstanceValid() == false) return 0;
+	if(!isInstanceValid() || !other.isInstanceValid()) return false;
 	long root_Pointer;
 	long au_List_Pointer;
 	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer, &au_List_Pointer);
@@ -224,7 +226,7 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 			{
 				if(au.getInterval().isNull() == false)
 				{
-					//if only an end time updated is desired
+					//if only an end time update is desired
 					if(r.updateLatestLeaf(au_Address, au.getInterval().getEnd())) return true;
 				}
 				else return true;
@@ -299,6 +301,7 @@ bool archiver_Index::getLatestAU(const char * channel_Name, archiver_Unit * au)
 bool archiver_Index::deleteTree(const char * channel_Name) 
 {
 	if(isInstanceValid() == false) return false;
+	if(channel_Name == 0) return false;
 	long cntu_Address = t.findCNTU(channel_Name);
 	if(cntu_Address < 0) return true;
 	
@@ -318,6 +321,7 @@ bool archiver_Index::deleteTree(const char * channel_Name)
 bool archiver_Index::getEntireIndexedInterval(const char * channel_Name, interval * result)
 {
 	if(isInstanceValid() == false) return false;
+	if(channel_Name == 0) return false;
 	long root_Pointer;
 	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer);
 	if(cntu_Address < 0)
@@ -344,6 +348,7 @@ channel_Name_Iterator * archiver_Index::getChannelNameIterator() const
 aup_Iterator * archiver_Index::getAUPIterator(const char * channel_Name)
 {
 	if(isInstanceValid() == false) return 0;
+	if(channel_Name == 0) return false;
 	long root_Pointer;
 	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer);
 	if(cntu_Address < 0) 
@@ -362,6 +367,7 @@ aup_Iterator * archiver_Index::getAUPIterator(const char * channel_Name)
 key_AU_Iterator * archiver_Index::getKeyAUIterator(const char * channel_Name)
 {
 	if(isInstanceValid() == false) return 0;
+	if(channel_Name == 0) return false;
 	long root_Pointer;
 	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer);
 	if(cntu_Address < 0)
@@ -381,6 +387,7 @@ key_AU_Iterator * archiver_Index::getKeyAUIterator(const char * channel_Name)
 void archiver_Index::dump(const char * file_Path, const char * mode = "a")
 {
 	if(isInstanceValid() == false) return;
+	if(file_Path == 0) return;
 	FILE * dump_File = fopen(file_Path, mode);
 	if(dump_File == 0) return;
 	//dump the cntu table first
@@ -413,6 +420,7 @@ void archiver_Index::dump(const char * file_Path, const char * mode = "a")
 void archiver_Index::createDotFile(const char * channel_Name, const char * file_Name)
 {
 	if(isInstanceValid() == false) return;
+	if(channel_Name == 0) return;
 	long root_Pointer;
 	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer);
 	if(cntu_Address < 0) return;
@@ -428,6 +436,7 @@ void archiver_Index::createDotFile(const char * channel_Name, const char * file_
 
 void archiver_Index::dumpNames(FILE * text_File)
 {
+	if(text_File == 0) return;
 	struct bin_Tree_Item
 	{
 		char name[CHANNEL_NAME_LENGTH];

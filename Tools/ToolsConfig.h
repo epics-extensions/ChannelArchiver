@@ -16,6 +16,10 @@
 // (very unclear what's defined. Try to use -D$(HOST_ARCH))
 // WIN32, Linux, solaris, HP_UX
 
+/// \defgroup Tools
+/// The Tools classes started out with the idea to
+/// be useful beyond the archiver.
+
 // Set CPP_EDITION to the C++ edition that you have:
 // 3 <=> according to Stroustrup's C++ book release 3.
 // MS Visual Studio 6.0 is 3 (so far the only one?)

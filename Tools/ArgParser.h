@@ -13,6 +13,9 @@
 
 #include <ToolsConfig.h>
 
+/// \addtogroup Tools
+/// @{
+
 class CmdArg;
 
 /// General purpose argument parser for
@@ -27,6 +30,7 @@ class CmdArg;
 ///     parser.setArgumentsInfo("<filename>");
 ///     CmdArgFlag debug(parser, "debug", "Enable debugging");
 ///     CmdArgInt  limit(parser, "limit", "<secs>", "Time limit in seconds");
+///     CmdArgString text(parser, "text", "<text>", "A string argument");
 ///     limit.set(5); // default
 ///     if (parser.parse() == false)
 ///         return -1;
@@ -205,11 +209,16 @@ public:
     /// Get the value.
     const stdString &get() const;
 
+    /// Was option provided?
+    bool isSet() const;
+    
     virtual size_t parse(const char *arg);
     
 private:
     stdString _value;
 };
+
+/// @}
 
 // inlines ----------------------------------------------
 
@@ -255,6 +264,10 @@ inline CmdArgString::operator const stdString &() const
  
 inline const stdString &CmdArgString::get() const
 {   return _value; }
+
+inline bool CmdArgString::isSet() const
+{   return _value.length() > 0; }
+
 
 #endif //  __ARGPARSER_H__
 

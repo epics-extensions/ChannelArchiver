@@ -8,12 +8,18 @@
 #include "MemoryBuffer.h"
 #include "StorageTypes.h"
 
+/// \addtogroup Storage
+/// @{
+
+/// \typedef DbrType is used to hold dbr_time_xxx types.
 typedef unsigned short DbrType;
+
+/// \typedef DbrCount is used to hold the array size of CA channels.
 typedef unsigned short DbrCount;
 
 /// Non-CA events to the archiver;
 /// some are archived - some are directives.
-enum
+enum RawValueSpecialSeverities
 {
     ARCH_NO_VALUE           = 0x0f00,
     ARCH_EST_REPEAT         = 0x0f80,
@@ -102,7 +108,7 @@ public:
     
     /// Read a value from binary file.
     /// size: pre-calculated from type, count
-    static void read(DbrType type, DbrCount count,
+    static bool read(DbrType type, DbrCount count,
                      size_t size, Data *value,
                      class DataFile *datafile, FileOffset offset);
     
@@ -113,6 +119,8 @@ public:
                        MemoryBuffer<dbr_time_string> &cvt_buffer,
                        class DataFile *datafile, FileOffset offset);
 };
+
+/// @}
 
 inline void RawValue::copy(DbrType type, DbrCount count,
                            Data *lhs, const Data *rhs)

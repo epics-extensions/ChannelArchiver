@@ -79,7 +79,7 @@ void MatlabExporter::exportChannelList(
     if (! _filename.empty())
     {
         file.open (_filename.c_str());
-#       ifdef __HP_aCC
+#       if defined(HP_UX)
         if (file.fail())
 #else
         if (! file.is_open())

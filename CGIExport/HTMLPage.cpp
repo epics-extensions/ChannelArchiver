@@ -42,7 +42,7 @@ void HTMLPage::start()
 
     std::ifstream file;
     file.open(start_file);
-#ifdef  __HP_aCC
+#ifdef  HP_UX
     if (! file.fail())
 #else
     if (file.is_open())
@@ -203,7 +203,7 @@ HTMLPage::~HTMLPage()
     {
         std::ifstream file;
         file.open(end_file);
-#ifdef  __HP_aCC
+#ifdef  HP_UX
         if (! file.fail())
 #else
         if (file.is_open())

@@ -157,7 +157,7 @@ bool ConfigFile::loadGroup(const stdString &group_name)
     std::ifstream file;
 
     file.open(group_name.c_str());
-#   ifdef __HP_aCC
+#   if defined(HP_UX)
     if (file.fail())
 #   else
     if (! file.is_open())
@@ -207,7 +207,7 @@ bool ConfigFile::saveGroup(const class GroupInfo *group)
     Filename::build(_config_dir, group->getName(), filename);
     std::ofstream file;
     file.open (filename.c_str());
-#   ifdef __HP_aCC
+#   if defined(HP_UX)
     if (file.fail())
 #   else
     if (! file.is_open())

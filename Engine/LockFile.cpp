@@ -14,7 +14,7 @@ bool Lockfile::Lock (const stdString &prog_name)
 	// Check for existing file
     std::ifstream ifile;
 	ifile.open (_filename.c_str());
-#	ifdef __HP_aCC
+#	if defined(HP_UX)
 	if (! ifile.fail())
 #	else
 	if (ifile.is_open ())
@@ -32,7 +32,7 @@ bool Lockfile::Lock (const stdString &prog_name)
 
     std::ofstream ofile;
 	ofile.open (_filename.c_str());
-#	ifdef __HP_aCC
+#	if defined(HP_UX)
 	if (ofile.fail())
 #	else
 	if (! ofile.is_open ())

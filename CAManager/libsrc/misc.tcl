@@ -199,3 +199,8 @@ proc camMisc::recCopyCfg {file dir} {
     }
   }
 }
+
+proc camMisc::isLocalhost {name} {
+  return [expr ![string compare -nocase $name $::_host] \
+	    || ![string compare -nocase $name "localhost"]]
+}

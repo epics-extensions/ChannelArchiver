@@ -85,7 +85,7 @@ proc checkArchivers {args} {
   foreach i [camMisc::arcIdx] {
     if {[info exists ::nocheck($i)] && $::nocheck($i)} continue
     if {![info exists ::_run($i)]} {set ::_run($i) -}
-    if {"[camMisc::arcGet $i host]" != "$::_host"} continue
+    if {![camMisc::isLocalhost "[camMisc::arcGet $i host]"]} continue
     trace variable ::_run($i) w checkstate
     camComm::CheckRunning $i ::_run($i)
   }
@@ -327,7 +327,7 @@ proc readCFG {} {
     camMisc::init
     set ::cfg_ts $ts
     foreach i [camMisc::arcIdx] {
-      if {"[camMisc::arcGet $i host]" != "$::_host"} continue
+      if {![camMisc::isLocalhost "[camMisc::arcGet $i host]"]} continue
       if {"[camMisc::arcGet $i start]" == "NO"} continue
       scheduleStop $i
     }

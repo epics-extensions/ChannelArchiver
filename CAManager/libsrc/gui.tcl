@@ -1343,7 +1343,7 @@ proc camGUI::aNew {w} {
     $w delete row [expr [.tf.t cget -rows] - 2]
   }
 
-  set camGUI::aEngines($row,$::iHost) "$::_host"
+  set camGUI::aEngines($row,$::iHost) $::_host
   set ::var($row,port) 4711
   set ::ports [getPorts -1]
   set camGUI::aEngines($row,$::iPort) "$::var($row,port)"
@@ -1738,7 +1738,7 @@ proc camGUI::setButtons {w} {
     $topf.bf.start configure -state normal
     $topf.bf.stop configure -state disabled
   }
-  if {$camGUI::aEngines($row,$::iHost) != "$::_host"} {
+  if {![camMisc::isLocalhost $camGUI::aEngines($row,$::iHost)]} {
     $topf.bf.start configure -state disabled
   }
   if {$row > 0} {
@@ -1764,7 +1764,7 @@ proc camGUI::aStart {w} {
   regexp (\[0-9\]*), [$w cursel] all row
 
   set host [camMisc::arcGet $row host]
-  if {"$host" != "$::_host"} {return}
+  if {![camMisc::isLocalhost "$host"]} {return}
 
   runArchiver $row 1
   after 5000 [list camComm::CheckRunning $row camGUI::aEngines($row,$::iRun)]

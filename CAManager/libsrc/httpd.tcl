@@ -189,12 +189,12 @@ proc httpd::sendOutput {fd} {
   variable _timefmt
   variable _proto
   variable _query
-   if {$_proto($fd) != ""} {
-      puts $fd "$_proto($fd) 200 OK"
-      puts $fd "Server: Channel Archiver bgManager $tcl_platform(user)@$::_host:$::_port"
-      puts $fd "Content-type: text/html"
-      puts $fd ""
-   }
+  if {$_proto($fd) != ""} {
+    puts $fd "$_proto($fd) 200 OK"
+    puts $fd "Server: Channel Archiver bgManager $tcl_platform(user)@$::_host:$::_port"
+    puts $fd "Content-type: text/html"
+    puts $fd ""
+  }
   puts $fd "<html><head><title>Channel Archiver - bgManager ($tcl_platform(user)@$::_host:$::_port)</title>"
   puts $fd "<meta http-equiv=refresh content=$::bgUpdateInt>"
   puts $fd "</head>"
@@ -214,7 +214,7 @@ proc httpd::sendOutput {fd} {
   if {!$::args(nocmd)} {puts $fd "<th bgcolor=white>command</th>"}
   puts $fd "</tr>"
   foreach i [camMisc::arcIdx] {
-    if {"[camMisc::arcGet $i host]" != "$::_host"} continue
+    if {![camMisc::isLocalhost "[camMisc::arcGet $i host]"]} continue
     set run $::_run($i)
     set r $run
     set p [camMisc::arcGet $i port]

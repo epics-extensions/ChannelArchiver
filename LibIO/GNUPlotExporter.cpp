@@ -36,19 +36,22 @@ static void printTimeAndValue(FILE *f, const osiTime &time,
     else
         prec = 0;
     
-    ::printTime(f, time);
     if (value.getCount() > 0)
     {
         for (size_t ai=0; ai<value.getCount(); ++ai)
         {
+	    ::printTime(f, time);
+	    if (value.getCount() > 1) fprintf(f, "\t%d", ai);
             if (prec > 0)
                 fprintf(f, "\t%.*f\n", prec, value.getDouble(ai));
             else
                 fprintf(f, "\t%g\n", value.getDouble(ai));
         }
+	if (value.getCount() > 1) fprintf(f, "\n");
     }
     else
     {
+       ::printTime(f, time);
         stdString txt;
         value.getStatus(txt);
         if (prec > 0)
@@ -133,7 +136,8 @@ void GNUPlotExporter::exportChannelList(
             ! channels->getChannel()->getValueAfterTime(_start, base))
 	   continue; // nothing in time range
 	
-	if (_reduce && isValidTime(_start) && isValidTime(_end)) {
+	if (_reduce && isValidTime(_start) && isValidTime(_end) && 
+	    ( base->getValue()->getCount() == 1 )) {
 	   _linear_interpol_secs = (_end.getSec() - _start.getSec()) / _reduce;
 	   value = new BucketingValueIteratorI(base, _linear_interpol_secs);
 	} else {

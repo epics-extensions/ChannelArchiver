@@ -148,8 +148,13 @@ void copy(const stdString &index_name, const stdString &copy_name,
                "(%s)\n", copy_name.c_str(), index_name.c_str());
         return;
     }
-    if (! (index.open(index_name) && new_index.open(copy_name, false)))
+    if (! index.open(index_name))
         return;
+    if (! new_index.open(copy_name, false))
+    {
+        index.close();
+        return;
+    }
     if (verbose)
         printf("Copying values from '%s' to '%s'\n",
                index_name.c_str(), copy_name.c_str());

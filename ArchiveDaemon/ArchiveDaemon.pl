@@ -213,6 +213,8 @@ sub write_indexconfig($@)
     }
     print INDEX "<?xml version=\"1.0\" encoding=\"UTF-8\"" .
 	" standalone=\"no\"?>\n";
+    print INDEX "<!--        Written by the ArchiveDaemon        -->\n";
+    print INDEX "<!-- Do not edit while ArchiveDaemon is running -->\n";
     print INDEX "<!DOCTYPE indexconfig SYSTEM \"$master_index_dtd\">\n"
 	if (length($master_index_dtd) > 0);
     print INDEX "<indexconfig>\n";

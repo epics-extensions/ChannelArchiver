@@ -93,18 +93,20 @@ proc checkArchivers {args} {
 
 proc checkBgManager {fd h} {
   gets $fd line
-  if [regexp "Server: Channel Archiver bgManager (.*)@(.*):(\[0-9\]*)" $line \
-	  all user host port] {
-    set ::reply($h) "$user@$host:$port"
+  if [regexp "Server: Channel Archiver bgManager (.*)@(.*):(\[0-9\]*):(.*)" $line \
+	  all user host port cfg] {
+    # don't care about the user-id
+    set ::reply($h) "$host:$port:$cfg"
   }
   if {"$line" == "</html>"} {
     close $fd
     incr ::open -1
-    if {$::open == 0} {set ::pipi 1}
   }
 }
 
 proc cfbgmTimeout {fd h} {
+  set ::reply($h) "timeout"
+  incr ::open -1
   catch {close $fd}
 }
 
@@ -129,23 +131,28 @@ proc checkForBgManager { {force 0} } {
     }
     set ::reply($h) {}
     incr ::open
+    after 3000 "cfbgmTimeout $sock $h"
     puts $sock "GET / HTTP/1.1\n"
     flush $sock
-    fconfigure $sock -blocking 1
+    fconfigure $sock -blocking 0
     fileevent $sock readable "checkBgManager $sock $h"
-    after 3000 "cfbgmTimeout $sock $h"
   }
-  if {$::open > 0} { vwait ::pipi }
+  while {$::open > 0} {vwait ::open}
   foreach h [lrmdups $hosts] {
     set act none
+    set hn $h
+    if {$h == "localhost"} {set hn $::_host}
     if {![info exists ::reply($h)]} {
       set msg "No CAbgManager running for $tcl_platform(user)@$h:$::_port!"
       set act start
     } elseif {[llength $::reply($h)] == 0} {
       set msg "CAbgManager $tcl_platform(user)@$h:$::_port didn't reply!"
       set act config
-    } elseif {"$::reply($h)" != "$tcl_platform(user)@$h:$::_port"} {
-      set msg "CAbgManager $tcl_platform(user)@$h:$::_port answered $::reply($h)!"
+    } elseif {$::reply($h) == "timeout"} {
+      set msg "CAbgManager $tcl_platform(user)@$h:$::_port didn't reply within 3s!"
+      set act restart
+    } elseif {"$::reply($h)" != "$hn:$::_port:$camMisc::cfg_file"} {
+      set msg "CAbgManager expected to run like\n   $h:$::_port:$camMisc::cfg_file\nidentified itself as\n   $::reply($h)!"
       set act config
     } else {
       set msg "CAbgManager $tcl_platform(user)@$h:$::_port OK!"
@@ -162,6 +169,10 @@ proc checkForBgManager { {force 0} } {
 	} else {
 	  set ret($h) 1
 	}
+      }
+      restart {
+	camGUI::MessageBox warning "Warning" "CAbgManager: timeout!" \
+	    "$msg" "Please check and restart manually if necessary!" Ok .
       }
       config {
 	camGUI::MessageBox warning "Warning" "CAbgManager: invalid response!" \

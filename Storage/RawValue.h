@@ -21,7 +21,7 @@ typedef unsigned short DbrCount;
 /// some are archived - some are directives.
 enum RawValueSpecialSeverities
 {
-    ARCH_NO_VALUE           = 0x0f00,
+    ARCH_BASE_MASK          = 0x0007, // Mask for bits used by EPICS base
     ARCH_EST_REPEAT         = 0x0f80,
     ARCH_DISCONNECT         = 0x0f40,
     ARCH_STOPPED            = 0x0f20,

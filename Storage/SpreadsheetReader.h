@@ -10,9 +10,9 @@
 /// \ingroup Storage
 /// @{
 
-/// Reads data from storage in form suitable for spreadsheets
+/// Reads data from storage, formatted as spreadsheet.
 
-/// Based on several DataReader classes, which reach read a single
+/// Based on several DataReader classes, which read a single
 /// channel, the SpreadsheetReader reads multiple channels,
 /// stepping through the values in time such that one can
 /// use them for spreadsheet-type output, one point in time
@@ -21,12 +21,9 @@ class SpreadsheetReader
 {
   public:
     /// Create the SpreadsheetReader
-
-    /// For delta == 0, use the ordinary DataReader.
-    /// For delta > 0, use the LinearReader which
-    /// attempt linear interpolation or averaging
-    /// onto multiples of delta seconds.
-    SpreadsheetReader(IndexFile &index, double delta);
+    SpreadsheetReader(IndexFile &index,
+                      ReaderFactory::How how = ReaderFactory::Raw,
+                      double delta=0.0);
 
     virtual ~SpreadsheetReader();
     
@@ -71,9 +68,9 @@ class SpreadsheetReader
     bool next();  
   
 protected:
-    IndexFile &index;
-
-    double delta;
+    IndexFile          &index;
+    ReaderFactory::How how;
+    double             delta;
     
     // Number of array entries for the following stuff that's non-scalar
     size_t num;

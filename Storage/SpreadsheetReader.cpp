@@ -2,11 +2,11 @@
 #include "MsgLogger.h"
 // Storage
 #include "DataFile.h"
-#include "LinearReader.h"
 #include "SpreadsheetReader.h"
 
-SpreadsheetReader::SpreadsheetReader(IndexFile &index, double delta)
-        : index(index), delta(delta)
+SpreadsheetReader::SpreadsheetReader(IndexFile &index,
+                                     ReaderFactory::How how, double delta)
+        : index(index), how(how), delta(delta)
 {
     num = 0;
     reader = 0;
@@ -65,11 +65,7 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
     }
     for (i=0; i<num; ++i)
     {
-        if (delta > 0)
-            reader[i] = new LinearReader(index, delta);
-        else
-            reader[i] = new RawDataReader(index);
-        if (!reader[i])
+        if (!(reader[i] = ReaderFactory::create(index, how, delta)))
         {
             LOG_MSG("SpreadsheetReader::find cannot allocate reader %d\n", i);
             return false;

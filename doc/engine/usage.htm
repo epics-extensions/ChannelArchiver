@@ -63,6 +63,7 @@
         -port &lt;port&gt;                   WWW server's TCP port (default 4812)
         -description &lt;text&gt;            description for HTTP display
         -log &lt;filename&gt;                write logfile
+        -nocfg                               disable online configuration
 
         Default directory-file: 'freq_directory'         
   </pre>
@@ -84,11 +85,12 @@
 
   Details on the remaining options:
   <ul>
-    <li>-d &lt;description&gt; : set engine's description for the HTTP
+    <li>-description &lt;description&gt; : set engine's description for the HTTP
     display
-    <li>-l &lt;log-file&gt; : write all messages not only to the
+    <li>-log &lt;log-file&gt; : write all messages not only to the
     console but also to this log file
-    <li>-p &lt;port&gt; : run HTTP-server on given port (default: 4812)
+    <li>-port &lt;port&gt; : run HTTP-server on given port (default: 4812)
+    <li>-nocfg : disable the online-configuration screen
   </ul>
 
   The HTTP display options configure the ArchiveEngine's built-in web

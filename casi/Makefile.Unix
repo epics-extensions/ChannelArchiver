@@ -13,7 +13,7 @@ BASE=../../../../../../base
 EXT=../../../../..
 INCLUDES  = -I../.. -I$(EXT)/include -I$(BASE)/include
 INCLUDES += -I$(BASE)/include/os/$(HOST_ARCH) -I$(BASE)/src/ca
-LIBS = -L $(EXT)/lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARCH) -lca -ldb -lCom
+LIBS = -L $(EXT)/lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARCH) -lca -ldb -lCom -lpthread
 
 # Solaris @ LANL
 #LIBS += -ldl  -lsocket -lnsl -lm

@@ -63,7 +63,7 @@ archive::archive ()
 
 archive::~archive ()
 {
-	cout << "TRACE: ~archive(" << _name << ")\n";
+//	cout << "TRACE: ~archive(" << _name << ")\n";
 	if (_archiveI)
 		delete _archiveI;
 }
@@ -167,10 +167,8 @@ bool archive::addChannel (const char *name, channel &c)
     else // check for BinArchive compliance
     {
         if (dynamic_cast<BinChannelIterator *>(c._iter) == 0)
-        {
-            // would be nice to throw error here
-            return false;
-        }
+            throwDetailedArchiveException (Invalid,
+                                           "no BinArchive");
     }
         
 	return _archiveI->addChannel (name, c._iter);
@@ -178,17 +176,14 @@ bool archive::addChannel (const char *name, channel &c)
 
 const char *archive::nextFileTime (const char *current_time)
 {
-    if (! _archiveI)
-        return "<invalid archive>";
-
     BinArchive *archive = dynamic_cast<BinArchive *>(_archiveI);
 
     if (! archive)
-        return "<no BinArchive";
+        throwDetailedArchiveException (Invalid, "no BinArchive");
 
     osiTime time;
     if (! text2osi (current_time, time))
-        return "<invalid time>";
+        throwDetailedArchiveException (Invalid, "invalid time");
 
     osiTime next;
     archive->calcNextFileTime (time, next);
@@ -202,13 +197,13 @@ const char *archive::nextFileTime (const char *current_time)
 channel::channel ()
 {
 	_iter = 0;
-	cout << "TRACE: channel()\n";
+//	cout << "TRACE: channel()\n";
 }
 
 channel::~channel ()
 {
 	setIter (0);
-	cout << "TRACE: ~channel()\n";
+//	cout << "TRACE: ~channel()\n";
 }
 
 bool channel::valid ()
@@ -235,19 +230,23 @@ bool channel::next ()
 const char *channel::getFirstTime ()
 {
 	if (!valid())
-		return "<invalid>";
-
+        throwDetailedArchiveException (Invalid,
+                                       "getFirstTime called "
+                                       "for invalid channel");
 	return osi2txt (_iter->getChannel()->getFirstTime());
 }
 
 const char *channel::getLastTime ()
 {
 	if (!valid())
-		return "<invalid>";
+        throwDetailedArchiveException (Invalid,
+                                       "getLastTime called "
+                                       "for invalid channel");
 
 	return osi2txt (_iter->getChannel()->getLastTime());
 }
 
+// internal helper routine
 bool channel::testValue (value &v)
 {
 	if (!valid())
@@ -264,23 +263,28 @@ bool channel::testValue (value &v)
 bool channel::getFirstValue (value &v)
 {
 	if (! testValue (v))
-		return false;
-
+        throwDetailedArchiveException (Invalid,
+                                       "getFirstValue called "
+                                       "for invalid channel");
 	return _iter->getChannel()->getFirstValue (v._iter);
 }
 
 bool channel::getLastValue (value &v)
 {
 	if (! testValue (v))
-		return false;
-
+        throwDetailedArchiveException (Invalid,
+                                       "getLastValue called "
+                                       "for invalid channel");
 	return _iter->getChannel()->getLastValue (v._iter);
 }
 
 bool channel::getValueAfterTime (const char *time, value &v)
 {
 	if (! testValue (v))
-		return false;
+        throwDetailedArchiveException (Invalid,
+                                       "getValueAfterTime called "
+                                       "for invalid channel");
+        
 	osiTime osi;
 	if (! text2osi (time, osi))
 	{
@@ -294,7 +298,9 @@ bool channel::getValueAfterTime (const char *time, value &v)
 bool channel::getValueBeforeTime (const char *time, value &v)
 {
 	if (! testValue (v))
-		return false;
+        throwDetailedArchiveException (Invalid,
+                                       "getValueBeforeTime called "
+                                       "for invalid channel");
 	osiTime osi;
 	if (! text2osi (time, osi))
 	{
@@ -308,7 +314,9 @@ bool channel::getValueBeforeTime (const char *time, value &v)
 bool channel::getValueNearTime (const char *time, value &v)
 {
 	if (! testValue (v))
-		return false;
+        throwDetailedArchiveException (Invalid,
+                                       "getValueNearTime called "
+                                       "for invalid channel");
 	osiTime osi;
 	if (! text2osi (time, osi))
 	{
@@ -331,7 +339,11 @@ int channel::lockBuffer (const value &value)
 void channel::addBuffer (const value &value, int value_count)
 {
     if (! valid ()  ||  value._iter == 0)
-        return;
+        throwDetailedArchiveException (Invalid,
+                                       "invalid Value");
+    if (dynamic_cast<BinChannelIterator *>(_iter) == 0)
+        throwDetailedArchiveException (Invalid,
+                                       "no BinArchive");
 
     _iter->getChannel()->addBuffer (*value._iter->getValue(),
                                     value._iter->getPeriod(),
@@ -341,7 +353,8 @@ void channel::addBuffer (const value &value, int value_count)
 bool channel::addValue (const value &value)
 {
     if (! valid ()  ||  value._iter == 0)
-        return false;
+        throwDetailedArchiveException (Invalid,
+                                       "invalid Value");
 
     return _iter->getChannel()->addValue (*value._iter->getValue());
 }
@@ -358,6 +371,7 @@ void channel::setIter (ArchiveI *archiveI)
 {
 	if (_iter)
 		delete _iter;
+
 	_archiveI = archiveI;
 	if (_archiveI)
 		_iter = _archiveI->newChannelIterator();
@@ -371,13 +385,13 @@ void channel::setIter (ArchiveI *archiveI)
 value::value ()
 {
 	_iter = 0;
-	cout << "TRACE: value()\n";
+//	cout << "TRACE: value()\n";
 }
 
 value::~value ()
 {
 	setIter (0);
-	cout << "TRACE: ~value()\n";
+//	cout << "TRACE: ~value()\n";
 }
 
 bool value::valid ()
@@ -388,7 +402,8 @@ bool value::valid ()
 bool value::isInfo ()
 {
 	if (! valid())
-		return true; // invalid: some type of info...
+        throwDetailedArchiveException (Invalid,
+                                       "invalid Value");
 	return _iter->getValue()->isInfo();
 }
 
@@ -410,8 +425,8 @@ const char *value::type ()
 int value::count ()
 {
 	if (! valid())
-		return 0;
-
+        throwDetailedArchiveException (Invalid,
+                                       "invalid Value");
 	return _iter->getValue()->getCount();
 }
 
@@ -423,8 +438,8 @@ double value::get ()
 double value::getidx (int index)
 {
 	if (! valid())
-		return 0.0;
-
+        throwDetailedArchiveException (Invalid,
+                                       "invalid Value");
 	return _iter->getValue()->getDouble(index);
 }
 
@@ -442,24 +457,20 @@ const char *value::text ()
 
 const char *value::time ()
 {
-	if (valid())
-	{
-		return osi2txt (_iter->getValue()->getTime());
-	}
-
-	return "<invalid>";
+	if (! valid())
+        throwDetailedArchiveException (Invalid,
+                                       "invalid Value");
+    return osi2txt (_iter->getValue()->getTime());
 }
 
 const char *value::status ()
 {
 	static stdString text; // keep after 'return'
-	if (valid())
-	{
-		_iter->getValue()->getStatus(text);
-		return text.c_str();
-	}
-
-	return "<invalid>";
+	if (!valid())
+        throwDetailedArchiveException (Invalid,
+                                       "invalid Value");
+    _iter->getValue()->getStatus(text);
+    return text.c_str();
 }
 
 bool value::next ()
@@ -481,7 +492,8 @@ bool value::prev ()
 int value::determineChunk (const char *until)
 {
     if (!_iter)
-        return 0;
+        throwDetailedArchiveException (Invalid,
+                                       "invalid Value");
 
     osiTime time;
     if (! text2osi (until, time))
@@ -496,7 +508,4 @@ void value::setIter (ValueIteratorI *iter)
 		delete _iter;
 	_iter = iter;
 }
-
-
-
 

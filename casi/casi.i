@@ -1,3 +1,5 @@
+/*  -*- mode: C++ -*-          <-              for emacs */
+
 %title "CASI - ChannelArchiver Scripting Interface"
 %style html_body="<BODY bgcolor=\"#B0B0FF\"><BLOCKQUOTE><FONT face=\"Comic Sans MS\">:</FONT></BLOCKQUOTE></BODY>"
 
@@ -9,6 +11,12 @@ behaviour of the C++ LibIO API to the ChannelArchiver
 as close as possible.
 Therefore you might consider crosschecking with
 that documentation.
+
+
+Most functions can generate a RuntimeError or
+an UnknownError.
+
+
 %}
 
 /* Includes for compilation of wrapper */
@@ -25,6 +33,23 @@ USING_NAMESPACE_CHANARCH
 
 const char *casi_version = "1.0";
 
+%include exception.i
+
+%except
+{
+    try
+    {
+        $function
+    }
+    catch (GenericException &e)
+    {   // un-const to avoid warnings
+        SWIG_exception (SWIG_RuntimeError, (char *) e.what());
+    }
+    catch (...)
+    {
+        SWIG_exception (SWIG_UnknownError, "Unknown exception while calling CASI");
+    }
+}
 
 /* The archive class is the starting point:
 

@@ -48,11 +48,16 @@ void BinChannelIterator::attach (BinArchive *arch, const DirectoryFileIterator &
 void BinChannelIterator::clear ()
 {
 	if (_regex)
+	{
 		_regex->release ();
-	delete _append_buffer;
+		_regex = 0;
+	}
+	if (_append_buffer)
+	{
+		delete _append_buffer;
+		_append_buffer = 0;
+	}
 	_archive = 0;
-	_regex = 0;
-	_append_buffer = 0;
 	_dir.getChannel()->setChannelIterator (0);
 }
 

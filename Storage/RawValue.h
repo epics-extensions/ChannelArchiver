@@ -79,12 +79,12 @@ public:
     /// that does not carry any value
     static bool isInfo(const Data *value);
 
-    /// Check the value to see if it's zero
+    /// Check the value to see if it's above zero.
 
-    /// For numerics, that's obvious: value==0. Enums are treated like integers,
-    /// strings are 'zero' if emptry (zero length).
+    /// For numerics, that's obvious: value>0. Enums are treated like integers,
+    /// strings are 'zero' if empty (zero length).
     /// Arrays are not really handled, we only consider the first element.
-    static bool isZero(DbrType type, const Data *value);
+    static bool isAboveZero(DbrType type, const Data *value);
     
     /// Set status and severity
     static void setStatus(Data *value, short status, short severity);

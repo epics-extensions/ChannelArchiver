@@ -147,8 +147,8 @@ sampling period.
 \subsubsection{disable} \label{sec:disable}
 This optional sub-element of a channel turns the channel into a
 ``disabling'' channel for the group. Whenever the value of the channel
-is non-zero, sampling of the whole group will be disabled until the
-channel returns to zero.
+is above zero, sampling of the whole group will be disabled until the
+channel returns to zero or below zero.
 
 This is useful for e.g.\ a group of channels related to power
 supplies: Whenever the power supply is off, we might want to disable
@@ -158,9 +158,9 @@ channels will only yield noise. By disabling the sampling based on a
 which are of no interest.
 
 \NOTE There is no ``enabling'' feature (yet), meaning: The channel
-marked as ``disable'' will disable its group whenever it is non-zero,
-there is no ``enable'' flag that would enable archiving of a group
-whenever the flagged channel is non-zero.
+marked as ``disable'' will disable its group whenever it is above
+zero. There is no ``enable'' flag that would enable archiving of a group
+whenever the flagged channel is above zero.
 
 \section{Starting and Stopping}
 \subsection{Starting}

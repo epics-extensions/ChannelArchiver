@@ -115,25 +115,24 @@ void RawValue::getStatus(const Data *value, stdString &result)
     }
 }
 
-bool RawValue::isZero(DbrType type, const Data *value)
+bool RawValue::isAboveZero(DbrType type, const Data *value)
 {
     switch (type)
     {
         case DBR_TIME_STRING:
-            return ((dbr_time_string *)value)->value[0] == '\0';
+            return ((dbr_time_string *)value)->value[0] != '\0';
         case DBR_TIME_ENUM:
-            return ((dbr_time_enum *)value)->value == 0;
+            return ((dbr_time_enum *)value)->value > 0;
         case DBR_TIME_CHAR:
-            return ((dbr_time_char *)value)->value == 0;
+            return ((dbr_time_char *)value)->value > 0;
         case DBR_TIME_SHORT:
-            return ((dbr_time_short *)value)->value == 0;
-
+            return ((dbr_time_short *)value)->value > 0;
         case DBR_TIME_LONG:
-            return ((dbr_time_long *)value)->value == 0;
+            return ((dbr_time_long *)value)->value > 0;
         case DBR_TIME_FLOAT:
-            return ((dbr_time_float *)value)->value == (float)0.0;
+            return ((dbr_time_float *)value)->value > (float)0.0;
         case DBR_TIME_DOUBLE:
-            return ((dbr_time_double *)value)->value == (double)0.0;
+            return ((dbr_time_double *)value)->value > (double)0.0;
     }
     return false;
 }

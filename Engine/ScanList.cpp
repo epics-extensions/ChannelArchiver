@@ -49,7 +49,7 @@ ScanList::~ScanList()
     }
 }
 
-void ScanList::addChannel(ArchiveChannel *channel)
+void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
 {
     stdList<SinglePeriodScanList *>::iterator li;
     SinglePeriodScanList *list;
@@ -57,7 +57,7 @@ void ScanList::addChannel(ArchiveChannel *channel)
     // find a scan list with suitable period
     for (li = period_lists.begin(); li != period_lists.end(); ++li)
     {
-        if ((*li)->period == channel->getPeriod())
+        if ((*li)->period == channel->getPeriod(guard))
         {
             list = *li; // found one!
             break;
@@ -65,7 +65,7 @@ void ScanList::addChannel(ArchiveChannel *channel)
     }
     if (li == period_lists.end()) // create new list
     {
-        list = new SinglePeriodScanList(channel->getPeriod());
+        list = new SinglePeriodScanList(channel->getPeriod(guard));
         period_lists.push_back(list);
         // next scan time, rounded to period
         list->next_scan = roundTimeUp(epicsTime::getCurrent(),

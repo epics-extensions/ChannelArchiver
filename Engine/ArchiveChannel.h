@@ -35,9 +35,11 @@ public:
     friend class SampleMechanismMonitored;
 
     /// Create an ArchiveChannel
-    ArchiveChannel(const stdString &name,
-                   double period, SampleMechanism *mechanism);
+    ArchiveChannel(const stdString &name, double period);
     ~ArchiveChannel();
+
+    /// Define the samlpe mechanism.
+    void setMechanism(Guard &guard, SampleMechanism *mechanism);
     
     /// mutex between CA, HTTPD, Engine.
     /// None of the ArchiveChannel methods take the lock,
@@ -49,7 +51,10 @@ public:
     const stdString &getName() const;
 
     /// Get period. Meaning depends on SampleMechanism.
-    double getPeriod() const;
+    double getPeriod(Guard &guard) const;
+
+    /// Set priod. Meaning depends on SampleMechanism.
+    void setPeriod(Guard &engine_guard, Guard &guard, double period);
 
     /// A channel belongs to at least one group,
     /// and might disable some of the groups to which it belongs.
@@ -132,7 +137,7 @@ private:
     // being re-enabled
     bool            pending_value_set;
     RawValue::Data *pending_value;
-    // ---
+    // ---    
     
     // The mechanism: This or another channel of one of the groups
     // to which this channel belongs might disable a group.
@@ -150,8 +155,11 @@ private:
 inline const stdString &ArchiveChannel::getName() const
 {   return name; }    
 
-inline double ArchiveChannel::getPeriod() const
-{   return period; }    
+inline double ArchiveChannel::getPeriod(Guard &guard) const
+{
+    guard.check(mutex);
+    return period;
+}    
     
 inline stdList<class GroupInfo *> &ArchiveChannel::getGroups(Guard &guard)
 {

@@ -32,7 +32,7 @@ public:
 
     // Add a channel to a ScanList.
     // channel->getPeriod() must be valid
-    void addChannel(class ArchiveChannel *channel);
+    void addChannel(Guard &channel_guard, class ArchiveChannel *channel);
 
     // Scan all channels that are due at/after deadline
     void scan(const epicsTime &deadline);

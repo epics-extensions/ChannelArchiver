@@ -211,26 +211,28 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     bool new_channel;
     if (!channel)
     {
-        // TODO: Pick correct SampleMechanism
-        channel = new ArchiveChannel(channel_name, period,
-                                     new SampleMechanismMonitored());
+        channel = new ArchiveChannel(channel_name, period);
         channels.push_back(channel);
         new_channel = true;
     }
     else
-    {
-#ifdef TODO
-        // For existing channels: minimize period, maximize monitor feature
-        if (channel_info->isMonitored())
-            monitored = true;
-        if (channel_info->getPeriod() < period)
-            period = channel_info->getPeriod();
-        channel_info->resetBuffers();
         new_channel = false;
- 
-#endif
-    }
+
     Guard guard(channel->mutex);
+    SampleMechanism *mechanism;
+    
+    // For existing channels: minimize period, maximize monitor feature
+    if (monitored)
+        mechanism = new SampleMechanismMonitored();
+    else
+    {
+        // TODO:
+        mechanism = new SampleMechanismMonitored();
+    }
+    if (channel->getPeriod(guard) > period)
+        channel->setPeriod(engine_guard, guard, period);
+    channel->setMechanism(guard, mechanism);
+    
     group->addChannel(guard, channel);
     channel->addToGroup(guard, group, disabling);
     if (new_channel)

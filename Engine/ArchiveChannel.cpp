@@ -8,13 +8,11 @@
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
-ArchiveChannel::ArchiveChannel(const stdString &name,
-                               double period, SampleMechanism *mechanism)
+ArchiveChannel::ArchiveChannel(const stdString &name, double period)
 {
     this->name = name;
     this->period = period;
-    this->mechanism = mechanism;
-    mechanism->channel = this;
+    this->mechanism = 0;
     chid_valid = false;
     connected = false;
     nelements = 0;
@@ -28,6 +26,7 @@ ArchiveChannel::~ArchiveChannel()
 {
     if (mechanism)
         delete mechanism;
+    mechanism = 0;
     if (pending_value)
         RawValue::free(pending_value);
     if (chid_valid)
@@ -36,6 +35,24 @@ ArchiveChannel::~ArchiveChannel()
         ca_clear_channel(ch_id);
         chid_valid = false;
     }
+}
+
+void ArchiveChannel::setMechanism(Guard &guard, SampleMechanism *mechanism)
+{
+    guard.check(mutex);
+    if (this->mechanism)
+        delete this->mechanism;
+    this->mechanism = mechanism;
+    this->mechanism->channel = this;
+}
+
+void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard, double period)
+{
+    guard.check(mutex);
+    this->period = period;
+    if (connected)
+        buffer.allocate(dbr_time_type, nelements,
+                        theEngine->suggestedBufferSize(engine_guard, period));
 }
 
 void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
@@ -207,7 +224,8 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
         me->connected = false;
         me->connection_time = epicsTime::getCurrent();
         me->pending_value_set = false;
-        me->mechanism->handleConnectionChange(guard);
+        if (me->mechanism)
+            me->mechanism->handleConnectionChange(guard);
     }    
 }
 
@@ -309,7 +327,7 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
         me->init(engine_guard, guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
                  ca_element_count(arg.chid));
         me->connected = true;
-        if (was_connected != me->connected)
+        if (was_connected != me->connected && me->mechanism)
             me->mechanism->handleConnectionChange(guard);
     }
     else
@@ -318,7 +336,7 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
         me->connection_time = epicsTime::getCurrent();
         me->connected = false;
         me->pending_value_set = false;
-        if (was_connected != me->connected)
+        if (was_connected != me->connected && me->mechanism)
             me->mechanism->handleConnectionChange(guard);
     }
 }
@@ -329,8 +347,8 @@ void ArchiveChannel::handleDisabling(Guard &guard, const RawValue::Data *value)
     guard.check(mutex);
     if (groups_to_disable.empty())
         return;
-    // We disable if the channel is non-zero
-    bool criteria = RawValue::isZero(dbr_time_type, value) == false;
+    // We disable if the channel is above zero
+    bool criteria = RawValue::isAboveZero(dbr_time_type, value);
     if (criteria && !currently_disabling)
     {   // wasn't disabling -> disabling
         currently_disabling = true;

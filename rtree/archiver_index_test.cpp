@@ -12,7 +12,7 @@
 int run()
 {
 	archiver_Index my_Index;
-	my_Index.create("index.dat", 2);
+	my_Index.open("index.dat", false, 2);
 	archiver_Unit au;
 	interval iv;
 	key_Object ko;
@@ -111,7 +111,7 @@ int run()
 	my_Index.open("index.dat", false);
 
 	archiver_Index new_Index; 
-	new_Index.create("new_index.dat", 3, 1007);
+	new_Index.open("new_index.dat", false, 3, 1007);
 	channel_Name_Iterator * ci = my_Index.getChannelNameIterator();
     if(ci != 0)
     {
@@ -187,7 +187,7 @@ int run()
 
     //2 AUs per channel
     char channel[100];
-    my_Index.create("names_test.dat");
+    my_Index.open("names_test.dat", false);
 	FILE * names = fopen("names.txt", "r");
     if(names == 0)
     {

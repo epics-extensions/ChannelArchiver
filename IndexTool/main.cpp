@@ -69,10 +69,11 @@ int main(int argc, const char *argv[])
     archiver_Index ai;
     archiver_Index master_Index;
     FILE * f  = fopen(output_name.c_str(), "r+b");
-    //at this point the R tree parameters can be set for user's needs
+
     if(f == 0)
         {
-            master_Index.create(output_name.c_str());
+            //at this point the R tree parameters can be set for user's needs
+            master_Index.open(output_name.c_str(), false, 2);
             only_New_Data = false;
         }
     else
@@ -97,7 +98,7 @@ int main(int argc, const char *argv[])
                 ai.setGlobalPriority(priority);
             case 1:
             {
-                if(ai.open(path) == false) return 0;
+                if(ai.open(path, false) == false) return 0;
                 break;
             }
             default:
@@ -118,7 +119,7 @@ int main(int argc, const char *argv[])
                 delete cni;
                 return 0;
             };
-            if(verbose) printf("%s processed\n\n", channel_Name);
+            if(verbose) printf("%s processed\n\n", channel_Name.c_str());
             result = cni->getNext(&channel_Name);
         }
         delete cni;

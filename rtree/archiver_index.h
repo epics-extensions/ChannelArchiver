@@ -33,32 +33,37 @@ public:
     *  doesn't store the directory of the AUs
     *  @see addDataFromAnotherindex()
     */
-    const stdString&  getDirectory() const {return dir;}
+    const stdString& getDirectory() const {return dir;}
     const stdString& getFileName() const {return file_Name;}
     const stdString& getFullPath() const {return full_Path;}
     
 	/**
-	*	Open the file with the specified path and check, if it is a valid index file
-    *   If the file doesn't exist, but read_Only is set to false, create is called with standard parameters
-    *   @param file_Path MUST be an absolute path (the class stores the directory
-    *   @see create()
-    *   @see getDirectory()
-	*	@return false, if the file was tried to be opened in "read only" mode, but it doesn't exist; or if the file is not valid, or errors occured; true otherwise.
+	*	Open the file with the specified path and check, if it is a valid index file; also set the stdString
+    *   attributes of this class.
+    *   There are four possible cases:
+    *
+    *   File exists?    read_Only    Reaction
+    *   ---------------------------------------------------
+    *   true            true         opens the file in "r" mode, ignores the index parameters if set (the safest case)
+    *   true            false        opens the file in "r+" mode, ignores the index parameters if set 
+    *   false           false        creates a new file (i.e. opens it in "w+" mode), uses default parameters if not set
+    *   false           true         returns false
+    *
+    *   So, to create a new index file:
+    *   1) make sure the selected path doesn't point to an existing file
+    *   2) use open('file_Path', false, ...)
+    *   Note: Before open()  either NO other functions are allowed to have been called, or close() MUST be called 
+    *   @param file_Path MUST be an absolute path (the class stores the directory of the index file)
+    *   @see getDirectory(), getFileName(), getPath()
+    *   @see close()
+	*	@return false, if the file was tried to be opened in "read only" mode, but it doesn't exist; or if the existing
+    *   file is not a valid index file, or errors occured; true otherwise.
 	*/
-	bool open(const char * file_Path, bool read_Only = true);
-
-	/**
-	*	Create a new index file
-	*	Caution: If the file with the specified name exists, it is overwritten!
-	*	@param m determines the size of the R tree nodes; must be greater than or equal 2
-	*	@param hash_Table_Size must be greater than or equal 2; should be a prime number 
-	*	@return False if the parameters are illegal, or errors occured; true otherwise.
-	*/
-	bool create(const char * file_Path, short m=3, short hash_Table_Size=1007);
+	bool open(const char * file_Path, bool read_Only = true, short _m=3, short hash_Table_Size=1007);
 
 	/**
 	*	Detach the file allocator, close the index file and reset the object attributes.
-	*	@return False, if errors occured; true otherwise.
+	*	@return false, if errors occured; true otherwise.
 	*/
 	bool close();
 
@@ -173,7 +178,7 @@ public:
 	*/
 	bool isInstanceValid() const;	
 private:
-
+    bool create(short m, short hash_Table_Size);
 	FILE * f;						
 	file_allocator fa;
 	cntu_Table t;

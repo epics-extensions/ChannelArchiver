@@ -7,18 +7,26 @@
 #include "file_allocator.h"
 
 archiver_Index::archiver_Index()
-:f(0), m(0), global_Priority(-1){}
+:f(0), m(0), read_Only(true), global_Priority(-1){}
 
 archiver_Index::~archiver_Index()
 {
 	if(f!=0) close();
 }
 
-bool archiver_Index::open(const char * file_Path, bool read_Only)
+bool archiver_Index::open(const char * file_Path, bool read_Only, short _m, short hash_Table_Size)
 {
-	if(file_Path == 0) return false;
-	if(read_Only) f = fopen(file_Path, "rb");
-    else f = fopen(file_Path, "r+b");
+	if(file_Path == 0)
+    {
+        printf("The path of the index file was not specified\n");
+        return false;
+    }
+    full_Path = stdString(file_Path);
+    Filename::getDirname(full_Path, dir);
+    Filename::getBasename(full_Path, file_Name);
+    this->read_Only = read_Only;
+    
+	f = fopen(file_Path, "rb");
 	if(f==0) 
 	{
         if(read_Only)
@@ -26,12 +34,20 @@ bool archiver_Index::open(const char * file_Path, bool read_Only)
             printf("Could not open the file %s\n", file_Path);
       		return false;
         }
-        else return create(file_Path);
+        else
+        {
+            f = fopen(file_Path, "w+b");
+            return (f!= 0) && create(_m, hash_Table_Size);
+        }
 	}
-    //create() does it, too
-    full_Path = stdString(file_Path);
-    Filename::getDirname(full_Path, dir);
-    Filename::getBasename(full_Path, file_Name);
+    if(!read_Only)
+    {
+        if((f = freopen(file_Path, "r+b", f)) == 0)
+        {
+           printf("The file \"%s\" seems to be read- only\n", file_Path);
+           return false;
+        }
+    }
 	if(fa.attach(f, HEADER_SIZE) == false)	return false;
 	//check if the file is an index file
 	char buffer[MAGIC_ID_SIZE + 1];
@@ -58,7 +74,6 @@ bool archiver_Index::open(const char * file_Path, bool read_Only)
 
 	//load the object attributes
 	fseek(f, HASH_TABLE_SIZE, SEEK_SET);
-	short hash_Table_Size;
 	if(readShort(f, &hash_Table_Size) == false)
 	{
 		printf("Couldn't read the hash table size from the address %d\n", HASH_TABLE_SIZE);
@@ -67,74 +82,13 @@ bool archiver_Index::open(const char * file_Path, bool read_Only)
 	t.setSize(hash_Table_Size);
 	this->read_Only = read_Only;
 	fseek(f, R_TREE_M, SEEK_SET);
-	if(readShort(f, &m) == false)
+	if(readShort(f, &this->m) == false)
 	{
 		printf("Couldn't read the r tree parameter from the address %d\n", R_TREE_M);
 		return false;
 	}
-	if(r.setM(m) == false) return false;
+	if(r.setM(this->m) == false) return false;
 	return t.attach(&fa, CNTU_TABLE_POINTER);		
-}
-
-bool archiver_Index::create(const char * file_Path, short m, short hash_Table_Size)
-{
-	if(m < 2)
-	{
-		printf("The R tree parameter m must be greater than or equal 2\n");
-		return false;
-	}
-	if(hash_Table_Size < 2)
-	{
-		printf("The size of the hash table must be greater than or equal 2\n");
-		return false;
-	}
-	if(file_Path == 0) return false;
-    read_Only = false;
-	this->m = m;
-	t.setSize(hash_Table_Size);
-
-	f = fopen(file_Path, "w+b");
-	if(f==0) 
-	{
-		printf("Couldn't create the file %s\n", file_Path);
-		return false;
-	}
-    full_Path = stdString(file_Path);
-    Filename::getDirname(full_Path, dir);
-    Filename::getBasename(full_Path, file_Name);
-
-	if(fa.attach(f, HEADER_SIZE) == false) return false;	
-	
-	fseek(f, MAGIC_ID, SEEK_SET);
-	if(fwrite("RTI1", 4, 1, f) != 1)
-	{
-		printf("Couldn't write to the address %d of the file %s\n", MAGIC_ID, file_Path);
-		return false;
-	}
-
-	fseek(f, CNTU_TABLE_POINTER, SEEK_SET);
-	if(writeLong(f, -1) == false)
-	{
-		printf("Couldn't write to the address %d of the file %s\n", CNTU_TABLE_POINTER, file_Path);
-		return false;
-	}
-
-	fseek(f, HASH_TABLE_SIZE, SEEK_SET);
-	if(writeShort(f, hash_Table_Size) == false)
-	{
-		printf("Couldn't write to the address %d of the file %s\n", HASH_TABLE_SIZE, file_Path);
-		return false;
-	}
-
-	fseek(f, R_TREE_M, SEEK_SET);
-	if(writeShort(f, m) == false)
-	{
-		printf("Couldn't write to the address %d of the file %s\n", R_TREE_M, file_Path);
-		return false;
-	}
-	if(r.setM(m) == false) return false;
-	
-	return t.attach(&fa, CNTU_TABLE_POINTER);
 }
 
 bool archiver_Index::close()
@@ -589,6 +543,54 @@ bool archiver_Index::isInstanceValid() const
 	return true;
 }
 
+//the file must have been opened i.e. use only inside open()!!!
+bool archiver_Index::create(short m, short hash_Table_Size)
+{
+	if(m < 2)
+	{
+		printf("The R tree parameter m must be greater than or equal 2\n");
+		return false;
+	}
+	if(hash_Table_Size < 2)
+	{
+		printf("The size of the hash table must be greater than or equal 2\n");
+		return false;
+	}
+	this->m = m;
+	t.setSize(hash_Table_Size);
 
+	if(fa.attach(f, HEADER_SIZE) == false) return false;	
+	
+	fseek(f, MAGIC_ID, SEEK_SET);
+	if(fwrite("RTI1", 4, 1, f) != 1)
+	{
+		printf("Couldn't write to the address %d of the file %s\n", MAGIC_ID, full_Path.c_str());
+		return false;
+	}
+
+	fseek(f, CNTU_TABLE_POINTER, SEEK_SET);
+	if(writeLong(f, -1) == false)
+	{
+		printf("Couldn't write to the address %d of the file %s\n", CNTU_TABLE_POINTER, full_Path.c_str());
+		return false;
+	}
+
+	fseek(f, HASH_TABLE_SIZE, SEEK_SET);
+	if(writeShort(f, hash_Table_Size) == false)
+	{
+		printf("Couldn't write to the address %d of the file %s\n", HASH_TABLE_SIZE, full_Path.c_str());
+		return false;
+	}
+
+	fseek(f, R_TREE_M, SEEK_SET);
+	if(writeShort(f, m) == false)
+	{
+		printf("Couldn't write to the address %d of the file %s\n", R_TREE_M, full_Path.c_str());
+		return false;
+	}
+	if(r.setM(m) == false) return false;
+	
+	return t.attach(&fa, CNTU_TABLE_POINTER);
+}
 
 

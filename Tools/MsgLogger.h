@@ -31,8 +31,8 @@ public:
     /// Override default output routine.
     void SetPrintRoutine(PrintRoutine print, void *arg = 0)
     {
-        _print = print;
-        _print_arg = arg;
+        print = print;
+        print_arg = arg;
     }
 
     /// Restore default output routine
@@ -41,16 +41,11 @@ public:
     /// Log some text.
     void Print(const char *s);
 
-    void Lock()
-    {    _lock.lock(); }
-
-    void Unlock()
-    {    _lock.unlock(); }
+    epicsMutex   lock;
 
 private:
-    PrintRoutine _print;
-    void         *_print_arg;
-    epicsMutex   _lock;
+    PrintRoutine print;
+    void         *print_arg;
 };
 
 // The gloablly available MsgLogger instance:

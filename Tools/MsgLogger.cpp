@@ -16,7 +16,7 @@ MsgLogger::MsgLogger()
 
 void MsgLogger::Print(const char *s)
 {
-	_print(_print_arg, s);
+	print(print_arg, s);
 }
 
 #ifdef WIN32
@@ -34,8 +34,8 @@ static void DefaultPrintRoutine(void *arg, const char *text)
 
 void MsgLogger::SetDefaultPrintRoutine()
 {
-	_print = DefaultPrintRoutine;
-	_print_arg = 0; // not used
+	print = DefaultPrintRoutine;
+	print_arg = 0; // not used
 }
 
 static void LOG_MSG_NL(const char *format, va_list ap)
@@ -47,7 +47,8 @@ static void LOG_MSG_NL(const char *format, va_list ap)
     epicsTime2string(epicsTime::getCurrent(), s);
     TheMsgLogger.Print(s.substr(0, 19).c_str());
     TheMsgLogger.Print(" ");
-    vsprintf(buffer, format, ap);
+    //vsprintf(buffer, format, ap);
+    vsnprintf(buffer, BufferSize-1, format, ap);
     if (strlen(buffer) >= BufferSize)
         TheMsgLogger.Print("LOG_MSG_NL: Buffer overrun\n");
     TheMsgLogger.Print(buffer);
@@ -61,9 +62,9 @@ void LOG_MSG(const char *format, ...)
 {
     va_list ap;
     va_start(ap, format);
-    TheMsgLogger.Lock();
+    TheMsgLogger.lock.lock();
     LOG_MSG_NL(format, ap);
-    TheMsgLogger.Unlock();
+    TheMsgLogger.lock.unlock();
     va_end(ap);
 }
 

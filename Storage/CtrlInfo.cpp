@@ -42,9 +42,14 @@ bool CtrlInfo::operator == (const CtrlInfo &rhs) const
 {
     const CtrlInfoData *rhs_info = rhs._infobuf.mem();
     const CtrlInfoData *info = _infobuf.mem();
-    
-    // will compare "size" element first:
-    return memcmp (info, rhs_info, rhs_info->size) == 0;
+    // memcmp over the full info should start by comparing
+    // the size & type fields and work in any case,
+    // but valgrind complained about use of uninitialized
+    // memory, so now it's explicit:
+    return info->size == rhs_info->size &&
+        info->type == rhs_info->type &&
+        memcmp(&info->value, &rhs_info->value,
+               rhs_info->size - 2*sizeof(unsigned short)) == 0;
 }
 
 CtrlInfo::Type CtrlInfo::getType() const
@@ -286,10 +291,10 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
                 datafile->getBasename().c_str(), offset);
         return false;
     }
-    _infobuf.reserve (size+1); // +1 for possible unit string hack, see below
+    _infobuf.reserve(size+1); // +1 for possible unit string hack, see below
     CtrlInfoData *info = _infobuf.mem();
     info->size = size;
-    if (info->size > _infobuf.getBufferSize ())
+    if (info->size > _infobuf.getBufferSize())
     {
         info->type = Invalid;
         LOG_MSG("Datafile %s: CtrlInfo @ 0x%lX is too big\n",
@@ -297,8 +302,8 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
         return false;
     }
     // read remainder of CtrlInfo:
-    if (fread (((char *)info) + sizeof size,
-               info->size - sizeof size, 1, datafile->file) != 1)
+    if (fread(((char *)info) + sizeof size,
+              info->size - sizeof size, 1, datafile->file) != 1)
     {
         info->type = Invalid;
         LOG_MSG("Datafile %s: Cannot read remainder of CtrlInfo @ 0x%lX\n",
@@ -306,7 +311,7 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
         return false;
     }
     // convert rest from disk format
-    SHORTFromDisk (info->type);
+    SHORTFromDisk(info->type);
     switch (info->type)
     {
         case Numeric:
@@ -320,21 +325,21 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
             {
                 // Hack: some old archives are written with nonterminated
                 // unit strings:
-                int end = info->size - offsetof (CtrlInfoData, value.analog.units);
-                for (int i=0; i<end; ++i)
-                {
+                int i, end;
+                end = info->size - offsetof(CtrlInfoData, value.analog.units);
+                for (i=0; i<end; ++i)
                     if (info->value.analog.units[i] == '\0')
                         return true; // OK, string is terminated
-                }
                 ++info->size; // include string terminator
                 info->value.analog.units[end] = '\0';
             }
             break;
         case Enumerated:
-            SHORTFromDisk (info->value.index.num_states);
+            SHORTFromDisk(info->value.index.num_states);
             break;
         default:
-            LOG_MSG("Datafile %s: CtrlInfo @ 0x%lX has invalid  type %d, size %d\n",
+            LOG_MSG("Datafile %s: "
+                    "CtrlInfo @ 0x%lX has invalid  type %d, size %d\n",
                     datafile->getBasename().c_str(),
                     offset, info->type, info->size);
             info->type = Invalid;

@@ -117,7 +117,8 @@ void copy(const stdString &index_name, const stdString &copy_name,
     IndexFile::NameIterator names;
     bool                    channel_ok;
     const RawValue::Data   *value;
-    size_t                  channel_count = 0, value_count = 0, count, back;
+    size_t                  channel_count = 0, value_count = 0, back_count = 0;
+    size_t                  count, back;
     double                  period = 1.0;
     size_t                  num_samples = 4096;    
     BenchTimer              timer;
@@ -211,6 +212,7 @@ void copy(const stdString &index_name, const stdString &copy_name,
         }
         ++channel_count;
         value_count += count;
+        back_count += back;
     }
     new_index.close();
     index.close();
@@ -219,6 +221,8 @@ void copy(const stdString &index_name, const stdString &copy_name,
     {
         printf("Total: %lu channels, %lu values\n",
                (unsigned long) channel_count, (unsigned long) value_count);
+        printf("Skipped %lu back-in-time values\n",
+               (unsigned long) back_count);
         printf("Runtime: %s\n", timer.toString().c_str());
     }
 }
@@ -532,6 +536,7 @@ int main(int argc, const char *argv[])
     CmdArgString start_time  (parser, "start", "<time>",
                               "Format: \"mm/dd/yyyy[ hh:mm:ss[.nano-secs]]\"");
     CmdArgString end_time    (parser, "end", "<time>", "(exclusive)");
+    CmdArgDouble file_limit  (parser, "file_limit", "<MB>", "File Size Limit");
     CmdArgString dir2index   (parser, "dir2index", "<dir. file>",
                               "Convert old directory file to index");
     CmdArgString index2dir   (parser, "index2dir", "<dir. file>",
@@ -547,6 +552,7 @@ int main(int argc, const char *argv[])
     CmdArgFlag test          (parser, "test", "Perform some consistency tests");
     // Defaults
     RTreeM.set(50);
+    file_limit.set(100.0);
     // Get Arguments
     if (! parser.parse())
         return -1;
@@ -567,6 +573,9 @@ int main(int argc, const char *argv[])
     }
     verbose = verbosity;
     stdString index_name = parser.getArgument(0);
+    DataWriter::file_size_limit = (unsigned long)(file_limit*1024*1024);
+    if (file_limit < 10.0)
+        fprintf(stderr, "file_limit values under 10.0 MB are not useful\n");
     // Start/end time
     epicsTime *start = 0, *end = 0;
     stdString txt;

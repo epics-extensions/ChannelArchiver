@@ -1,0 +1,201 @@
+\chapter{Example Setup} \label{ch:examplesetup}
+The following is meant as an example of how to use the various tools
+together. Assume that we have channels related to vacuum readings and
+channels related to a cooling system. As a result, we created the
+following two configuration files for two different archive engines:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+/data/vacuum/engineconfig.xml
+/data/cooling/engineconfig.xml
+\end{lstlisting}
+
+\noindent Alternatively, we could have created only a single
+configuration file, containing one ``Vacuum'' and one ``Cooling'' group of
+channels. But subsystems are often assigned to different engineers, so
+it is likely that we received these two configuration files from the
+respective subsystem engineer and it is easiest to keep them separate.
+
+\section{Engines and Sub-Archives}
+By running ArchiveEngines in those two directories, we will get two
+sub archives, that is: An index file and one or more data files will
+be generated in /data/vacuum and /data/cooling.  In addition,
+we might want to stop and restart the ArchiveEngines periodically,
+let's say each day.  So even if one engine crashes, the worst that can
+happen is that we loose data for one subsystem and one day. As a
+result, we will now end up with multiple sub-archives. Their indices
+could be this:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+/data/vacuum/2004/02_19/index
+/data/vacuum/2004/02_20/index
+/data/cooling/2004/02_19/index
+/data/cooling/2004/02_20/index
+\end{lstlisting}
+
+\noindent There will also be data files like
+/data/vacuum/2004/02\_19/20040219, but for the most part we can
+identify a sub-archive via its index file, so we listed only those.
+For data retrieval, we can invoke ArchiveExport with the
+path to any of the four index files. We can also list all four index
+files in the configuration for our network data server. This is,
+however, inconvenient because we will only see data for one day of one
+subsystem at a time. 
+
+\section{Master Indices}
+The Index Tool allows creation of a master index
+that covers more than one sub archive. For example, we can create
+these two configuration files for the index tool, either manually or
+with the help of make\_indexconfig.pl:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+/data/vacuum/indexconfig.xml:
+   Lists 2004/02_19/index and 2004/02_20/index
+/data/cooling/indexconfig.xml:
+   Lists 2004/02_19/index and 2004/02_20/index
+\end{lstlisting}
+
+\noindent After running ArchiveIndexTool in /data/vacuum and /data/cooling,
+we will have two new indices. One refers to all the vacuum data, the
+other to all the cooling data:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+/data/vacuum/index
+/data/cooling/index
+\end{lstlisting}
+\noindent Note that these are only index files. There are no new data
+files because the new ``master'' index files will point to data blocks
+in the existing data files, e.g. the one under /data/vacuum/2004/02\_19. 
+It is also important to remember that the master index files include the
+paths to the data files as instructed in the indexconfig.xml files.
+According to the previous example,  
+/data/vacuum/index was created from
+/data/vacuum/indexconfig.xml which included the relative path
+``2004/02\_19/index''. The vacuum master index will therefore point to
+data files with a relative path like ``2004/02\_19/20040219''.
+Whenever we use ``/data/vacuum/index'', the retrieval tools will prepend
+the path to the index, ``/data/vacuum'', to the relative data 
+file path found in the index, for example ``2004/02\_19/20040219'', and thus
+find the data under its full path of
+ e.g.\ ``/data/vacuum/2004/02\_19/20040219''.
+We cannot move ``/data/vacuum/index'' to another location like
+``/tmp/index''. The retrieval tools would then try to access
+``/tmp/2004/02\_19/20040219'' and fail.
+
+Having said that, it \emph{is} possible to generate master indices
+that use the full, absolute paths to their data files by simply listing
+the full paths to the sub-archives in indexconfig.xml. This is,
+however, not recommended because it will increase the size of the
+index files simply because the full path names are longer than the
+relative paths. For the same reason it is advisable to use short path
+names: When an index file points to many data blocks in many data
+files, it makes quite some difference if you used a short-named
+directory tree with paths like ``/data/vac/...'' as opposed to
+``/user/data/channel-archiver/data/subsystems/vacuum-system/...''.
+
+As a second step, we can further combine the master indices for vacuum
+and cooling data into one index that covers all out data. By creating
+``/data/indexconfig.xml'' in which we list ``vacuum/index'' and
+``cooling/index'', and running the ArchiveIndexTool in
+``/data'', we create ``/data/index'' which points to all our data.
+Alternatively, we could have skipped the intermediate indices for
+vacuum and cooling and created ``/data/indexconfig.xml'' from the
+beginning like this:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+/data/indexconfig.xml: Lists
+   vacuum/2004/02_19/index
+   vacuum/2004/02_20/index
+   cooling/2004/02_19/index
+   cooling/2004/02_20/index
+\end{lstlisting}
+
+\noindent In any case we end up with ``/data/index'' as an index for
+all our vacuum and cooling data.
+
+\section{Automatization}
+The ArchiveDaemon program will automate most of what we described so
+far. By creating a file ``/data/ArchiveDaemon.xml'' as follows and
+running the archive daemon in ``/data'', the daemon will 
+\begin{enumerate}
+\item Start an ArchiveEngine in ``/data/vacuum'' that writes to
+      a daily sub-archive like ``/data/vacuum/2004/02\_19/index''.
+      Same for a second engine in ``/data/cooling'' ...
+\item Stop each ArchiveEngine at 02:00~AM and restart it in a new
+      subdirectory.  
+\item Generate or update ``/data/indexconfig.xml'' whenever a new
+      sub-archive is created for the vacuum or cooling data.
+\item Periodically run ArchiveIndexTool on ``/data/indexconfig.xml'',
+      generating or updating ``/data/master\_index''.
+\item Provide a web page that lists the status of the two archive
+      engines.
+\end{enumerate}
+
+\noindent This is the example ArchiveDaemon.xml:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE engines SYSTEM "ArchiveDaemon.dtd">
+<engines>
+  <engine>
+   <desc>Vacuum</desc>          <port>4813</port>
+   <config>/data/vacuum/engineconfig.xml</config>
+   <daily>02:00</daily>
+  </engine>
+  <engine>
+   <desc>Cooling</desc>         <port>4814</port>
+   <config>/data/cooling/engineconfig.xml</config>
+   <daily>02:00</daily>
+  </engine>
+</engines>
+\end{lstlisting}
+
+\section{Data Management}
+The generation of daily sub-archives reduces the amount of data that
+might be lost in case an ArchiveEngine crashes and cannot be restarted
+by the ArchiveDaemon to one day. In the long run, however, it is
+advisable to combine the daily sub-archives into bigger ones, for
+example monthly. The smaller number of sub-archives is easier to
+handle when it comes to backups. Is also provides slightly better
+retrieval times. Depending on your situation, monthly archives might either
+be too big to fit on a CD-ROM or ridiculously small, in which case you
+should try weekly, bi-weekly, quarterly or other types of sub-archives.
+
+In the following example, we assume that it's March 2004 and we want
+to combine the two daily vacuum sub-archives from the previous section
+into one for the month of February 2004:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+cd /data/vacuum/2004
+mkdir 02_xx
+ArchiveDataTool -copy 02_xx/index 02_19/index \
+    -e "02/20/2004 02:00:00"
+ArchiveDataTool -copy 02_xx/index 02_20/index \
+    -s "02/20/2004 02:00:00" -e "02/21/2004 02:00:00"
+\end{lstlisting}
+\noindent Note that we assume a daily restart at 02:00 and thus we
+force the ArchiveDataTool to only copy values from the time range
+where we expect the sub-archives to have data. This practice somewhat
+helps us to remove samples with wrong time stamps that result from
+Channel Access servers with ill-configured clocks.
+
+At this time, there is no better tool nor a wrapper around the
+ArchiveDataTool available, so a typical monthly data management run
+will involve about 30 invocations of the ArchiveDataTool where one
+needs to carefully adjust the sub archive paths, start times and end
+times to suit the current month and year.
+
+After successfully combining the daily sub-archives for February 2004
+into a monthly 2004/02\_xx, we need to
+\begin{enumerate}
+\item Stop the ArchiveDaemon because we are about to edit
+      indexconfig.xml.
+      The ArchiveEngines controlled by the daemon can run on.
+\item Edit /data/indexconfig.xml that listed the daily sub-archives for
+      Feb.\ 2004 and replace them with the single 2004/02\_xx/index.
+\item Remove or rename the master index file and re-create it with the new
+      indexconfig.xml. This step is required because the ArchiveIndexTool
+      will only add new data blocks to the master index, it will not
+      remove existing ones. Since we no longer want to refer to the
+      daily sub-archives, we need to recreate the master index.
+\item Start the ArchiveDaemon again, check its online status.
+\item One may now move the daily sub-archives that are no longer
+      required to some temporary location. A month later, when we are
+      convinced that nobody is still trying to use them, we can delete
+      them.
+\end{enumerate}
+
+\noindent Again there is no tool available to automate the
+indexconfig.xml update.

@@ -16,11 +16,11 @@ shown in Fig.~\ref{fig:daemon}.
 The daemon will attempt to start any ArchiveEngine that it does not
 find running. In addition, the daemon can periodically stop and
 restart ArchiveEngines in order to create e.g.\ daily sub-archives.
-Furthermore, it adds each sub-archive to a configuration file for the
-ArchiveIndexTool and runs the latter, so that all the sub-archives can
-be accessed as if they were one big archive.
+Furthermore, it adds each sub-archive of newly created ArchiveEngines
+to a configuration file for the ArchiveIndexTool and runs the latter,
+so that all the sub-archives can be accessed as if they were one big archive.
 
-Before attempting to use the ArchiveDaemon, one should be familiar
+Before using the ArchiveDaemon, one should be familiar
 with the configuration of the ArchiveEngine (sec.\ \ref{sec:engine}),
 and how to start and stop it. Furthermore, one needs to be familiar
 with the ArchiveIndexTool (sec.\ \ref{sec:indextool}).
@@ -66,11 +66,11 @@ ArchiveEngine periodically. The element must contain a time in the
 format ``HH:MM'' with 24-hour hours HH and minutes MM. One example
 would be ``02:00'' for a restart at 2~am each morning.
 
-\subsubsection{huorly}
+\subsubsection{hourly}
 This optional element configures the ArchiveDaemon to restart the
 ArchiveEngine periodically. The element must contain a number
 specifying hours: A value of 2.0 will cause a restart every 2
-hours. The hourly restart quite inefficient and primarily meant for testing.
+hours. The hourly restart is quite inefficient and primarily meant for testing.
 
 \subsection{Operation}
 The ArchiveDaemon is a perl script that is typically started like this:
@@ -109,6 +109,16 @@ directory in which it was started:
   already exists, the ArchiveDaemon will add every new sub-archive
   that it creates to the file. If the file does not exist, one will be
   created the next time a new sub-archive is started.
+
+  Note that the ArchiveDaemon will \emph{not} search for sub archives
+  or index files and automatically add them to indexconfig.xml. It
+  will only add newly created sub-archives. If you already have
+  sub-archives that need to be included in the master index, your
+  initial indexconfig.xml needs to list them.
+  Also note that the ArchiveDaemon reads this file on startup. In
+  order to \emph{remove} indices from indexconfig.xml, it is therefore
+  required to stop the running daemon, since it will otherwise
+  overwrite indexconfig.xml with its in-memory version.
 \item ArchiveIndexTool.log\\
   The log file of the last run of the ArchiveIndexTool.
 \item master\_index\\

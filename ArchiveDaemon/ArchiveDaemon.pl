@@ -299,6 +299,7 @@ sub handle_HTTP_main($)
     print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Port</FONT></TH>";
     print $client
 	"<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Restart</FONT></TH>";
+    print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Started</FONT></TH>";
     print $client "<TH BGCOLOR=#000000><FONT COLOR=#FFFFFF>Status</FONT></TH>";
     print $client "</TR>\n";  
     foreach $engine ( @config )
@@ -322,9 +323,10 @@ sub handle_HTTP_main($)
 	}	
 	if ($engine->{started})
 	{
-	    print $client "<TD ALIGN=CENTER>Started $engine->{started}, ";
+	    print $client "<TD ALIGN=CENTER>$engine->{started}</TD>";
 	    $connected = $engine->{connected};
 	    $channels = $engine->{channels};
+	    print $client "<TD ALIGN=CENTER>";
 	    print $client "<FONT COLOR=#FF0000>" if ($channels != $connected);
 	    print $client "$connected/$channels channels connected";
 	    print $client "</FONT>" if ($channels != $connected);
@@ -335,12 +337,12 @@ sub handle_HTTP_main($)
 	    if ($engine->{lockfile})
 	    {
 		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
-		    "MISSING BUT LOCKED</FONT></TD>";
+		    "MISSING BUT LOCKED</FONT></TD><TD></TD>";
 	    }
 	    else
 	    {
 		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
-		    "Not Running</FONT></TD>";
+		    "Not Running</FONT></TD><TD></TD>";
 	    }
 	}
        

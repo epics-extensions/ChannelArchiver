@@ -1,14 +1,11 @@
 \section{Index Tool} \label{sec:indextool}
 The ArchiveIndexTool is used to create Master Indices by combining
-multiple indices into a new one.
-
-When invoked without valid arguments, it will display a command
-description similar to this:
+multiple indices into a new one.  When invoked without valid
+arguments, it will display a command description similar to this:
 
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
 USAGE: ArchiveIndexTool [Options] <archive list file> \
-                                         <output index>
- 
+                                         <output index> 
 Options:
   -help             Show Help
   -M <3-100>        RTree M value
@@ -26,3 +23,17 @@ Listing \ref{lst:indexconfigex} provides an example.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example
     Archive Index Tool Configuration},label=lst:indexconfigex]{../IndexTool/indexconfig.xml}
+
+We refer to chapter \ref{ch:examplesetup} for an example of how to use
+the ArchiveIndexTool in collaboration with the other Channel Archiver
+tools. As an aid to creating configuration files for the
+ArchiveIndexTool, you can use the perl script ``make\_indexconfig.pl''
+that converts a list of index files into the appropriately formatted XML:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+
+USAGE: make_indexconfig [-d DTD] index { index }
+ 
+This tool generates a configuration for the ArchiveIndexTool
+based on a DTD and a list of index files provided via
+the command line.
+\end{lstlisting}

@@ -19,7 +19,7 @@ enum
     ARCH_REPEAT             = 0x0f10,
     ARCH_DISABLED           = 0x0f08,
     ARCH_CHANGE_WRITE_FREQ  = 0x0f04,
-    ARCH_CHANGE_PERIOD      = 0x0f02, // new period for single channel ARCH_CHANGE_FREQ
+    ARCH_CHANGE_PERIOD      = 0x0f02, // new period for single channel
     ARCH_CHANGE_SIZE        = 0x0f01
 };
 
@@ -66,21 +66,30 @@ public:
     /// Get status/severity as string
     static void getStatus(const Data *value, stdString &status);
 
-    // Set status and severity
+    /// Does the severity represent one of the special ARCH_xxx values
+    /// that does not carry any value
+    static bool isInfo(const Data *value);
+    
+    /// Set status and severity
     static void setStatus(Data *value, short status, short severity);
 
-    // Parse stat/sevr from text
+    /// Parse stat/sevr from text
     static bool parseStatus(const stdString &text, short &stat, short &sevr);
 
-    // Get time stamp
+    /// Get time stamp
     static const epicsTime getTime(const Data *value);
 
-    // Get time stamp as text
+    /// Get time stamp as text
     static void getTime(const Data *value, stdString &time);
 
-    // Set time stamp
+    /// Set time stamp
     static void setTime(Data *value, const epicsTime &stamp);
 
+    /// Display value, using CtrlInfo if available
+    static void show(FILE *file,
+                     DbrType type, DbrCount count, const Data *value,
+                     const class CtrlInfo *info=0);
+    
     /// Read a value from binary file.
     /// size: pre-calculated from type, count
     static void read  (DbrType type, DbrCount count,
@@ -106,6 +115,12 @@ inline short RawValue::getStat(const Data *value)
 
 inline short RawValue::getSevr(const Data *value)
 { return value->severity; }
+
+inline bool RawValue::isInfo(const Data *value)
+{
+    short s = value->severity;
+    return  s==ARCH_DISCONNECT || s==ARCH_STOPPED || s==ARCH_DISABLED;
+}
 
 inline void RawValue::setStatus(Data *value, short status, short severity)
 {

@@ -1,104 +1,85 @@
 #ifndef __CIRCULARBUFFER_H__
 #define __CIRCULARBUFFER_H__
 
-#include<ValueI.h>
-#include<epicsMutex.h>
+#ifdef CIRCBUF_TEST
+#include <stdlib.h>
+#else
+#include <epicsMutex.h>
+#include <RawValue.h>
+#endif
 
-// Circular buffer:
-// Each channel has one to buffer the incoming values
-// until they are written to the disk.
-//
-// Hopefully thread-save.
-//
+/// Circular buffer:
+/// Each ArchiveChannel has one to buffer the incoming values
+/// of type dbr_time_xxx until they are written to the disk.
+///
+/// The CircularBuffer provides a lock to allow usage across
+/// threads (CA callbacks insert values, main engine thread removes
+/// them when writing to disk).
+/// But: the CircularBuffer does not take the lock itself, the caller
+/// needs to handle this. 
 class CircularBuffer
 {
 public:
     CircularBuffer();
     ~CircularBuffer();
 
-    // Keep memory as is, but reset to have 0 entries
+    /// Threads should use this to lock/unlock
+    epicsMutex      mutex;
+    
+    /// Allocate buffer for num*(type,count) values.
+    void allocate(DbrType type, DbrCount count, size_t num);
+
+    /// Capacity, that is: max. number of elements
+    size_t getCapacity()
+    {   return max_index-1; }
+
+    /// Number of values in the buffer, 0...(capacity-1)
+    size_t getCount();
+
+    /// Keep memory as is, but reset to have 0 entries
     void reset();
     
-    CircularBuffer & operator = (const CircularBuffer &);
-
-    void allocate(DbrType type, DbrCount count, double scan_period);
-
-    // Capacity of this CircularBuffer (Number of elements)
-    size_t getSize()
-    {   return _num; }
-
+    /// Number of samples that had to be dropped
     size_t getOverwrites()
-    {   return _overwrites; }
+    {   return overwrites; }
 
+    /// Doesn't change buffer at all, just reset the overwrite count
     void resetOverwrites()
-    {   _lock.lock(); _overwrites = 0; _lock.unlock();    }
+    {   overwrites = 0; }
 
+    /// Copy a raw value into the buffer
     void addRawValue(const RawValue::Data *raw_value);
 
-    const RawValue::Data *removeRawValue();
+    /// Get a pointer to value number i without removing it
 
-    size_t getCount();
+    ///
+    /// Returns 0 if i is invalid.
+    ///
+    const RawValue::Data *getRawValue(size_t i);
+    
+    /// Return pointer to the oldest value in the buffer and remove it.
+
+    ///
+    /// Returns 0 of there's nothing more to remove.
+    ///
+    const RawValue::Data *removeRawValue();
 
 private:
     CircularBuffer(const CircularBuffer &); // not impl.
+    CircularBuffer & operator = (const CircularBuffer &); // not impl.
 
-    void allocate(DbrType type, DbrCount count, size_t num);
-    RawValue::Data *getElement(RawValue::Data *buf, size_t i);
+    RawValue::Data *getElement(size_t i);
     RawValue::Data *getNextElement();
 
-    epicsMutex      _lock;
-    DbrType         _type;
-    DbrCount        _count;
-    RawValue::Data  *_buffer;
-    size_t          _element_size;// == RawValue::getSize (_type, _count)
-    size_t          _num;         // number of elements in buffer
-    size_t          _head;        // index of current element
-    size_t          _tail;        // before! last element, _tail==_head: empty
-    size_t          _overwrites;
+    DbrType         type;        // dbr_time_xx
+    DbrCount        count;       // array size of type
+    RawValue::Data  *buffer;     // the buffer
+    size_t          element_size;// == RawValue::getSize (_type, _count)
+    size_t          max_index;   // max. number of elements in buffer
+    size_t          head;        // index of current element
+    size_t          tail;        // before(!) last element, _tail==_head: empty
+    size_t          overwrites;  // # of elements we had to drop
 };
-
-inline RawValue::Data *CircularBuffer::getElement(RawValue::Data *buf,
-                                                   size_t i)
-{   return (RawValue::Data *) (((char *)buf) + i * _element_size); }
-
-inline void CircularBuffer::addRawValue(const RawValue::Data *raw_value)
-{
-    _lock.lock();
-    memcpy(getNextElement(), raw_value, _element_size);
-    _lock.unlock();
-}
-
-inline size_t CircularBuffer::getCount()
-{
-    size_t count;
-    _lock.lock();
-    if (_head >= _tail)
-        count = _head - _tail;
-    else    
-        //     #(tail .. end)      + #(start .. head)
-        count = (_num - _tail - 1) + (_head + 1);
-    _lock.unlock();
-
-    return count;
-}
-
-inline const RawValue::Data *CircularBuffer::removeRawValue()
-{
-    RawValue::Data *val;
-
-    _lock.lock();
-    if (_tail == _head)
-        val = 0;
-    else
-    {
-        if (++_tail >= _num)
-            _tail = 0;
-
-        val = getElement(_buffer, _tail);
-    }
-    _lock.unlock();
-    return val;
-}
 
 #endif //__CIRCULARBUFFER_H__
 

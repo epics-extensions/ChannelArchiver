@@ -1,7 +1,87 @@
+#ifdef CIRCBUF_TEST
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+typedef short DbrType;
+typedef short DbrCount;
+
+class RawValue
+{
+public:
+    typedef long Data;
+    static Data *allocate(DbrType, DbrCount, int num)
+    {    return (Data *)malloc(sizeof(long)*num); }
+    static void free(Data *data)
+    {    ::free(data); }
+    static size_t getSize(DbrType t, DbrCount c)
+    {    return sizeof(long); }
+};
+
+class epicsMutex
+{
+public:
+    void lock() {}
+    void unlock()    {}
+};
+
 #include "CircularBuffer.h"
+
+int main()
+{
+    CircularBuffer buffer;
+    long i;
+
+    buffer.allocate(0, 0, 5);
+    puts("--- Empty");
+    printf("Capacity: %d\n", buffer.getCapacity());
+    printf("Count   : %d\n", buffer.getCount());
+    puts("--- Adding 5 values");
+    for (i=0; i<5; ++i)
+        buffer.addRawValue(&i);
+    printf("Count   : %d\n", buffer.getCount());
+
+    const long *p;
+    puts("--- Peeking the values out");
+    for (i=0; i<6; ++i)
+    {
+        p = buffer.getRawValue(i);
+        if (p)
+            printf("Value: %ld\n", *p);
+        else
+            printf("Value: none\n");
+    }
+    puts("--- Removing the values");
+    while (p=buffer.removeRawValue())
+        printf("Value: %ld\n", *p);
+    printf("Count   : %d\n", buffer.getCount());
+    printf("Overwrites: %d \n", buffer.getOverwrites());
+
+    puts("--- Generating overwrites");
+    for (i=0; i<2*buffer.getCapacity(); ++i)
+        buffer.addRawValue(&i);
+    printf("Overwrites: %d \n", buffer.getOverwrites());
+    buffer.resetOverwrites();
+    printf("Overwrites: %d \n", buffer.getOverwrites());
+    
+    puts("--- Removing the values");
+    while (p=buffer.removeRawValue())
+        printf("Value: %ld\n", *p);
+    printf("Count   : %d\n", buffer.getCount());
+    
+    return 0;
+}
+
+#else
+
 #include "MsgLogger.h"
 #include "Engine.h"
+#include "CircularBuffer.h"
 
+#endif
+
+
+// The Circular buffer implementation:
+//
 // Initial: tail = head = 0.
 //
 // valid entries:
@@ -9,125 +89,104 @@
 
 CircularBuffer::CircularBuffer()
 {
-	_type = 0;
-	_count = 0;
-	_buffer = 0;
-	_element_size = 0;
-	_num = 0;
-	_head = 0;
-	_tail = 0;
-	_overwrites = 0;
+	type = 0;
+	count = 0;
+	buffer = 0;
+	element_size = 0;
+	max_index = 0;
+	head = 0;
+	tail = 0;
+	overwrites = 0;
 }
 
 CircularBuffer::~CircularBuffer()
 {
-	RawValue::free(_buffer);
+    RawValue::free(buffer);
+}
+
+void CircularBuffer::allocate(DbrType type, DbrCount count, size_t num)
+{
+    if (this->type==type && this->count==count && max_index > num)
+        // can hold that already
+        return;
+    
+    // Since head == tail indicates empty, we can only
+    // hold max_index-1 elements. Upp num by one to account for that
+    ++num;
+	if (buffer)
+		RawValue::free(buffer);
+	buffer = RawValue::allocate(type, count, num);
+	element_size = RawValue::getSize(type, count);
+	this->type = type;
+	this->count = count;
+	max_index = num;
+}
+
+size_t CircularBuffer::getCount()
+{
+    size_t count;
+    if (head >= tail)
+        count = head - tail;
+    else    
+        //     #(tail .. end)      + #(start .. head)
+        count = (max_index - tail - 1) + (head + 1);
+    return count;
 }
 
 void CircularBuffer::reset()
 {
-    _lock.lock();
-	_head = 0;
-	_tail = 0;
-	_overwrites = 0;
-    _lock.unlock();
+	head = 0;
+	tail = 0;
+	overwrites = 0;
 }
 
-CircularBuffer & CircularBuffer::operator = (const CircularBuffer &rhs)
+void CircularBuffer::addRawValue(const RawValue::Data *raw_value)
 {
-	_type = rhs._type;
-	_count = rhs._count;
-	_element_size = rhs._element_size;
-	_num = rhs._num;
-	_head = rhs._head;
-	_tail = rhs._tail;
-	_overwrites = rhs._overwrites;
+    memcpy(getNextElement(), raw_value, element_size);
+}
 
-	_buffer = 0;
+const RawValue::Data *CircularBuffer::getRawValue(size_t i)
+{
+    if (i<0 || i >= getCount())
+        return 0;
+    i = (tail + 1 + i) % max_index;
+    return getElement(i);
+}
 
-	if (rhs._buffer)
-		allocate(_type, _count, _num);
-	return *this;
+const RawValue::Data *CircularBuffer::removeRawValue()
+{
+    RawValue::Data *val;
+
+    if (tail == head)
+        val = 0;
+    else
+    {
+        if (++tail >= max_index)
+            tail = 0;
+
+        val = getElement(tail);
+    }
+    return val;
 }
 
 RawValue::Data *CircularBuffer::getNextElement()
 {
 	// compute the place in the circular queue
-	if (++_head >= _num)
-		_head = 0;
+	if (++head >= max_index)
+		head = 0;
 
 	// here is the over write of the queue
 	// we slow it down in the event handler
 	// we reset it in the archiving routine
-	if (_head == _tail)
+	if (head == tail)
 	{
-		++_overwrites;
-		if (++_tail >= _num)
-			_tail = 0;
+		++overwrites;
+		if (++tail >= max_index)
+			tail = 0;
 	}
-	return getElement(_buffer, _head);
+	return getElement(head);
 }
 
-void CircularBuffer::allocate(DbrType type, DbrCount count, double scan_period)
-{
-	size_t	num;
-
-	double write_period = theEngine->getWritePeriod();
-	if (write_period <= 0)
-		num = 100;
-	else
-		num = size_t(write_period * theEngine->getBufferReserve()
-                     / scan_period);
-	if (num < 3)
-		num = 3;
-
-	allocate(type, count, num);
-}
-
-void CircularBuffer::allocate(DbrType type, DbrCount count, size_t num)
-{
-	RawValue::Data *buffer;
-	if (_type==type && _count==count && _num >= num) // can hold that already
-		return;
-
-	_lock.lock();
-	buffer = RawValue::allocate(type, count, num);
-	if (_type!=type && _count!=count && _buffer) // old buffer, diff. type?
-	{
-		RawValue::free(_buffer);
-		_buffer = 0;
-	}
-
-	_element_size = RawValue::getSize(type, count);
-	_type = type;
-	_count = count;
-
-	if (_buffer) // old (smaller) buffer to copy in?
-	{
-		// buffer is bigger than old _buffer
-		if (_tail < _head)
-		{
-			memcpy(getElement(buffer, 1),
-                   getElement(_buffer, _tail+1), _head-_tail);
-			_head -= _tail;
-			_tail = 0;
-		}
-		else
-		if (_tail > _head)
-		{
-			size_t tail_elems = _num - _tail - 1;
-			memcpy(getElement(buffer, 1),
-                   getElement(_buffer, _tail+1), tail_elems);
-			memcpy(getElement(buffer, tail_elems), _buffer, _head+1);
-			_tail = 0;
-			_head += tail_elems + 1;
-		}
-		// else: _head == _tail, empty _buffer
-		RawValue::free(_buffer);
-	}
-
-	_num = num;
-	_buffer = buffer;
-	_lock.unlock();
-}
+RawValue::Data *CircularBuffer::getElement(size_t i)
+{   return (RawValue::Data *) (((char *)buffer) + i * element_size); }
 

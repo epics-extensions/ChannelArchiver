@@ -84,7 +84,11 @@ public:
     void   setBufferReserve(int reserve);
     void   setSecsPerFile(double secs_per_file);
     double getSecsPerFile() const;
-
+    /// Determine the suggested buffer size for a value
+    /// with given scan period based on how often we write
+    /// and the buffer reserve
+    size_t suggestedBufferSize(double period);
+    
     // Engine ignores time stamps which are later than now+future_secs
     double getIgnoredFutureSecs() const;
     void setIgnoredFutureSecs(double secs);
@@ -183,6 +187,19 @@ inline double Engine::getIgnoredFutureSecs() const
 
 inline void Engine::setIgnoredFutureSecs(double secs)
 {   _future_secs = secs; }
+
+
+inline size_t Engine::suggestedBufferSize(double period)
+{
+    size_t	num;
+
+	if (_write_period <= 0)
+		return 100;
+    num = (size_t)(_write_period * _buffer_reserve / period);
+	if (num < 3)
+		num = 3;
+    return num;
+}
 
 inline bool Engine::addToScanList(ChannelInfo *channel)
 {

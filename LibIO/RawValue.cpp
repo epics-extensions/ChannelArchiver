@@ -14,6 +14,7 @@
 #include <ArrayTools.h>
 #include <epicsTimeHelper.h>
 #include "RawValue.h"
+#include "CtrlInfo.h"
 #include "ArchiveException.h"
 
 RawValue::Data * RawValue::allocate(DbrType type, DbrCount count, size_t num)
@@ -181,6 +182,110 @@ void RawValue::getTime(const Data *value, stdString &time)
     epicsTime et(value->stamp);
     epicsTime2string(et, time);
 }
+
+void RawValue::show(FILE *file,
+                    DbrType type, DbrCount count, const Data *value,
+                    const class CtrlInfo *info)
+{
+    stdString time, stat;
+    int i;
+    // Print time - status
+    getTime(value, time);
+    getStatus(value, stat);
+    fprintf(file, "%s\t%s", time.c_str(), stat.c_str());
+    if (isInfo(value))
+    {   // done
+        fputs("\n", file);
+        return;
+    }
+    // print value
+    switch (type)
+    {
+        case DBR_TIME_STRING:
+            fprintf(file, "\t'%s'\n", ((dbr_time_string *)value)->value);
+            return;
+        case DBR_TIME_ENUM:
+            i = ((dbr_time_enum *)value)->value;
+            if (info)
+            {
+                stdString state;
+                info->getState(i, state);
+                fprintf(file, "%s (%d)\n", state.c_str(), i);
+            }
+            else
+                fprintf(file, "%d\n", i);
+            return;
+        case DBR_TIME_CHAR:
+        {
+            dbr_char_t *val = &((dbr_time_char *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i+1 >= count)
+                    fprintf(file, "%d\n", (int)*val);
+                else
+                    fprintf(file, "%d\t", (int)*val);
+                ++val;
+            }
+            return;
+        }
+            
+        case DBR_TIME_SHORT:
+        {
+            dbr_short_t *val = &((dbr_time_short *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i+1 >= count)
+                    fprintf(file, "%d\n", (int)*val);
+                else
+                    fprintf(file, "%d\t", (int)*val);
+                ++val;
+            }
+            return;
+        }
+        case DBR_TIME_LONG:
+        {
+            dbr_long_t *val = &((dbr_time_long *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i+1 >= count)
+                    fprintf(file, "%ld\n", (long)*val);
+                else
+                    fprintf(file, "%ld\t", (long)*val);
+                ++val;
+            }
+            return;
+        }
+        case DBR_TIME_FLOAT:
+        {
+            dbr_float_t *val = &((dbr_time_float *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i+1 >= count)
+                    fprintf(file, "%f\n", (double)*val);
+                else
+                    fprintf(file, "%f\t", (double)*val);
+                ++val;
+            }
+            return;
+        }
+        case DBR_TIME_DOUBLE:
+        {
+            dbr_double_t *val = &((dbr_time_double *)value)->value;
+            for (i=0; i<count; ++i)
+            {
+                if (i+1 >= count)
+                    fprintf(file, "%f\n", (double)*val);
+                else
+                    fprintf(file, "%f\t", (double)*val);
+                ++val;
+            }
+            return;
+        }
+        default:
+            fprintf(file, "<cannot decode>\n");
+    }
+}
+    
 
 void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
                     FILE *file, FileOffset offset)

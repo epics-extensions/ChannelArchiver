@@ -452,8 +452,12 @@ bool ChannelInfo::setValueType(DbrType type, DbrCount count)
 void ChannelInfo::checkRingBuffer()
 {
     if (_new_value)
+    {
+        _buffer.mutex.lock();
         _buffer.allocate(_new_value->getType(), _new_value->getCount(),
-                         _period);
+                         theEngine->suggestedBufferSize(_period));
+        _buffer.mutex.unlock();
+    }
 }
 
 void ChannelInfo::addToRingBuffer(const ValueI *value)
@@ -475,12 +479,14 @@ void ChannelInfo::addToRingBuffer(const ValueI *value)
         LOG_MSG("Value: %s\n", t.c_str());
     }
 
+    _buffer.mutex.lock();
     size_t ow = _buffer.getOverwrites();
     _buffer.addRawValue(value->getRawValue());
     _ever_written = true;
     if (ow <= 0  &&  _buffer.getOverwrites() > 0)
         LOG_MSG ("'%s': %d overwrites\n",
                  _name.c_str(), _buffer.getOverwrites());
+    _buffer.mutex.unlock();
     setLastArchiveStamp(value->getTime());
 }
 
@@ -833,7 +839,9 @@ void ChannelInfo::enable(ChannelInfo *cause)
 
 void ChannelInfo::resetBuffers()
 {
+    _buffer.mutex.lock();
     _buffer.reset();
+    _buffer.mutex.unlock();
     _new_value_set = false;
     _pending_value_set = false;
     _previous_value_set = false;
@@ -843,14 +851,18 @@ void ChannelInfo::resetBuffers()
 // Dump circular buffer into archive
 void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
 {
+    _buffer.mutex.lock();
     size_t count = _buffer.getCount();
     if (count <= 0)
+    {
+        _buffer.mutex.unlock();
         return;
-
+    }
     if (! archive.findChannelByName(_name, channel))
     {
         LOG_MSG ("ChannelInfo::write: Cannot find '%s'\n",
                  _name.c_str());
+        _buffer.mutex.unlock();
         return;
     }
 
@@ -891,13 +903,16 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
         raw = _buffer.removeRawValue();
     }
     _buffer.resetOverwrites();
+    _buffer.mutex.unlock();
 }
 
 
 void ChannelInfo::shutdown(Archive &archive, ChannelIterator &channel,
                            const epicsTime &now)
 {
+    _buffer.mutex.lock();
     _buffer.reset();
+    _buffer.mutex.unlock();
     addEvent(0, ARCH_STOPPED, now);
     write(archive, channel);
 }

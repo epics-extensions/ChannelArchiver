@@ -124,6 +124,8 @@ public:
 
 	/// Enumerated: state string
 	size_t getNumStates() const;
+    
+    /// Get given state as text (also handles undefined states)
 	void getState(size_t state, stdString &result) const;
 
 	/// Like strtod, strtol: try to parse,

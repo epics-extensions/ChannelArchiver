@@ -144,7 +144,7 @@ int main(int argc, const char *argv[])
                 "------------------------------------------\n",
                 EngineServer::_port);
 #ifdef SAMPLE_TEST
-        ArchiveChannel *ac = new ArchiveChannel("fred", new SampleMechanismMonitored(5.0));
+        ArchiveChannel *ac = new ArchiveChannel("fred", 5.0, new SampleMechanismMonitored());
 
         ac->startCA();
 

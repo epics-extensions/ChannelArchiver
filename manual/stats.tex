@@ -106,7 +106,7 @@ blocks will therefore not require $M$ values that are equally 2 or 10 times
 bigger. Only very small increases of $M$ would be beneficial. If we
 consider that in general those bigger archives will also contain
 channels with only a few samples, $M=50$ will probably be ``as good''.
-% Overall, about 1:30..4 min for 27 sub-indices totalling 50 .. 160 MB
+% Overall, about 1:30..4 min for 27 sub-indices totaling 50 .. 160 MB
 % Master index is 18..24 MB
 
 In the following, $M$ was kept at 50, the default for most archive tools.
@@ -134,6 +134,23 @@ In the following, $M$ was kept at 50, the default for most archive tools.
       Re-run: 30~seconds.
 \end{itemize}
 
+\subsection{Impact of Data Management on Performance}
+As a less-than-perfect example, we created a collection of mostly
+hourly sub-archives, resulting in 297 sub-archives, 158~MB index
+files, 307~MB data files.  Creation of a master index took about
+25~minutes, resulting in a master index file size of 65~MB.  A re-run
+of the Index Tool took about 3~minutes.
+
+By combining the hourly sub-archives into monthly ones, the count was
+reduced from 297 sub-archives to only 16.  This took about
+8~minutes, resulting in 5.5~MB for index files and 148~MB for data
+files. Creation of a master index for the 16 sub-archives now took
+26~seconds, a re-run was further reduced to 1.5~seconds.
+Overall this shows that periodic data management, combining individual
+sub-archives into fewer ones, will reduce not only the number of files
+but also file sizes, resulting in better performance.
+
+\subsection{New Index compared to old ``multi archive''}
 %  ORNL March 2004 Xmtr archive:
 % dir. files were about 1MB each, 27 of them.
 % 0.9 sec  : ArchiveExport index3 -i -m Tnk.:T$
@@ -146,33 +163,32 @@ In the following, $M$ was kept at 50, the default for most archive tools.
 % Similar, but only for one channel:
 % 0.566 secs, 21166 lines -> 37000 lines/sec
 
-\noindent With the 92-sub-archive index, the following was tested:
+We took a test archive consisting of 638 small sub-archives,
+where the data files totaled only a little over 400~MB.
+A master index was created as well as a ``multi archive'' file
+that lists the 638 sub-archives.
 \begin{itemize}
-\item Time to list all channel names: $<$1~second.\\
-      This took about 7 seconds with the old ``multi archive'' file
-      that required opening the individual sub-archives.
-\item Time to find channels that match a pattern and show their
-      start/end times: 0.2~seconds (4 channels out of 500 matched).\\
-      This took about 6~seconds with the previous ``multi archive''.
-\item Seek test, i.e.\ find a data block for a given start time:
-      Index file requires $<$0.5~seconds, old index uses 1.5~seconds.
+\item Time to list all  540 channel names: $<$1~second.\\
+      This takes 40 seconds with the old ``multi archive'' file.
+      The results for finding names that match a pattern or
+      determining the available time range for a channel are
+      similar.
+
+      The new index is clearly superior in this test case simply
+      because the data is contained in one index, while the ``multi
+      archive'' file required access to all 638 sub-archives
+\item The time to retrieve a few samples from the start, middle or end of the
+      archive is fairly constant around 0.1 seconds with the new index.
+      With the previous implementation, the lookup time for the samples
+      depends on where the respective sub-archive is positioned in the
+      multi-archive file. When the data is found in the first
+      sub-archive listed in the multi-archive file, the times compare
+      to the new index. The further one goes down the list of
+      sub-archives as they appeared in the multi-archive file, the
+      longer it takes. A reproducible test is difficult because the
+      preceding tests (list all channels) causes the operating system
+      to cache many of the sub-archive's directory files.
 \end{itemize}
-
-\subsection{Data Management Performance}
-As a less-than-perfect example, we created a collection of mostly
-hourly sub-archives, resulting in 297 sub-archives, 158~MB index
-files, 307~MB data files.  Creation of a master index took about
-25~minutes.  resulting in a master index file size of 65~MB.  A re-run
-of the Index Tool took about 3~minutes.
-
-By combining the hourly sub-archives into monthly ones, the count was
-reduced from 297 sub-archives into only 16.  This took about
-8~minutes, resulting in 5.5~MB for index files and 148~MB for data
-files. Creation of a master index for the 16 sub-archives now took
-26~seconds, a re-run was further reduced to 1.5~seconds.
-Overall this shows that periodic data management, combining individual
-sub-archives into fewer ones, will reduce not only the number of files
-but also file sizes, resulting in better performance.
 
 \subsection{Retrieval Performance}
 Tests of the retrieval performance often include not only the
@@ -186,7 +202,8 @@ In the following tests, the output was redirected to a file.
 \item Use ArchiveExport to dump values for 7 channels in a spreadsheet format,
       which adds the effort for 'staircase' interpolation to the
       previous test case:
-      95000 lines in 11 secs, that is around 8600 lines/sec.
+      Each channel had 20000 to 30000 values. The interpolation generated
+      a 95000 line spreadsheet in 11 secs, that is around 8600 lines/sec.
       On a second test run, the time was reduced to 7 seconds, again
       showing the impact of buffering by the operating system.
 \item Use Matlab to retrieve the data for the same 7 channels,
@@ -195,7 +212,15 @@ In the following tests, the output was redirected to a file.
       500 ``Plot Bins'':
       Around 1500 values per channel were retrieved in 6 seconds.
       The ArchiveDataServer.cgi ran 4 seconds, so about two
-      seconds were added by the web server, network transfer, Matleb
-      MEX code and matlab .
+      seconds were added by the web server, network transfer, Matlab
+      MEX code and Matlab .
+\item Use the Java Archive Client to retrieve the same 7 channels into 800
+      ``Plot Bins'':
+      Around 2100 values per channel were retrieved and plotted in 12 seconds.
+      (When using the alternate machine with the slower CPU but RAID disks as 
+      the data server, the time was reduced to 8 seconds).
+      The Java client was still usable, but slow to respond with this amount of data:
+      Zoom requests took about 2 seconds.
 \end{itemize}
+
 

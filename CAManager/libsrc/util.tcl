@@ -71,20 +71,21 @@ proc Puts {s {color normal}} {
   }
 
   puts stdout "$now$s"
-  if {$color == "no"} return
+  if {$color == "no"} {return 1}
   if {$color != "normal"} {
     set s "<font color=$color>$s</font>"
   }
   set ::_msg [lrange [linsert $::_msg 0 "$now$s"] 0 99]
+  return 1
 }
 
 proc checkArchivers {args} {
   trace vdelete ArchiversSet w {after 1 checkArchivers}
   after [expr 1000 * $::bgCheckInt] checkArchivers
   foreach i [camMisc::arcIdx] {
+    if {[info exists ::nocheck($i)] && $::nocheck($i)} continue
     if {![info exists ::_run($i)]} {set ::_run($i) -}
     if {"[camMisc::arcGet $i host]" != "$::_host"} continue
-#    if {![regexp "^since" $::_run($i)]} {set ::_run($i) -}
     trace variable ::_run($i) w checkstate
     camComm::CheckRunning $i ::_run($i)
   }
@@ -341,7 +342,7 @@ proc semGive {} {
   set ::mutex 0
 }
 
-proc runArchiver {i {forceRun 0}} {
+proc runArchiver {i {forceRun 0} {verbose 1}} {
 
   # Each archiver has a root-directory ROOT
   # ArchiveEngine runs in ROOT
@@ -364,11 +365,25 @@ proc runArchiver {i {forceRun 0}} {
 
   array unset ::sched $i,start
   set now [clock seconds]
-  foreach attr {port descr cfg cfgc start multi timespec} {
+  foreach attr {descr port cfg cfgc start multi timespec} {
     set $attr [camMisc::arcGet $i $attr]
   }
   foreach attr {log archive} {
     set $attr [clock format $now -format [camMisc::arcGet $i $attr]]
+  }
+
+  set logtxt [list "Started by [file tail [file rootname [info script]]] ($::CVS(Version)) @ [clock format $now]\n"]
+  lappend logtxt " Description:\t\"$descr\""
+  lappend logtxt " Config file:\t$cfg"
+  lappend logtxt " Schedule:\t$start, $timespec"
+  lappend logtxt " URL:\t\thttp://$::_host:$port/"
+  lappend logtxt " Archive:\t[camMisc::arcGet $i archive]"
+  lappend logtxt " Logfile:\t[camMisc::arcGet $i log]"
+  if {"[file dirname $archive]" != "."} {
+    lappend logtxt " MultiArchive:\t[file dirname $cfg]/[file tail $archive]"
+  }
+  if {"$multi" != ""} {
+    lappend logtxt " MasterArchive:\t$multi\n"
   }
 
   set ROOT "[file dirname $cfg]"
@@ -381,7 +396,7 @@ proc runArchiver {i {forceRun 0}} {
     }
     set ::wasError($i) 1
     semGive
-    return
+    return 0
   }
 
   # Inspect the first 20 lines of the previous log-file for possible
@@ -393,13 +408,19 @@ proc runArchiver {i {forceRun 0}} {
       gets $rh line
       switch -regexp -- $line {
 	"Found an existing lock file" {
-	  EPuts $i 2 "\"$descr\" terminated because it found an existing lock file!"
+	  set msg " terminated because it found an existing lock file!"
+	  lappend logtxt "Previous run$msg"
+	  EPuts $i 2 "\"$descr\"$msg"
 	}
 	"bind failed for HTTPServer::create" {
-	  EPuts $i 3 "\"$descr\" terminated because it couldn't bind to the required port!"
+	  set msg " terminated because it couldn't bind to the required port!"
+	  lappend logtxt "Previous run$msg\n"
+	  EPuts $i 3 "\"$descr\"$msg"
 	}
 	"Config file '.*': cannot open" {
-	  EPuts $i 4 "\"$descr\" terminated because it couldn't open the config-file!"
+	  set msg " terminated because it couldn't open the config-file!"
+	  lappend logtxt "Previous run$msg\n"
+	  EPuts $i 4 "\"$descr\"$msg"
 	}
       }
     }
@@ -412,14 +433,16 @@ proc runArchiver {i {forceRun 0}} {
   if {![info exists ::tryAgain($i)]} {set ::tryAgain($i) 1}
   if {[file exists [file join $ROOT archive_active.lck]]} {
     incr ::tryAgain($i)
-    if {($::tryAgain($i) > 6)} {
+    if {($::tryAgain($i) > 10)} {
       EPuts $i 5 "Lockfile for \"$descr\" exists - Archiver already/still running! (or terminated abnormally?)"
       semGive
-      return
+      return 0
     } else {
-      Puts "Lockfile for \"$descr\" exists - $::tryAgain($i). try in $::bgCheckInt seconds"
+      if {!$::nocheck($i)} {
+	Puts "Lockfile for \"$descr\" exists - $::tryAgain($i). try in $::bgCheckInt seconds"
+      }
       semGive
-      return
+      return 0
     }
   }
   set ::tryAgain($i) 1
@@ -443,18 +466,9 @@ proc runArchiver {i {forceRun 0}} {
   }
 
   # if it's a toggle-archive, delete the one to overwrite
-#  set adir [file dirname $archive]
   if {$toggle && ("$::lastArc($i)" != "$archive")} {
-#     if {[file exists $ROOT/$archive]} {
-#       file mkdir $ROOT/last/$adir
-#       if {[file exists $ROOT/last/$adir]} {
-# 	file delete -force $ROOT/last/$adir
-#       }
-#       file rename $ROOT/$adir $ROOT/last/$adir
-#    }
     set files [glob -nocomplain $ROOT/[file dirname $archive]/*]
     if {[llength $files] > 0} {
-#      Puts "deleting $files"
       eval file delete -force $files
     }
   }
@@ -466,7 +480,7 @@ proc runArchiver {i {forceRun 0}} {
       set ::wasError($i) 3
     }
     semGive
-    return
+    return 0
   }
   set ::wasError($i) 0
 
@@ -493,15 +507,20 @@ proc runArchiver {i {forceRun 0}} {
     }
   }
 
+  set logtxt [linsert $logtxt 6 " act. archive:\t$archive"]
+  set logtxt [linsert $logtxt 8 " act. logfile:\t$log"]
+
   # Start the Archiver
   set cfg "[file tail $cfg]"
   cd $ROOT
-  Puts "start \"$descr\" (in $ROOT/[file dirname $archive])" command
+  if {$verbose} {
+    Puts "start \"$descr\" ($ROOT)" command
+  }
+  catch {file rename -force runmsg.txt runmsg-old.txt}
+  write_file runmsg.txt [join $logtxt "\n"]
   if {$cfgc} {
-#    exec strace -oTRACE ArchiveEngine -p $port -description "$descr" -log $log -nocfg $cfg $archive >&runlog &
     exec ArchiveEngine -p $port -description "$descr" -log $log -nocfg $cfg $archive >&runlog &
   } else {
-#    exec strace -oTRACE ArchiveEngine -p $port -description "$descr" -log $log $cfg $archive >&runlog &
     exec ArchiveEngine -p $port -description "$descr" -log $log $cfg $archive >&runlog &
   }
 
@@ -563,6 +582,7 @@ proc runArchiver {i {forceRun 0}} {
   if {"$multi" != ""} {
     after 20000 "updateMultiArchive \"$multi\""
   }
+  return 1
 }
 
 proc scheduleStop {i} {
@@ -574,18 +594,55 @@ proc scheduleStop {i} {
   camMisc::arcSet $i stoptime $stoptime
   if {[info exists ::sched($i,stop,time)] && ($::sched($i,stop,time) == $stoptime)} return
   if {[info exists ::sched($i,stop,job)]} {after cancel $::sched($i,stop,job)}
-  Puts "stopping \"[camMisc::arcGet $i descr]\" @ [httpd::time $stoptime]" schedule
-  set ::sched($i,stop,job) [after [expr ( $stoptime - $now ) * 1000] "stopArchiver $i"]
+  if {[lsearch -exact {minute hour day week month} [camMisc::arcGet $i start]] >= 0} {
+    Puts "restarting \"[camMisc::arcGet $i descr]\" @ [httpd::time $stoptime]" schedule
+    set ::sched($i,stop,job) [after [expr ( $stoptime - $now ) * 1000] "restartArchiver $i"]
+  } else {
+    Puts "stopping \"[camMisc::arcGet $i descr]\" @ [httpd::time $stoptime]" schedule
+    set ::sched($i,stop,job) [after [expr ( $stoptime - $now ) * 1000] "stopArchiver $i"]
+  }
   set ::sched($i,stop,time) $stoptime
 }
 
-proc stopArchiver {i {forceStop 0}} {
+set bgsleep 0
+proc bgsleep {msec} {
+  incr ::bgsleep
+  set v ::bgsleep$::bgsleep
+  after $msec "set $v 1"
+  vwait $v
+  unset $v
+}
+
+proc restartArchiver {i} {
+  Puts "restart \"[camMisc::arcGet $i descr]\"" command
+  set ::nocheck($i) 1
+  set try 0
+  set lastsleep 1000
+  set sleep 0
+  if {[stopArchiver $i 0 restart]} {
+    bgsleep 500
+    while {![runArchiver $i 0 0] && ($try < 10) &&
+	   [Puts "restart of \"[camMisc::arcGet $i descr]\" failed, retry in [expr ( $sleep + $lastsleep ) / 1000]s"] } {
+      incr try
+      set h $sleep
+      incr sleep $lastsleep
+      set lastsleep $h
+      bgsleep $sleep
+    }
+    if {$try == 10} {Puts "restart of \"[camMisc::arcGet $i descr]\" failed permanently!" error}
+  }
+  set ::nocheck($i) 0
+}
+
+proc stopArchiver {i {forceStop 0} {action stop}} {
   array unset ::sched $i,stop,*
   if {!$forceStop && [file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]} {
-    Puts "stop of \"[camMisc::arcGet $i descr]\" blocked" error
-    return
+    Puts "$action of \"[camMisc::arcGet $i descr]\" blocked" error
+    return 0
   }
-  Puts "stop \"[camMisc::arcGet $i descr]\"" command
+  if {$action == "stop"} {
+    Puts "stop \"[camMisc::arcGet $i descr]\"" command
+  }
   if {![catch {set sock [socket [camMisc::arcGet $i host] [camMisc::arcGet $i port]]}]} {
     fconfigure $sock -blocking 0
     fileevent $sock readable [list justread $sock]
@@ -593,16 +650,17 @@ proc stopArchiver {i {forceStop 0}} {
     puts $sock "GET /stop HTTP/1.0"
     puts $sock ""
     flush $sock
-#    puts stderr "                   sent stop-request($sock)"
   }
+  set w [open [file dirname [camMisc::arcGet $i cfg]]/runmsg.txt a+]
+  puts $w "Stopped by [file tail [file rootname [info script]]] ($::CVS(Version)) @ [clock format [clock seconds]]\n"
+  close $w
+  return 1
 }
 
 proc justread {sock} {
-#  puts stderr "                   consuming data($sock)"
   set data [read $sock]
   flush $sock
   if {[eof $sock]} {
-#    puts stderr "                   closing $sock"
     close $sock
     if {[set i [lsearch -exact $::socks $sock]] >= 0} { set ::socks [lreplace $::socks $i $i] }
   }

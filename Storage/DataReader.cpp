@@ -15,6 +15,7 @@ DataReader::~DataReader()
 
 RawDataReader::RawDataReader(IndexFile &index)
         : index(index), tree(0), node(0), rec_idx(0), valid_datablock(false),
+          dbr_type(0), dbr_count(0),
           type_changed(false), ctrl_info_changed(false),
           data(0), header(0)
 {}
@@ -193,7 +194,8 @@ bool RawDataReader::getHeader(const stdString &dirname,
         delete header;
     header = new_header;
     // Check for type change
-    if (header->data.dbr_type  != dbr_type  ||
+    if (!data ||
+        header->data.dbr_type  != dbr_type  ||
         header->data.dbr_count != dbr_count)
     {
         dbr_type  = header->data.dbr_type;

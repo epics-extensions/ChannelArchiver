@@ -33,6 +33,10 @@
 #undef CONVERSION_REQUIRED
 #endif
 
+#if defined(HP_UX)
+#undef CONVERSION_REQUIRED
+#endif
+
 // Some even more generic things are configured in ToolsConfig.h!
 
 // ----------------------------------------------------------

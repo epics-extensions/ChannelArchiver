@@ -384,7 +384,7 @@ bool RTree::selfTest(unsigned long &nodes, unsigned long &records)
 }
 
 // Comparison routine for AVLTree (node_cache)
-static int sort_compare(const RTree::Node &a, const RTree::Node &b)
+int sort_compare(const RTree::Node &a, const RTree::Node &b)
 {    return b.offset - a.offset; }
 
 bool RTree::read_node(Node &node) const

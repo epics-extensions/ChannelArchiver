@@ -122,8 +122,8 @@ class RTree *ListIndex::getTree(const stdString &channel,
     return 0;
 }
 
-static int sort_compare(const stdString &a,
-                        const stdString &b)
+int sort_compare(const stdString &a,
+                 const stdString &b)
 {
     return b.compare(a);
 }

@@ -23,6 +23,15 @@
 //       It won't work on VAX/VMS systems!
 #define CONVERSION_REQUIRED 
 
+// This seems to work for Mac OS X
+#if defined(__POWERPC__) && defined(__APPLE__)
+#undef CONVERSION_REQUIRED
+#endif
+
+#if defined(HP_UX)
+#undef CONVERSION_REQUIRED
+#endif
+
 // ----------------------------------------------------------
 // General
 // ----------------------------------------------------------

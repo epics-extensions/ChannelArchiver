@@ -187,7 +187,7 @@ inline const char *ChannelInfo::getHost() const
     // -> be safe here and only call it when connected
     if(_connected)
         return ca_host_name(_chid);
-    return "<??>";
+    return "<unknown host>";
 }
 
 inline bool ChannelInfo::isRepeated(const ValueI *value)

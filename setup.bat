@@ -10,7 +10,7 @@ rem Configure:
 rem
 rem (*) MS Visual Studio
 
-set HOME=d:\Kay
+set HOME=c:\Kay
 
 set MSVS=C:\PROGRA~1\VSTUDIO
 
@@ -28,7 +28,7 @@ rem (*) Python: Add to path,
 rem	tell it how to find what we are about to build
 
 set PATH=%PATH%;c:\progra~1\python
-set PYTHONPATH=%HOME%\Epics\extensions\src\ChannelArchiver\casi\python
+set PYTHONPATH=%HOME%\Epics\extensions\src\ChannelArchiver\casi\python\O.WIN32
 
 
 rem ----------------------------------------------------------

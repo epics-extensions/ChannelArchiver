@@ -34,7 +34,7 @@ public:
     GroupInfo(const stdString &name);
 
     /// Name of this group
-    const stdString &getName()
+    const stdString &getName() const
     { return name; }
     
     /// Unique ID (within one ArchiveEngine). 0 ... (#groups-1)

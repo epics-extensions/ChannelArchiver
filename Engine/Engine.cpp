@@ -62,7 +62,6 @@ Engine::Engine(const stdString &index_name)
     write_period = 30;
     buffer_reserve = 3;
     next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
-    secs_per_file = 60*60*24; // One day
     future_secs = 6*60*60;
 
     // Initialize CA library for multi-treaded use and
@@ -289,10 +288,6 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
             index.close();
         }
     }
-#ifdef TODO
-    if (_configuration)
-        _configuration->saveChannel(channel_info);
-#endif
     channel->startCA(guard);
     return channel;
 }

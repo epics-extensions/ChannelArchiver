@@ -53,6 +53,13 @@ FUX::~FUX()
         delete root;
 }
 
+void FUX::setDoc(Element *doc)
+{
+    if (root)
+        delete root;
+    root = doc;
+}
+
 void FUX::start_tag(void *data, const char *el, const char **attr)
 {
     FUX *me = (FUX *)data;
@@ -88,10 +95,10 @@ void FUX::end_tag(void *data, const char *el)
     me->state = idle;
 }
 
-inline void indent(int depth)
+inline void indent(FILE *f, int depth)
 {
     for (int i=0; i<depth; ++i)
-        printf("\t");    
+        fprintf(f, "\t");
 }
 
 void FUX::dump(FILE *f)
@@ -119,7 +126,7 @@ void FUX::dump_element(FILE *f, Element *e, int depth)
 {
     if (!e)
         return;
-    indent(depth);
+    indent(f, depth);
     if (all_white_text(e->value))
     {
         if (e->children.size() == 0)
@@ -137,7 +144,7 @@ void FUX::dump_element(FILE *f, Element *e, int depth)
         stdList<Element *>::const_iterator c;
         for (c=e->children.begin(); c!=e->children.end(); ++c)
             dump_element(f, *c, depth+1);
-        indent(depth);
+        indent(f, depth);
     }
     fprintf(f, "</%s>\n", e->name.c_str());    
 }

@@ -63,6 +63,9 @@ stdString SampleMechanismMonitored::getDescription(Guard &guard) const
     return stdString(desc);
 }
 
+bool SampleMechanismMonitored::isScanning() const
+{   return false; }
+
 void SampleMechanismMonitored::handleConnectionChange(Guard &guard)
 {
     stdList<GroupInfo *>::iterator g;
@@ -164,6 +167,9 @@ stdString SampleMechanismGet::getDescription(Guard &guard) const
     return stdString(desc);
 }
 
+bool SampleMechanismGet::isScanning() const
+{   return true; }
+
 void SampleMechanismGet::handleConnectionChange(Guard &guard)
 {
     stdList<class GroupInfo *> &groups = channel->getGroups(guard);
@@ -197,8 +203,6 @@ void SampleMechanismGet::handleValue(Guard &guard,
                                      const epicsTime &now,
                                      const RawValue::Data *value)
 {
-    LOG_MSG("SampleMechanismGet::handleValue %s\n", channel->name.c_str());
-#if 0
     if (channel->isDisabled(guard))
     {   // park the value so that we can write it ASAP after being re-enabled
         RawValue::copy(channel->dbr_time_type, channel->nelements,
@@ -207,13 +211,13 @@ void SampleMechanismGet::handleValue(Guard &guard,
     }
     else
     {
-        //LOG_MSG("SampleMechanismMonitored::value_callback %s\n",
-        //        channel->name.c_str());
+        LOG_MSG("SampleMechanismGet::handleValue %s\n",
+                channel->name.c_str());
         //RawValue::show(stdout, channel->dbr_time_type,
         //               channel->nelements, value, &channel->ctrl_info);   
         // Add every monitor to the ring buffer, only check for back-in-time
         epicsTime stamp = RawValue::getTime(value);
-        if (me->isGoodTimestamp(stamp, now))
+        if (isGoodTimestamp(stamp, now))
         {
             if (isValidTime(channel->last_stamp_in_archive) &&
                 stamp < channel->last_stamp_in_archive)
@@ -225,10 +229,11 @@ void SampleMechanismGet::handleValue(Guard &guard,
             }
             else
             {
+                // TODO: compare w/ remembered value for 'repeat'
                 channel->buffer.addRawValue(value);
                 channel->last_stamp_in_archive = stamp;
+                // TODO: remember
             }
         }
     }
-#endif
 }

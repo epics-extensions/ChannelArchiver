@@ -446,7 +446,11 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
     page.out(group_name);
     Guard guard(theEngine->mutex);
     if (theEngine->addGroup(guard, group_name))
+    {
         page.line("</I> was added to the engine.");
+        EngineConfig config;
+        config.write(guard, theEngine);
+    }
     else
         page.line("</I> could not be added to the engine.");
 }
@@ -471,8 +475,9 @@ static void parseConfig(HTTPClientConnection *connection,
     EngineConfig config;
     if (config.read(guard, theEngine, config_name))
     {
-        // theEngine->config_file.save(); TODO
         page.line("</I> was loaded.");
+        EngineConfig config;
+        config.write(guard, theEngine);
     }
     else
         page.line("</I> could not be loaded.<P>");

@@ -114,7 +114,7 @@ client library, which in turn tries to resolve the name on the
 network.  Ultimately, the configuration of your data servers decides
 what channel names are available.
 
-\subsubsection{period}
+\subsubsection{period} \label{sec:period}
 This mandatory sub-element of a channel defines the sampling period.
 In case of periodic sampling, this is the period at which the periodic
 sampling attempts to operate. In case of monitored channels (see next
@@ -318,8 +318,23 @@ http://localhost:4812
 \end{lstlisting}
 
 \noindent The start page of the ArchiveEngine web server should look
-similar to the one shown in Fig.~\ref{fig:engine:main}.
+similar to the one shown in Fig.~\ref{fig:engine:main}. By following
+the links, one can investigate the status of the groups and channels
+that the ArchiveEngine is currently handling. The ``Config'' page
+allows limited online-reconfiguration. Whenever a new group or channel
+is added, the engine attemps to write a new config file called
+\INDEX{onlineconfig.xml} in the directory where is was started.
+It is left to the user to decide what to do with this file: Should it
+replace the original configuration file, so that online changes are
+preserved? Or should it be ignored, because online changes are only
+meant to be temporary and with the next run of the engine, the
+original configuration file will be used?
 
+Note also that the ArchiveEngine does not allow online removal of
+channels and groups. The scan mechanism of a channel can only be
+changed towards a higher scan rate or lower period, similar to the
+handling of multiply defined channels in a configuration file. Refer
+to the section discussing the ``period'' tag on page \pageref{sec:period}.
 
 \section{Threads} % ----------------------------------------------------------
 The ArchiveEngine uses several threads:

@@ -81,11 +81,6 @@ public:
     int    getBufferReserve() const;
     void   setBufferReserve(Guard &guard, int reserve);
 
-    enum {
-        SECS_PER_DAY = 60*60*24,
-        SECS_PER_MONTH = 60*60*24*31 // depends on month, ... this is a magic number
-    };
-
     /// Determine the suggested buffer size for a value
     /// with given scan period based on how often we write
     /// and the buffer reserve
@@ -139,7 +134,6 @@ private:
     double          write_period;   // period between writes to archive file
     int             buffer_reserve; // 2-> alloc. buffs for 2x expected data
     epicsTime       next_write_time;// when to write again
-    double          secs_per_file;  // roughly: data file period
     double          future_secs;    // now+_future_secs is considered wrong
 
 #ifdef USE_PASSWD

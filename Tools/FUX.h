@@ -66,6 +66,9 @@ public:
     ///
     Element *parse(const char *file_name);
 
+    /// Set the document.
+    void setDoc(Element *doc);
+    
     /// Dumps the FUX document.
 
     /// Elements with values that are pure white space are

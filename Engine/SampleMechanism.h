@@ -42,8 +42,13 @@ public:
     /// so a SampleMechanism must assert that it can be deleted
     /// (and replaced with a new one) at any time.
     virtual ~SampleMechanism();
+
+    /// Printable description.
     virtual stdString getDescription(Guard &guard) const = 0;
 
+    /// Is the mechanism scanning or safe-every-monitor?
+    virtual bool isScanning() const = 0;
+    
     /// Invoked for connection changes.
     virtual void handleConnectionChange(Guard &guard) = 0;
 
@@ -75,6 +80,7 @@ public:
     SampleMechanismMonitored(class ArchiveChannel *channel);
     ~SampleMechanismMonitored();
     stdString getDescription(Guard &guard) const;
+    bool isScanning() const;
     void handleConnectionChange(Guard &guard);
     void handleValue(Guard &guard, const epicsTime &now,
                      const RawValue::Data *value);
@@ -90,6 +96,7 @@ public:
     SampleMechanismGet(class ArchiveChannel *channel);
     ~SampleMechanismGet();
     stdString getDescription(Guard &guard) const;
+    bool isScanning() const;
     void handleConnectionChange(Guard &guard);
     void handleValue(Guard &guard, const epicsTime &now,
                      const RawValue::Data *value);

@@ -14,8 +14,8 @@
 #define TEST_TIMER
 #define TEST_CA
 #define TEST_BITSET
-#define TEST_FUX
 #endif
+#define TEST_FUX
 
 // Nothing should need to be touched from here down
 

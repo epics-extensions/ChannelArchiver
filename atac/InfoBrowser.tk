@@ -1,0 +1,93 @@
+# Simple example for a "GUI" tool
+# that lists channel information
+
+source atacTools.tcl
+
+proc usage {} {
+	global argv0
+	puts "USAGE: $argv0 archive \[ channelPattern \]"
+
+	exit 1
+}
+
+#################################
+# Parse args
+#
+set argc [ llength $argv ]
+if { $argc < 1 } { usage }
+
+set archiveName [ lindex $argv 0 ]
+if { $argc > 1 } {
+	set channelPattern [ lindex $argv 1 ]
+} else {
+	set channelPattern ""
+}      
+
+#################################
+# GUI setup
+#
+option add *background #AEC9D2  
+
+frame .archivename
+label .archivename.lbl -text "Archive:" -width 20
+entry .archivename.entry -textvariable archiveName -width 40
+pack .archivename.lbl -side left
+pack .archivename.entry -side right -expand yes -fill x
+
+frame .channelpattern
+label .channelpattern.lbl -text "Channel Pattern:" -width 20
+entry .channelpattern.entry -textvariable channelPattern -width 40
+pack .channelpattern.lbl -side left
+pack .channelpattern.entry -side right -expand yes -fill x
+ 
+frame .names
+listbox .names.list -yscrollcommand ".names.scroll set" -width 30 -height 20
+scrollbar .names.scroll -command ".names.list yview"
+set channelList ".names.list"
+pack .names.scroll -side right -fill y
+pack .names.list -side left -expand yes -fill both 
+
+frame .buttons
+button .buttons.restart -command "listChannels" -text "Restart"
+button .buttons.exit -command "exit" -text "Exit"
+pack .buttons.restart  -side left -padx 0
+pack .buttons.exit     -side right -padx 0
+
+pack .archivename -fill x -side top
+pack .channelpattern -fill x -side top
+pack .buttons -fill x -side bottom
+pack .names -expand yes -fill both -side top
+
+update     
+
+
+# Main
+#
+proc listChannels {} {
+	global archiveName
+	global channelList
+	global channelPattern
+
+	if { [ $channelList size ] > 0 } {
+		$channelList delete 0 end
+	}
+	update
+
+	set archiveId [ archive open $archiveName ]
+	set channelId [ archive findChannelByPattern $archiveId $channelPattern ]
+	while { [ channel valid $channelId ] } {
+		$channelList insert end [ channel name $channelId ]
+		$channelList insert end " First: [ channel getFirstTime $channelId ]"
+		$channelList insert end " Last : [ channel getLastTime  $channelId ]"   
+
+		channel next $channelId
+	}
+	channel close $channelId
+	archive close $archiveId
+}
+
+# Main
+#
+
+showAtacNag
+listChannels

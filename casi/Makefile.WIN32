@@ -13,7 +13,7 @@
 HOST_ARCH=WIN32
 
 # SWIG Installation
-SWIG      = d:\sys\swig1.1\swig -c++
+SWIG      = c:\sys\swig1.1\swig -c++ -Ic:\sys\swig1.1\swig_lib
 
 # Includes/links for EPICS extensions, base
 # Note: these are relative to e.g. the tcl/O.WIN32 directory!
@@ -31,19 +31,19 @@ CFLAGS = -GX -GR -DWIN32 -D_X86_ $(INCLUDES)
 
 # Tcl settings
 #TCL      = c:\progra~1\tcl
-TCL      = d:\sys\tcl
+TCL      = c:\sys\tcl
 TCL_INC  = -I$(TCL)\include
 TCL_LIB  = $(TCL)\lib\tcl80.lib
 
 # Python settings
 #PYTHON   = c:\Progra~1\python
-PYTHON   = d:\sys\python
+PYTHON   = c:\sys\python
 PY_INC   = -I$(PYTHON)\include
 PY_LIB   = $(PYTHON)\libs\python15.lib
 PY_FLAGS = /D __WIN32__
 
 # Perl settings - not working...
-PERL       = d:\sys\Perl
+PERL       = c:\sys\Perl
 PERL_INC   = -I$(PERL)\lib\CORE
 PERL_LIB   = $(PERL)\lib\CORE\perlcore.lib
 PERL_FLAGS = /DWIN32 /DMSWIN32 /DPERL_OBJECT /DHAS_BOOL

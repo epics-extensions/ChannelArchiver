@@ -532,8 +532,8 @@ void test(const stdString &directory, const osiTime &start, const osiTime &end)
 }
 
 // Copy one channel name onto another new name
-void copy(const stdString &archive_name,
-          const stdString &channel_name, const stdString &new_name)
+static void copy(const stdString &archive_name,
+                 const stdString &channel_name, const stdString &new_name)
 {
     DirectoryFile dir(archive_name, true /* for write */);
     DirectoryFileIterator o_entry = dir.find(channel_name);
@@ -545,14 +545,13 @@ void copy(const stdString &archive_name,
         BinChannel *n_ch = n_entry.getChannel();
         
         if (n_entry.isValid())
-            std::cout << "Added " << new_name << "\n";
+            std::cout << "Copied as " << new_name << "\n";
         n_ch->setFirstTime(o_ch->getFirstTime());
         n_ch->setFirstFile(o_ch->getFirstFile());
         n_ch->setFirstOffset(o_ch->getFirstOffset());
         n_ch->setLastTime(o_ch->getLastTime());
         n_ch->setLastFile(o_ch->getLastFile());
         n_ch->setLastOffset(o_ch->getLastOffset());
-        n_ch->setNextEntryOffset(o_ch->getNextEntryOffset());
         n_entry.save();
     }
     else
@@ -567,10 +566,6 @@ void delete_name(const stdString &archive_name, const stdString &channel_name)
     if (dir.remove(channel_name))
     {
         std::cout << "Removed '" << channel_name << "' from directory file\n";
-        std::cout << "Note that this does not remove any samples or compact\n";
-        std::cout << "the data files, you have to copy the data files\n";
-        std::cout << "to accomplish this.\n";
-        std::cout << "And by the way there is no way back, the channel is now gone.\n";
     }
     else
     {
@@ -627,7 +622,13 @@ int main(int argc, const char *argv[])
     initOsiHelpers();
 
     CmdArgParser parser(argc, argv);
-    parser.setHeader("Archive Manager version " VERSION_TXT ", built " __DATE__ "\n\n");
+    parser.setHeader("Archive Manager version " VERSION_TXT
+                     ", built " __DATE__ "\n\n"
+                     "You should not run the this tool on a live archive\n"
+                     "Stop the ArchiveEngine before operating on an archive.\n"
+                     "Create backups in case this tool damages your archive.\n"
+                     "\n"
+                     );
     parser.setArgumentsInfo("<archive>");
 
     CmdArgFlag   do_show_info   (parser, "info", "Show archive information");
@@ -645,7 +646,7 @@ int main(int argc, const char *argv[])
     CmdArgString ascii_input    (parser, "Input", "<ascii file>", "read ASCII dump for channel into archive");
     CmdArgString compare_target (parser, "Compare", "<target archive>", "Compare with target archive");
     CmdArgFlag   do_seek_test   (parser, "Seek", "Seek test (use with -start)");
-    CmdArgString copy_channel   (parser, "Copy", "<new name>", "Copy channel name");
+    CmdArgString rename_channel (parser, "Rename", "<new name>", "Rename channel name, requires -c for old channel");
     CmdArgString delete_channel (parser, "DELETE", "<channel>", "Delete channel from directory file");
 #ifdef EXPERIMENT
     CmdArgFlag   do_experiment  (parser, "Experiment", "Perform experiment (temporary option)");
@@ -693,14 +694,15 @@ int main(int argc, const char *argv[])
             seek_time(archive_name, channel_name, start);
         else if (show_headers.get().length() > 0)
             headers(archive_name, show_headers);
-        else if (copy_channel.get().length() > 0)
+        else if (rename_channel.get().length() > 0)
         {
             if (channel_name.get().length() <= 0)
             {
-                std::cerr << "Need channel name (option -c) for copy\n";
+                std::cerr << "Need channel name (option -c) for rename\n";
                 return -1;
             }
-            copy(archive_name, channel_name.get(), copy_channel.get());
+            copy(archive_name, channel_name.get(), rename_channel.get());
+            delete_name(archive_name, channel_name.get());
         }
         else if (delete_channel.get().length() > 0)
         {

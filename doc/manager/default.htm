@@ -29,6 +29,10 @@
   The tool displays an option summary like this:
   <pre>USAGE:  ArchiveManager [Options] &lt;archive&gt;
 
+You should not run the this tool on a live archive.
+Stop the ArchiveEngine before operating on an archive.
+Create backups in case this tool damages your archive.
+
 Options:
         -info                          Show archive information
         -test                          Test archive for errors
@@ -45,7 +49,7 @@ Options:
         -Input &lt;ascii file&gt;            read ASCII dump for channel into archive
         -Compare &lt;target archive&gt;      Compare with target archive
         -Seek                          Seek test (use with -start)
-        -Copy &lt;new name&gt;               Copy channel name
+        -Rename &lt;new name&gt;             Rename channel name, requires -c for old channel
         -DELETE &lt;channel&gt;              Delete channel from directory file
  </pre>
 
@@ -78,7 +82,7 @@ Options:
   <em>ArchiveManager $ARCH -c is_hvps_actv -s &quot;02/10/2000 17:21:17&quot; -e
   &quot;02/10/2000 17:43:22&quot;</em>
 
-  <h3>Copy, delete, rename entries</h3>
+  <h3>Delete, rename entries</h3>
   <em>ArchiveManager $ARCH -DELETE fred</em><br>
   will delete the entry 'fred' from the directory file.
   Note that this does <u>not</u> remove any samples or compact
@@ -86,14 +90,8 @@ Options:
   to accomplish this. (see '-xport' option).
   And by the way <u>there is no way back, the channel is gone.</u>
   <p>
-  <em>ArchiveManager $ARCH -channel fred -Copy egon</em><br>
-  will create a copied name in the directory file.
-  This does <u>not</u> copy any data: The new name is merely an
-  alias for the original name.<br>
-  This option becomes useful in connection with the delete, because
-  copy and delete combine to a "rename" option:<br>
-  <em>ArchiveManager $ARCH -channel old_name -Copy new_name</em><br>
-  <em>ArchiveManager $ARCH -DELETE old_name</em><br>
+  <em>ArchiveManager $ARCH -channel fred -Rename egon</em><br>
+  will rename a channel in the directory file.
 
   <h3>Dump channel in ASCII</h3>
   <em>ArchiveManager $ARCH -O is_hvps_actv &gt;is_hvps_actv.txt</em>

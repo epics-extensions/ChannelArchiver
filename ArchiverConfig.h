@@ -22,7 +22,7 @@
 #define VERSION 1
 #define RELEASE 9
 
-#define VERSION_TXT "1.9.0"
+#define VERSION_TXT "1.9.1"
 
 // ----------------------------------------------------------
 // ArchiveEngine

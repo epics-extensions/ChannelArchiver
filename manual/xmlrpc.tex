@@ -104,16 +104,24 @@ result = archiver.values(
 \noindent The parameter ''how'' determines how the raw values of the various
 channels get arranged to meet the requested time range and count:
 \begin{description}
-\item[\sffamily how = 0:]
+\item[\sffamily how = 0 (raw):]
   Get raw data from archive,  starting w/ start,
   up to either 'end' time or max. 'count' samples.
-\item[\sffamily how = 1:]
-  Get interpolated data from archive,  starting w/ start,
+\item[\sffamily how = 1 (spreadsheet):]
+  Get ``filled'' or staircase-interpolated data from archive, starting
+  w/ start, up to either 'end' time or max. 'count' samples.
+  For each channel, the same number of values is returned, and the
+  time stamps of the samples match accross channels, so that one can
+  print the samples for each channel as columns in a spread sheet.
+  If a spreadsheet cell is empty because the channel does not have any
+  useful value for that point in time, a status/severity of
+  UDF/INVALID is returned (Tables \ref{tab:sevr} and \ref{tab:stat})
+  For details on the staircase interpolation, refer to section \ref{sec:timestampcorr} and following, beginning on page \pageref{sec:timestampcorr}.
+\item[\sffamily how = 2 (interpol.):]
+  Get interpolated data from archive, starting w/ start,
   up to either 'end' time or max. 'count' samples.
   The data is interpolated with time slots that are multiples
-  of (end-start)/count.
-  For details,  refer to section \ref{sec:timestampcorr} and following,
-  beginning on page \pageref{sec:timestampcorr}.
+  of (end-start)/count. Again refer to section \ref{sec:timestampcorr}.
 \end{description}
 
 \noindent The result is an array of structures,  one structure per
@@ -209,6 +217,8 @@ together with the ordinary EPICS severity values.
       5   & LOLO ALARM  \\
       6   & LOW ALARM  \\
       7   & STATE ALARM  \\
+      \ldots   & \ldots  \\
+      17   & UDF ALARM  \\
       \ldots   & \ldots  \\
     \end{tabular}
     \caption{Alarm Status Values}

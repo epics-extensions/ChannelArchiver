@@ -9,7 +9,7 @@ REQUEST="$1";
 export REQUEST_METHOD=POST
 export CONTENT_TYPE=text/xml
 export CONTENT_LENGTH=`wc --bytes <$REQUEST`
-export SERVERCONFIG=serverconfig.xml
+export SERVERCONFIG=test.xml
 cat $REQUEST | O.linux-x86/ArchiveDataServer
 
 #cat /tmp/archserver.log

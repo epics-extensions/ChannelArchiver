@@ -3,8 +3,8 @@
 use DataServer;
 
 # Setup URL
-$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
 $server_url = 'http://bogart/cgi-bin/xmlrpc/ArchiveDataServer2.cgi';
+$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
 
 print("Connecting to Archive Data Server URL '$server_url'\n");
 print("==================================================================\n");
@@ -28,7 +28,7 @@ foreach $result ( @{$results} )
     $key = $result->{key};
     print("Key $key: '$result->{name}' in '$result->{path}'\n");
 }
-$key = 2;
+$key = 1;
 
 print("Channels:\n");
 print("==================================================================\n");
@@ -58,10 +58,10 @@ foreach $result ( @{$results} )
 print("Get Values:\n");
 print("==================================================================\n");
 @names = ( "fred", "janet" );
-($start, $startnano) = string2time("01/01/2004 00:00:00.000000000");
+($start, $startnano) = string2time("02/17/2004 02:00:00.000000000");
 ($end, $endnano)   = string2time("02/28/2004 02:06:12.000000000");
-$count = 50;
-$how = 0;
+$count = 10;
+$how = 1;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:
 $results = $server->call('archiver.values', $key, \@names,

@@ -5,12 +5,15 @@
 // XML-RPC
 #include <xmlrpc.h>
 #include <xmlrpc_cgi.h>
+// EPICS Base
+#include <alarm.h>
 // Tools
 #include <AutoPtr.h>
 #include <MsgLogger.h>
 #include <RegularExpression.h>
 #include <BinaryTree.h>
 // Storage
+#include <SpreadsheetReader.h>
 #include <LinearReader.h>
 // XMLRPCServer
 #include "DataServer.h"
@@ -89,7 +92,7 @@ void epicsTime2pieces(const epicsTime &t,
     nano = stamp.nsec;
 }
 
-// Inverse ro epicsTime2pieces
+// Inverse to epicsTime2pieces
 void pieces2epicsTime(xmlrpc_int32 secs, xmlrpc_int32 nano, epicsTime &t)
 {   // As lame as other nearby code
     epicsTimeStamp stamp;
@@ -182,11 +185,30 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
                                "states", "<undefined>");
 }
 
-// Given a raw sample dbr_type/dbr_count,data,
-// map it onto xml_type/xml_count and add to values
+void dbr_type_to_xml_type(DbrType dbr_type, DbrCount dbr_count,
+                          xmlrpc_int32 &xml_type, xmlrpc_int32 &xml_count)
+{
+    switch (dbr_type)
+    {
+        case DBR_TIME_STRING: xml_type = XML_STRING; break;
+        case DBR_TIME_ENUM:   xml_type = XML_ENUM;   break;
+        case DBR_TIME_SHORT:
+        case DBR_TIME_CHAR:
+        case DBR_TIME_LONG:   xml_type = XML_INT;    break;
+        case DBR_TIME_FLOAT:    
+        case DBR_TIME_DOUBLE:
+        default:              xml_type = XML_DOUBLE; break;
+    }
+    xml_count = dbr_count;
+}
+
+// Given a raw sample dbr_type/count/time/data,
+// map it onto xml_type/count and add to values.
+// Handles the special case data == 0,
+// which happens for undefined cells in a SpreadsheetReader.
 void encode_value(xmlrpc_env *env,
                   DbrType dbr_type, DbrCount dbr_count,
-                  const RawValue::Data *data,
+                  const epicsTime &time, const RawValue::Data *data,
                   xmlrpc_int32 xml_type, xmlrpc_int32 xml_count,
                   xmlrpc_value *values)
 {
@@ -201,7 +223,8 @@ void encode_value(xmlrpc_env *env,
         case XML_STRING:
         {
             stdString txt;
-            RawValue::getValueString(txt, dbr_type, dbr_count, data, 0);
+            if (data)
+                RawValue::getValueString(txt, dbr_type, dbr_count, data, 0);
             element = xmlrpc_build_value(env, STR("s#"),
                                          txt.c_str(), txt.length());
             xmlrpc_array_append_item(env, val_array, element);
@@ -211,11 +234,11 @@ void encode_value(xmlrpc_env *env,
         case XML_ENUM:
         {
             long l;
-            for (i=0;
-                 i < xml_count &&
-                     RawValue::getLong(dbr_type, dbr_count, data, l, i);
-                 ++i)
+            for (i=0; i < xml_count; ++i)
             {
+                if (!data  ||
+                    !RawValue::getLong(dbr_type, dbr_count, data, l, i))
+                    l = 0;
                 element = xmlrpc_build_value(env, STR("i"), (xmlrpc_int32)l);
                 xmlrpc_array_append_item(env, val_array, element);
                 xmlrpc_DECREF(element);
@@ -224,11 +247,11 @@ void encode_value(xmlrpc_env *env,
         case XML_DOUBLE:
         {
             double d;
-            for (i=0;
-                 i < xml_count &&
-                     RawValue::getDouble(dbr_type, dbr_count, data, d, i);
-                 ++i)
+            for (i=0; i < xml_count; ++i)
             {
+                if (!data  ||
+                    !RawValue::getDouble(dbr_type, dbr_count, data, d, i))
+                    d = 0.0;
                 element = xmlrpc_build_value(env, STR("d"), d);
                 xmlrpc_array_append_item(env, val_array, element);
                 xmlrpc_DECREF(element);
@@ -236,14 +259,24 @@ void encode_value(xmlrpc_env *env,
         }
     }
     xmlrpc_int32 secs, nano;
-    epicsTime2pieces(RawValue::getTime(data), secs, nano);
-    xmlrpc_value *value = xmlrpc_build_value(
-        env, STR("{s:i,s:i,s:i,s:i,s:V}"),
-        "stat", (xmlrpc_int32)RawValue::getStat(data),
-        "sevr", (xmlrpc_int32)RawValue::getSevr(data),
-        "secs", secs,
-        "nano", nano,
-        "value", val_array);
+    epicsTime2pieces(time, secs, nano);
+    xmlrpc_value *value;
+    if (data)
+        value = xmlrpc_build_value(
+            env, STR("{s:i,s:i,s:i,s:i,s:V}"),
+            "stat", (xmlrpc_int32)RawValue::getStat(data),
+            "sevr", (xmlrpc_int32)RawValue::getSevr(data),
+            "secs", secs,
+            "nano", nano,
+            "value", val_array);
+    else
+        value = xmlrpc_build_value(
+            env, STR("{s:i,s:i,s:i,s:i,s:V}"),
+            "stat", (xmlrpc_int32)UDF_ALARM,
+            "sevr", (xmlrpc_int32)INVALID_ALARM,
+            "secs", secs,
+            "nano", nano,
+            "value", val_array);    
     xmlrpc_DECREF(val_array);
     xmlrpc_array_append_item(env, values, value);
     xmlrpc_DECREF(value);
@@ -254,15 +287,16 @@ void encode_value(xmlrpc_env *env,
 //
 // Returns raw values if interpol <= 0.0.
 // Returns 0 on error.
-xmlrpc_value *get_data(xmlrpc_env *env,
-                       int key,
-                       const stdVector<stdString> names,
-                       const epicsTime &start, const epicsTime &end,
-                       long count, double interpol)
+xmlrpc_value *get_channel_data(xmlrpc_env *env,
+                               int key,
+                               const stdVector<stdString> names,
+                               const epicsTime &start, const epicsTime &end,
+                               long count, double interpol)
 {
     xmlrpc_value   *results = 0;
 #ifdef LOGFILE
     stdString txt;
+    LOG_MSG("get_channel_values\n");
     LOG_MSG("Start: %s\n", epicsTimeTxt(start, txt));
     LOG_MSG("End  : %s\n", epicsTimeTxt(end, txt));
     LOG_MSG("Interpolating onto %g seconds\n", interpol);
@@ -270,7 +304,7 @@ xmlrpc_value *get_data(xmlrpc_env *env,
     AutoPtr<IndexFile> index(open_index(env, key));
     AutoPtr<DataReader> reader;
     if (env->fault_occurred)
-        goto exit_from_get_data;
+        return 0;
     if (interpol <= 0.0)
         reader = new RawDataReader(*index);
     else
@@ -279,11 +313,11 @@ xmlrpc_value *get_data(xmlrpc_env *env,
     {
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
                                        "Cannot create reader");
-        goto exit_from_get_data;
+        goto exit_get_channel_data;
     }
     results = xmlrpc_build_value(env, STR("()"));
     if (env->fault_occurred)
-        goto exit_from_get_data;
+        goto exit_get_channel_data;
     const RawValue::Data *data;
     xmlrpc_value *result, *meta, *values;
     xmlrpc_int32 xml_type, xml_count;
@@ -296,7 +330,7 @@ xmlrpc_value *get_data(xmlrpc_env *env,
 #endif
         values = xmlrpc_build_value(env, STR("()"));
         if (env->fault_occurred)
-            goto exit_from_get_data;
+            goto exit_get_channel_data;
         data = reader->find(names[i], &start, &end);
         if (data == 0)
         {
@@ -308,26 +342,18 @@ xmlrpc_value *get_data(xmlrpc_env *env,
         {
             // Fix meta/type/count based on first value
             meta = encode_ctrl_info(env, &reader->getInfo());
-            switch (reader->getType())
-            {
-                case DBR_TIME_STRING: xml_type = XML_STRING; break;
-                case DBR_TIME_ENUM:   xml_type = XML_ENUM;   break;
-                case DBR_TIME_SHORT:
-                case DBR_TIME_CHAR:
-                case DBR_TIME_LONG:   xml_type = XML_INT;    break;
-                case DBR_TIME_FLOAT:    
-                case DBR_TIME_DOUBLE:
-                default:              xml_type = XML_DOUBLE; break;
-            }
-            xml_count = reader->getCount();
-            for (num_vals = 0;
-                 data && num_vals < count
-                     && RawValue::getTime(data) < end;
-                 ++num_vals, data = reader->next())
+            dbr_type_to_xml_type(reader->getType(), reader->getCount(),
+                                 xml_type, xml_count);
+            num_vals = 0;
+            while (data && num_vals < count &&
+                   RawValue::getTime(data) < end)
             {
                 encode_value(env,
-                             reader->getType(), reader->getCount(), data,
+                             reader->getType(), reader->getCount(),
+                             RawValue::getTime(data), data,
                              xml_type, xml_count, values);
+                 ++num_vals;
+                 data = reader->next();
             }
         }
         // Assemble result = { name, meta, type, count, values }
@@ -343,10 +369,116 @@ xmlrpc_value *get_data(xmlrpc_env *env,
         xmlrpc_array_append_item(env, results, result);
         xmlrpc_DECREF(result);
     }
-  exit_from_get_data:
+  exit_get_channel_data:
     index->close();
     return results;
 }
+
+// Return the data for all the names[], start .. end etc.
+// as get_values() is supposed to return them.
+//
+// Returns raw values if interpol <= 0.0.
+// Returns 0 on error.
+xmlrpc_value *get_sheet_data(xmlrpc_env *env,
+                             int key,
+                             const stdVector<stdString> names,
+                             const epicsTime &start, const epicsTime &end,
+                             long count, double interpol)
+{
+    xmlrpc_value *results = 0, **meta = 0, **values = 0;
+    xmlrpc_int32 *xml_type = 0, *xml_count = 0;
+    long i, num_vals = 0, name_count = names.size();
+    bool ok = false;
+#ifdef LOGFILE
+    stdString txt;
+    LOG_MSG("get_sheet_values\n");
+    LOG_MSG("Start: %s\n", epicsTimeTxt(start, txt));
+    LOG_MSG("End  : %s\n", epicsTimeTxt(end, txt));
+    LOG_MSG("Interpolating onto %g seconds\n", interpol);
+#endif
+    AutoPtr<IndexFile> index(open_index(env, key));
+    if (env->fault_occurred)
+        return 0;
+    AutoPtr<SpreadsheetReader> sheet(new SpreadsheetReader(*index, interpol));
+    if (!sheet)
+        goto exit_get_sheet_data;
+    results = xmlrpc_build_value(env, STR("()"));
+    if (env->fault_occurred)
+        goto exit_get_sheet_data;
+    meta     = (xmlrpc_value **) calloc(name_count, sizeof(xmlrpc_value *));
+    values   = (xmlrpc_value **) calloc(name_count, sizeof(xmlrpc_value *));
+    xml_type  = (xmlrpc_int32 *) calloc(name_count, sizeof(xmlrpc_int32));
+    xml_count = (xmlrpc_int32 *) calloc(name_count, sizeof(xmlrpc_int32));
+    if (! (results && meta && values && xml_type && xml_count))
+        goto exit_get_sheet_data;
+    ok = sheet->find(names, &start);
+    for (i=0; i<name_count; ++i)
+    {
+        values[i] = xmlrpc_build_value(env, STR("()"));            
+        if (env->fault_occurred)
+            goto exit_get_sheet_data;
+        if (ok)
+        {   // Fix meta/type/count based on first value
+            meta[i] = encode_ctrl_info(env, &sheet->getCtrlInfo(i));
+            dbr_type_to_xml_type(sheet->getType(i), sheet->getCount(i),
+                                 xml_type[i], xml_count[i]);
+        }
+        else
+        {
+            meta[i] = encode_ctrl_info(env, 0);
+            xml_type[i] = XML_ENUM;
+            xml_count[i] = 1;
+        }
+    }
+    while (ok && num_vals < count && sheet->getTime() < end)
+    {
+        for (i=0; i<name_count; ++i)
+        {
+            encode_value(env,
+                         sheet->getType(i), sheet->getCount(i),
+                         sheet->getTime(), sheet->getValue(i),
+                         xml_type[i], xml_count[i], values[i]);
+            
+        }
+        ++num_vals;
+        ok = sheet->next();
+    }
+    for (i=0; i<name_count; ++i)
+    {   // Assemble result = { name, meta, type, count, values }
+        xmlrpc_value *result =
+            xmlrpc_build_value(env, STR("{s:s,s:V,s:i,s:i,s:V}"),
+                               "name",   names[i].c_str(),
+                               "meta",   meta[i],
+                               "type",   xml_type[i],
+                               "count",  xml_count[i],
+                               "values", values[i]);    
+        // Add to result array
+        xmlrpc_array_append_item(env, results, result);
+        xmlrpc_DECREF(result);
+    }
+  exit_get_sheet_data:
+    index->close();
+    for (i=0; i<name_count; ++i)
+    {
+        if (meta && meta[i])
+            xmlrpc_DECREF(meta[i]);
+        if (values && values[i])
+            xmlrpc_DECREF(values[i]);
+    }
+    if (xml_count)
+        free(xml_count);
+    if (xml_type)
+        free(xml_type);
+    if (values)
+        free(values);
+    if (meta)
+        free(meta);
+    return results;
+}
+
+// ---------------------------------------------------------------------
+// XML-RPC callbacks
+// ---------------------------------------------------------------------
 
 // { int32  ver, string desc } = archiver.info()
 xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
@@ -357,16 +489,14 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
     char txt[500];
     const char *config = get_config_name(env);
     if (!config)
-    {
-#ifdef LOGFILE
-        LOG_MSG("config: '%s'\n", config);
-#endif
         return 0;
-    }
+#ifdef LOGFILE
+    LOG_MSG("config: '%s'\n", config);
+#endif
     sprintf(txt,
             "Channel Archiver Data Server V%d\n"
             "Config '%s'\n"
-            "Supports how=0 (raw), 1 (interpol/average)\n",
+            "Supports how=0 (raw), 1 (spreadsheet), 2 (interpol/average)\n",
             ARCH_VER, config);
     return xmlrpc_build_value(env, STR("{s:i,s:s}"),
                               STR("ver"), ARCH_VER,
@@ -521,17 +651,25 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     switch (how)
     {
         case 0:
-            return get_data(env, key, name_vector, start, end, actual_count, -1.0);
+            return get_channel_data(env, key, name_vector, start, end,
+                                    actual_count, -1.0);
         case 1:
+            return get_sheet_data(env, key, name_vector, start, end,
+                                  actual_count, -1.0);
+        case 2:
             if (count <= 1)
                 count = 1;
-            return get_data(env, key, name_vector, start, end, actual_count,
-                            (end-start)/count);
+            return get_channel_data(env, key, name_vector, start, end,
+                                    actual_count, (end-start)/count);
     }
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_ARG_ERROR,
                                    "Invalid how=%d", how);
     return 0;
 }
+
+// ---------------------------------------------------------------------
+// main
+// ---------------------------------------------------------------------
 
 #ifdef LOGFILE
 static void LogRoutine(void *arg, const char *text)

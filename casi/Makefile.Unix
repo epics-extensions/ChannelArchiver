@@ -10,7 +10,7 @@ SWIG = swig -c++ -dhtml
 
 # Includes/links for EPICS extensions, base
 # Note: these are relative to e.g. the tcl/$(HOST_ARCH) directory!
-BASE=/cs/epics/R3.13.3/base
+BASE=/cs/epics/R3.13.5/base
 EXT=../../../../..
 INCLUDES  = -I../.. -I$(EXT)/include -I$(BASE)/include
 INCLUDES += -I$(BASE)/include/os/$(HOST_ARCH) -I$(BASE)/src/ca

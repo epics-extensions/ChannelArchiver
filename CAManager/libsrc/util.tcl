@@ -364,8 +364,10 @@ Puts "util: readCFG" funcallX
       regsub "job\$" $i "time" t
       regexp "(.*),(.*),job" $i all num act
 
-      Puts "canceling $act job \"[lindex [after info $::sched($i)] 0]\" \"[camMisc::arcGet $num descr]\"" debug2
-      after cancel $::sched($i)
+      if {[lsearch -exact [after info] $::sched($i)] >= 0} {
+	Puts "canceling $act job \"[lindex [after info $::sched($i)] 0]\" \"[camMisc::arcGet $num descr]\"" debug2
+	after cancel $::sched($i)
+      }
       array unset ::sched $i
       array unset ::sched $t
     }

@@ -5,9 +5,13 @@
 # Use e.g.
 #   ArchiveManager ../../Engine/Test/freq_directory -Compare /tmp/dir
 # for verification
+#
+# Benchmark result:
+#
+# On a machine were Engine/bench.cpp can write  ~7700 values/sec,
+# this script could copy (read, write, do python) ~2200 val/sec
 
-import casiTools
-import casi
+import casiTools, casi, time
 
 old='../../Engine/Test/freq_directory'
 new='/tmp/dir'
@@ -31,13 +35,15 @@ if not archive1.write (new, hours_per_file):
 
 # This could be "findChannelByPattern"
 archive0.findFirstChannel (channel0)
+total = 0
+t0 = time.clock()
 while channel0.valid():
     name  = channel0.name()
     start = channel0.getFirstTime()
     end   = channel0.getLastTime()
     print "Channel: ", name
-    print "\t     t0:", start
-    print "\t     t1:", end
+    print "\t     start:", start
+    print "\t     end  :", end
     # Test if this channel & time range should be copied...
 
     # Check channel in new archive
@@ -83,8 +89,14 @@ while channel0.valid():
     print "\t%d values" % values
     channel1.releaseBuffer ()
     channel0.next()
+    total = total + values
 
+t1 = time.clock()
+elapsed = t1 - t0
 
-
+if elapsed:
+    print "Average:", total/elapsed, "val/sec"
+else:
+    print "Total:", total, "values"
 
 

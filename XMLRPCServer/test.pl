@@ -3,8 +3,8 @@
 use DataServer;
 
 # Setup URL
-$server_url = 'http://bogart/cgi-bin/xmlrpc/ArchiveDataServer2.cgi';
 $server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
+$server_url = 'http://bogart/cgi-bin/xmlrpc/ArchiveDataServer3.cgi';
 
 print("Connecting to Archive Data Server URL '$server_url'\n");
 print("==================================================================\n");
@@ -28,10 +28,12 @@ foreach $result ( @{$results} )
     $key = $result->{key};
     print("Key $key: '$result->{name}' in '$result->{path}'\n");
 }
-$key = 1;
+$key = 2;
 
 print("Channels:\n");
 print("==================================================================\n");
+if (0)
+{
 $results = $server->call('archiver.names', $key, "");
 foreach $result ( @{$results} )
 {
@@ -40,8 +42,9 @@ foreach $result ( @{$results} )
 	$end   = time2string($result->{end_sec},   $result->{end_nano});
 	print("Channel $name, $start - $end\n");
 }
-print("...fred...\n");
-$results = $server->call('archiver.names', $key, "fred");
+}
+print("...IOC...\n");
+$results = $server->call('archiver.names', $key, "IOC");
 foreach $result ( @{$results} )
 {
 	$name = $result->{name};
@@ -57,10 +60,10 @@ foreach $result ( @{$results} )
 # result = (look at spec, too complex for this comment)
 print("Get Values:\n");
 print("==================================================================\n");
-@names = ( "fred", "janet" );
-($start, $startnano) = string2time("02/17/2004 02:00:00.000000000");
-($end, $endnano)   = string2time("02/28/2004 02:06:12.000000000");
-$count = 10;
+@names = ( "Test_HPRF:IOC1:Load", "Test_HPRF:IOC1:MemMax" );
+($start, $startnano) = string2time("01/02/2003 02:00:00.000000000");
+($end, $endnano)   = string2time("01/10/2003 02:06:12.000000000");
+$count = 40;
 $how = 1;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:

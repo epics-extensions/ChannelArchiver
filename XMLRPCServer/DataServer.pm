@@ -16,6 +16,7 @@ BEGIN
 {
 }
 
+# Convert seconds & nanoseconds into string
 sub time2string($$)
 {
     my ($secs, $nano) = @ARG;
@@ -26,6 +27,7 @@ sub time2string($$)
 		   $mon+1, $mday, $year + 1900, $hour, $min, $sec, $nano);
 }
 
+# Parse (seconds, nanoseconds) from string, couterpart to time2string
 sub string2time($)
 {
     my ($text) = @ARG;
@@ -35,76 +37,82 @@ sub string2time($)
     return ( $secs, $nano );
 }
 
-sub stat2string($)
+# Convert (status, severity) into string
+sub stat2string($$)
 {
-    my ($stat) = @ARG;
-    return "" if ($stat == 0);
-    return "READ" if ($stat == 1);
-    return "WRITE" if ($stat == 2);
-    return "HIHI" if ($stat == 3);
-    return "HIGH" if ($stat == 4);
-    return "LOLO" if ($stat == 5);
-    return "LOW" if ($stat == 6);
-    return "UDF" if ($stat == 17);
-    return "Status $stat";
-}
-
-sub sevr2string($)
-{
-    my ($sevr) = @ARG;
-    return "" if ($sevr == 0);
+    my ($stat, $sevr, $ss) = @ARG;
+ 
     return "ARCH_DISABLED" if ($sevr == 0x0f08);
-    return "ARCH_REPEAT" if ($sevr == 0x0f10);
+    return "ARCH_REPEAT $stat" if ($sevr == 0x0f10);
     return "ARCH_STOPPED" if ($sevr == 0x0f20);
     return "ARCH_DISCONNECT" if ($sevr == 0x0f40);
-    return "ARCH_EST_REPEAT" if ($sevr == 0x0f80);
+    return "ARCH_EST_REPEAT $stat" if ($sevr == 0x0f80);
     $sevr = $sevr & 0xF;
-    return "MINOR" if ($sevr == 1);
-    return "MAJOR" if ($sevr == 2);
-    return "INVALID" if ($sevr == 3);
-    return "Severity $sevr";
+
+    $ss = "" if ($sevr == 1);
+    $ss = "Severity $sevr";
+    $ss = "MINOR" if ($sevr == 1);
+    $ss = "MAJOR" if ($sevr == 2);
+    $ss = "INVALID" if ($sevr == 3);
+
+    return "" if ($stat == 0);
+    return "READ/$ss" if ($stat == 1);
+    return "WRITE/$ss" if ($stat == 2);
+    return "HIHI/$ss" if ($stat == 3);
+    return "HIGH/$ss" if ($stat == 4);
+    return "LOLO/$ss" if ($stat == 5);
+    return "LOW/$ss" if ($stat == 6);
+    return "UDF/$ss" if ($stat == 17);
+    return "Status $stat/$ss";
 }
 
+# local: dump meta info (prefix, meta-hash reference)
+sub show_meta($$)
+{
+    my ($pfx, $meta) = @ARG;
+    if ($meta->{type} == 1)
+    {
+	print($pfx, "Display : $meta->{disp_low} ... $meta->{disp_high}\n");
+	print($pfx, "Alarms  : $meta->{alarm_low} ... $meta->{alarm_high}\n");
+	print($pfx, "Warnings: $meta->{warn_low} ... $meta->{warn_high}\n");
+	print($pfx, "Units   : '$meta->{units}', Precision: $meta->{prec}\n");
+    }
+    elsif ($meta->{type} == 0)
+    {   # Didn't test this case
+	foreach my $state ( @{$meta->{states}} )
+	{
+	    print($pfx, "State: '$state'\n");
+	}
+    }
+}
+    
+# Dump result of archiver.values()
 sub show_values($)
 {
     my ($results) = @ARG;
-    my (%meta, $result, $time, $stat, $sevr);
+    my (%meta, $result, $time, $stat);
 
     foreach $result ( @{$results} )
     {
 	print("Result for channel '$result->{name}':\n");
-	%meta = %{$result->{meta}};
-	if ($meta{type} == 1)
-	{
-	    print("Display : $meta{disp_low} ... $meta{disp_high}\n");
-	    print("Alarms  : $meta{alarm_low} ... $meta{alarm_high}\n");
-	    print("Warnings: $meta{warn_low} ... $meta{warn_high}\n");
-	    print("Units   : '$meta{units}', Precision: $meta{prec}\n");
-	}
-	elsif ($meta{type} == 0)
-	{   # Didn't test this case
-	    foreach $state ( @{$meta{states}} )
-	    {
-		print("State: '$state'\n");
-	    }
-	}
-
+	show_meta("", $result->{meta});
 	print("Type: $result->{type}, element count $result->{count}.\n");
 	
 	foreach $value ( @{$result->{values}} )
 	{
 	    $time = time2string($value->{secs}, $value->{nano});
-	    $stat = stat2string($value->{stat});
-	    $sevr = sevr2string($value->{sevr});
-	    print("$time @{$value->{value}} $stat $sevr\n");
+	    $stat = stat2string($value->{stat}, $value->{sevr});
+	    print("$time @{$value->{value}} $stat\n");
 	}
     }
 }
 
+# Dump result of archiver.values(), works only
+# for how = spreadsheet
 sub show_values_as_sheet($)
 {
     my ($results) = @ARG;
-    my (%meta, $result, $stat, $sevr, $channels, $vals, $c, $i);
+    my (%meta, $result, $stat, $channels, $vals, $c, $i);
     $channels = $#{$results} + 1;
     return if ($channels <= 0);
     $vals = $#{$results->[0]->{values}} + 1;
@@ -112,35 +120,17 @@ sub show_values_as_sheet($)
     foreach $result ( @{$results} )
     {
 	print("# Channel '$result->{name}':\n");
-	%meta = %{$result->{meta}};
-	if ($meta{type} == 1)
-	{
-	    print("# Display : $meta{disp_low} ... $meta{disp_high}\n");
-	    print("# Alarms  : $meta{alarm_low} ... $meta{alarm_high}\n");
-	    print("# Warnings: $meta{warn_low} ... $meta{warn_high}\n");
-	    print("# Units   : '$meta{units}', Precision: $meta{prec}\n");
-	}
-	elsif ($meta{type} == 0)
-	{   # Didn't test this case
-	    foreach $state ( @{$meta{states}} )
-	    {
-		print("# State: '$state'\n");
-	    }
-	}
+	show_meta("# ", $result->{meta});
 	print("# Type: $result->{type}, element count $result->{count}.\n");
     }
     # Header: "Time" & channel names
     print("# Time\t");
     for ($c=0; $c<$channels; ++$c)
     {
-	if ($results->[$c]->{meta}->{type} == 1)
-	{
-	    print("$results->[$c]->{name}\t[$results->[$c]->{meta}->{units}]\t");
-	}
-	else
-	{
-	    print("$results->[$c]->{name}\t\t");
-	}
+	print("$results->[$c]->{name}\t");
+	print("[$results->[$c]->{meta}->{units}]")
+	    if ($results->[$c]->{meta}->{type} == 1);
+	print("\t");
     }
     print("\n");
     # Spreadsheet cells
@@ -154,9 +144,9 @@ sub show_values_as_sheet($)
 				  $results->[$c]->{values}->[$v]->{nano}),
 		      "\t");
 	    }
-	    $stat = stat2string($results->[$c]->{values}->[$v]->{stat});
-	    $sevr = sevr2string($results->[$c]->{values}->[$v]->{sevr});
-	    print("@{$results->[$c]->{values}->[$v]->{value}}\t$stat $sevr");
+	    $stat = stat2string($results->[$c]->{values}->[$v]->{stat},
+				$results->[$c]->{values}->[$v]->{sevr});
+	    print("@{$results->[$c]->{values}->[$v]->{value}}\t$stat");
 	    if ($c == $channels-1)
 	    {
 		print("\n");

@@ -357,7 +357,7 @@ void channel::addBuffer(const value &value, int value_count)
       throwDetailedArchiveException(Invalid,
 				    "no BinArchive");
    
-   _iter->getChannel()->addBuffer(*value.getVal(), 0, value_count);
+   _iter->getChannel()->addBuffer(*value.getVal(), 1, value_count);
 }
 
 // bool channel::addValue(const value &value)
@@ -373,8 +373,8 @@ bool channel::addValue(const value &value)
     if (! valid()  ||  !value.valid())
         throwDetailedArchiveException(Invalid,
 				      "invalid Value");
-    if (_iter->getChannel()->lockBuffer(*value.getVal(), 0) == 0) {
-       _iter->getChannel()->addBuffer(*value.getVal(), 0, buf_size);
+    if (_iter->getChannel()->lockBuffer(*value.getVal(), 1) == 0) {
+       _iter->getChannel()->addBuffer(*value.getVal(), 1, buf_size);
        if (buf_size < max_buf_size)
 	  buf_size *= buf_size_fact;
     }

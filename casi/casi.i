@@ -5,6 +5,11 @@
 
 %module casi
 
+#ifdef SWIGTCL
+%include consthash.i
+#endif
+%include typemaps.i
+
 %text %{
 This scriping interface is meant to mimic the
 behaviour of the C++ LibIO API to the ChannelArchiver

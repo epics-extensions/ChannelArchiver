@@ -55,6 +55,10 @@ static ostream & operator << (ostream &o, const chid &chid)
     return o;
 }
 
+#ifdef CA_STATISTICS
+size_t ChannelInfo::_missing_CA_values = 0;
+#endif
+
 // Locking:
 // 
 // The ChannelInfo list and the Circ. Buffers in there are

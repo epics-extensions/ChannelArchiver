@@ -171,8 +171,6 @@ bool Engine::process()
     double scan_delay, write_delay;
     bool do_wait = true;
 
-    write_delay = _next_write_time - now;            
-
     if (_scan_list.isDueAtAll())
     {
         scan_delay = _scan_list.getDueTime() - now;
@@ -183,8 +181,13 @@ bool Engine::process()
         }
     }
     else
-        scan_delay = write_delay;
+    {
+        // Wait a little while....
+        // This determines the _need_CA_flush delay
+        scan_delay = 0.5;
+    }
     
+    write_delay = _next_write_time - now;            
     if (write_delay <= 0.0)
     {
         write_thread.write();
@@ -209,15 +212,9 @@ bool Engine::process()
     if (do_wait)
     {
         if (write_delay < scan_delay)
-        {
-            printf("Sleeping %g sec until write\n", write_delay);
             epicsThreadSleep(write_delay);
-        }
         else
-        {
-            printf("Sleeping %g sec until scan\n", scan_delay);
             epicsThreadSleep(scan_delay);
-        }
     }
     return true;
 }

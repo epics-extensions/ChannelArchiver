@@ -54,7 +54,7 @@ static void usage(HTMLPage &page)
 	std::cout << "<LI>PATTERN:   Regular expression for channel names\n";
 	std::cout << "<LI>GLOB:      If defined, shell glob is used instead of Regular expression\n";
 	std::cout << "<LI>NAMES:     List of channel names\n";
-    std::cout << "<LI>FORMAT:    PLOT | MATLAB | EXCEL | SPREADSHEET<br>\n"
+    std::cout << "<LI>FORMAT:    PLOT | MATLAB | MLSHEET | SPREADSHEET<br>\n"
               << "(used by COMMAND=GET)\n";
 	std::cout << "<LI>STATUS:    Show channel status (disconnected, ...)\n";
 	std::cout << "<LI>INTERPOL:  Use linear Interpolation (seconds)\n";
@@ -306,7 +306,8 @@ typedef enum
     fmt_Spreadsheet,
     fmt_Excel,
     fmt_GNUPlot,
-    fmt_Matlab
+    fmt_Matlab,
+    fmt_MatlabSheet
 } Format;
 
 // Export data as configured for HTMLPage (names, start, end, ...)
@@ -340,9 +341,20 @@ static bool exportFunc(HTMLPage &page, Format format,
 		else
 		if (format == fmt_Matlab)
 		{
-			exporter = new MatlabExporter (archive);
+			exporter = new MatlabExporter(archive);
 			std::cout << "Content-type: application/octet-stream\n";
 			std::cout << "Content-Disposition: filename=\"archive_data.m\"\n";
+            std::cout << "Content-Description: EPICS ChannelArchiver Data\n";
+			std::cout << "\n";
+		}
+        else
+		if (format == fmt_MatlabSheet)
+		{
+            SpreadSheetExporter *sse = new SpreadSheetExporter(archive);
+            sse->useMatlabFormat();
+			exporter = sse;
+			std::cout << "Content-type: text/plain\n";
+			std::cout << "Content-Disposition: filename=\"archive_data\"\n";
             std::cout << "Content-Description: EPICS ChannelArchiver Data\n";
 			std::cout << "\n";
 		}
@@ -713,6 +725,9 @@ int main(int argc, const char *argv[], const char *envp[])
         else
         if (page._format == "MATLAB")
             format = fmt_Matlab;
+        else
+        if (page._format == "MLSHEET")
+            format = fmt_MatlabSheet;
         else
         if (page._format == "PLOT")
             format = fmt_GNUPlot;

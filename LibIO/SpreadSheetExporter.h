@@ -14,7 +14,12 @@ public:
     SpreadSheetExporter(ArchiveI *archive);
     SpreadSheetExporter(ArchiveI *archive, const stdString &filename);
 
+    void useMatlabFormat()       { _use_matlab_format = true; }
+
     void exportChannelList(const stdVector<stdString> &channel_names);
+private:
+    stdString _comment;
+    bool _use_matlab_format;
 };
 
 

@@ -9,12 +9,16 @@
 
 SpreadSheetExporter::SpreadSheetExporter(ArchiveI *archive)
         : Exporter(archive)
-{}
+{
+    _use_matlab_format = false;
+}
 
 SpreadSheetExporter::SpreadSheetExporter(ArchiveI *archive,
                                          const stdString &filename)
         : Exporter(archive, filename)
-{}
+{
+    _use_matlab_format = false;
+}
 
 inline double fabs(double x)
 { return x>=0 ? x : -x; }
@@ -57,7 +61,17 @@ void SpreadSheetExporter::exportChannelList(
     const ValueI *v;
     char info[300];
 
-	_undefined_value = "#N/A";
+    if (_use_matlab_format)
+    {
+        _undefined_value = "NaN";
+        _comment = "% ";
+    }
+    else
+    {
+        _undefined_value = "#N/A";
+        _comment = "; ";
+    }
+    
     if (num > _max_channel_count)
     {
         sprintf(info,
@@ -134,49 +148,70 @@ void SpreadSheetExporter::exportChannelList(
         out = &file;
     }
 
-	*out << "; Generated from archive data\n";
-	*out << ";\n";
-	*out << "; To plot this data in MS Excel:\n";
-	*out << "; 1) choose a suitable format for the Time colunm (1st col.)\n";
-	*out << ";    Excel can display up to the millisecond level\n";
-	*out << ";    if you choose a custom cell format like\n";
-	*out << ";              mm/dd/yy hh:mm:ss.000\n";
-	*out << "; 2) Select the table and generate a plot,\n";
-	*out << ";    a useful type is the 'XY (Scatter) plot'.\n";
-	*out << ";\n";
-    *out << "; '#N/A' is used to indicate that there is no valid data for\n";
-    *out << "; this point in time because e.g. the channel was disconnected.\n";
-    *out << "; A seperate 'status' column - if included - shows details.\n";
-	*out << ";\n";
+    if (_use_matlab_format)
+    {
+        *out << "% Generated from archive data\n";
+        *out << "%\n";
+        *out << "% To plot this data into MatLab:\n";
+        *out << "%\n";
+        *out << "% [date, time, ch1, ch2]=textread('data.txt', '%s %s %f %f', 'commentstyle', 'matlab');\n";
+        *out << "%\n";
+        *out << "% (replace ch1, ch2 by the names you like, check for a matching number of %f format arguments)\n";
+        *out << "%\n";
+        *out << "% You will obtain arrays date, time, ch1, ....\n";
+        *out << "% To plot one of them over time:\n";
+        *out << "% times=datenum(date) + datenum(time);\n";
+        *out << "% plot(times, ch1); datetick('x');\n";
+        *out << "\n";
+    }
+    else
+    {
+        *out << "; Generated from archive data\n";
+        *out << ";\n";
+        *out << "; To plot this data in MS Excel:\n";
+        *out << "; 1) choose a suitable format for the Time colunm (1st col.)\n";
+        *out << ";    Excel can display up to the millisecond level\n";
+        *out << ";    if you choose a custom cell format like\n";
+        *out << ";              mm/dd/yy hh:mm:ss.000\n";
+        *out << "; 2) Select the table and generate a plot,\n";
+        *out << ";    a useful type is the 'XY (Scatter) plot'.\n";
+        *out << ";\n";
+        *out << "; '#N/A' is used to indicate that there is no valid data for\n";
+        *out << "; this point in time because e.g. the channel was disconnected.\n";
+        *out << "; A seperate 'status' column - if included - shows details.\n";
+        *out << ";\n";
+    }
 
     if (_linear_interpol_secs > 0.0)
 	{
-		*out << "; NOTE:\n";
-		*out << "; The values in this table\n";
-		*out << "; were interpolated within " << _linear_interpol_secs << " seconds\n";
-		*out << "; (linear interpolation), so that the values for different channels\n";
-		*out << "; can be written on lines for the same time stamp.\n";
-		*out << "; If you prefer to look at the exact time stamps for each value\n";
-		*out << "; export the data without interpolation.\n";
+		*out << _comment << "NOTE:\n";
+		*out << _comment << "The values in this table\n";
+		*out << _comment << "were interpolated within " << _linear_interpol_secs << " seconds\n";
+		*out << _comment << "(linear interpolation), so that the values for different channels\n";
+		*out << _comment << "can be written on lines for the same time stamp.\n";
+		*out << _comment << "If you prefer to look at the exact time stamps for each value\n";
+		*out << _comment << "export the data without interpolation.\n";
 	}
 	else if (_fill)
 	{
-		*out << "; NOTE:\n";
-		*out << "; The values in this table were filled, i.e. repeated\n";
-		*out << "; using staircase interpolation.\n";
-		*out << "; If you prefer to look at the exact time stamps\n";
-		*out << "; for all channels, export the data without rounding.\n";
+		*out << _comment << "NOTE:\n";
+		*out << _comment << "The values in this table were filled, i.e. repeated\n";
+		*out << _comment << "using staircase interpolation.\n";
+		*out << _comment << "If you prefer to look at the exact time stamps\n";
+		*out << _comment << "for all channels, export the data without rounding.\n";
 	}
 	else
 	{
-		*out << "; This table holds the raw data as found in the archive.\n";
-		*out << "; Since Channels are not always scanned at exactly the same time,\n";
-		*out << "; many '#N/A' may appear when looking at more than one channel like this.\n";
+		*out << _comment << "This table holds the raw data as found in the archive.\n";
+		*out << _comment << "Since Channels are not always scanned at exactly the same time,\n";
+		*out << _comment << "many '#N/A' may appear when looking at more than one channel like this.\n";
 	}
-	*out << ";\n";
 
     // Headline: "Time" and channel names
-    *out << "Time";
+    if (_use_matlab_format)
+        *out << _comment << "Date / Time";
+    else
+        *out << "Time";
     for (i=0; i<num; ++i)
     {
         *out << '\t' << channels[i]->getChannel()->getName();

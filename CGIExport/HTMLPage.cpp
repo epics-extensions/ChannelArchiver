@@ -173,9 +173,9 @@ void HTMLPage::interFace() const
     std::cout << "  <TR>\n";
     std::cout << "      <TD></TD>\n";
     std::cout << "      <TD><input type=radio name=FORMAT ";
-    if (_format == "EXCEL")
+    if (_format == "MLSHEET")
         std::cout << "checked=1 ";
-    std::cout <<           "value=EXCEL>Excel-File</TD>\n";
+    std::cout <<           "value=MLSHEET>Matlab-Spreadsheet</TD>\n";
     std::cout << "      <TD align=right>Fill:</TD>\n";
     std::cout << "      <TD><input name=FILL type=checkbox value=ON"
 	      << (_fill?" checked=1":"") << "> (step-func. interpolation)</TD>\n";

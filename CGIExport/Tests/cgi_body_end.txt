@@ -7,18 +7,21 @@
     <li><B>Get</B>: Get values for given channels that are within
         time range</li>
     <ul>
-        <li><B>Plot</B>: Get simple online plot.
-        <li><B>Spreadsheet</B>: Get a spreadsheet-type text file which
-                                you can save to your disk for further
-                                investigation.
-        <li><B>Excel</B>: Same, but with HTTP hints that ask the web
-                          browser to directly open the file in Excel,
-                          skipping the save-to-disk. Might not work
-                          for your PC.
-        <li><B>Matlab</B>: Get a Matlab command file.
-        <li><B>Status</B>: Export the channel status
-                           (disconnected, ...).
-                           Not supported for all formats.
+        <li><B>Plot</B>:
+            Get simple online plot.
+        <li><B>Spreadsheet</B>:
+            Get a spreadsheet-type text file which
+            you can save to your disk for further investigation.
+        <li><B>Matlab-Spreadsheet</B>: 
+            Same, but with slightly different formatting for Matlab.
+            The result requires some typing in Matlab, check the
+            comments of the generated file.
+        <li><B>Matlab</B>:
+            Get a Matlab command file. Easier to import into Matlab
+	    but usually requires more memory.
+        <li><B>Status</B>:
+            Export the channel status (disconnected, ...).
+            Not supported for all formats.
     </ul>
   </ul>
 

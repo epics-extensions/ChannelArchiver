@@ -91,7 +91,7 @@ proc httpd::getInput {fd} {
       puts $fd "</TABLE>"
       puts $fd "</body></html>"
       close $fd
-      Exit
+      after 1000 Exit
     }
     if [regexp "(.*)\\?(.*)" $_page($fd) all page args] {
 #      puts stderr [join $_query($fd) "\n"]
@@ -191,7 +191,9 @@ proc httpd::sendOutput {fd} {
   }
   puts $fd "<table border=0 cellpadding=5>"
   puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>Configured ArchiveEngines for config <font color=yellow><em>[file tail $camMisc::cfg_file]</em></font> of user <font color=yellow><em>$tcl_platform(user)</em></font> on host <font color=yellow><em>$::_host</em></font></font></th></tr>"
-  puts $fd "<tr><th bgcolor=white>ArchiveEngine</th><th bgcolor=white>Port</th><th bgcolor=white>running?</th><th bgcolor=white>run/rerun</th><th bgcolor=white>command</th></tr>"
+  puts $fd "<tr><th bgcolor=white>ArchiveEngine</th><th bgcolor=white>Port</th><th bgcolor=white>running?</th><th bgcolor=white>run/rerun</th>"
+  if {!$::args(nocmd)} {puts $fd "<th bgcolor=white>command</th>"}
+  puts $fd "</tr>"
   foreach i [camMisc::arcIdx] {
     if {"[camMisc::arcGet $i host]" != "$::_host"} continue
     set run $::_run($i)
@@ -261,32 +263,34 @@ proc httpd::sendOutput {fd} {
       }
     }
     puts $fd "</td>"
-    puts $fd "<td>"
-    puts $fd "<table cellpadding=2 border=1 width=\"150\"><tr>"
-    if {[camMisc::arcGet $i busy] != ""} {
-      puts $fd "<td bgcolor=orange align=center>[camMisc::arcGet $i busy]</td>"
-    } else {    
-      if {$run != "NO"} {
-	if 1 {
-	# is running
-	puts $fd "<td bgcolor=red align=center>"
-	puts $fd "<a href=\"/stop?ind=$i\"><b>STOP</b></a>"
-	puts $fd "</td>"
-        } else {
-	  puts $fd "<td><form method=GET action=\"/stop\">"
-          puts $fd "<input type=HIDDEN NAME=ind value=$i>"
-	  puts $fd "<input type=submit value=STOP>"
-	  puts $fd "</form></td>"
+    if {!$::args(nocmd)} {
+      puts $fd "<td>"
+      puts $fd "<table cellpadding=2 border=1 width=\"150\"><tr>"
+      if {[camMisc::arcGet $i busy] != ""} {
+	puts $fd "<td bgcolor=orange align=center>[camMisc::arcGet $i busy]</td>"
+      } else {    
+	if {$run != "NO"} {
+	  if 1 {
+	    # is running
+	    puts $fd "<td bgcolor=red align=center>"
+	    puts $fd "<a href=\"/stop?ind=$i\"><b>STOP</b></a>"
+	    puts $fd "</td>"
+	  } else {
+	    puts $fd "<td><form method=GET action=\"/stop\">"
+	    puts $fd "<input type=HIDDEN NAME=ind value=$i>"
+	    puts $fd "<input type=submit value=STOP>"
+	    puts $fd "</form></td>"
+	  }
+	} else {
+	  # is NOT running
+	  puts $fd "<td bgcolor=green align=center>"
+	  puts $fd "<a href=\"/start?ind=$i\"><font color=black><b>START</b></font></a>"
+	  puts $fd "</td>"
 	}
-      } else {
-	# is NOT running
-	puts $fd "<td bgcolor=green align=center>"
-	puts $fd "<a href=\"/start?ind=$i\"><font color=black><b>START</b></font></a>"
-	puts $fd "</td>"
       }
+      puts $fd "</tr></table>"
+      puts $fd "</td>"
     }
-    puts $fd "</tr></table>"
-    puts $fd "</td>"
     puts $fd "</tr>"
   }
   puts $fd "<tr><td>&nbsp;</td></tr>"
@@ -294,7 +298,18 @@ proc httpd::sendOutput {fd} {
   puts $fd "Messages (most recent first)"
   puts $fd "</font></th></tr>"
   puts $fd "<tr><td colspan=5 align=center>"
-  puts $fd "<font color=red>Errors/Warnings</font> / <font color=blue>Starts/Stops</font> / <font color=green>Scheduled jobs</font> / Misc."
+  set msg ""
+  foreach c [lsort [array names ::colormap]] {
+    if {$::colormap($c) != "no"} {
+      if {$::colormap($c) == "normal"} {
+	lappend msg "$::colorname($c)"
+      } else {
+	lappend msg "<font color=\"$::colormap($c)\">$::colorname($c)</font>"
+      }
+    }
+  }
+
+  puts $fd [join $msg " / "]
   puts $fd "</td></tr></table>"
   foreach m $::_msg {
     puts $fd "$m<br>"

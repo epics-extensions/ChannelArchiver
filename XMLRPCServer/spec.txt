@@ -62,9 +62,8 @@ type:  string	0
        int      2
        double   3
 
-count == 1 : scalar, value.value is just a value
-count >  1 : array,  value.value is an array
+count == 1 : scalar, value.value is an array with only one entry
+count >  1 : array,  value.value is an array with more than one entry
 
-values := { int32 stat, int32 sevr, int32 secs, int32 nano,
-           <type> value([]) }
+values := { int32 stat, int32 sevr, int32 secs, int32 nano, <type> value[] }
 

@@ -180,13 +180,73 @@ bool dump_blocks()
     return true;
 }
 
+static TestData update_data[] =
+{
+    { "200", "210", "-20-",  1 },
+    { "209", "209", "-21-",  1 },
+    { "209", "220", "-21-",  1 },
+};
+
+bool update_test(const char *index_name,
+                 const TestData *data, int num, const char *dotfile)
+{
+    IndexFile index(10);
+    RTree *tree;
+    FileAllocator::minimum_size = 0;
+    FileAllocator::file_size_increment = 0;
+    FileAllocator fa;
+    index.open(index_name, false);
+    tree = index.addChannel("test");
+    if (!tree)
+    {
+        fprintf(stderr, "index.addChannel failed\n");
+        return false;
+    }    
+    unsigned long nodes, records;
+    if (!tree->selfTest(nodes, records))
+    {
+        fprintf(stderr, "Self test failed\n");
+        return false;
+    }
+    int i;
+    epicsTime start, end;
+    for (i=0; i<num; ++i)
+    {
+        if (i==(num-1))
+            tree->makeDot("update0.dot");
+        string2epicsTime(data[i].start, start);
+        string2epicsTime(data[i].end, end);
+        stdString filename = data[i].file;
+        if (tree->updateLastDatablock(start, end, data[i].offset, filename)
+            == RTree::YNE_Error)
+        {
+            fprintf(stderr, "Update %s..%s: %d failed\n",
+                    data[i].start, data[i].end, i+1);
+            return false;
+        }
+        if (i==(num-1))
+            tree->makeDot("update1.dot");
+        if (!tree->selfTest(nodes, records))
+        {
+            fprintf(stderr, "Self test failed\n");
+            return false;
+        }
+    }
+    tree->makeDot(dotfile);
+    delete tree;
+    index.close();
+    puts("OK: RTree update");
+    return true;
+}
+
 #include <assert.h>
 
 void fmt(double d)
 {
     char buffer[50];
     size_t l;
-    
+
+    puts("Format Test");
     l = RawValue::formatDouble(d, RawValue::DEFAULT, 6, buffer, sizeof(buffer));
     printf("DEFAULT   : '%s' (%d)\n", buffer, l);
     assert(strlen(buffer) == l);
@@ -203,6 +263,8 @@ void fmt(double d)
 
 int main()
 {
+    initEpicsTimeHelper();
+#ifdef DO_FORMAT_TEST
     fmt(0.0);
     fmt(-0.321);
     fmt(1.0e-12);
@@ -212,8 +274,12 @@ int main()
     fmt(3.14e+7);
     fmt(-3.14e+7);
     fmt(-0.123456789);
-
-    initEpicsTimeHelper();
+#endif
+    if (!update_test("test/update.tst",
+                     update_data, sizeof(update_data)/sizeof(TestData),
+                     "test/update_data.dot"))
+        return -1;
+#if 0
     if (!fill_test(false, "test/tree.tst",
                    fill_data, sizeof(fill_data)/sizeof(TestData),
                    "test/test_data1.dot"))
@@ -228,5 +294,6 @@ int main()
                    man_data2, sizeof(man_data2)/sizeof(TestData),
                    "man_data2.dot"))
         return -1;
+#endif
     return 0;
 }

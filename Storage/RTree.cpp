@@ -375,7 +375,8 @@ bool RTree::write_node(const Node &node)
 }    
 
 bool RTree::self_test_node(unsigned long &nodes, unsigned long &records,
-                           FileOffset n, FileOffset p, epicsTime start, epicsTime end)
+                           FileOffset n, FileOffset p,
+                           epicsTime start, epicsTime end)
 {
     stdString txt1, txt2;
     epicsTime s, e;
@@ -657,7 +658,7 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
 {
     stdString txt1, txt2;
     YNE       yne;
-    int       i;
+    int       i, additions;
     Datablock block, new_block;
     Node      node(M, true);
     LOG_ASSERT(start <= end);
@@ -668,39 +669,50 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
         return YNE_Error;
     }
     for (i=0; i<M; ++i) // find record[i] <= [start...end]
-    {   
+    {   // Stop on first empty record
         if (node.record[i].child_or_ID == 0)
             break;
         // Check for the 4 possible overlap situations.
         // Note: Overlap! Just "touching" is not an "overlap".
         // Block is added to all record that cover it so that
-        // we'll find it right away when re-building a master index.
+        // we'll find it when re-building a master index.
         if (node.record[i].start <= start  &&  end <= node.record[i].end)
             // (1) Existing record:  |------------|
             //     New block      :     |---|
             //     ==> Add block to existing record
             return add_block_to_record(node, i, data_offset, data_filename);
+        additions = 0;
         if (start < node.record[i].start  &&
             node.record[i].start < end && end <= node.record[i].end)
         {   // (2) Existing record:         |-------|
             //     New block      :     |--------|
             //     ==> Add non-overlap  |###|           
             yne = add_block_to_record(node, i, data_offset, data_filename);
-            if (yne == YNE_Error  ||  yne == YNE_No)
-                return yne; // Error or already know that block.
-            return insertDatablock(start, node.record[i].start,
-                                   data_offset, data_filename);
+            if (yne == YNE_Error)
+                return YNE_Error;
+            if (yne == YNE_Yes)
+                ++additions;
+            yne = insertDatablock(start, node.record[i].start,
+                                  data_offset, data_filename);
+            if (yne == YNE_Error)
+                return YNE_Error;
+            return (additions>0 || yne==YNE_Yes) ? YNE_Yes : YNE_No;
         }
         if (node.record[i].start <= start && start < node.record[i].end &&
             node.record[i].end < end)
         {   // (3) Existing record:     |-------|
             //     New block      :        |--------|
-            //     ==> Add non-overla p         |###|
+            //     ==> Add non-overlap          |###|
             yne = add_block_to_record(node, i, data_offset, data_filename);
-            if (yne == YNE_Error  ||  yne == YNE_No)
-                return yne;
-            return insertDatablock(node.record[i].end, end,
-                                   data_offset, data_filename);
+            if (yne == YNE_Error)
+                return YNE_Error;
+            if (yne == YNE_Yes)
+                ++additions;
+            yne = insertDatablock(node.record[i].end, end,
+                                  data_offset, data_filename);
+            if (yne == YNE_Error)
+                return YNE_Error;
+            return (additions>0 || yne==YNE_Yes) ? YNE_Yes : YNE_No;
         }
         if (start < node.record[i].start && node.record[i].end < end)
         {
@@ -708,14 +720,21 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
             //     New block      :     |----------|
             //     ==> Add non-overlaps |##| + |###|
             yne = add_block_to_record(node, i, data_offset, data_filename);
-            if (yne == YNE_Error  ||  yne == YNE_No)
-                return yne;
+            if (yne == YNE_Error)
+                return YNE_Error;
+            if (yne == YNE_Yes)
+                ++additions;
             yne = insertDatablock(start, node.record[i].start,
                                   data_offset, data_filename);
-            if (yne == YNE_Error  ||  yne == YNE_No)
-                return yne;
-            return insertDatablock(node.record[i].end, end,
+            if (yne == YNE_Error)
+                return YNE_Error;
+            if (yne == YNE_Yes)
+                ++additions;
+            yne = insertDatablock(node.record[i].end, end,
                                    data_offset, data_filename);
+            if (yne == YNE_Error)
+                return YNE_Error;
+            return (additions>0 || yne==YNE_Yes) ? YNE_Yes : YNE_No;
         }
         // Otherwise: records are sorted in time. Does new entry belong here?
         if (end <= node.record[i].start)

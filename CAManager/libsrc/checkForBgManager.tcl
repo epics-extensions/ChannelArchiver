@@ -17,6 +17,7 @@ proc cfbgmTimeout {fd h} {
 
 proc checkForBgManager {} {
   global tcl_platform
+  if {$::checkBgMan == 0} return
   foreach arc [camMisc::arcIdx] {
     lappend hosts [camMisc::arcGet $arc host]
   }

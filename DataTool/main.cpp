@@ -117,7 +117,7 @@ void determine_period_and_samples(IndexFile &index,
     int i;
     if (!tree->getLastDatablock(node, i, block))
         return;
-    DataHeader *header;
+    AutoPtr<DataHeader> header;
     if (!(header = get_dataheader(directory,
                                   block.data_filename, block.data_offset)))
         return;
@@ -126,21 +126,118 @@ void determine_period_and_samples(IndexFile &index,
     if (verbose > 2)
         printf("Last source buffer: Period %g, %lu samples.\n",
                period, (unsigned long) num_samples);
-    delete header;
 }
 
+// Helper for copy: Handles samples of a single channel
+void copy_channel(const stdString &channel_name,
+                  const epicsTime *start, const epicsTime *end,
+                  IndexFile &index, RawDataReader &reader,
+                  IndexFile &new_index,
+                  size_t &channel_count, size_t &value_count, size_t &back_count)
+{
+    double          period = 1.0;
+    size_t          num_samples = 4096;    
+    DataWriter     *writer = 0;
+    RawValue::Data *last_value = 0;
+    bool            last_value_set = false;
+    size_t          count = 0, back = 0;
+    if (verbose > 1)
+    {
+        printf("Channel '%s': ", channel_name.c_str());
+        if (verbose > 3)
+            printf("\n");
+        fflush(stdout);
+    }
+    determine_period_and_samples(index, channel_name, period, num_samples);
+    const RawValue::Data *value = reader.find(channel_name, start);
+    while (value && start && RawValue::getTime(value) < *start)
+    {   // Correct for "before-or-at" idea of find()
+        if (verbose > 2)
+            printf("Skipping sample before start time\n");
+        value = reader.next();
+    }
+    for (/**/; value; value = reader.next())
+    {
+        if (end  &&  RawValue::getTime(value) >= *end)
+            break; // Reached or exceeded end time
+        if (!writer || reader.changedType() || reader.changedInfo())
+        {   // Need new or different writer
+            delete writer;
+            writer = new DataWriter(
+                new_index, channel_name,
+                reader.getInfo(), reader.getType(), reader.getCount(),
+                period, num_samples);
+            RawValue::free(last_value);
+            last_value_set = false;
+            last_value = RawValue::allocate(reader.getType(),
+                                            reader.getCount(), 1);
+            if (!writer  ||  !last_value)
+            {
+                printf("Cannot allocate DataWriter/RawValue\n");
+                return;
+            }
+        }
+        if (RawValue::getTime(value) < writer->getLastStamp())
+        {
+            ++back;
+            if (verbose > 2)
+                printf("Skipping %lu back-in-time values\r",
+                       (unsigned long) back);
+            continue;
+        }
+        DataWriter::DWA add_status = writer->add(value);
+        if (add_status == DataWriter::DWA_Error)
+        {
+            printf("DataWriter::add failed\n");
+            break;
+        }
+        else if (add_status == DataWriter::DWA_Back)
+        {
+            printf("DataWriter::add still claims back-in-time\n");
+            continue;
+        }
+        // Keep track of last time stamp and status (not value!)
+        RawValue::setStatus(last_value,
+                            RawValue::getStat(value),
+                            RawValue::getSevr(value));
+        RawValue::setTime(last_value, RawValue::getTime(value));
+        last_value_set = true;
+        ++count;
+        if (verbose > 3 && (count % 1000 == 0))
+            printf("Copied %lu values\r", (unsigned long) count);
+        
+    }
+    if (last_value_set && count > 0 &&
+        RawValue::getSevr(last_value) != ARCH_STOPPED)
+    {   // Try to add an "Off" Sample.
+        RawValue::setStatus(last_value, 0, ARCH_STOPPED);
+        writer->add(last_value);        
+    }
+    delete writer;
+    if (verbose > 1)
+    {
+        if (back)
+            printf("%lu values, %lu back-in-time                       \n",
+                   (unsigned long) count, (unsigned long) back);
+        else
+            printf("%lu values                                         \n",
+                   (unsigned long) count);
+    }
+    ++channel_count;
+    value_count += count;
+    back_count += back;
+}
+
+// Copy samples from archive with index_name
+// to new index copy_name.
+// Uses all samples in source archive or  [start ... end[ .
 void copy(const stdString &index_name, const stdString &copy_name,
           int RTreeM, const epicsTime *start, const epicsTime *end,
           const stdString &single_name)
 {
     IndexFile               index(RTreeM), new_index(RTreeM);
     IndexFile::NameIterator names;
-    bool                    channel_ok;
-    const RawValue::Data   *value;
     size_t                  channel_count = 0, value_count = 0, back_count = 0;
-    size_t                  count, back;
-    double                  period = 1.0;
-    size_t                  num_samples = 4096;    
     BenchTimer              timer;
     stdString               dir1, dir2;
     Filename::getDirname(index_name, dir1);
@@ -163,88 +260,19 @@ void copy(const stdString &index_name, const stdString &copy_name,
         printf("Copying values from '%s' to '%s'\n",
                index_name.c_str(), copy_name.c_str());
     RawDataReader reader(index);
-    stdString channel_name;
-    bool use_single_name = single_name.length() > 0;
-    for (channel_ok = index.getFirstChannel(names);
-         channel_ok;  channel_ok = index.getNextChannel(names))
+    if (single_name.empty())
     {
-        channel_name = names.getName();
-        if (use_single_name)
-            channel_name = single_name;
-        if (verbose > 1)
+        bool ok = index.getFirstChannel(names);
+        while (ok)
         {
-            printf("Channel '%s': ", channel_name.c_str());
-            if (verbose > 3)
-                printf("\n");
-            fflush(stdout);
-        }
-        DataWriter *writer = 0;
-        count = back = 0;
-        determine_period_and_samples(index, channel_name, period, num_samples);
-        value = reader.find(channel_name, start);
-        while (value && start && RawValue::getTime(value) < *start)
-        {
-            if (verbose > 2)
-                printf("Skipping sample before start time\n");
-            value = reader.next();
-        }
-        for (/**/; value; value = reader.next())
-        {
-            if (end  &&  RawValue::getTime(value) >= *end)
-                break;
-            if (!writer || reader.changedType() || reader.changedInfo())
-            {
-                delete writer;
-                writer = new DataWriter(
-                    new_index, channel_name,
-                    reader.getInfo(), reader.getType(), reader.getCount(),
-                    period, num_samples);
-                if (!writer)
-                {
-                    printf("Cannot create DataWriter\n");
-                    return;
-                }
-            }
-            if (RawValue::getTime(value) < writer->getLastStamp())
-            {
-                ++back;
-                if (verbose > 2)
-                    printf("Skipping %lu back-in-time values\r",
-                           (unsigned long) back);
-                continue;
-            }
-            DataWriter::DWA add_status = writer->add(value);
-            if (add_status == DataWriter::DWA_Error)
-            {
-                printf("DataWriter::add failed\n");
-                break;
-            }
-            else if (add_status == DataWriter::DWA_Back)
-            {
-                printf("DataWriter::add still claims back-in-time\n");
-                continue;
-            }
-            ++count;
-            if (verbose > 3 && (count % 1000 == 0))
-                printf("Copied %lu values\r", (unsigned long) count);
-                
-        }
-        delete writer;
-        if (verbose > 1)
-        {
-            if (back)
-                printf("%lu values, %lu back-in-time                       \n",
-                       (unsigned long) count, (unsigned long) back);
-            else
-                printf("%lu values                                         \n",
-                       (unsigned long) count);
-        }
-        ++channel_count;
-        value_count += count;
-        back_count += back;
-        if (use_single_name)
-            break;
+            copy_channel(names.getName(), start, end, index, reader,
+                         new_index, channel_count, value_count, back_count);
+            ok = index.getNextChannel(names);
+        }    
     }
+    else
+        copy_channel(single_name, start, end, index, reader,
+                     new_index, channel_count, value_count, back_count);
     new_index.close();
     index.close();
     timer.stop();
@@ -622,9 +650,9 @@ int main(int argc, const char *argv[])
                       ", built " __DATE__ ", " __TIME__ "\n\n"
                      );
     parser.setArgumentsInfo("<index-file>");
-    CmdArgFlag help          (parser, "help", "Show help");
-    CmdArgInt verbosity      (parser, "verbose", "<level>", "Show more info");
-    CmdArgFlag info          (parser, "info", "Simple archive info");
+    CmdArgFlag help           (parser, "help", "Show help");
+    CmdArgInt  verbosity     (parser, "verbose", "<level>", "Show more info");
+    CmdArgFlag info           (parser, "info", "Simple archive info");
     CmdArgFlag list_index    (parser, "list", "List channel name info");
     CmdArgString copy_index  (parser, "copy", "<new index>", "Copy channels");
     CmdArgString start_time  (parser, "start", "<time>",

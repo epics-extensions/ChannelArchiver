@@ -87,10 +87,11 @@ bool dump_gnuplot(IndexFile &index,
                   bool image)
 {
     stdVector<stdString> units;
-    size_t i;
+    size_t i, e;
     stdString time, stat, val;
     const RawValue::Data *value;
     bool prev_line_was_data;
+    bool is_array = false;
     
     FILE *f = fopen(output_name.c_str(), "wt");
     if (! f)
@@ -107,32 +108,58 @@ bool dump_gnuplot(IndexFile &index,
         PlotReader *reader = new PlotReader(index, interpolate);
         value = reader->find(names[i], start);
         if (value)
+        {
+            if (reader->getCount() > 1)
+                is_array = true;
+            if (is_array  &&  i > 0)
+            {
+                fprintf(stderr,
+                        "Your channel list contains arrays, "
+                        "and you can only export a single array channel "
+                        " by itself\n");
+                return false;
+            }
             units.push_back(reader->getInfo().getUnits());
+        }
         else
             units.push_back("-no data-");
         while (value)
         {
             if (end && RawValue::getTime(value) >= *end)
                 break;
+            epicsTime2string(RawValue::getTime(value), time);
+            RawValue::getStatus(value, stat);            
             if (RawValue::isInfo(value))
             {   // Add one(!) empty line for break in data
                 if (prev_line_was_data)
-                    fprintf(f, "\n# ");
-                else
-                    fprintf(f, "# ");
+                    fprintf(f, "\n");
+                fprintf(f, "# %s %s\n", time.c_str(), stat.c_str());
                 prev_line_was_data = false;
             }
             else
+            {
+                if (reader->getCount() <= 1)
+                {
+                    RawValue::getValueString(
+                        val, reader->getType(), reader->getCount(),
+                        value, &reader->getInfo()); 
+                    fprintf(f, "%s\t%s\t%s\n",
+                            time.c_str(), val.c_str(), stat.c_str());
+                }
+                else
+                {
+                    double dbl;
+                    for (e=0; e<reader->getCount(); ++e)
+                    {
+                        RawValue::getDouble(reader->getType(),
+                                            reader->getCount(),
+                                            value, dbl, e);
+                        fprintf(f, "%s\t%d\t%g\n", time.c_str(), e, dbl);
+                    }
+                    fprintf(f, "\n");
+                }
                 prev_line_was_data = true;
-            fprintf(f, "%s", epicsTimeTxt(RawValue::getTime(value), time));
-            RawValue::getStatus(value, stat);
-            if (RawValue::isInfo(value))
-                val = "#N/A";
-            else
-                RawValue::getValueString(
-                    val, reader->getType(), reader->getCount(),
-                    value, &reader->getInfo());
-            fprintf(f, "\t%s\t%s\n", val.c_str(), stat.c_str());
+            }
             value = reader->next();
         }
         fprintf(f, "\n\n"); // GNUPlot index separator
@@ -152,8 +179,11 @@ bool dump_gnuplot(IndexFile &index,
     fprintf(f, "set data style steps\n");   
     fprintf(f, "set timefmt \"%%m/%%d/%%Y %%H:%%M:%%S\"\n");    
     fprintf(f, "set xdata time\n");
-    fprintf(f, "set xlabel \"Time\"\n");    
-    fprintf(f, "set format x \"%%m/%%d/%%Y\\n%%H:%%M:%%S\"\n");
+    fprintf(f, "set xlabel \"Time\"\n");
+    if (is_array)
+        fprintf(f, "set format x \"%%m/%%d/%%Y %%H:%%M:%%S\"\n");
+    else
+        fprintf(f, "set format x \"%%m/%%d/%%Y\\n%%H:%%M:%%S\"\n");
     fprintf(f, "set ylabel \"Data\"\n");
     fprintf(f, "set grid\n");
     fprintf(f, "# X axis tick control:\n");
@@ -179,14 +209,28 @@ bool dump_gnuplot(IndexFile &index,
         fprintf(f, "set output '%s.png'\n",
                 output_name.c_str());
     }
-    fprintf(f, "plot '%s' index 0 using 1:3 title '%s [%s]'",
-            output_name.c_str(),
-            names[0].c_str(), units[0].c_str());
-    for (i=1; i<names.size(); ++i)
-        fprintf(f, ", '%s' index %d using 1:3 %s title '%s [%s]'",
-                output_name.c_str(), i,
-                ((second_y_axis && i==1) ? "axes x1y2" : ""),
-                names[i].c_str(), units[i].c_str());
+    if (is_array)
+    {
+        fprintf(f, "set view 60,260,1\n");
+        fprintf(f, "#set contour\n");
+        fprintf(f, "set surface\n");
+        fprintf(f, "#set hidden3d\n");
+        fprintf(f, "splot '%s' using 1:3:4",
+                output_name.c_str());
+        fprintf(f, " title '%s' with lines\n",
+                names[0].c_str());
+    }
+    else
+    {
+        fprintf(f, "plot '%s' index 0 using 1:3 title '%s [%s]'",
+                output_name.c_str(),
+                names[0].c_str(), units[0].c_str());
+        for (i=1; i<names.size(); ++i)
+            fprintf(f, ", '%s' index %d using 1:3 %s title '%s [%s]'",
+                    output_name.c_str(), i,
+                    ((second_y_axis && i==1) ? "axes x1y2" : ""),
+                    names[i].c_str(), units[i].c_str());
+    }
     fprintf(f, "\n");
     fclose(f);
     return true;

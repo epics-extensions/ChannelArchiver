@@ -17,10 +17,14 @@ disp('List available archives:')
 % to see the contents
 
 disp('List channel names:');
-[names,starts,ends]=ArchiveData(url, 'names', 1, 'IOC')
+[names,starts,ends]=ArchiveData(url, 'names', 1, 'IOC');
+names
 
-
-
-[names,starts,ends]=ArchiveData(url, 'names', 1, 'IOC.*Load')
+[names,starts,ends]=ArchiveData(url, 'names', 1, 'IOC.*Load');
+names
 datestr(starts)
 datestr(ends)
+
+disp('Get Values:');
+ArchiveData(url, 'values', key, {'fred';'janet'}, datenum(2003,3,11), now)
+

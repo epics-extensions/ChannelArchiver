@@ -5,14 +5,32 @@
 //
 // See ArchiveData.m for usage, Makefile for compilation.
 //
+// Yes, this code is very ugly, but so far there didn't seem
+// any use on further modularization because it's nothing
+// but extremely ugly back-and-forth conversions between
+// Archiver data types and Matlab/Octave.
+//
 // kasemir@lanl.gov
 
-#undef DEBUG
+// OCTAVE needs to be defined to get the code for Octave.
+// You might have guessed that.
 
-// Generic Stuff -------------------------------------------------------
+// Debug messages?
+#define DEBUG
+
+// -----------------------------------------------------------------------
+// Generic Stuff
+// -----------------------------------------------------------------------
+#include <epicsTimeHelper.h>
 #include <ArchiveDataClient.h>
 
-#define OneSecond (1.0/24/60/60)
+#ifdef OCTAVE
+// For an unknown reason, octave has a ~1sec rounding problem.
+#    define SplitSecondTweak      (1.0/24/60/60/2)
+#else
+#    define SplitSecondTweak      0.0
+#endif
+
 static double epicsTime2DateNum(const epicsTime &t)
 {
     xmlrpc_int32 secs, nano;
@@ -20,23 +38,27 @@ static double epicsTime2DateNum(const epicsTime &t)
     if (!timezone) // either not set or we're in England
         tzset();
     time_t local_secs = secs - timezone;
-    // From Paul Kienzle's collection of Matlab-compatibility
-    // routines for Octave:
-    // seconds since 1970-1-1 divided by 86400 sec/day
-    // plus datenum(1970,1,1).
-    // For an unknown reason, octave has a ~1sec rounding
-    // problem.
-    return (double)local_secs/86400.0 + 719529.0
-#ifdef OCTAVE
-        + OneSecond/2
-#endif
-        ;
+    // From Paul Kienzle's collection of compatibility routines for Octave:
+    // seconds since 1970-1-1 divided by sec/day plus datenum(1970,1,1):
+    return (double)local_secs/86400.0 + 719529.0 + SplitSecondTweak;
 }    
 
-// Octave Stuff --------------------------------------------------------
+void DateNum2epicsTime(double num, epicsTime &t)
+{
+    xmlrpc_int32 secs, nano = 0;
+    double local_secs = (num - 719529.0)*86400.0;
+    secs = (xmlrpc_int32)local_secs + timezone;
+    pieces2epicsTime(secs, nano, t);
+}
+
+// -----------------------------------------------------------------------
+// Octave Stuff
+// -----------------------------------------------------------------------
 #ifdef OCTAVE
 #include <octave/oct.h>
 #include <octave/pager.h>
+#include <octave/Cell.h>
+
 DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
 {
     octave_value_list retval;
@@ -143,17 +165,69 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
         else
             error("'%s' failed\n", cmd.c_str());
     }
+    else if (cmd == "values")
+    {
+        if (nargin < 6)
+        {
+            error("Need URL, CMD, KEY, NAME, START, END\n");
+            return retval;
+        }
+        stdVector<stdString> names;
+        if (args(3).is_string())
+            names.push_back(stdString(args(3).string_value().c_str()));
+        else if (args(3).is_cell())
+        {
+            int rows = args(3).cell_value().rows();
+            int cols = args(3).cell_value().cols();
+            int i, j;
+            for (i=0; i<rows; ++i)
+                for (j=0; j<cols; ++j)
+                {
+                    const octave_value &v = args(3).cell_value().elem(i, j);
+                    names.push_back(stdString(v.string_value().c_str()));
+                }
+        }
+        else
+        {
+            error("NAME must be string or cell array of strings\n");
+            return retval;
+        }
+        double start_datenum = args(4).double_value();
+        double end_datenum = args(5).double_value();
+        epicsTime start, end;
+        DateNum2epicsTime(start_datenum, start);
+        DateNum2epicsTime(end_datenum,   end);
+#ifdef DEBUG
+        {
+            size_t i, num = names.size();
+            stdString txt;
+            for (i=0; i<num; ++i)
+                octave_stdout << "Name: '" << names[i].c_str() << "'\n";
+            epicsTime2string(start, txt);
+            octave_stdout << "Start: " << txt.c_str() << "\n";
+            epicsTime2string(end, txt);
+            octave_stdout << "End:  " << txt.c_str() << "\n";
+        }
+#endif
+    }
     else
         error("Unknown command '%s'\n", cmd.c_str());
     return retval;
 }
 
 #else
-// Matlab Stuff --------------------------------------------------------
+// -----------------------------------------------------------------------
+// Matlab Stuff
+// -----------------------------------------------------------------------
 #include "mex.h"
 
 static bool get_string(const mxArray *arg, char **buf, const char *name)
 {
+    if (!mxIsChar(arg))
+    {
+        mexErrMsgIdAndTxt("ArchiveData", "%s must be a string", name);
+        return false;
+    }   
     int buflen = mxGetNumberOfElements(arg) + 1;
     *buf = (char *)mxCalloc(buflen, sizeof(char));
     if (mxGetString(arg, *buf, buflen) != 0)
@@ -170,11 +244,6 @@ void mexFunction(int nresult, mxArray *result[],
     if (nargin < 2)
     {
         mexErrMsgTxt("At least two arguments (URL, cmd) required.");
-        return;
-    }
-    if (!(mxIsChar(args[0]) && mxIsChar(args[1])))
-    {
-        mexErrMsgTxt("URL & CMD must be strings.");
         return;
     }
     char *url, *cmd;
@@ -212,7 +281,7 @@ void mexFunction(int nresult, mxArray *result[],
         stdVector<ArchiveDataClient::ArchiveInfo> archives;
         if (client.getArchives(archives))
         {
-            size_t        i, num = archives.size();
+            size_t i, num = archives.size();
             result[0] = mxCreateDoubleMatrix(num, 1, mxREAL);
             double *keys = mxGetPr(result[0]);
             if (nresult > 1)
@@ -245,14 +314,11 @@ void mexFunction(int nresult, mxArray *result[],
             return;
         }
         stdString pattern;
-        if (nargin == 4)
+        if (nargin >= 4)
         {
             char *patt;
-            if (!(mxIsChar(args[3]) && get_string(args[3], &patt, "PATTERN")))
-            {
-                mexErrMsgTxt("PATTERN must be a string");
+            if (!get_string(args[3], &patt, "PATTERN"))
                 return;
-            }
             pattern = patt;
         }
         stdVector<ArchiveDataClient::NameInfo> name_infos;
@@ -286,9 +352,50 @@ void mexFunction(int nresult, mxArray *result[],
         else
             mexErrMsgIdAndTxt("ArchiveData", "'%s' failed\n", cmd);
     }
+    else if (!strcmp(cmd, "values"))
+    {
+        if (nargin < 6)
+        {
+            mexErrMsgTxt("Need URL, CMD, KEY, NAME, START, END\n");
+            return;
+        }
+        stdVector<stdString> names;
+        char *name;
+        if (mxIsChar(args[3]))
+        {
+            if (!get_string(args[3], &name, "NAME"))
+                return;
+            names.push_back(stdString(name));
+        }
+        else if (mxIsCell(args[3]))
+        {
+            int i, num = mxGetM(args[3]) * mxGetN(args[3]);
+            for (i=0; i<num; ++i)
+            {
+                mxArray *cell = mxGetCell(args[3], i);
+                if (!get_string(cell, &name, "NAME from List"))
+                    return;
+                names.push_back(stdString(name));                
+            }
+        }
+        double start_datenum = mxGetScalar(args[4]);
+        double end_datenum = mxGetScalar(args[5]);
+        epicsTime start, end;
+        DateNum2epicsTime(start_datenum, start);
+        DateNum2epicsTime(end_datenum,   end);
+#ifdef DEBUG
+        {
+            size_t i, num = names.size();
+            stdString txt;
+            for (i=0; i<num; ++i)
+                mexPrintf("Name: '%s'\n", names[i].c_str());
+            mexPrintf("Start: %s\n", epicsTimeTxt(start,txt));
+            mexPrintf("End:   %s\n",  epicsTimeTxt(end,txt));
+        }
+#endif
+    }
     else
         mexErrMsgIdAndTxt("ArchiveData", "Unknown command '%s'", cmd);
-
 }
 
 #endif

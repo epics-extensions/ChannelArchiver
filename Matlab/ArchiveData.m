@@ -17,14 +17,21 @@
 %    Lists available archives by key, name and path.
 %
 % [names,starts,ends] = ArchiveData(URL, 'names', KEY [, PATTERN])
-%    Lists available channels for archive with given key.
-%    Optional pattern is a regular expression.
+%    Lists available channels for archive with given KEY.
+%    Optional PATTERN is a regular expression.
 %    Returns list of names, start and end times.
 %
-%    Times: All times are in the format of Matlab's.
-%           "serial data number".
-%           Octave needs to use matlab-compatibility routines
+%    Times: All times are in the format of Matlab
+%           serial date numbers.
+%           Octave needs to use Matlab-compatibility routines
 %           datenum, datevec, ...
+%
+% ??? = ArchiveData(URL, 'values', KEY, NAME, START, END)
+%    Gets values from archive with given key.
+%    NAME can either be a single name or a cell array 
+%    of names: { 'fred';'janet' }.
+%    START and END are serial date numbers.
+%
 
 % Plotting: datetick   <-> 
 %  gset xdata time; gset timefmt "%d/%m"; gset format x "%b %d"

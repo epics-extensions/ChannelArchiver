@@ -7,10 +7,17 @@ New  "versions"  are  marked  by some additional functionality. The
 
 \begin{itemize}
 
-\item In the works --- Version 2.1.1:\\
-Mostly working on ArchiveEngine: Add scanning back in.
-XML-RPC Data Server undergoes more testing, Java Archive client
-begins to be useful.
+\item In the works --- Version 2.1.2:\\
+
+\item 04/01/2004 --- Version 2.1.1:\\
+Many little updates have been checked into CVS
+while the tools reported "2.1.1".
+In the end, the engine supported sampling, monitoring
+and sampling-based-on-monitors, and ran without known problems
+under valgrind.
+The XML-RPC Data Server seemed to work fine, supporting
+raw data, plot-binning, spreadsheets, averaged and linear interpolation.
+Java Archive client is useable.
 Switched index file to CAI2, where the name hash includes a filename
 for the RTree. For now it's left empty, but the file format now
 allows for a further extension where certain RTrees are in separate

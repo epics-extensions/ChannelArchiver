@@ -1,8 +1,28 @@
 \chapter{Legacy}
+The main difference between the current version of the Channel Archiver toolset
+and previous versions are:
+\begin{itemize}
+\item EPICS Base: Current toolset requires R3.14.4 or later.
+\item Index: Current toolset uses index files, previous toolset
+      used Directory files.
+\item Configurations: All configuration files are based on XML,
+      while they used to be generic ASCII files.
+\end{itemize}
 
 \section{Directory Files}
-In case you have existing sub-archives that use the Directory files,
-refer to the ArchiveDataTool for converting them into nidex files.
+In case you have existing archives based on Directory files,
+you can use the ArchiveDataTool to create an index file for each existing directory file
+and that way migrate to the new toolset.
+The ArchiveDataTool can also create Directory files from index files, in case you
+need to use an older tool to investigate data in new archives.
+
+\section{ArchiveManager}
+The ArchiveManager command line tool for managing archives that use the
+older Directory files is still available.
+It does \emph{not} work with the new index files.
+After migrating the data to the new index format,
+ArchiveDataTool replaces the ArchiverManager. You can use the ArchiveDataTool
+to create index files for existing directory files.
 
 \section{Archive Engine Configurations}
 The ChannelArchiver/Engine directory contains ConvertEngineConfig.pl,
@@ -14,3 +34,12 @@ USAGE: ConvertEngineConfig [-d DTD] old-config new-config
 This tool reads an old-type ArchiveEngine ASCII config.
 file and converts it into the current XML config file.
 \end{lstlisting}
+
+\section{CAManager, CAbgManager}
+The ArchiveDaemon offers the basic functionality of the CAbgManager:
+It monitors, starts and restarts ArchiveEngines and offers a web page
+for status information.
+There is no graphical configuration tool comparable to the CAManager,
+you have to create the XML configuration file for the ArchiveDaemon
+by hand.
+

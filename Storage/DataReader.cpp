@@ -96,6 +96,7 @@ const RawValue::Data *RawDataReader::find(
                datablock.data_filename.c_str(),
                datablock.data_offset,
                s.c_str(), e.c_str());
+    }
 #endif
     // Get the buffer for that data block
     if (!getHeader(index.getDirectory(),
@@ -110,38 +111,71 @@ const RawValue::Data *RawDataReader::find(
 // Read sample at val_idx
 const RawValue::Data *RawDataReader::next()
 {
-    if (!(header && valid_datablock))
+    if (!header)
         return 0;
-    if (val_idx >= header->data.num_samples            ||
-        RawValue::getTime(data) > node->record[rec_idx].end)
-    {   // Need to get another block
-        valid_datablock = tree->getNextDatablock(*node, rec_idx, datablock);
-        if (!valid_datablock)
-            return 0;
-#ifdef DEBUG_DATAREADER
-        stdString s, e;
-        epicsTime2string(node->record[rec_idx].start, s);
-        epicsTime2string(node->record[rec_idx].end, e);
-        printf("Next  Block: %s @ 0x%lX: %s - %s\n",
-               datablock.data_filename.c_str(), datablock.data_offset,
-               s.c_str(), e.c_str());
-#endif
-        if (!getHeader(index.getDirectory(),
-                       datablock.data_filename, datablock.data_offset))
+    // End of current header or current RTree entry
+    // (if we still have an rtree entry)?
+    if (val_idx >= header->data.num_samples   ||
+        (valid_datablock  &&
+         RawValue::getTime(data) > node->record[rec_idx].end))
+    {
+        if (valid_datablock)
+            valid_datablock = tree->getNextDatablock(*node, rec_idx, datablock);
+        if (valid_datablock)
         {
-            delete header;
-            header = 0;
-            return 0;
+#ifdef DEBUG_DATAREADER
+            stdString s, e;
+            printf("Next  Block: %s @ 0x%lX: %s - %s\n",
+                   datablock.data_filename.c_str(), datablock.data_offset,
+                   epicsTimeTxt(node->record[rec_idx].start, s),
+                   epicsTimeTxt(node->record[rec_idx].end, e));
+#endif
+            if (!getHeader(index.getDirectory(),
+                           datablock.data_filename, datablock.data_offset))
+                return 0;
+            return findSample(node->record[rec_idx].start);
         }
-        return findSample(node->record[rec_idx].start);
+        else
+        {   // Special case: master index might be between updates.
+            // Try to get more samples from Datafile, ignoring RTree.
+#ifdef DEBUG_DATAREADER
+            stdString txt;
+            printf("RawDataReader reached end:\n");
+            printf("Sample %d of %lu\n",
+                   val_idx, (unsigned long)header->data.num_samples);
+#endif
+            // Refresh datafile and header                
+            if (!(header->datafile->reopen() && header->read(header->offset)))
+            {
+                delete header;
+                header = 0;
+                return 0;
+            } 
+            // Need to look for next header (w/o asking RTree) ?
+            if (val_idx >= header->data.num_samples)
+            {
+                if (!getHeader(header->datafile->getDirname(),
+                               header->data.next_file, header->data.next_offset))
+                    return 0; 
+#ifdef DEBUG_DATAREADER
+                stdString txt;
+                printf("Using new data block %s @ 0x%X:\n",
+                       header->datafile->getFilename().c_str(),
+                       (unsigned long)header->offset);
+#endif
+                return findSample(header->data.begin_time);
+            }
+            // else fall through and continue in current header
+#ifdef DEBUG_DATAREADER 
+            printf("Using sample %d of %lu\n",
+                   val_idx, (unsigned long)header->data.num_samples);
+#endif
+        }
     }
     // Read next sample in current block       
-    FileOffset offset =
-        header->offset
-        + sizeof(DataHeader::DataHeaderData)
-        + val_idx * raw_value_size;
-    if (! RawValue::read(this->dbr_type, this->dbr_count,
-                         raw_value_size, data,
+    FileOffset offset = header->offset
+        + sizeof(DataHeader::DataHeaderData) + val_idx * raw_value_size;
+    if (! RawValue::read(dbr_type, dbr_count, raw_value_size, data,
                          header->datafile, offset))
     {
         delete header;
@@ -270,19 +304,26 @@ bool RawDataReader::getHeader(const stdString &dirname,
 const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
 {
     LOG_ASSERT(header);
-    LOG_ASSERT(data);
-    // Speedier handling of start == header->data.end_time?
-    // For now, the binary search is used in any case.
-    // Binary search for sample before-or-at start in current header
-    epicsTime stamp;
-    size_t low = 0, high = header->data.num_samples - 1;
-    FileOffset offset, offset0 =
-        header->offset + sizeof(DataHeader::DataHeaderData);
+    LOG_ASSERT(data); 
 #ifdef DEBUG_DATAREADER
     stdString stamp_txt;
     epicsTime2string(start, stamp_txt);
     printf("Goal: %s\n", stamp_txt.c_str());
 #endif
+    // Speedier handling of start == header->data.begin_time
+    if (start == header->data.begin_time)
+    {
+#ifdef DEBUG_DATAREADER
+        printf("Using the first sample in the buffer\n");
+#endif
+        val_idx = 0;
+        return next();
+    }
+    // Binary search for sample before-or-at start in current header
+    epicsTime stamp;
+    size_t low = 0, high = header->data.num_samples - 1;
+    FileOffset offset, offset0 =
+        header->offset + sizeof(DataHeader::DataHeaderData);
     while (true)
     {
         // Pick middle value, rounded up

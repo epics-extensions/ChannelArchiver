@@ -1,6 +1,5 @@
 #include "aup_iterator.h"
 #include "r_entry.h"
-#include "au_pointer.h"
 #include <stdlib.h>
 
 aup_Iterator::aup_Iterator(const r_Tree * r)
@@ -30,7 +29,7 @@ bool aup_Iterator::getFirstAUAddress(const interval& i, long * result)
 
 
 bool aup_Iterator::getNextAUAddress(long * result)
-{
+{/*
 	*result = -1;
 	if(current_Leaf_Address < 0)
 	{
@@ -71,11 +70,12 @@ bool aup_Iterator::getNextAUAddress(long * result)
 	}
 	aup_Addresses.insertElement(au_Address);
 	*result = au_Address;
+    */
 	return true;
 }
 
 bool aup_Iterator::getKeyAUAddressOfTheCurrentLeaf(long * result)
-{
+{/*
 	*result = -1;
 	r_Entry entry;
 	entry.attach(r->getFile(), current_Leaf_Address);
@@ -98,6 +98,10 @@ bool aup_Iterator::getKeyAUAddressOfTheCurrentLeaf(long * result)
 	}
 	aup_Addresses.insertElement(au_Address);
 	*result = au_Address;
+    */
 	return true;
 }
+
+
+
 

@@ -62,13 +62,6 @@
 
 #define	ENTRY_SIZE				36
 
-//AU pointer
-#define AUP_AU_OFFSET			0
-#define AUP_NEXT_OFFSET			4
-#define AUP_PREVIOUS_OFFSET		8
-
-#define AU_POINTER_SIZE			12
-
 //cntu
 #define CNTU_NAME_OFFSET		0
 #define CHANNEL_NAME_LENGTH		200	//including 0 termination!!!

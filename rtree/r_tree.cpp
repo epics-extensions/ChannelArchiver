@@ -50,26 +50,16 @@ bool r_Tree::getLatestAU(archiver_Unit * au) const
 	if(root.readLatestLeafIndex(&latest_Leaf) == false) return false;
 	r_Entry entry = r_Entry();
 	entry.attach(f, index2address(latest_Leaf));	
-	long key_Pointer;
-	if(entry.readKeyPointer(&key_Pointer) == false) return false;
+	long key_Address;
+	if(entry.readKeyAddress(&key_Address) == false) return false;
 
-	if(key_Pointer < 0) 
+	if(key_Address < 0) 
 	{
 		printf("Corrupt key in the entry at the address %ld\n", index2address(latest_Leaf));
 		return false;
 	}
 
-	au_Pointer aup = au_Pointer();
-
-	aup.attach(f, key_Pointer);
-	
-	long next;
-	if(aup.readNextAUPAddress(&next) == false) return false;
-	if(next < 0) return false;
-	
-	long au_Address;
-	if(aup.readAUAddress(&au_Address) == false) return false;
-	au->attach(f, au_Address);
+	au->attach(f, key_Address);
 	return au->readAU();
 }
 
@@ -101,9 +91,10 @@ bool r_Tree::addAU(long au_Address)
 			return (addNewEntry(last_Leaf, -1, -1, au_Address, &au_Interval) >= 0);
 		}
 	}	
-	
+
+    //the new AU is not the latest...
 	long current_Leaf;
-	if(findFirstLeaf(&au_Interval, &current_Leaf) == false) return false;
+	if(findFirstLeaf(&au_Interval, &current_Leaf) == false) return false; //the first leaf that interesects the interval of the new AU
 	if(current_Leaf < 0) 
 	{
 		//no partitioning!
@@ -120,7 +111,7 @@ bool r_Tree::addAU(long au_Address)
 		search_Interval.setStart(au_Interval.getEnd());
 		search_Interval.setEnd(e);						//the next interval
 		
-		if(findFirstLeaf(&search_Interval, &current_Leaf) == false) return false;
+		if(findFirstLeaf(&search_Interval, &current_Leaf) == false) return false; //find the new AU's future next AU
 		if(current_Leaf < 0)
 		{
 			//The new leaf is at the end of the leaves list
@@ -146,15 +137,14 @@ bool r_Tree::addAU(long au_Address)
 	}
 	else
 	{
-		//partitioning is due
+		//partitioning might be due: check the priority etc.
 		//current_Leaf is the first of the leaves that overlap with the au_Interval
 		interval new_Leaf_Interval;
 		entry.attach(f, index2address(current_Leaf));
 		if(entry.readInterval() == false) return false;
 		interval current_Leaf_Interval = entry.getInterval();
-		au_Pointer_List aupl = au_Pointer_List(fa, offset);
 
-		//first: prepare the first leaf so that we only need to consider au_Start_Time!
+		//first: handle the first leaf in order to consider new AU's end time only
 		long result = compareTimeStamps(au_Interval.getStart(), current_Leaf_Interval.getStart());
 		if(	result < 0)
 		{
@@ -173,29 +163,44 @@ bool r_Tree::addAU(long au_Address)
 			new_Leaf_Interval.setEnd(au_Interval.getStart());
 			//change the current_Leaf's start time
 			if(updateStartTime(&au_Interval, current_Leaf) == false) return false;
-			
-			if(aupl.init(index2address(current_Leaf)) == false) return false;
-			long new_Key_Pointer = aupl.copyList();
-			if(new_Key_Pointer < 0)	return false;
+            
 			//create the new leaf
 			entry.attach(f, index2address(current_Leaf));
 			long previous_Index;
 			if(entry.readPreviousIndex(&previous_Index) == false) return false;
+            long key_Address;
+            if(entry.readKeyAddress(&key_Address) == false) return false;
 			long new_Leaf = addNewEntry(previous_Index, current_Leaf, -1, -1, &new_Leaf_Interval); 
 			if(new_Leaf < -1) return false;
 			 
 			entry.attach(f, index2address(new_Leaf));
-			if(entry.writeKeyPointer(new_Key_Pointer) == false) return false;		
+			if(entry.writeKeyAddress(key_Address) == false) return false;		
 
 			current_Leaf_Interval.setStart(au_Interval.getStart());
 		}
 		//at this point we know that the current_Leaf starts at the same time as the not
-		//yet treated part of the au_Interval
+		//yet treated part of the  au_Interval (new AU's interval)
 		//that's why we have to look at the au's END TIME ONLY
+        //if the leaf points to an AU with a higher priority (etc., see below), simply go to the next leaf
+        //else insert the new key after possibly partitioning it
 		epicsTimeStamp previous_Leaf_End_Time;
-		bool plet_Set = false;	//is set to true AFTER the first run of the loop
+		bool plet_Set = false;	//is set to true AFTER the first run of the loop, means
+        archiver_Unit current_Key_AU;
 		do
 		{
+            entry.attach(f, index2address(current_Leaf));
+            long key_Address;
+            if(entry.readKeyAddress(&key_Address) == false) return false;
+            current_Key_AU.attach(f, key_Address);
+            if(current_Key_AU.readAU() == false) return false;
+            //go to the next leaf if the current key AU  has a higher priority etc.
+            //Criteria for "I" being the new key:
+            //I have a bigger priority than the current key OR
+            //(my priority is the same) AND (current key is not previous key) AND
+            //((
+            //
+            
+            
 			if(	plet_Set &&
 				compareTimeStamps(current_Leaf_Interval.getStart(), au_Interval.getEnd()) >= 0)
 			{
@@ -255,7 +260,7 @@ bool r_Tree::addAU(long au_Address)
 				entry.attach(f, index2address(new_Leaf));
 				return 
 					(
-						entry.writeKeyPointer(new_Key_Address) &&
+						entry.writeKeyAddress(new_Key_Address) &&
 						aupl.init(index2address(new_Leaf)) &&
 						aupl.insertAUPointer(au_Address)
 					);
@@ -357,8 +362,8 @@ bool r_Tree::removeAU(long au_Address)
 	entry.attach(f, index2address(latest_Leaf));
 	
 	au_Pointer aup = au_Pointer(); 
-	long key_Pointer;
-	if(entry.readKeyPointer(&key_Pointer) == false) return false;
+	long key_Address;
+	if(entry.readKeyAddress(&key_Address) == false) return false;
 	aup.attach(f, key_Pointer);
 	long next_AUP;
 	if(aup.readNextAUPAddress(&next_AUP) == false) return false;
@@ -817,7 +822,7 @@ long r_Tree::addNewEntry(long previous_Index, long next_Index, long child_Index,
 		!entry.writeParentIndex(parent_Index)		||
 		!entry.writeNextIndex(next_Index)			||
 		!entry.writePreviousIndex(previous_Index)	||
-		!entry.writeKeyPointer(-1)) return -1;
+		!entry.writeKeyAddress(-1)) return -1;
 
 	if(au_Address > 0) 
 	{
@@ -833,7 +838,7 @@ long r_Tree::addNewEntry(long previous_Index, long next_Index, long child_Index,
 			return -1;
 		}
 		entry.attach(f, index2address(new_Index));
-		if(entry.writeKeyPointer(key_Address) == false)
+		if(entry.writeKeyAddress(key_Address) == false)
 		{
 			delete aup;
 			return -1;
@@ -1376,8 +1381,8 @@ void r_Tree::writeDotFile(const char * name) const
 					}
 					fprintf(dot_File, "node%d [label = \"<f0>", i + k);
 					entry.attach(f, index2address(temp_Index));
-					long current_AUP_Address;
-					if(entry.readKeyPointer(&current_AUP_Address) == false) return;
+					long current_AU_Address;
+					if(entry.readKeyAddress(&current_AU_Address) == false) return;
 					archiver_Unit au;
 					au_Pointer aup;
 					long au_Address;
@@ -1499,8 +1504,8 @@ bool r_Tree::test() const
 					printf("The entry at the address %ld has a corrupt child index\n", index2address(current_Index));
 					return false;
 				}
-				long key_Pointer;
-				if(entry.readKeyPointer(&key_Pointer) == false) return false;
+				long key_Address;
+				if(entry.readKeyAddress(&key_Address) == false) return false;
 				if(key_Pointer < 0)
 				{
 					printf("The entry at the address %ld has no key pointer\n", index2address(current_Index));
@@ -1519,8 +1524,8 @@ bool r_Tree::test() const
 					printf("The entry at the address %ld has no child index\n", index2address(current_Index));
 					return false; 
 				}
-				long key_Pointer;
-				if(entry.readKeyPointer(&key_Pointer) == false) return false;
+				long key_Address;
+				if(entry.readKeyAddress(&key_Address) == false) return false;
 				if(key_Pointer > 0)
 				{
 					printf("The entry at the address %ld has a corrupt key pointer\n", index2address(current_Index));

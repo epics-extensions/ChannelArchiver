@@ -104,7 +104,7 @@ bool r_Entry::readPreviousIndex(long * result) const
 	return true;
 }
 
-bool r_Entry::readKeyPointer(long * result) const
+bool r_Entry::readKeyAddress(long * result) const
 {
 	if(f == 0 || entry_Address < 0) 
 	{
@@ -116,7 +116,7 @@ bool r_Entry::readKeyPointer(long * result) const
 	fseek(f, ADDRESS, SEEK_SET);
 	if(readLong(f, result) == false) 
 	{
-		printf("Failed to read the key pointer of the entry from the address %ld \n", ADDRESS);
+		printf("Failed to read the key address of the entry from the address %ld \n", ADDRESS);
 		return false;
 	}
 	return true;
@@ -199,7 +199,7 @@ bool r_Entry::writePreviousIndex(long value) const
 	return true;	
 }
 
-bool r_Entry::writeKeyPointer(long value) const
+bool r_Entry::writeKeyAddress(long value) const
 {
 	if(f == 0 || entry_Address < 0) 
 	{
@@ -211,7 +211,7 @@ bool r_Entry::writeKeyPointer(long value) const
 	fseek(f, ADDRESS, SEEK_SET);
 	if(writeLong(f, value) == false) 
 	{
-		printf("Failed to write the key pointer of the entry to the address %ld \n", ADDRESS);
+		printf("Failed to write the key address of the entry to the address %ld \n", ADDRESS);
 		return false;
 	}
 	return true;

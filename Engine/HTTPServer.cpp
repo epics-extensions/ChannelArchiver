@@ -43,6 +43,7 @@ HTTPServer *HTTPServer::create(short port)
     SOCKET s = epicsSocketCreate(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in  local;
 
+    // TODO: use osiSock.h : aToIPAddr
     local.sin_family = AF_INET;
     local.sin_port = htons (port);
 #   ifdef WIN32

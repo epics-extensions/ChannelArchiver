@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "key_au_iterator.h"
-#include "au_pointer.h"
 #include "archiver_unit.h"
 
 key_AU_Iterator::key_AU_Iterator(const r_Tree * source)
@@ -137,14 +136,8 @@ bool key_AU_Iterator::checkInterval(long leaf_Address, interval * leaf_Interval)
 bool key_AU_Iterator::getKey(long leaf_Address, key_Object * result)
 {
 	current_Entry.attach(index_File, leaf_Address);
-	long key_Pointer_Address;
-	if(current_Entry.readKeyPointer(&key_Pointer_Address) == false) return false;
-
-	au_Pointer aup;
-	aup.attach(index_File, key_Pointer_Address);
 	long key_Address;
-	if(aup.readAUAddress(&key_Address) == false) return false;
-
+	if(current_Entry.readKeyAddress(&key_Address) == false) return false;
 	archiver_Unit au;
 	au.attach(index_File, key_Address);
 	if(au.readKey() == false) return false;	

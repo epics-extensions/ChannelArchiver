@@ -25,7 +25,7 @@ public:
     /// Create a reader for an index.
     DataReader(archiver_Index &index);
 
-    ~DataReader();
+    virtual ~DataReader();
     
     /// Locate data.
 
@@ -40,12 +40,12 @@ public:
     /// \param start: start time or 0 for first value
     /// \param end: end time or 0 for last value
     /// \return Returns value or 0
-    const RawValue::Data *find(const stdString &channel_name,
-                               const epicsTime *start,
-                               const epicsTime *end);
+    virtual const RawValue::Data *find(const stdString &channel_name,
+                                       const epicsTime *start,
+                                       const epicsTime *end);
 
     /// Returns next value or 0.
-    const RawValue::Data *next();
+    virtual const RawValue::Data *next();
 
     /// Name of the channel, i.e. the one passed to find()
     stdString channel_name;

@@ -3,8 +3,8 @@
 #ifndef _R_TREE_H_
 #define _R_TREE_H_
 
+#include "archiver_unit.h"
 #include "array_list.h"
-#include "au_pointer_list.h"
 #include "file_allocator.h"
 #include "r_entry.h"
 #include "r_tree_free_space_manager.h"

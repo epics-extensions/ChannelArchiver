@@ -34,8 +34,7 @@ public:
 	bool readInterval();
 
 	/**
-	*	Determine the index of the next/previous entry, the child or the parent; or the address of the 
-	*	key AU pointer
+	*	Determine the index of the next/previous entry, the child or the parent; or the address of the key AU
 	*	Inside an R tree each entry gets an index from the 
 	*	rtree free space manager; pointers to the ouside of the tree are addresses
 	*	@param result is a pointer which the values are read to from the file;
@@ -46,7 +45,7 @@ public:
 	bool readParentIndex(long * result) const;
 	bool readNextIndex(long * result) const;
 	bool readPreviousIndex(long * result) const;
-	bool readKeyPointer(long * result) const;
+	bool readKeyAddress(long * result) const;
 	
 	/**
 	*	Write the R entry interval to the file this object was attached to
@@ -64,7 +63,7 @@ public:
 	bool writeParentIndex(long value) const;
 	bool writeNextIndex(long value) const;
 	bool writePreviousIndex(long value) const;
-	bool writeKeyPointer(long value) const;
+	bool writeKeyAddress(long value) const;
 private:
 	interval entry_Interval;
 	FILE * f;

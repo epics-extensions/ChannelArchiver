@@ -151,7 +151,7 @@ proc checkForBgManager {} {
 	  } else {
 	    set tclext ""
 	  }
-	  exec CAbgManager$tclext &
+	  exec CAbgManager$tclext $::argv &
 	}
       }
       config {

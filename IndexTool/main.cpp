@@ -37,7 +37,7 @@ int main(int argc, const char *argv[])
                      );
     parser.setArgumentsInfo("<archive list file> <output index>");
     CmdArgFlag help  (parser, "help", "Show Help");
-    CmdArgFlag verbose (parser, "verbose", "Show more info");
+    CmdArgInt verbose (parser, "verbose", "<level>", "Show more info");
     CmdArgInt M_val (parser, "M", "<int>", "RTree M value");
     M_val.set(7);
     if (! parser.parse())
@@ -84,6 +84,8 @@ int main(int argc, const char *argv[])
             fclose(f);
         }
 
+    if (verbose > 1)
+	    master_Index.verbose = true;
     f = fopen(archive_list_name.c_str(), "rt");
     if(f==0)
     {
@@ -112,7 +114,7 @@ int main(int argc, const char *argv[])
         result = cni->getFirst(&channel_Name);
         while(result)
         {
-            if(verbose)
+            if(verbose > 0)
             {
                 printf("Processing channel %s from the index file %s\n", channel_Name.c_str(), path);
             }
@@ -121,7 +123,7 @@ int main(int argc, const char *argv[])
                 delete cni;
                 return 0;
             };
-            if(verbose) printf("%s processed\n\n", channel_Name.c_str());
+            if(verbose > 0) printf("%s processed\n\n", channel_Name.c_str());
             result = cni->getNext(&channel_Name);
         }
         delete cni;

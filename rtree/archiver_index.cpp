@@ -5,6 +5,12 @@
 #include <string.h>
 #include "bin_io.h"
 #include "file_allocator.h"
+/**
+*   The header files below are for performance tests only  
+*/
+#include "sys/time.h"
+#include "unistd.h"
+
 
 archiver_Index::archiver_Index()
 :f(0), m(0), read_Only(true), global_Priority(-1){}
@@ -105,15 +111,29 @@ bool archiver_Index::close()
 }
 
 bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver_Index& other, bool only_New_Data)
-{	
+{
+	//for test purposes only
+    struct timeval before, after;
+    long length_Of_Time;
+    ////////////////////////
 	if(!isInstanceValid() || !other.isInstanceValid() || read_Only) return false;
 	long root_Pointer;
 	long au_List_Pointer;
-	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer, &au_List_Pointer);
+    ////////////////////
+    gettimeofday(&before, 0);
+    //
+    long cntu_Address = t.findCNTU(channel_Name, &root_Pointer, &au_List_Pointer);
 	if(cntu_Address < 0)
 	{
 		if(t.addCNTU(channel_Name, &root_Pointer, &au_List_Pointer) == false) return false;
 	}
+
+    ///////////////////////
+    gettimeofday(&after, 0);
+    length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);  
+    if (verbose)
+	    printf("It takes %ld microseconds to find the address of the R tree\n", length_Of_Time);
+    //
 	if(root_Pointer < 0)
 	{
 		printf("The cntu at the address %ld is corrupt\n", cntu_Address);
@@ -135,7 +155,17 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 	if(ai == 0) return false;
 	long au_Address;
 	archiver_Unit au;
+    ///////////////////
+    gettimeofday(&before, 0);
+    //
 	bool result = ai->getFirstAUAddress(search_Interval, &au_Address);
+    ///////////////////////
+    gettimeofday(&after, 0);
+    length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);  
+    if (verbose)
+	    printf("It takes %ld microseconds to find the first AU\n", length_Of_Time);
+    //
+    
 	while(result)
 	{
 		if(au_Address < 0) 
@@ -143,6 +173,9 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 			delete ai;
 			return true;
 		}
+        ///////////////////
+        gettimeofday(&before, 0);
+        //
 		au.attach(other.getFile(), au_Address);
 		if(au.readAU() == false) 
 		{
@@ -165,7 +198,22 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 			delete ai;
 			return false;
 		}
+         ///////////////////////
+        gettimeofday(&after, 0);
+        length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);  
+        if (verbose)
+		printf("It takes %ld microseconds to add an AU\n", length_Of_Time);
+        //
+        ///////////////////
+        gettimeofday(&before, 0);
+        //        
       	result = ai->getNextAUAddress(&au_Address);
+        ///////////////////////
+        gettimeofday(&after, 0);
+        length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);  
+        if (verbose)
+		printf("It takes %ld microseconds to find a next AU\n", length_Of_Time);
+        //
 	}
 	delete ai;
 	return false;

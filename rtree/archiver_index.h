@@ -20,6 +20,8 @@ public:
 	archiver_Index();
 	~archiver_Index();
 
+        bool verbose;
+
 	/**
 	*	Is used only inside addDataFromAnotherIndex()
 	*	@see addDataFromAnotherIndex()

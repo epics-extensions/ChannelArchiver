@@ -6,9 +6,7 @@
 // for legal information.
 //
 // Kay-Uwe Kasemir, kasemir@lanl.gov
-// --------------------------------------------------------
-
-#include "ToolsConfig.h"
+// --------------------------------------------------------xs
 
 // Tree Item:
 // Holds the full Item as well as left/right pointers
@@ -23,7 +21,8 @@ public:
 /// \ingroup Tools
 /// BinaryTree:
 ///
-/// Sorted binary tree for Items that support the "less than" and "equal" operator.
+/// Sorted binary tree for Items that support
+/// the "less than" and "equal" operator.
 template<class Item> class BinaryTree
 {
 public:

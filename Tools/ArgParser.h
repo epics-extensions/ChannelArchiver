@@ -111,8 +111,11 @@ public:
     // Show info on option for command line
     void usage_option() const;
 
+    // Get string length of option w/o description
+    size_t option_size() const;
+    
     // Show option description
-    void usage() const;
+    void usage(size_t tab) const;
 
     // Parse arguments from current option.
     // args: following arg

@@ -13,12 +13,76 @@
 bool verbose;
 
 // "visitor" for BinaryTree of channel names
-static void name_printer(const stdString &name, void *arg)
+static void add_name2vector(const stdString &name, void *arg)
 {
-    printf("%s\n", name.c_str());
+    stdVector<stdString> *names = (stdVector<stdString> *)arg;
+    if (verbose)
+        printf("%s\n", name.c_str());
+    names->push_back(name);
+}
+void get_names_for_pattern(archiver_Index &index,
+                           stdVector<stdString> &names,
+                           const stdString &pattern)
+{
+    if (verbose)
+        printf("Expanding pattern '%s'\n", pattern.c_str());
+    RegularExpression *regex =
+        RegularExpression::reference(pattern.c_str());
+    if (!regex)
+    {
+        fprintf(stderr, "Cannot allocate regular expression\n");
+        return;
+    }     
+    channel_Name_Iterator *cni = index.getChannelNameIterator();
+    if (!cni)
+    {
+        fprintf(stderr, "Cannot get channel name iterator\n");
+        return;
+    }
+    // Put all names in binary tree
+ 	BinaryTree<stdString> channels;
+    stdString name;
+    bool ok;
+    for (ok = cni->getFirst(&name); ok; ok = cni->getNext(&name))
+    {
+        if (!regex->doesMatch(name.c_str()))
+            continue; // skip what doesn't match regex
+        channels.add(name);
+    }
+    delete cni;
+    regex->release();
+    // Sorted dump of names
+    channels.traverse(add_name2vector, (void *)&names);
 }
 
-bool list_channels(archiver_Index &index, const stdString &pattern)
+// Used by list_channels & name_printer
+class ChannelInfo
+{
+public:
+    stdString name;
+    epicsTime start, end;
+
+    bool operator < (const ChannelInfo &rhs)
+    { return name < rhs.name; }
+
+    bool operator == (const ChannelInfo &rhs)
+    { return name == rhs.name; }
+};
+
+// "visitor" for BinaryTree of channel names
+static void name_printer(const ChannelInfo &info, void *arg)
+{
+    bool show_info = (bool) arg;
+    stdString s, e;
+    if (show_info)
+        printf("%s\t%s\t%s\n", info.name.c_str(),
+               epicsTimeTxt(info.start, s), epicsTimeTxt(info.end, e));
+    else
+        printf("%s\n", info.name.c_str());
+}
+
+bool list_channels(archiver_Index &index, const stdString &pattern,
+                   bool show_info)
 {
     RegularExpression *regex = 0;
     if (pattern.length() > 0)
@@ -30,20 +94,29 @@ bool list_channels(archiver_Index &index, const stdString &pattern)
         return false;
     }
     // Put all names in binary tree
- 	BinaryTree<stdString> names;
-    stdString name;
+ 	BinaryTree<ChannelInfo> channels;
+    ChannelInfo info;
     bool ok;
-    for (ok = cni->getFirst(&name); ok; ok = cni->getNext(&name))
+    for (ok = cni->getFirst(&info.name); ok; ok = cni->getNext(&info.name))
     {
-        if (regex && !regex->doesMatch(name.c_str()))
+        if (regex && !regex->doesMatch(info.name.c_str()))
             continue; // skip what doesn't match regex
-        names.add(name);
+        if (show_info)
+        {
+            interval range;
+            if (index.getEntireIndexedInterval(info.name.c_str(), &range))
+            {
+                info.start = range.getStart();
+                info.end = range.getEnd();
+            }
+        }
+        channels.add(info);
     }
     delete cni;
     if (regex)
         regex->release();
     // Sorted dump of names
-    names.traverse(name_printer, 0);
+    channels.traverse(name_printer, (void *)show_info);
     return true;
 }
 
@@ -114,9 +187,10 @@ int main(int argc, const char *argv[])
     parser.setHeader("Archive Export version " ARCH_VERSION_TXT ", "
                      EPICS_VERSION_STRING
                      ", built " __DATE__ ", " __TIME__ "\n\n");
-    parser.setArgumentsInfo(" <index file> { channel }");
+    parser.setArgumentsInfo("<index file> {channel}");
     CmdArgFlag   be_verbose (parser, "verbose", "Verbose mode");
     CmdArgFlag   do_list    (parser, "list", "List all channels");
+    CmdArgFlag   do_info    (parser, "info", "Time-range info on channels");
     CmdArgString start_time (parser, "start", "<time>",
                              "Format: \"mm/dd/yyyy[ hh:mm:ss[.nano-secs]]\"");
     CmdArgString end_time   (parser, "end", "<time>", "(exclusive)");
@@ -168,8 +242,9 @@ int main(int argc, const char *argv[])
         if (verbose)
             printf("Using end time   %s\n", epicsTimeTxt(*end, txt));
     }
-    // Index name, channel names
+    // Index name
     stdString index_name = parser.getArgument(0);
+    // Channel names
     stdVector<stdString> names;
     if (parser.getArguments().size() > 1)
     {
@@ -190,13 +265,20 @@ int main(int argc, const char *argv[])
                 index_name.c_str());
         return -1;
     }
+    if (verbose)
+        printf("Opened index '%s'\n", index_name.c_str());
+    
+    if (names.size() == 0 && pattern.get().length() > 0)
+        get_names_for_pattern(index, names, pattern);
+    if (do_info)
+        return list_channels(index, pattern, true);
     if (do_list)
-        return list_channels(index, pattern);
+        return list_channels(index, pattern, false);
+    if (names.size() == 0)
+        return 0;
     if (!dump_spreadsheet(index, names, start, end, status_text))
         return -1;
  
     return 0;
 }
-
-
 

@@ -1,6 +1,13 @@
 \section{XML-RPC}
 The following is a description of the calls implemented by the archive
 data server based on the XML-RPC protocol.
+For details on XML-RPC, including the specifications and examples of
+how to use it from within C, C++, Java, perl, please refer to
+\href{http://www.xmlrpc.com}{http://www.xmlrpc.com}.
+
+Users of Java should probably utilize the Java archive data client
+library provided with the ChannelArchiver. Users of other programming
+environments need to refer to the following.
 
 \subsection{archiver.info}
 This call returns version information for 
@@ -12,12 +19,105 @@ if clients check for the correct version numbers.
 \end{lstlisting}
 
 \begin{description}
-\item[ver:]  Version number. Currently we use ver = 1.
-\item[desc:] Cute description that one can print.
+\item[\sffamily ver:]  Version number. Currently we use ver = 1.
+\item[\sffamily desc:] Cute description that one can print.
 \end{description}
 
-The result is a structure with a numeric "ver"
+\noindent The result is a structure with a numeric "ver"
 member and a string "desc" member. Implementations
 like perl will return a hash with members "ver"
 and "desc".
 
+\subsection{archiver.get\_names}
+Returns channel names and start/end times.
+Pattern is a regular expression.
+If left empty, all names are returned.
+
+\NOTE The Time Stamps are \emph{not} the raw EPICS time stamps with 1990 epoch,
+but use the time\_t data type based on a 1970 epoch.
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+{string name, int32 start_sec, int32 start_nano,
+              int32 end_sec,   int32 end_nano}[] 
+            = archiver.get_names(string pattern)
+\end{lstlisting}
+
+The result is an array of structures, one structure
+per channel that matches the pattern.
+Start/end gives an idea of the time range that can
+be found in the archive for that channel.
+The archive might actually contain entries \emph{after}
+the reported end time because the index might not
+be up too date on the end times.
+
+\subsection{archiver.get\_values}
+This call returns values for a given list of channel names
+and a common time range.
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+result = archiver.get_values(
+         string name[],
+         int32 start_sec, int32 start_nano,
+         int32 end_sec, int32 end_nano, int32 count,
+         int32 how)
+\end{lstlisting}
+
+The parameter ''how'' determines how the raw values of the various
+channels get arranged to meet the requested time range and count:
+\begin{description}
+\item[\sffamily how = 0:]
+  Get raw data from archive, starting w/ start,
+  up to either 'end' time or max. 'count' samples.
+\end{description}
+
+\noindent The result is an array of structures, one structure per
+requested channel:
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+result := { string name, meta, int32 type,
+            int32 count, values }[]
+\end{lstlisting}
+
+\begin{description}
+\item[\sffamily name:]
+   The channel name.
+   Result[i].name should match name[i] of the request,
+   so this is a waste of electrons, but it's sure convenient
+   to have the name in the result, and we're talking XML-RPC,
+   so forget about the electrons.
+\item[\sffamily meta:]
+   The meta information for the channel. This is itself a structure 
+   with the following entries:
+   \begin{lstlisting}[keywordstyle=\sffamily]
+meta := { int32 type;
+          type==0: string states[],
+          type==1: double disp_high,
+                   double disp_low,
+	           double alarm_high,
+                   double alarm_low,
+                   double warn_high,
+                   double warn_low,
+                   int prec, string units
+        }
+   \end{lstlisting}
+\item[\sffamily type:]
+   Describes the data type of this channel's values:
+  \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+  string   0
+  enum	   1 (XML int32)
+  int      2
+  double   3
+  \end{lstlisting}
+\item[\sffamily count:]
+  Describes the array size of this channel's values, using 1 for
+  scalar values. Note that even scalar values are returned as an array
+  with one element!
+\item[\sffamily values:]
+  This is an array where each entry is a structure of the following
+  layout:
+  \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+  values := { int32 stat, int32 sevr,
+              int32 secs, int32 nano,
+              <type> value[] } []
+  \end{lstlisting}
+\end{description}

@@ -33,15 +33,15 @@ void CmdArgParser::usage()
     stdList<CmdArg *>::iterator option;
     stdString fullname, prog;
     fullname = _progname;
-    Filename::getBasename (fullname, prog);
+    Filename::getBasename(fullname, prog);
 
     if (_header)
         fprintf(stderr, "%s", _header);
-    fprintf(stderr, "USAGE:\t%s ", prog.c_str());
+    fprintf(stderr, "USAGE: %s ", prog.c_str());
     if (_options.size() < 3)
     {
-        for (option = _options.begin (); option != _options.end(); ++option)
-            (*option)->usage_option ();
+        for (option = _options.begin(); option != _options.end(); ++option)
+            (*option)->usage_option();
     }
     else
         fprintf(stderr, "[Options]");
@@ -50,8 +50,15 @@ void CmdArgParser::usage()
     fprintf(stderr, "\n\n");
 
     fprintf(stderr, "Options:\n");
-    for (option = _options.begin (); option != _options.end(); ++option)
-        (*option)->usage ();
+    size_t tab = 0, o_tab;
+    for (option = _options.begin(); option != _options.end(); ++option)
+    {
+        o_tab = (*option)->option_size();
+        if (o_tab > tab)
+            tab = o_tab;
+    }
+    for (option = _options.begin(); option != _options.end(); ++option)
+        (*option)->usage(tab+3);
     if (_footer)
         fprintf(stderr, "%s", _footer);
 }
@@ -80,7 +87,7 @@ bool CmdArgParser::parse()
                 const char *arg = trailing_arg ?
                                   _argv[i]+matches+1 : _argv[i+1];
 
-                switch ((*option)->parse (arg))
+                switch ((*option)->parse(arg))
                 {
                 case 1:
                     ++i;
@@ -93,7 +100,7 @@ bool CmdArgParser::parse()
                     break;
                 default:
                     fprintf(stderr, "Error in option -%c\n", _argv[i][1]);
-                    usage ();
+                    usage();
                     return false;
                 }
                 break;
@@ -145,10 +152,18 @@ void CmdArg::usage_option() const
         fprintf(stderr, " %s", _arguments);
 }
 
-void CmdArg::usage() const
+size_t CmdArg::option_size() const
 {
-    fprintf(stderr, "\t-%s", _option);
-    size_t skip = 30 - strlen(_option);
+    size_t len = strlen(_option);
+    if (_arguments)
+        len += strlen(_arguments);
+    return len;
+}
+
+void CmdArg::usage(size_t tab) const
+{
+    fprintf(stderr, "  -%s", _option);
+    size_t skip = tab - strlen(_option);
 
     if (_arguments)
     {

@@ -47,28 +47,49 @@ archiver_Index *open_index(xmlrpc_env *env)
     const char *name = get_index(env);
     if (env->fault_occurred)
         return 0;
-    if (!index->open(name))
-    {
-        delete index;
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
-                                       "Cannot open index '%s'",
-                                       name);
-        return 0;
-    }
-    return index;
+    if (index->open(name))
+        return index;
+    delete index;
+    xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
+                                   "Cannot open index '%s'", name);
+    return 0;
 }
 
-// archdat.info returns version information.
+void epicsTime2pieces(const epicsTime &t,
+                      xmlrpc_int32 &secs,
+                      xmlrpc_int32 &nano)
+{   // This is lame, calling twice on epicsTime's conversions
+    epicsTimeStamp stamp = t;
+    time_t time;
+    epicsTimeToTime_t(&time, &stamp);
+    secs = time;
+    nano = stamp.nsec;
+}
+
+void pieces2epicsTime(xmlrpc_int32 secs,
+                      xmlrpc_int32 nano,
+                      epicsTime &t)
+{   // As lame as other nearby code
+    epicsTimeStamp stamp;
+    time_t time = secs;
+    epicsTimeFromTime_t(&stamp, time);
+    stamp.nsec = nano;
+    t = stamp;
+}
+
+// archiver.info returns version information.
 // ver    numeric version
 // desc   a string description
 //
-// { int32  ver, string desc } = archdat.info()
+// { int32  ver, string desc } = archiver.info()
 xmlrpc_value *info(xmlrpc_env *env,
                    xmlrpc_value *args,
                    void *user)
 {
     char txt[200];
     const char *index = get_index(env);
+    if (!index)
+        return 0;
     sprintf(txt, "Channel Archiver Data Server V%d\nIndex '%s'",
             ARCH_VER, index);
     return xmlrpc_build_value(env,
@@ -101,20 +122,18 @@ public:
     static void add_name_to_result(const ChannelInfo &info, void *arg)
     {
         UserArg *user_arg = (UserArg *)arg;
-        xmlrpc_value *channel;
-
-        epicsTimeStamp start = info.start;
-        epicsTimeStamp end = info.end;
-        time_t_wrapper start_secs = info.start;
-        time_t_wrapper end_secs = info.end;
+        xmlrpc_int32 ss, sn, es, en;
+        epicsTime2pieces(info.start, ss, sn);
+        epicsTime2pieces(info.end, es, en);
         
-        channel = xmlrpc_build_value(user_arg->env,
-                                     STR("{s:s,s:i,s:i,s:i,s:i}"),
-                                     "name", info.name.c_str(),
-                                     "start_sec", start_secs,
-                                     "start_nano", start.nsec,
-                                     "end_sec", end_secs,
-                                     "end_nano", end.nsec);
+        xmlrpc_value *channel =
+            xmlrpc_build_value(user_arg->env,
+                               STR("{s:s,s:i,s:i,s:i,s:i}"),
+                               "name", info.name.c_str(),
+                               "start_sec", ss,
+                               "start_nano", sn,
+                               "end_sec", es,
+                               "end_nano", en);
         if (channel)
         {
             xmlrpc_array_append_item(user_arg->env,
@@ -141,22 +160,19 @@ xmlrpc_value *get_names(xmlrpc_env *env,
     if (env->fault_occurred)
         return NULL;
     if (pattern_len > 0)
-    {
         regex = RegularExpression::reference(pattern);
+    // Create result
+    xmlrpc_value *result = xmlrpc_build_value(env, STR("()"));
+    if (!result)
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
+                                       "Cannot create result");
+        return 0;
     }
     // Open Index
     archiver_Index *index = open_index(env);
     if (env->fault_occurred)
         return 0;
-    // Create result
-    xmlrpc_value *result = xmlrpc_build_value(env, STR("()"));
-    if (!result)
-    {
-        delete index;
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
-                                       "Cannot create result");
-        return 0;
-    }  
     channel_Name_Iterator *cni = index->getChannelNameIterator();
     if (!cni)
     {
@@ -193,69 +209,83 @@ xmlrpc_value *get_names(xmlrpc_env *env,
     ChannelInfo::UserArg user_arg;
     user_arg.env = env;
     user_arg.result = result;
-    channels.traverse(ChannelInfo::add_name_to_result, (void *)&user_arg);    
+    channels.traverse(ChannelInfo::add_name_to_result, (void *)&user_arg);
+    sprintf(log_line, "get_names('%s') -> %d names",
+            (pattern ? pattern : "<no pattern>"),
+             xmlrpc_array_size(env, result));
     return result;
 }
 
-static xmlrpc_value *make_ctrl_info(xmlrpc_env *env,
-                                    const char *units)
+static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo &info)
 {
-	xmlrpc_value *meta =
-        xmlrpc_build_value(env,
-                           STR("{s:i,s:d,s:d,s:d,s:d,s:d,s:d,s:i,s:s}"),
-                           "type", (xmlrpc_int32)1,
-                           "disp_high",  10.0, "disp_low",    0.0,
-                           "alarm_high", 10.0, "warn_high",   9.0,
-                           "warn_low",    1.0, "alarm_low",   0.0,
-                           "prec", (xmlrpc_int32)4,
-                           "units",     units);
-	return meta;
-}
-
-xmlrpc_value *get_values(xmlrpc_env *env,
-                         xmlrpc_value *args,
-                         void *user)
-{
-    xmlrpc_value *names;
-    xmlrpc_value *name_val, *results, *result, *meta;
-    xmlrpc_value *values, *val_array, *value;
-    xmlrpc_int32 start_sec, start_nano, end_sec, end_nano, count, how;
-    xmlrpc_int32 secs, nano;
-    xmlrpc_int32 name_count, name_index, name_len, i;
-    char *name;
-
-    // Extract arguments
-    xmlrpc_parse_value(env, args, STR("(Aiiiiii)"),
-                       &names,
-                       &start_sec, &start_nano, &end_sec, &end_nano,
-                       &count, &how);
-    if (env->fault_occurred)
-        return 0;
-
-    if (count == 42)
+   if (info.getType() == CtrlInfo::Enumerated)
     {
-        xmlrpc_env_set_fault_formatted(
-            env, ARCH_DAT_SERV_FAULT,
-            "I don't like count==%d", count);
-        return 0;
-    }
-
-    name_count = xmlrpc_array_size(env, names);
-    // Build result for each requested channel name
-    results = xmlrpc_build_value(env, STR("()"));
-    for (name_index = 0; name_index < name_count; ++name_index)
-    {
-        // extract name from array (no new ref!)
-        name_val = xmlrpc_array_get_item(env, names, name_index);
-        if (env->fault_occurred)
+        xmlrpc_value *states = xmlrpc_build_value(env, STR("()"));
+        xmlrpc_value *state;
+        stdString state_txt;
+        size_t i, num = info.getNumStates();
+        for (i=0; i<num; ++i)
         {
-            xmlrpc_DECREF(results);
-            return NULL;
+            info.getState(i, state_txt);
+            state = xmlrpc_build_value(env, STR("s#"),
+                                       state_txt.c_str(), state_txt.length());
+            xmlrpc_array_append_item(env, states, state);
+            xmlrpc_DECREF(state);
         }
-        xmlrpc_parse_value(env, name_val, STR("s#"),
-                           &name, &name_len);                       
+        xmlrpc_value *meta = xmlrpc_build_value(env, STR("{s:i,s:V}"),
+                                                "type", (xmlrpc_int32)0,
+                                                "states", states);
+        xmlrpc_DECREF(states);
+        return meta;
+    }
+    if (info.getType() == CtrlInfo::Numeric)
+    {
+        return xmlrpc_build_value(
+            env, STR("{s:i,s:d,s:d,s:d,s:d,s:d,s:d,s:i,s:s}"),
+            "type", (xmlrpc_int32)1,
+            "disp_high",  info.getDisplayHigh(),
+            "disp_low",   info.getDisplayLow(),
+            "alarm_high", info.getHighAlarm(),
+            "warn_high",  info.getHighWarning(),
+            "warn_low",   info.getLowWarning(),
+            "alarm_low",  info.getLowAlarm(),
+            "prec", (xmlrpc_int32)info.getPrecision(),
+            "units", info.getUnits());
+    }
+    return  xmlrpc_build_value(env, STR("{s:i,s:(s)}"),
+                               "type", (xmlrpc_int32)0,
+                               "states", "<undefined>");
+ }
+
+void make_dummy_data(xmlrpc_env *env,
+                     const stdVector<stdString> names,
+                     const epicsTime &start,
+                     const epicsTime &end,
+                     long count,
+                     xmlrpc_value *results)
+{
+    xmlrpc_value *result, *meta;
+    xmlrpc_value *values, *val_array, *value;
+    xmlrpc_int32 start_sec, start_nano, end_sec, end_nano;
+    xmlrpc_int32 secs, nano;
+    long ni, i, name_count = names.size();
+
+    epicsTime2pieces(start, start_sec, start_nano);
+    epicsTime2pieces(end, end_sec, end_nano);
+    CtrlInfo info;
+    for (ni=0; ni<name_count; ++ni)
+    {
         // Meta information
-        meta = make_ctrl_info(env, name);
+        if (ni & 1)
+            info.setNumeric(2, names[ni],
+                            0.0, 10.0,
+                            0.0, 1.0, 9.0, 10.0);
+        else
+        {
+            char *strings[] = { "Alone", "lonely", "and", "really", "afraid" };
+            info.setEnumerated(5, strings);
+        }
+        meta = encode_ctrl_info(env, info);
         // Values
         values = xmlrpc_build_value(env, STR("()"));
         for (i=0; i<count; ++i)
@@ -277,7 +307,7 @@ xmlrpc_value *get_values(xmlrpc_env *env,
         }
         // Assemble channel = { meta, data }
         result = xmlrpc_build_value(env, STR("{s:s,s:V,s:i,s:i,s:V}"),
-                                    "name", name,
+                                    "name", names[ni].c_str(),
                                     "meta", meta,
                                     "type", (xmlrpc_int32) 3,
                                     "count",(xmlrpc_int32) 1,
@@ -288,8 +318,52 @@ xmlrpc_value *get_values(xmlrpc_env *env,
         xmlrpc_array_append_item(env, results, result);
         xmlrpc_DECREF(result);
     }
-    sprintf(log_line, "get_values(%d channels, each %d values = %d values)",
-            name_count, count, name_count*count);
+}
+
+xmlrpc_value *get_values(xmlrpc_env *env,
+                         xmlrpc_value *args,
+                         void *user)
+{
+    xmlrpc_value *names;
+    xmlrpc_int32 start_sec, start_nano, end_sec, end_nano, count, how;
+    // Extract arguments
+    xmlrpc_parse_value(env, args, STR("(Aiiiiii)"),
+                       &names,
+                       &start_sec, &start_nano, &end_sec, &end_nano,
+                       &count, &how);    
+    if (env->fault_occurred)
+        return 0;
+   // Build start/end
+    epicsTime start, end;
+    pieces2epicsTime(start_sec, start_nano, start);
+    pieces2epicsTime(end_sec, end_nano, end);    
+    // Pull names into stdVector<stdString>
+    // for SpreadsheetReader and just because.
+    xmlrpc_value *name_val;
+    char *name;
+    int i;
+    xmlrpc_int32 name_count = xmlrpc_array_size(env, names);
+    stdVector<stdString> name_vector;
+    name_vector.reserve(name_count);
+    for (i = 0; i < name_count; ++i)
+    {   // no new ref!
+        name_val = xmlrpc_array_get_item(env, names, i);
+        if (env->fault_occurred)
+            return 0;
+        xmlrpc_parse_value(env, name_val, STR("s"), &name);
+        if (env->fault_occurred)
+            return 0;
+        name_vector.push_back(stdString(name));
+    }
+    // Build results
+    xmlrpc_value *results = xmlrpc_build_value(env, STR("()"));
+    switch (how)
+    {
+        default:
+            make_dummy_data(env, name_vector, start, end, count, results);
+    }
+    sprintf(log_line, "get_values(%d channels, count %d)",
+            name_count, count);
     return results;
 }
 
@@ -330,8 +404,3 @@ int main(int argc, const char *argv[])
     
     return 0;
 }
-
-
-
-
-

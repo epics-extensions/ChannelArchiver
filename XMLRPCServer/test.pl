@@ -13,29 +13,37 @@ if ($#ARGV == 0)
     $server_url = $ARGV[0];
 }
 
+print("=======================================================================\n");
 print("Connecting to Archive Data Server URL '$server_url'\n");
+print("=======================================================================\n");
 
 $server = Frontier::Client->new(url => $server_url);
 
+print("=======================================================================\n");
 print("Info:\n");
+print("=======================================================================\n");
 # { int32 ver, string desc } = archdat.info()
 $result = $server->call('archiver.info');
-printf("Archive Data Server V %d,\nDescription '%s'\n\n",
+printf("Archive Data Server V %d,\nDescription '%s'\n",
        $result->{'ver'},
        $result->{'desc'});
 
 # string name[] = archdat.get_names(string pattern)
-print("Request without pattern:\n");
-$results = $server->call('archiver.get_names', "");
-foreach $result ( @{$results} )
-{
-	$name = $result->{name};
-	$start = time2string($result->{start_sec}, $result->{start_nano});
-	$end   = time2string($result->{end_sec},   $result->{end_nano});
-	print("Channel $name, $start - $end\n");
-}
+#print("=======================================================================\n");
+#print("Request without pattern:\n");
+#print("=======================================================================\n");
+#$results = $server->call('archiver.get_names', "");
+#foreach $result ( @{$results} )
+#{
+#	$name = $result->{name};
+#	$start = time2string($result->{start_sec}, $result->{start_nano});
+#	$end   = time2string($result->{end_sec},   $result->{end_nano});
+#	print("Channel $name, $start - $end\n");
+#}
 
+print("=======================================================================\n");
 print("Request with pattern:\n");
+print("=======================================================================\n");
 $results = $server->call('archiver.get_names', "IOC");
 foreach $result ( @{$results} )
 {
@@ -51,10 +59,13 @@ foreach $result ( @{$results} )
 #                              int32 end_sec, int32 end_nano, int32 count,
 #                              int32 how)
 # result = (look at spec, too complex for this comment)
+print("=======================================================================\n");
 print("Get Values:\n");
-@names = ( "fred", "freddy", "Jimmy", "James" );
+print("=======================================================================\n");
+#@names = ( "fred", "freddy", "Jimmy", "James" );
+@names = ( "fred", "freddy" );
 #@names = ( "fred" );
-$count = 42;
+$count = 5;
 $end = time();
 $start = $end - $count;
 $how = 0;

@@ -103,10 +103,10 @@ void GNUPlotExporter::exportChannelList(
     f = fopen(data_name.c_str(), "wt");
     if (! f)
         throwDetailedArchiveException(WriteError, data_name);
-   
+    
     fprintf(f, "# GNUPlot Exporter V " VERSION_TXT "\n");
     fprintf(f, "#\n");
-  
+    
     stdVector<stdString> plotted_channels;
     stdString channel_desc;
     Archive         archive(_archive);
@@ -127,7 +127,7 @@ void GNUPlotExporter::exportChannelList(
         if (! channel->getValueBeforeTime(_start, value) &&
             ! channel->getValueAfterTime(_start, value))
             continue; // nothing in time range
-
+        
         if (value->getCount() > 1)
         {
             _is_array = true;
@@ -161,7 +161,7 @@ void GNUPlotExporter::exportChannelList(
         // time stamps to get there.
         bool have_anything = false;
         bool last_was_data = false;
-        while (value && (!isValidTime(_end) || time <= _end))
+        while (value)
         {
             time = value->getTime();
             if (isValidTime(_start) && time < _start) // start hack
@@ -171,6 +171,8 @@ void GNUPlotExporter::exportChannelList(
                 fprintf(f, "\n");
                 time = _start;
             }
+            if (isValidTime(_end) && time > _end)
+                break;
             if (value->isInfo())
             {
                 // Show as comment & empty line -> "gap" in GNUplot graph.

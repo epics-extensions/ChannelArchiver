@@ -9,6 +9,7 @@ proc camComm::CheckRunning {i rvar} {
     condSet $rvar "NO"
     return
   }
+  incr ::openSocks
 
   puts $sock "GET / HTTP/1.0"
   puts $sock ""

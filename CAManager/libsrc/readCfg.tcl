@@ -9,7 +9,10 @@ proc readCFG {} {
   if {$ts > $::cfg_ts} {
     Puts "(re-)readCFG"
     foreach i [array names ::sched *,job] {
+      regsub "job\$" $i "time" t
       after cancel $::sched($i)
+      array unset ::sched $i
+      array unset ::sched $t
     }
     camMisc::init
     set ::cfg_ts $ts

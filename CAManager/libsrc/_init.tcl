@@ -16,6 +16,7 @@ set ::bgCheckInt 10
 set ::bgUpdateInt 10
 
 set ::multiVersion 1
+set ::openSocks 0
 
 source bgerror.tcl
 source checkArchivers.tcl

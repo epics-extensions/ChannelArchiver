@@ -88,102 +88,107 @@ sub parse($$)
     $fh++;
     if (not open $fh, "$group")
     {
-	open $fh, "$directory/$group"
-	    or die "Cannot open $group nor $directory/$group\n";
+        open $fh, "$directory/$group"
+            or die "Cannot open $group nor $directory/$group\n";
     }
     $group = basename($group);
     while (<$fh>)
     {
-	chomp;
-	next if (m'\A#'); # Skip comments
-	next if (m'\A\s*\Z'); # Skip empty lines
-	$line = $_;
-	if (m'!(\S+)\s+(\S+)')
-	{   # Parameter "!<text> <text>" ?
-	    if ($1 eq "group")
-	    {
-		parse($2,$fh);
-	    }
-	    elsif (length($params{$1}) > 0)
-	    {
-		$params{$1} = $2;
-		if ($1 eq "file_size")
-		{
-		    $params{$1} = $2/24 * 10;
-		    if (not $filesize_warning)
-		    {
-			printf("%s, line %d:\n", $group, $NR);
-			printf("\tThe 'file_size' parameter used to be in hours,\n");
-			printf("\tbut has been changed to MB.\n");
-			printf("\tThe automated conversion is arbitrary, assuming a\n");
-			printf("\tdata file size of about 10 MB per day (24h).\n");
-			$filesize_warning = 1;
-		    }
-		}
-	    }
-	    else
-	    {
-		printf("%s, line %d: Unknown parameter/value '%s' - '%s'\n",
-		       $group, $NR, $1, $2);
-		exit(-2);
-	    }
-	}
-	elsif (m'\A\s*(\S+)\s+([0-9\.]+)(\s+)?(.+)?\Z')
-	{   # <channel> <period> [Monitor|Disable]*
-	    $channel = $1;
-	    $period = $2;
-	    $opt_delim = $3;
-	    $options = $4;
-	    $monitor = $disable = 0;
-	    if (not defined($period)  or  $period <= 0)
-	    {
-		printf("%s, line %d: Invalid scan period\n",
-		       $group, $NR);
-		exit(-3);
-	    }
-	    if (length($options) > 0)
-	    {
+        chomp;
+        next if (m'\A#'); # Skip comments
+        next if (m'\A\s*\Z'); # Skip empty lines
+        $line = $_;
+        if (m'![Dd]isconnect\s*')
+        {   # Parameter "!disconnect" (you knew that)
+            $params{disconnect} = 1;
+        }
+        elsif (m'!(\S+)\s+(\S+)')
+        {   # Parameter "!<text> <text>" ?
+            if ($1 eq "group")
+            {
+                parse($2,$fh);
+            }
+            elsif (length($params{$1}) > 0)
+            {   # Check if it's a valid param (is there a default value?)
+                $params{$1} = $2;
+                if ($1 eq "file_size")
+                {
+                    $params{$1} = $2/24 * 10;
+                    if (not $filesize_warning)
+                    {
+                        printf("%s, line %d:\n", $group, $NR);
+                        printf("\tThe 'file_size' parameter used to be in hours,\n");
+                        printf("\tbut has been changed to MB.\n");
+                        printf("\tThe automated conversion is arbitrary, assuming a\n");
+                        printf("\tdata file size of about 10 MB per day (24h).\n");
+                        $filesize_warning = 1;
+                    }
+                }
+            }
+            else
+            {
+                printf("%s, line %d: Unknown parameter/value '%s' - '%s'\n",
+                       $group, $NR, $1, $2);
+                exit(-2);
+            }
+        }
+        elsif (m'\A\s*(\S+)\s+([0-9\.]+)(\s+)?(.+)?\Z')
+        {   # <channel> <period> [Monitor|Disable]*
+            $channel = $1;
+            $period = $2;
+            $opt_delim = $3;
+            $options = $4;
+            $monitor = $disable = 0;
+            if (not defined($period)  or  $period <= 0)
+            {
+                printf("%s, line %d: Invalid scan period\n",
+                       $group, $NR);
+                exit(-3);
+            }
+            if (length($options) > 0)
+            {
                 if (length($opt_delim) <= 0)
                 {
                     printf("%s, line %d: Missing space between period and options\n",
                            $group, $NR);
                     exit(-4);
                 }
-		foreach $opt ( split /\s+/, $options )
-		{
-		    if ($opt =~ m'\A[Mm]onitor\Z')
-		    {
-			$monitor = 1;
-		    }
-		    elsif ($opt =~ m'\A[Dd]isable\Z')
-		    {
-			$disable = 1;
-		    }
-		    elsif (length($opt) > 0)
-		    {
-			printf("%s, line %d: Invalid option '%s'\n",
-			       $group, $NR, $opt);
-			exit(-5);
-		    }
-		}
-	    }
-	    $groups{$group}{$channel}{period} = $period;
-	    if ($monitor)
-	    {
-		$groups{$group}{$channel}{monitor} = $monitor;
-	    }
-	    else
-	    {
-		$groups{$group}{$channel}{scan} = 1;
-	    }
-	    $groups{$group}{$channel}{disable} = $disable;
-	}
-	else
-	{
-	    printf("%s, line %d:\n '%s' is neither comment, option nor channel definition\n",
-		   $group, $NR, $line);
-	    exit(-6);
-	}
+                foreach $opt ( split /\s+/, $options )
+                {
+                    if ($opt =~ m'\A[Mm]onitor\Z')
+                    {
+                        $monitor = 1;
+                    }
+                    elsif ($opt =~ m'\A[Dd]isable\Z')
+                    {
+                        $disable = 1;
+                    }
+                    elsif (length($opt) > 0)
+                    {
+                        printf("%s, line %d: Invalid option '%s'\n",
+                               $group, $NR, $opt);
+                        exit(-5);
+                    }
+                }
+            }
+            $groups{$group}{$channel}{period} = $period;
+            if ($monitor)
+            {
+                $groups{$group}{$channel}{monitor} = $monitor;
+            }
+            else
+            {
+                $groups{$group}{$channel}{scan} = 1;
+            }
+            $groups{$group}{$channel}{disable} = $disable;
+        }
+        else
+        {
+            printf("%s, line %d:\n '%s' is neither comment, " .
+		   "option nor channel definition\n",
+                   $group, $NR, $line);
+            exit(-6);
+        }
     }
     close($fh);
 }
@@ -193,36 +198,43 @@ sub dump_xml()
     my ($parm, $group, $channel, $ofh);
     if (length($outfile) > 0)
     {
-	open OUT, ">$outfile" or die "Cannot create $outfile\n";
-	$ofh = select(OUT);
+        open OUT, ">$outfile" or die "Cannot create $outfile\n";
+        $ofh = select(OUT);
     }
     printf("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
     printf("<!DOCTYPE engineconfig SYSTEM \"$opt_d\">\n");
     printf("<engineconfig>\n");
     foreach $parm ( sort keys %params )
     {
-	printf("\t<$parm>$params{$parm}</$parm>\n");
+        if ($parm eq "disconnect")
+        {
+            printf("\t<disconnect/>\n");
+        }
+        else
+        {
+            printf("\t<$parm>$params{$parm}</$parm>\n");
+        }
     }
     
     foreach $group ( sort keys %groups )
     {
-	printf("\t<group>\n");
-	printf("\t\t<name>$group</name>\n");
-	foreach $channel ( sort keys %{$groups{$group}} )
-	{
-	    printf("\t\t<channel><name>$channel</name>");
-	    printf("<period>$groups{$group}{$channel}{period}</period>");
-	    printf("<monitor/>") if ($groups{$group}{$channel}{monitor});
-	    printf("<scan/>") if ($groups{$group}{$channel}{scan});
-	    printf("<disable/>") if ($groups{$group}{$channel}{disable});
-	    printf("</channel>\n");
-	}
-	printf("\t</group>\n");
+        printf("\t<group>\n");
+        printf("\t\t<name>$group</name>\n");
+        foreach $channel ( sort keys %{$groups{$group}} )
+        {
+            printf("\t\t<channel><name>$channel</name>");
+            printf("<period>$groups{$group}{$channel}{period}</period>");
+            printf("<monitor/>") if ($groups{$group}{$channel}{monitor});
+            printf("<scan/>")    if ($groups{$group}{$channel}{scan});
+            printf("<disable/>") if ($groups{$group}{$channel}{disable});
+            printf("</channel>\n");
+        }
+        printf("\t</group>\n");
     }
     printf("</engineconfig>\n");
     if (length($outfile) > 0)
     {
-	select($ofh);
-	close(OUT);
+        select($ofh);
+        close(OUT);
     }
 }

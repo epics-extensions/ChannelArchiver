@@ -330,11 +330,21 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
             (me->isMonitored() && me->_mechanism != use_monitor)  )
         {
             if (!me->isMonitored()  &&  theEngine->addToScanList(me))
+            {
+#ifdef ENGINE_DEBUG
+                LOG_MSG("caControlHandler(%s) added to scan list\n",
+                        me->getName().c_str());
+#endif
                 me->_mechanism = use_get;
+            }
             else
             {
                 // Engine will not scan this: add a monitor for this channel
                 int status;
+#ifdef ENGINE_DEBUG
+                LOG_MSG("caControlHandler(%s) subscribing to events\n",
+                        me->getName().c_str());
+#endif
                 status = ca_add_masked_array_event(dbr_type, nelements,
                                                    me->_chid,
                                                    caEventHandler, me,
@@ -347,6 +357,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
                     me->unlock();
                     return;
                 }
+                theEngine->needCAflush();
                 me->_mechanism = use_monitor;
             }
         }

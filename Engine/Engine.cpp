@@ -73,7 +73,6 @@ Engine::Engine(const stdString &directory_file_name)
         throwDetailedArchiveException(Fail, "ca_add_exception_event");
 
     engine_server = new EngineServer();
-
     write_thread.start();
 
 #ifdef USE_PASSWD

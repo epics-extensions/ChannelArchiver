@@ -12,15 +12,39 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include "ToolsConfig.h"
-#include "NetTools.h"
 #include "HTTPServer.h"
 #include "MsgLogger.h"
 
 // HTTPServer ----------------------------------------------
 
-HTTPServer *HTTPServer::create (short port)
+
+HTTPServer::HTTPServer(SOCKET socket)
+        : _thread(*this, "HTTPD",
+                  epicsThreadGetStackSize(epicsThreadStackBig),
+                  epicsThreadPriorityMedium)
 {
+#ifdef ENGINE_DEBUG
+    LOG_MSG("new HTTPServer\n");
+#endif
+    _socket = socket;
+    _go = true;
+}
+
+HTTPServer::~HTTPServer()
+{
+    _go = false;
+    if (! _thread.exitWait(5.0))
+        LOG_MSG("HTTPServer: server thread does not exit\n");
+    if (_socket)
+        socket_close(_socket);
+}
+
+HTTPServer *HTTPServer::create(short port)
+{
+#ifdef ENGINE_DEBUG
+    LOG_MSG("new HTTPServer\n");
+#endif
+    
     SOCKET s = socket (AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in  local;
 
@@ -44,31 +68,58 @@ HTTPServer *HTTPServer::create (short port)
         return 0;
     }
     listen(s, 3);
+
+#ifdef ENGINE_DEBUG
+    LOG_MSG("HTTPServer socket ready, creating HTTPServer\n");
+#endif
+    
     return new HTTPServer(s);
 }
 
-HTTPServer::HTTPServer(SOCKET socket) : fdReg(socket, fdrRead)
+void HTTPServer::start()
 {
-    _socket = socket;
+    _thread.start();
 }
 
-HTTPServer::~HTTPServer()
+void HTTPServer::run()
 {
-    if (_socket)
-        socket_close(_socket);
-}
-
-void HTTPServer::callBack()
-{
+    fd_set fds;
+    struct timeval timeout;
     struct sockaddr_in  peername;
-    socklen_t  len = sizeof peername;
-    SOCKET peer = accept(_socket, (struct sockaddr *)&peername, &len);
+    socklen_t  len;
 
-    if (peer != INVALID_SOCKET)
+#ifdef ENGINE_DEBUG
+    LOG_MSG("HTTPServer thread 0x%08X running\n", epicsThreadGetIdSelf());
+#endif
+    while (_go)
     {
-        HTTPClientConnection *client = new HTTPClientConnection(peer);
-        client = 0; // to avoid "not used" errors
+        // somebody there?
+        FD_ZERO(&fds);
+        FD_SET(_socket, &fds);
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+        if (select(_socket+1, &fds, 0, 0, &timeout) == 1  &&
+            FD_ISSET(_socket, &fds))
+        {
+            len = sizeof peername;
+            SOCKET peer = accept(_socket, (struct sockaddr *)&peername, &len);
+            if (peer != INVALID_SOCKET)
+            {
+#ifdef ENGINE_DEBUG
+                stdString local_info, peer_info;
+                GetSocketInfo(peer, local_info, &peer_info);
+                LOG_MSG("HTTPServer thread 0x%08X accepted %s/%s\n",
+                        epicsThreadGetIdSelf(),
+                        local_info, peer_info);
+#endif
+                HTTPClientConnection *client = new HTTPClientConnection(peer);
+                client->start();
+            }
+        }
     }
+#ifdef ENGINE_DEBUG
+    LOG_MSG("HTTPServer thread 0x%08X exiting\n", epicsThreadGetIdSelf());
+#endif
 }
 
 // HTTPClientConnection -----------------------------------------
@@ -79,7 +130,9 @@ size_t HTTPClientConnection::_total = 0;
 size_t HTTPClientConnection::_clients = 0;
 
 HTTPClientConnection::HTTPClientConnection(SOCKET socket)
-        : fdReg(socket, fdrRead)
+        : _thread(*this, "HTTPClientConnection",
+                  epicsThreadGetStackSize(epicsThreadStackBig),
+                  epicsThreadPriorityLow)
 {
     _socket = socket;
     _dest = 0;
@@ -98,11 +151,18 @@ HTTPClientConnection::~HTTPClientConnection()
     socket_close(_socket);
 }
 
-// Called by fdManager on input:
-void HTTPClientConnection::callBack()
+void HTTPClientConnection::start()
 {
-    if (handleInput())
-        delete this;
+    _thread.start();
+}
+
+
+void HTTPClientConnection::run()
+{
+    while (handleInput())
+    {
+    }
+    delete this;
 }
 
 // Result: done, i.e. connection can be closed?

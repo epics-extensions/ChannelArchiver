@@ -88,9 +88,8 @@ int main(int argc, const char *argv[])
     const stdString &config_name = parser.getArgument (0);
     stdString index_name = parser.getArgument (1);
 
-    LOG_MSG("Starting Engine with configuration file %s\n",
-            config_name.c_str());
-    LOG_MSG("Writing to index %s\n", index_name.c_str());
+    LOG_MSG("Starting Engine with configuration file %s, index %s\n",
+            config_name.c_str(), index_name.c_str());
 
     Lockfile lock_file("archive_active.lck");
     if (! lock_file.Lock (argv[0]))

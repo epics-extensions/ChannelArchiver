@@ -1,49 +1,49 @@
-// --------------------------------------------------------
+// -*- c++ -*-
 // $Id$
 //
 // Please refer to NOTICE.txt,
 // included as part of this distribution,
 // for legal information.
 //
-// Kay-Uwe Kasemir, kasemir@lanl.gov
-// --------------------------------------------------------
+// kasemir@lanl.gov
 
 #if !defined(HTTP_SERVER_H_)
 #define HTTP_SERVER_H_
 
-#include <list>
-#include <vector>
-#include <osiSock.h>
-#include <fdManager.h>
+#include <epicsThread.h>
+#include <ToolsConfig.h>
+#include <NetTools.h>
 #include "HTMLPage.h"
-
-using stdList;
-using stdVector;
 
 //CLASS
 // A HTTPServer creates a CLASS HTTPClientConnection
 // for each incoming, well, client.
 //
-// All these classes are essentially run
-// by the EPICS fdManager, so it's process() method
-// has to be called periodically.
-class HTTPServer : public fdReg
+// The HTTPClientConnection then needs to handle
+// the incoming requests and produce appropriate
+// and hopefully strikingly beatiful HTML pages.
+class HTTPServer : public epicsThreadRunable
 {
 public:
-    //* Only user-callable method in HTTPServer:<BR>
-    // Create a HTTPServer.
-    static HTTPServer *create (short port=4812);
+    //* Create a HTTPServer.
+    static HTTPServer *create(short port);
     virtual ~HTTPServer();
 
-private:
-    HTTPServer (SOCKET socket);
-    void callBack ();
+    //* Start accepting connections
+    // (launch thread)
+    void start();
 
-    SOCKET  _socket;
+    void run();
+
+private:
+    HTTPServer(SOCKET socket);
+
+    epicsThread _thread;
+    bool        _go;
+    SOCKET      _socket;
 };
 
-class HTTPClientConnection;
-typedef void (*PathHandler) (HTTPClientConnection *connection,
+typedef void (*PathHandler) (class HTTPClientConnection *connection,
                              const stdString &full_path);
 
 // Used by HTTPClientConnection
@@ -61,50 +61,51 @@ typedef struct
 // HTTPClientConnection handles input and dispatches
 // to a PathHandler from PathList.
 // It's deleted when the connection is closed.
-class HTTPClientConnection : public fdReg
+class HTTPClientConnection : public epicsThreadRunable
 {
 public:
-    HTTPClientConnection (SOCKET socket);
-    virtual ~HTTPClientConnection ();
+    HTTPClientConnection(SOCKET socket);
+    virtual ~HTTPClientConnection();
 
-    SOCKET getSocket ()
+    void start();
+    
+    SOCKET getSocket()
     {   return _socket; }
 
-    static void setPathHandlers (PathHandlerList *handler)
+    static void setPathHandlers(PathHandlerList *handler)
     {   _handler = handler; }
 
     // List of all open client connections
-    static size_t getClientCount ()
+    static size_t getClientCount()
     {   return _clients;    }
 
     // Total number of clients since started (for debugging)
-    static size_t getTotalClientCount ()
+    static size_t getTotalClientCount()
     {   return _total;  }
 
     // Predefined PathHandlers:
-    void error (const stdString &message);
-    void pathError (const stdString &path);
+    void error(const stdString &message);
+    void pathError(const stdString &path);
+
+    void run();
 
 private:
-    SOCKET              _socket;
-    stdVector<stdString>   _input_line;
-    char                _line[2048];
-    unsigned int        _dest; // index in line
-
+    epicsThread              _thread;
+    SOCKET                   _socket;
+    stdVector<stdString>     _input_line;
+    char                     _line[2048];
+    unsigned int             _dest; // index in line
     static PathHandlerList  *_handler;
     static size_t _total;
     static size_t _clients;
 
-    // Called by fdManager on input:
-    void callBack ();
-
     // Result: done, i.e. connection can be closed?
-    bool handleInput ();
+    bool handleInput();
 
     // return: full request that I can handle?
-    bool analyzeInput ();
+    bool analyzeInput();
 
-    void dumpInput (HTMLPage &page);
+    void dumpInput(HTMLPage &page);
 };
 
 #endif // !defined(HTTP_SERVER_H_)

@@ -18,6 +18,7 @@
 #define _NET_IF_H
 #endif
 
+#include <cvtFast.h>
 #include <CGIDemangler.h>
 #include <NetTools.h>
 #include <epicsTimeHelper.h>
@@ -25,7 +26,6 @@
 #include "ArchiveException.h"
 #include "EngineServer.h"
 #include "HTTPServer.h"
-#include "cvtFast.h"
 
 // Excluded because the directory could
 // be put in the "Description" field if you care.
@@ -613,22 +613,27 @@ bool EngineServer::_nocfg = false;
 
 EngineServer::EngineServer()
 {
+#ifdef ENGINE_DEBUG
+    LOG_MSG("EngineServer starting up\n");
+#endif
     HTTPClientConnection::setPathHandlers(handlers);
     _server = HTTPServer::create(_port);
-    if (_server)
-    {
-        LOG_MSG("Launched EngineServer on port %d\n", _port);
-    }
-    else
+    if (!_server)
     {
         LOG_MSG("Cannot create EngineServer on port %d\n", _port);
         throwDetailedArchiveException(Fail, "HTTPServer::create failed");
     }
+#ifdef ENGINE_DEBUG
+    LOG_MSG("EngineServer starting HTTPServer 0x%X\n", _server);
+#endif
+    _server->start();
 }
 
 EngineServer::~EngineServer()
 {
     delete _server;
+#ifdef ENGINE_DEBUG
+    LOG_MSG("EngineServer deleted\n");
+#endif
 }
-
 

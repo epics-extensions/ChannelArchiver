@@ -64,9 +64,15 @@ int main (int argc, const char *argv[])
 	initOsiHelpers ();
 
 	CmdArgParser parser (argc, argv);
-	CmdArgInt port (parser, "port", "<port>", "WWW server's TCP port");
-	CmdArgString description (parser, "description", "<text>", "description for HTTP display");
-	CmdArgString log (parser, "log", "<filename>", "write logfile");
+	parser.setArgumentsInfo ("<config-file> [<directory-file>]");
+	CmdArgInt port           (parser, "port", "<port>",
+										"WWW server's TCP port (default 4812)");
+	CmdArgString description (parser, "description", "<text>",
+										"description for HTTP display");
+	CmdArgString log         (parser, "log", "<filename>", "write logfile");
+
+	parser.setHeader ("Version " VERSION_TXT ", built " __DATE__ "\n\n");
+	parser.setFooter ("\n\tDefault directory-file: 'freq_directory'\n\n");
 	port.set (EngineServer::_port); // default
 
 	if (!parser.parse() ||

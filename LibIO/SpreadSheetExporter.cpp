@@ -34,6 +34,16 @@ void SpreadSheetExporter::prolog (ostream &out)
 		out << "; If you prefer to look at the exact time stamps\n";
 		out << "; for all channels, export the data without rounding.\n";
 	}
+	else if (_linear_interpol_secs > 0.0)
+	{
+		out << "; NOTE:\n";
+		out << "; The values in this table\n";
+		out << "; were interpolated within " << _linear_interpol_secs << " seconds\n";
+		out << "; (linear interpolation), so that the values for different channels\n";
+		out << "; can be written on lines for the same time stamp.\n";
+		out << "; If you prefer to look at the exact time stamps for each value\n";
+		out << "; export the data without interpolation.\n";
+	}
 	else if (_fill)
 	{
 		out << "; NOTE:\n";

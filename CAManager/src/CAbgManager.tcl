@@ -37,7 +37,7 @@ proc init {} {
 
   namespace inscope :: package require Tclx
   
-  foreach dir {util misc comm httpd plugins} {
+  foreach dir {util misc comm httpd} {
     set script $INCDIR/$dir.tcl
     namespace inscope :: source $script
   }

@@ -213,7 +213,7 @@ count.  For details on the methods mentioned in here refer to section
 \item[\sffamily how = 0 (raw):]
   Get raw data from archive (see \ref{sec:rawdata}), starting w/ 'start',
   up to either 'end' time or max. 'count' samples.
-\item[\sffamily how = 1 (filled/staircase spreadsheet):]
+\item[\sffamily how = 1 (spreadsheet):]
   Get data that is filled or staircase-interpolated, starting
   w/ 'start', up to either 'end' time or max. 'count' samples
   (see \ref{sec:filling}).
@@ -223,17 +223,25 @@ count.  For details on the methods mentioned in here refer to section
   If a spreadsheet cell is empty because the channel does not have any
   useful value for that point in time, a status/severity of
   UDF/INVALID is returned (Tables \ref{tab:sevr} and \ref{tab:stat}).
-\item[\sffamily how = 2 (interpol.):]
-  Get interpolated/averaged data from archive, starting w/ 'start',
+\item[\sffamily how = 2 (averaged):]
+  Get averaged data from the archive, starting w/ 'start',
   up to either 'end' time or max. 'count' samples
   (see \ref{sec:lininterpol}).
-  The data is interpolated with time slots that are multiples
+  The data is averaged within bins whose size is determined by 
   of (end-start)/count, so you should expect to get close to 'count'
   values which cover 'start' to 'end'.
   Again refer to section \ref{sec:timestampcorr}.
 \item[\sffamily how = 3 (plot binning):]
   Uses the plot-binning method based on 'count' bins
   (see \ref{sec:plotbinning}).
+\item[\sffamily how = 4 (linear):]
+  Get linearly interpolated data from the archive, starting w/ 'start',
+  up to either 'end' time or max. 'count' samples
+  (see \ref{sec:lininterpol}).
+  The data is interpolated onto time slots which are multiples
+  of (end-start)/count, so you should expect to get close to 'count'
+  values which cover 'start' to 'end'.
+  Again refer to section \ref{sec:timestampcorr}.
 \end{description}
 
 \noindent The result is an array of structures,  one structure per

@@ -244,14 +244,7 @@ bool RTree::Node::getInterval(epicsTime &start, epicsTime &end) const
 RTree::RTree(FileAllocator &fa, Offset anchor)
         :  fa(fa), anchor(anchor), root_offset(0)
 {
-    cache_misses = 0;
-    cache_hits = 0;
-}
-
-RTree::~RTree()
-{
-//    LOG_MSG("RTree node cache hits: %lu, misses: %lu\n",
-//            (unsigned long)cache_hits, (unsigned long)cache_misses);
+    cache_misses = cache_hits = 0;
 }
 
 bool RTree::init()
@@ -822,8 +815,8 @@ bool RTree::choose_leaf(const epicsTime &start, const epicsTime &end,
     // the RTree paper:
     // Find entry which needs the least enlargement.
     epicsTime t0, t1;
-    double enlarge, min_enlarge;
-    int i, min_i;
+    double enlarge, min_enlarge=0;
+    int i, min_i=-1;
     for (i=0; i<RTreeM; ++i)
     {
         if (!node.record[i].child_or_ID)
@@ -999,16 +992,19 @@ bool RTree::remove_record(Node &node, int i)
 
 bool RTree::condense_tree(Node &node)
 {
-    int i, j;
+    int i, j=-1;
     if (node.parent==0)
     {   // reached root
         if (!node.isLeaf)
         {
-            int c = 0;
+            int children = 0;
             for (i=0; i<RTreeM; ++i)
                 if (node.record[i].child_or_ID)
-                {    ++c; j=i;    }
-            if (c==1)
+                {
+                    ++children;
+                    j=i;
+                }
+            if (children==1)
             {   // only child_or_ID j left => make that one root
                 Offset old_root = node.offset;
                 root_offset = node.offset = node.record[j].child_or_ID;

@@ -14,9 +14,7 @@
 long IndexFile::ht_size = 1009;
 
 IndexFile::IndexFile() : f(0), names(fa, 4)
-{
-    cache_hits = cache_misses = 0;
-}
+{}
 
 bool IndexFile::open(const stdString &filename, bool readonly)
 {
@@ -83,16 +81,11 @@ void IndexFile::close()
 {
     if (f)
     {
-        tree_cache.clear();
         fa.detach();
         fclose(f);
         f = 0;
     }   
 }
-
-// Comparison routine for AVLTree<TreeCacheEntry>
-int sort_compare(const TreeCacheEntry &a, const TreeCacheEntry &b)
-{   return a.channel.compare(b.channel); }
 
 RTree *IndexFile::addChannel(const stdString &channel)
 {
@@ -108,52 +101,19 @@ RTree *IndexFile::addChannel(const stdString &channel)
     }
     tree = new RTree(fa, tree_anchor);
     if (tree->init() && names.insert(channel, tree_anchor))
-    {
-        TreeCacheEntry entry;
-        entry.channel = channel;
-        entry.tree = tree;
-        //printf("Adding to cache tree 0x%lX (%s)\n",
-        //       (unsigned long)tree, channel.c_str());
-        tree_cache.add(entry);
-        entry.tree = 0;
-       return tree;
-    }
+        return tree;
     delete tree;
     return 0;
 }
 
 RTree *IndexFile::getTree(const stdString &channel)
 {
-    // Note: TreeCacheEntry deletes its tree,
-    // which is fine for those in the cache,
-    // but we have to be careful with local
-    // copies of the entry.
-    RTree *tree;
-    TreeCacheEntry entry;
-    entry.channel = channel;
-    if (tree_cache.find(entry))
-    {
-        ++cache_hits;
-        tree = entry.tree;
-        //printf("Got from cache tree 0x%lX (%s)\n",
-        //       (unsigned long)tree, channel.c_str());
-        entry.tree = 0;
-        return tree;
-    }
-    ++cache_misses;
     long tree_anchor;
     if (!names.find(channel, tree_anchor))
         return 0;
-    tree = new RTree(fa, tree_anchor);
+    RTree *tree = new RTree(fa, tree_anchor);
     if (tree->reattach())
-    {
-        entry.tree = tree;
-        //printf("Adding to cache tree 0x%lX (%s)\n",
-        //       (unsigned long)tree, channel.c_str());
-        tree_cache.add(entry);
-        entry.tree = 0;
         return tree;
-    }
     delete tree;
     return 0;
 }
@@ -168,9 +128,7 @@ bool IndexFile::getNextChannel(NameIterator &iter)
     return names.nextIteration(iter.hashvalue, iter.entry);
 }
 
-void IndexFile::showHashStats(FILE *f)
+void IndexFile::showStats(FILE *f)
 {
-    fprintf(f, "IndexFile Tree Cache hits: %ld, misses: %ld\n",
-            (long) cache_hits, (long) cache_misses);
     names.showStats(f);
 }

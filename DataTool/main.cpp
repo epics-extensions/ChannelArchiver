@@ -22,7 +22,7 @@ void show_hash_info(const stdString &index_name)
                 index_name.c_str());
         return;
     }
-    index.showNameHashStats(stdout);
+    index.showStats(stdout);
     index.close();
 }
 

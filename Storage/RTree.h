@@ -108,8 +108,6 @@ public:
     ///                Caller needs to assert that there are RTree::anchor_size
     ///                bytes available at that location in the file.
     RTree(FileAllocator &fa, Offset anchor);
-
-    ~RTree();
     
     /// Initialize empty tree. Compare to reattach().
     bool init();

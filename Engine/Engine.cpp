@@ -276,6 +276,7 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                         DataFile::close_all();
                     }
                 }
+                delete tree;
             }
             index.close();
         }

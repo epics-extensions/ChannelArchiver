@@ -72,6 +72,7 @@ bool list_channels(IndexFile &index, stdVector<stdString> names,
             if (tree)
             {
                 tree->getInterval(start, end);
+                delete tree;
                 printf("%s\t%s\t%s\n", (*name).c_str(),
                        epicsTimeTxt(start, s), epicsTimeTxt(end, e));
             }

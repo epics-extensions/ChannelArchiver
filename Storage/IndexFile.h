@@ -7,19 +7,6 @@
 #include <NameHash.h>
 #include <RTree.h>
 
-class TreeCacheEntry
-{
-public:
-    TreeCacheEntry() : tree(0) {}
-    ~TreeCacheEntry()
-    {
-        if (tree)
-            delete tree;
-    }
-    stdString channel;
-    RTree *tree;
-};
-
 /// \ingroup Storage
 /// @{
 /// Defines routines for the RTree-based index.
@@ -34,11 +21,6 @@ public:
 /// Those two items constitute the 'reserved space'
 /// all the remaining space is handled by the FileAllocator.
 /// The ID of each NameHash entry points to an RTree anchor.
-///
-/// The IndexFile class maintains a cache of all the RTrees
-/// that were used. So whenever one requests an RTree for one
-/// channel in the index, that RTree stays in memory until the
-/// IndexFile class gets deleted.
 class IndexFile
 {
 public:
@@ -61,12 +43,12 @@ public:
     /// for the channel. When channel is already in index, existing
     /// tree gets returned.
     ///
-    /// Caller must not delete the tree pointer.
+    /// Caller must delete the tree pointer.
     class RTree *addChannel(const stdString &channel);
 
     /// Obtain the RTree for a channel.
 
-    /// Caller must not delete the tree pointer.
+    /// Caller not delete the tree pointer.
     ///
     ///
     class RTree *getTree(const stdString &channel);
@@ -95,13 +77,9 @@ public:
     const stdString &getDirectory() const
     {    return dirname; }
 
-    void showHashStats(FILE *f);
-   
-    mutable size_t cache_hits, cache_misses;
+    void showStats(FILE *f);   
 
 private:
-    mutable AVLTree<TreeCacheEntry> tree_cache;
-
     FILE *f;
     FileAllocator fa;
     NameHash names;

@@ -47,9 +47,7 @@ DataWriter::DataWriter(IndexFile &index,
     raw_value_size = RawValue::getSize(dbr_type, dbr_count);
 
     // Find or add appropriate data buffer
-    tree = index.getTree(channel_name);
-    if (!tree)
-        tree = index.addChannel(channel_name);
+    tree = index.addChannel(channel_name);
     if (!tree)
     {
         LOG_MSG("DataWriter(%s) cannot get Tree\n",

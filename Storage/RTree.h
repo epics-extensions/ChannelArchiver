@@ -36,7 +36,7 @@
 //
 // --> NFS is bad, small RTreeM values are bad.
 
-#define RTreeM 50
+#define RTreeM 3
 
 /// \ingroup Storage
 /// \@{
@@ -60,6 +60,8 @@ public:
     class Datablock
     {
     public:
+        Datablock() : next_ID(0), data_offset(0), offset(0) {}
+        Offset    next_ID;       
         Offset    data_offset;   ///< This block's offset in DataFile
         stdString data_filename; ///< DataFile for this block
         
@@ -118,15 +120,20 @@ public:
     /// Return range covered by this RTree
     bool getInterval(epicsTime &start, epicsTime &end);
     
-    enum InsertResult { InsError, InsOK, InsExisted };
+    enum YNE { YNE_Error, YNE_Yes, YNE_No };
     
-    /// Insert interval start...end with ID into tree.
-    InsertResult insert(const epicsTime &start,
-                        const epicsTime &end, Offset ID);
-
     /// Create and insert a new Datablock.
-    InsertResult insertDatablock(const epicsTime &start, const epicsTime &end,
-                                 Offset data_offset, stdString data_filename);
+
+    /// Note: Once a data block (offset and filename) is inserted
+    ///       for a given start and end time, the RTree code assumes
+    ///       that it stays that way. I.e. if we try to indert the same
+    ///       start/end/offset/file again, this will result in a NOP
+    ///       and return YNENo.
+    ///       It is an error to insert the same offset/file again with
+    ///       a different start and/or end time!
+    YNE insertDatablock(const epicsTime &start, const epicsTime &end,
+                        Offset data_offset,
+                        const stdString &data_filename);
     
     /// Locate entry after start time.
 
@@ -138,31 +145,15 @@ public:
     /// There's one exception: When requesting a start time
     /// that preceeds the first available data point, so that there is
     /// no previous data point, the very first record is returned.
-    bool search(const epicsTime &start, Node &node, int &i) const;
 
-    /// Like search(), but also gets datablock ref'ed by node&i.
     bool searchDatablock(const epicsTime &start, Node &node, int &i,
                          Datablock &block) const;
-    
-    /// Locate first entry.
-    bool getFirst(Node &node, int &i) const;
 
-    /// Set node & record index to last entry in tree.
-    bool getLast(Node &node, int &i) const;
-
-    /// Like getFirst(), but also gets datablock.
+    /// Locate first entry;
     bool getFirstDatablock(Node &node, int &i, Datablock &block) const;
     
-    /// Like getLast(), but also gets datablock.
-    bool getLastDatablock(Node &node, int &i, Datablock &block) const;
-    
-    /// If node & i were set to a valid entry by search(), update to prev.
-    bool prev(Node &node, int &i) const
-    {    return prev_next(node, i, -1); }
-    
-    /// If node & i were set to a valid entry by search(), update to next.
-    bool next(Node &node, int &i) const
-    {    return prev_next(node, i, +1); }
+    /// \see getFirstDatablock
+    bool getLastDatablock(Node &node, int &i, Datablock &block) const;    
 
     /// Absolutely no clue what this one could do.
     bool prevDatablock(Node &node, int &i, Datablock &block) const;
@@ -170,23 +161,6 @@ public:
     /// \see prevDatablock()
     bool nextDatablock(Node &node, int &i, Datablock &block) const;
     
-    /// Remove entry from tree.
-    bool remove(const epicsTime &start, const epicsTime &end, Offset ID);
-
-    /// Special 'update' call for usage by the ArchiveEngine.
-
-    /// The engine usually appends to the last buffer.
-    /// So most of the time, the ID and start time in this
-    /// call have not changed, only the end time has been extended,
-    /// and the intention is to update the tree.
-    /// Sometimes, however, the engine created a new block,
-    /// in which case it will call append_latest a final time
-    /// to update the end time and then it'll follow with an insert().
-    /// \return True if start & ID refer to the existing last block
-    ///         and the end time was succesfully updated.
-    bool updateLast(const epicsTime &start,
-                    const epicsTime &end, Offset ID);
-
     /// Tries to update existing datablock.
 
     /// Tries to use updateLatest, will then fall back to insertDatablock.
@@ -196,7 +170,7 @@ public:
                              Offset data_offset, stdString data_filename);
     
     /// Create a graphviz 'dot' file.
-    void makeDot(const char *filename, bool show_data=false);
+    void makeDot(const char *filename);
 
     /// Returns true if tree passes self test, otherwise prints errors.
     bool selfTest();
@@ -223,23 +197,66 @@ private:
     
     bool self_test_node(Offset n, Offset p, epicsTime start, epicsTime end);
     
-    void make_node_dot(FILE *dot, FILE *f, Offset node_offset, bool show_data);
+    void make_node_dot(FILE *dot, FILE *f, Offset node_offset);
 
+    bool search(const epicsTime &start, Node &node, int &i) const;
+
+    /// Locate first entry.
+    bool getFirst(Node &node, int &i) const;
+
+    /// Set node & record index to last entry in tree.
+    bool getLast(Node &node, int &i) const;
+
+    /// If node & i were set to a valid entry by search(), update to prev.
+    bool prev(Node &node, int &i) const
+    {    return prev_next(node, i, -1); }
+    
+    /// If node & i were set to a valid entry by search(), update to next.
+    bool next(Node &node, int &i) const
+    {    return prev_next(node, i, +1); }
+
+    bool prev_next(Node &node, int &i, int dir) const;
+    
+    YNE is_block_under_record(const Node &node, int i,
+                              Offset data_offset,
+                              const stdString &data_filename,
+                              Datablock &block);
+    
+    bool write_new_datablock(Offset data_offset,
+                             const stdString &data_filename,
+                             Datablock &block);
+    
     // Sets node to selected leaf for new entry start/end/ID or returns false.
     // Invoke by setting node.offset == root_offset.
     bool choose_leaf(const epicsTime &start, const epicsTime &end, Node &node);
 
+    
     // Adjusts tree from node on upwards (update parents).
     // If new_node!=0, it's added to node's parent,
     // handling all resulting splits.
     // adjust_tree will write new_node, but not necessarily node!
     bool adjust_tree(Node &node, Node *new_node);
 
+    /// Remove entry from tree.
+    bool remove(const epicsTime &start, const epicsTime &end, Offset ID);
+
     bool remove_record(Node &node, int i);
 
     bool condense_tree(Node &node);
 
-    bool prev_next(Node &node, int &i, int dir) const;
+    /// Special 'update' call for usage by the ArchiveEngine.
+
+    /// The engine usually appends to the last buffer.
+    /// So most of the time, the ID and start time in this
+    /// call have not changed, only the end time has been extended,
+    /// and the intention is to update the tree.
+    /// Sometimes, however, the engine created a new block,
+    /// in which case it will call append_latest a final time
+    /// to update the end time and then it'll follow with an insert().
+    /// \return True if start & ID refer to the existing last block
+    ///         and the end time was succesfully updated.
+    bool updateLast(const epicsTime &start,
+                    const epicsTime &end, Offset ID);
 };
 
 

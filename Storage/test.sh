@@ -1,3 +1,11 @@
+make && O.linux-x86/RTreeTest
+dot -Tpng index0.dot -o index0.png
+dot -Tpng index1.dot -o index1.png
+pngtopnm index0.png >index0.pnm
+pngtopnm index1.png >index1.pnm
+pnmcat -tb index0.pnm index1.pnm >index.pnm
+eog index.pnm &
+exit 0
 
 rm -f test/file_allocator.dat
 O.$EPICS_HOST_ARCH/FileAllocatorTest >test/file_allocator.out

@@ -11,15 +11,16 @@
 #define NodeSize  (1+4+RecordSize*RTreeM)
 
 long RTree::Datablock::getSize() const
-{   //  data offset, name size, name (w/o '\0')
-    return 4 + 2 + data_filename.length();
+{   //  next_ID, data offset, name size, name (w/o '\0')
+    return 4 + 4 + 2 + data_filename.length();
 }
 
 bool RTree::Datablock::write(FILE *f) const
 {
     if (fseek(f, offset, SEEK_SET))
         return false;
-    if (!(writeLong(f, data_offset) && writeShort(f, data_filename.length())))
+    if (!(writeLong(f, next_ID) && writeLong(f, data_offset) &&
+          writeShort(f, data_filename.length())))
         return false;
     return fwrite(data_filename.c_str(), data_filename.length(), 1, f) == 1;
 }
@@ -27,21 +28,36 @@ bool RTree::Datablock::write(FILE *f) const
 bool RTree::Datablock::read(FILE *f)
 {
     if (fseek(f, offset, SEEK_SET))
+    {
+        fprintf("Datablock seek error @ 0x%lX\n", offset);
         return false;
+    }
     short len;
     char buf[300];
-    if (!(readLong(f, &data_offset) && readShort(f, &len)))
+    if (!(readLong(f, &next_ID) && readLong(f, &data_offset) &&
+          readShort(f, &len)))
+    {
+        fprintf("Datablock read error @ 0x%lX\n", offset);
         return false;
+    }
     if (len >= (short)sizeof(buf)-1)
     {
         LOG_MSG("Datablock::read: Filename exceeds buffer (%d)\n", len);
         return false;
     }
     if (fread(buf, len, 1, f) != 1)
+    {
+        fprintf("Datablock filename read error @ 0x%lX\n", offset);
         return false;
+    }
     buf[len] = '\0';
     data_filename.assign(buf, len);
-    return (short)data_filename.length() == len;
+    if ((short)data_filename.length() != len)
+    {
+        fprintf("Datablock filename length error @ 0x%lX\n", offset);
+        return false;
+    }
+    return true;
 }
     
 // Check if intervals s1...e1 and s2...e2 overlap.
@@ -291,178 +307,6 @@ bool RTree::getInterval(epicsTime &start, epicsTime &end)
     return read_node(node) && node.getInterval(start, end);
 }
 
-// Insertion follows Guttman except as indicated
-RTree::InsertResult RTree::insert(const epicsTime &start,
-                                  const epicsTime &end, Offset ID)
-{
-    stdString txt1, txt2;
-    if (start > end)
-    {
-        LOG_MSG("RTree::insert: illegal interval %s...%s\n",
-                epicsTimeTxt(start, txt1), epicsTimeTxt(end, txt2));
-        return InsError;
-    }
-    if (! ID)
-    {
-        LOG_MSG("RTree::insert: Cannot insert zero ID\n");
-        return InsError;
-    }
-    int i, j;
-    Node node;
-    node.offset = root_offset;
-    if (!choose_leaf(start, end, node))
-    {
-        LOG_MSG("RTree::insert cannot find leaf\n");
-        return InsError;
-    }
-    for (i=0; i<RTreeM; ++i) // find record[i] <= [start...end]
-    {   
-        if (node.record[i].child_or_ID == ID &&
-            node.record[i].start == start && 
-            node.record[i].end   == end) // Already inserted?
-            return InsExisted;
-        if (node.record[i].child_or_ID == 0)
-            break;
-        if (do_intervals_overlap(node.record[i].start, node.record[i].end,
-                                 start, end))
-        {   // Special: Resolve overlap by inserting the non-overlapping pieces
-            epicsTime s1=node.record[i].start;
-            epicsTime e1=node.record[i].end;
-            epicsTime s2=start, e2=end, s3, e3;
-            Offset ID1=node.record[i].child_or_ID, ID2=ID, ID3;
-            // Delete original entry
-            if (!remove_record(node, i))
-            {
-                LOG_MSG("RTree::insert: Cannot remove record "
-                        "from node @ 0x%lX\n", node.offset);
-                return InsError;
-            }
-            resolve_overlap(s1, e1, ID1, s2, e2, ID2, s3, e3, ID3);
-            if (ID1 && !insert(s1, e1, ID1))
-            {
-                LOG_MSG("RTree::insert: Cannot insert %s..%s (%d)\n",
-                        epicsTimeTxt(s1, txt1), epicsTimeTxt(e1, txt2), ID1);
-                return InsError;
-            }
-            if (ID2 && !insert(s2, e2, ID2))
-            {
-                LOG_MSG("RTree::insert: Cannot insert %s..%s (%d)\n",
-                        epicsTimeTxt(s2, txt1), epicsTimeTxt(e2, txt2), ID2);
-                return InsError;
-            }
-            if (ID3 && !insert(s3, e3, ID3))
-            {
-                LOG_MSG("RTree::insert: Cannot insert %s..%s (%d)\n",
-                        epicsTimeTxt(s3, txt1), epicsTimeTxt(e3, txt2), ID3);
-                return InsError;
-            }
-            return InsOK;
-        }
-        // Special: records sorted in time 
-        if (end <= node.record[i].start) // new entry belongs into rec[i]
-            break;
-    }
-    // Need to insert new data into record[i]
-    Record overflow;
-    if (i<RTreeM)
-    {
-        overflow = node.record[RTreeM-1]; // From i on, shift all recs right;
-        for (j=RTreeM-1; j>i; --j)        // Last record goes into overflow.
-            node.record[j] = node.record[j-1];
-        node.record[i].start = start;
-        node.record[i].end = end;
-        node.record[i].child_or_ID = ID;
-        if (!write_node(node))
-        {
-            LOG_MSG("RTree::insert cannot write node\n");
-            return InsError;
-        }
-    }
-    else
-    {
-        overflow.start = start;
-        overflow.end = end;
-        overflow.child_or_ID = ID;
-    }
-    if (overflow.child_or_ID)
-    {   // Did either new entry or shifting result in overflow?
-        Node new_node(true);
-        if (!(new_node.offset = fa.allocate(NodeSize)))
-        {
-            LOG_MSG("RTree::insert cannot allocate new node\n");
-            return InsError;
-        }
-        new_node.record[0] = overflow;
-        return adjust_tree(node, &new_node) ? InsOK : InsError;
-    }
-    return adjust_tree(node, 0) ? InsOK : InsError;
-}
-
-RTree::InsertResult RTree::insertDatablock(const epicsTime &start,
-                                           const epicsTime &end,
-                                           Offset data_offset,
-                                           stdString data_filename)
-{
-    // Beware: We must not simply insert a new datablock,
-    // because then that datablock will have a new offset/ID
-    // be be different from an equivalent datablock that might
-    // already be in the tree. So check first:
-    Datablock block;
-    Node node;
-    int i;
-    if (searchDatablock(start, node, i, block) &&
-        block.data_offset == data_offset && 
-        node.record[i].start == start &&
-        node.record[i].end == end &&
-        block.data_filename == data_filename)
-        return InsExisted;
-    // Insert new block:
-    block.data_offset = data_offset;
-    block.data_filename = data_filename;
-    block.offset = fa.allocate(block.getSize());
-    if (!(block.offset && block.write(fa.getFile())))
-    {
-        fprintf(stderr, "RTree::insertDatablock(%s @ 0x%lX) cannot alloc\n",
-                data_filename.c_str(), data_offset);
-        return InsError;
-    }
-    return insert(start, end, block.offset);
-}
-
-bool RTree::search(const epicsTime &start, Node &node, int &i) const
-{
-    node.offset = root_offset;
-    bool go;
-    do
-    {
-        if (!read_node(node))
-        {
-            LOG_MSG("RTree::search cannot read node @ 0x%lX\n", node.offset);
-            return false;
-        }
-        if (start < node.record[0].start) // request before start of tree?
-            return getFirst(node, i);
-        for (go=false, i=RTreeM-1;  i>=0;  --i)
-        {   // Find right-most record with data at-or-before 'start'
-            if (node.record[i].child_or_ID == 0)
-                continue; // nothing
-            if (node.record[i].start <= start)
-            {
-                if (node.isLeaf)   // Found!
-                    return true;
-                else
-                {   // Search subtree
-                    node.offset = node.record[i].child_or_ID;
-                    go = true;
-                    break;
-                }
-            }
-        }
-    }
-    while (go);
-    return false;
-}
-
 bool RTree::searchDatablock(const epicsTime &start, Node &node, int &i,
                             Datablock &block) const
 {
@@ -470,52 +314,6 @@ bool RTree::searchDatablock(const epicsTime &start, Node &node, int &i,
         return false;
     block.offset = node.record[i].child_or_ID;
     return block.read(fa.getFile());
-}
-
-bool RTree::getFirst(Node &node, int &i) const
-{
-    // Descent using leftmost children
-    node.offset = root_offset;
-    while (node.offset)
-    {
-        if (!read_node(node))
-        {
-            LOG_MSG("RTree::getFirst: read error\n");
-            return false;
-        }
-        for (i=0; i<RTreeM; ++i) // Locate leftmost record
-            if (node.record[i].child_or_ID)
-                break;
-        if (i>=RTreeM)
-            return false;
-        if (node.isLeaf)           // Done or continue to go down?
-            return true;
-        node.offset = node.record[i].child_or_ID;
-    }    
-    return false;
-}
-
-bool RTree::getLast(Node &node, int &i) const
-{
-    // Descent using rightmost children
-    node.offset = root_offset;
-    while (node.offset)
-    {
-        if (!read_node(node))
-        {
-            LOG_MSG("RTree::getLast: read error\n");
-            return false;
-        }
-        for (i=RTreeM-1; i>=0; --i) // Locate rightmost record
-            if (node.record[i].child_or_ID)
-                break;
-        if (i<0)
-            return false;
-        if (node.isLeaf)           // Done or continue to go down?
-            return true;
-        node.offset = node.record[i].child_or_ID;
-    }    
-    return false;
 }
 
 bool RTree::getFirstDatablock(Node &node, int &i, Datablock &block) const
@@ -550,56 +348,6 @@ bool RTree::nextDatablock(Node &node, int &i, Datablock &block) const
     return block.read(fa.getFile());
 }
 
-// Follows Guttman except that we don't care about
-// half-filled nodes. Only empty nodes get removed.
-bool RTree::remove(const epicsTime &start, const epicsTime &end, Offset ID)
-{
-    int i;
-    Node node;
-    node.offset = root_offset;
-    bool go;
-    do
-    {
-        if (!read_node(node))
-        {
-            LOG_MSG("RTree::remove cannot read node @ 0x%lX\n", node.offset);
-            return false;
-        }
-        for (go=false, i=0;  i<RTreeM;  ++i)
-        {   // Find left-most record that includes our target interval
-            if (node.record[i].child_or_ID == 0)
-                return false;
-            if (!node.isLeaf &&
-                node.record[i].start <= start && node.record[i].end >= end)
-            {   // Search subtree
-                node.offset = node.record[i].child_or_ID;
-                go = true;
-                break;
-            }
-            if (node.isLeaf &&
-                node.record[i].start == start && node.record[i].end == end &&
-                node.record[i].child_or_ID == ID)
-                return remove_record(node, i);
-        }
-    }
-    while (go);
-    return false;
-}
-
-bool RTree::updateLast(const epicsTime &start, const epicsTime &end, Offset ID)
-{
-    int i;
-    Node node;
-    if (!getLast(node, i))
-        return false;
-    if (node.record[i].child_or_ID != ID  ||
-        node.record[i].start != start)
-        return false; // Cannot update, different data block
-    // Update end time, done.
-    node.record[i].end = end;
-    return write_node(node) && adjust_tree(node, 0);
-}
-
 bool RTree::updateLastDatablock(const epicsTime &start, const epicsTime &end,
                                 Offset data_offset, stdString data_filename)
 {
@@ -622,7 +370,7 @@ bool RTree::updateLastDatablock(const epicsTime &start, const epicsTime &end,
     return insertDatablock(start, end, data_offset, data_filename);
 }    
 
-void RTree::makeDot(const char *filename, bool show_data)
+void RTree::makeDot(const char *filename)
 {
     FILE *dot = fopen(filename, "wt");
     if (!dot)
@@ -634,7 +382,7 @@ void RTree::makeDot(const char *filename, bool show_data)
     fprintf(dot, "digraph RTree\n");
     fprintf(dot, "{\n");
     fprintf(dot, "\tnode [shape = record, height=.1];\n");
-    make_node_dot(dot, fa.getFile(), root_offset, show_data);
+    make_node_dot(dot, fa.getFile(), root_offset);
     fprintf(dot, "}\n");
     fclose(dot);
 }
@@ -727,10 +475,9 @@ bool RTree::self_test_node(Offset n, Offset p, epicsTime start, epicsTime end)
     return true;
 }
 
-void RTree::make_node_dot(FILE *dot, FILE *f, Offset node_offset,
-                          bool show_data)
+void RTree::make_node_dot(FILE *dot, FILE *f, Offset node_offset)
 {
-    Datablock data_block;
+    Datablock datablock;
     stdString txt1, txt2;
     int i;
     Node node;
@@ -758,32 +505,28 @@ void RTree::make_node_dot(FILE *dot, FILE *f, Offset node_offset,
     {
         for (i=0; i<RTreeM; ++i)
         {
-            if (node.record[i].child_or_ID)
+            datablock.offset = node.record[i].child_or_ID;
+            while (datablock.offset)
             {
-                if (show_data)
-                {
-                    data_block.offset = node.record[i].child_or_ID;
-                    if (!data_block.read(f))
-                    {
-                        LOG_MSG("RTree::make_node_dot cannot read data "
-                                "@ 0x%lX\n", data_block.offset);
-                        return;
-                    }
-                    fprintf(dot, "\tid%ld "
-                            "[ label=\"'%s' \\r@ 0x%lX \\r\",style=filled ];\n",
-                            node.record[i].child_or_ID,
-                            data_block.data_filename.c_str(),
-                            data_block.data_offset);                    
-                }
-                else
-                {
-                    fprintf(dot, "\tid%ld "
-                            "[ label=\"ID %ld\",style=filled ];\n",
-                            node.record[i].child_or_ID,
-                            node.record[i].child_or_ID);
-                }
                 fprintf(dot, "\tnode%ld:f%d->id%ld;\n",
-                        node.offset, i, node.record[i].child_or_ID);
+                        node.offset, i, datablock.offset);
+                if (!datablock.read(f))
+                {
+                    LOG_MSG("RTree::make_node_dot cannot read data "
+                            "@ 0x%lX\n", datablock.offset);
+                    return;
+                }
+                fprintf(dot, "\tid%ld "
+                        "[ label=\"'%s' \\r@ 0x%lX \\r\",style=filled ];\n",
+                        datablock.offset,
+                        datablock.data_filename.c_str(),
+                        datablock.data_offset);
+                if (datablock.next_ID)
+                {
+                    fprintf(dot, "\tid%ld -> id%ld;\n",
+                            datablock.offset, datablock.next_ID);
+                }
+                datablock.offset = datablock.next_ID;
             }
         }
     }
@@ -798,9 +541,271 @@ void RTree::make_node_dot(FILE *dot, FILE *f, Offset node_offset,
         for (i=0; i<RTreeM; ++i)
         {
             if (node.record[i].child_or_ID)
-                make_node_dot(dot, f, node.record[i].child_or_ID, show_data);
+                make_node_dot(dot, f, node.record[i].child_or_ID);
         }
     }
+}
+
+bool RTree::search(const epicsTime &start, Node &node, int &i) const
+{
+    node.offset = root_offset;
+    bool go;
+    do
+    {
+        if (!read_node(node))
+        {
+            LOG_MSG("RTree::search cannot read node @ 0x%lX\n", node.offset);
+            return false;
+        }
+        if (start < node.record[0].start) // request before start of tree?
+            return getFirst(node, i);
+        for (go=false, i=RTreeM-1;  i>=0;  --i)
+        {   // Find right-most record with data at-or-before 'start'
+            if (node.record[i].child_or_ID == 0)
+                continue; // nothing
+            if (node.record[i].start <= start)
+            {
+                if (node.isLeaf)   // Found!
+                    return true;
+                else
+                {   // Search subtree
+                    node.offset = node.record[i].child_or_ID;
+                    go = true;
+                    break;
+                }
+            }
+        }
+    }
+    while (go);
+    return false;
+}
+
+bool RTree::getFirst(Node &node, int &i) const
+{
+    // Descent using leftmost children
+    node.offset = root_offset;
+    while (node.offset)
+    {
+        if (!read_node(node))
+        {
+            LOG_MSG("RTree::getFirst: read error\n");
+            return false;
+        }
+        for (i=0; i<RTreeM; ++i) // Locate leftmost record
+            if (node.record[i].child_or_ID)
+                break;
+        if (i>=RTreeM)
+            return false;
+        if (node.isLeaf)           // Done or continue to go down?
+            return true;
+        node.offset = node.record[i].child_or_ID;
+    }    
+    return false;
+}
+
+bool RTree::getLast(Node &node, int &i) const
+{
+    // Descent using rightmost children
+    node.offset = root_offset;
+    while (node.offset)
+    {
+        if (!read_node(node))
+        {
+            LOG_MSG("RTree::getLast: read error\n");
+            return false;
+        }
+        for (i=RTreeM-1; i>=0; --i) // Locate rightmost record
+            if (node.record[i].child_or_ID)
+                break;
+        if (i<0)
+            return false;
+        if (node.isLeaf)           // Done or continue to go down?
+            return true;
+        node.offset = node.record[i].child_or_ID;
+    }    
+    return false;
+}
+
+
+bool RTree::prev_next(Node &node, int &i, int dir) const
+{
+    LOG_ASSERT(node.isLeaf);
+    LOG_ASSERT(i>=0  &&  i<RTreeM);
+    LOG_ASSERT(dir == -1  ||  dir == 1);
+    i += dir;
+    // Another rec. in curr.node?
+    if (i>=0 && i<RTreeM && node.record[i].child_or_ID)
+        return true;
+    Node parent;
+    // Go up to parent nodes...
+    while (true)
+    {
+        if (!(parent.offset = node.parent))
+            return false;
+        if (!read_node(parent))
+        {
+            LOG_MSG("RTree::next: read error\n");
+            return false;
+        }
+        for (i=0; i<RTreeM; ++i)
+            if (parent.record[i].child_or_ID == node.offset)
+                break;
+        if (i>=RTreeM)
+        {
+            LOG_MSG("RTree::next: child_or_ID not listed in parent?\n");
+            return false;
+        }
+        i += dir;
+        if (i>=0 && i<RTreeM && parent.record[i].child_or_ID)
+            break;
+        // else: go up another level
+        node = parent;
+    }
+    node.offset = parent.record[i].child_or_ID;
+    // Decend using rightmost (prev) or leftmost (next)  children
+    i = 0;
+    while (node.offset)
+    {
+        if (!read_node(node))
+        {
+            LOG_MSG("RTree::next: read error\n");
+            return false;
+        }
+        if (dir < 0)
+            for (i=RTreeM-1; i>0; --i)
+                if (node.record[i].child_or_ID)
+                    break;
+        if (node.isLeaf)
+            return node.record[i].child_or_ID != 0;
+        node.offset = node.record[i].child_or_ID;
+    }
+    return false;
+}
+
+// Insertion follows Guttman except as indicated
+RTree::YNE RTree::insertDatablock(const epicsTime &start,
+                                  const epicsTime &end,
+                                  Offset data_offset,
+                                  const stdString &data_filename)
+{
+    if (start > end)
+    {
+        LOG_MSG("RTree::insert: illegal interval %s...%s\n",
+                epicsTimeTxt(start, txt1), epicsTimeTxt(end, txt2));
+        return YNE_Error;
+    }
+    stdString txt1, txt2;
+    int i,j;
+    YNE yne;
+    Datablock block, new_block;
+    Node node;
+    node.offset = root_offset;
+    if (!choose_leaf(start, end, node))
+    {
+        LOG_MSG("RTree::insert cannot find leaf\n");
+        return YNE_Error;
+    }
+    for (i=0; i<RTreeM; ++i) // find record[i] <= [start...end]
+    {   
+        if (node.record[i].child_or_ID == 0)
+            break;
+        if (node.record[i].start <= start  &&  end <= node.record[i].end)
+        {   // (1) Datablock fully covered by existing record
+            yne = is_block_under_record(node, i, data_offset, data_filename, block);
+            if (yne == YNE_Error  ||  yne == YNE_Yes)
+                return yne;
+            if (!write_new_datablock(data_offset, data_filename, new_block))
+                return YNE_Error;
+            block.next_ID = new_block.offset;
+            if (!block.write(fa.getFile()))
+                return YNE_Error;
+            return YNE_Yes;
+        }
+        if (do_intervals_overlap(node.record[i].start, node.record[i].end,
+                                 start, end))
+        {
+            printf("NOT YET\n");
+            return YNE_Error;
+        }
+        // Special: records sorted in time
+        if (end <= node.record[i].start) // new entry belongs into rec[i]
+            break;
+    }
+    // Need to insert new data into record[i]
+    Record overflow;
+    if (i<RTreeM)
+    {
+        overflow = node.record[RTreeM-1]; // From i on, shift all recs right;
+        for (j=RTreeM-1; j>i; --j)        // Last record goes into overflow.
+            node.record[j] = node.record[j-1];
+        node.record[i].start = start;
+        node.record[i].end = end;
+        node.record[i].child_or_ID = ID;
+        if (!write_node(node))
+        {
+            LOG_MSG("RTree::insert cannot write node\n");
+            return InsError;
+        }
+    }
+    else
+    {
+        overflow.start = start;
+        overflow.end = end;
+        overflow.child_or_ID = ID;
+    }
+    if (overflow.child_or_ID)
+    {   // Did either new entry or shifting result in overflow?
+        Node new_node(true);
+        if (!(new_node.offset = fa.allocate(NodeSize)))
+        {
+            LOG_MSG("RTree::insert cannot allocate new node\n");
+            return InsError;
+        }
+        new_node.record[0] = overflow;
+        return adjust_tree(node, &new_node) ? InsOK : InsError;
+    }
+    return adjust_tree(node, 0) ? InsOK : InsError;
+}
+
+// See if the record (node:i) already contains the
+// block for data_offset&file.
+// If No, block is positioned on last block in record's block list.
+RTreeM::YNE RTreeM::is_block_under_record(const Node &node, int i,
+                                          Offset data_offset,
+                                          const stdString &data_filename,
+                                          Datablock &block)
+{
+    LOG_ASSERT(node.isLeaf);
+    block.next_ID = node.record[i].child_or_ID;
+    while (block.next_ID)
+    {
+        block.offset = block.next_ID;
+        if (!block.read(fa.getFile()))
+            return YNE_Error;
+        if (block.data_offset == data_offset &&
+            block.data_filename == data_filename)
+            return YNE_Yes;
+    }
+    return YNE_No;
+}
+
+// Configure block for data_offset/name,
+// allocate space in file and write.
+bool RTree::write_new_datablock(Offset data_offset,
+                                const stdString &data_filename,
+                                Datablock &block)
+{
+    block.offset = fa.allocate(block.getSize());
+    block.next_ID = 0;
+    block.data_offset = data_offset;
+    block.data_filename = data_filename;
+    if (!(block.offset && block.write(fa.getFile())))
+    {
+        fprintf(stderr, "RTree::write_new_datablock(%s @ 0x%lX) failed\n",
+                data_filename.c_str(), data_offset);
+        return false;
+    }
+    return true;
 }
 
 bool RTree::choose_leaf(const epicsTime &start, const epicsTime &end,
@@ -972,6 +977,42 @@ bool RTree::adjust_tree(Node &node, Node *new_node)
     return adjust_tree(parent, &new_parent);
 }
 
+// Follows Guttman except that we don't care about
+// half-filled nodes. Only empty nodes get removed.
+bool RTree::remove(const epicsTime &start, const epicsTime &end, Offset ID)
+{
+    int i;
+    Node node;
+    node.offset = root_offset;
+    bool go;
+    do
+    {
+        if (!read_node(node))
+        {
+            LOG_MSG("RTree::remove cannot read node @ 0x%lX\n", node.offset);
+            return false;
+        }
+        for (go=false, i=0;  i<RTreeM;  ++i)
+        {   // Find left-most record that includes our target interval
+            if (node.record[i].child_or_ID == 0)
+                return false;
+            if (!node.isLeaf &&
+                node.record[i].start <= start && node.record[i].end >= end)
+            {   // Search subtree
+                node.offset = node.record[i].child_or_ID;
+                go = true;
+                break;
+            }
+            if (node.isLeaf &&
+                node.record[i].start == start && node.record[i].end == end &&
+                node.record[i].child_or_ID == ID)
+                return remove_record(node, i);
+        }
+    }
+    while (go);
+    return false;
+}
+
 bool RTree::remove_record(Node &node, int i)
 {
     int j;
@@ -1068,58 +1109,18 @@ bool RTree::condense_tree(Node &node)
     return false;
 }
 
-bool RTree::prev_next(Node &node, int &i, int dir) const
+bool RTree::updateLast(const epicsTime &start, const epicsTime &end, Offset ID)
 {
-    LOG_ASSERT(node.isLeaf);
-    LOG_ASSERT(i>=0  &&  i<RTreeM);
-    LOG_ASSERT(dir == -1  ||  dir == 1);
-    i += dir;
-    // Another rec. in curr.node?
-    if (i>=0 && i<RTreeM && node.record[i].child_or_ID)
-        return true;
-    Node parent;
-    // Go up to parent nodes...
-    while (true)
-    {
-        if (!(parent.offset = node.parent))
-            return false;
-        if (!read_node(parent))
-        {
-            LOG_MSG("RTree::next: read error\n");
-            return false;
-        }
-        for (i=0; i<RTreeM; ++i)
-            if (parent.record[i].child_or_ID == node.offset)
-                break;
-        if (i>=RTreeM)
-        {
-            LOG_MSG("RTree::next: child_or_ID not listed in parent?\n");
-            return false;
-        }
-        i += dir;
-        if (i>=0 && i<RTreeM && parent.record[i].child_or_ID)
-            break;
-        // else: go up another level
-        node = parent;
-    }
-    node.offset = parent.record[i].child_or_ID;
-    // Decend using rightmost (prev) or leftmost (next)  children
-    i = 0;
-    while (node.offset)
-    {
-        if (!read_node(node))
-        {
-            LOG_MSG("RTree::next: read error\n");
-            return false;
-        }
-        if (dir < 0)
-            for (i=RTreeM-1; i>0; --i)
-                if (node.record[i].child_or_ID)
-                    break;
-        if (node.isLeaf)
-            return node.record[i].child_or_ID != 0;
-        node.offset = node.record[i].child_or_ID;
-    }
-    return false;
+    int i;
+    Node node;
+    if (!getLast(node, i))
+        return false;
+    if (node.record[i].child_or_ID != ID  ||
+        node.record[i].start != start)
+        return false; // Cannot update, different data block
+    // Update end time, done.
+    node.record[i].end = end;
+    return write_node(node) && adjust_tree(node, 0);
 }
+
 

@@ -1,8 +1,10 @@
 \chapter{Setup, Installation}
-In general, the archiver tools use the EPICS build system as for
-example described in the ``EPICS: Input/Output Controller Application
-Developer's Guide'' for Release 3.14.4.
-This means you need the following prerequisites:
+
+\section{Compilation}
+The archiver tools use the EPICS build system as for example described
+in the ``EPICS: Input/Output Controller Application Developer's
+Guide'' for Release 3.14.4.  This means you need the following
+prerequisites:
 \begin{enumerate}
 \item EPICS Base R3.14.4 (or later) needs to be built and installed.\\
       Unless you are running Linux, this might require getting a
@@ -13,56 +15,83 @@ This means you need the following prerequisites:
       your EPICS extensions directory tree. 
 \end{enumerate}
 
-\noindent All the above is either pretty obvious to those who know it already
-or beyond this manual to explain, in which case we have to refer you
-to the EPICS web site 
+\noindent All the above is either pretty obvious to those who know it
+already or beyond this manual to explain, in which case we have to
+refer you to the EPICS web site
 \href{http://www.aps.anl.gov/epics}{http://www.aps.anl.gov/epics}. 
+In addition, some open source tools and libraries are required which
+are listed in the following subsections.
 
-In addition, the archiver's network data server currently uses
-XML-RPC. The \INDEX{XML-RPC Setup} requires the installation of at
-least the C/C++ and Java support. If you want to access the archive
-data server from e.g.\ perl, this would mean you have to get XML-RPC
-support for perl, too.
+\subsection{XML-RPC}
+The archiver's network data server uses XML-RPC. The \INDEX{XML-RPC
+Setup} requires the installation of at least the C/C++ and Java
+support. If you want to access the archive data server from e.g.\
+perl, this would mean you have to get XML-RPC support for perl, too.
 
-\section{Expat}
-We use the expat XML reader. It comes with e.g.\ RedHat~9,
-otherwise see
-\href{http://expat.sourceforge.net}{http://expat.sourceforge.net}.
-
-\section{XML-RPC for C/C++}
-We use xmlrpc-c-0.9.9 from
+For C/C++, we use xmlrpc-c-0.9.9 from
 \href{http://xmlrpc-c.sourceforge.net}{http://xmlrpc-c.sourceforge.net}.
 The Makefiles in ChannelArchiver/XMLRPCServer assume this to be
 installed in the default location, that is under /usr/local.
 
 With RedHat~6.2, xmlrpc-c compiled out of the box.
 Under RedHat~9.0, it ran into a compile-time error that could be fixed
-by un-commenting ``using namespace std;'' in the affected header file.
+by un-commenting ``using namespace std;'' in the header file which
+reported the error.
 
-\section{Apache Web Server}
-The XML-RPC data server is a CGI program that needs to be served by a
-web server. With the default setup of the Apache web server under
-Linux, a simple way to do this is:
-
-\begin{lstlisting}
-# Create subdir under pre-configured 'cgi-bin'
-mkdir /var/www/cgi-bin/xmlrpc
-
-# Add xml-rpc library to LD_LIBRARY_PATH
-cat >>/etc/httpd/conf/httpd.conf
-<Directory /var/www/cgi-bin/xmlrpc>
-        SetEnv LD_LIBRARY_PATH  /usr/local/lib
-</Directory>
-^D
-
-# Restart web server
-/etc/rc.d/init.d/httpd restart
+\subsection{Xerces XML Library}
+The \INDEX{Xerces} library is used to parse the XML configuration files of the
+ArchiveEngine and the network data server.
+See ``Xerces C++'' under
+\begin{center}
+\href{http://xml.apache.org/index.html}{http://xml.apache.org/index.html}
+\end{center}
+or try this direct link:
+\begin{center}
+\href{http://xml.apache.org/xerces-c/index.html}
+     {http://xml.apache.org/xerces-c/index.html}
+\end{center}
+to get the sources. The Makefiles assume this to be installed under /usr/local.
+Example installation under RH9:
+\begin{lstlisting}[keywordstyle=\sffamily]
+tar vzoxf xerces-c-current.tar.gz 
+cd xerces-c-src2_4_0
+export XERCESCROOT=`pwd`
+cd $XERCESCROOT/src/xercesc
+autoconf
+./runConfigure -plinux -cgcc -xg++\
+               -minmem -nsocket \
+               -tnative -rpthread \
+                -P/usr/local
+make
+su
+make install
 \end{lstlisting}
+% Building Samples
+%cd $XERCESCROOT/samples
+%./runConfigure -plinux -cgcc -xg++
+%make
+%ls ../bin
+%make clean
 
+\section{Expat}
+As an inferior alternative to Xerces, the \INDEX{Expat} library is supported
+after changing Tools/FUX.h. Expat comes with e.g.\ RedHat~9,
+otherwise see
+\begin{center}
+\href{http://expat.sourceforge.net}{http://expat.sourceforge.net}.
+\end{center}
+Expat might be a little faster and easier to install, but it does not
+offer validation, so it will be up to you to assert that all XML
+configuration files are 100\% perfect.
 
-\noindent Now you can copy the archive data server as
-ArchiveServer.cgi into the new xmlrpc directory and access it via
-http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi.
+\section{Installation}
+There are no specific installation procedures for the ArchiveEngine,
+ArchiveExport, and most other Channel Archiver components. The binaries for
+them end up in the standard EPICS extension directories. Their usage
+might require configuration files, the format of which is described as
+part of the tools section in this manual.
 
-\NOTE The file extensions .cgi is essential!
+The ArchiveDataServer requires integration with your web server. The
+process is exemplified in the Data Server chapter starting on page
+\pageref{sec:dataserver}.
 

@@ -10,7 +10,7 @@ disk performance. Access to data on NFS-mounted disks is by orders of
 magnitude slower than access to data on local disks.
 
 The following are performance values obtained on a computer
-with an 1~GHz CPU, an ordinary IDE disk, that was mostly idle
+with a 1~GHz CPU, an ordinary IDE disk, that was mostly idle
 while the archiver tools ran. % That's blitz.ta53.lanl.gov
 The corresponding values on a machine with an 800~MHz CPU, concurrently
 used by other people, but faster hard disks (Mylex
@@ -36,25 +36,23 @@ the RTree.
 \item 12 sub-archives, 1.2~MB of old directory files, 1.4~GB Data
       files:\\
       Converting directory files into index files with $M=50$:
-      3~minutes, resulting in 11~MB for the new index files.\\
-      Creating a master index: 35~seconds for a master index of 9~MB.\\
-      Re-run of the ArchiveMegaindex tool: 7~seconds.
-      This shows that the ArchiveIndexTool detects when data blocks
-      are already in the master index and does not add them again.
+      Just under 3~minutes, resulting in 11~MB for the new index files.\\
+      Creating a master index: 37~seconds for a master index of 9~MB.
+      The master index is slightly smaller than the sum of the
+      individual sub-indices because of better RTree utilization:
+      The $M$ was configured to be 50 in all cases and many channels
+      in the the sub-archives use only a fraction of a single RTree
+      node, down to an average record usage of 8\%, while the master
+      index uses around 50\%.
+      A re-run of the ArchiveIndexTool tool is faster because
+      it detects when data block are already in the master index and
+      does not add them again. In this case, the re-run took 10~seconds.
 % LANL Xmtr Data 2003:
 \item 92 sub-archives, 12~MB directory files, 2.3GB of data files:\\
       Converting into 61~MB of index files: About 12 minutes.\\
-      Creating a master index: about 2~minutes, the resulting
-      index uses about 1.1~GB.
-      (Values for $M=10$: Individual indices sum to 25~MB. Master
-      index took 60~minutes and was 1.4~GB.)\\
-      Re-run: 40~minutes. Again the master index does not change at
-      all because the ArchiveIndexTool recognizes that the data blocks
-      from the sub-archives have already been added. But finding the
-      last data block of the about 500 channels from the 92
-      sub-archives in the 1.1~GB master index file cannot be cached by
-      the operating system as it could in the previous case with a
-      24~MB master index.
+      Creating a master index: Under 2~minutes, the resulting
+      index uses about 18~MB.
+      Re-run: 30~seconds.
 \end{itemize}
 
 \noindent With the 92-subarchive index, the following was tested:

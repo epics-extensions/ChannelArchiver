@@ -15,10 +15,8 @@
 #include "ArchiveException.h"
 #include "Engine.h"
 #include "EngineServer.h"
-#include "WriteThread.h"
 
 static EngineServer *engine_server = 0;
-static WriteThread  write_thread;
 Engine *theEngine;
 
 static void caException(struct exception_handler_args args)
@@ -75,7 +73,6 @@ Engine::Engine(const stdString &directory_file_name)
     _ca_context = ca_current_context();
     
     engine_server = new EngineServer();
-    write_thread.start();
 
 #ifdef USE_PASSWD
     _user = DEFAULT_USER;
@@ -109,15 +106,11 @@ void Engine::shutdown()
     delete engine_server;
     engine_server = 0;
 
-    LOG_MSG("Waiting for WriteThread to exit...\n");
-    write_thread.stop();
-
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now;
     now = epicsTime::getCurrent();
 
     _engine_lock.lock();
-    _archive_lock.lock();
     ChannelIterator channel(*_archive);
     try
     {
@@ -133,7 +126,6 @@ void Engine::shutdown()
         LOG_MSG("Engine::shutdown caught %s\n", e.what());
     }
     channel->releaseBuffer();
-    _archive_lock.unlock();
     _engine_lock.unlock();
 
     LOG_MSG("Engine shut down.\n");
@@ -163,61 +155,6 @@ bool Engine::checkUser(const stdString &user, const stdString &pass)
     return user == _user &&  pass == _pass;
 }
 #endif   
-
-bool Engine::process()
-{
-    // scan, write or wait?
-    epicsTime now = epicsTime::getCurrent();
-    double scan_delay, write_delay;
-    bool do_wait = true;
-
-    if (_scan_list.isDueAtAll())
-    {
-        scan_delay = _scan_list.getDueTime() - now;
-        if (scan_delay <= 0.0)
-        {
-            _scan_list.scan(now);
-            do_wait = false;
-        }
-    }
-    else
-    {
-        // Wait a little while....
-        // This determines the _need_CA_flush delay
-        scan_delay = 0.5;
-    }
-    
-    write_delay = _next_write_time - now;            
-    if (write_delay <= 0.0)
-    {
-        write_thread.write();
-        // _next_write_time is modified after the archiving is done.
-        // If there is slowness in the file writing - we will check
-        // it less frequently - thus overwriting the archive circular
-        // buffer - thus causing events to be discarded at the monitor
-        // receive callback
-        if (! write_thread.isRunning())
-        {
-            LOG_MSG("WriteThread stopped. Engine quits, too.\n");
-            return false;
-        }
-        _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
-        do_wait = false;
-    }
-    if (_need_CA_flush)
-    {
-        ca_flush_io();
-        _need_CA_flush = false;
-    }
-    if (do_wait)
-    {
-        if (write_delay < scan_delay)
-            epicsThreadSleep(write_delay);
-        else
-            epicsThreadSleep(scan_delay);
-    }
-    return true;
-}
 
 GroupInfo *Engine::findGroup(const stdString &name)
 {
@@ -303,7 +240,6 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
 
     if (new_channel)
     {
-        _archive_lock.lock();
         try
         {
             // Is channel already in Archive?
@@ -328,7 +264,6 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
         {
             LOG_MSG("Engine::addChannel: caught\n%s\n", e.what());
         }
-        _archive_lock.unlock();
     }
     if (_configuration)
         _configuration->saveChannel(channel_info);
@@ -395,17 +330,14 @@ void Engine::setSecsPerFile(double secs_per_file)
         _configuration->saveEngine();
 }
 
-// Called by WriteThread as well as Engine on shutdown!
 void Engine::writeArchive()
 {
     _is_writing = true;
-    _archive_lock.lock();
     ChannelIterator channel(*_archive);
     try
     {
         stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
-        while (channel_info != _channels.end() &&
-               write_thread.isRunning())
+        while (channel_info != _channels.end())
         {
             (*channel_info)->lock();
             (*channel_info)->write(*_archive, channel);
@@ -418,7 +350,51 @@ void Engine::writeArchive()
         LOG_MSG("Engine::writeArchive caught %s\n", e.what());
     }
     channel->releaseBuffer();
-    _archive_lock.unlock();
     _is_writing = false;
+}
+
+bool Engine::process()
+{
+    // scan, write or wait?
+    epicsTime now = epicsTime::getCurrent();
+    double scan_delay, write_delay;
+    bool do_wait = true;
+
+    if (_scan_list.isDueAtAll())
+    {
+        scan_delay = _scan_list.getDueTime() - now;
+        if (scan_delay <= 0.0)
+        {
+            _scan_list.scan(now);
+            do_wait = false;
+        }
+    }
+    else
+    {
+        // Wait a little while....
+        // This determines the _need_CA_flush delay
+        scan_delay = 0.5;
+    }
+    
+    write_delay = _next_write_time - now;            
+    if (write_delay <= 0.0)
+    {
+        writeArchive();
+        _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
+        do_wait = false;
+    }
+    if (_need_CA_flush)
+    {
+        ca_flush_io();
+        _need_CA_flush = false;
+    }
+    if (do_wait)
+    {
+        if (write_delay < scan_delay)
+            epicsThreadSleep(write_delay);
+        else
+            epicsThreadSleep(scan_delay);
+    }
+    return true;
 }
 

@@ -93,7 +93,7 @@ public:
     void   setGetThreshold(double get_threshhold);
     double getGetThreshold();
 
-    // Engine Info: Started, where, info about write thread
+    // Engine Info: Started, where, info about writes
     const epicsTime &getStartTime() const { return _start_time; }
     const stdString &getDirectory() const { return _directory;  }
     const epicsTime &getNextWriteTime() const { return _next_write_time; }
@@ -137,10 +137,6 @@ private:
     double          _future_secs;    // now+_future_secs is considered wrong
 
     Configuration   *_configuration;
-
-    // Archive: Used by WriteThread,
-    // sometimes Engine (to get CtrlInfo for new channels)
-    epicsMutex      _archive_lock;
     Archive         *_archive;
 
 #ifdef USE_PASSWD

@@ -73,7 +73,7 @@ class ValueI;
 {
     try
     {
-        $function
+        $action
     }
     catch (GenericException &e)
     {   // un-const to avoid warnings
@@ -81,7 +81,8 @@ class ValueI;
     }
     catch (...)
     {
-        SWIG_exception (SWIG_UnknownError, "Unknown exception while calling CASI");
+        SWIG_exception (SWIG_UnknownError,
+                        "Unknown exception while calling CASI");
     }
 }
 

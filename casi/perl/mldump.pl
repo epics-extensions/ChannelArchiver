@@ -4,10 +4,8 @@
 use English;
 
 # Set search path for the Perl module (casi.pm)
-use lib "O." . $ENV{HOST_ARCH};
+use lib "O." . $ENV{EPICS_HOST_ARCH};
 use casi;
-#use strict;
-# use vars qw($a $c $v $name);
 use Getopt::Std;
 
 sub usage()
@@ -21,13 +19,13 @@ sub usage()
 
 getopts('ha:s:e:');
 usage() if $opt_h;
-$opt_a = "../../Engine/Test/freq_directory" unless $opt_a;
+$opt_a = "../../Engine/Test/index" unless $opt_a;
 
 # Create archive, channel, value, open archive
-$a = archive::new();
-$c = channel::new();
-$v = value::new();
-$a->open($opt_a);
+$a = casi::new_archive();
+$c = casi::new_channel();
+$v = casi::new_value();
+casi::archive_open($a, $opt_a);
 
 print "% MatLab data file, created by $PROGRAM_NAME script.\n";
 print "% Data from archive $opt_a\n";
@@ -52,31 +50,33 @@ print "\n";
 # Dump values for single channel
 foreach $name ( @ARGV )
 {
-    $a->findChannelByName($name, $c)
+    casi::archive_findChannelByName($a, $name, $c)
 	or die "Cannot find channel $name\n";
     if ($start)
     {
-	$c->getValueAfterTime($start, $v);
+	casi::channel_getValueAfterTime($c, $start, $v);
     }
     else
     {
-	$c->getFirstValue($v);
+	casi::channel_getFirstValue($c, $v);
     }
     
     $i=1;
-    while ($v->valid()  and  (!$end  or $v->time() le $end))
+    while (casi::value_valid($v)  and
+	   (!$end  or casi::value_time($v) le $end))
     {
-	print "$name.t($i)={'" . stamp2datestr($v->time()) . "'};\n";
-	if ($v->isInfo())
+	print("$name.t($i)={'" .
+	      stamp2datestr(casi::value_time($v)) . "'};\n");
+	if (casi::value_isInfo($v))
 	{
 	    print "$name.v($i)=nan;\n";
 	}
 	else
 	{
-	    print "$name.v($i)=" . $v->text() . ";\n";
+	    print "$name.v($i)=" . casi::value_text($v) . ";\n";
 	}
 	++ $i;
-	$v->next();
+	casi::value_next($v);
     }
     print "$name.d=datenum(char($name.t));\n";
     print "$name.l=size($name.v,2);\n";

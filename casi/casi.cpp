@@ -312,8 +312,8 @@ bool channel::getValueBeforeTime(const char *time, value &v) const
 {
     if (! testValue(v))
         throwDetailedArchiveException(Invalid,
-                                       "getValueBeforeTime called "
-                                       "for invalid channel");
+                                      "getValueBeforeTime called "
+                                      "for invalid channel");
     epicsTime epicsTime;
     if (! text2epicsTime(time, epicsTime))
     {

@@ -1,13 +1,6 @@
 # Makefile to call sub-makes
 
-INSTAPP=install -o aptdvl -g 10
-EXE=
-INSTALLDIR=/home/aptdvl/bin
-CGIDIR=/home/httpd/html/archive/cgi
-
 include Make.ver
-
-SRCZIP=channelarchiver-$(VERSION).$(RELEASE).$(PATCH).src.zip
 
 all:
 	$(MAKE) -C ../Tools
@@ -16,7 +9,6 @@ all:
 	$(MAKE) -C Export
 	$(MAKE) -C CGIExport
 	$(MAKE) -C Engine
-
 
 clean:
 	@$(MAKE) -C ../Tools clean
@@ -30,8 +22,7 @@ cleanCGITest:
 	@-rm -f CGIExport/Tests/cgi/tmp/*
 	@-rm -f CGIExport/Tests/cgi/CGIExport.cgi
 
-
-new:	clean all
+SRCZIP=channelarchiver-$(VERSION).$(RELEASE).$(PATCH).src.zip
 
 zip:	cleanCGITest
 	(cd /tmp; \
@@ -47,11 +38,4 @@ zip:	cleanCGITest
 	 zip -r $(SRCZIP) Tools ChannelArchiver\
 	)  
 
-install:
-	$(INSTAPP) ../../bin/$(HOST_ARCH)/ArchiveExport$(EXE) $(INSTALLDIR)
-	$(INSTAPP) ../../bin/$(HOST_ARCH)/ArchiveEngine$(EXE) $(INSTALLDIR)
-	$(INSTAPP) ../../bin/$(HOST_ARCH)/ArchiveManager$(EXE) $(INSTALLDIR)
-	$(INSTAPP) ../../bin/$(HOST_ARCH)/CGIExport$(EXE) $(CGIDIR)/`date +CGIExport%y%m%d.cgi`
-	-(cd $(CGIDIR); rm CGIExport.cgi)
-	(cd $(CGIDIR); ln -s `date +CGIExport%y%m%d.cgi` CGIExport.cgi)
 

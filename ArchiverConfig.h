@@ -19,10 +19,10 @@
 // Some even more generic things are coArnfigured in ToolsConfig.h!
 
 // This should match Make.ver
-#define VERSION 1
-#define RELEASE 10
+#define VERSION 2
+#define RELEASE 0
 
-#define VERSION_TXT "1.10.1"
+#define VERSION_TXT "2.0.0"
 
 // ----------------------------------------------------------
 // ArchiveEngine
@@ -151,19 +151,11 @@
 // ----------------------------------------------------------
 // ArchiveExport
 // ----------------------------------------------------------
-
-// (This is more of a test program. You should use the CGIExport tool
-//  or the tcl/tk extension instead)
-
 #define EXPORT_ARCHIVE_TYPE MultiArchive
 
 // ----------------------------------------------------------
 // WinBrowser
 // ----------------------------------------------------------
-
-// (This is more of a test program. You should use the CGIExport tool
-//  or the tcl/tk extension instead)
-
 #define WINBROWSER_ARCHIVE_TYPE MultiArchive
 
 #endif

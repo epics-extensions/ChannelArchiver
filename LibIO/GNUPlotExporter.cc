@@ -12,7 +12,6 @@
 #include "ExpandingValueIteratorI.h"
 #include "Filename.h"
 #include "epicsTimeHelper.h"
-#include <math.h>
 
 #ifdef WIN32
 #include <float.h>

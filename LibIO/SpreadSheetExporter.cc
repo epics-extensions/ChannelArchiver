@@ -5,7 +5,6 @@
 #include "LinInterpolValueIteratorI.h"
 #include "ExpandingValueIteratorI.h"
 #include "epicsTimeHelper.h"
-#include <math.h>
 
 SpreadSheetExporter::SpreadSheetExporter(ArchiveI *archive)
         : Exporter(archive)

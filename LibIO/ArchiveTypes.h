@@ -12,6 +12,7 @@
 #define __CHANNELARCHIVETYPES_H__
 
 #include<MsgLogger.h>
+#include<math.h>
 
 // Safely (i.e. w/o overruns and '\0'-limited)
 // copy a std-string into a char [].

@@ -83,6 +83,11 @@ public:
 	const ChannelIteratorI *getI () const	{	return _ptr; }
 
 private:
+	// Copying is prohibited because it's unclear
+	// how to copy all the possible implementations
+	// of a ChannelIteratorI.
+	// If two ChannelIterators shall reference the same channel,
+	// the ArchiveI has to be queried for the same channel twice.
 	ChannelIterator (const ChannelIterator &rhs); // not impl.
 	ChannelIterator & operator = (const ChannelIterator &rhs); // not impl.
 

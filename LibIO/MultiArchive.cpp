@@ -230,13 +230,41 @@ bool MultiArchive::getValueNearTime (size_t channel_index,
 
 bool MultiArchive::parseMasterFile (const stdString &master_file)
 {
-	ASCIIParser	parser;
-
-	if (! parser.open (master_file))
+	// Carefully check if "master_file" starts with the magic line:
+	ifstream	file;
+	file.open (master_file.c_str());
+	if (! file.is_open ())
 	{
 		LOG_MSG ("Cannot open master file '" << master_file << "'\n");
 		return false;
 	}
+	file.setf (ios::binary);
+	char line[14]; // master_version  : 14 chars
+	file.read (line, 14);
+	int got = file.gcount ();
+	file.close ();
+
+	if (got < 14)
+	{
+		LOG_MSG ("Invalid master file '" << master_file << "'\n");
+		return false; // too small to be anything
+	}
+	if (strncmp (line, "master_version", 14) !=0)
+	{
+		// Could be Binary file:
+		_archives.push_back (master_file);
+		investigateChannels ();
+		return true;
+	}
+
+	// ------------------------------------------------
+	// OK, looks like a master file.
+	// Now read it again as ASCII:
+
+	ASCIIParser	parser;
+
+	if (! parser.open (master_file))
+		return false;
 
 	stdString parameter, value;
 	if (parser.nextLine()						&&
@@ -249,10 +277,8 @@ bool MultiArchive::parseMasterFile (const stdString &master_file)
 	}
 	else
 	{
-		// LOG_MSG ("Expecting master_version=1 in '" << master_file
-		//	<< "', line " << parser.getLineNo() << "\n");
-		// LOG_MSG ("Assuming '" << master_file << "' is a BinArchive\n");
-		_archives.push_back (master_file);
+		LOG_MSG ("Invalid master file '" << master_file << "', maybe wrong version\n");
+		return false;
 	}
 
 	investigateChannels ();

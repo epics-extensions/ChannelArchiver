@@ -434,5 +434,42 @@ bool BinValueDbrString::parseValue (const stdString &text)
 	return true;
 }
 
+//////////////////////////////////////////////////////////////////////
+// BinValueDbrChar
+//////////////////////////////////////////////////////////////////////
+
+IMPLEMENT_getDouble(BinValueDbrChar,dbr_time_char,dbr_char_t)
+IMPLEMENT_setDouble(BinValueDbrChar,dbr_time_char,dbr_char_t)
+IMPLEMENT_NUMERIC_getValue(BinValueDbrChar,dbr_time_char,dbr_char_t)
+
+bool BinValueDbrChar::parseValue (const stdString &text)
+{
+	dbr_char_t *data = & (reinterpret_cast<dbr_time_char *>(_value))->value;
+	if (text.length() == 1  && text[0] == '-' && getCount()>0)
+	{
+		data[0] = 0;
+		return true;
+	}
+
+	const char *txt = text.c_str();
+	char *next;
+	long val;
+
+	for (size_t i = 0; i<getCount(); ++i)
+	{
+		if (!txt || *txt=='\0')
+			return false;
+		val = strtol (txt, &next, 10);
+		if (val == LONG_MIN  ||  val == LONG_MAX)
+			return false;
+		data[i] = (dbr_char_t) val;
+		while (*next == ' ' || *next == ',')
+			++next;
+		txt = next;
+	}
+
+	return true;
+}
+
 END_NAMESPACE_CHANARCH
 

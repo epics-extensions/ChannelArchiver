@@ -147,6 +147,20 @@ public:
 	virtual bool parseValue (const stdString &text);
 };
 
+//////////////////////////////////////////////////////////////////////
+//CLASS BinValueDbrChar
+// Specialization of CLASS BinValue.
+class BinValueDbrChar : public BinValue
+{
+public:
+	BinValueDbrChar (DbrCount count) : BinValue (DBR_TIME_CHAR, count) {}
+	//* Specialization of the pure virtual methods in CLASS BinValue:
+	virtual double getDouble (DbrCount index) const;
+	virtual void setDouble (double value, DbrCount index = 0);
+	virtual void getValue (stdString &result) const;
+	virtual bool parseValue (const stdString &text);
+};
+
 END_NAMESPACE_CHANARCH
 
 #endif // !defined(_VALUE_H_)

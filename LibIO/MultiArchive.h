@@ -33,8 +33,9 @@ class MultiValueIterator;
 //
 // <UL>
 // <LI>Comments (starting with a number-sign) and empty lines are ignored
-// <LI>The first valid line must be<BR>
+// <LI>The very first line must be<BR>
 //	   <PRE>master_version=1</PRE>
+//	   There must be no comments preceding this line!
 // <LI>All remaining lines list one archive name per line
 // </UL>
 // <H2>Example</H2>

@@ -37,36 +37,36 @@ INC += MultiChannel.h
 INC += MultiValueIterator.h
 
 #	Contents of library:
-LIBSRCS += HashTable.cc
-LIBSRCS += ArchiveException.cc
-LIBSRCS += ArchiveI.cc
-LIBSRCS += ChannelI.cc
-LIBSRCS += ChannelIteratorI.cc
-LIBSRCS += CtrlInfoI.cc
-LIBSRCS += ValueI.cc
-LIBSRCS += ValueIteratorI.cc
+LIBSRCS += HashTable.cpp
+LIBSRCS += ArchiveException.cpp
+LIBSRCS += ArchiveI.cpp
+LIBSRCS += ChannelI.cpp
+LIBSRCS += ChannelIteratorI.cpp
+LIBSRCS += CtrlInfoI.cpp
+LIBSRCS += ValueI.cpp
+LIBSRCS += ValueIteratorI.cpp
 
-LIBSRCS += DataFile.cc
-LIBSRCS += DirectoryFile.cc
-LIBSRCS += BinArchive.cc
-LIBSRCS += BinChannel.cc
-LIBSRCS += BinChannelIterator.cc
-LIBSRCS += BinCtrlInfo.cc
-LIBSRCS += BinValue.cc
-LIBSRCS += BinValueIterator.cc
+LIBSRCS += DataFile.cpp
+LIBSRCS += DirectoryFile.cpp
+LIBSRCS += BinArchive.cpp
+LIBSRCS += BinChannel.cpp
+LIBSRCS += BinChannelIterator.cpp
+LIBSRCS += BinCtrlInfo.cpp
+LIBSRCS += BinValue.cpp
+LIBSRCS += BinValueIterator.cpp
 
-LIBSRCS += MultiArchive.cc
-LIBSRCS += MultiChannelIterator.cc
-LIBSRCS += MultiChannel.cc
-LIBSRCS += MultiValueIterator.cc
+LIBSRCS += MultiArchive.cpp
+LIBSRCS += MultiChannelIterator.cpp
+LIBSRCS += MultiChannel.cpp
+LIBSRCS += MultiValueIterator.cpp
 
-LIBSRCS += ExpandingValueIteratorI.cc
-LIBSRCS += LinInterpolValueIteratorI.cc
-LIBSRCS += BucketingValueIteratorI.cc
-LIBSRCS += Exporter.cc
-LIBSRCS += SpreadSheetExporter.cc
-LIBSRCS += MatlabExporter.cc
-LIBSRCS += GNUPlotExporter.cc
+LIBSRCS += ExpandingValueIteratorI.cpp
+LIBSRCS += LinInterpolValueIteratorI.cpp
+LIBSRCS += BucketingValueIteratorI.cpp
+LIBSRCS += Exporter.cpp
+LIBSRCS += SpreadSheetExporter.cpp
+LIBSRCS += MatlabExporter.cpp
+LIBSRCS += GNUPlotExporter.cpp
 
 #       Library to build:
 #       lib$(LIBRARY).a  or   ..dll/..exp/..lib

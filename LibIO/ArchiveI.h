@@ -13,8 +13,6 @@
 
 #include "ChannelIteratorI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS ArchiveI
 // The ArchiveI class is the top-level interface
 // to the ChannelArchiver data files.
@@ -175,7 +173,5 @@ inline bool Archive::addChannel (const stdString &name, ChannelIterator &channel
 
 inline ValueI *Archive::newValue (DbrType type, DbrCount count)
 {	return _ptr->newValue (type, count); }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__ARCHIVEI_H__

@@ -13,8 +13,6 @@
 
 #include "ValueIteratorI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 class MultiChannelIterator;
 
 //CLASS MultiValueIterator
@@ -22,27 +20,25 @@ class MultiChannelIterator;
 class MultiValueIterator : public ValueIteratorI
 {
 public:
-	MultiValueIterator ();
-	virtual ~MultiValueIterator ();
+    MultiValueIterator();
+    virtual ~MultiValueIterator();
 
-	virtual bool isValid () const;
-	virtual const ValueI * getValue () const;
-	virtual bool next ();
-	virtual bool prev ();
+    virtual bool isValid() const;
+    virtual const ValueI * getValue() const;
+    virtual bool next();
+    virtual bool prev();
 
-	virtual size_t determineChunk (const osiTime &until);
-	virtual double getPeriod () const;
+    virtual size_t determineChunk(const osiTime &until);
+    virtual double getPeriod() const;
 
-	// To be called by MultiArchive classes only:
-	void clear ();
-	void position (MultiChannelIterator *channel, ValueIteratorI *value);
+    // To be called by MultiArchive classes only:
+    void clear();
+    void position(MultiChannelIterator *channel, ValueIteratorI *value);
 
 private:
-	bool _is_valid;
-	MultiChannelIterator *_channel_iterator;
-	ValueIteratorI *_base_value_iterator;
+    bool _is_valid;
+    MultiChannelIterator *_channel_iterator;
+    ValueIteratorI *_base_value_iterator;
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif // __MULTIVALUEITERATOR_H__

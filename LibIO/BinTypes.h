@@ -14,8 +14,6 @@
 #include <osiSock.h>
 #endif
 
-BEGIN_NAMESPACE_CHANARCH
-
 #ifdef CONVERSION_REQUIRED
 
 inline void ULONGFromDisk(unsigned long &item)
@@ -84,7 +82,5 @@ inline bool isValidFilename (const stdString &name)
 
 inline bool isValidFilename (const char *name)
 {	return name[0] != '\0';	}
-
-END_NAMESPACE_CHANARCH
 
 #endif // __BINTYPES_H__

@@ -3,8 +3,7 @@
 
 #include "ArchiveTypes.h"
 #include "MemoryBuffer.h"
-
-BEGIN_NAMESPACE_CHANARCH
+#include <iostream>
 
 // ! Binary layout of CtrlInfo must be maintained !
 class NumericInfo
@@ -123,7 +122,7 @@ public:
 	// position 'next' on character following the recognized state text
 	bool parseState (const char *text, const char **next, size_t &state) const;
 
-	void show (ostream &o) const;
+    void show (std::ostream &o) const;
 
 protected:
 	const char *getState (size_t state, size_t &len) const;
@@ -163,8 +162,6 @@ inline size_t CtrlInfoI::getNumStates () const
 		return _infobuf.mem()->value.index.num_states;
 	return 0;
 }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__CTRLINFOI_H__
 

@@ -5,8 +5,6 @@
 #include "ArchiveException.h"
 #include "BinValue.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //////////////////////////////////////////////////////////////////////
 // BinRawValue
 //////////////////////////////////////////////////////////////////////
@@ -130,7 +128,7 @@ ValueI *BinValue::clone () const
     return value;
 }
 
-void BinValue::show (ostream &o) const
+void BinValue::show (std::ostream &o) const
 {
     stdString time_text, stat_text;
 
@@ -471,5 +469,4 @@ bool BinValueDbrChar::parseValue (const stdString &text)
     return true;
 }
 
-END_NAMESPACE_CHANARCH
 

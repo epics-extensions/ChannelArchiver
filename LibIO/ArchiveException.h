@@ -13,8 +13,6 @@
 
 #include "ArchiveTypes.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS ArchiveException
 // Special Exception for ChanArch classes.
 //
@@ -75,19 +73,19 @@ private:
 	stdString _detail;
 };
 
-inline ArchiveException::Code ArchiveException::getErrorCode () const
+inline ArchiveException::Code ArchiveException::getErrorCode() const
 {	return _code;	}
 
-inline const stdString &ArchiveException::getDetail () const
+inline const stdString &ArchiveException::getDetail() const
 {	return _detail; }
 
 
 
 // inline? Then e.g. Invalid would have to be given as
 // ChannelArchiveException::Invalid...
-#define throwArchiveException(code)	throw ArchiveException (__FILE__, __LINE__,ArchiveException::code)
-#define throwDetailedArchiveException(code,detail)	throw ArchiveException (__FILE__, __LINE__,ArchiveException::code, detail)
-
-END_NAMESPACE_CHANARCH
+#define throwArchiveException(code)	\
+   throw ArchiveException(__FILE__, __LINE__,ArchiveException::code)
+#define throwDetailedArchiveException(code,detail) \
+   throw ArchiveException(__FILE__, __LINE__,ArchiveException::code, detail)
 
 #endif //__ARCHIVEEXCEPTION_H__

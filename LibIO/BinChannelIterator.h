@@ -5,8 +5,6 @@
 #include "DirectoryFile.h"
 #include "RegularExpression.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 class BinArchive;
 class DataHeaderIterator;
 
@@ -40,8 +38,6 @@ private:
 
 inline BinArchive *BinChannelIterator::getArchive ()
 {	return _archive;	}
-
-END_NAMESPACE_CHANARCH
 
 #endif //__BINCHANNELITERATOR_H__
 

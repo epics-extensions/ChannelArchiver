@@ -13,8 +13,6 @@
 
 #include "ValueIteratorI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //////////////////////////////////////////////////////////////////////
 //CLASS LinInterpolValueIteratorI
 // A CLASS ValueIterator that performs linear interpolation.
@@ -90,7 +88,5 @@ inline void LinInterpolValueIteratorI::setMaxDeltaT (double maxDeltaT)
 
 inline double LinInterpolValueIteratorI::getMaxDeltaT () const
 {	return _maxDeltaT;	}
-
-END_NAMESPACE_CHANARCH
 
 #endif //__EXPANDINGVALUEITERATOR_H__

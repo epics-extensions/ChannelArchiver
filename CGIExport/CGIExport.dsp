@@ -200,6 +200,10 @@ SOURCE=..\LibIO\LinInterpolValueIteratorI.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Tools\LowLevelIO.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\main.cpp
 # End Source File
 # Begin Source File
@@ -245,6 +249,10 @@ SOURCE=..\LibIO\ValueI.cpp
 # Begin Source File
 
 SOURCE=..\LibIO\ValueIteratorI.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Tools\WIN32Thread.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"

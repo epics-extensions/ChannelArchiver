@@ -4,8 +4,6 @@
 #include "BinTypes.h"
 #include "ChannelI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 class BinChannel : public ChannelI
 {
 public:
@@ -89,7 +87,5 @@ inline void BinChannel::clear ()
     _offset = INVALID_OFFSET;
     _data.name[0] = '\0';
 }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__BINCHANNEL_H__

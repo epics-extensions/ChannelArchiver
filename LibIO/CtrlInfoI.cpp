@@ -1,9 +1,6 @@
 #include "ArchiveException.h"
 #include "CtrlInfoI.h"
 
-USE_STD_NAMESPACE
-BEGIN_NAMESPACE_CHANARCH
-
 CtrlInfoI::CtrlInfoI ()
 {
 	size_t additional_buffer = 10;
@@ -133,8 +130,8 @@ void CtrlInfoI::formatDouble (double value, stdString &result) const
 	if (getType() != Numeric)
 		throwDetailedArchiveException (Invalid, "CtrlInfo::formatDouble: Type not Numeric");
 
-	strstream buf;
-	buf.setf(ios::fixed, ios::floatfield);
+    std::strstream buf;
+	buf.setf(std::ios::fixed, std::ios::floatfield);
 	buf.precision (getPrecision ());
 	buf << value << '\0';
 	result = buf.str ();
@@ -174,7 +171,7 @@ void CtrlInfoI::getState (size_t state, stdString &result) const
 		return;
 	}
 
-	strstream tmp;
+    std::strstream tmp;
 	tmp << "<Undef: " << state << '\0';
 	result = tmp.str();
 	tmp.rdbuf()->freeze (false);
@@ -204,7 +201,7 @@ bool CtrlInfoI::parseState (const char *text, const char **next, size_t &state) 
 	return false;
 }
 
-void CtrlInfoI::show (ostream &o) const
+void CtrlInfoI::show (std::ostream &o) const
 {
     if (getType() == Numeric)
     {
@@ -231,5 +228,4 @@ void CtrlInfoI::show (ostream &o) const
         o << "CtrlInfo: Unknown\n";
 }
 
-END_NAMESPACE_CHANARCH
 

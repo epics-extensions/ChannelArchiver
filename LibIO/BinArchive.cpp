@@ -5,8 +5,6 @@
 #include "DirectoryFile.h"
 #include "Filename.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 BinArchive::BinArchive (const stdString &archive_name, bool for_write)
 {
     _dir = new DirectoryFile (archive_name, for_write);
@@ -128,5 +126,4 @@ bool BinArchive::makeFullFileName (const stdString &basename, stdString &full_na
     return true;
 }
 
-END_NAMESPACE_CHANARCH
 

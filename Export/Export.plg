@@ -6,17 +6,7 @@
 --------------------Configuration: Export - Win32 Debug--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "d:\TMP\RSP5F6.tmp" with contents
-[
-/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\LibIO" /I "..\..\Tools" /I "..\..\..\..\base\include" /I "..\..\..\..\base\include\os\WIN32" /I "..\..\..\..\base\src\ca" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /D "EPICS_DLL" /Fp"Debug/Export.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
-"D:\Kay\Epics\extensions\src\ChannelArchiver\Export\Export.cpp"
-"D:\Kay\Epics\extensions\src\ChannelArchiver\LibIO\Exporter.cpp"
-"D:\Kay\Epics\extensions\src\ChannelArchiver\LibIO\GNUPlotExporter.cpp"
-"D:\Kay\Epics\extensions\src\ChannelArchiver\LibIO\LinInterpolValueIteratorI.cpp"
-"D:\Kay\Epics\extensions\src\ChannelArchiver\LibIO\SpreadSheetExporter.cpp"
-]
-Creating command line "cl.exe @d:\TMP\RSP5F6.tmp" 
-Creating temporary file "d:\TMP\RSP5F7.tmp" with contents
+Creating temporary file "d:\TMP\RSP157.tmp" with contents
 [
 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ca.lib Com.lib db.lib ws2_32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/ArchiveExport.pdb" /debug /machine:I386 /out:"Debug/ArchiveExport.exe" /pdbtype:sept /libpath:"..\..\..\..\base\lib\WIN32" 
 .\Debug\ArchiveException.obj
@@ -54,15 +44,11 @@ kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32
 .\Debug\stdString.obj
 .\Debug\ValueI.obj
 .\Debug\ValueIteratorI.obj
+.\Debug\LowLevelIO.obj
+.\Debug\WIN32Thread.obj
 ]
-Creating command line "link.exe @d:\TMP\RSP5F7.tmp"
+Creating command line "link.exe @d:\TMP\RSP157.tmp"
 <h3>Output Window</h3>
-Compiling...
-Export.cpp
-Exporter.cpp
-LinInterpolValueIteratorI.cpp
-GNUPlotExporter.cpp
-SpreadSheetExporter.cpp
 Linking...
 
 

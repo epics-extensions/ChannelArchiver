@@ -13,8 +13,6 @@
 #include "MultiChannelIterator.h"
 #include "MultiValueIterator.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 MultiChannel::MultiChannel ()
 {
 	_channel_iterator = 0;
@@ -116,6 +114,4 @@ void MultiChannel::releaseBuffer ()
 {
 	throwDetailedArchiveException (Invalid, "Cannot write, MultiArchive is read-only");
 }
-
-END_NAMESPACE_CHANARCH
 

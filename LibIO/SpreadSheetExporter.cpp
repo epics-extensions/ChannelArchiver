@@ -2,12 +2,10 @@
 
 #include "SpreadSheetExporter.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 // Will be called before actually outputting anything.
 // This routine might write header information
 // and adjust the following settings for this Exporter
-void SpreadSheetExporter::prolog (ostream &out)
+void SpreadSheetExporter::prolog (std::ostream &out)
 {
 	out << "; Generated from archive data\n";
 
@@ -68,4 +66,3 @@ void SpreadSheetExporter::prolog (ostream &out)
 	_undefined_value = "#N/A";
 }
 
-END_NAMESPACE_CHANARCH

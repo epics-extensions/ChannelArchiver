@@ -16,8 +16,6 @@
 #include "BinTypes.h"
 #include "BinValue.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //////////////////////////////////////////////////////////////////////
 // DataHeader
 //////////////////////////////////////////////////////////////////////
@@ -239,7 +237,5 @@ private:
 
     void getHeader (FileOffset position);
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif // !defined(_DATAFILE_H_)

@@ -11,9 +11,6 @@
 #include "LinInterpolValueIteratorI.h"
 #include "ArchiveException.h"
 
-BEGIN_NAMESPACE_CHANARCH
-USE_STD_NAMESPACE
-
 LinInterpolValueIteratorI::LinInterpolValueIteratorI (ValueIteratorI *base, double deltaT)
 {
 	_base = base;
@@ -150,6 +147,4 @@ const ValueI * LinInterpolValueIteratorI::interpolate (const osiTime &time)
 
 	return _value;
 }
-
-END_NAMESPACE_CHANARCH
 

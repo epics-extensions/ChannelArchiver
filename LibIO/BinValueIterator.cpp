@@ -18,8 +18,6 @@ static const size_t BEFORE_START = ULONG_MAX-1;
 static const size_t AFTER_END    = ULONG_MAX;
 #endif
 
-BEGIN_NAMESPACE_CHANARCH
-
 BinValueIterator::BinValueIterator ()
 {
     _channel = 0;
@@ -420,4 +418,3 @@ bool BinValueIterator::prevBuffer ()
     return checkValueType ();
 }
 
-END_NAMESPACE_CHANARCH

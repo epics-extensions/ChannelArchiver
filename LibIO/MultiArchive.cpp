@@ -13,11 +13,9 @@
 #include "MultiValueIterator.h"
 #include "BinArchive.h"
 #include "ArchiveException.h"
+#include "LowLevelIO.h"
 #include <ASCIIParser.h>
 #include <BinaryTree.h>
-
-USE_STD_NAMESPACE
-BEGIN_NAMESPACE_CHANARCH
 
 // Open a MultiArchive for the given master file
 MultiArchive::MultiArchive (const stdString &master_file)
@@ -89,7 +87,7 @@ bool MultiArchive::getChannel (size_t channel_index, MultiChannelIterator &chann
     }
 
     const ChannelIInfo &info = _channels[channel_index];
-    list<stdString>::const_iterator archs = _archives.begin();
+    stdList<stdString>::const_iterator archs = _archives.begin();
     for (/**/; archs != _archives.end(); ++archs)
     {
         Archive archive (new BinArchive (*archs));
@@ -121,7 +119,7 @@ bool MultiArchive::getValueAtOrAfterTime (size_t channel_index,
         return false;
 
     const ChannelIInfo &info = _channels[channel_index];
-    list<stdString>::const_iterator archs = _archives.begin();
+    stdList<stdString>::const_iterator archs = _archives.begin();
     for (/**/; archs != _archives.end(); ++archs)
     {
         Archive archive (new BinArchive (*archs));
@@ -160,7 +158,7 @@ bool MultiArchive::getValueAtOrBeforeTime (size_t channel_index,
         return false;
 
     const ChannelIInfo &info = _channels[channel_index];
-    list<stdString>::const_iterator archs = _archives.begin();
+    stdList<stdString>::const_iterator archs = _archives.begin();
     for (/**/; archs != _archives.end(); ++archs)
     {
         Archive archive (new BinArchive (*archs));
@@ -203,7 +201,7 @@ bool MultiArchive::getValueNearTime (size_t channel_index,
     double best_bet = -1.0; // negative == invalid
 
     const ChannelIInfo &info = _channels[channel_index];
-    list<stdString>::const_iterator archs = _archives.begin();
+    stdList<stdString>::const_iterator archs = _archives.begin();
     for (/**/; archs != _archives.end(); ++archs)
     {
         Archive archive (new BinArchive (*archs));
@@ -234,64 +232,53 @@ bool MultiArchive::getValueNearTime (size_t channel_index,
     return false;
 }
 
-bool MultiArchive::parseMasterFile (const stdString &master_file)
+bool MultiArchive::parseMasterFile(const stdString &master_file)
 {
     // Carefully check if "master_file" starts with the magic line:
-    ifstream    file;
-    file.open (master_file.c_str());
-#ifdef __HP_aCC
-    if (file.fail())
-#else
-    if (! file.is_open ())
-#endif
+    LowLevelIO file;
+    if (! file.llopen (master_file.c_str()))
     {
-        LOG_MSG ("Cannot open master file '" << master_file << "'\n");
+        LOG_MSG("Cannot open master file '" << master_file << "'\n");
         return false;
     }
-    file.setf (ios::binary);
     char line[14]; // master_version  : 14 chars
-    file.read (line, 14);
-    int got = file.gcount ();
-    file.close ();
-
-    if (got < 14)
+    if (! file.llread(line, 14))
     {
-        LOG_MSG ("Invalid master file '" << master_file << "'\n");
+        LOG_MSG("Invalid master file '" << master_file << "'\n");
         return false; // too small to be anything
     }
-    if (strncmp (line, "master_version", 14) !=0)
+    file.llclose();
+    if (strncmp(line, "master_version", 14) !=0)
     {
         // Could be Binary file:
-        _archives.push_back (master_file);
-        investigateChannels ();
+        _archives.push_back(master_file);
+        investigateChannels();
         return true;
     }
 
     // ------------------------------------------------
     // OK, looks like a master file.
     // Now read it again as ASCII:
-
     ASCIIParser parser;
-
-    if (! parser.open (master_file))
+    if (! parser.open(master_file))
         return false;
 
     stdString parameter, value;
-    if (parser.nextLine()                       &&
-        parser.getParameter (parameter, value)  &&
-        parameter == "master_version"           &&
+    if (parser.nextLine()                      &&
+        parser.getParameter(parameter, value)  &&
+        parameter == "master_version"          &&
         value == "1")
     {
-        while (parser.nextLine ())
-            _archives.push_back (parser.getLine ());
+        while (parser.nextLine())
+            _archives.push_back (parser.getLine());
     }
     else
     {
-        LOG_MSG ("Invalid master file '" << master_file << "', maybe wrong version\n");
+        LOG_MSG("Invalid master file '" << master_file << "', maybe wrong version\n");
         return false;
     }
 
-    investigateChannels ();
+    investigateChannels();
 
     return true;
 }
@@ -304,7 +291,7 @@ bool MultiArchive::findChannelInfo (const stdString &name, ChannelIInfo **info)
 {
     // Find element we look for
     // or following element, >=, where we could insert
-    vector<ChannelIInfo>::iterator i = _channels.begin();
+    stdVector<ChannelIInfo>::iterator i = _channels.begin();
     for (/**/;  i != _channels.end(); ++i)
     {
         if (i->_name == name)   // found
@@ -331,7 +318,7 @@ bool MultiArchive::investigateChannels ()
 
     _channels.clear ();
 
-    list<stdString>::iterator archs = _archives.begin();
+    stdList<stdString>::iterator archs = _archives.begin();
     for (/**/; archs != _archives.end(); ++archs)
     {
         Archive archive (new BinArchive (*archs));
@@ -362,7 +349,7 @@ bool MultiArchive::investigateChannels ()
 void MultiArchive::log () const
 {
     LOG_MSG ("MultiArchive:\n");
-    list<stdString>::const_iterator archs = _archives.begin();
+    stdList<stdString>::const_iterator archs = _archives.begin();
     
     while (archs != _archives.end())
     {
@@ -371,7 +358,7 @@ void MultiArchive::log () const
     }
 
     LOG_MSG ("Channels:\n");
-    vector<ChannelIInfo>::const_iterator chans = _channels.begin();
+    stdVector<ChannelIInfo>::const_iterator chans = _channels.begin();
     while (chans != _channels.end())
     {
         LOG_MSG (chans->_name << "\n");
@@ -379,4 +366,3 @@ void MultiArchive::log () const
     }
 }
 
-END_NAMESPACE_CHANARCH

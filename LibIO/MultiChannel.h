@@ -13,8 +13,6 @@
 
 #include "ChannelI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 class MultiChannelIterator;
 
 //////////////////////////////////////////////////////////////////////
@@ -50,9 +48,9 @@ private:
 	MultiChannelIterator *_channel_iterator; // ptr back to who owns "this"
 };
 
-inline void MultiChannel::setMultiChannelIterator (MultiChannelIterator *channel_iterator)
+inline void MultiChannel::setMultiChannelIterator (
+    MultiChannelIterator *channel_iterator)
 {	_channel_iterator = channel_iterator;	}
 
-END_NAMESPACE_CHANARCH
 
 #endif // __MULTICHANNEL_H__

@@ -13,8 +13,6 @@
 
 #include "ChannelI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS ChannelIteratorI
 // Channel iterator interface to be implemented.
 // The preferred API is CLASS ChannelIterator.
@@ -131,6 +129,4 @@ inline ChannelI &ChannelIterator::operator * ()
 inline ChannelIterator &ChannelIterator::operator ++ ()
 {	_ptr->next (); return *this; }
 	
-END_NAMESPACE_CHANARCH
-
 #endif //__CHANNELITERATORI_H__

@@ -6,8 +6,6 @@
 #include "DataFile.h"
 #include "ArchiveException.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 BinChannel::BinChannel ()
 {
 	init ();
@@ -368,5 +366,4 @@ void BinChannel::releaseBuffer ()
 	}
 }
 
-END_NAMESPACE_CHANARCH
 

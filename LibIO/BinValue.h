@@ -6,8 +6,7 @@
 #include "BinTypes.h"
 #include "ValueI.h"
 #include "BinCtrlInfo.h"
-
-BEGIN_NAMESPACE_CHANARCH
+#include <iostream>
 
 //////////////////////////////////////////////////////////////////////
 //CLASS BinRawValue
@@ -42,7 +41,7 @@ public:
     void read (LowLevelIO &filefd, FileOffset offset);
     void write (LowLevelIO &filefd, FileOffset offset) const;
 
-    void show (ostream &o) const;
+    void show (std::ostream &o) const;
 
 protected:
     BinValue (DbrType type, DbrCount count);
@@ -170,7 +169,5 @@ public:
     virtual void getValue (stdString &result) const;
     virtual bool parseValue (const stdString &text);
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif // !defined(_VALUE_H_)

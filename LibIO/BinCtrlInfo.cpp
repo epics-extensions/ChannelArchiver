@@ -1,9 +1,6 @@
 #include "ArchiveException.h"
 #include "BinCtrlInfo.h"
 
-USE_STD_NAMESPACE
-BEGIN_NAMESPACE_CHANARCH
-
 // Read CtrlInfo for Binary format
 //
 // Especially for the original engine,
@@ -36,7 +33,7 @@ void BinCtrlInfo::read (LowLevelIO &file, FileOffset offset)
             return;
         }
         // keep current values for _infobuf!
-        strstream buf;
+        std::strstream buf;
         buf << "CtrlInfo too small: " << size << '\0';
         throwDetailedArchiveException (Invalid, buf.str());
         buf.rdbuf()->freeze (false);
@@ -49,7 +46,7 @@ void BinCtrlInfo::read (LowLevelIO &file, FileOffset offset)
     if (info->size > _infobuf.getBufferSize ())
     {
         info->type = Invalid;
-        strstream buf;
+        std::strstream buf;
         buf << "CtrlInfo too big: " << info->size << '\0';
         throwDetailedArchiveException (Invalid, buf.str());
         buf.rdbuf()->freeze (false);
@@ -139,6 +136,4 @@ void BinCtrlInfo::write (LowLevelIO &file, FileOffset offset) const
                        info->size - converted))
         throwArchiveException (WriteError);
 }
-
-END_NAMESPACE_CHANARCH
 

@@ -7,8 +7,6 @@
 #include "MsgLogger.h"
 #include "Filename.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //#define LOG_DIRFILE
 
 //////////////////////////////////////////////////////////////////////
@@ -253,4 +251,3 @@ void DirectoryFileIterator::save ()
         _entry.write (_dir->_file, _entry.getOffset());
 }
 
-END_NAMESPACE_CHANARCH

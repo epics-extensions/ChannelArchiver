@@ -4,8 +4,6 @@
 #include "osiTimeHelper.h"
 #include "TimeAxis.h"
 
-USING_NAMESPACE_TOOLS
-
 void TimeAxis::createDefaultAxis ()
 {
 	double	diff, start, end, delta, tick;

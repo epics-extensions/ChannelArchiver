@@ -13,8 +13,6 @@
 
 #include "ValueI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS ValueIteratorI
 // Value iterator iterface to be implemented.
 // The preferred API is CLASS ValueIterator.
@@ -163,7 +161,5 @@ inline ValueIteratorI *ValueIterator::getI ()
 
 inline const ValueIteratorI *ValueIterator::getI () const
 {	return _ptr; }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__VALUEITERATORI_H__

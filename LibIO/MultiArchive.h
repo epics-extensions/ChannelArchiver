@@ -12,14 +12,6 @@
 #define __MULTI_ARCHIVEI_H__
 
 #include "ArchiveI.h"
-#include <list>
-#include <vector>
-
-BEGIN_NAMESPACE_CHANARCH
-#ifdef USE_NAMESPACE_STD
-using std::list;
-using std::vector;
-#endif
 
 class MultiChannelIterator;
 class MultiValueIterator;
@@ -34,19 +26,19 @@ class MultiValueIterator;
 // <UL>
 // <LI>Comments (starting with a number-sign) and empty lines are ignored
 // <LI>The very first line must be<BR>
-//	   <PRE>master_version=1</PRE>
-//	   There must be no comments preceding this line!
+//     <PRE>master_version=1</PRE>
+//     There must be no comments preceding this line!
 // <LI>All remaining lines list one archive name per line
 // </UL>
 // <H2>Example</H2>
 // <PRE>
-//	master_version=1
-//	# First check the "fast" archive
-//	/archives/fast/dir
-//	# Then check the "main" archive
-//	/archives/main/dir
-//	# Then check Fred's "xyz" archive
-//	/home/fred/xyzarchive/dir
+//  master_version=1
+//  # First check the "fast" archive
+//  /archives/fast/dir
+//  # Then check the "main" archive
+//  /archives/main/dir
+//  # Then check Fred's "xyz" archive
+//  /home/fred/xyzarchive/dir
 // </PRE>
 // <P>
 // This type of archive is read-only!
@@ -81,58 +73,56 @@ class MultiValueIterator;
 class MultiArchive : public ArchiveI
 {
 public:
-	//* Open a MultiArchive for the given master file
-	MultiArchive (const stdString &master_file);
+    //* Open a MultiArchive for the given master file
+    MultiArchive(const stdString &master_file);
 
-	//* All virtuals from CLASS ArchiveI are implemented,
-	// except that the "write" routines fail for this read-only archive type.
+    //* All virtuals from CLASS ArchiveI are implemented,
+    // except that the "write" routines fail for this read-only archive type.
 
-	virtual ChannelIteratorI *newChannelIterator () const;
-	virtual ValueIteratorI *newValueIterator () const;
-	virtual ValueI *newValue (DbrType type, DbrCount count);
-	virtual bool findFirstChannel (ChannelIteratorI *channel);
-	virtual bool findChannelByName (const stdString &name, ChannelIteratorI *channel);
-	virtual bool findChannelByPattern (const stdString &regular_expression, ChannelIteratorI *channel);
-	virtual bool addChannel (const stdString &name, ChannelIteratorI *channel);
+    virtual ChannelIteratorI *newChannelIterator() const;
+    virtual ValueIteratorI *newValueIterator() const;
+    virtual ValueI *newValue(DbrType type, DbrCount count);
+    virtual bool findFirstChannel(ChannelIteratorI *channel);
+    virtual bool findChannelByName(const stdString &name, ChannelIteratorI *channel);
+    virtual bool findChannelByPattern(const stdString &regular_expression, ChannelIteratorI *channel);
+    virtual bool addChannel(const stdString &name, ChannelIteratorI *channel);
 
-	// debugging only
-	void log () const;
+    // debugging only
+    void log() const;
 
-	// To be used by MultiArchive intrinsics only:
-	// -------------------------------------------
-	bool getChannel (size_t channel_index, MultiChannelIterator &iterator) const; 
-	const ChannelIInfo & getChannelInfo (size_t channel_index) const; 
+    // To be used by MultiArchive intrinsics only:
+    // -------------------------------------------
+    bool getChannel(size_t channel_index, MultiChannelIterator &iterator) const; 
+    const ChannelIInfo & getChannelInfo(size_t channel_index) const; 
 
-	// For given channel, set value_iterator to value at-or-after time.
-	// For has_to_be_later = true, the archive must contain more values,
-	// i.e. it won't position on the very last value that's stamped at "time" exactly
-	//
-	// For result=false, value_iterator could not be set.
-	// These routines will not clear() the value_iterator
-	// to allow stepping back when used from within next()/prev()!
-	bool getValueAtOrAfterTime (size_t channel_index, MultiChannelIterator &channel_iterator,
-		const osiTime &time, bool has_to_be_later,
-		MultiValueIterator &value_iterator) const;
-	bool getValueAtOrBeforeTime (size_t channel_index, MultiChannelIterator &channel_iterator,
-		const osiTime &time, bool has_to_be_earlier,
-		MultiValueIterator &value_iterator) const;
-	bool getValueNearTime (size_t channel_index, MultiChannelIterator &channel_iterator,
-		const osiTime &time, MultiValueIterator &value_iterator) const;
+    // For given channel, set value_iterator to value at-or-after time.
+    // For has_to_be_later = true, the archive must contain more values,
+    // i.e. it won't position on the very last value that's stamped at "time" exactly
+    //
+    // For result=false, value_iterator could not be set.
+    // These routines will not clear() the value_iterator
+    // to allow stepping back when used from within next()/prev()!
+    bool getValueAtOrAfterTime(size_t channel_index, MultiChannelIterator &channel_iterator,
+                               const osiTime &time, bool has_to_be_later,
+                               MultiValueIterator &value_iterator) const;
+    bool getValueAtOrBeforeTime(size_t channel_index, MultiChannelIterator &channel_iterator,
+                                const osiTime &time, bool has_to_be_earlier,
+        MultiValueIterator &value_iterator) const;
+    bool getValueNearTime(size_t channel_index, MultiChannelIterator &channel_iterator,
+                          const osiTime &time, MultiValueIterator &value_iterator) const;
 
 private:
-	bool parseMasterFile (const stdString &master_file);
+    bool parseMasterFile(const stdString &master_file);
 
-	// Fill _channels from _archives
-	bool investigateChannels ();
-	bool findChannelInfo (const stdString &name, ChannelIInfo **info);
+    // Fill _channels from _archives
+    bool investigateChannels();
+    bool findChannelInfo(const stdString &name, ChannelIInfo **info);
 
-	list<stdString>	_archives; // names of archives
-	vector<ChannelIInfo>	_channels; // info of channels, summarized over all archives
+    stdList<stdString>      _archives; // names of archives
+    stdVector<ChannelIInfo> _channels; // info of channels, summarized over all archives
 };
 
-inline const ChannelIInfo &MultiArchive::getChannelInfo (size_t channel_index) const
-{	return _channels[channel_index];	}
-
-END_NAMESPACE_CHANARCH
+inline const ChannelIInfo &MultiArchive::getChannelInfo(size_t channel_index) const
+{   return _channels[channel_index];    }
 
 #endif

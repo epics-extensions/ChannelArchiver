@@ -12,8 +12,6 @@
 #include "MultiChannelIterator.h"
 #include "MultiValueIterator.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 MultiChannelIterator::MultiChannelIterator (const MultiArchive *archive)
 {
 	_is_valid = false;
@@ -122,6 +120,4 @@ bool MultiChannelIterator::getPrevValue (MultiValueIterator &value_iterator)
 
 	return false;
 }
-
-END_NAMESPACE_CHANARCH
 

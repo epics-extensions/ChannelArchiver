@@ -2,8 +2,6 @@
 #include "ArchiveException.h"
 #include "DataFile.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 void BinChannelIterator::init ()
 {
     _archive = 0;
@@ -79,8 +77,6 @@ bool BinChannelIterator::next ()
 
     return isValid();
 }
-
-END_NAMESPACE_CHANARCH
 
 
 

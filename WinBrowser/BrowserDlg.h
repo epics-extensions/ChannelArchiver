@@ -16,8 +16,6 @@
 #include "PlotCanvas.h"
 #include "Limits.h"
 
-USING_NAMESPACE_CHANARCH
-
 /////////////////////////////////////////////////////////////////////////////
 // CBrowserDlg dialog
 

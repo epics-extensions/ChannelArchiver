@@ -10,8 +10,6 @@
 
 #include "ChannelI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 ChannelI::~ChannelI ()
 {}
 
@@ -32,5 +30,4 @@ void ChannelI::addBuffer (const ValueI &value_arg, double period, size_t value_c
 void ChannelI::releaseBuffer ()
 {}
 
-END_NAMESPACE_CHANARCH
 

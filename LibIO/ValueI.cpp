@@ -14,9 +14,6 @@
 #include <stdlib.h>
 #include "ValueI.h"
 
-USE_STD_NAMESPACE
-BEGIN_NAMESPACE_CHANARCH
-
 //////////////////////////////////////////////////////////////////////
 // RawValueI
 //////////////////////////////////////////////////////////////////////
@@ -73,7 +70,7 @@ bool RawValueI::hasSameValue (DbrType type, DbrCount count, size_t size,
 
 void RawValueI::getStatus (const Type *value, stdString &result)
 {
-    strstream buf;
+    std::strstream buf;
 
     short severity = short(value->severity & 0xfff);
     switch (severity)
@@ -245,7 +242,7 @@ bool ValueI::parseType (const stdString &text, DbrType &type)
     return false;
 }
 
-void ValueI::show (ostream &o) const
+void ValueI::show (std::ostream &o) const
 {
     stdString time_text, stat_text;
 
@@ -256,6 +253,4 @@ void ValueI::show (ostream &o) const
     o << "RawValue (type " << getType() << ", count " << getCount();
     o << ") " << stat_text;
 }
-
-END_NAMESPACE_CHANARCH
 

@@ -41,15 +41,12 @@
 #   define ARCHIVE_TYPE BinArchive
 #endif
 
-USING_NAMESPACE_CHANARCH
-USE_STD_NAMESPACE
-
 // For communication sigint_handler -> main loop
 static bool run = true;
 static void signal_handler (int sig)
 {
     run = false;
-    cout << "exiting on signal " << sig << " as soon as possible\n";
+    std::cout << "exiting on signal " << sig << " as soon as possible\n";
 }                                                        
 
 // List all channel names for given pattern
@@ -62,7 +59,7 @@ void list_channels (const stdString &archive_name, const stdString &pattern)
     archive.findChannelByPattern (pattern, channel);
     while (run && channel)
     {
-        cout << channel->getName() << endl;
+        std::cout << channel->getName() << "\n";
         ++ channel;
     }
 }
@@ -80,15 +77,15 @@ void list_values (const stdString &archive_name, const stdString &channel_name,
 
     if (! archive.findChannelByName (channel_name, channel))
     {
-        cerr << "Cannot find channel '" << channel_name << "':\n";
+        std::cerr << "Cannot find channel '" << channel_name << "':\n";
         return;
     }
 
-    cout << "Channel " << channel->getName() << "\n";
+    std::cout << "Channel " << channel->getName() << "\n";
     channel->getValueAfterTime (start, value);
     while (run && value && (end == nullTime  ||  value->getTime() < end))
     {
-        cout << *value << endl;
+        std::cout << *value << "\n";
         ++ value;
     }
 }
@@ -103,11 +100,11 @@ void dump (const stdString &archive_name, const stdString &channel_pattern,
     archive.findChannelByPattern (channel_pattern, channel);
     while (run && channel)
     {
-        cout << "Channel " << channel->getName() << "\n";
+        std::cout << "Channel " << channel->getName() << "\n";
         channel->getValueAfterTime (start, value);
         while (run && value && (end == nullTime  ||  value->getTime() < end))
         {
-            cout << *value << endl;
+            std::cout << *value << "\n";
             ++ value;
         }
         ++channel;
@@ -133,13 +130,13 @@ void show_info (const stdString &archive_name, const stdString &pattern)
             end = time;
         if (pattern.empty ())
             continue;
-        cout    << channel->getFirstTime () << "\t"
+        std::cout    << channel->getFirstTime () << "\t"
                 << channel->getLastTime () << "\t"
                 << channel->getName() << "\n";
     }
-    cout << "Channel count : " << channel_count << endl;
-    cout << "First sample  : " << start << endl;
-    cout << "Last  sample  : " << end   << endl;
+    std::cout << "Channel count : " << channel_count << "\n";
+    std::cout << "First sample  : " << start << "\n";
+    std::cout << "Last  sample  : " << end   << "\n";
 }
 
 void show_channel_info (const stdString &archive_name,
@@ -150,11 +147,11 @@ void show_channel_info (const stdString &archive_name,
 
     if (archive.findChannelByName (channel_name, channel))
     {
-        cout << "start: " << channel->getFirstTime () << endl;
-        cout << "end:   " << channel->getLastTime ()  << endl;
+        std::cout << "start: " << channel->getFirstTime () << "\n";
+        std::cout << "end:   " << channel->getLastTime ()  << "\n";
     }
     else
-        cout << channel_name << ": not found\n";
+        std::cout << channel_name << ": not found\n";
 }
 
 void seek_time (const stdString &archive_name,
@@ -167,17 +164,17 @@ void seek_time (const stdString &archive_name,
 
     if (! archive.findChannelByName (channel_name, channel))
     {
-        cerr << "Cannot find channel '" << channel_name << "':\n";
+        std::cerr << "Cannot find channel '" << channel_name << "':\n";
         return;
     }
 
-    cout << "Channel '" << channel->getName() << "'\n";
+    std::cout << "Channel '" << channel->getName() << "'\n";
 
     channel->getValueNearTime (start, value);
     if (value)
-        cout << "Found: " << value->getTime () << endl;
+        std::cout << "Found: " << value->getTime () << "\n";
     else
-        cout << "Not found\n";
+        std::cout << "Not found\n";
 }
 
 // "Export", copy all values from [start...end[
@@ -215,14 +212,15 @@ void do_export (const stdString &archive_name,
          run && old_channel;
          ++old_channel)
     {
-        cout << old_channel->getName () << flush;
+        std::cout << old_channel->getName ();
+        std::cout.flush();
         chunk_count = val_count = 0;
 
         try
         {
             if (! old_channel->getValueAfterTime (start, values))
             {
-                cout << "\t" << "0 chunks\t0 values\n";
+                std::cout << "\t" << "0 chunks\t0 values\n";
                 continue;
             }
             new_archiveI->calcNextFileTime (values->getTime(), next_file_time);
@@ -232,7 +230,7 @@ void do_export (const stdString &archive_name,
                 chunk = values.determineChunk (end);
             if (chunk <= 0)
             {
-                cout << "\t" << "0 chunks\t0 values\n";
+                std::cout << "\t" << "0 chunks\t0 values\n";
                 continue;
             }
 
@@ -242,7 +240,7 @@ void do_export (const stdString &archive_name,
                 last_stamp = new_channel->getLastTime ();
                 if (isValidTime (start)  &&  last_stamp > start)
                 {
-                    cout << "Error:\n"
+                    std::cout << "Error:\n"
                          << "Archive " << new_dir_name
                          << " does already contain\n"
                          << "values for channel " << old_channel->getName ()
@@ -266,14 +264,14 @@ void do_export (const stdString &archive_name,
                 {
                     if (! isValidTime(values->getTime()))
                     {
-                        cout << *values << "\tinvalid time stamp, skipped\n";
+                        std::cout << *values << "\tinvalid time stamp, skipped\n";
                         continue;
                     }
                     if (isValidTime (last_stamp))   // time stamp checks
                     {   
                         if (values->getTime() < last_stamp)
                         {
-                            cout << *values
+                            std::cout << *values
                                  << "\tgoing back in time, skipped\n";
                             continue;
                         }
@@ -283,7 +281,7 @@ void do_export (const stdString &archive_name,
                          values->getSevr() == ARCH_EST_REPEAT) &&
                         (size_t)values->getStat() >= repeat_limit)
                     {
-                        cout << *values
+                        std::cout << *values
                              << "\trepeat count beyond " << repeat_limit
                              << ", skipped\n";
                         continue;
@@ -310,10 +308,10 @@ void do_export (const stdString &archive_name,
         }
         catch (GenericException &e)
         {
-            cout <<  "\nError:\n" << e.what () << "\n";
+            std::cout <<  "\nError:\n" << e.what () << "\n";
         }
 
-        cout << "\t" << chunk_count << " chunks\t" << val_count << " values\n";
+        std::cout << "\t" << chunk_count << " chunks\t" << val_count << " values\n";
     }
 }
 
@@ -328,11 +326,11 @@ void compare (const stdString &archive_name, const stdString &target_name)
 
     for (src.findFirstChannel (src_chan); run && src_chan; ++src_chan)
     {
-        cout << src_chan->getName () << " : ";
+        std::cout << src_chan->getName () << " : ";
 
         if (! dst.findChannelByName (src_chan->getName (), dst_chan))
         {
-            cout << "not found\n";
+            std::cout << "not found\n";
             continue;
         }
 
@@ -342,16 +340,16 @@ void compare (const stdString &archive_name, const stdString &target_name)
         {
             if (*src_val != *dst_val)
             {
-                cout << "difference:\n";
-                cout << "< " << *src_val << "\n";
-                cout << "> " << *dst_val << "\n";
+                std::cout << "difference:\n";
+                std::cout << "< " << *src_val << "\n";
+                std::cout << "> " << *dst_val << "\n";
             }
             ++src_val;
             ++dst_val;
         }
         if (! src_val)
-            cout << " OK\n";
-        cout.flush ();
+            std::cout << " OK\n";
+        std::cout.flush ();
     }
 }
 
@@ -366,11 +364,11 @@ void expand (const stdString &archive_name,
 
     if (! archive.findChannelByName (channel_name, channel))
     {
-        cerr << "Cannot find channel '" << channel_name << "':\n";
+        std::cerr << "Cannot find channel '" << channel_name << "':\n";
         return;
     }
 
-    cout << "Channel '" << channel->getName() << "\n";
+    std::cout << "Channel '" << channel->getName() << "\n";
 
     ValueIterator   raw_values(archive);
     channel->getValueAfterTime (start, raw_values);
@@ -378,21 +376,21 @@ void expand (const stdString &archive_name,
     ValueIterator value (expand);
     while (value && (end == nullTime  ||  value->getTime() < end))
     {
-        cout << *value;
+        std::cout << *value;
         if (expand->isExpanded())
-            cout << "\t(expanded)";
-        cout << endl;
+            std::cout << "\t(expanded)";
+        std::cout << "\n";
         ++value;
     }
 
-    cout << "reverse:\n";
+    std::cout << "reverse:\n";
     --value; // move from 'after end' to 'last value'
     while (value && (start == nullTime  || value->getTime() > start))
     {
-        cout << *value;
+        std::cout << *value;
         if (expand->isExpanded())
-            cout << "\t(expanded)";
-        cout << endl;
+            std::cout << "\t(expanded)";
+        std::cout << "\n";
         --value;
     }
 }
@@ -411,7 +409,7 @@ void interpolate (const stdString &directory, const stdString &channel_name,
         return;
     }
 
-    cout << "Channel '" << channel->getName() << "\n";
+    std::cout << "Channel '" << channel->getName() << "\n";
 
     ValueIterator vi = channel.getValueAfterTime (start);
     ExpandingValueIterator evi (&vi);
@@ -419,7 +417,7 @@ void interpolate (const stdString &directory, const stdString &channel_name,
     InfoFilterValueIterator value (&livi);
     while (value && (end == nullTime  ||  value->getTime() < end))
     {
-        cout << *value << endl;
+        std::cout << *value << "\n";
         ++value;
     }
 #endif
@@ -435,14 +433,14 @@ void headers (const stdString &directory, const stdString &channel_name)
     
     if (! archive.findChannelByName (channel_name, channel))
     {
-        cerr << "Cannot find channel '" << channel_name << "':\n";
+        std::cerr << "Cannot find channel '" << channel_name << "':\n";
         return;
     }
 
     ValueIterator value (archive);
     if (! channel->getFirstValue (value))
     {
-        cerr << "No values for '" << channel_name << "':\n";
+        std::cerr << "No values for '" << channel_name << "':\n";
         return;
     }
 
@@ -450,29 +448,29 @@ void headers (const stdString &directory, const stdString &channel_name)
     BinValueIterator *bvi = dynamic_cast<BinValueIterator *>(value.getI());
     do
     {
-        cout << "Buffer:  " << bvi->getHeader().getFilename()
+        std::cout << "Buffer:  " << bvi->getHeader().getFilename()
             << " @ " << bvi->getHeader().getOffset () << "\n";
-        cout << "Prev:    " << bvi->getHeader()->getPrevFile ()
+        std::cout << "Prev:    " << bvi->getHeader()->getPrevFile ()
             << " @ " << bvi->getHeader()->getPrev () << "\n";
-        cout << "Time:    " << bvi->getHeader()->getBeginTime() << "\n";
-        cout << "...      " << bvi->getHeader()->getEndTime () << "\n";
-        cout << "New File:" << bvi->getHeader()->getNextTime () << "\n";
+        std::cout << "Time:    " << bvi->getHeader()->getBeginTime() << "\n";
+        std::cout << "...      " << bvi->getHeader()->getEndTime () << "\n";
+        std::cout << "New File:" << bvi->getHeader()->getNextTime () << "\n";
 
-        cout << "Samples: " << bvi->getHeader()->getNumSamples () << "\n";
-        cout << "Size:    " << bvi->getHeader()->getBufSize()
+        std::cout << "Samples: " << bvi->getHeader()->getNumSamples () << "\n";
+        std::cout << "Size:    " << bvi->getHeader()->getBufSize()
             << " bytes, free: " << bvi->getHeader()->getBufFree() <<" bytes\n";
 
-        cout << "Period:  " << value.getPeriod() << "\n";
+        std::cout << "Period:  " << value.getPeriod() << "\n";
 
         info = value->getCtrlInfo ();
         if (info)
-            info->show (cout);
+            info->show (std::cout);
         else
-            cout << "No CtrlInfo\n";
+            std::cout << "No CtrlInfo\n";
 
-        cout << "Next:    " << bvi->getHeader()->getNextFile ()
+        std::cout << "Next:    " << bvi->getHeader()->getNextFile ()
             << " @ " << bvi->getHeader()->getNext () << "\n";
-        cout << "\n";
+        std::cout << "\n";
     }
     while (run && bvi->nextBuffer ());
 }
@@ -487,8 +485,8 @@ void test(const stdString &directory, const osiTime &start, const osiTime &end)
     archive.findFirstChannel (channel);
     while (run && channel)
     {
-        cout << '.';
-        cout.flush ();
+        std::cout << '.';
+        std::cout.flush ();
         ++channels;
         channel->getValueAfterTime (start, value);
         chan_errors = 0;
@@ -501,9 +499,9 @@ void test(const stdString &directory, const osiTime &start, const osiTime &end)
                 {
                     if (value->getTime () < last)
                     {
-                        cout << "\n" << channel->getName() << " back in time\n";
-                        cout << last << "   is followed by:\n";
-                        cout << *value << "\n";
+                        std::cout << "\n" << channel->getName() << " back in time\n";
+                        std::cout << last << "   is followed by:\n";
+                        std::cout << *value << "\n";
                         ++chan_errors;
                     }
                 }
@@ -513,20 +511,20 @@ void test(const stdString &directory, const osiTime &start, const osiTime &end)
         }
         catch (GenericException &e)
         {
-            cout << "\n" << e.what () << "\n";
+            std::cout << "\n" << e.what () << "\n";
             ++chan_errors;
         }
 
         if (chan_errors)
         {
             errors += chan_errors;
-            cout << "\n" << channel->getName() << " : " << chan_errors << " errors,\n";
+            std::cout << "\n" << channel->getName() << " : " << chan_errors << " errors,\n";
         }
         ++channel;
     }
-    cout << "\n";
-    cout << channels << " channels\n";
-    cout << errors << " errors\n";
+    std::cout << "\n";
+    std::cout << channels << " channels\n";
+    std::cout << errors << " errors\n";
 }
 
 //#define EXPERIMENT
@@ -540,7 +538,7 @@ void experiment (const stdString &archive_name)
 
 static void PrintRoutine (void *arg, const stdString &text)
 {
-    cout << text;
+    std::cout << text;
 }
 
 int main (int argc, const char *argv[])
@@ -628,10 +626,10 @@ int main (int argc, const char *argv[])
     }
     catch (GenericException &e)
     {
-        cerr <<  "Error:\n" << e.what () << "\n";
+        std::cerr <<  "Error:\n" << e.what () << "\n";
         return -1;
     }
-    cout << endl;
+    std::cout << "\n";
 
     return 0;
 }

@@ -3,8 +3,6 @@
 
 #include "ValueIteratorI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //////////////////////////////////////////////////////////////////////
 //CLASS InfoFilterValueIteratorI
 // A CLASS InfoFilterValueIteratorI removes all "info" values
@@ -59,8 +57,6 @@ public:
 private:
 	ValueIteratorI *_base;
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif //__INFOFILTERVALUEITERATOR_H__
 

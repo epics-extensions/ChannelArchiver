@@ -11,8 +11,6 @@
 #include "MultiValueIterator.h"
 #include "MultiChannelIterator.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 MultiValueIterator::MultiValueIterator ()
 {
 	_is_valid = false;
@@ -87,6 +85,4 @@ void MultiValueIterator::position (MultiChannelIterator *channel, ValueIteratorI
 	_base_value_iterator = value;
 	_is_valid = _base_value_iterator && _base_value_iterator->isValid();
 }
-
-END_NAMESPACE_CHANARCH
 

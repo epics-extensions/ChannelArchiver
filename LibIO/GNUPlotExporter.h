@@ -3,8 +3,6 @@
 
 #include "SpreadSheetExporter.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS GNUPlotExporter
 // GNUPlotExporter generates a text file for GNUPlot
 // together with a simple plotting script.
@@ -41,16 +39,13 @@ public:
 	{	_set_path = true;	}
 
 protected:
-	void prolog (ostream &out);
-	void post_scriptum (const vector<stdString> &channel_names);
+    void prolog (std::ostream &out);
+	void post_scriptum (const stdVector<stdString> &channel_names);
 
 private:
 	stdString _script_name;
 	bool _make_image;
 	bool _set_path;
 };
-
-END_NAMESPACE_CHANARCH
-
 
 #endif //__GNUPLOTEXPORTER_H__

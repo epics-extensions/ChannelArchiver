@@ -8,8 +8,6 @@
 #include "BinChannel.h"
 #include "HashTable.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //////////////////////////////////////////////////////////////////////
 // DirectoryFileIterator
 //////////////////////////////////////////////////////////////////////
@@ -119,7 +117,5 @@ private:
     // Offset of next unused entry for add:
     FileOffset   _next_free_entry;
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif // !defined(_DIRECTORYFILE_H_)

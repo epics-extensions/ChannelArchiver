@@ -5,8 +5,6 @@
 #include "BinValue.h"
 #include "DataFile.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //////////////////////////////////////////////////////////////////////
 //CLASS BinValueIterator
 // BinValueIterator is the fundamental implementation
@@ -86,8 +84,6 @@ protected:
 	bool nextBufferValue ();
 	bool prevBufferValue ();
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif //__BINVALUEITERATOR_H__
 

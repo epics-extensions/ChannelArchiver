@@ -1,8 +1,6 @@
 #include "ExpandingValueIteratorI.h"
 #include "ArchiveException.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 static inline bool isRepeat (const ValueI *value)
 { return value->getSevr() == ARCH_EST_REPEAT  ||
 		 value->getSevr() == ARCH_REPEAT;
@@ -168,4 +166,3 @@ size_t ExpandingValueIteratorI::determineChunk (const osiTime &until)
 	return _base->determineChunk (until);
 }
 
-END_NAMESPACE_CHANARCH

@@ -1,3 +1,4 @@
+# -*- makefile -*-
 # $Id$
 # This file is for gnumake, for building on Unix
 # (tried RedHat 6.1, solaris)
@@ -54,6 +55,9 @@ PY_FLAGS =
 #PY_LIB   = -L$(HOME)/lib/$(PYTHON)/config -l$(PYTHON)
 #PY_FLAGS = 
 
+# Perl(5) settings
+PERL_INC=-I/usr/lib/perl5/5.00503/i386-linux/CORE
+
 all::	tcl python
 
 static::	static-tcl static-python
@@ -61,6 +65,7 @@ static::	static-tcl static-python
 dirs::
 	-mkdir tcl/O.$(HOST_ARCH)
 	-mkdir python/O.$(HOST_ARCH)
+	-mkdir perl/O.$(HOST_ARCH)
 
 python::	dirs
 	(cd python/O.$(HOST_ARCH);\
@@ -85,6 +90,13 @@ static-tcl::	dirs
 	 $(SWIG) -tcl8 -lwish.i -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i;\
 	 $(CC) -c $(CFLAGS) $(TCL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp;\
 	 $(CC) $(MODULE).o $(MODULE)_wrap.o $(TCL_LIB) $(LIBS)  -o casiwish)
+
+perl::	dirs
+	(cd perl/O.$(HOST_ARCH);\
+	 $(SWIG) -perl5 -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i;\
+	 $(CC) -c $(CFLAGS) $(PERL_FLAGS) $(PERL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp;\
+	 $(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(PERL_LIB)  $(LIBS)  -o casic.so)
+
 
 clean::
 	rm -f python/O.$(HOST_ARCH)/*

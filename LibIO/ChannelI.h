@@ -13,8 +13,6 @@
 
 #include "ValueIteratorI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 class ChannelIInfo
 {
 public:
@@ -112,7 +110,5 @@ inline bool ChannelI::getValueBeforeTime (const osiTime &time, ValueIterator &va
 
 inline bool ChannelI::getValueNearTime (const osiTime &time, ValueIterator &values)
 { return getValueNearTime (time, values.getI()); }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__CHANNELI_H__

@@ -3,8 +3,6 @@
 
 #include "ValueIteratorI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //////////////////////////////////////////////////////////////////////
 //CLASS ExpandingValueIteratorI
 // A CLASS ValueIteratorI that expands "repeated" values
@@ -74,8 +72,6 @@ private:
 
 inline bool ExpandingValueIteratorI::isExpanded () const
 {	return _repeat_value != 0; }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__EXPANDINGVALUEITERATOR_H__
 

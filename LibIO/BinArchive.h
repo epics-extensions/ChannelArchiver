@@ -13,8 +13,6 @@
 
 #include "ArchiveI.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS BinArchive
 //
 // BinArchive is the implementation of the CLASS ArchiveI interface
@@ -61,7 +59,5 @@ private:
 	class DirectoryFile	*_dir;
 	unsigned long _secs_per_file;		// each data file holds data for this period
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif //__BINARCHIVE_H__

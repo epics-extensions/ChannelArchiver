@@ -6,7 +6,6 @@
 #ifdef WIN32
 #pragma warning (disable: 4786)
 #endif
-#include <map>
 
 #include "DataFile.h"
 #include "ArchiveException.h"
@@ -14,9 +13,6 @@
 #include "Filename.h"
 
 //#define LOG_DATAFILE
-
-BEGIN_NAMESPACE_CHANARCH
-USE_STD_NAMESPACE
 
 //////////////////////////////////////////////////////////////////////
 // DataHeader
@@ -80,87 +76,13 @@ void DataHeader::write (LowLevelIO &file, FileOffset offset) const
 //////////////////////////////////////////////////////////////////////
 
 // Map of all DataFiles currently open
-#define USE_STD_MAP
-
-#ifdef USE_STD_MAP
-
-typedef map<stdString, DataFile *> FileMap;
+typedef stdMap<stdString, DataFile *> FileMap;
 static FileMap  open_data_files;
-
-#else
-
-// In case std::map does not work: Linear replacement - yuck!
-// ... but OK because not many files in list
-//     and here we have a handle on what's going on,
-//     different from <map>
-class FileMap
-{
-public:
-    stdString   _name;
-    DataFile    *_file;
-
-    static DataFile *find (const stdString &name);
-    static void insert (const stdString &name, DataFile *file);
-    static void erase (const stdString &name);
-
-private:
-    FileMap         *_next;
-    static FileMap  *_root;
-};
-
-FileMap *FileMap::_root = 0;
-
-DataFile *FileMap::find (const stdString &name)
-{
-    FileMap *n = _root;
-
-    while (n)
-    {
-        if (n->_name == name)
-            return n->_file;
-        n = n->_next;
-    }
-    return 0;
-}
-
-void FileMap::insert (const stdString &name, DataFile *file)
-{
-    LOG_ASSERT (find (name) == 0);
-
-    FileMap *n = new FileMap;
-    n->_name = name;
-    n->_file = file;
-    n->_next = _root;
-    _root = n;
-}
-
-void FileMap::erase (const stdString &name)
-{
-    FileMap **n = &_root;
-
-    while (*n)
-    {
-        if ((*n)->_name == name)
-        {
-            FileMap *to_del = *n;
-
-            *n = to_del->_next;
-            delete to_del;
-
-            return;
-        }
-        n = &((*n)->_next);
-    }
-    LOG_ASSERT (false);
-}
-
-#endif
 
 DataFile *DataFile::reference (const stdString &filename, bool for_write)
 {
     DataFile *file;
 
-#ifdef USE_STD_MAP
     FileMap::iterator i = open_data_files.find (filename);
     if (i == open_data_files.end ())
     {
@@ -172,18 +94,6 @@ DataFile *DataFile::reference (const stdString &filename, bool for_write)
         file = i->second;
         file->reference ();
     }
-#else
-    file = FileMap::find (filename);
-    if (! file)
-    {
-        file = new DataFile (filename, for_write);
-        FileMap::insert (file->getFilename(), file);
-    }
-    else
-    {
-        file->reference ();
-    }
-#endif
 
     return file;
 }
@@ -200,13 +110,9 @@ void DataFile::release ()
 {
     if (--_ref_count <= 0)
     {
-#ifdef USE_STD_MAP
         FileMap::iterator i = open_data_files.find (_filename);
         LOG_ASSERT (i != open_data_files.end ());
         open_data_files.erase (i);
-#else
-        FileMap::erase (_filename);
-#endif
         delete this;
     }
 }
@@ -511,5 +417,4 @@ DataHeaderIterator & DataHeaderIterator::operator -- ()
     return *this;
 }
 
-END_NAMESPACE_CHANARCH
 

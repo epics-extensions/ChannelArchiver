@@ -6,6 +6,61 @@
 --------------------Configuration: CGIExport - Win32 Debug OLD_osiTime--------------------
 </h3>
 <h3>Command Lines</h3>
+Creating temporary file "d:\TMP\RSP191.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib ca.lib Com.lib db.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/CGIExport.pdb" /debug /machine:I386 /out:"Debug/CGIExport.exe" /pdbtype:sept /libpath:"..\..\..\..\base\lib\WIN32" 
+.\Debug\ArchiveException.obj
+.\Debug\ArchiveI.obj
+.\Debug\ArgParser.obj
+.\Debug\ASCIIParser.obj
+.\Debug\BinArchive.obj
+.\Debug\BinChannel.obj
+.\Debug\BinChannelIterator.obj
+.\Debug\BinCtrlInfo.obj
+.\Debug\BinValue.obj
+.\Debug\BinValueIterator.obj
+.\Debug\CGIDemangler.obj
+.\Debug\CGIInput.obj
+.\Debug\ChannelI.obj
+.\Debug\ChannelIteratorI.obj
+.\Debug\CtrlInfoI.obj
+.\Debug\DataFile.obj
+.\Debug\DirectoryFile.obj
+.\Debug\ExpandingValueIteratorI.obj
+.\Debug\Exporter.obj
+.\Debug\Filename.obj
+.\Debug\GenericException.obj
+.\Debug\gnu_regex.obj
+.\Debug\GNUPlotExporter.obj
+.\Debug\HashTable.obj
+.\Debug\HTMLPage.obj
+.\Debug\LinInterpolValueIteratorI.obj
+.\Debug\main.obj
+.\Debug\MsgLogger.obj
+.\Debug\MultiArchive.obj
+.\Debug\MultiChannel.obj
+.\Debug\MultiChannelIterator.obj
+.\Debug\MultiValueIterator.obj
+.\Debug\osiTimeHelper.obj
+.\Debug\RegularExpression.obj
+.\Debug\SpreadSheetExporter.obj
+.\Debug\stdString.obj
+.\Debug\ValueI.obj
+.\Debug\ValueIteratorI.obj
+.\Debug\LowLevelIO.obj
+.\Debug\WIN32Thread.obj
+]
+Creating command line "link.exe @d:\TMP\RSP191.tmp"
+Creating temporary file "d:\TMP\RSP192.bat" with contents
+[
+@echo off
+copy .\Debug\CGIExport.exe Tests\cgi\CGIExport.cgi
+]
+Creating command line "d:\TMP\RSP192.bat"
+Linking...
+<h3>Output Window</h3>
+Installing in Test/cgi
+        1 file(s) copied.
 
 
 

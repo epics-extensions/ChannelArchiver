@@ -16,14 +16,11 @@ static const char *error_text[] =
 /* Unsupported */	"Not Supported",
 };
 
-USE_STD_NAMESPACE
-BEGIN_NAMESPACE_CHANARCH
-
 const char *ArchiveException::what() const
 {
 	if (_error_info.empty ())
 	{
-		strstream buf;
+        std::strstream buf;
 
 		if (_detail.empty())
 			buf << getSourceFile() << " (" << getSourceLine() <<"): "
@@ -39,5 +36,4 @@ const char *ArchiveException::what() const
 	return _error_info.c_str ();
 }
 
-END_NAMESPACE_CHANARCH
 

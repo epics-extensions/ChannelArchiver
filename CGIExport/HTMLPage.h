@@ -22,31 +22,31 @@ using std::vector;
 class HTMLPage
 {
 public:
-	HTMLPage ();
-	virtual ~HTMLPage ();
+    HTMLPage ();
+    virtual ~HTMLPage ();
 
-	void start ();
-	void header (const stdString &text, int level) const;
+    void start ();
+    void header (const stdString &text, int level) const;
 
-	// Print the interface stuff
-	void interFace () const;
+    // Print the interface stuff
+    void interFace () const;
 
-	// Page context
-	stdString _title;
-	stdString _cgi_path;
-	stdString _command;
-	stdString _directory;
-	stdString _pattern;
-	vector<stdString> _names;
-	double _round;
-	double _interpol;
-	bool _fill;
-	bool _status;
-	osiTime _start;
-	osiTime _end;
+    // Page context
+    stdString _title;
+    stdString _cgi_path;
+    stdString _command;
+    stdString _directory;
+    stdString _pattern;
+    stdVector<stdString> _names;
+    double _round;
+    double _interpol;
+    bool _fill;
+    bool _status;
+    osiTime _start;
+    osiTime _end;
 
 private:
-	bool _started;
+    bool _started;
 };
 
 #endif

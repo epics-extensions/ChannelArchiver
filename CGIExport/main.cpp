@@ -31,41 +31,38 @@
 #include <unistd.h>
 #endif
 
-USE_STD_NAMESPACE
-USING_NAMESPACE_CHANARCH
-
 stdString GNUPlot = GNUPLOT_PROGRAM;
 
 void Usage(HTMLPage &page)
 {
 	page.header ("Usage", 2);
-	cout << "This program uses the CGI interface,\n";
-	cout << "both GET/HEAD and POST are supported.\n";
-	cout << "<P>\n";
+    std::cout << "This program uses the CGI interface,\n";
+	std::cout << "both GET/HEAD and POST are supported.\n";
+	std::cout << "<P>\n";
 	page.header ("Recognized form parameters", 3);
-	cout << "<UL>\n";
-	cout << "<LI>COMMAND: START | HELP | LIST | INFO | PLOT | GET | DEBUG\n";
-	cout << "<LI>DIRECTORY: Archive's directory file\n";
-	cout << "<LI>and maybe more...\n";
-	cout << "</UL>\n";
-	cout << "When started with COMMAND=START,\n";
-	cout << "a start page should be created that links to the remaining commands....\n";
+	std::cout << "<UL>\n";
+	std::cout << "<LI>COMMAND: START | HELP | LIST | INFO | PLOT | GET | DEBUG\n";
+	std::cout << "<LI>DIRECTORY: Archive's directory file\n";
+	std::cout << "<LI>and maybe more...\n";
+	std::cout << "</UL>\n";
+	std::cout << "When started with COMMAND=START,\n";
+	std::cout << "a start page should be created that links to the remaining commands....\n";
 }
 
 void showEnvironment (HTMLPage &page, char *envp[])
 {
 	size_t i;
 	page.header ("Environment",2);
-	cout << "<PRE>\n";
+	std::cout << "<PRE>\n";
 	for (i=0; envp[i]; ++i)
-		cout << envp[i] << endl;
-	cout << "</PRE>\n";
+		std::cout << envp[i] << "\n";
+	std::cout << "</PRE>\n";
 }
 
 // "visitor" for BinaryTree of channel names
 static void listChannelsTraverser (const stdString &item, void *arg)
 {
-	cout << "<TR><TD>"
+	std::cout << "<TR><TD>"
 		 << item.c_str()
 		 << "</TR></TD>\n";
 }
@@ -90,14 +87,14 @@ void listChannels (HTMLPage &page)
 	catch (GenericException &e)
 	{
 		page.header ("Archive Error",2);
-		cout << "<PRE>\n";
-		cout << e.what () << endl;
-		cout << "</PRE>\n";
+		std::cout << "<PRE>\n";
+		std::cout << e.what () << "\n";
+		std::cout << "</PRE>\n";
 	}
 	page.header ("Channel List", 2);
-	cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
+	std::cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
 	channels.traverse (listChannelsTraverser);
-	cout << "</TABLE>\n";
+	std::cout << "</TABLE>\n";
 	page.interFace ();
 }
 
@@ -115,7 +112,7 @@ bool operator < (const class Info &a, const class Info &b)
 // Visitor routine for BinaryTree<Info>
 static void listInfoTraverser (const Info &info, void *arg)
 {
-	cout << "<TR><TD>" << info.channel
+	std::cout << "<TR><TD>" << info.channel
 		<< "</TD><TD>" << info.first
 		<< "</TD><TD>" << info.last
 		<< "</TD></TR>\n";
@@ -167,20 +164,20 @@ void listInfo (HTMLPage &page)
 	catch (GenericException &e)
 	{
 		page.header ("Archive Error",2);
-		cout << "<PRE>\n";
-		cout << e.what () << endl;
-		cout << "</PRE>\n";
+		std::cout << "<PRE>\n";
+		std::cout << e.what () << "\n";
+		std::cout << "</PRE>\n";
 		return;
 	}
 	page.header ("Channel Info", 2);
-	cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
-	cout << "<TR><TH>Channel</TH><TH>First archived</TH><TH>Last archived</TH></TR>\n";
+	std::cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
+	std::cout << "<TR><TH>Channel</TH><TH>First archived</TH><TH>Last archived</TH></TR>\n";
 	infos.traverse (listInfoTraverser);
-	cout << "</TABLE>\n";
+	std::cout << "</TABLE>\n";
 	page.interFace ();
 }
 
-void getNames (const stdString &input_string, vector<stdString> &names)
+void getNames (const stdString &input_string, stdVector<stdString> &names)
 {
 	const char *input = input_string.c_str();
 	const char *delim = " ,\t;\n\r";
@@ -218,7 +215,7 @@ bool decodeTimes (CGIInput &cgi, osiTime &start, osiTime &end)
 	if (!cgi.find ("STARTMONTH").empty())
 	{
 		stdString start_txt;
-		strstream buf;
+        std::strstream buf;
 		// 12/22/1998 11:50:00
 		buf << cgi.find ("STARTMONTH")
 			<< '/' << cgi.find ("STARTDAY")
@@ -236,7 +233,7 @@ bool decodeTimes (CGIInput &cgi, osiTime &start, osiTime &end)
 	if (!cgi.find ("ENDMONTH").empty())
 	{
 		stdString end_txt;
-		strstream buf;
+        std::strstream buf;
 		buf << cgi.find ("ENDMONTH")
 			<< '/' << cgi.find ("ENDDAY")
 			<< '/' << cgi.find ("ENDYEAR")
@@ -276,8 +273,8 @@ bool exportFunc (HTMLPage &page, bool useGNU=false, const char *temp_file_base=0
 		else
 		{
 			exporter = new SpreadSheetExporter (archive, tempfilebase);
-			cout << "Content-type: text/plain\n";
-			cout << "\n";
+			std::cout << "Content-type: text/plain\n";
+			std::cout << "\n";
 		}
 
 		exporter->setStart (page._start);
@@ -302,21 +299,21 @@ bool exportFunc (HTMLPage &page, bool useGNU=false, const char *temp_file_base=0
 	}
 	catch (GenericException &e)
 	{
-		cout << "Archive Error :\n";
-		cout << "===============\n";
-		cout << e.what () << endl;
+		std::cout << "Archive Error :\n";
+		std::cout << "===============\n";
+		std::cout << e.what () << "\n";
 		return false;
 	}
 	catch (const char *txt)
 	{
-		cout << "Caught Error :\n";
-		cout << "===============\n";
-		cout << txt << endl;
+		std::cout << "Caught Error :\n";
+		std::cout << "===============\n";
+		std::cout << txt << "\n";
 		return false;
 	}
 	catch (...)
 	{
-		cout << "Caught Unknown Error\n";
+		std::cout << "Caught Unknown Error\n";
 		return false;
 	}
 
@@ -325,7 +322,7 @@ bool exportFunc (HTMLPage &page, bool useGNU=false, const char *temp_file_base=0
 
 static void PrintRoutine (void *arg, const stdString &text)
 {
-	cerr << text;
+    std::cerr << text;
 }
 
 void help (HTMLPage &page)
@@ -384,7 +381,7 @@ int main (int argc, const char *argv[], char *envp[])
 	}
 	if (!command_line)
 	{
-		if (!cgi.parse (cin, cout))
+		if (!cgi.parse (std::cin, std::cout))
 		{
 			page._title = "CGI Error";
 			page.start ();
@@ -406,7 +403,7 @@ int main (int argc, const char *argv[], char *envp[])
 	{
 		page._title = "Time Error";
 		page.start ();
-		cout << "Cannot decode times.\n";
+		std::cout << "Cannot decode times.\n";
 		return 0;
 	}
 
@@ -425,14 +422,14 @@ int main (int argc, const char *argv[], char *envp[])
 		page.start ();
 		page.header ("DEBUG Information",1);
 
-		cout << "<I>CGIExport Version " VERSION_TXT ", built " __DATE__ "</I>\n";
+		std::cout << "<I>CGIExport Version " VERSION_TXT ", built " __DATE__ "</I>\n";
 
 		page.header ("Variables",2);
-		const map<stdString, stdString> &var_map = cgi.getVars ();
-		map<stdString, stdString>::const_iterator vars = var_map.begin();
+		const stdMap<stdString, stdString> &var_map = cgi.getVars ();
+		stdMap<stdString, stdString>::const_iterator vars = var_map.begin();
 		while (vars != var_map.end())
 		{
-			cout << "'" << vars->first << "' = '" << vars->second << "'<BR>\n";
+			std::cout << "'" << vars->first << "' = '" << vars->second << "'<BR>\n";
 			++vars;
 		}
 
@@ -441,26 +438,26 @@ int main (int argc, const char *argv[], char *envp[])
 		page.header ("Script Info", 2);
 
 		page.header ("Script:", 3);
-		cout << "<PRE>" << script << "</PRE><P>\n";
+		std::cout << "<PRE>" << script << "</PRE><P>\n";
 
 		page.header ("Script path:", 3);
-		cout << "<PRE>" << script_dir << "</PRE><P>\n";
+		std::cout << "<PRE>" << script_dir << "</PRE><P>\n";
 
 		page.header ("Current directory:", 3);
-		cout << "<PRE>" << dir << "</PRE><P>\n";
+		std::cout << "<PRE>" << dir << "</PRE><P>\n";
 
 		page.header ("GNUPlot:", 3);
-		cout << "<PRE>" << GNUPlot << "</PRE><P>\n";
+		std::cout << "<PRE>" << GNUPlot << "</PRE><P>\n";
 
 #ifndef WIN32
 		page.header ("Personality:", 3);
-		cout << "UID: " << getuid() << '/' << geteuid();
-		cout << ", GID: " << getgid() << '/' << getegid() << "<P>\n";
+		std::cout << "UID: " << getuid() << '/' << geteuid();
+		std::cout << ", GID: " << getgid() << '/' << getegid() << "<P>\n";
 #endif
 
 		showEnvironment (page, envp);
 
-		cout << "<HR>\n";
+		std::cout << "<HR>\n";
 		page.interFace ();
 		return 0;
 	}
@@ -513,7 +510,7 @@ int main (int argc, const char *argv[], char *envp[])
 		if (! exportFunc (page, true, physical))
 		{
 			page.header ("Error: No data",3);
-			cout << "There seems to be no data for that channel and time range.\n";
+			std::cout << "There seems to be no data for that channel and time range.\n";
 			page.interFace ();
 			return 0;
 		}
@@ -536,16 +533,16 @@ int main (int argc, const char *argv[], char *envp[])
 		if (result != 0)
 		{
 			page.header ("Error: GNUPlot",3);
-			cout << "The execution of GNUPlot to generate your plot failed:<P>\n";
-			cout << "<PRE>'" << GNUPlotCommand << "'</PRE><P>\n";
-			cout << "Result: " << result << "<P>\n";
-			cout << "Possible Reasons:\n";
-			cout << "<UL>\n";
-			cout << "<LI>No data? Use <B>GET</B> to check this\n";
-			cout << "<LI>Constant data so GNUPlot doesn't know how to draw the axis?<BR>";
-			cout << "Use <B>GET</B> to check this\n";
-			cout << "<LI>Gnuplot not installed?\n";
-			cout << "</UL>\n";
+			std::cout << "The execution of GNUPlot to generate your plot failed:<P>\n";
+			std::cout << "<PRE>'" << GNUPlotCommand << "'</PRE><P>\n";
+			std::cout << "Result: " << result << "<P>\n";
+			std::cout << "Possible Reasons:\n";
+			std::cout << "<UL>\n";
+			std::cout << "<LI>No data? Use <B>GET</B> to check this\n";
+			std::cout << "<LI>Constant data so GNUPlot doesn't know how to draw the axis?<BR>";
+			std::cout << "Use <B>GET</B> to check this\n";
+			std::cout << "<LI>Gnuplot not installed?\n";
+			std::cout << "</UL>\n";
 			return 0;
 		}
 
@@ -560,8 +557,8 @@ int main (int argc, const char *argv[], char *envp[])
 		GNUPlotImage += "_";
 		GNUPlotImage += client;
 		GNUPlotImage += GNUPlotExporter::imageExtension ();
-		cout << "<IMG SRC=\"" + GNUPlotImage + "\"</A><P>\n";
-		cout << "<HR>\n";
+		std::cout << "<IMG SRC=\"" + GNUPlotImage + "\"</A><P>\n";
+		std::cout << "<HR>\n";
 		page.interFace ();
 
 		return 0;

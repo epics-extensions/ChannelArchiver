@@ -94,6 +94,9 @@ proc camMisc::init {} {
     }
   }
   set ArchiversSet 1
+  if {![info exists ::allowedIPs]} {
+    set ::allowedIPs ""
+  }
 }
 
 proc camMisc::arcGet {index {key ""}} {

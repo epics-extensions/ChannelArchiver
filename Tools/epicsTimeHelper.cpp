@@ -137,6 +137,7 @@ void vals2epicsTime(int year, int month, int day,
 }
 
 // Round down
+#define NSEC 1000000000L
 epicsTime roundTimeDown(const epicsTime &time, double secs)
 {
 	if (secs <= 0)
@@ -145,15 +146,22 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
     struct local_tm_nano_sec tm = (local_tm_nano_sec) time;
     unsigned long round;
 
-    if (secs < secsPerDay)
+    if (secs < 1.0)
+    {
+        epicsTimeStamp stamp = (epicsTimeStamp)time;
+        round =(unsigned long)(secs * NSEC);
+        stamp.nsec = (stamp.nsec / round)*round;
+        return epicsTime(stamp);
+    }
+    else if (secs < secsPerDay)
     {
         epicsTimeStamp stamp = (epicsTimeStamp)time;
         
-        double t = stamp.secPastEpoch + stamp.nsec / 1.0e9;
+        double t = stamp.secPastEpoch + stamp.nsec / NSEC;
         t = floor(t / secs) * secs;
         
         stamp.secPastEpoch = (epicsUInt32) t;
-        stamp.nsec = (epicsUInt32) ((t - stamp.secPastEpoch) * 1.0e9);
+        stamp.nsec = (epicsUInt32) ((t - stamp.secPastEpoch) * NSEC);
         
         return epicsTime(stamp);
     }
@@ -198,16 +206,29 @@ epicsTime roundTimeUp(const epicsTime &time, double secs)
 
     struct local_tm_nano_sec tm = (local_tm_nano_sec) time;
     unsigned long round;
-    if (secs < secsPerDay)
+    if (secs < 1.0)
+    {
+        epicsTimeStamp stamp = (epicsTimeStamp)time;
+        round =(unsigned long)(secs * NSEC);
+        stamp.nsec =
+            ((stamp.nsec / round) + 1)*round;
+        while (stamp.nsec >= NSEC)
+        {
+            stamp.secPastEpoch += 1;
+            stamp.nsec -= NSEC;
+        }
+        return epicsTime(stamp);
+    }
+    else if (secs < secsPerDay)
     {
         epicsTimeStamp stamp = (epicsTimeStamp)time;
         
-        double t = stamp.secPastEpoch + stamp.nsec / 1.0e9;
+        double t = stamp.secPastEpoch + stamp.nsec / NSEC;
         double div = floor(t / secs); 
         t = (div+1)*secs;
         
         stamp.secPastEpoch = (epicsUInt32) t;
-        stamp.nsec = (epicsUInt32) ((t - stamp.secPastEpoch) * 1.0e9);
+        stamp.nsec = (epicsUInt32) ((t - stamp.secPastEpoch) * NSEC);
         
         return epicsTime(stamp);
     }

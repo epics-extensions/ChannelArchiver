@@ -245,7 +245,7 @@ void test_time()
 
     vals2epicsTime(1990, 3, 18, 12, 13, 44, 800000019L, now);
     epicsTime2string(roundTimeUp(now, 0), txt);            TEST(txt == "03/18/1990 12:13:44.800000019");
-    epicsTime2string(roundTimeUp(now, 0.5), txt);          TEST(txt == "03/18/1990 12:13:45.000000000");
+    epicsTime2string(roundTimeUp(now, 0.5), txt);          TEST(txt == "03/18/1990 12:13:45.000000000");    
     epicsTime2string(roundTimeUp(now, 1.0), txt);          TEST(txt == "03/18/1990 12:13:45.000000000");
     epicsTime2string(roundTimeUp(now, 10.0), txt);         TEST(txt == "03/18/1990 12:13:50.000000000");
     epicsTime2string(roundTimeUp(now, 30.0), txt);         TEST(txt == "03/18/1990 12:14:00.000000000");

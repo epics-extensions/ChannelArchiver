@@ -16,6 +16,7 @@ else
         echo "FAILED NameHashTest"
 fi
 
+rm -f test/index1 test/index2
 O.$EPICS_HOST_ARCH/RTreeTest
 if [ $? -eq 0 ]
 then

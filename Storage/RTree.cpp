@@ -883,21 +883,22 @@ bool RTree::insert_record_into_node(Node &node, int idx,
             LOG_MSG("RTree::insert_record_into_node cannot alloc. overflow\n");
             return false;
         }
+        int cut = M/2+1;
+        // TODO: This results in a 50/50 split
+        // Maybe it's better to split 70/30 because
+        // the Engine will insert consecutive data?
+        
         // There are M records in node and 1 in overflow.
-        // Shift M/2 from node into overflow so that both are about 1/2 full.
-        // TODO:
-        // Maybe it's better to split 70% / 30% because
-        // the Engine will insert consecutive data, and with the 50/50
-        // split we end up with a half-full tree.
-        int cut = M/2;
-        for (j=cut; j>0; --j) // shift overflow records to make room
-            overflow.record[j] = overflow.record[j-1];
-        for (j=1; j<=cut; ++j)
+        // Shift from node.record[cut] on into into overflow.
+        overflow.record[M-cut] = overflow.record[0];
+        for (j=cut; j<M; ++j)
         {   // copy from node and clear the copied entries in node
-            overflow.record[j-1] = node.record[M-j];
-            node.record[M-j].clear();
+            LOG_ASSERT(j-cut >= 0);
+            LOG_ASSERT(j-cut < M);
+            overflow.record[j-cut] = node.record[j];
+            node.record[j].clear();
         }
-        rec_in_overflow = idx >= (M-cut);
+        rec_in_overflow = (idx >= cut);
     }
     if (!write_node(node))
     {

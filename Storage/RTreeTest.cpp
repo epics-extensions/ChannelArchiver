@@ -183,11 +183,11 @@ int main()
         return -1;
     if (!dump_blocks())
         return -1;
-    if (!fill_test(true, "index1",
+    if (!fill_test(true, "test/index1",
                    man_data1, sizeof(man_data1)/sizeof(TestData),
                    "man_data1.dot"))
         return -1;
-    if (!fill_test(true, "index2",
+    if (!fill_test(true, "test/index2",
                    man_data2, sizeof(man_data2)/sizeof(TestData),
                    "man_data2.dot"))
         return -1;

@@ -33,7 +33,7 @@ class Plot
 public:
 	enum
 	{
-		CMAX = 10
+		CMAX = 100
 	};
 
 

@@ -98,6 +98,9 @@ int main(int argc, const char *argv[])
             exporter = sse;
         }
 
+#ifdef EXTEND_EXPORT
+     exporter->setMaxChannelCount(1000);
+#endif
         exporter->setVerbose(verbose);
         if (status_text)
             exporter->enableStatusText();

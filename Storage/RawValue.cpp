@@ -96,9 +96,6 @@ void RawValue::getStatus(const Data *value, stdString &result)
     case ARCH_DISABLED:
         result = "Archive_Disabled";
         return;
-    case ARCH_CHANGE_PERIOD:
-        result = "Change Sampling Period";
-        return;
     }
 
     if (severity < (short)SIZEOF_ARRAY(alarmSeverityString)  &&
@@ -174,13 +171,6 @@ bool RawValue::parseStatus(const stdString &text, short &stat, short &sevr)
         stat = 0;
         return true;
     }
-    if (!strcmp(text.c_str(), "Change Sampling Period"))
-    {
-        sevr = ARCH_CHANGE_PERIOD;
-        stat = 0;
-        return true;
-    }
-
     short i, j;
     for (i=0; i<(short)SIZEOF_ARRAY(alarmSeverityString); ++i)
     {

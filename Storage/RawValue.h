@@ -27,9 +27,6 @@ enum RawValueSpecialSeverities
     ARCH_STOPPED            = 0x0f20,
     ARCH_REPEAT             = 0x0f10,
     ARCH_DISABLED           = 0x0f08,
-    ARCH_CHANGE_WRITE_FREQ  = 0x0f04,
-    ARCH_CHANGE_PERIOD      = 0x0f02, // new period for single channel
-    ARCH_CHANGE_SIZE        = 0x0f01
 };
 
 

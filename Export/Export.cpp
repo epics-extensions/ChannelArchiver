@@ -1,16 +1,23 @@
 // Export.cpp
 
+#include <epicsVersion.h>
+#include <ToolsConfig.h>
+#include <epicsTimeHelper.h>
+#include <ArgParser.h>
 #include "../ArchiverConfig.h"
 #include "BinArchive.h"
 #include "MultiArchive.h"
 #include "GNUPlotExporter.h"
 #include "MatlabExporter.h"
-#include "ArgParser.h"
 
 int main(int argc, const char *argv[])
 {
+    initEpicsTimeHelper();
     CmdArgParser parser(argc, argv);
-    parser.setArgumentsInfo(" <directory file> { channel }");
+    parser.setHeader("Archive Export version " VERSION_TXT ", "
+                     EPICS_VERSION_STRING
+                     ", built " __DATE__ ", " __TIME__ "\n\n");
+    parser.setArgumentsInfo(" <index file> { channel }");
     CmdArgString start_time (parser,
                              "start", "<time>", "Format: \"mm/dd/yy[ hh:mm:ss[.nano-secs]]\"");
     CmdArgString end_time   (parser,
@@ -43,7 +50,6 @@ int main(int argc, const char *argv[])
         return -1;
     if (parser.getArguments().size() < 1)
     {
-        fputs("ArchiveExport " VERSION_TXT "\n\n", stderr);
         parser.usage();
         return -1;
     }
@@ -67,10 +73,10 @@ int main(int argc, const char *argv[])
 
     try
     {
-        osiTime startTime, endTime;
+        epicsTime startTime, endTime;
         // start and/or end time provided ?
-	if (! start_time.get().empty()) string2osiTime(start_time, startTime);
-	if (! end_time.get().empty()) string2osiTime(end_time, endTime);
+	if (! start_time.get().empty()) string2epicsTime(start_time, startTime);
+	if (! end_time.get().empty()) string2epicsTime(end_time, endTime);
 
         ArchiveI *archive = new EXPORT_ARCHIVE_TYPE(parser.getArgument (0),
 						    startTime, endTime);

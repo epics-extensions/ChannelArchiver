@@ -2,8 +2,14 @@
 
 include ../../Make.cfg
 
-SRCS += Export.cc
+SRCS += Export.cpp
 
 PROD := ArchiveExport
+PROD_LIBS_DEFAULT := ChanArchIO Tools ca Com
+PROD_LIBS_WIN32 := ChanArchIOObj ToolsObj ca Com
+ChanArchIO_DIR = $(INSTALL_LIB)
+ChanArchIOObj_DIR = $(INSTALL_LIB)
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
 
 include ../../Make.end

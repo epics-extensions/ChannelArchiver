@@ -65,9 +65,13 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
                  << "): parameter '" << parameter << "' is ignored\n");
 }
 
+// This one checks e.g. channel name characters
+// to avoid crashes when we are fed a binary file
+// for a config file.
+// The definition of "good" might be too tight.
 static inline bool good_character(char ch)
 {
-    return isalpha(ch) || isdigit(ch) || strchr("_", ch);
+    return isalpha(ch) || isdigit(ch) || strchr("_:()-", ch);
 }
 
 bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,

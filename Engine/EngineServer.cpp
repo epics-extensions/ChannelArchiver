@@ -86,6 +86,10 @@ static void engineinfo(HTTPClientConnection *connection,
         
         sprintf(line, "%.1f sec", theEngine->getGetThreshold());
         page.tableLine("Get Threshold", line, 0);
+
+        page.tableLine("Disconn. on disable",
+                       (theEngine->disconnectOnDisable(engine_guard) ?
+                        "Yes" : "No"), 0);
     }
     else
         page.tableLine("No Engine runnig!?", 0);

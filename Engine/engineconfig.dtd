@@ -6,7 +6,8 @@
 <!ELEMENT engineconfig ((write_period|get_threshold|
                          file_size|ignored_future|
                          buffer_reserve|
-                         max_repeat_count|disconnect)*, group+)>
+                         max_repeat_count|disconnect)*,
+                         group+)>
 <!ELEMENT group (name,channel+)>
 <!ELEMENT channel (name,period,(scan|monitor),disable?)>
 <!ELEMENT write_period (#PCDATA)><!-- int seconds -->

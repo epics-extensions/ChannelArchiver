@@ -109,6 +109,30 @@ the given number of repeats. The default is 120, meaning that a
 channel that is scanned every 30 seconds will be written once an hour
 even if it had not changed. 
 
+\subsection{disconnect} \label{sec:disconnect}
+This global option selects how ``disabled'' channels (see
+\ref{sec:disable}) are handled. By default, disabled channels will
+stay connected via ChannelAccess, but no values are archived.
+When setting the ``disconnect'' option, disabled channels will instead
+disconnect from ChannelAccess and then, later, attempt to reconnect
+once the channel is again enabled.
+
+In general, it is a good idea to stay with the default. That way we
+leave the connection handling to the ChannelAccess client library,
+which is optimized to do this. The engine will still receive new data,
+and as soon as the channel is re-enabled, it can thus store the most
+recent value.
+
+The disconnect feature was added for the rare case that you have IOCs
+that are temporarily off-line, and some PV will tell you about the
+fact. You can then use that PV to disable and disconnect the affected
+channels, preventing the ChannelAccess client library from continuing
+to issue connection attempts. Another example would be that you want
+to reduce the network load of continuing CA monitors for channels
+that are archived via monitors at a high rate but disabled. 
+Most likely, though, checking your channels' update rates or using a
+temporary archive engine might be the better solution.
+
 \subsection{group}
 Every channel belongs to a group of channels. The configuration file
 must define at least one group. For organizational or aesthetic
@@ -155,7 +179,7 @@ received via ChannelAccess will be stored. The ``period'' tag is used
 to determine the in-memory buffer size of the engine. That means: If
 samples arrive much more frequently than estimated via the ``period''
 tag, the archive engine might drop samples. (See also
-``buffer\_reserve'', \ref{sec:reserve}
+``buffer\_reserve'', \ref{sec:reserve}).
 
 \subsubsection{scan}
 As an alternative to the ``monitor'' tag, ``scan'' can be used to
@@ -166,7 +190,9 @@ sampling period.
 This optional sub-element of a channel turns the channel into a
 ``disabling'' channel for the group. Whenever the value of the channel
 is above zero, sampling of the whole group will be disabled until the
-channel returns to zero or below zero.
+channel returns to zero or below zero
+(see \ref{sec:disconnect} for additional disconnection).
+
 
 This is useful for e.g.\ a group of channels related to power
 supplies: Whenever the power supply is off, we might want to disable
@@ -175,10 +201,12 @@ channels will only yield noise. By disabling the sampling based on a
 ``Power Supply is Off'' channel, we can avoid storing those values
 which are of no interest.
 
-\NOTE There is no ``enabling'' feature (yet), meaning: The channel
+\NOTE There is no ``enabling'' feature, meaning: The channel
 marked as ``disable'' will disable its group whenever it is above
 zero. There is no ``enable'' flag that would enable archiving of a group
 whenever the flagged channel is above zero.
+If you want it the other way around, you typically add a CALC record
+to handle the inversion.
 
 \section{Starting and Stopping}
 \subsection{Starting}

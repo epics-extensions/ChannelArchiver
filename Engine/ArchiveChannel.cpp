@@ -1,6 +1,10 @@
 // Tools
 #include "epicsTimeHelper.h"
 #include "MsgLogger.h"
+#include "ArchiveException.h"
+// Storage
+#include "DirectoryFile.h"
+#include "DataFile.h"
 //Engine
 #include "ArchiveChannel.h"
 #include "Engine.h"
@@ -122,64 +126,65 @@ void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
         last_stamp_in_archive = *last_stamp;
 }
 
-void ArchiveChannel::write(Archive &archive, ChannelIterator &channel)
+void ArchiveChannel::write(DirectoryFile &index)
 {
-    #ifdef TODO
+    DataFile *datafile;
+    DataHeaderIterator *dhi;
+    size_t avail, count = buffer.getCount();
+    if (count <= 0)
+        return;
     try
     {
-        size_t count = buffer.getCount();
-        if (count <= 0)
-            return;
-        if (! archive.findChannelByName(name, channel))
+        DirectoryFileIterator dfi = index.find(name);
+        if (!dfi.isValid())
         {
             LOG_MSG ("ArchiveChannel::write: Cannot find '%s'\n",
                      name.c_str());
             return;
         }
-        
-        BinValue *write_value = BinValue::create(dbr_time_type, nelements);
-        write_value->setCtrlInfo(&ctrl_info);
-        const RawValue::Data *raw = buffer.removeRawValue();
-        size_t avail = channel->lockBuffer(*write_value, period);
-        while (raw)
+        if (!Filename::isValidFilename(dfi.entry.data.last_file))
+        {   // Channel has never been written
+            datafile = DataFile::reference(index.getDirname(),
+                                           theEngine->makeDataFileName(), true);
+            dhi = new DataHeaderIterator();
+            dhi->attach(datafile);
+            avail = 0;
+        }
+        else
         {
-            write_value->copyIn(raw);
+            datafile = DataFile::reference(index.getDirname(),
+                                           dfi.entry.data.last_file, true);
+            dhi = datafile->getHeader(dfi.entry.data.last_offset);
+            if (!dhi->isValid())
+            {
+                LOG_MSG("ArchiveChannel::write %s: broken header\n", name.c_str());
+                return;
+            }
+            avail = dhi->header.available();
+        }
+        const RawValue::Data *raw;
+        while ((raw=buffer.removeRawValue()) != 0)
+        {
             if (avail <= 0) // no buffer at all or buffer full
             {
-                channel->addBuffer(*write_value, period, 100);
-                avail = 100;
-                //            if (_vals_per_buffer < MAX_VALS_PER_BUF)
-                //    _vals_per_buffer *= BUF_GROWTH_RATE;
+                // Add a new buffer
+                // Set ctrl info
+                // avail = 100;
             }
-            if (! channel->addValue(*write_value))
-            {
-                LOG_MSG("Fatal: cannot add values in writeArchive '%s'\n",
-                        name.c_str());
-                break;
-            }
+            // add value to buffer
             
-#if defined(ENGINE_DEBUG) && ENGINE_DEBUG > 5
-            stdString time, val, stat;
-            _write_value->getTime(time);
-            _write_value->getValue(val); 
-            _write_value->getStatus(stat);
-            LOG_MSG("write thread 0x%08X: %s %s %s %s\n",
-                    epicsThreadGetIdSelf(), channel->getName(),
-                    time.c_str(), val.c_str(), stat.c_str());
-#endif        
             if (--count <= 0)
                 break;
             --avail;
-            raw = buffer.removeRawValue();
         }
+        delete dhi;
+        datafile->release();
         buffer.resetOverwrites();
-        delete write_value;
     }
     catch (ArchiveException &e)
     {
         LOG_MSG("ArchiveChannel::write caught %s\n", e.what());
-    }   
-#endif
+    }
 }
 
 

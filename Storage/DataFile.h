@@ -39,6 +39,9 @@ public:
     /// Fill the data with zeroes.
     void clear();
 
+    /// Returns number of unused samples in buffer
+    size_t available();
+    
     /// Read (and convert) from file/offset
     bool read(FILE *file, FileOffset offset);
 

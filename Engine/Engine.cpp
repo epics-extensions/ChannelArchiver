@@ -111,9 +111,8 @@ void Engine::shutdown()
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now;
     now = epicsTime::getCurrent();
-#ifdef TODO
     mutex.lock();
-    ChannelIterator channel(*_archive);
+    DirectoryFile *index = new DirectoryFile(index_name, true);
     try
     {
         stdList<ArchiveChannel *>::iterator ch;
@@ -121,19 +120,18 @@ void Engine::shutdown()
         {
             (*ch)->mutex.lock();
             (*ch)->addEvent(0, ARCH_STOPPED, now);
-            (*ch)->write(*_archive, channel);
+            (*ch)->write(*index);
             (*ch)->mutex.unlock();
         }
+        DataFile::close_all();
+	delete index;
     }
     catch (ArchiveException &e)
     {
         LOG_MSG("Engine::shutdown caught %s\n", e.what());
     }
-    channel->releaseBuffer();
     mutex.unlock();
-    LOG_MSG("Closing archive\n");
-    delete _archive;
-#endif
+
     LOG_MSG("Removing memory for channels and groups\n");
     while (! channels.empty())
     {
@@ -333,18 +331,38 @@ void Engine::setBufferReserve(int reserve)
     config_file.save();
 }
 
+stdString Engine::makeDataFileName()
+{
+    int year, month, day, hour, min, sec;
+    unsigned long nano;
+    char buffer[80];
+                                                                                    
+    epicsTime now = epicsTime::getCurrent();
+    epicsTime file;
+                                                                                    
+    if (getSecsPerFile() == SECS_PER_MONTH)
+    {
+        epicsTime2vals(now, year, month, day, hour, min, sec, nano);
+        vals2epicsTime(year, month, 1, 0, 0, 0, 0, file);
+    }
+    else
+        file = roundTimeDown(now, _secs_per_file);
+    epicsTime2vals(file, year, month, day, hour, min, sec, nano);
+    sprintf(buffer, "%04d%02d%02d-%02d%02d%02d", year, month, day, hour, min, sec);
+    return stdString(buffer);
+}
+
 void Engine::writeArchive()
 {
     is_writing = true;
-#ifdef TODO
-    ChannelIterator channel(*_archive);
+    DirectoryFile index(index_name, true);
     try
     {
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
             (*ch)->mutex.lock();
-            (*ch)->write(*_archive, channel);
+            (*ch)->write(index);
             (*ch)->mutex.unlock();
         }
     }
@@ -352,8 +370,7 @@ void Engine::writeArchive()
     {
         LOG_MSG("Engine::writeArchive caught %s\n", e.what());
     }
-    channel->releaseBuffer();
-#endif
+    DataFile::close_all();
     is_writing = false;
 }
 

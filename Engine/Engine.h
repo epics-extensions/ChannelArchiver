@@ -77,6 +77,12 @@ public:
     double getDefaultPeriod();
     int    getBufferReserve() const;
     void   setBufferReserve(int reserve);
+
+    enum {
+        SECS_PER_DAY = 60*60*24,
+        SECS_PER_MONTH = 60*60*24*31 // depends on month, ... this is a magic number
+    };
+
     double getSecsPerFile() const;
     void   setSecsPerFile(double s);
     
@@ -104,6 +110,8 @@ public:
     /// channel has to prepare a monitor.
     bool addToScanList(ArchiveChannel *channel);
 
+    stdString makeDataFileName();
+    
     void writeArchive();
 
 private:

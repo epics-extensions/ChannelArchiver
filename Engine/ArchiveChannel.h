@@ -86,7 +86,7 @@ public:
               const CtrlInfo *ctrl_info = 0, const epicsTime *last_stamp = 0);
     
     /// Write current ring buffer content to archive.
-    void write(class Archive &archive, class ChannelIterator &channel);
+    void write(class DirectoryFile &index);
 
     /// Add an event to the buffer (special status/severity)
 

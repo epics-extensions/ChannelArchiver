@@ -19,6 +19,16 @@ void DataHeader::clear()
     memset(this, 0, sizeof(class DataHeader));
 }
 
+size_t DataHeader::available()
+{
+    if (buf_free <= 0)
+        return 0;
+    size_t val_size = RawValue::getSize(dbr_type, nelements);
+    if (val_size > 0)
+        return buf_free / val_size;
+    return 0;
+}
+
 bool DataHeader::read(FILE *file, FileOffset offset)
 {
     if (fseek(file, offset, SEEK_SET) != 0   ||

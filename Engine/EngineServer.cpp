@@ -61,7 +61,7 @@ static void engineinfo(HTTPClientConnection *connection,
         epicsTime2string(theEngine->getStartTime(), s);
         page.tableLine("Started", s.c_str(), 0);
         
-        page.tableLine("Archive ", theEngine->getDirectory().c_str(), 0);
+        page.tableLine("Archive ", theEngine->getIndexName().c_str(), 0);
         
         cvtUlongToString(theEngine->channels.size(), line);
         page.tableLine("Channels", line, 0);

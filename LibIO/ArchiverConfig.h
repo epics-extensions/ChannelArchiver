@@ -33,7 +33,7 @@
 #define VERSION 2
 #define RELEASE 0
 
-#define VERSION_TXT "2.0.0"
+#define VERSION_TXT "2.0.1"
 
 // ----------------------------------------------------------
 // ArchiveEngine

@@ -322,6 +322,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
 #ifdef LOGFILE
         LOG_MSG("Handling '%s'\n", names[i].c_str());
 #endif
+        num_vals = 0;
         values = xmlrpc_build_value(env, STR("()"));
         if (env->fault_occurred)
             goto exit_get_channel_data;
@@ -338,7 +339,6 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
             meta = encode_ctrl_info(env, &reader->getInfo());
             dbr_type_to_xml_type(reader->getType(), reader->getCount(),
                                  xml_type, xml_count);
-            num_vals = 0;
             while (data && RawValue::getTime(data) < end)
             {
                 if (!plot_binnnig && num_vals >= count)

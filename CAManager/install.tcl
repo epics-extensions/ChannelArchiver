@@ -66,9 +66,23 @@ if {[regexp "Windows" $tcl_platform(os)]} {
   set tclext ""
 }
 
+package require Tclx
+
 Puts "Searching Tcl/TK interpreters:\n" action
 set wish [info nameofexecutable]
-set tclsh [lindex [glob -nocomplain [file dirname $wish]/tcl*$ext] 0]
+foreach pat "tclsh\[0-9\]*$ext tclsh*$ext tcl\[0-9\]*$ext tcl*$ext" {
+  set l [lmatch -regexp [glob -nocomplain [file dirname $wish]/*] [file dirname $wish]/$pat]
+  if {[llength $l] > 0} {
+    set dt 0
+    foreach f $l {
+      if {[file mtime $f] > $dt} {
+	set tclsh $f
+	set dt [file mtime $f]
+      }
+    }
+    break
+  }
+}
 Puts "  tclsh executable is $tclsh\n"
 Puts "  wish executable is $wish\n"
 Puts "\n"

@@ -98,3 +98,11 @@ that this avoids data loss.
 One example that could cause this: You try to archive array channels,
 where each individual sample is already quite big, and picked a tiny
 file\_size. 
+
+\noindent
+\textbf{Found an existing lock file 'indextool\_active.lck'}\\
+When an ArchiveIndexTool is started, it creates a lock file
+similar to the ArchiveEngine, in the hope of preventing more than
+one Index Tool from modifying a master index at the same time.
+See preceding description of archiver\_active.lck file.
+

@@ -24,8 +24,9 @@
 #include "Engine.h"
 #include "EngineServer.h"
 
+epicsMutex CACallbackMutex;
 static EngineServer *engine_server = 0;
-Engine *theEngine;
+Engine *theEngine = 0;
 
 static void caException(struct exception_handler_args args)
 {
@@ -101,12 +102,14 @@ bool Engine::attachToCAContext(Guard &engine_guard)
 void Engine::shutdown()
 {
     LOG_MSG("Shutdown:\n");
+    CACallbackMutex.lock(); // prohibit callbacks
     LOG_ASSERT(this == theEngine);
     delete engine_server;
     engine_server = 0;
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now = epicsTime::getCurrent();
     {
+        CACallbackMutex.lock();
         Guard engine_guard(mutex);
         IndexFile index(RTreeM);
         if (index.open(index_name.c_str(), false))

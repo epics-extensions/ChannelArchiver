@@ -51,6 +51,18 @@
 // ==> Whoever needs Engine & channel locks needs to first lock the
 //     engine, then the channel. Never the other way around!
 
+// Remaining Issue:
+// Some CA calls take a 'callback lock' to prohibit callbacks.
+// That same callback lock is taken inside a CA callback.
+// This lead to the following deadlock on Engine shutdown:
+// Thread 1: Engine::shutdown()->lock engine,channel
+//           -> ca_clear_channel(janet998) -> callback lock
+// Thread 2: tcpRecvThread::run -> callback lock
+//           -> control_info_callback(janet641) -> lock engine
+// i.e. lock order engine, callback lock and then the reverse;
+// We use CACallbackMutex to stop our CA callbacks:
+extern epicsMutex CACallbackMutex;
+
 /// \defgroup Engine
 /// Classes related to the ArchiveEngine
 

@@ -8,7 +8,7 @@
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
-#define DEBUG_CHANNEL
+#undef DEBUG_CHANNEL
 
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
 {
@@ -100,6 +100,8 @@ void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
     
 void ArchiveChannel::startCA(Guard &guard)
 {
+    if (!theEngine)
+        return;
     guard.check(mutex);
     if (!chid_valid)
     {
@@ -252,6 +254,14 @@ void ArchiveChannel::write(Guard &guard, IndexFile &index)
 void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
+    if (!CACallbackMutex.tryLock())
+    {
+#ifdef DEBUG_CHANNEL
+        LOG_MSG("ArchiveChannel::connection_handler(%s): No CACallbackMutex, skipping.\n", 
+                me->name.c_str());
+#endif
+        return;
+    }
     Guard engine_guard(theEngine->mutex);
     Guard guard(me->mutex);
     if (ca_state(arg.chid) == cs_conn)
@@ -268,7 +278,7 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
         if (status != ECA_NORMAL)
         {
             LOG_MSG("'%s': ca_array_get_callback error in "
-                    "caLinkConnectionHandler: %s",
+                    "caLinkConnectionHandler: %s\n",
                     me->name.c_str(), ca_message (status));
         }
         theEngine->need_CA_flush = true;
@@ -291,7 +301,8 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
             for (g=me->groups.begin(); g!=me->groups.end(); ++g)
                 -- (*g)->num_connected;
         }
-    }    
+    }
+    CACallbackMutex.unlock();
 }
 
 // Fill crtl_info from raw dbr_ctrl_xx data
@@ -383,13 +394,22 @@ bool ArchiveChannel::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
 void ArchiveChannel::control_callback(struct event_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
-    bool was_connected = me->connected;
+    if (!CACallbackMutex.tryLock())
+    {
+#ifdef  DEBUG_CHANNEL
+        LOG_MSG("ArchiveChannel::control_callback(%s): No CACallbackMutex, skipping.\n", 
+                me->name.c_str());
+#endif
+        return;
+    }
     Guard engine_guard(theEngine->mutex);
     Guard guard(me->mutex);
+    bool was_connected = me->connected;
     if (arg.status != ECA_NORMAL)
     {
         LOG_MSG("%s: Control_callback failed: %s\n",
                 me->name.c_str(),  ca_message(arg.status));
+        CACallbackMutex.unlock();
         return;
     }
     if (me->setup_ctrl_info(arg.type, arg.dbr))
@@ -411,22 +431,35 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
                 ++ (*g)->num_connected;
         }
     }
+    CACallbackMutex.unlock();
 }
 
 void ArchiveChannel::value_callback(struct event_handler_args args)
 {
     ArchiveChannel *me = (ArchiveChannel *) args.usr;
+    if (!CACallbackMutex.tryLock())
+    {
+#ifdef  DEBUG_CHANNEL
+        LOG_MSG("ArchiveChannel::value_callback(%s): No CACallbackMutex, skipping.\n", 
+                me->name.c_str());
+#endif
+        return;
+    }
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
     if (args.status != ECA_NORMAL  ||  value == 0)
     {
         LOG_MSG("ArchiveChannel::value_callback(%s): No value, CA error %s\n", 
                 me->name.c_str(), ca_message(args.status));
+        CACallbackMutex.unlock();
         return;
     }   
     epicsTime now = epicsTime::getCurrent();
     epicsTime stamp = RawValue::getTime(value);
     if (!me->isGoodTimestamp(stamp, now))
+    {
+        CACallbackMutex.unlock();
         return;
+    }
     Guard guard(me->mutex);
     if (me->isDisabled(guard))
     {
@@ -443,6 +476,7 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
             me->mechanism->handleValue(guard, now, stamp, value);
     }
     me->handleDisabling(guard, value);
+    CACallbackMutex.unlock();
 }
 
 // called by SampleMechanism
@@ -485,8 +519,10 @@ void ArchiveChannel::addEvent(Guard &guard,
     guard.check(mutex);
     if (nelements <= 0)
     {
+#ifdef DEBUG_CHANNEL
         LOG_MSG("'%s': Cannot add event because data type is unknown\n",
                 name.c_str());
+#endif
         return;
     }
     RawValue::Data *value = buffer.getNextElement();

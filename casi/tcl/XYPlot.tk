@@ -96,12 +96,12 @@ pack .buttons.backward -side left  -padx 10
 pack .buttons.forward  -side left  -padx 10
 pack .buttons.exit     -side right -padx 0
 
-pack .archivename -side top -expand yes -fill x
-pack .xchannelname -side top -expand yes -fill x
-pack .ychannelname -side top -expand yes -fill x
-pack .start -side top -expand yes -fill x
-pack .buttons -side bottom -expand yes -fill x
-pack .times -side bottom -expand yes -fill x
+pack .archivename -side top -fill x
+pack .xchannelname -side top  -fill x
+pack .ychannelname -side top  -fill x
+pack .start -side top -fill x
+pack .buttons -side bottom -fill x
+pack .times -side bottom -fill x
 pack $xygraph -side top -expand yes -fill both
 
 #########################################################################

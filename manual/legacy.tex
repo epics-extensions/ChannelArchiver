@@ -29,11 +29,48 @@ The ChannelArchiver/Engine directory contains ConvertEngineConfig.pl,
 a perl script that attemps to convert old-style ASCII configuration
 files for the previous ArchiveEngine into the new XML files:
 \begin{lstlisting}[keywordstyle=\sffamily]
-USAGE: ConvertEngineConfig [-d DTD] old-config new-config
+USAGE:
+ConvertEngineConfig [options] ASCII-config {ASCII-config}
  
-This tool reads an old-type ArchiveEngine ASCII config.
-file and converts it into the current XML config file.
+Options:
+  -d <DTD>       :  Specify DTD
+  -o <filename>  :  Set output file name
+ 
+This tool reads the ASCII configuration file
+for an Engine and converts it into the XML
+config file.
+ 
+One can use either one ASCII config file
+(with !group entries) or supply a list of
+ASCII files, where each one will then define
+a group.
 \end{lstlisting}
+
+\noindent Some sites might actually prefer to use the ASCII
+configuration files and convert them to the XML format with this tool,
+so here is a brief description of the ASCII format.
+Each ASCII file defines a group of channels.
+\begin{itemize}
+\item ``!write\_period $<$seconds$>$''\\
+  Configures the write\_period parameter. Most of the global engine
+  parameters described in section \ref{sec:engineconfig} are allowed
+  via the format ``!$<$parameter$>$ $<$value$>$''.
+\item ``!group $<$file-name$>$''\\
+  Read another group file.
+  To use this, you should create one ``main'' configuration file
+  that contains only ``!group ...'' lines.
+  Preferably, do not use the ``!group ...'' command at all.
+  Simply create one ASCII file per group, and list all the group files
+  that you want one engine to handle on the ConvertEngineConfig
+  command line.
+\item ``$<$channel$>$ $<$period$>$''\\
+  Selects scanned sampling of the given channel.
+\item ``$<$channel$>$ $<$period$>$ Monitor''\\
+  Selects monitored sampling of the given channel.
+\item ``$<$channel$>$ $<$period$>$ Monitor Disable''\\
+  Selects monitored sampling of the given channel; channel disables
+  its group..
+\end{itemize}
 
 \section{CAManager, CAbgManager}
 The ArchiveDaemon offers the basic functionality of the CAbgManager:

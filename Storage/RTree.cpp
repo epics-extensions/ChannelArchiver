@@ -306,23 +306,56 @@ RTree::YNE RTree::updateLastDatablock(const epicsTime &start,
 {
     Node node(M, true);
     int i;
-    if (getLast(node, i)  &&  node.record[i].start == start)
+    if (getLast(node, i))
     {
+        // Likely scenarios:
+        // Engine added values to an existing block, so only
+        // the end time changed.
+        // --> update end time, done.
+        // After a restart, the last engine wrote 10-20
+        // (20 being the "off" sample),
+        // new engine now keeps adding from the most recent CA value
+        // (e.g. 15) on: 15-15, 15-20, 15-21, 15-22, ...
+        // The 15-20 part of the new engine's block is hidden
+        // below what the last engine wrote.
+        // --> keep updating the last block as  20-21, 20-22, ...;
+        //     hidden part 15..20 is inserted again, which ends up as a NOP.
         Datablock block;
         block.offset = node.record[i].child_or_ID;
         if (!block.read(fa.getFile()))
             return YNE_Error;
-        if (block.data_offset == data_offset &&
+        // Is this the one and only block under the last node
+        // and does it point to offset/filename? 
+        if (block.next_ID == 0 &&
+            block.data_offset   == data_offset &&
             block.data_filename == data_filename)
         {
-            if (node.record[i].end == end)
-                return YNE_No;
-            node.record[i].end = end;
-            if (write_node(node) && adjust_tree(node, 0))
-                return YNE_Yes;
-            return YNE_Error;
+            int additions = 0;
+            //   Last block's range:      |---------------|
+            //     New/update range:   xxxxxxxxxxxxxxxxxxxx------|
+            if (start <= node.record[i].end &&
+                node.record[i].end < end)
+            {   // Update end time
+                node.record[i].end = end;
+                if (write_node(node) && adjust_tree(node, 0))
+                    ++additions;
+                else
+                    return YNE_Error;
+            }
+            // Need to insert the 'xxxx' section?
+            if (start < node.record[i].start)
+            {
+                YNE yne = insertDatablock(start, node.record[i].start,
+                                          data_offset, data_filename);
+                if (yne == YNE_Error)
+                    return YNE_Error;
+                if (yne == YNE_Yes)
+                    ++additions;
+            }
+            return (additions > 0) ? YNE_Yes : YNE_No;
         }
     }
+    // Fallback: Last-block-update wahoo didn't work.
     return insertDatablock(start, end, data_offset, data_filename);
 }    
 
@@ -930,7 +963,8 @@ bool RTree::insert_record_into_node(Node &node, int idx,
     return true;
 }
 
-// This is the killer routine which keeps the tree balanced
+// This is the killer routine which keeps the tree balanced.
+// Returns false on error, true on success (which includes NOP).
 bool RTree::adjust_tree(Node &node, Node *new_node)
 {
     int i;

@@ -182,9 +182,16 @@ bool dump_blocks()
 
 static TestData update_data[] =
 {
-    { "200", "210", "-20-",  1 },
-    { "209", "209", "-21-",  1 },
-    { "209", "220", "-21-",  1 },
+    { "200", "210", "-last-", 1 }, // Last engine's last block
+    { "209", "209", "-new-",  1 }, // New engine's block, hidden
+    { "209", "220", "-new-",  1 }, // .. growing
+    { "209", "230", "-new-",  1 }, // .. growing
+    { "230", "270", "-new-",  1 }, // .. unreal, but handled as growing.
+    { "280", "280", "-new2-", 1 }, // Second block of new engine, one sample 
+    { "280", "281", "-new2-", 1 }, // .. growing
+    { "280", "282", "-new2-", 1 }, // .. growing
+    { "280", "283", "-new2-", 1 }, // .. growing
+    { "280", "290", "-new2-", 1 }, // .. growing
 };
 
 bool update_test(const char *index_name,
@@ -275,11 +282,6 @@ int main()
     fmt(-3.14e+7);
     fmt(-0.123456789);
 #endif
-    if (!update_test("test/update.tst",
-                     update_data, sizeof(update_data)/sizeof(TestData),
-                     "test/update_data.dot"))
-        return -1;
-#if 0
     if (!fill_test(false, "test/tree.tst",
                    fill_data, sizeof(fill_data)/sizeof(TestData),
                    "test/test_data1.dot"))
@@ -294,6 +296,9 @@ int main()
                    man_data2, sizeof(man_data2)/sizeof(TestData),
                    "man_data2.dot"))
         return -1;
-#endif
+    if (!update_test("test/update.tst",
+                     update_data, sizeof(update_data)/sizeof(TestData),
+                     "test/update_data.dot"))
+        return -1;
     return 0;
 }

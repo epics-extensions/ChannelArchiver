@@ -171,20 +171,57 @@ every 30 seconds and once as a monitor with an estimated period or one
 second, the channel will in fact be monitored with an estimated period
 of 1 second.
 
+\subsubsection{scan}
+Either ``monitor'' or ``scan'' need to be provided as part of a
+channel configuration to select the sampling method.  
+True to its name, ``scan'' selects scanned operation, where the preceding
+``period'' tag determines the sampling period, that is the time
+between taking samples.
+As an example, scanned operation with a period of 60 means: Every 60
+seconds, the engine will write the most recent value of the channel to
+the archive.
+
 \subsubsection{monitor}
-Either ``monitor'' or ``scan'' needs to be provided as part of a
-channel configuration to select the sampling method.  In the case of
-``monitor'', the channel will be monitored, that is: Each change
-received via ChannelAccess will be stored. The ``period'' tag is used
-to determine the in-memory buffer size of the engine. That means: If
+As an alternative to the ``scan'' tag, ``monitor'' can be used,
+requesting monitored operation, that is: An attempt is made to store
+each change received via ChannelAccess. The ``period'' tag is used to
+determine the in-memory buffer size of the engine. That means: If
 samples arrive much more frequently than estimated via the ``period''
 tag, the archive engine might drop samples. (See also
-``buffer\_reserve'', \ref{sec:reserve}).
-
-\subsubsection{scan}
-As an alternative to the ``monitor'' tag, ``scan'' can be used to
-select periodic sampling. The preceding ``period'' tag determines the
-sampling period.
+``buffer\_reserve'', \ref{sec:reserve}).  Some examples, assuming that
+channel ``fred'' actually emits monitors at 1~Hz:
+\begin{itemize}
+\item ``fred 1 Monitor''\\
+      Every value sent by fred is archived. Might be a good idea for
+      some channels, but don't try to store every value of every PV
+      of your control system indefinetely unless you are prepared to
+      deal with that amount of data.
+\item ``fred 1''\\
+      The engine will sample once per second, and the channel changes
+      once a second, so you might think that you archive every value
+      just as in the previous example.  But think again. The sampling
+      of the engine on the host and the scanning of the channel on the
+      CA server are not synchronized, plus there are additional
+      network delays. So you will sometimes miss values whenever more
+      than one sample arrived between the engine's sampling, or get
+      duplicate values whenever no new value arrived between the
+      engine's sampling. Bad idea.
+\item ``fred 60''\\
+      The engine will sample every 60 seconds. This is a very
+      reasonable setup: The channel samples at 1 Hz, so you get
+      frequent updates for the operator interface, but for the archive
+      we only care about a sample per minute and save storage space by
+      ignoring finer detail.
+\item ``fred 10 Monitor''\\
+      Probably an error. The engine is instructed to save every
+      incoming monitor, but you told it to allocate buffers for only
+      one value every 10 seconds, even though we knew that the channel
+      will emit monitors much more often. So you will get ``overrun''
+      errors, the engine will overwrite older samples in its ring
+      buffer with newly arriving samples, and the archive will contain
+      the last few samples that happened to be in the buffer at
+      write-to-disk time.
+\end{itemize}
 
 \subsubsection{disable} \label{sec:disable}
 This optional sub-element of a channel turns the channel into a

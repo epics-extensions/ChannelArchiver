@@ -126,13 +126,21 @@ value from the CA server at this rate, it establishes a monitor and
 only saves a value every 5 seconds.
 \end{description}
 
-\noindent The difference between the two sampled modes is subtle but important
+\noindent The configuration of the engine in section
+\ref{sec:engineconfig} describes how one selects the sampling
+mechanism for each channel. 
+When selecting monitored operation, you will need to provide an
+estimate of how many monitors the channel emits, so that the engine
+can allocate appropriate buffer space (more on this in sections
+\ref{sec:reserve} and \ref{sec:period}).
+
+The difference between the two sampled modes is subtle but important
 for performance reasons. Assume our data source changes at 1~Hz. If
 we want to store a value every 30 seconds, it is most efficient to
 send a 'read'-request every 30 seconds. If, on the other hand, we want
 to store a value every 5 seconds, it is usually more effective to
 establish a monitor, so we automatically receive updates about every
-second, and simply ignore 4 of the 5 values.
+second, and simply \emph{ignore} 4 of the 5 values.
 
 When configuring a channel, the user only selects either ``Monitor''
 or ``Scan'' with a sampling rate.  The ArchiveEngine will

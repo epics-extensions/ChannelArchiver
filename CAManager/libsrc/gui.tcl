@@ -18,10 +18,15 @@ option add *weekdayBackground white widgetDefault
 option add *weekendBackground mistyrose widgetDefault
 option add *selectColor red widgetDefault
 
-if {1} {
+set dt 1[clock format [clock seconds] -format %H -gmt 1]
+incr dt -1[clock format [clock seconds] -format %H -gmt 0]
+
+if {(($dt >= 5) && ($dt <= 8)) || ($dt == 10)} {
+  # according to the timezone, we're most probably in the USA
   option add *startDay sunday widgetDefault
   option add *days {Su Mo Tu We Th Fr Sa} widgetDefault
 } else {
+  # otherwise assume european style weeks...
   option add *startDay monday widgetDefault
   option add *days {Mo Tu We Th Fr Sa Su} widgetDefault
 }
@@ -366,6 +371,11 @@ array set suggested {
     {directory}
     {^\[^%\]*$}
     "no \"%\" at all"
+  }
+  timerange {
+    {directory}
+    {.}
+    "no restrictions"
   }
 }
 
@@ -966,7 +976,6 @@ proc camGUI::initTable {table} {
     catch {destroy $table.f.f$i}
   }
   $table configure -rows $row
-puts $row
   setDT
   after 500 {set ::busyIndicator ""}
 }

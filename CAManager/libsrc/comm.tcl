@@ -21,7 +21,7 @@ proc camComm::CheckRunning {i rvar} {
 
   set start [clock seconds]
   if [catch {set sock [socket [camMisc::arcGet $i host] [camMisc::arcGet $i port]]}] {
-    set $rvar "NO"
+    condSet $rvar "NO"
     return
   }
   lappend ::Socks $sock

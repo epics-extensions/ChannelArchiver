@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<engines>
+   <engine>
+      <desc>Demo</desc>
+      <port>4812</port>
+      <config>/home/ade/epics/supTop/extensions/R3.14.4/src/ChannelArchiver/ArchiveDaemon/excas.xml</config>
+      <index>index</index>
+      <daily>17:20</daily>
+   </engine>
+   <engine>
+      <desc>Demo 2</desc>
+      <port>4813</port>
+      <config>/tmp/excas.xml</config>
+      <index>2004/02/01/index</index>
+   </engine>
+</engines>

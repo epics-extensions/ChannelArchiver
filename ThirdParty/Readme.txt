@@ -10,3 +10,8 @@ I used this for tests of the XML-RPC Archive Data Server.
 Under RedHat 9.0, is was sufficient to install
 Frontier-RPC-0.07b4.
 
+* XML-Simple-2.09.tar.gz
+An XML reader for perl, used by the ArchiveDaemon.
+See "Setup, Installation" in manual.
+
+

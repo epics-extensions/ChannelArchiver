@@ -21,9 +21,10 @@ refer you to the EPICS web site
 \href{http://www.aps.anl.gov/epics}{http://www.aps.anl.gov/epics}. 
 
 You need to read and maybe adjust Tools/ToolsConfig.h and
-Tools/ArchiverConfig.h to suit your needs.
-In addition, some open source tools and libraries are required which
-are listed in the following subsections.
+Tools/ArchiverConfig.h to suit your needs.  In addition, some open
+source tools and libraries are required which are listed in the
+following subsections. They are included in the ``ThirdParty''
+subdirectory of the archiver sources.
 
 \subsection{XML-RPC}
 The archiver's network data server uses XML-RPC. The \INDEX{XML-RPC
@@ -31,7 +32,7 @@ Setup} requires the installation of at least the C/C++ and Java
 support. If you want to access the archive data server from e.g.\
 perl, this would mean you have to get XML-RPC support for perl, too.
 
-For C/C++, we use xmlrpc-c-0.9.9 from
+For C/C++, we use xmlrpc-c from
 \href{http://xmlrpc-c.sourceforge.net}{http://xmlrpc-c.sourceforge.net}.
 The Makefiles in ChannelArchiver/XMLRPCServer assume this to be
 installed in the default location, that is under /usr/local.
@@ -43,7 +44,7 @@ reported the error.
 
 \subsection{Xerces XML Library}
 The \INDEX{Xerces} library is used to parse the XML configuration files of the
-ArchiveEngine and the network data server.
+ArchiveEngine, IndexTool, and the network data server.
 See ``Xerces C++'' under
 \begin{center}
 \href{http://xml.apache.org/index.html}{http://xml.apache.org/index.html}
@@ -86,6 +87,20 @@ otherwise see
 Expat might be a little faster and easier to install, but it does not
 offer validation, so it will be up to you to assert that all XML
 configuration files are 100\% perfect.
+
+\subsection{XML-Simple}
+This XML library for perl is used by the ArchiveDaemon.
+It is available from 
+\begin{center}
+\href{http://www.cpan.org}{http://www.cpan.org}.
+\end{center}
+\begin{lstlisting}[keywordstyle=\sffamily]
+tar vzoxf XML-Simple-2.09.tar.gz
+cd XML-Simple-2.09
+perl Makefile.PL
+su
+make install
+\end{lstlisting}
 
 \section{Installation}
 There are no specific installation procedures for the ArchiveEngine,

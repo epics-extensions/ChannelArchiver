@@ -25,8 +25,9 @@ StorageObj_DIR = $(INSTALL_LIB)
 Tools_DIR      = $(INSTALL_LIB)
 ToolsObj_DIR   = $(INSTALL_LIB)
 
-# Only for benchmarking the read/write routines:
-TESTPROD_HOST := bench
+# Only for benchmarking the read/write routines
+# or other CA tests
+TESTPROD_HOST := bench hammer
 
 # Install script to convert old request files.
 SCRIPTS += ConvertEngineConfig.pl

@@ -14,9 +14,10 @@
 
 // System
 #include <signal.h>
+// Base
+#include "epicsVersion.h"
 // Tools
 #include "Filename.h"
-#include "epicsVersion.h"
 #include "epicsTimeHelper.h"
 #include "ArgParser.h"
 #include "MsgLogger.h"

@@ -4,6 +4,7 @@
 
 // Enable/disable certain tests in case one doesn't work out
 // on your architecture
+#define TEST_AUTOPTR
 #if 0
 #define TEST_STRING
 #define TEST_TIME
@@ -13,8 +14,8 @@
 #define TEST_TIMER
 #define TEST_CA
 #define TEST_BITSET
-#endif
 #define TEST_FUX
+#endif
 
 // Nothing should need to be touched from here down
 
@@ -27,6 +28,59 @@
            printf("OK  : %s\n", #t); \
        else                          \
            printf("FAIL: %s\n", #t)
+
+#ifdef TEST_AUTOPTR
+#include "AutoPtr.h"
+
+static int deletes = 0;
+class X
+{
+public:
+    X() {}
+
+    ~X()
+    {
+        ++deletes;    
+    }
+
+    int val;
+};
+
+void test_autoptr()
+{
+    printf("\nAutoPtr Tests\n");
+    printf("------------------------------------------\n");
+    {
+        AutoPtr<int> i(new int);
+        *i = 42;
+        TEST(*i == 42);
+    }
+    {
+        AutoPtr<X> x(new X);
+        x->val = 42;
+        (*x).val = 43;
+        
+        AutoPtr<X> x2(x);
+        TEST(x2->val == 43);
+    }
+    {
+        X x;
+        AutoPtr<X> p(&x);
+        p.release();
+        p.assign(&x);
+        p.release();
+    }
+    {
+        int i;
+        for (i=0; i<5; ++i)
+        {
+            AutoPtr<X> x(new X);
+            x->val = i;
+        }
+    }
+    TEST(deletes == 7);
+}
+#endif
 
 // -----------------------------------------------------------------
 #ifdef TEST_STRING
@@ -767,6 +821,10 @@ void test_fux()
 
 int main ()
 {
+#ifdef TEST_AUTOPTR
+    test_autoptr();
+#endif
+
 #ifdef TEST_STRING
     test_string();
 #endif

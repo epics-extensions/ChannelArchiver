@@ -1,4 +1,5 @@
 // Tools
+#include <AutoPtr.h>
 #include <BinIO.h>
 #include <MsgLogger.h>
 #include <Filename.h>
@@ -144,7 +145,6 @@ bool IndexFile::check(int level)
         return false;
     }
     NameIterator names;
-    RTree *tree;
     bool have_name;
     unsigned long channels = 0;
     unsigned long total_nodes=0, total_used_records=0, total_records=0;
@@ -154,7 +154,7 @@ bool IndexFile::check(int level)
          have_name = getNextChannel(names))
     {
         ++channels;
-        tree = getTree(names.getName());
+        AutoPtr<RTree> tree(getTree(names.getName()));
         if (!tree)
         {
             printf("Cannot get tree for channel '%s'\n",
@@ -167,13 +167,11 @@ bool IndexFile::check(int level)
         {
             printf("RTree for channel '%s' is broken\n",
                    names.getName().c_str());
-            delete tree;
             return false;
         }
         total_nodes += nodes;
         total_used_records += records;
         total_records += nodes * tree->getM();
-        delete tree;
     }
     printf("\nAll RTree self-tests check out fine\n");
     printf("%ld channels\n", channels);

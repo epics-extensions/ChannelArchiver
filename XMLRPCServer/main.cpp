@@ -6,6 +6,7 @@
 #include <xmlrpc.h>
 #include <xmlrpc_cgi.h>
 // Tools
+#include <AutoPtr.h>
 #include <MsgLogger.h>
 #include <RegularExpression.h>
 #include <BinaryTree.h>
@@ -235,17 +236,15 @@ xmlrpc_value *get_data(xmlrpc_env *env,
                        const epicsTime &start, const epicsTime &end,
                        long count, double interpol)
 {
-    IndexFile      *index = 0;
-    DataReader     *reader = 0;
     xmlrpc_value   *results = 0;
-
 #ifdef LOGFILE
     stdString txt;
     LOG_MSG("Start: %s\n", epicsTimeTxt(start, txt));
     LOG_MSG("End  : %s\n", epicsTimeTxt(end, txt));
     LOG_MSG("Interpolating onto %g seconds\n", interpol);
 #endif
-    index = open_index(env, key);
+    AutoPtr<IndexFile> index(open_index(env, key));
+    AutoPtr<DataReader> reader;
     if (env->fault_occurred)
         goto exit_from_get_data;
     if (interpol <= 0.0)
@@ -261,7 +260,6 @@ xmlrpc_value *get_data(xmlrpc_env *env,
     results = xmlrpc_build_value(env, STR("()"));
     if (env->fault_occurred)
         goto exit_from_get_data;
-
     const RawValue::Data *data;
     xmlrpc_value *result, *meta, *values;
     xmlrpc_int32 xml_type, xml_count;
@@ -322,9 +320,7 @@ xmlrpc_value *get_data(xmlrpc_env *env,
         xmlrpc_DECREF(result);
     }
   exit_from_get_data:
-    delete reader;
     index->close();
-    delete index;
     return results;
 }
 
@@ -414,7 +410,7 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
         return 0;
     }
     // Open Index
-    IndexFile *index = open_index(env, key);
+    AutoPtr<IndexFile> index(open_index(env, key));
     if (env->fault_occurred)
     {
         if (regex)
@@ -423,7 +419,6 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
     }
     // Put all names in binary tree
     IndexFile::NameIterator ni;
-    RTree *tree;
     BinaryTree<ChannelInfo> channels;
     ChannelInfo info;
     bool ok;
@@ -433,17 +428,14 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
         if (regex && !regex->doesMatch(ni.getName()))
             continue; // skip what doesn't match regex
         info.name = ni.getName();
-        if ((tree = index->getTree(info.name)))
-        {
+        AutoPtr<RTree> tree(index->getTree(info.name));
+        if (tree)
             tree->getInterval(info.start, info.end);
-            delete tree;
-        }
         else
             info.start = info.end = nullTime;
         channels.add(info);
     }
     index->close();
-    delete index;
     if (regex)
         regex->release();
     // Sorted dump of names

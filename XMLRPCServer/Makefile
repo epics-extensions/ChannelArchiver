@@ -10,7 +10,7 @@ USR_CXXFLAGS += -I/usr/local/include
 
 DummyDataServer_SRCS += DummyServer.cpp
 ArchiveDataServer_SRCS += ServerConfig main.cpp
-TESTPROD_HOST := DummyDataServer ArchiveDataServer bench
+TESTPROD_HOST := DummyDataServer ArchiveDataServer
 
 PROD_LIBS_DEFAULT  := Storage    Tools    ca Com
 PROD_LIBS_WIN32    := StorageObj ToolsObj ca Com
@@ -32,7 +32,7 @@ xmlrpc_xmltok_DIR   = /usr/local/lib
 xmlrpc_client_DIR   = /usr/local/lib
 
 # From xmlrpc-c-config libwww-client --libs
-bench_LDFLAGS=-L/usr/lib -L/usr/local/lib -lxmlrpc_client -L/usr/lib -lmd5 -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib   
+bench_LDFLAGS=-L/usr/lib -L/home/kasemir/lib -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib
 
 include $(TOP)/configure/RULES
 

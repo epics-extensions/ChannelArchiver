@@ -5,6 +5,7 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 
 # Includes to install from this subproject
 INC += ToolsConfig.h 
+INC += AutoPtr.h
 INC += ArchiveException.h
 INC += ArchiverConfig.h
 INC += ArgParser.h
@@ -19,6 +20,7 @@ INC += Conversions.h
 INC += epicsTimeHelper.h       
 INC += Filename.h
 INC += GenericException.h
+INC += Guard.h
 INC += Histogram.h
 INC += InsertionSort.h
 INC += MemoryPool.h 

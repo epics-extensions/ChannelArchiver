@@ -4,6 +4,7 @@
 // Base
 #include <epicsVersion.h>
 // Tools
+#include <AutoPtr.h>
 #include <stdString.h>
 #include <Filename.h>
 #include "ArchiverConfig.h"
@@ -71,7 +72,6 @@ bool create_masterindex(int RTreeM,
     ASCIIParser config_parser;
     IndexFile::NameIterator names;
     IndexFile index(RTreeM), subindex(RTreeM);
-    RTree *tree, *subtree;
     bool ok;
     if (!config_parser.open(config_name))
     {
@@ -104,13 +104,15 @@ bool create_masterindex(int RTreeM,
             const stdString &channel = names.getName();
             if (verbose > 1)
                 printf("'%s'\n", channel.c_str());
-            if (!(subtree = subindex.getTree(channel)))
+            AutoPtr<RTree> subtree(subindex.getTree(channel));
+            if (!subtree)
             {
                 fprintf(stderr, "Cannot get tree for '%s' from '%s'\n",
                         channel.c_str(), sub_name.c_str());
                 continue;
             }
-            if (!(tree = index.addChannel(channel)))
+            AutoPtr<RTree> tree(index.addChannel(channel));
+            if (!tree)
             {
                 fprintf(stderr, "Cannot add '%s' to '%s'\n",
                         channel.c_str(), index_name.c_str());
@@ -119,8 +121,6 @@ bool create_masterindex(int RTreeM,
             add_tree_to_master(index_name,
                                subindex.getDirectory(),
                                channel, subtree, tree);
-            delete subtree;
-            delete tree;
         }
         subindex.close();
         if (verbose > 2)

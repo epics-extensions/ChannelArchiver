@@ -3,6 +3,7 @@
 // Base
 #include <epicsVersion.h>
 // Tools
+#include <AutoPtr.h>
 #include <BinaryTree.h>
 #include <RegularExpression.h>
 #include <epicsTimeHelper.h>
@@ -65,11 +66,10 @@ bool list_channels(IndexFile &index, stdVector<stdString> names,
     {
         if (show_info)
         {
-            RTree *tree = index.getTree((*name));
+            AutoPtr<RTree> tree(index.getTree((*name)));
             if (tree)
             {
                 tree->getInterval(start, end);
-                delete tree;
                 printf("%s\t%s\t%s\n", (*name).c_str(),
                        epicsTimeTxt(start, s), epicsTimeTxt(end, e));
             }

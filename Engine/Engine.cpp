@@ -12,6 +12,7 @@
 #include <cadef.h>
 // Tools
 #include "ToolsConfig.h"
+#include "AutoPtr.h"
 #include "epicsTimeHelper.h"
 #include "ArchiveException.h"
 #include "MsgLogger.h"
@@ -49,9 +50,7 @@ Engine::Engine(const stdString &index_name)
 {
     static bool the_one_and_only = true;
 
-    if (! the_one_and_only)
-        throwDetailedArchiveException(
-            Unsupported, "Cannot run more than one Engine");
+    LOG_ASSERT(the_one_and_only);
     _start_time = epicsTime::getCurrent();
     RTreeM = 50;
     this->index_name = index_name;
@@ -67,18 +66,16 @@ Engine::Engine(const stdString &index_name)
     _secs_per_file = 60*60*24; // One day
     _future_secs = 6*60*60;
 
-    // Initialize CA library for multi-treaded use
-    if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL)
-        throwDetailedArchiveException(Fail, "ca_context_create");
-    
-    // Add exception handler to avoid aborts from CA
-    if (ca_add_exception_event(caException, 0) != ECA_NORMAL)
-        throwDetailedArchiveException(Fail, "ca_add_exception_event");
-
+    // Initialize CA library for multi-treaded use and
+    // add exception handler to avoid aborts from CA
+    if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL ||
+        ca_add_exception_event(caException, 0) != ECA_NORMAL)
+    {
+        LOG_MSG("CA client initialization failed\n");
+        LOG_ASSERT(0);
+    }
     ca_context = ca_current_context();
-    
     engine_server = new EngineServer();
-
 #ifdef USE_PASSWD
     _user = DEFAULT_USER;
     _pass = DEFAULT_PASS;
@@ -176,7 +173,10 @@ GroupInfo *Engine::findGroup(const stdString &name)
 GroupInfo *Engine::addGroup(const stdString &name)
 {
     if (name.empty())
-        throw GenericException(__FILE__, __LINE__);
+    {
+        LOG_MSG("Engine::addGroup: No name given\n");
+        return 0;
+    }
     GroupInfo *group = findGroup(name);
     if (!group)
     {
@@ -238,7 +238,7 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
         IndexFile index(RTreeM);
         if (index.open(index_name.c_str(), false))
         {   // Is channel already in Archive?
-            RTree *tree = index.getTree(channel_name);
+            AutoPtr<RTree> tree(index.getTree(channel_name));
             if (tree)
             {
                 RTree::Datablock block;
@@ -251,8 +251,8 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                                             block.data_filename, false);
                     if (datafile)
                     {
-                        DataHeader *header =
-                            datafile->getHeader(block.data_offset);
+                        AutoPtr<DataHeader> header(
+                            datafile->getHeader(block.data_offset));
                         if (header)
                         {
                             epicsTime last_stamp(header->data.end_time);
@@ -271,13 +271,11 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                                     block.data_filename.c_str(),
                                     block.data_offset,
                                     stamp_txt.c_str());
-                            delete header;
                         }
                         datafile->release();
                         DataFile::close_all();
                     }
                 }
-                delete tree;
             }
             index.close();
         }
@@ -288,7 +286,6 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
 #endif
     channel->startCA();
     channel->mutex.unlock();
-
     return channel;
 }
 

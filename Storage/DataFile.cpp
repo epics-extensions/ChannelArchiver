@@ -8,6 +8,7 @@
 #endif
 
 // Tools
+#include "AutoPtr.h"
 #include "Conversions.h"
 #include "MsgLogger.h"
 #include "Filename.h"
@@ -169,7 +170,7 @@ DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
                 filename.c_str());
         return 0;
     }
-    DataHeader *header = new DataHeader(this);
+    AutoPtr<DataHeader> header(new DataHeader(this));
     if (! header)
     {
         LOG_MSG("DataFile::addHeader(%s): Cannot alloc new header\n",
@@ -187,7 +188,6 @@ DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
     {
         LOG_MSG("DataFile::addHeader(%s): Cannot write new header\n",
                 filename.c_str());
-        delete header;
         return 0;   
     }
     // allocate data buffer by writing some marker at the end:
@@ -200,10 +200,9 @@ DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
    {
         LOG_MSG("DataFile::addHeader(%s): Cannot mark end of new buffer\n",
                 filename.c_str());
-        delete header;
         return 0;
     }
-    return header;
+    return header.release();
 }
 
 bool DataFile::addCtrlInfo(const CtrlInfo &info, FileOffset &offset)

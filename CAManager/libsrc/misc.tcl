@@ -46,11 +46,11 @@ namespace eval camMisc {
   if {$::args(log) == ""} {array unset ::args log}
   if {$::args(log+) == ""} {array unset ::args log+}
 
-  if {[info exists ::args(log+)]} {
-    set $::args(log) $::args(log+)
-  }
   if {[info exists ::args(log)] && ($::args(log) != "-")} {
     file delete -force "$::args(log)"
+  }
+  if {[info exists ::args(log+)]} {
+    set $::args(log) $::args(log+)
   }
   
   foreach k $::argv {

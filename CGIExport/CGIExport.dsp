@@ -66,7 +66,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\Export" /I "..\Lib" /I "..\..\Tools" /I "..\..\..\base\include" /I "..\..\..\base\include\os\WIN32" /I "..\..\..\base\src\ca" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D CPP_EDITION=3 /D OLD_osiTime=1 /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\Export" /I "..\LibIO" /I "..\..\Tools" /I "..\..\..\..\base\include" /I "..\..\..\..\base\include\os\WIN32" /I "..\..\..\..\base\src\ca" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D GNUPLOT_PROGRAM=\"c:\\Progra~1\\gnuplot\\wgnuplot.exe\" /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\Export" /I "..\LibIO" /I "..\..\Tools" /I "..\..\..\..\base\include" /I "..\..\..\..\base\include\os\WIN32" /I "..\..\..\..\base\src\ca" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -105,6 +105,10 @@ SOURCE=..\LibIO\ArchiveI.cpp
 # Begin Source File
 
 SOURCE=..\..\Tools\ArgParser.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Tools\ASCIIParser.cpp
 # End Source File
 # Begin Source File
 
@@ -192,11 +196,31 @@ SOURCE=.\HTMLPage.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\LibIO\LinInterpolValueIteratorI.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\main.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\Tools\MsgLogger.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MultiArchive.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MultiChannel.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MultiChannelIterator.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\LibIO\MultiValueIterator.cpp
 # End Source File
 # Begin Source File
 

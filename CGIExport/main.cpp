@@ -20,9 +20,8 @@
 #include "HTMLPage.h"
 #include "CGIInput.h"
 
-// Use "Bin" archive:
 #include "BinArchive.h"
-#define ARCHIVE_TYPE BinArchive
+#include "MultiArchive.h"
 
 // getcwd
 #ifdef WIN32
@@ -71,15 +70,16 @@ static void listChannelsTraverser (const stdString &item, void *arg)
 		 << "</TR></TD>\n";
 }
 
-void listChannels (HTMLPage &page, const stdString &archive_name, const stdString &pattern)
+void listChannels (HTMLPage &page)
 {
 	BinaryTree<stdString> channels;
 
+	page.start ();
 	try
 	{
-		Archive archive (new ARCHIVE_TYPE (archive_name));
+		Archive archive (new CGIEXPORT_ARCHIVE_TYPE (page._directory));
 		ChannelIterator channel (archive);
-		archive.findChannelByPattern (pattern, channel);
+		archive.findChannelByPattern (page._pattern, channel);
 
 		while (channel)
 		{
@@ -98,6 +98,7 @@ void listChannels (HTMLPage &page, const stdString &archive_name, const stdStrin
 	cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
 	channels.traverse (listChannelsTraverser);
 	cout << "</TABLE>\n";
+	page.interFace ();
 }
 
 class Info
@@ -120,64 +121,47 @@ static void listInfoTraverser (const Info &info, void *arg)
 		<< "</TD></TR>\n";
 }
 
-void listInfo (HTMLPage &page, const stdString &archive_name, const vector<stdString> &names)
+void listInfo (HTMLPage &page)
 {
+	page.start ();
 	BinaryTree<Info>	infos;
 	Info				info;
 	try
 	{
-		Archive archive (new ARCHIVE_TYPE (archive_name));
+		Archive archive (new CGIEXPORT_ARCHIVE_TYPE (page._directory));
 		ChannelIterator channel (archive);
-		
-		for (size_t i=0; i<names.size(); ++i)
+
+		if (page._names.empty())
 		{
-			if (archive.findChannelByName (names[i], channel))
+			archive.findChannelByPattern (page._pattern, channel);
+			while (channel)
 			{
 				info.channel = channel->getName();
 				info.first   = channel->getFirstTime();
 				info.last    = channel->getLastTime();
+				infos.add (info);
+				++channel;
 			}
-			else
-			{
-				info.channel = names[i];
-				info.channel += " -not found-";
-				info.first   = nullTime;
-				info.last    = nullTime;
-			}
-			infos.add (info);
 		}
-	}
-	catch (GenericException &e)
-	{
-		page.header ("Archive Error",2);
-		cout << "<PRE>\n";
-		cout << e.what () << endl;
-		cout << "</PRE>\n";
-	}
-	page.header ("Channel Info", 2);
-	cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
-	cout << "<TR><TH>Channel</TH><TH>First archived</TH><TH>Last archived</TH></TR>\n";
-	infos.traverse (listInfoTraverser);
-	cout << "</TABLE>\n";
-}
-
-void listInfo (HTMLPage &page, const stdString &archive_name, const stdString &pattern)
-{
-	BinaryTree<Info>	infos;
-	Info				info;
-	try
-	{
-		Archive archive (new ARCHIVE_TYPE (archive_name));
-		ChannelIterator channel (archive);
-		
-		archive.findChannelByPattern (pattern, channel);
-		while (channel)
+		else
 		{
-			info.channel = channel->getName();
-			info.first   = channel->getFirstTime();
-			info.last    = channel->getLastTime();
-			infos.add (info);
-			++channel;
+			for (size_t i=0; i<page._names.size(); ++i)
+			{
+				if (archive.findChannelByName (page._names[i], channel))
+				{
+					info.channel = channel->getName();
+					info.first   = channel->getFirstTime();
+					info.last    = channel->getLastTime();
+				}
+				else
+				{
+					info.channel = page._names[i];
+					info.channel += " -not found-";
+					info.first   = nullTime;
+					info.last    = nullTime;
+				}
+				infos.add (info);
+			}
 		}
 	}
 	catch (GenericException &e)
@@ -186,12 +170,14 @@ void listInfo (HTMLPage &page, const stdString &archive_name, const stdString &p
 		cout << "<PRE>\n";
 		cout << e.what () << endl;
 		cout << "</PRE>\n";
+		return;
 	}
 	page.header ("Channel Info", 2);
 	cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
 	cout << "<TR><TH>Channel</TH><TH>First archived</TH><TH>Last archived</TH></TR>\n";
 	infos.traverse (listInfoTraverser);
 	cout << "</TABLE>\n";
+	page.interFace ();
 }
 
 void getNames (const stdString &input_string, vector<stdString> &names)
@@ -245,13 +231,7 @@ bool decodeTimes (CGIInput &cgi, osiTime &start, osiTime &end)
 		buf.clear ();
 
 		if (! string2osiTime (start_txt, start))
-		{
-			HTMLPage	page;
-			page.start ("Error in start time");
-			page.header ("Error in start time:", 3);
-			cout << "Cannot decode '" << start_txt << "'<BR>\n";
 			return false;
-		}
 	}
 	if (!cgi.find ("ENDMONTH").empty())
 	{
@@ -268,28 +248,22 @@ bool decodeTimes (CGIInput &cgi, osiTime &start, osiTime &end)
 		buf.clear ();
 
 		if (! string2osiTime (end_txt, end))
-		{
-			HTMLPage	page;
-			page.start ("Error in end time");
-			page.header ("Error in end time:", 3);
-			cout << "Cannot decode '" << end_txt << "'<BR>\n";
 			return false;
-		}
 	}
 
 	return true;
 }
 
-bool exportFunc (const stdString &archive_name,
-			 const stdString &pattern, const vector<stdString> &names,
-			 const osiTime &start, const osiTime &end,
-			 double round, bool fill, bool status, bool useGNU, const stdString &tempfilebase)
+bool exportFunc (HTMLPage &page, bool useGNU=false, const char *temp_file_base=0)
 {
 	bool have_data = false;
+	stdString tempfilebase;
+	if (temp_file_base)
+		tempfilebase = temp_file_base;
 
 	try
 	{
-		ArchiveI *archive = new ARCHIVE_TYPE (archive_name);
+		ArchiveI *archive = new CGIEXPORT_ARCHIVE_TYPE (page._directory);
 		Exporter *exporter;
 
 		if (useGNU)
@@ -306,18 +280,20 @@ bool exportFunc (const stdString &archive_name,
 			cout << "\n";
 		}
 
-		exporter->setStart (start);
-		exporter->setEnd (end);
-		if (fill)
+		exporter->setStart (page._start);
+		exporter->setEnd (page._end);
+		if (page._fill)
 			exporter->useFilledValues ();
-		if (status)
+		if (page._status)
 			exporter->enableStatusText (true);
-		if (round > 0.0)
-			exporter->setTimeRounding (round);
-		if (names.empty())
-			exporter->exportMatchingChannels (pattern);
+		if (page._round > 0.0)
+			exporter->setTimeRounding (page._round);
+		if (page._interpol > 0.0)
+			exporter->setLinearInterpolation (page._interpol);
+		if (page._names.empty())
+			exporter->exportMatchingChannels (page._pattern);
 		else
-			exporter->exportChannelList (names);
+			exporter->exportChannelList (page._names);
 
 		have_data = exporter->getDataCount () > 0;
 
@@ -352,10 +328,10 @@ static void PrintRoutine (void *arg, const stdString &text)
 	cerr << text;
 }
 
-void help ()
+void help (HTMLPage &page)
 {
-	HTMLPage	page;
-	page.start ("Help");
+	page._title = "Help";
+	page.start ();
 	Usage (page);
 }
 
@@ -369,21 +345,18 @@ void getTimeTxt (char *result)
 
 int main (int argc, const char *argv[], char *envp[])
 {
+	TheMsgLogger.SetPrintRoutine (PrintRoutine);
 #ifdef WEB_DIRECTORY
 	chdir (WEB_DIRECTORY);
 #endif
 
-	TheMsgLogger.SetPrintRoutine (PrintRoutine);
+	HTMLPage	page;
+	page._title = "EPICS Channel Archive";
+	page._cgi_path = getenv ("SCRIPT_NAME");
 
-	stdString title ("EPICS Channel Archive");
-	stdString command;
-	stdString directory;
-	stdString pattern;
-
-	stdString script_path, script_dir, script;
-	script_path = getenv ("SCRIPT_NAME");
-	Filename::getDirname  (script_path, script_dir);
-	Filename::getBasename (script_path, script);
+	stdString script_dir, script;
+	Filename::getDirname  (page._cgi_path, script_dir);
+	Filename::getBasename (page._cgi_path, script);
 
 	CGIInput cgi;
 
@@ -401,17 +374,17 @@ int main (int argc, const char *argv[], char *envp[])
 
 	if (!parser.getParameter (0).empty())
 	{
-		command = parser.getParameter (0);
+		cgi.add ("COMMAND", parser.getParameter (0));
 		command_line = true;
 	}
 	if (!parser.getParameter (1).empty())
 	{
-		directory = parser.getParameter (1);
+		cgi.add ("DIRECTORY", parser.getParameter (1));
 		command_line = true;
 	}
 	if (!parser.getParameter (2).empty())
 	{
-		pattern = parser.getParameter (2);
+		cgi.add ("PATTERN", parser.getParameter (2));
 		command_line = true;
 	}
 	if (!command_line)
@@ -419,37 +392,42 @@ int main (int argc, const char *argv[], char *envp[])
 	{
 		if (!cgi.parse (cin, cout))
 		{
-			HTMLPage	page;
-			page.start ("CGI Error");
+			page._title = "CGI Error";
+			page.start ();
 			showEnvironment (page, envp);
 			return 0;
 		}
-		command = cgi.find ("COMMAND");
-		directory = cgi.find ("DIRECTORY");
-		pattern = cgi.find ("PATTERN");
 	}
 
-	vector<stdString>	names;
-	getNames (cgi.find ("NAMES"), names);
-	double round = atof (cgi.find ("ROUND").c_str());
-	bool fill = cgi.find ("FILL").length()>0;
-	bool status = cgi.find ("STATUS").length()>0;
-	osiTime	start, end;
-	decodeTimes (cgi, start, end);
-
-	if (command.empty() || command == "HELP")
+	page._command = cgi.find ("COMMAND");
+	page._directory = cgi.find ("DIRECTORY");
+	page._pattern = cgi.find ("PATTERN");
+	page._round = atof (cgi.find ("ROUND").c_str());
+	page._interpol = atof (cgi.find ("INTERPOL").c_str());
+	page._fill = cgi.find ("FILL").length()>0;
+	page._status = cgi.find ("STATUS").length()>0;
+	getNames (cgi.find ("NAMES"), page._names);
+	if (! decodeTimes (cgi, page._start, page._end))
 	{
-		help ();
+		page._title = "Time Error";
+		page.start ();
+		cout << "Cannot decode times.\n";
 		return 0;
 	}
 
-	if (command == "DEBUG")
+	if (page._command.empty() || page._command == "HELP")
 	{
-		HTMLPage	page;
-		page.start ("DEBUG Information");
+		help (page);
+		return 0;
+	}
+
+	if (page._command == "DEBUG")
+	{
+		page._title = "DEBUG Information";
+		page.start ();
 		page.header ("DEBUG Information",1);
 
-		cout << "<I>CGIExport Version " << VERSION << "." << RELEASE << ", built " __DATE__ "</I>\n";
+		cout << "<I>CGIExport Version " VERSION_TXT ", built " __DATE__ "</I>\n";
 
 		page.header ("Variables",2);
 		const map<stdString, stdString> &var_map = cgi.getVars ();
@@ -485,37 +463,32 @@ int main (int argc, const char *argv[], char *envp[])
 		showEnvironment (page, envp);
 
 		cout << "<HR>\n";
-		page.interFace (script_path, directory, pattern, names, round, fill, status, start, end);
+		page.interFace ();
 		return 0;
 	}
 
-	if (directory.empty())
+	if (page._directory.empty())
 	{
-		HTMLPage	page;
-		page.start ("Error: DIRECTORY not set");
+		page._title = "Error: DIRECTORY not set";
+		page.start ();
 		page.header ("Error: DIRECTORY not set",1);
 		Usage (page);
 		return 0;
 	}
 
-	if (command == "LIST")
+	if (page._command == "LIST")
 	{
-		HTMLPage	page;
-		page.start (title);
-		listChannels (page, directory, pattern);
-		cout << "<HR>\n";
-		page.interFace (script_path, directory, pattern, names, round, fill, status, start, end);
-
+		listChannels (page);
 		return 0;
 	}
 
-	if (command == "GET")
+	if (page._command == "GET")
 	{
-		exportFunc (directory, pattern, names, start, end, round, fill, status, false, "");
+		exportFunc (page);
 		return 0;
 	}
 
-	if (command == "PLOT")
+	if (page._command == "PLOT")
 	{
 		const char *client = getenv ("REMOTE_HOST");
 		if (client == 0) client = getenv ("REMOTE_ADDR");
@@ -537,14 +510,13 @@ int main (int argc, const char *argv[], char *envp[])
 		strcat (physical, "_");
 		strcat (physical, client);
 
-		HTMLPage	page;
-		page.start (title);
+		page.start ();
 		page.header ("Channel Plot", 2);
-		if (! exportFunc (directory, pattern, names, start, end, round, true, false, true, physical))
+		if (! exportFunc (page, true, physical))
 		{
 			page.header ("Error: No data",3);
 			cout << "There seems to be no data for that channel and time range.\n";
-			page.interFace (script_path, directory, pattern, names, round, fill, status, start, end);
+			page.interFace ();
 			return 0;
 		}
 
@@ -592,35 +564,26 @@ int main (int argc, const char *argv[], char *envp[])
 		GNUPlotImage += GNUPlotExporter::imageExtension ();
 		cout << "<IMG SRC=\"" + GNUPlotImage + "\"</A><P>\n";
 		cout << "<HR>\n";
-		page.interFace (script_path, directory, pattern, names, round, fill, status, start, end);
+		page.interFace ();
 
 		return 0;
 	}
 
-	if (command == "INFO")
+	if (page._command == "INFO")
 	{
-		HTMLPage	page;
-		page.start (title);
-		if (names.empty())
-			listInfo (page, directory, pattern);
-		else
-			listInfo (page, directory, names);
-		cout << "<HR>\n";
-		page.interFace (script_path, directory, pattern, names, round, fill, status, start, end);
+		listInfo (page);
 		return 0;
 	}
 
-	if (command == "START")
+	if (page._command == "START")
 	{
-		HTMLPage	page;
-		page.start (title);
+		page.start ();
 		page.header ("Channel Archive CGI Interface", 1);
-		page.interFace (script_path, directory, pattern, names, round,
-			/*fill*/true, /*status*/false, start, end);
+		page.interFace ();
 		return 0;
 	}
 
-	help ();
+	help (page);
 
 	return 0;
 }

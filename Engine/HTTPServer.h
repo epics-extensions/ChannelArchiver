@@ -10,10 +10,14 @@
 #if !defined(HTTP_SERVER_H_)
 #define HTTP_SERVER_H_
 
+// Base
 #include <epicsTime.h>
 #include <epicsThread.h>
+// Tools
 #include <ToolsConfig.h>
 #include <NetTools.h>
+#include <Guard.h>
+// Engine
 #include "HTMLPage.h"
 
 // undef: Nothing
@@ -24,9 +28,20 @@
 //     5: whatever
 #define HTTPD_DEBUG 2
 
+// These timeouts influnce how quickly the
+// server can be shut down
+
+// Timeout for server to check for new client
+#define HTTPD_TIMEOUT 1
+
+// Client uses timeout for each read
+#define HTTPD_READ_TIMEOUT 1
+
+// HTTP clients older than this total timeout are killed
+#define HTTPD_CLIENT_TIMEOUT 10
+
 /// \addtogroup Engine
 /// @{
-
 
 /// An in-memory web server.
 
@@ -50,21 +65,24 @@ public:
     void run();
 
     void serverinfo(SOCKET socket);
+
+    bool isShuttingDown() const
+    {   return go == false; }    
     
 private:
     HTTPServer(SOCKET socket);
-    void cleanup();
-
     epicsThread                           thread;
     bool                                  go;
     SOCKET                                socket;
-    stdList<class HTTPClientConnection *> clients;
     size_t                                total_clients;
+    epicsMutex                            client_list_mutex;
+    stdList<class HTTPClientConnection *> clients;
+    // returns # of clients that are still active
+    int cleanup();
 };
 
 typedef void (*PathHandler) (class HTTPClientConnection *connection,
                              const stdString &full_path);
-
 
 /// Used by HTTPClientConnection to dispatch client requests
 

@@ -34,7 +34,7 @@ ArchiveChannel::~ArchiveChannel()
     }
     if (chid_valid)
     {
-        LOG_MSG("CA clear channel '%s'\n", name.c_str());
+        //LOG_MSG("CA clear channel '%s'\n", name.c_str());
         ca_clear_channel(ch_id);
         chid_valid = false;
     }
@@ -95,7 +95,7 @@ void ArchiveChannel::startCA(Guard &guard)
     guard.check(mutex);
     if (!chid_valid)
     {
-        LOG_MSG("CA create channel '%s'\n", name.c_str());
+        //LOG_MSG("CA create channel '%s'\n", name.c_str());
 	// I have see the first call to ca_create_channel take
         // about 10 second when the EPICS_CA_ADDR_LIST pointed
         // to a computer outside of my private office network.
@@ -175,8 +175,8 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
     {   // Assert we don't go back in time
         if (when >= last_stamp_in_archive)
         {
-            LOG_MSG("'%s': re-enabled, writing the most recent value\n",
-                    name.c_str());
+            //LOG_MSG("'%s': re-enabled, writing the most recent value\n",
+            //        name.c_str());
             RawValue::setTime(pending_value, when);
             buffer.addRawValue(pending_value);
             last_stamp_in_archive = when;
@@ -243,7 +243,7 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
     Guard guard(me->mutex);
     if (ca_state(arg.chid) == cs_conn)
     {
-        LOG_MSG("%s: cs_conn, getting control info\n", me->name.c_str());
+        //LOG_MSG("%s: cs_conn, getting control info\n", me->name.c_str());
         // Get control information for this channel
         // TODO: This is only requested on connect
         // - similar to the previous engine or DM.
@@ -269,6 +269,10 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
         me->pending_value_set = false;
         if (was_connected  &&  me->mechanism)
         {
+            {
+                Guard engine_guard(theEngine->mutex);
+                theEngine->decNumConnected(engine_guard);
+            }
             me->mechanism->handleConnectionChange(guard);
             // Tell groups that we are disconnected
             stdList<GroupInfo *>::iterator g;
@@ -370,7 +374,7 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
     if (arg.status == ECA_NORMAL &&
         me->setup_ctrl_info(arg.type, arg.dbr))
     {
-        LOG_MSG("%s: received control info\n", me->name.c_str());
+        //LOG_MSG("%s: received control info\n", me->name.c_str());
         me->connection_time = epicsTime::getCurrent();
         Guard engine_guard(theEngine->mutex);
         me->init(engine_guard, guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
@@ -378,6 +382,10 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
         me->connected = true;
         if (was_connected == false   &&   me->mechanism)
         {
+            {
+                Guard engine_guard(theEngine->mutex);
+                theEngine->incNumConnected(engine_guard);
+            }
             me->mechanism->handleConnectionChange(guard);
             // Tell groups that we are connected
             stdList<GroupInfo *>::iterator g;

@@ -31,13 +31,14 @@ public:
     /// createable only by calling this method
     /// and from then on accessible via global Engine *theEngine
     static void create(const stdString &index_name);
+
+    // Ask engine to stop & delete itself.
+    // shutdown() will take the engine's mutex.
     void shutdown();
-    
 #ifdef USE_PASSWD
     /// Check if user/password are valid
     bool checkUser(const stdString &user, const stdString &pass);
 #endif
-
     /// Lock for all the engine info:
     /// groups, channels, next write time, ...
     /// All but
@@ -62,6 +63,8 @@ public:
     bool need_CA_flush;
     
     /// Call this in a "main loop" as often as possible
+
+    // Locks mutex while accessing engine's internals
     bool process();
 
     /// All the channels of this engine.
@@ -76,7 +79,10 @@ public:
     ArchiveChannel *addChannel(Guard &guard, GroupInfo *group,
                                const stdString &channel_name,
                                double period, bool disabling, bool monitored);
-
+    void incNumConnected(Guard &guard);
+    void decNumConnected(Guard &guard);
+    size_t getNumConnected(Guard &guard);
+    
     /// Engine configuration
     void   setWritePeriod(Guard &guard, double period);
     double getWritePeriod() const;   
@@ -121,6 +127,7 @@ private:
 
     stdList<ArchiveChannel *> channels;// all the channels
     stdList<GroupInfo *> groups;    // scan-groups of channels
+    size_t num_connected;
     
     struct ca_client_context *ca_context;
     
@@ -163,6 +170,28 @@ inline const stdString &Engine::getDescription() const
 
 inline double Engine::getGetThreshold()
 {   return get_threshhold; }
+
+
+inline void Engine::incNumConnected(Guard &guard)
+{
+    guard.check(mutex);
+    ++num_connected;
+}
+
+inline void Engine::decNumConnected(Guard &guard)
+{
+    guard.check(mutex);
+    if (num_connected <= 0)
+        LOG_MSG("Engine: discrepancy w/ # of connected channels\n");
+    else
+        --num_connected;
+}
+
+inline size_t Engine::getNumConnected(Guard &guard)
+{
+    guard.check(mutex);
+    return num_connected;
+}
 
 inline double Engine::getWritePeriod() const
 {   return write_period; }

@@ -47,18 +47,21 @@ FILE *logfile = 0;
 
 static void LoggerPrintRoutine(void *arg, const char *text)
 {
-    fputs(text, stdout);
-    fflush(stdout);
     if (logfile)
     {
         fputs(text, logfile);
         fflush(logfile);
     }
+    else
+    {
+        fputs(text, stdout);
+        fflush(stdout);
+    }
 }
 
 int main(int argc, const char *argv[])
 {
-    initEpicsTimeHelper();
+    initEpicsTimeHelper();    
     TheMsgLogger.SetPrintRoutine(LoggerPrintRoutine);
 
     CmdArgParser parser (argc, argv);
@@ -73,37 +76,30 @@ int main(int argc, const char *argv[])
                       EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n");
     port.set (EngineServer::_port); // default
-
-    if (!parser.parse() ||
-        parser.getArguments ().size() != 2)
+    if (!parser.parse()    ||   parser.getArguments ().size() != 2)
     {
         parser.usage ();
         return -1;
     }
-    
+    EngineServer::_port = (int)port;
+    EngineServer::_nocfg = (bool)nocfg;
+    HTMLPage::_nocfg = (bool)nocfg;
+    const stdString &config_name = parser.getArgument (0);
+    stdString index_name = parser.getArgument (1);
     if (log.get().length() > 0)
     {
         logfile = fopen(log.get().c_str(), "at");
         if (! logfile)
         {
             LOG_MSG("Cannot open logfile '%s'\n", log.get().c_str());
+            return -1;
         }
     }
-
-    EngineServer::_port = (int)port;
-    EngineServer::_nocfg = (bool)nocfg;
-    HTMLPage::_nocfg = (bool)nocfg;
-    
-    const stdString &config_name = parser.getArgument (0);
-    stdString index_name = parser.getArgument (1);
-
-    LOG_MSG("Starting Engine with configuration file %s, index %s\n",
-            config_name.c_str(), index_name.c_str());
-
     Lockfile lock_file("archive_active.lck");
     if (! lock_file.Lock (argv[0]))
         return -1;
-    
+    LOG_MSG("Starting Engine with configuration file %s, index %s\n",
+            config_name.c_str(), index_name.c_str());
     Engine::create(index_name);
     {
         Guard guard(theEngine->mutex);
@@ -118,7 +114,6 @@ int main(int argc, const char *argv[])
     LOG_MSG("ChannelArchiver thread 0x%08X entering main loop\n",
             epicsThreadGetIdSelf());
 #endif
-        // Main loop
 #ifdef HAVE_SIGACTION
     struct sigaction action;
     memset(&action, 0, sizeof(struct sigaction));
@@ -132,16 +127,14 @@ int main(int argc, const char *argv[])
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
 #endif
+    // Main loop
     LOG_MSG("\n------------------------------------------\n"
             "Engine Running.\n"
             "Stop via web browser at http://localhost:%d/stop\n"
             "------------------------------------------\n",
             EngineServer::_port);
     while (run)
-    {
         theEngine->process();
-    }
-    
     // If engine is not shut down properly (ca_task_exit !),
     // the MS VC debugger will freak out
     LOG_MSG ("Shutting down Engine\n");
@@ -150,7 +143,6 @@ int main(int argc, const char *argv[])
     lock_file.Unlock ();
     if (logfile)
         fclose(logfile);
-    LOG_MSG ("Done.\n");    
-    
+    LOG_MSG ("Done.\n");
     return 0;
 }

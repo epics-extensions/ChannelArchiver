@@ -34,15 +34,6 @@
 // ArchiveEngine
 // ----------------------------------------------------------
 
-// HTTP clients older than this timeout
-// are killed
-#define HTTPD_CLIENT_TIMEOUT 30
-
-// Config:
-//
-// Type of data format to use (only BinArchive is supported):
-#define ENGINE_ARCHIVE_TYPE BinArchive
-
 // Show full path to engine config in HTTPD?
 #undef SHOW_DIR
 

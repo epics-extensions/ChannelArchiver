@@ -74,7 +74,7 @@ my ($index_update_period) = 60*60;
 my ($http_check_timeout) = 1;
 
 # Timeout used when reading a HTTP client or ArchiveEngine
-my ($read_timeout) = 5;
+my ($read_timeout) = 10;
 
 # This host. 'localhost' should work unless you have
 # more than one network card and a messed up network config.
@@ -101,6 +101,8 @@ my ($daemonization) = 1;
 # 'hourly' => undef or (double) hours between restarts
 # -- adjusted at runtime
 # 'started' => 0 or start time text from running engine.
+# 'channels' => # of channels (only valid if started)
+# 'connected' => # of _connected_ channels (only valid if started)
 # 'lockfile' => is there a file 'archive_active.lck' ?
 my (@config);
 
@@ -288,7 +290,7 @@ sub create_HTTPD($)
 sub handle_HTTP_main($)
 {
     my ($client) = @ARG;
-    my ($engine, $message);
+    my ($engine, $message, $channels, $connected);
     html_start($client, 1);
     print $client "<H1>Archive Daemon</H1>\n";
     print $client "<TABLE BORDER=0 CELLPADDING=5>\n";
@@ -320,7 +322,13 @@ sub handle_HTTP_main($)
 	}	
 	if ($engine->{started})
 	{
-	    print $client "<TD ALIGN=CENTER>Started $engine->{started}</TD>";
+	    print $client "<TD ALIGN=CENTER>Started $engine->{started}, ";
+	    $connected = $engine->{connected};
+	    $channels = $engine->{channels};
+	    print $client "<FONT COLOR=#FF0000>" if ($channels != $connected);
+	    print $client "$connected/$channels channels connected";
+	    print $client "</FONT>" if ($channels != $connected);
+	    print $client "</TD>";
 	}
 	else
 	{
@@ -350,18 +358,26 @@ sub handle_HTTP_main($)
 sub handle_HTTP_status($)
 {
     my ($client) = @ARG;
-    my ($engine, $total, $running);
+    my ($engine, $total, $running, $channels, $connected);
     html_start($client, 1);
-    print $client "<H1>Archive Daemon</H1>\n";
+    print $client "<H1>Archive Daemon Status</H1>\n";
     $total = $#config + 1;
-    $running = 0;
+    $running = $channels = $connected = 0;
     foreach $engine ( @config )
     {
-	++$running if ($engine->{started});
+	if ($engine->{started})
+	{
+	    ++$running;
+	    $channels += $engine->{channels};
+	    $connected += $engine->{connected};
+	}
     }
     print $client "<FONT COLOR=#FF0000>" if ($running != $total);
-    print $client "$running of $total engines are running\n";
+    print $client "$running of $total engines are running<p>\n";
     print $client "</FONT>" if ($running != $total);
+    print $client "<FONT COLOR=#FF0000>" if ($channels != $connected);
+    print $client "$connected of $channels channels are connected\n";
+    print $client "</FONT>" if ($channels != $connected);
     html_stop($client);
 }
 
@@ -369,7 +385,7 @@ sub handle_HTTP_info($)
 {
     my ($client) = @ARG;
     html_start($client, 1);
-    print $client "<H1>Archive Daemon</H1>\n";
+    print $client "<H1>Archive Daemon Info</H1>\n";
     print $client "<TABLE BORDER=0 CELLPADDING=5>\n";
 
     print $client "<TR><TD><B>Config File:</B></TD><TD>$config_file</TD></TR>\n";
@@ -597,25 +613,35 @@ sub stop_engine($$)
     return 0;
 }
 
-# Test if ArchiveEngine runs on host/port, returning description & start time
+# Test if ArchiveEngine runs on host/port,
+# returning (description, start time, # channels, # connected channels)
 sub check_engine($$)
 {
     my ($host, $port) = @ARG;
-    my ($line, $desc, $started);
+    my ($line, $desc, $started, $channels, $connected);
     $desc = '';
     $started = '';
+    $channels = $connected = 0;
     foreach $line ( read_URL($host, $port, "/") )
     {
 	if ($line =~ m'Description</TH>.*>([^>]+)</TD>')
 	{
 	    $desc = $1;
 	}
-	if ($line =~ m'Started</TH>[^0-9]+([0123456789/:. ]+)')
+	elsif ($line =~ m'Started</TH>[^0-9]+([0123456789/:. ]+)')
 	{
 	    $started = $1;
 	}
+	elsif ($line =~ m'Channels</TH>[^0-9]+([0123456789]+)')
+	{
+	    $channels = $1;
+	}
+	elsif ($line =~ m'Connected</TH>.+>([0123456789]+)<')
+	{
+	    $connected = $1;
+	}
     }
-    return ($desc, $started);
+    return ($desc, $started, $channels, $connected);
 }
 
 # Check if now's the time to restart a given engine
@@ -671,15 +697,18 @@ sub check_restarts($)
 sub check_engines($)
 {
     my ($now) = @ARG;
-    my ($engine, $desc, $started);
+    my ($engine, $desc, $started, $channels, $connected);
     foreach $engine ( @config )
     {
 	my ($dir) = dirname($engine->{config});
 	$engine->{lockfile} = (-f "$dir/archive_active.lck");
-	($desc, $started) = check_engine($host, $engine->{port});
+	($desc, $started, $channels, $connected) =
+	    check_engine($host, $engine->{port});
 	if (length($started) > 0)
 	{
 	    $engine->{started} = $started;
+	    $engine->{channels} = $channels;
+	    $engine->{connected} = $connected;
 	}
 	else
 	{

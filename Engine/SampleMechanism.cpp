@@ -50,7 +50,7 @@ void SampleMechanismMonitored::handleConnectionChange(Guard &guard)
 {
     if (channel->isConnected(guard))
     {
-        LOG_MSG("%s: fully connected\n", channel->getName().c_str());
+        // LOG_MSG("%s: fully connected\n", channel->getName().c_str());
         if (!have_subscribed)
         {
             int status = ca_create_subscription(
@@ -70,7 +70,7 @@ void SampleMechanismMonitored::handleConnectionChange(Guard &guard)
     }
     else
     {
-        LOG_MSG("%s: disconnected\n", channel->getName().c_str());
+        //LOG_MSG("%s: disconnected\n", channel->getName().c_str());
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
         wasWrittenAfterConnect = false;
@@ -156,7 +156,7 @@ void SampleMechanismGet::handleConnectionChange(Guard &guard)
 {
     if (channel->isConnected(guard))
     {
-        LOG_MSG("%s: fully connected\n", channel->getName().c_str());
+        //LOG_MSG("%s: fully connected\n", channel->getName().c_str());
         if (!is_on_scanlist)
         {
             Guard engine_guard(theEngine->mutex);
@@ -172,7 +172,7 @@ void SampleMechanismGet::handleConnectionChange(Guard &guard)
     }
     else
     {
-        LOG_MSG("%s: disconnected\n", channel->getName().c_str());
+        //LOG_MSG("%s: disconnected\n", channel->getName().c_str());
         flushPreviousValue(channel->connection_time);
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);

@@ -53,6 +53,7 @@ Engine::Engine(const stdString &index_name)
     LOG_ASSERT(the_one_and_only);
     start_time = epicsTime::getCurrent();
     RTreeM = 50;
+    num_connected = 0;
     this->index_name = index_name;
     is_writing = false;
     description = "EPICS Channel Archiver Engine";
@@ -73,7 +74,6 @@ Engine::Engine(const stdString &index_name)
         LOG_ASSERT(0);
     }
     ca_context = ca_current_context();
-    engine_server = new EngineServer();
 #ifdef USE_PASSWD
     _user = DEFAULT_USER;
     _pass = DEFAULT_PASS;
@@ -83,6 +83,7 @@ Engine::Engine(const stdString &index_name)
 void Engine::create(const stdString &index_name)
 {
     theEngine = new Engine(index_name);
+    engine_server = new EngineServer();
 }
 
 bool Engine::attachToCAContext(Guard &guard)
@@ -101,15 +102,11 @@ void Engine::shutdown()
 {
     LOG_MSG("Shutdown:\n");
     LOG_ASSERT(this == theEngine);
-
-    LOG_MSG("Stopping web server\n");
     delete engine_server;
     engine_server = 0;
-
     LOG_MSG("Adding 'Archive_Off' events...\n");
-    epicsTime now;
-    now = epicsTime::getCurrent();
-    mutex.lock();
+    epicsTime now = epicsTime::getCurrent();
+    mutex.lock(); // - lock
     IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
     {
@@ -124,12 +121,8 @@ void Engine::shutdown()
         index.close();
     }
     else
-    {
         LOG_MSG("Engine::shutdown cannot open index %s\n",
                 index_name.c_str());
-    }
-    mutex.unlock();
-
     LOG_MSG("Removing memory for channels and groups\n");
     while (! channels.empty())
     {
@@ -141,10 +134,10 @@ void Engine::shutdown()
         delete groups.back();
         groups.pop_back();
     }
-    ca_flush_io();
     LOG_MSG("Stopping ChannelAccess:\n");
     ca_context_destroy();
     theEngine = 0;
+    mutex.unlock(); // - unlock
     delete this;
     LOG_MSG("Engine shut down.\n");
 }
@@ -265,6 +258,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                                               &last_stamp);
                                 stdString stamp_txt;
                                 epicsTime2string(last_stamp, stamp_txt);
+                                /*
                                 LOG_MSG("'%s' initialized from storage.\n"
                                         "Data file '%s' @ 0x%lX\n"
                                         "Last Stamp: %s\n",
@@ -272,6 +266,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                                         block.data_filename.c_str(),
                                         block.data_offset,
                                         stamp_txt.c_str());
+                                */
                                 // As long as we don't have a new value,
                                 // log as disconnected
                                 channel->addEvent(guard, 0, ARCH_DISCONNECT,

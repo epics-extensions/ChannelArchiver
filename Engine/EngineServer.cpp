@@ -52,10 +52,18 @@ static void engineinfo(HTTPClientConnection *connection,
         epicsTime2string(theEngine->getStartTime(), s);
         page.tableLine("Started", s.c_str(), 0);
         
-        page.tableLine("Archive", theEngine->getIndexName().c_str(), 0);
-        
-        cvtUlongToString(theEngine->getChannels(guard).size(), line);
+        page.tableLine("Archive Index", theEngine->getIndexName().c_str(), 0);
+
+        size_t num_channels = theEngine->getChannels(guard).size();
+        size_t num_connected = theEngine->getNumConnected(guard);
+        cvtUlongToString(num_channels, line);
         page.tableLine("Channels", line, 0);
+
+        if (num_channels != num_connected)
+            sprintf(line,"<FONT COLOR=#FF0000>%d</FONT>",(int)num_connected);
+        else
+            cvtUlongToString(num_connected, line);
+        page.tableLine("Connected", line, 0);
         
 #ifdef SHOW_DIR
         getcwd(dir, sizeof line);                 
@@ -93,7 +101,8 @@ static void showStopForm(HTMLPage &page)
     page.line("<TD><input type=\"text\" name=\"USER\" size=20></TD></TR>");
     page.line("<TR><TD>Password:</TD>");
     page.line("<TD><input type=\"text\" name=\"PASS\" size=20></TD></TR>");
-    page.line("<TR><TD></TD><TD><input TYPE=\"submit\" VALUE=\"Stop!\"></TD></TR>");
+    page.line("<TR><TD></TD>"
+              "<TD><input TYPE=\"submit\" VALUE=\"Stop!\"></TD></TR>");
     page.line("</TABLE>");
     page.line("</FORM>");
 }
@@ -108,34 +117,32 @@ static void stop(HTTPClientConnection *connection, const stdString &path)
     line += peer;
     line += "\n";
     LOG_MSG(line.c_str());
-
     HTMLPage page(s, "Archive Engine Stop");
-
 #ifdef USE_PASSWD
-    CGIDemangler args;
-    args.parse(path.substr(6).c_str());
-    stdString user = args.find("USER");
-    stdString pass = args.find("PASS");
-
-    if (! theEngine->checkUser(user, pass))
+    if (theEngine)
     {
-        page.line("<H3><FONT COLOR=#FF0000>Wrong user/password</FONT></H3>");
-        LOG_MSG("USER: '%s', PASS: '%s' - wrong user/password\n",
-                user.c_str(), pass.c_str());
-        showStopForm(page);
-        return;
+        CGIDemangler args;
+        args.parse(path.substr(6).c_str());
+        stdString user = args.find("USER");
+        stdString pass = args.find("PASS");
+        if (! theEngine->checkUser(user, pass))
+        {
+            page.line("<H3><FONT COLOR=#FF0000>"
+                      "Wrong user/password</FONT></H3>");
+            LOG_MSG("USER: '%s', PASS: '%s' - wrong user/password\n",
+                    user.c_str(), pass.c_str());
+            showStopForm(page);
+            return;
+        }
+        LOG_MSG("user/password accepted\n");
     }
-    LOG_MSG("user/password accepted\n");
 #endif
-
     page.line("<H3>Engine Stopped</H3>");
-
     page.line(line);
     page.line("<P>");
     page.line("Engine will quit as soon as possible...");
     page.line("<P>");
     page.line("Therefore the web interface stops responding now.");
-
     extern bool run;
     run = false;
 }
@@ -143,16 +150,13 @@ static void stop(HTTPClientConnection *connection, const stdString &path)
 static void config(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Archive Engine Config.");
-
     if(HTMLPage::_nocfg) {
         page.line("Online Config is disabled for this ArchiveEngine!");
         return;
     }
-
 #ifdef USE_PASSWD
     showStopForm(page);
 #endif
-
     page.line("<H3>Groups</H3>");
     page.line("<UL>");
     page.line("<LI><A HREF=\"/groups\">List groups</A>");
@@ -208,6 +212,8 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
     stdList<ArchiveChannel *>::const_iterator channel;
     stdString link;
     link.reserve(80);
+    if (!theEngine)
+        return;
     Guard guard(theEngine->mutex);
     stdList<ArchiveChannel *> &channels = theEngine->getChannels(guard);
     for (channel = channels.begin(); channel != channels.end(); ++channel)
@@ -220,7 +226,8 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
         Guard guard((*channel)->mutex);
         page.tableLine(link.c_str(),
                        ((*channel)->isConnected(guard) ?
-                        "connected" : "<FONT COLOR=#FF0000>disconnected</FONT>"),
+                        "connected" :
+                        "<FONT COLOR=#FF0000>disconnected</FONT>"),
                        0);
     }
     page.closeTable();
@@ -282,7 +289,8 @@ static void channelInfo(HTTPClientConnection *connection,
                         const stdString &path)
 {
     stdString channel_name = path.substr(9);
-
+    if (!theEngine)
+        return;
     Guard guard(theEngine->mutex);
     ArchiveChannel *channel = theEngine->findChannel(guard, channel_name);
     if (! channel)
@@ -290,9 +298,7 @@ static void channelInfo(HTTPClientConnection *connection,
         connection->error("No such channel: " + channel_name);
         return;
     }
-
     HTMLPage page(connection->getSocket(), "Channel Info", 30);
-
     channelInfoTable(page);
     channel->mutex.lock();
     channelInfoLine(page, channel);
@@ -303,6 +309,8 @@ static void channelInfo(HTTPClientConnection *connection,
 void groups(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Groups");
+    if (!theEngine)
+        return;
     Guard guard(theEngine->mutex);
     stdList<GroupInfo *> &groups = theEngine->getGroups(guard);
     if (groups.empty())
@@ -355,6 +363,8 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
 {
     stdString group_name = path.substr(7);
     CGIDemangler::unescape(group_name);
+    if (!theEngine)
+        return;
     Guard guard(theEngine->mutex);
     const GroupInfo *group = theEngine->findGroup(guard, group_name);
     if (! group)
@@ -392,12 +402,13 @@ static void addChannel(HTTPClientConnection *connection,
     args.parse(path.substr(12).c_str());
     stdString channel_name = args.find("CHANNEL");
     stdString group_name   = args.find("GROUP");
-
     if (channel_name.empty() || group_name.empty())
     {
         connection->error("Channel and group names must not be empty");
         return;
     }
+    if (!theEngine)
+        return;
     Guard guard(theEngine->mutex);
     GroupInfo *group = theEngine->findGroup(guard, group_name);
     if (!group)
@@ -438,12 +449,13 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
     CGIDemangler args;
     args.parse(path.substr(10).c_str());
     stdString group_name   = args.find("GROUP");
-
     if (group_name.empty())
     {
         connection->error("Group name must not be empty");
         return;
     }
+    if (!theEngine)
+        return;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
     page.line("<H1>Groups</H1>");
     page.out("Group <I>");
@@ -470,6 +482,8 @@ static void parseConfig(HTTPClientConnection *connection,
         connection->error("Config. name must not be empty");
         return;
     }
+    if (!theEngine)
+        return;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
     page.line("<H1>Configuration</H1>");
     page.out("Configuration <I>");
@@ -493,6 +507,8 @@ static void channelGroups(HTTPClientConnection *connection,
     CGIDemangler args;
     args.parse(path.substr(15).c_str());
     stdString channel_name = args.find("CHANNEL");
+    if (!theEngine)
+        return;
     Guard engine_guard(theEngine->mutex);
     ArchiveChannel *channel =
         theEngine->findChannel(engine_guard, channel_name);
@@ -535,10 +551,11 @@ static void channelGroups(HTTPClientConnection *connection,
 
 static PathHandlerList  handlers[] =
 {
+    //  URL, substring length?, handler. The order matters!
 #ifdef USE_PASSWD
     { "/stop?", 6, stop },
 #endif
-    { "/stop", 0, stop  }, // list "old" handler for users who still use it (will give error)
+    { "/stop", 0, stop  },
     { "/help", 0, config    },
     { "/config", 0, config  },
     { "/channels", 0, channels  },

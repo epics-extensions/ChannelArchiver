@@ -121,7 +121,7 @@ void show_info (const stdString &archive_name, const stdString &pattern)
     size_t channel_count = 0;
     osiTime start, end, time;
 
-    for (archive.findChannelByPattern (pattern, channel);   channel;  ++channel)
+    for (archive.findChannelByPattern(pattern, channel); channel; ++channel)
     {
         ++channel_count;
 
@@ -193,14 +193,18 @@ void do_export (const stdString &archive_name,
                 const stdString &channel_pattern,
                 const osiTime &start, const osiTime &end,
                 const stdString &new_dir_name,
-                size_t repeat_limit)
+                size_t repeat_limit,
+                size_t days_per_file)
 {
     size_t i, chunk, chunk_count=0, val_count=0;
     osiTime next_file_time, last_stamp;
 
     Archive old_archive (new BinArchive (archive_name));
     BinArchive *new_archiveI = new BinArchive (new_dir_name, true);
-    new_archiveI->setSecsPerFile (BinArchive::SECS_PER_MONTH);
+    if (days_per_file > 0)
+        new_archiveI->setSecsPerFile (BinArchive::SECS_PER_DAY*days_per_file);
+    else
+        new_archiveI->setSecsPerFile (BinArchive::SECS_PER_MONTH);
     Archive new_archive (new_archiveI);
 
     ChannelIterator old_channel (old_archive);
@@ -456,7 +460,7 @@ void headers (const stdString &directory, const stdString &channel_name)
 
         cout << "Samples: " << bvi->getHeader()->getNumSamples () << "\n";
         cout << "Size:    " << bvi->getHeader()->getBufSize()
-            << " bytes, free: " << bvi->getHeader()->getBufFree() << " bytes\n";
+            << " bytes, free: " << bvi->getHeader()->getBufFree() <<" bytes\n";
 
         cout << "Period:  " << value.getPeriod() << "\n";
 
@@ -473,7 +477,7 @@ void headers (const stdString &directory, const stdString &channel_name)
     while (run && bvi->nextBuffer ());
 }
 
-void test (const stdString &directory, const osiTime &start, const osiTime &end)
+void test(const stdString &directory, const osiTime &start, const osiTime &end)
 {
     Archive archive (new ARCHIVE_TYPE (directory));
     ChannelIterator channel(archive);
@@ -557,6 +561,7 @@ int main (int argc, const char *argv[])
     CmdArgString end_text       (parser, "end", "<time>", "End time (exclusive)");
     CmdArgString export_archive (parser, "xport", "<new archive>", "export data into new archive");
     CmdArgInt    repeat_limit   (parser, "repeat_limit", "<seconds>", "remove 'repeat' entries beyond limit (export)");
+    CmdArgInt    days_per_file  (parser, "FileSize", "<days>", "Days per binary data file (export, binary file format detail)");
     CmdArgString show_headers   (parser, "headers", "<channel>", "show headers for channel");
     CmdArgString ascii_output   (parser, "Output", "<channel>", "output ASCII dump for channel");
     CmdArgString ascii_input    (parser, "Input", "<ascii file>", "read ASCII dump for channel into archive");
@@ -614,7 +619,7 @@ int main (int argc, const char *argv[])
         {
             if (channel_pattern.get().empty ())
                 channel_pattern.set (channel_name.get());
-            do_export (archive_name, channel_pattern, start, end, export_archive, (size_t) repeat_limit.get());
+            do_export (archive_name, channel_pattern, start, end, export_archive, (size_t) repeat_limit.get(), days_per_file.get());
         }
         else if (channel_name.get().empty ())
             list_channels (archive_name, channel_pattern);

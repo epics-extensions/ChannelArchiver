@@ -1,6 +1,5 @@
 #include "Engine.h"
 #include "ConfigFile.h"
-#include <fstream>
 #include <Filename.h>
 #include <ctype.h>
 
@@ -9,7 +8,8 @@ ConfigFile::ConfigFile()
     _config_dir = "cfg";
 }
 
-void ConfigFile::setParameter(const stdString &parameter, char *value)
+void ConfigFile::setParameter(const ASCIIParser &parser,
+                              const stdString &parameter, const char *value)
 {
     if (parameter == "write_freq"  ||  parameter == "write_period")
     {
@@ -22,7 +22,7 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
         if (num <= 0)
         {
             LOG_MSG("Config file '%s'(line %d): invalid period %s\n",
-                    _file_name.c_str(), _line_no, value);
+                    _file_name.c_str(), parser.getLineNo(), value);
             return;
         }
         theEngine->setDefaultPeriod(num);
@@ -33,7 +33,7 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
         if (num <= 0)
         {
             LOG_MSG("Config file '%s'(line %d): invalid buffer_reserve %s\n",
-                    _file_name.c_str(), _line_no);
+                    _file_name.c_str(), parser.getLineNo());
             return;
         }
         theEngine->setBufferReserve(num);
@@ -48,21 +48,16 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
         if (num < 0)
         {
             LOG_MSG("Config file '%s'(line %d): invalid hour specific. %s\n",
-                    _file_name.c_str(), _line_no, value);
+                    _file_name.c_str(), parser.getLineNo(), value);
             return;
         }
         theEngine->setIgnoredFutureSecs(num*60*60);
     }
     else if (parameter == "group")
-    {
-        char *pos = strchr(value, '\r');
-        if (pos)
-            *pos = '\0';
         loadGroup(value);
-    }
     else
         LOG_MSG("Config file '%s'(line %d): parameter '%s' is ignored\n",
-                _file_name.c_str(), _line_no, parameter.c_str());
+                _file_name.c_str(), parser.getLineNo(), parameter.c_str());
 }
 
 // This one checks e.g. channel name characters
@@ -74,11 +69,10 @@ static inline bool good_character(char ch)
     return isalpha(ch) || isdigit(ch) || strchr("_:()-", ch);
 }
 
-bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
+bool ConfigFile::getChannel(ASCIIParser &parser, stdString &channel,
                             double &period, bool &monitor, bool &disable)
 {
-    char line[100];
-    char *ch; // current position in line
+    const char *ch; // current position in line
     stdString parameter;
 
     channel.assign(0, 0);
@@ -88,19 +82,9 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
         monitor = false;
         disable = false;
 
-        in.getline(line, sizeof (line));
-        if (in.eof())
+        if (!parser.nextLine())
             return false;
-        ++_line_no;
-
-        ch = line;
-        // skip white space
-        while (*ch && isspace(*ch)) ++ch;
-        if (! *ch) continue; // empty line
-
-        // skip comment lines
-        if (*ch == '#')
-            continue; // try next line
+        ch = parser.getLine().c_str();
 
         // Format: <channel> <period> <Monitor> <Disable> ?
         // How does a <channel> name start?
@@ -113,7 +97,7 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
                 {
                     LOG_MSG("Config file '%s'(line %d): "
                             "suspicious channel name\n",
-                            _file_name.c_str(), _line_no);
+                            _file_name.c_str(), parser.getLineNo());
                     return false;
                 }
                 channel += *(ch++);
@@ -127,7 +111,7 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
 
             // test for period
             if (isdigit (*ch))
-                period = strtod (ch, &ch);
+                period = strtod(ch, (char **)&ch);
 
             // skip space
             while (*ch && isspace(*ch)) ++ch;
@@ -154,7 +138,7 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
         // else: Format !<parameter> <value>
         ++ch;
         // get parameter
-        parameter.reserve (20);
+        parameter.reserve(20);
         while (*ch  &&  !isspace(*ch))
             parameter += *(ch++);
         if (parameter.length() == 0)
@@ -163,7 +147,7 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
         // skip space
         while (*ch && isspace(*ch)) ++ch;
         if (! *ch) return true;
-        setParameter(parameter, ch);
+        setParameter(parser, parameter, ch);
         parameter = '\0';
     }
 
@@ -172,19 +156,13 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
 
 bool ConfigFile::loadGroup(const stdString &group_name)
 {
-    std::ifstream file;
-
-    file.open(group_name.c_str());
-#   if defined(HP_UX)
-    if (file.fail())
-#   else
-    if (! file.is_open())
-#   endif
+    ASCIIParser parser;
+    
+    if (! parser.open(group_name))
     {
         LOG_MSG("Config file '%s': cannot open\n", group_name.c_str());
         return false;
     }
-    file.unsetf(std::ios::binary);
 
     // new archive group?
     GroupInfo *group = theEngine->findGroup(group_name);
@@ -193,7 +171,6 @@ bool ConfigFile::loadGroup(const stdString &group_name)
         group = theEngine->addGroup(group_name);
         if (! group)
         {
-            file.close();
             LOG_MSG("Config file '%s': cannot add to Engine\n",
                     group_name.c_str());
             return false;
@@ -201,14 +178,11 @@ bool ConfigFile::loadGroup(const stdString &group_name)
     }
 
     _file_name = group_name;
-    _line_no = 0;
-
     stdString channel_name;
     double period;
     bool monitor, disable;
-    while (getChannel (file, channel_name, period, monitor, disable))
-        theEngine->addChannel (group, channel_name, period, disable, monitor);
-    file.close ();
+    while (getChannel(parser, channel_name, period, monitor, disable))
+        theEngine->addChannel(group, channel_name, period, disable, monitor);
 
     return true;
 }

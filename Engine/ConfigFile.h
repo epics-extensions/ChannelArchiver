@@ -1,8 +1,9 @@
+/* -*-c++-*- */
 #ifndef __CONFIGFILE_H__
 #define __CONFIGFILE_H__
 
-#include "Configuration.h"
-#include <fstream>
+#include"Configuration.h"
+#include<ASCIIParser.h>
 
 //CLASS ConfigFile
 // This implementation of a CLASS Configuration will read
@@ -25,22 +26,22 @@
 class ConfigFile : public Configuration
 {
 public:
-    ConfigFile ();
+    ConfigFile();
 
     //* Configuration interface
-    bool load (const stdString &config_name);
-    bool loadGroup  (const stdString &group_name);
-    bool save ();
-    bool saveGroup (const class GroupInfo *group);
+    bool load(const stdString &config_name);
+    bool loadGroup(const stdString &group_name);
+    bool save();
+    bool saveGroup(const class GroupInfo *group);
 
 private:
-    void setParameter (const stdString &parameter, char *value);
-    bool getChannel (std::ifstream &in, stdString &channel, double &period,
+    void setParameter(const ASCIIParser &parser,
+                      const stdString &parameter, const char *value);
+    bool getChannel(ASCIIParser &parser, stdString &channel, double &period,
                      bool &monitor, bool &disable);
     stdString   _config_dir;
     stdString   _config_name;
     stdString   _file_name;
-    size_t  _line_no;
 };
 
 #endif //__CONFIGFILE_H__

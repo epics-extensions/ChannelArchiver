@@ -8,6 +8,7 @@ public:
 	~EngineServer ();
 
 	static short _port;
+        static bool _nocfg;
 private:
 	class HTTPServer *_server;
 };

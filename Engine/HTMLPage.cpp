@@ -14,6 +14,8 @@
 #include <strstream>
 #include <stdarg.h>
 
+bool HTMLPage::_nocfg = false;
+
 HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 {
 	_socket = socket;
@@ -60,7 +62,9 @@ HTMLPage::~HTMLPage ()
 
 	line ("<A HREF=\"/\">-Main-</A>  ");
 	line ("<A HREF=\"/groups\">-Groups-</A>  ");
-	line ("<A HREF=\"/config\">-Config.-</A>  ");
+	if (!_nocfg) {
+	   line ("<A HREF=\"/config\">-Config.-</A>  ");
+	}
 	line ("<BR>");
 
 	if (_refresh > 0)

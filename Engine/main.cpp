@@ -19,6 +19,7 @@
 #include "ArgParser.h"
 #include "LockFile.h"
 #include "EngineServer.h"
+#include "HTMLPage.h"
 #include <Filename.h>
 
 // No clue what's needed here....
@@ -72,7 +73,7 @@ int main (int argc, const char *argv[])
     CmdArgString description (parser, "description", "<text>",
                               "description for HTTP display");
     CmdArgString log         (parser, "log", "<filename>", "write logfile");
-
+    CmdArgFlag   nocfg       (parser, "nocfg", "disable online configuration");
     parser.setHeader ("Version " VERSION_TXT
                       ", built " __DATE__ ", " __TIME__ "\n\n");
     parser.setFooter ("\n\tDefault directory-file: 'freq_directory'\n\n");
@@ -102,6 +103,8 @@ int main (int argc, const char *argv[])
     }
 
     EngineServer::_port = (int)port;
+    EngineServer::_nocfg = (bool)nocfg;
+    HTMLPage::_nocfg = (bool)nocfg;
     
     // Arg. 1 might be the directory_name to use:
     const stdString &config_file = parser.getArgument (0);

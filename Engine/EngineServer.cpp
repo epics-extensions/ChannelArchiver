@@ -158,6 +158,11 @@ static void config(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Archive Engine Config.");
 
+    if (HTMLPage::_nocfg) {
+       page.line("Online Config is disabled for this ArchiveEngine!");
+       return;
+    }
+
 #ifdef USE_PASSWD
     showStopForm(page);
 #endif
@@ -597,6 +602,7 @@ static PathHandlerList  handlers[] =
 
 // static member:
 short EngineServer::_port = 4812;
+bool EngineServer::_nocfg = false;
 
 EngineServer::EngineServer ()
 {

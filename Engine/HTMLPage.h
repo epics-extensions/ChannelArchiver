@@ -32,6 +32,7 @@ public:
 	void tableLine (const char *item, ...);
 	void closeTable ();
 
+        static bool _nocfg;
 protected:
 	SOCKET _socket;
 	int _refresh;

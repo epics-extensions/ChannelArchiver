@@ -77,7 +77,7 @@ OldDataWriter::OldDataWriter(DirectoryFile &index,
              return;
         }        
         // add first header
-        header = datafile->addHeader(dbr_type, dbr_count,
+        header = datafile->addHeader(channel_name, dbr_type, dbr_count,
                                      period, next_buffer_size);
         datafile->release(); // now ref'ed by header
         if (!header)
@@ -249,7 +249,7 @@ bool OldDataWriter::addNewHeader(bool new_ctrl_info)
         ctrl_info_offset = header->data.ctrl_info_offset;
         
     DataHeader *new_header =
-        header->datafile->addHeader(dbr_type, dbr_count, period,
+        header->datafile->addHeader(channel_name, dbr_type, dbr_count, period,
                                     next_buffer_size);
     if (!new_header)
         return false;

@@ -108,19 +108,16 @@ const RawValue::Data *RawDataReader::find(
         return findSample(node->record[rec_idx].start);       
 }
 
-// Read sample at val_idx
+// Read next sample, the one to which val_idx points.
 const RawValue::Data *RawDataReader::next()
 {
     if (!header)
         return 0;
-    // End of current header or current RTree entry
-    // (if we still have an rtree entry)?
-    if (val_idx >= header->data.num_samples   ||
-        (valid_datablock  &&
-         RawValue::getTime(data) > node->record[rec_idx].end))
+    // End of current header?
+    if (val_idx >= header->data.num_samples)
     {
         if (valid_datablock)
-            valid_datablock = tree->getNextDatablock(*node, rec_idx, datablock);
+            valid_datablock = tree->getNextDatablock(*node,rec_idx,datablock);
         if (valid_datablock)
         {
 #ifdef DEBUG_DATAREADER
@@ -155,7 +152,8 @@ const RawValue::Data *RawDataReader::next()
             if (val_idx >= header->data.num_samples)
             {
                 if (!getHeader(header->datafile->getDirname(),
-                               header->data.next_file, header->data.next_offset))
+                               header->data.next_file,
+                               header->data.next_offset))
                     return 0; 
 #ifdef DEBUG_DATAREADER
                 stdString txt;
@@ -181,6 +179,13 @@ const RawValue::Data *RawDataReader::next()
         delete header;
         header = 0;
         return 0;
+    }
+    // If we still have an RTree entry: Are we within bounds?
+    if (valid_datablock  &&
+        RawValue::getTime(data) > node->record[rec_idx].end)
+    {
+        val_idx = header->data.num_samples;
+        return next();
     }
     ++val_idx;
     return data;

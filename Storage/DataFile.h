@@ -28,6 +28,9 @@
 class DataFile
 {
 public:
+    // == 'ADF1', Archive Data File 1
+    static const unsigned long cookie = 0x41444631;
+
     /// Reference a data file.
     
     /// \param dirname: Path/directory up to the filename
@@ -42,6 +45,9 @@ public:
 
     /// Indicates if this file was newly created.
     bool is_new_file;
+
+    /// Does the file follow the 2-1-1 format w/ cookie and tags?
+    bool isTaggedFile() { return is_tagged_file; }
     
     /// De-reference a data file (Call instead of delete).
 
@@ -88,7 +94,8 @@ public:
     class DataHeader *getHeader(FileOffset offset);
 
     /// Get size of a header with given parameters.
-    size_t getHeaderSize(DbrType dbr_type, DbrCount dbr_count,
+    size_t getHeaderSize(const stdString &name,
+                         DbrType dbr_type, DbrCount dbr_count,
                          size_t num_samples);
     
     /// Add a new DataHeader to the file.
@@ -97,7 +104,8 @@ public:
     /// The header's data type and buffer size info
     /// will be initialized.
     /// Links (dir, prev, next) need to be configured and saved.
-    class DataHeader *addHeader(DbrType dbr_type, DbrCount dbr_count,
+    class DataHeader *addHeader(const stdString &name,
+                                DbrType dbr_type, DbrCount dbr_count,
                                 double period, size_t num_samples);
 
     /// Add CtrlInfo to the data file
@@ -128,6 +136,7 @@ private:
     FILE * file;
     size_t ref_count;
     bool   for_write;
+    bool   is_tagged_file;
     stdString filename;
     stdString dirname;
     stdString basename;
@@ -183,6 +192,9 @@ public:
     DataFile *datafile;
 
     /// Offset in current file for this header.
+
+    /// Note that this is the pointer to the DataHeaderData on the disk.
+    /// Data files with tags have 'INFO' + channel name before that!
     FileOffset offset;
     
     /// Fill the data with zeroes, invalidate the data.

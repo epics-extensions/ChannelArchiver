@@ -253,7 +253,8 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
         FileOffset file_size;
         if (! header->datafile->getSize(file_size))
             return false;
-        headroom = header->datafile->getHeaderSize(dbr_type, dbr_count,
+        headroom = header->datafile->getHeaderSize(channel_name,
+                                                   dbr_type, dbr_count,
                                                    next_buffer_size);
         if (new_ctrl_info)
             headroom += ctrl_info.getSize();
@@ -282,7 +283,8 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
     else // use existing one
         ctrl_info_offset = header->data.ctrl_info_offset;
     DataHeader *new_header =
-        datafile->addHeader(dbr_type, dbr_count, period, next_buffer_size);
+        datafile->addHeader(channel_name,
+                            dbr_type, dbr_count, period, next_buffer_size);
     if (new_datafile)
         datafile->release(); // now ref'ed by new_header
     if (!new_header)

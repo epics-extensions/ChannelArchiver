@@ -412,9 +412,10 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
     int idx;
     bool ok;
     if (verbose > 1)
-        printf("RTree M for channel '%s': %d\n", channel_name.c_str(), tree->getM());
+        printf("RTree M for channel '%s': %d\n", channel_name.c_str(),
+               tree->getM());
     if (verbose > 2)
-        printf("Datablocks for channel '%s': ", channel_name.c_str());
+        printf("Datablocks for channel '%s':\n", channel_name.c_str());
     for (ok = tree->getFirstDatablock(node, idx, block);
          ok;
          ok = tree->getNextDatablock(node, idx, block))
@@ -425,6 +426,27 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
                    block.data_filename.c_str(), block.data_offset,
                    epicsTimeTxt(node.record[idx].start, start),
                    epicsTimeTxt(node.record[idx].end, end));
+        if (verbose > 3)
+        {
+            DataFile *datafile = DataFile::reference(index.getDirectory(),
+                                                     block.data_filename,
+                                                     false);
+            if (datafile)
+            {
+                DataHeader *header = datafile->getHeader(block.data_offset);
+                if (header)
+                {
+                    printf("Header:\n");
+                    header->show(stdout);
+                    delete header;
+                }
+                else
+                    printf("Cannot read header in data file.\n");
+                datafile->release();
+            }
+            else
+                printf("Cannot access data file\n");
+        }
         while (tree->getNextChainedBlock(block))
         {
             ++chained_count;

@@ -125,7 +125,7 @@
   dedicated machine, except for the additional problem of ...</p>
   <h2>Channel Access Flow Control</h2>
   <p>The Archive Engine uses a dedicated write thread to balance the CPU load. It also tries
-  to increase the default TCL buffer size in order to buffer incoming values while the
+  to increase the default TCP buffer size in order to buffer incoming values while the
   program is busy writing samples to the disk.</p>
   <p>The current Channel Access library, though, silently implements a flow control
   mechanism. It is not based on a TCP buffer &quot;high-water-mark&quot; idea, instead it

@@ -86,6 +86,7 @@ void MatlabExporter::exportChannelList(
     *out << "%  datetick('x');\n";
     *out << "%  xlabel([data.t{1} ' - ' data.t{data.l}]);\n";
     *out << "%  title(data.n);\n";
+
     
     for (i=0; i<num; ++i)
     {
@@ -101,10 +102,22 @@ void MatlabExporter::exportChannelList(
                  << "'\n";
             continue;
         }
+        
+        char *p, *variable = strdup(channel_names[i].c_str());
+        bool fixed_name = false;
+        while ((p=strchr(variable, ':')) != 0)
+        {
+            *p = '_';
+            fixed_name = true;
+        }
+        if (fixed_name)
+            *out << "% Used '" << variable
+                 << "' for channel '" << channel_names[i] << "'\n";
+
         // Value loop per channel
         line = 0;
         count = value->getCount();
-        while (value && 
+        while (value &&
                (time=value->getTime()) !=nullTime &&
                (_end==nullTime || time <= _end))
         {
@@ -112,20 +125,20 @@ void MatlabExporter::exportChannelList(
             ++line;
             osiTime2vals (time, year, month, day, hour, min, sec, nano);
             sprintf(info, "%s.t(%d)={'%02d-%02d-%04d %02d:%02d:%02d.%09ld'};",
-                    channel_names[i].c_str(), line,
+                    variable, line,
                     month, day, year, hour, min, sec, nano);
             *out << info << "\n";
         
             if (value->isInfo())
-                *out << channel_names[i] << ".v(" << line << ")=nan;\n";
+                *out << variable << ".v(" << line << ")=nan;\n";
             else
             {
                 if (count == 1)
-                    *out << channel_names[i] << ".v(" << line << ")="
+                    *out << variable << ".v(" << line << ")="
                          << value->getDouble() << ";\n";
                 else
                 {
-                    *out << channel_names[i] << ".v(" << line << ")=[";
+                    *out << variable << ".v(" << line << ")=[";
                     for (ai=0; ai<count; ++i)
                     {
                         *out << value->getDouble(ai);
@@ -138,17 +151,18 @@ void MatlabExporter::exportChannelList(
             if (_show_status)
             {
                 value->getStatus (txt);
-                *out << channel_names[i] << ".s(" << line << ")={'"
+                *out << variable << ".s(" << line << ")={'"
                      << txt << "'};\n";
             }
             ++value;
         }
-        *out << channel_names[i] << ".d=datenum(char("
-             << channel_names[i] << ".t));\n";
-        *out << channel_names[i] << ".l=size("
-             << channel_names[i] << ".v, 2);\n";
-        *out << channel_names[i] << ".n='"
-             << channel_names[i] << "';\n";
+        *out << variable << ".d=datenum(char("
+             << variable << ".t));\n";
+        *out << variable << ".l=size("
+             << variable << ".v, 2);\n";
+        *out << variable << ".n='"
+             << variable << "';\n";
+        free(variable);
     }
     
     if (out == &file)

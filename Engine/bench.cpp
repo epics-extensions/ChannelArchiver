@@ -43,7 +43,7 @@ FILE: stdio (fopen, ...)
 
 */
 
-const size_t COUNT=10000;
+const size_t COUNT=100000;
 
 int main ()
 {

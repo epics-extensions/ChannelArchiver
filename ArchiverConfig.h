@@ -1,3 +1,4 @@
+// -*- c++ -*-
 // --------------------------------------------------------
 // $Id$
 //
@@ -29,7 +30,7 @@
 
 // Config:
 //
-// Type of data format to use:
+// Type of data format to use (only BinArchive is supported):
 #define ENGINE_ARCHIVE_TYPE BinArchive
 
 // Use password mechanism
@@ -60,9 +61,8 @@
 // ArchiveManager
 // ----------------------------------------------------------
 
-// Should ArchiveManager use "MultiArchive" or "BinArchive"
-// (when possible.
-//  For specifics like listing data headers, creating new file, ...
+// Should ArchiveManager use "MultiArchive" or "BinArchive"?
+// (For specifics like listing data headers, creating new file, ...
 //  BinArchive is used in any case)
 #define MANAGER_USE_MULTI
 

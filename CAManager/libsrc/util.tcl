@@ -789,8 +789,8 @@ Puts "util: restartArchiver $i" funcall
 
 package require http
 
-proc cleanupHttp {tok} {
-  ::http::cleanup $top
+proc cleanupHttp {token} {
+  ::http::cleanup $token
 }
 
 proc stopArchiver {i {forceStop 0} {action stop}} {

@@ -205,7 +205,9 @@ engine under it. Invoke  make\_archive\_dirs.pl. Per default, it will
 re-create all daemon and engine directories, so you might want to use
 the ``-s'' option to limit its operation to the new or modified
 subsystem.
-Invoke the ``run-daemon.sh'' script in the daemon directory to start
+In case the daemon was already running, it won't learn about the new
+engine unless you restart it. So run the ``stop-deamon.sh'' and then
+invoke the ``run-daemon.sh'' script in the daemon directory to start
 the daemon (which will then start any missing engines).
 
 \subsection{An Engine isn't running}

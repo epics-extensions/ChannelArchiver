@@ -22,7 +22,7 @@
 #define VERSION 1
 #define RELEASE 8
 
-#define VERSION_TXT "1.8.4"
+#define VERSION_TXT "1.8.5"
 
 // ----------------------------------------------------------
 // ArchiveEngine
@@ -147,14 +147,6 @@
 //    (no WIN32 specific '\' here)
 #define USE_RELATIVE_URL
 #define URL_PATH "/tmp/"
-
-// ----------------------------------------------------------
-// Atac - note that this will be replaced by casi!
-// ----------------------------------------------------------
-
-// (The tcl extension has to be compiled seperately,
-//  but the sources are configured in here):
-#define ATAC_ARCHIVE_TYPE MultiArchive
 
 // ----------------------------------------------------------
 // ArchiveExport

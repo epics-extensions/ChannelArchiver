@@ -12,7 +12,7 @@ opengl neverselect;
 alen=a.l;
 blen=b.l;
 d0=max(a.d(1), b.d(1));
-d1=min(a.d(alen), a.d(blen));
+d1=min(a.d(alen), b.d(blen));
 
 % Interpolate onto matching dates:
 T=linspace(d0, d1, min(alen,blen));

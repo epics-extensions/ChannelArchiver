@@ -85,6 +85,7 @@ public:
 
     void addEvent(dbr_short_t status, dbr_short_t severity,
                   const osiTime &time);
+    void addEvent(ValueI *value);
 
     // (Try to) enable/disable this channel
     void disable(ChannelInfo *cause);

@@ -14,6 +14,19 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>10/02/2001<br>
+      Patch #5:<br>
+      <ul>
+      <li>Thomas Birke improved the CGI interface:
+          List of channels is now shown in the "Names" box,
+          the online plot will by default show reduced data
+          which looks identical to the full data but runs quicker.
+      <li>ArchiveEngine should now store one sample after a
+          re-connect. That sample might have an adjusted time stamp,
+	  not the original IOC time stamp, because the preceding
+          "disconnect" status is written with a time stamp from the
+          host that runs the ArchiveEngine.
+      </ul>
     <li>07/25/2001<br>
       Patch #4:<br>
       Working on scripting support for Matlab, see casi/matlab/Readme.txt.

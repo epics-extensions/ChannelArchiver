@@ -177,11 +177,15 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
                 << ": CA disconnect\n");
         // Flush everything until the disconnect happened
         me->_connected = false;
-        me->_ever_written = false; // reset, prepare for reconnect
-        me->_new_value_set = false;
-        me->_connect_time = osiTime::getCurrent();
         // add a disconnect event
         me->addEvent(0, ARCH_DISCONNECT, me->_connect_time);
+        // reset, prepare for reconnect
+        me->_ever_written = false; 
+        me->_new_value_set = false;
+        me->_expected_next_time = nullTime;
+        me->_pending_value_set = false;
+        me->_previous_value_set = false;
+        me->_connect_time = osiTime::getCurrent();
         if (was_connected)
         {
             // Update statics in GroupInfo:
@@ -361,8 +365,7 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     }
 
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
-    //LOG_MSG (me->getName () << " : CA monitor      "
-    //         << *me->_new_value << endl);
+    LOG_NSV(me->getName() << " : CA monitor      " << *me->_new_value << "\n");
     me->handleNewValue();
 }
 
@@ -458,8 +461,6 @@ void ChannelInfo::addToRingBuffer(const ValueI *value)
 void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
                            const osiTime &event_time)
 {
-    static osiTime adjust(0.0l);
-
     if (!_tmp_value)
     {
         LOG_MSG(osiTime::getCurrent() << ", " << _name << ", IOC "
@@ -487,15 +488,21 @@ void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
     // that archiver event uses:
     memset(_tmp_value->getRawValue(), 0, _tmp_value->getRawValueSize());
     _tmp_value->setStatus(status, severity);
+    _tmp_value->setTime(event_time);
+    addEvent(_tmp_value);
+}
 
-    if (event_time > _last_archive_stamp)
-        _tmp_value->setTime(event_time);
-    else
+// Force Value into archive, adjusting the time stamp if necessary
+void ChannelInfo::addEvent(ValueI *value)
+{
+    static osiTime adjust(0.0l);
+
+    if (value->getTime() <= _last_archive_stamp)
     {   // adjust time, event has to be added to archive somehow!
         _last_archive_stamp += adjust;
-        _tmp_value->setTime(_last_archive_stamp);
+        value->setTime(_last_archive_stamp);
     }
-    addToRingBuffer(_tmp_value);
+    addToRingBuffer(value);
 
     // events are not repeat-counted, _previous_value is unset
     _previous_value_set = false;
@@ -544,9 +551,9 @@ void ChannelInfo::handleNewValue()
     {
         if ((double(now) - double(_had_null_time)) > (60.0*60*24))
         {   // quite frequent, limit messages to once a day
-            LOG_MSG (now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                     << " : Invalid/null time stamp\n\t"
-                     << *_new_value << "\n");
+            LOG_MSG(now << ", " << _name << ", IOC " << ca_host_name(_chid)
+                    << " : Invalid/null time stamp\n\t"
+                    << *_new_value << "\n");
             _had_null_time = now;
         }
         _new_value_set = false;
@@ -556,10 +563,19 @@ void ChannelInfo::handleNewValue()
     if ((stamp > now) &&
         (double(stamp) - double(now) > theEngine->getIgnoredFutureSecs()))
     {
-        LOG_MSG (now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                 << " : Ignoring futuristic time stamp\n\t"
-                 << *_new_value << "\n");
+        LOG_MSG(now << ", " << _name << ", IOC " << ca_host_name(_chid)
+                << " : Ignoring futuristic time stamp\n\t"
+                << *_new_value << "\n");
         _new_value_set = false;
+        return;
+    }
+
+    if (!_ever_written)
+    {
+        LOG_NSV(now << ", " << _name << ", IOC " << ca_host_name(_chid)
+                << " : write first value after connection\n\t"
+                << *_new_value << "\n");
+        addEvent(_new_value);
         return;
     }
     
@@ -578,9 +594,9 @@ void ChannelInfo::handleNewValue()
         stamp = roundTimeUp(now, 1.0);
         if (stamp <= _last_archive_stamp)
         {
-            LOG_MSG (now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                     << " : Unresolvable back-in-time value\n\t"
-                     << *_new_value << "\n");
+            LOG_MSG(now << ", " << _name << ", IOC " << ca_host_name(_chid)
+                    << " : Unresolvable back-in-time value\n\t"
+                    << *_new_value << "\n");
             return;
         }
         _new_value->setTime(stamp);

@@ -16,8 +16,8 @@ operating system will cache access to files as long as memory allows.
 
 The RTree is a balanced tree. Mathematically, this means that the
 number of read requests required to locate a node in an RTree depends
-on the height of the tree, which again follows logarithmically from
-$M$ and the number of nodes in the tree.  An RTree with $M=50$ and
+on the height of the tree, which is again logarithmically related to
+$M$ and the number of nodes in the tree.  An RTree with $M$=50 and
 height 5 for example has one root node with 50 pointers to sub-nodes,
 then up to $50^2$ nodes on the second level and so on, resulting in
 access to more than $10^{80}$ records on the fifth level, that is:
@@ -56,6 +56,7 @@ at least 80000 values per second on the test computer.
 \caption{\label{fig:singleidxcompare}RTree $M$ value tuning for small index, see text.}
 \end{figure}
 
+% Stats from March 2004 ORNL Xmtr test archive (RFQ, .. DTL 6)
 Performance and size of the index depend on the $M$ value configuration of
 the RTree. Fig.\ \ref{fig:singleidxcompare} displays the file size and
 the time needed to create an index for a small archive with 5100
@@ -105,6 +106,8 @@ blocks will therefore not require $M$ values that are equally 2 or 10 times
 bigger. Only very small increases of $M$ would be beneficial. If we
 consider that in general those bigger archives will also contain
 channels with only a few samples, $M=50$ will probably be ``as good''.
+% Overall, about 1:30..4 min for 27 sub-indices totalling 50 .. 160 MB
+% Master index is 18..24 MB
 
 In the following, $M$ was kept at 50, the default for most archive tools.
 \begin{itemize}
@@ -130,6 +133,18 @@ In the following, $M$ was kept at 50, the default for most archive tools.
       index uses about 18~MB.
       Re-run: 30~seconds.
 \end{itemize}
+
+%  ORNL March 2004 Xmtr archive:
+% dir. files were about 1MB each, 27 of them.
+% 0.9 sec  : ArchiveExport index3 -i -m Tnk.:T$
+% 1.8 sec  : ArchiveExport index100 -i -m Tnk.:T$
+% 7..8 secs: ArchiveManager {one of the 27 dir. files} -m Tnk.:T$
+% 4 min    : ArchiveManager master_file -m Tnk.:T$
+% ArchiveExport all data for 6 tank temperature channels:
+% 11.336 secs, 85819 lines -> 7570 lines/sec
+% (that's including spreadsheet 'filling'
+% Similar, but only for one channel:
+% 0.566 secs, 21166 lines -> 37000 lines/sec
 
 \noindent With the 92-sub-archive index, the following was tested:
 \begin{itemize}
@@ -164,9 +179,23 @@ Tests of the retrieval performance often include not only the
 code for getting at the data but also for presenting it. In the
 case of the command-line Archive Export program this would be the process
 of converting time stamps and values into ASCII text and printing them.
-The output was redirected to /dev/null to avoid additional penalties.
-
+In the following tests, the output was redirected to a file.
 \begin{itemize}
-\item Dump all the 143000 values for a channel: 4~seconds,
-      translating into 35700 values per second.
+\item Use ArchiveExport to dump all the 143000 values for a channel:
+      4~seconds, translating into 35700 values per second.
+\item Use ArchiveExport to dump values for 7 channels in a spreadsheet format,
+      which adds the effort for 'staircase' interpolation to the
+      previous test case:
+      95000 lines in 11 secs, that is around 8600 lines/sec.
+      On a second test run, the time was reduced to 7 seconds, again
+      showing the impact of buffering by the operating system.
+\item Use Matlab to retrieve the data for the same 7 channels,
+      asking the network data server to reduce the raw data (which
+      formed the 95000 line spreadsheet in the previous test) into
+      500 ``Plot Bins'':
+      Around 1500 values per channel were retrieved in 6 seconds.
+      The ArchiveDataServer.cgi ran 4 seconds, so about two
+      seconds were added by the web server, network transfer, Matleb
+      MEX code and matlab .
 \end{itemize}
+

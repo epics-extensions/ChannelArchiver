@@ -45,9 +45,9 @@ bool add_tree_to_master(const stdString &index_name,
                    epicsTimeTxt(node.record[idx].end, end));
         // Note that there's no inner loop over the 'chained'
         // blocks, we only handle the main blocks of each sub-tree.
-        switch (index->insertDatablock(node.record[idx].start,
-                                       node.record[idx].end,
-                                       block.data_offset, datafile))
+        switch (index->updateLastDatablock(node.record[idx].start,
+                                           node.record[idx].end,
+                                           block.data_offset, datafile))
         {
             case RTree::YNE_Error:
                 fprintf(stderr,

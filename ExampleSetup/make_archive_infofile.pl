@@ -27,7 +27,7 @@ sub usage()
     print(" -c <config> : Use given config file instead of $config_name\n");
     print(" -o <html>   : Generate given output file instead of $output_name\n");
     print(" -d          : debug\n");
-    print(" -e          : Generate file only if there are errors.\n");
+    print(" -e          : Append to file only if there are errors.\n");
 }
 
 sub time_as_text($)
@@ -67,7 +67,7 @@ sub write_info($$)
 	}
 	return if ($ok);
     }
-    open($out, ">$filename") or die "Cannot open '$filename'\n";
+    open($out, ">>$filename") or die "Cannot open '$filename'\n";
     print $out "Archive Status as of ", time_as_text(time), "\n";
     print $out "\n";
     foreach $daemon ( @daemons )

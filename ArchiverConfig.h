@@ -24,7 +24,7 @@
 #define VERSION_TXT "1.2"
 
 // ----------------------------------------------------------
-// Engine
+// ArchiveEngine
 // ----------------------------------------------------------
 
 // Config:
@@ -38,6 +38,16 @@
 
 #define DEFAULT_USER    "engine"
 #define DEFAULT_PASS    "password"   
+
+// ----------------------------------------------------------
+// ArchiveManager
+// ----------------------------------------------------------
+
+// Should ArchiveManager use "MultiArchive" or "BinArchive"
+// (when possible.
+//  For specifics like listing data headers, creating new file, ...
+//  BinArchive is used in any case)
+#define MANAGER_USE_MULTI
 
 // ----------------------------------------------------------
 // CGIExport

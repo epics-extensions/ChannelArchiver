@@ -47,11 +47,11 @@ pack .go .cancel -side right -padx 8 -pady 8
 focus .go
 bind .go <Key-Return> {.go invoke}
 
-set srcfiles [glob src/*.tcl]
+set srcfiles [glob -nocomplain src/*.tcl]
 incr ::prog [llength $srcfiles]
 set libfiles {}
-foreach dir [concat libsrc [glob -types d libsrc/*]] {
-  set lib [glob $dir/*.tcl]
+foreach dir [concat libsrc [glob -nocomplain -types d libsrc/*]] {
+  set lib [glob -nocomplain $dir/*.tcl]
   set libfiles [concat $libfiles $lib]
 }
 incr ::prog [llength $libfiles]
@@ -68,7 +68,7 @@ if {[regexp "Windows" $tcl_platform(os)]} {
 
 Puts "Searching Tcl/TK interpreters:\n" action
 set wish [info nameofexecutable]
-set tclsh [lindex [glob [file dirname $wish]/tcl*$ext] 0]
+set tclsh [lindex [glob -nocomplain [file dirname $wish]/tcl*$ext] 0]
 Puts "  tclsh executable is $tclsh\n"
 Puts "  wish executable is $wish\n"
 Puts "\n"

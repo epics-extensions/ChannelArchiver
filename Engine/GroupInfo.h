@@ -54,10 +54,12 @@ public:
     { return members; }
 
     /// Disable all channels of this group.
-    void disable(class ArchiveChannel *cause, const epicsTime &when);
+    void disable(Guard &engine_guard,
+                 class ArchiveChannel *cause, const epicsTime &when);
 
     /// Enable all channels of this group.
-    void enable(class ArchiveChannel *cause, const epicsTime &when);
+    void enable(Guard &engine_guard,
+                class ArchiveChannel *cause, const epicsTime &when);
     
     bool isEnabled() const
     { return disable_count <= 0; }

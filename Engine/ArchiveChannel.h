@@ -103,7 +103,7 @@ public:
     void disable(Guard &engine_guard, Guard &guard, const epicsTime &when);
 
     /// Enable this channel.
-    void enable(Guard &guard, const epicsTime &when);
+    void enable(Guard &engine_guard, Guard &guard, const epicsTime &when);
 
     /// Initialize value type etc.
 

@@ -32,16 +32,14 @@ void GroupInfo::addChannel(Guard &engine_guard, Guard &channel_guard,
 }
 
 // called by ArchiveChannel
-void GroupInfo::disable(ArchiveChannel *cause, const epicsTime &when)
+void GroupInfo::disable(Guard &engine_guard,
+                        ArchiveChannel *cause, const epicsTime &when)
 {
     LOG_MSG("'%s' disables group '%s'\n",
             cause->getName().c_str(), name.c_str());
     ++disable_count;
     if (disable_count != 1) // Was already disabled?
         return;
-    if (!theEngine)
-        return;
-    Guard engine_guard(theEngine->mutex);
     stdList<ArchiveChannel *>::iterator c;
     for (c=members.begin(); c!=members.end(); ++c)
     {
@@ -51,7 +49,8 @@ void GroupInfo::disable(ArchiveChannel *cause, const epicsTime &when)
 }
 
 // called by ArchiveChannel
-void GroupInfo::enable(ArchiveChannel *cause, const epicsTime &when)
+void GroupInfo::enable(Guard &engine_guard,
+                       ArchiveChannel *cause, const epicsTime &when)
 {
     LOG_MSG("'%s' enables group '%s'\n",
             cause->getName().c_str(), name.c_str());
@@ -67,7 +66,7 @@ void GroupInfo::enable(ArchiveChannel *cause, const epicsTime &when)
     for (c=members.begin(); c!=members.end(); ++c)
     {
         Guard guard((*c)->mutex);
-        (*c)->enable(guard, when);
+        (*c)->enable(engine_guard, guard, when);
     }
 }
 

@@ -189,7 +189,8 @@ void ArchiveChannel::disable(Guard &engine_guard,
         stopCA(engine_guard, guard);
 }
 
-void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
+void ArchiveChannel::enable(Guard &engine_guard,
+                            Guard &guard, const epicsTime &when)
 {
     guard.check(mutex);
     --disabled_count;
@@ -485,26 +486,33 @@ void ArchiveChannel::handleDisabling(Guard &guard, const RawValue::Data *value)
         return;
     // We disable if the channel is above zero
     bool criteria = RawValue::isAboveZero(dbr_time_type, value);
-    if (criteria && !currently_disabling)
+    if (criteria == currently_disabling)
+        return; // No change
+    // Change to/from disabling.
+    // Assert lock order: Engine, then channel
+    guard.unlock();
+    Guard engine_guard(theEngine->mutex);    
+    if (criteria)
     {   // wasn't disabling -> disabling
         currently_disabling = true;
         stdList<GroupInfo *>::iterator g;
         for (g=groups.begin(); g!=groups.end(); ++g)
         {
             if (groups_to_disable.test((*g)->getID()))
-                (*g)->disable(this, RawValue::getTime(value));
+                (*g)->disable(engine_guard, this, RawValue::getTime(value));
         }
     }
-    else if (!criteria && currently_disabling)
+    else
     {   // was disabling -> enabling
         stdList<GroupInfo *>::iterator g;
         for (g=groups.begin(); g!=groups.end(); ++g)
         {
             if (groups_to_disable.test((*g)->getID()))
-                (*g)->enable(this, RawValue::getTime(value));
+                (*g)->enable(engine_guard, this, RawValue::getTime(value));
         }
         currently_disabling = false;
     }
+    guard.lock();
 }
 
 // Event (value with special status/severity):

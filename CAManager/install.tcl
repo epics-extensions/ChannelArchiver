@@ -66,14 +66,14 @@ if {$interactive} {
 
 set srcfiles [glob -nocomplain src/*.tcl]
 incr ::prog [llength $srcfiles]
-set libfiles {}
+set mylibfiles {}
 foreach file [glob -nocomplain libsrc/*.tcl] {
-  lappend libfiles $file
+  lappend mylibfiles $file
 }
 foreach file [glob -nocomplain libsrc/plugins/*.tcl] {
-  lappend libfiles $file
+  lappend mylibfiles $file
 }
-incr ::prog [llength $libfiles]
+incr ::prog [llength $mylibfiles]
 
 if {[regexp "Windows" $tcl_platform(os)]} {
   set path [split $env(PATH) ";"]
@@ -144,13 +144,25 @@ if {![info exists instdir]} {
 Puts "\n"
 Puts "Searching for required external packages:\n" action
 array set required {
-  Tcl       8.3
-  Tk        8.3
-  Tclx      8.3
-  Tkx       8.3
-  Iwidgets  4.0.0
-  BWidget   1.3.1
-  Tktable   2.7
+  Tcl       {8.3 8.4}
+  Tk        {8.3 8.4}
+  Tclx      {8.3 8.4}
+  Iwidgets  {4.0.0 4.0.2}
+  BWidget   {1.3.1 1.6}
+  Tktable   {2.7 2.8}
+  http	    {2.3 2.4.4}
+  cmdline   {1.1.1 1.2.1}
+}
+#  Tkx       {8.3 8.4}
+
+proc mknum {version} {
+  set numver 0
+  set exp 0
+  foreach i [split $version "."] {
+    set numver [expr $numver + $i * 1e$exp]
+    incr exp -3
+  }
+  return $numver
 }
 
 set terminate 0
@@ -162,7 +174,8 @@ if {[catch {package require Tk}]} {
       Puts "ERROR: " error
       Puts "Package \"$package\" is not installed!\n"
       set terminate 1
-    } elseif {"$result" != "$required($package)"} {
+    } elseif {[mknum "$result"] < [mknum "[lindex $required($package) 0]"] || 
+	      [mknum "$result"] > [mknum "[lindex $required($package) 1]"]} {
       Puts "WARNING: " warning
       Puts "Version of \"$package\" is not tested version!\n"
       Puts "  Found version $result, tested version is $required($package)\n"
@@ -229,7 +242,7 @@ if {!$terminate} {
   Puts "Install libraries in $instdir/lib/tcl/CAManager:\n" action
   set files {}
 
-  foreach lib $libfiles {
+  foreach lib $mylibfiles {
     regsub "libsrc/" $lib "" l
     set df $instdir/lib/tcl/CAManager/$l
     Puts "installing $lib ..."

@@ -87,6 +87,16 @@ bool EngineConfig::read(Guard &engine_guard, class Engine *engine,
             }
             engine->setBufferReserve(engine_guard, (int)d);
         }
+        else if (e->name == "max_repeat_count")
+        {
+            if (!parse_double(e->value, d))
+            {
+                LOG_MSG("EngineConfig '%s': Error in max_repeat_count\n",
+                        filename.c_str());
+                return false;
+            }
+            SampleMechanismGet::max_repeat_count = (size_t) d;
+        }
         else if (e->name == "group")
         {
             if (!handle_group(engine_guard, engine, e))
@@ -166,6 +176,11 @@ bool EngineConfig::write(Guard &engine_guard, class Engine *engine)
 
     e = new FUX::Element(doc, "buffer_reserve");
     sprintf(buf, "%d", engine->getBufferReserve());
+    e->value = buf;
+    doc->add(e);
+
+    e = new FUX::Element(doc, "max_repeat_count");
+    sprintf(buf, "%lu", (unsigned long)SampleMechanismGet::max_repeat_count);
     e->value = buf;
     doc->add(e);
 

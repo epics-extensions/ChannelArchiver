@@ -59,9 +59,14 @@ public:
     /// - from a CA monitor that the SampleMechanism initiated
     /// - from a CA callback initiated by the Engine's ScanList
     ///
-    /// When called, the channel is enabled and the value's stamp is good.
     /// While disabled, values are copied to pending_value.
-    /// handleValue needs to update last_stamp_in_archive.
+    /// Otherwise, handleValue is invoked as long as the
+    /// value's time stamp is good:
+    /// - non-zero,
+    /// - not too far ahead in the future.
+    ///
+    /// The SampleMechanism needs to deal with back-in-time
+    /// issues and update last_stamp_in_archive.
     virtual void handleValue(Guard &guard,
                              const epicsTime &now,
                              const epicsTime &stamp,
@@ -92,9 +97,23 @@ private:
 };
 
 /// A SampleMechanism that uses a periodic CA 'get'.
+
+/// This implementation of a SampleMechanism performs
+/// periodic CA 'get' operations and stores the most
+/// recent value that it receives with its original time stamp.
+/// In addition, repeat counts are used:
+/// If the value matches the previous sample, it is not written
+/// again. Only after the value changes, a value that indicates
+/// the repeat count gets written.
 class SampleMechanismGet : public SampleMechanism
 {
 public:
+    /// Max. counter for repeats.
+
+    /// Even if the value does not change, it is written
+    /// after max_repeat_count iterations. This way we avoid
+    /// the appearance of the ArchiveEngine being dead.
+    static size_t max_repeat_count;
     SampleMechanismGet(class ArchiveChannel *channel);
     ~SampleMechanismGet();
     stdString getDescription(Guard &guard) const;
@@ -103,8 +122,13 @@ public:
     void handleValue(Guard &guard, const epicsTime &now,
                      const epicsTime &stamp, const RawValue::Data *value);
 private:
-    bool is_on_scanlist;
-    // flushRepeats();
+    bool is_on_scanlist; // Registered w/ Engine's Scanlist?
+    // Handling of repeats:
+    bool previous_value_set; // previous_value valid?
+    RawValue::Data *previous_value; // the previous value
+    size_t repeat_count; // repeat count for the previous value
+    // Write the previous value because we're disconnected or got a new value
+    void flushPreviousValue(const epicsTime &stamp);
 };
 
 /// \@}

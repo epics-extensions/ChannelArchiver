@@ -91,6 +91,23 @@ $$ Since writes can be delayed by other tasks running on the same
 computer as well as disk activity etc., the buffer is bigger than the
 minimum required: buffer\_reserve defaults to 3.
 
+\subsection{max\_repeat\_count} \label{sec:repeats}
+When sampling in a scanned mode (as opposed to monitored), the engine
+stores only new values. As long as a value matches the preceding
+sample, it is not written to storage. Only after the value changes, a
+special value marked with a severity of ARCH\_REPEAT and a status that
+reflects the number of repeats is written, then the new sample is
+added.
+
+This procedure conserves disk space. The disadvantage lies in the fact
+that one does not see any new samples in the archive until the
+channel changes, which can be disconcerting to some users. Therefore
+the max\_repeat\_count configuration parameter was added. It forces
+the engine to write a sample even if the channel has not change after
+the given number of repeats. The default is 120, meaning that a
+channel that is scanned every 30 seconds will be written once an hour
+even if it had not changed. 
+
 \subsection{group}
 Every channel belongs to a group of channels. The configuration file
 must define at least one group. For organizational or aesthetic
@@ -322,7 +339,7 @@ similar to the one shown in Fig.~\ref{fig:engine:main}. By following
 the links, one can investigate the status of the groups and channels
 that the ArchiveEngine is currently handling. The ``Config'' page
 allows limited online-reconfiguration. Whenever a new group or channel
-is added, the engine attemps to write a new config file called
+is added, the engine attempt to write a new config file called
 \INDEX{onlineconfig.xml} in the directory where is was started.
 It is left to the user to decide what to do with this file: Should it
 replace the original configuration file, so that online changes are

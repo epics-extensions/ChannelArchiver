@@ -168,14 +168,16 @@ meta := { int32 type;
   \end{lstlisting}
 \end{description}
 
-\noindent The values for status and severity are in part those that the EPICS
-IOC databases use. For the current definition,  refer to the IOC
-Application Developer's Guide~\cite{iocappdev04}. Tables
-\ref{tab:sevr} and \ref{tab:stat} list some common values.
-In addition,  the archiver toolset uses special severity values to
-indicate a disconnected channel or the fact that the ArchiveEngine
-was shut down. These values are listed in table \ref{tab:archsevr};
-they can be found ``or-ed'' together with the ordinary EPICS severity values. 
+\noindent The values for status and severity match in part those that
+the EPICS IOC databases use. The ArchiveEngine simply receives and
+stores them, they are passed on to the retrieval tools without
+change. For their current definition, refer to the IOC Application
+Developer's Guide~\cite{iocappdev04}. Tables \ref{tab:sevr} and
+\ref{tab:stat} list some common values.  In addition, the archiver
+toolset uses special severity values to indicate a disconnected
+channel or the fact that the ArchiveEngine was shut down. These values
+are listed in table \ref{tab:archsevr}; they can be found ``or-ed''
+together with the ordinary EPICS severity values.
 
 \begin{table}[htbp]
   \begin{center}
@@ -226,9 +228,6 @@ they can be found ``or-ed'' together with the ordinary EPICS severity values.
     0x0f20 & ARCH\_STOPPED             & ArchiveEngine shut down \\
     0x0f10 & ARCH\_REPEAT              & Repeat count \\
     0x0f08 & ARCH\_DISABLED            & Channel is disabled \\
-    0x0f04 & ARCH\_CHANGE\_WRITE\_FREQ & no longer used \\
-    0x0f02 & ARCH\_CHANGE\_PERIOD      & no longer used \\
-    0x0f01 & ARCH\_CHANGE\_SIZE        & no longer used \\
     \end{tabular}
     \caption{Channel Archiver Alarm Severities}
     \label{tab:archsevr}

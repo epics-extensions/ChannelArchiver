@@ -5,7 +5,8 @@
 <!-- and each group must contain at least 1 channel. -->
 <!ELEMENT engineconfig ((write_period|get_threshold|
                          file_size|ignored_future|
-                         buffer_reserve)*, group+)>
+                         buffer_reserve|
+                         max_repeat_count)*, group+)>
 <!ELEMENT group (name,channel+)>
 <!ELEMENT channel (name,period,(scan|monitor),disable?)>
 <!ELEMENT write_period (#PCDATA)><!-- int seconds -->
@@ -13,6 +14,7 @@
 <!ELEMENT file_size (#PCDATA)><!-- MB -->
 <!ELEMENT ignored_future (#PCDATA)><!-- double hours -->
 <!ELEMENT buffer_reserve (#PCDATA)><!-- int times -->
+<!ELEMENT max_repeat_count (#PCDATA)><!-- int times -->
 <!ELEMENT name (#PCDATA)>
 <!ELEMENT period (#PCDATA)><!-- double seconds -->
 <!ELEMENT scan EMPTY>

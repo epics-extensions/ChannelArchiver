@@ -131,6 +131,7 @@ private:
     epicsTime       connection_time;
     DbrType         dbr_time_type;
     DbrCount        nelements;  // == 0 -> data type is not known
+    size_t          dbr_size; // == RawValue::getSize(dbr_time_type, nelements)
     CtrlInfo        ctrl_info;
     // Value buffer in memory, later written to disk.
     // Should hold values arriving up to 'period' plus some
@@ -155,6 +156,9 @@ private:
     epicsTime last_stamp_in_archive; // for back-in-time checks
 
     bool isGoodTimestamp(const epicsTime &stamp, const epicsTime &now);
+
+    // Check given stamp against last time stamp in archive
+    bool isBackInTime(const epicsTime &stamp) const;
 };
 
 inline const stdString &ArchiveChannel::getName() const

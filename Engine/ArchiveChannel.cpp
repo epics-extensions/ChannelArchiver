@@ -182,6 +182,7 @@ void ArchiveChannel::init(Guard &engine_guard, Guard &guard,
     guard.check(mutex);
     this->dbr_time_type = dbr_time_type;
     this->nelements = nelements;
+    this->dbr_size =  RawValue::getSize(dbr_time_type, nelements);
     buffer.allocate(dbr_time_type, nelements,
                     theEngine->suggestedBufferSize(engine_guard, period));
     if (pending_value)
@@ -485,6 +486,11 @@ bool ArchiveChannel::isGoodTimestamp(const epicsTime &stamp,
                 getName().c_str(), t.c_str());
         return false;
     }
+    return true;
+}
+
+bool ArchiveChannel::isBackInTime(const epicsTime &stamp) const
+{
     if (isValidTime(last_stamp_in_archive) &&
         stamp < last_stamp_in_archive)
     {
@@ -492,9 +498,9 @@ bool ArchiveChannel::isGoodTimestamp(const epicsTime &stamp,
         epicsTime2string(stamp, stamp_txt);
         LOG_MSG("'%s': received back-in-time stamp %s\n",
                 getName().c_str(), stamp_txt.c_str());
-        return false;
+        return true;
     }
-    
-    return true;
+    return false;
 }
+
 

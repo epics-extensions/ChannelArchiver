@@ -12,7 +12,7 @@
 #include <epicsTimeHelper.h>
 #include "ScanList.h"
 
-#define DEBUG_SCANLIST
+#undef DEBUG_SCANLIST
 
 SinglePeriodScanList::SinglePeriodScanList(double period)
         : period(period)

@@ -19,6 +19,8 @@ IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
 
 bool IndexFile::open(const stdString &filename, bool readonly)
 {
+    this->filename = filename;
+    Filename::getDirname(filename, dirname);
     bool new_file = false;
     if (readonly)
         f = fopen(filename.c_str(), "rb");
@@ -69,8 +71,6 @@ bool IndexFile::open(const stdString &filename, bool readonly)
     }
     if (!names.reattach())
         goto open_error;
-    this->filename = filename;
-    Filename::getDirname(filename, dirname);
     return true;
   open_error:
     close();

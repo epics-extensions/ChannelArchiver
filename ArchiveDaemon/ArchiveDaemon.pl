@@ -80,8 +80,10 @@ my ($read_timeout) = 5;
 # more than one network card and a messed up network config.
 my ($host) = 'localhost';
 
-my ($message_queue_length) = 15;
+# Number of entries in the "Messages" log
+my ($message_queue_length) = 20;
 
+# Detach from terminal etc. to run as a background daemon?
 my ($daemonization) = 1;
 
 # ----------------------------------------------------------------
@@ -638,7 +640,7 @@ sub usage()
     print("\t-f file  : use file instead of $config_file\n");
     print("\n");
     print("This tool automatically starts, monitors and restarts\n");
-    print("ArchiveEngines based on $config_file.");
+    print("ArchiveEngines based on $config_file.\n");
     exit(-1);
 }
 if (!getopts('hp:f:')  ||  $#ARGV != -1  ||  $opt_h)

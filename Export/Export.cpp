@@ -43,15 +43,15 @@ int main(int argc, const char *argv[])
         return -1;
     if (parser.getArguments().size() < 1)
     {
-        std::cerr << "ArchiveExport " VERSION_TXT "\n\n";
+        fputs("ArchiveExport " VERSION_TXT "\n\n", stderr);
         parser.usage();
         return -1;
     }
 
 	if (reduce > 0  && ! GNUPlot)
     {
-        std::cerr << "Error:\n"
-                  << "Reduce option works only for GNUPlot output\n";
+        fputs("Error:\n"
+              "Reduce option works only for GNUPlot output\n", stderr);
         parser.usage();
         return -1;
     }
@@ -59,9 +59,8 @@ int main(int argc, const char *argv[])
         GNUPlot.set();
     if (GNUPlot  &&  output.get().empty())
     {
-        std::cerr << "Error:\n"
-                  << "You must specify an output file (-o)"
-                  << " for GNUPlot output\n";
+        fputs("Error:\n"
+              "You must specify an output file (-o) for GNUPlot output\n", stderr);
         parser.usage();
         return -1;
     }
@@ -100,25 +99,24 @@ int main(int argc, const char *argv[])
         }
 
         exporter->setVerbose(verbose);
-
         if (status_text)
             exporter->enableStatusText();
         if (bool(fill))
             exporter->useFilledValues();
         if (double(interpol) > 0)
             exporter->setLinearInterpolation(interpol, 100);
-
-	if (isValidTime(startTime)) exporter->setStart(startTime);
-	if (isValidTime(endTime)) exporter->setEnd(endTime);
-
+        if (isValidTime(startTime))
+            exporter->setStart(startTime);
+        if (isValidTime(endTime))
+            exporter->setEnd(endTime);
         // List of channels given?
         if (parser.getArguments().size() > 1)
         {   // yes, use it
             stdVector<stdString> channel_names;
             if (! pattern.get().empty())
             {
-                std::cerr << "Pattern from '-m' switch is ignored\n"
-                          << "since a list of channels was also provided\n";
+                fputs("Pattern from '-m' switch is ignored\n"
+                      "since a list of channels was also provided\n", stderr);
             }
             // first argument was directory file name, skip that:
             for (size_t i=1; i<parser.getArguments().size(); ++i)
@@ -131,9 +129,8 @@ int main(int argc, const char *argv[])
     }
     catch (const GenericException &e)
     {
-        std::cerr << "Exception:\n" << e.what() << "\n";
-        LOG_MSG ("Exception:\n" << e.what() << "\n");
-
+        fprintf(stderr, "Exception:\n%s\n", e.what());
+        LOG_MSG("Exception:\n%s\n", e.what());
         return -1;
     }
 

@@ -40,38 +40,38 @@ static stdString script_dir, script;
 static void usage(HTMLPage &page)
 {
 	page.header("Usage", 2);
-    std::cout << "This program uses the CGI interface,\n";
-	std::cout << "both GET/HEAD and POST are supported.\n";
-	std::cout << "<P>\n";
+    printf("This program uses the CGI interface,\n");
+	printf("both GET/HEAD and POST are supported.\n");
+	printf("<P>\n");
 	page.header("Recognized form parameters", 3);
-	std::cout << "<UL>\n";
-	std::cout << "<LI>COMMAND: "
-        "START | HELP | LIST | INFO | PLOT | GET | DEBUG\n";
+	printf("<UL>\n");
+	printf("<LI>COMMAND: "
+           "START | HELP | LIST | INFO | PLOT | GET | DEBUG\n");
 #ifdef NO_CGI_DEBUG
-	std::cout << "<br>(DEBUG is disabled)\n";
+	printf("<br>(DEBUG is disabled)\n");
 #endif
-    std::cout << "<LI>DIRECTORY: Archive's directory file, often 'freq_directory'\n";
-	std::cout << "<LI>PATTERN:   Regular expression for channel names\n";
-	std::cout << "<LI>GLOB:      If defined, shell glob is used instead of Regular expression\n";
-	std::cout << "<LI>NAMES:     List of channel names\n";
-    std::cout << "<LI>FORMAT:    PLOT | MATLAB | MLSHEET | SPREADSHEET<br>\n"
-              << "(used by COMMAND=GET)\n";
-	std::cout << "<LI>STATUS:    Show channel status (disconnected, ...)\n";
-	std::cout << "<LI>INTERPOL:  Use linear Interpolation (seconds)\n";
-    std::cout << "<LI>FILL:      Step-interpolation, repeat value to fill gaps\n";
-    std::cout << "<LI>STARTMONTH, STARTDAY, STARTYEAR, STARTHOUR, STARTMINUTE, STARTSECOND\n";
-    std::cout << "<LI>ENDMONTH, ENDDAY, ENDYEAR, ENDHOUR, ENDMINUTE, ENDSECOND\n";
-    std::cout << "<LI>and maybe more...\n";
-	std::cout << "</UL>\n";
-	std::cout << "When started with COMMAND=START,\n";
-	std::cout << "a start page should be created that links to the remaining commands....\n";
+    printf("<LI>DIRECTORY: Archive's directory file, often 'freq_directory'\n");
+	printf("<LI>PATTERN:   Regular expression for channel names\n");
+	printf("<LI>GLOB:      If defined, shell glob is used instead of Regular expression\n");
+	printf("<LI>NAMES:     List of channel names\n");
+    printf("<LI>FORMAT:    PLOT | MATLAB | MLSHEET | SPREADSHEET<br>\n"
+           "(used by COMMAND=GET)\n");
+	printf("<LI>STATUS:    Show channel status (disconnected, ...)\n");
+	printf("<LI>INTERPOL:  Use linear Interpolation (seconds)\n");
+    printf("<LI>FILL:      Step-interpolation, repeat value to fill gaps\n");
+    printf("<LI>STARTMONTH, STARTDAY, STARTYEAR, STARTHOUR, STARTMINUTE, STARTSECOND\n");
+    printf("<LI>ENDMONTH, ENDDAY, ENDYEAR, ENDHOUR, ENDMINUTE, ENDSECOND\n");
+    printf("<LI>and maybe more...\n");
+	printf("</UL>\n");
+	printf("When started with COMMAND=START,\n");
+	printf("a start page should be created that links to the remaining commands....\n");
 }
 
 // COMMAND==HELP
 static void cmdHelp(HTMLPage &page)
 {
 	page._title = "Help";
-	page.start ();
+	page.start();
 	usage(page);
 }
 
@@ -79,10 +79,10 @@ static void showEnvironment(HTMLPage &page, const char *envp[])
 {
 	size_t i;
 	page.header("Environment",2);
-	std::cout << "<PRE>\n";
+	printf("<PRE>\n");
 	for (i=0; envp[i]; ++i)
-		std::cout << envp[i] << "\n";
-	std::cout << "</PRE>\n";
+		printf("%s\n", envp[i]);
+	printf("</PRE>\n");
 }
 
 // "visitor" for BinaryTree of channel names
@@ -90,8 +90,10 @@ static void cmdListTraverser(const stdString &item, void *arg)
 {  
    static int namesCnt = 0;
    HTMLPage *pagep = (HTMLPage*)arg;
-   if (++namesCnt <= 100) pagep->_names.push_back(item);
-   if (namesCnt == 101) std::cout << "<b>List truncated to first 100 names!</b><p>\n";
+   if (++namesCnt <= 100)
+       pagep->_names.push_back(item);
+   if (namesCnt == 101)
+       printf("<b>List truncated to first 100 names!</b><p>\n");
 }
 
 // COMMAND==LIST
@@ -101,30 +103,30 @@ static void cmdList(HTMLPage &page)
 	page.start();
 	try
 	{
-	   Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory, page._start, page._end));
-	   ChannelIterator channel(archive);
-	   
-	   if (page._glob)
-	   {
-	      stdString expr = RegularExpression::fromGlobPattern(page._pattern);
-	      archive.findChannelByPattern(expr, channel);
-	   }
-	   else
-	      archive.findChannelByPattern(page._pattern, channel);
-	   
-	   page._names.clear();
-	   while (channel)
-	   {
-	      channels.add(channel->getName());
-	      ++channel;
-	   }
+        Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory, page._start, page._end));
+        ChannelIterator channel(archive);
+        
+        if (page._glob)
+        {
+            stdString expr = RegularExpression::fromGlobPattern(page._pattern);
+            archive.findChannelByPattern(expr, channel);
+        }
+        else
+            archive.findChannelByPattern(page._pattern, channel);
+        
+        page._names.clear();
+        while (channel)
+        {
+            channels.add(channel->getName());
+            ++channel;
+        }
 	}
 	catch (GenericException &e)
 	{
 		page.header("Archive Error",2);
-		std::cout << "<PRE>\n";
-		std::cout << e.what() << "\n";
-		std::cout << "</PRE>\n";
+		printf("<PRE>\n");
+        printf("%s\n", e.what());
+        printf("</PRE>\n");
 	}
 	page.header("Channel List", 2);
 	channels.traverse(cmdListTraverser, &page);
@@ -145,10 +147,12 @@ static bool operator < (const class Info &a, const class Info &b)
 // Visitor routine for BinaryTree<Info>
 static void cmdInfoTraverser(const Info &info, void *arg)
 {
-   std::cout << "<TR><TD>" << info.channel
-	     << "</TD><TD>" << info.first
-	     << "</TD><TD>" << info.last
-	     << "</TD></TR>\n";
+    stdString f, l;
+
+    osiTime2string(info.first, f);
+    osiTime2string(info.last, l);
+    printf("<TR><TD>%s</TD><TD>%s</TD><TD>%s</TD></TR>\n",
+           info.channel.c_str(), f.c_str(), l.c_str());
 }
 
 // COMMAND==INFO
@@ -205,16 +209,16 @@ static void cmdInfo(HTMLPage &page)
 	catch (GenericException &e)
 	{
 		page.header("Archive Error",2);
-		std::cout << "<PRE>\n";
-		std::cout << e.what() << "\n";
-		std::cout << "</PRE>\n";
+		printf("<PRE>\n");
+		printf("%s\n", e.what());
+		printf("</PRE>\n");
 		return;
 	}
 	page.header("Channel Info", 2);
-	std::cout << "<TABLE BORDER=1 CELLPADDING=1>\n";
-	std::cout << "<TR><TH>Channel</TH><TH>First archived</TH><TH>Last archived</TH></TR>\n";
+	printf("<TABLE BORDER=1 CELLPADDING=1>\n");
+	printf("<TR><TH>Channel</TH><TH>First archived</TH><TH>Last archived</TH></TR>\n");
 	infos.traverse(cmdInfoTraverser);
-	std::cout << "</TABLE>\n";
+	printf("</TABLE>\n");
 	page.interFace ();
 }
 
@@ -236,10 +240,8 @@ static void getNames(const stdString &input_string,
 		// find end, next delim or buffer overrrun
 		while (*input && !strchr(delim, *input) && i<sizeof(name)-1)
 			name[i++] = *(input++);
-
 		while (*input && strchr(delim, *input)) // skip multiple delims.
 			++input;
-
 		name[i] = '\0';
 		names.push_back(name);
 		i = 0;
@@ -259,35 +261,37 @@ static bool decodeTimes (const CGIInput &cgi, osiTime &start, osiTime &end)
 	if (!cgi.find("STARTMONTH").empty())
 	{
 		stdString start_txt;
-        std::strstream buf;
+        start_txt.reserve(25);
 		// 12/22/1998 11:50:00
-		buf << cgi.find("STARTMONTH")
-			<< '/' << cgi.find("STARTDAY")
-			<< '/' << cgi.find("STARTYEAR")
-			<< ' ' << cgi.find("STARTHOUR")
-			<< ':' << cgi.find("STARTMINUTE")
-			<< ':' << cgi.find("STARTSECOND") << '\0';
-		start_txt = buf.str();
-		buf.rdbuf()->freeze(false);
-		buf.clear();
-
+        start_txt  = cgi.find("STARTMONTH");
+        start_txt += '/';
+        start_txt += cgi.find("STARTDAY");
+        start_txt += '/';
+        start_txt += cgi.find("STARTYEAR");
+        start_txt += ' ';
+        start_txt += cgi.find("STARTHOUR");
+        start_txt += ':';
+        start_txt += cgi.find("STARTMINUTE");
+        start_txt += ':';
+        start_txt +=  cgi.find("STARTSECOND");
 		if (! string2osiTime(start_txt, start))
 			return false;
 	}
 	if (!cgi.find("ENDMONTH").empty())
 	{
 		stdString end_txt;
-        std::strstream buf;
-		buf << cgi.find("ENDMONTH")
-			<< '/' << cgi.find("ENDDAY")
-			<< '/' << cgi.find("ENDYEAR")
-			<< ' ' << cgi.find("ENDHOUR")
-			<< ':' << cgi.find("ENDMINUTE")
-			<< ':' << cgi.find("ENDSECOND") << '\0';
-		end_txt = buf.str();
-		buf.rdbuf()->freeze(false);
-		buf.clear();
-
+        end_txt.reserve(25);
+        end_txt  = cgi.find("ENDMONTH");
+        end_txt += '/';
+        end_txt += cgi.find("ENDDAY");
+        end_txt += '/';
+        end_txt += cgi.find("ENDYEAR");
+        end_txt += ' ';
+        end_txt += cgi.find("ENDHOUR");
+        end_txt += ':';
+        end_txt += cgi.find("ENDMINUTE");
+        end_txt += ':';
+        end_txt +=  cgi.find("ENDSECOND");
 		if (! string2osiTime(end_txt, end))
 			return false;
 	}
@@ -297,7 +301,6 @@ static bool decodeTimes (const CGIInput &cgi, osiTime &start, osiTime &end)
         start = end;
         end = t;
     }
-
 	return true;
 }
 
@@ -347,10 +350,10 @@ static bool exportFunc(HTMLPage &page, Format format,
 		if (format == fmt_Matlab)
 		{
 			exporter = new MatlabExporter(archive);
-			std::cout << "Content-type: application/octet-stream\n";
-			std::cout << "Content-Disposition: filename=\"archive_data.m\"\n";
-            std::cout << "Content-Description: EPICS ChannelArchiver Data\n";
-			std::cout << "\n";
+			printf("Content-type: application/octet-stream\n");
+			printf("Content-Disposition: filename=\"archive_data.m\"\n");
+            printf("Content-Description: EPICS ChannelArchiver Data\n");
+			printf("\n");
 		}
         else
 		if (format == fmt_MatlabSheet)
@@ -358,27 +361,27 @@ static bool exportFunc(HTMLPage &page, Format format,
             SpreadSheetExporter *sse = new SpreadSheetExporter(archive);
             sse->useMatlabFormat();
 			exporter = sse;
-			std::cout << "Content-type: text/plain\n";
-			std::cout << "Content-Disposition: filename=\"archive_data\"\n";
-            std::cout << "Content-Description: EPICS ChannelArchiver Data\n";
-			std::cout << "\n";
+			printf("Content-type: text/plain\n");
+			printf("Content-Disposition: filename=\"archive_data\"\n");
+            printf("Content-Description: EPICS ChannelArchiver Data\n");
+			printf("\n");
 		}
         else
 		if (format == fmt_Excel)
 		{
 			exporter = new SpreadSheetExporter (archive);
-			std::cout << "Content-type: application/ms-excel\n";
-			std::cout << "Content-Disposition: filename=\"archive_data.xls\"\n";
-            std::cout << "Content-Description: EPICS ChannelArchiver Data\n";
-			std::cout << "\n";
+			printf("Content-type: application/ms-excel\n");
+			printf("Content-Disposition: filename=\"archive_data.xls\"\n");
+            printf("Content-Description: EPICS ChannelArchiver Data\n");
+			printf("\n");
 		}
 		else
 		{
 			exporter = new SpreadSheetExporter (archive);
-			std::cout << "Content-type: text/plain\n";
-			std::cout << "Content-Disposition: filename=\"archive_data\"\n";
-            std::cout << "Content-Description: EPICS ChannelArchiver Data\n";
-			std::cout << "\n";
+			printf("Content-type: text/plain\n");
+			printf("Content-Disposition: filename=\"archive_data\"\n");
+            printf("Content-Description: EPICS ChannelArchiver Data\n");
+			printf("\n");
 		}
 
 		exporter->setStart(page._start);
@@ -409,23 +412,23 @@ static bool exportFunc(HTMLPage &page, Format format,
 	}
 	catch (GenericException &e)
 	{
-		std::cout << "Archive Error :\n";
-		std::cout << "<PRE>\n";
-		std::cout << e.what() << "\n";
-		std::cout << "</PRE>\n";
+		printf("Archive Error :\n");
+		printf("<PRE>\n");
+		printf("%s\n", e.what());
+		printf("</PRE>\n");
 		return false;
 	}
 	catch (const char *txt)
 	{
-		std::cout << "Caught Error :\n";
-		std::cout << "<PRE>\n";
-		std::cout << txt << "\n";
-		std::cout << "</PRE>\n";
+		printf("Caught Error :\n");
+		printf("<PRE>\n");
+		printf("%s\n", txt);
+		printf("</PRE>\n");
 		return false;
 	}
 	catch (...)
 	{
-		std::cout << "Caught Unknown Error\n";
+		printf("Caught Unknown Error\n");
 		return false;
 	}
 
@@ -494,17 +497,17 @@ static bool cmdPlot(HTMLPage &page)
     if (! exportFunc(page, fmt_GNUPlot, data.c_str()))
     {
         page.header("Error: Possible reasons",3);
-        std::cout << "<ul>\n";
-        std::cout << "<li>No data<br>\n";
-        std::cout << "    There seems to be no data for that channel\n";
-        std::cout << "    and time range.\n";
-        std::cout << "    Check the <A HREF=\"" << dataURL << "\">";
-        std::cout << "    data that was supposed to be plotted.</A>\n";
-        std::cout << "<li>Internal GNUPlot error<br>\n";
-        std::cout << "    If you can't get <i>any</i> plot today\n";
-        std::cout << "    even though the data is available as\n";
-        std::cout << "    a spreadsheet, the plotting is broken.\n";
-        std::cout << "</ul>\n";
+        printf("<ul>\n");
+        printf("<li>No data<br>\n");
+        printf("    There seems to be no data for that channel\n");
+        printf("    and time range.\n");
+        printf("    Check the <A HREF=\"%s\">", dataURL.c_str());
+        printf("    data that was supposed to be plotted.</A>\n");
+        printf("<li>Internal GNUPlot error<br>\n");
+        printf("    If you can't get <i>any</i> plot today\n");
+        printf("    even though the data is available as\n");
+        printf("    a spreadsheet, the plotting is broken.\n");
+        printf("</ul>\n");
         page.interFace();
         return 0;
     }
@@ -519,20 +522,18 @@ static bool cmdPlot(HTMLPage &page)
         if (result != 0)
         {
             page.header("Error: GNUPlot",3);
-            std::cout << "The execution of GNUPlot plot failed:<P>\n";
-            std::cout << "<PRE>'" << GNUPLOT_PROGRAM
-                      << " " << GNUPlotCommand << "'</PRE><P>\n";
-            std::cout << "Result: " << result << "<P>\n";
+            printf("The execution of GNUPlot plot failed:<P>\n");
+            printf("<PRE>'%s %s'</PRE><P>\n",
+                   GNUPLOT_PROGRAM, GNUPlotCommand);
+            printf("Result: %d<P>\n", result);
             return 0;
         }
     }
 #endif
     
-    std::cout << "<A HREF=\"" << dataURL << "\">";
-    std::cout << "<IMG SRC=\""
-              << imageURL
-              << "\" ALT=\"Click Image to see raw data\"</A></A><P>\n";
-    std::cout << "<HR>\n";
+    printf("<A HREF=\"%s\">", dataURL.c_str());
+    printf("<IMG SRC=\"%s\" ALT=\"Click Image to see raw data\"</A></A><P>\n", imageURL.c_str());
+    printf("<HR>\n");
     page.interFace();
     
     return 0;
@@ -545,16 +546,15 @@ void cmdDebug(HTMLPage &page, const CGIInput &cgi, const char *envp[])
     page.start();
     page.header("DEBUG Information",1);
     
-    std::cout << "<I>CGIExport Version " VERSION_TXT
-        ", built " __DATE__ "</I>\n";
+    printf("<I>CGIExport Version " VERSION_TXT
+           ", built " __DATE__ "</I>\n");
     
     page.header("Variables parsed from CGI input",2);
     const stdMap<stdString, stdString> &var_map = cgi.getVars ();
     stdMap<stdString, stdString>::const_iterator vars = var_map.begin();
     while (vars != var_map.end())
     {
-        std::cout << "'" << vars->first << "' = '"
-                  << vars->second << "'<BR>\n";
+        printf("'%s' = '%s'<BR>\n", vars->first.c_str(), vars->second.c_str());
         ++vars;
     }
     
@@ -563,47 +563,45 @@ void cmdDebug(HTMLPage &page, const CGIInput &cgi, const char *envp[])
     page.header("Script Info", 2);
 
     page.header("Current directory:", 3);
-    std::cout << "<PRE>" << dir << "</PRE><P>\n";
+    printf("<PRE>%s</PRE><P>\n", dir);
 
     page.header("Script:", 3);
-    std::cout << "<PRE>" << script << "</PRE><P>\n";
+    printf("<PRE>%s</PRE><P>\n", script.c_str());
     
     page.header("Script path:", 3);
-    std::cout << "<PRE>" << script_dir << "</PRE><P>\n";
+    printf("<PRE>%s</PRE><P>\n", script_dir.c_str());
     
     page.header("GNUPlot Program:", 3);
-    std::cout << "<PRE>" << GNUPLOT_PROGRAM << "</PRE><P>\n";
+    printf("<PRE>%s</PRE><P>\n", GNUPLOT_PROGRAM);
 
     page.header("GNUPlot Pipe:", 3);
-    std::cout << "<PRE>" << GNUPLOT_PIPE << "</PRE><P>\n";
+    printf("<PRE>%s</PRE><P>\n", GNUPLOT_PIPE);
 
     stdString data, dataURL, imageURL;
     getFilenames(data, dataURL, imageURL);
 
     page.header("Data:", 3);
-    std::cout << "<PRE>" << data << "</PRE><P>\n";
+    printf("<PRE>%s</PRE><P>\n", data.c_str());
 
     page.header("Data URL:", 3);
-    std::cout << "<PRE>" << dataURL << "</PRE><P>\n";
+    printf("<PRE>%s</PRE><P>\n", dataURL.c_str());
     
     page.header("Image URL:", 3);
-    std::cout << "<PRE>" << imageURL << "</PRE><P>\n";
+    printf("<PRE>%s</PRE><P>\n", imageURL.c_str());
     
 #ifndef WIN32
     page.header("Personality:", 3);
-    std::cout << "UID: " << getuid() << '/' << geteuid();
-    std::cout << ", GID: " << getgid() << '/' << getegid() << "<P>\n";
+    printf("UID: %d/%d, GID: %d/%d<P>\n", getuid(), geteuid(), getgid(), getegid());
 #endif
-    
     showEnvironment(page, envp);
     
-    std::cout << "<HR>\n";
+    printf("<HR>\n");
     page.interFace();
 }
 
 // For MsgLogger
-static void PrintRoutine(void *arg, const stdString &text)
-{   std::cerr << text; }
+static void PrintRoutine(void *arg, const char *text)
+{   fputs(text, stderr); }
 
 int main(int argc, const char *argv[], const char *envp[])
 {
@@ -623,7 +621,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	// For testing, allow command line arguments that override CGI parms:
 	bool command_line = false;
 	CmdArgParser parser(argc, argv);
-	parser.setHeader ("This command is meant to be executed via CGI\n"
+	parser.setHeader("This command is meant to be executed via CGI\n"
                       "For debugging, these options are available:\n\n");
 	CmdArgString directory(parser, "directory", "<archive>",
                            "Specify archive file");
@@ -679,7 +677,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	{
 		page._title = "Time Error";
 		page.start();
-		std::cout << "Cannot decode times.\n";
+		printf("Cannot decode times.\n");
         showEnvironment(page, envp);
 		return 0;
 	}

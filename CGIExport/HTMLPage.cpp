@@ -13,8 +13,6 @@
 #endif
 
 #include "HTMLPage.h"
-#include <iostream>
-#include <fstream>
 #include "osiTimeHelper.h"
 
 static const char *start_file = "cgi_body_start.txt";
@@ -33,222 +31,206 @@ HTMLPage::HTMLPage()
 
 void HTMLPage::start()
 {
-    std::cout << "Content-type: text/html\n"
-              << "Pragma: no-cache\n"
-              << "\n"
-              << "<HTML>\n"
-              << "<META Creator: EPICS ChannelArchiver CGIExport>\n"
-              << "<HEAD>\n"
-              << "<TITLE>" << _title << "</TITLE>\n";
-
-    std::ifstream file;
-    file.open(start_file);
-#ifdef  HP_UX
-    if (! file.fail())
-#else
-    if (file.is_open())
-#endif
+    printf("Content-type: text/html\n"
+           "Pragma: no-cache\n"
+           "\n"
+           "<HTML>\n"
+           "<META Creator: EPICS ChannelArchiver CGIExport>\n"
+           "<HEAD>\n"
+           "<TITLE>%s</TITLE>\n", _title.c_str());
+    FILE *f = fopen(start_file, "rt");
+    if (f)
     {
         char line[200];
-        while (! file.eof())
-        {
-            file.getline(line, sizeof (line));
-            std::cout << line << "\n";
-        }
+        while (fgets(line, sizeof(line), f))
+            fputs(line, stdout);
     }
     else
     {
-        std::cout << "\n<! default header --------->\n"
-                  << "<BODY bgcolor=\"#FFFFFF\">\n"
-                  << "<FONT face=\"Comic Sans MS, Arial, Helvetica\">\n"
-                  << "<BLOCKQUOTE>\n"
-                  << "<! create '" << start_file
-                  << "' to replace this default header ---->\n\n";
+        printf("\n<! default header --------->\n"
+               "<BODY bgcolor=\"#FFFFFF\">\n"
+               "<FONT face=\"Comic Sans MS, Arial, Helvetica\">\n"
+               "<BLOCKQUOTE>\n"
+               "<! create '%s' to replace this default header ---->\n\n",
+               start_file);
     }
     _started = true;
 }
 
 static void makeSelect(const char *name, int start, int end, int select)
 {
-    std::cout << "           <SELECT NAME=" << name << " SIZE=1>\n";
-
+    printf("           <SELECT NAME=%s SIZE=1>\n", name);
     for (int i=start; i<=end; ++i)
     {
-        std::cout << "<OPTION";
+        printf("<OPTION");
         if (i==select)
-            std::cout << " SELECTED";
-        std::cout << "> ";
+            printf(" SELECTED");
+        printf("> ");
         if (i<10)
-            std::cout << "0";
-        std::cout << i << "</OPTION> ";
+            printf("0");
+        printf("%d</OPTION> ", i);
     }
-    std::cout << "\n           </SELECT>\n";
+    printf("\n           </SELECT>\n");
 }
 
 // Print the interface stuff
+// (funny name because interface was a reserved word in some compiler)
 void HTMLPage::interFace() const
 {
     size_t i;
     int year, month, day, hour, min, sec;
     unsigned long nano;
 
-    std::cout << "<SCRIPT LANGUAGE=\"JavaScript\">\n";
-    std::cout << "function clrNames () { document.f.NAMES.value=\"\"; }\n";
-    std::cout << "</SCRIPT>\n";
+    printf("<SCRIPT LANGUAGE=\"JavaScript\">\n");
+    printf("function clrNames () { document.f.NAMES.value=\"\"; }\n");
+    printf("</SCRIPT>\n");
 
-    std::cout << "<FORM METHOD=\"GET\" ACTION=\"" << _cgi_path << "\" NAME=\"f\">\n";
-    std::cout << "  <INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\""
-              << _directory << "\">\n";
+    printf("<FORM METHOD=\"GET\" ACTION=\"%s\" NAME=\"f\">\n", _cgi_path.c_str());
+    printf("  <INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\"%s\">\n", _directory.c_str());
     // Table: 5 columns!
     // Start/end/Get | Format | Config. description | config input | Clear/Empty
-    std::cout << "  <TABLE cellpadding=1>\n";
-    std::cout << "  <TR valign=top>\n";
-    std::cout << "      <TD>Pattern:<br>\n";
-    std::cout << "          <INPUT name=GLOB type=checkbox value=ON";
+    printf("  <TABLE cellpadding=1>\n");
+    printf("  <TR valign=top>\n");
+    printf("      <TD>Pattern:<br>\n");
+    printf("          <INPUT name=GLOB type=checkbox value=ON");
     if (_glob)
-        std::cout << " checked=1";
-    std::cout <<            ">file glob\n";
-    std::cout << "      </TD>\n";
-    std::cout << "      <TD colspan=4><INPUT NAME=\"PATTERN\" VALUE=\""
-              <<            _pattern << "\" SIZE=40 MAXLENGTH=100>\n";
-    std::cout << "          <INPUT TYPE=submit NAME=COMMAND VALUE=LIST>\n";
-    std::cout << "          <INPUT TYPE=submit NAME=COMMAND VALUE=INFO>\n";
-    std::cout << "      </TD>\n";
-    std::cout << "  </TR>\n";
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD valign=\"top\">Names:</TD>\n";
-    std::cout << "      <TD colspan=4><TEXTAREA NAME=NAMES ROWS=5 COLS=40>";
+        printf(" checked=1");
+    printf(           ">file glob\n");
+    printf("      </TD>\n");
+    printf("      <TD colspan=4><INPUT NAME=\"PATTERN\" VALUE=\"%s\" SIZE=40 MAXLENGTH=100>\n",
+           _pattern.c_str());
+    printf("          <INPUT TYPE=submit NAME=COMMAND VALUE=LIST>\n");
+    printf("          <INPUT TYPE=submit NAME=COMMAND VALUE=INFO>\n");
+    printf("      </TD>\n");
+    printf("  </TR>\n");
+    printf("  <TR>\n");
+    printf("      <TD valign=\"top\">Names:</TD>\n");
+    printf("      <TD colspan=4><TEXTAREA NAME=NAMES ROWS=5 COLS=40>");
     for (i=0; i<_names.size(); ++i)
-        std::cout << _names[i] << "\n";
-    std::cout << "</TEXTAREA>\n";
-    std::cout << "<input type=button value=\"CLEAR\" onClick=\"clrNames()\">\n";
-    std::cout << "      </TD>\n";
-    std::cout << "  </TR>\n";
+        printf("%s\n", _names[i].c_str());
+    printf("</TEXTAREA>\n");
+    printf("<input type=button value=\"CLEAR\" onClick=\"clrNames()\">\n");
+    printf("      </TD>\n");
+    printf("  </TR>\n");
 
     osiTime2vals(_start, year, month, day, hour, min, sec, nano);
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD>Start:</TD><TD colspan=4>Day (m/d/y)\n";
+    printf("  <TR>\n");
+    printf("      <TD>Start:</TD><TD colspan=4>Day (m/d/y)\n");
     makeSelect("STARTMONTH",    1,   12, month);
     makeSelect("STARTDAY"  ,    1,   31, day);
     makeSelect("STARTYEAR" , 1998, 2005, year);
-    std::cout << "Time (h:m:s)";
+    printf("Time (h:m:s)");
     makeSelect("STARTHOUR" ,    0,   23, hour);
     makeSelect("STARTMINUTE" ,  0,   59, min);
     makeSelect("STARTSECOND" ,  0,   59, sec);
-    std::cout << "      </TD>\n";
-    std::cout << "  </TR>\n";
+    printf("      </TD>\n");
+    printf("  </TR>\n");
 
     osiTime2vals(_end, year, month, day, hour, min, sec, nano);
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD>End:</TD><TD colspan=4>Day (m/d/y)\n";
+    printf("  <TR>\n");
+    printf("      <TD>End:</TD><TD colspan=4>Day (m/d/y)\n");
     makeSelect("ENDMONTH",    1,   12, month);
     makeSelect("ENDDAY"  ,    1,   31, day);
     makeSelect("ENDYEAR" , 1998, 2010, year);
-    std::cout << "Time (h:m:s)";
+    printf("Time (h:m:s)");
     makeSelect("ENDHOUR" ,    0,   23, hour);
     makeSelect("ENDMINUTE" ,  0,   59, min);
     makeSelect("ENDSECOND" ,  0,   59, sec);
-    std::cout << "      </TD>\n";
-    std::cout << "  </TR>\n";
+    printf("      </TD>\n");
+    printf("  </TR>\n");
 
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD><input TYPE=submit NAME=COMMAND VALUE=GET></TD>\n";
-    std::cout << "      <TD><input type=radio name=FORMAT ";
+    printf("  <TR>\n");
+    printf("      <TD><input TYPE=submit NAME=COMMAND VALUE=GET></TD>\n");
+    printf("      <TD><input type=radio name=FORMAT ");
     if (_format == "PLOT")
-        std::cout << "checked=1 ";
-    std::cout <<            "value=PLOT>Plot, y limits\n";
-    std::cout << "<input maxLength=10 name=Y0 size=3 value=" << _y0 << ">\n";
-    std::cout << "<input maxLength=10 name=Y1 size=3 value=" << _y1 << ">\n";
-    std::cout << "      </TD>\n";
-    std::cout << "      <TD align=right>All Data:</TD>\n";
-    std::cout << "      <TD><input name=REDUCE type=checkbox value=ON"
-              << (!_reduce?" checked=1":"")
-              << "> (default: reduced to plot size)</TD>\n";
-    std::cout << "      <TD>\n";
-    std::cout << "      </TD>\n";
-    std::cout << "  </TR>\n";
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "      <TD><input type=radio name=FORMAT ";
+        printf("checked=1 ");
+    printf(           "value=PLOT>Plot, y limits\n");
+    printf("<input maxLength=10 name=Y0 size=3 value=%g>\n", _y0);
+    printf("<input maxLength=10 name=Y1 size=3 value=%g>\n", _y1);
+    printf("      </TD>\n");
+    printf("      <TD align=right>All Data:</TD>\n");
+    printf("      <TD><input name=REDUCE type=checkbox value=ON %s>"
+           " (default: reduced to plot size)</TD>\n",
+           (!_reduce?" checked=1":""));
+    printf("      <TD>\n");
+    printf("      </TD>\n");
+    printf("  </TR>\n");
+    printf("  <TR>\n");
+    printf("      <TD></TD>\n");
+    printf("      <TD><input type=radio name=FORMAT ");
     if (_format.empty() || _format == "SPREADSHEET")
-        std::cout << "checked=1 ";
-    std::cout <<            "value=SPREADSHEET>Spreadsheet</TD>\n";
-    std::cout << "      <TD align=right>Status:</TD>\n";
-    std::cout << "      <TD><input name=STATUS type=checkbox value=ON"
-	      << (_status?" checked=1":"") << "> (show channel status)</TD>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "  </TR>\n";
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "      <TD><input type=radio name=FORMAT ";
+        printf("checked=1 ");
+    printf(           "value=SPREADSHEET>Spreadsheet</TD>\n");
+    printf("      <TD align=right>Status:</TD>\n");
+    printf("      <TD><input name=STATUS type=checkbox value=ON%s>"
+           "(show channel status)</TD>\n",
+           (_status?" checked=1":""));
+    printf("      <TD></TD>\n");
+    printf("  </TR>\n");
+    printf("  <TR>\n");
+    printf("      <TD></TD>\n");
+    printf("      <TD><input type=radio name=FORMAT ");
     if (_format == "MLSHEET")
-        std::cout << "checked=1 ";
-    std::cout <<           "value=MLSHEET>Matlab-Spreadsheet</TD>\n";
-    std::cout << "      <TD align=right>Fill:</TD>\n";
-    std::cout << "      <TD><input name=FILL type=checkbox value=ON"
-	      << (_fill?" checked=1":"") << "> (step-func. interpolation)</TD>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "  </TR>\n";
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "      <TD><input type=radio name=FORMAT ";
+        printf("checked=1 ");
+    printf(          "value=MLSHEET>Matlab-Spreadsheet</TD>\n");
+    printf("      <TD align=right>Fill:</TD>\n");
+    printf("      <TD><input name=FILL type=checkbox value=ON%s>"
+           " (step-func. interpolation)</TD>\n",
+           (_fill?" checked=1":""));
+    printf("      <TD></TD>\n");
+    printf("  </TR>\n");
+    printf("  <TR>\n");
+    printf("      <TD></TD>\n");
+    printf("      <TD><input type=radio name=FORMAT ");
     if (_format == "MATLAB")
-        std::cout << "checked=1 ";
-    std::cout <<           "value=MATLAB>Matlab</TD>\n";
-    std::cout << "      <TD align=right>Interpolate:</TD>\n";
-    std::cout << "      <TD><input maxLength=10 name=INTERPOL size=5 value="
-	      << _interpol << "> secs (linear)</TD>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "  </TR>\n";
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "      <TD align=right>Log Scale:</TD>\n";
-    std::cout << "      <TD><input name=LOGY type=checkbox value=ON"
-	      << (_use_logscale ?" checked=1":"") << "></TD>\n";
-    std::cout << "      <TD></TD>\n";
-    std::cout << "  </TR>\n";
-    std::cout << "  </TABLE>\n";
-    std::cout << "</FORM>\n";
+        printf("checked=1 ");
+    printf(          "value=MATLAB>Matlab</TD>\n");
+    printf("      <TD align=right>Interpolate:</TD>\n");
+    printf("      <TD><input maxLength=10 name=INTERPOL size=5 value=%g> secs (linear)</TD>\n",
+           _interpol);
+    printf("      <TD></TD>\n");
+    printf("      <TD></TD>\n");
+    printf("  </TR>\n");
+    printf("  <TR>\n");
+    printf("      <TD></TD>\n");
+    printf("      <TD></TD>\n");
+    printf("      <TD align=right>Log Scale:</TD>\n");
+    printf("      <TD><input name=LOGY type=checkbox value=ON%s></TD>\n",
+           (_use_logscale ?" checked=1":""));
+    printf("      <TD></TD>\n");
+    printf("  </TR>\n");
+    printf("  </TABLE>\n");
+    printf("</FORM>\n");
 }
 
 HTMLPage::~HTMLPage()
 {
     if (_started)
     {
-        std::ifstream file;
-        file.open(end_file);
-#ifdef  HP_UX
-        if (! file.fail())
-#else
-        if (file.is_open())
-#endif
+        FILE *f = fopen(end_file, "rt");
+        if (f)
         {
             char line[200];
-            while (! file.eof())
-            {
-                file.getline(line, sizeof (line));
-                std::cout << line << "\n";
-            }
+            while (fgets(line, sizeof(line), f))
+                fputs(line, stdout);
         }
         else
         {
-            std::cout << "\n<! default footer --------->\n";
-            std::cout << "</BLOCKQUOTE>\n";
-            std::cout << "</FONT>\n";
-            std::cout << "</BODY>\n";
-            std::cout << "<! create '" << end_file
-                      << "' to replace this default footer ---->\n\n";
+            printf("\n<! default footer --------->\n");
+            printf("</BLOCKQUOTE>\n");
+            printf("</FONT>\n");
+            printf("</BODY>\n");
+            printf("<! create '%s' to replace this default footer ---->\n\n", end_file);
         }
-        std::cout << "</HTML>\n";
+        printf("</HTML>\n");
     }
 }
 
 void HTMLPage::header(const stdString &text, int level) const
 {
-    std::cout << "<H" << level << ">" << text << "</H" << level << ">\n";
+    printf("<H%d>%s</H%d>\n", level, text.c_str(), level);
 }
+
 
 
 

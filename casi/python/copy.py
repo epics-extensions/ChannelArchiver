@@ -8,8 +8,10 @@
 #
 # Benchmark result:
 #
-# On a machine were Engine/bench.cpp can write  ~7700 values/sec,
-# this script could copy (read, write, do python) ~2200 val/sec
+# On a machine were Engine/bench.cpp can write    ~7700 values/sec,
+# this script could copy (read, write, do python) ~2200 val/sec.
+# On a machine were Engine/bench.cpp can write   ~14800 values/sec,
+# this script could copy (read, write, do python) ~3870 val/sec.
 
 import casiTools, casi, time
 

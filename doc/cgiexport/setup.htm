@@ -10,8 +10,20 @@ background="../blueback.jpg">
 
 <blockquote>
   <h1>Channel Archive CGI Setup</h1>
-  <p>Right now the path names are relative but fixed and have to be similar to the Test
-  directory tree underneath the CGIExport source dir.:<ul>
+  <h2>Prerequisites</h2>
+  <p>Like any other CGI tool, the CGIExport tool for the Channel Archiver is a plug-in for a
+  web server.</p>
+  <p>This means you have to have a running web server and you need to know how to configure
+  it.</p>
+  <p>In here I can only provide examples on how to configure some web servers (Apache web
+  server, MS Internet Information Server/MS Personal Web Server).<br>
+  If you don't understand the examples or happen to use a different server, please consider
+  consulting the manual for your web server first.</p>
+  <h2>Example Setup</h2>
+  <p>The default path names are relative but fixed and have to be similar to the Test
+  directory tree underneath the CGIExport source directory. If you changed the CGIExport
+  configuration in &lt;ChannelArchiver&gt;/ArchiverConfig.h, the following might no longer
+  work for you:<ul>
     <li>ChannelArchiver/CGIExport/Tests/<br>
       HTML files for accessing the CGI Tool, must be exported via WWW server.<br>
       <br>
@@ -29,17 +41,31 @@ background="../blueback.jpg">
       In here, the CGI tool creates temporary files, so you must create this directory</li>
   </ul>
   <p>Make sure that the WWW server as well as CGI programs launched by it (usually running
-  as &quot;nobody&quot;) have access to those parts of the file system, especially check
-  write access to ...../cgi/tmp ! </p>
-  <p>In addition, the path to GNUPlot is hard-coded at compile time (check
-  ChannelArchiver/CGIExport/Makefile.Host). One could consider this a security feature...</p>
+  as &quot;nobody&quot;) have access to those parts of the file system, especially check <em>write
+  access</em> to ...../cgi/tmp !</p>
+  <p>In addition, the path to GNUPlot is hard-coded at compile time (see ArchiverConfig.h).
+  One could consider this a security feature...</p>
   <p>To test the CGI tool, make the Test directory accessible by your WWW server and make
   sure that the cgi subdirectory is executable (see below for MS and Apache specifics).</p>
   <p>There are simple Perl scripts cgi/Hi.pl and cgi/env.pl to debug your WWW setup. <br>
-  (You don't need perl to use the CGIExport tool. If the example perl scripts don't mean
-  anything to you, don't worry.) </p>
-  <p>When your WWW server setup was successful, you should be able to point your web browser
-  to http://localhost/archive/Default.htm and see the initial test page. </p>
+  You don't need perl to use the CGIExport tool in the end.<br>
+  The scripts are meant to test your web server setup because many CGI extensions are
+  written in Perl and therefore every web administrator should be able to help you with
+  this:</p>
+  <p>If installed and configured correctly, you can access <a
+  href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">&quot;http://&lt;your
+  host&gt;/archive/cgi/Hi.pl&quot;</a> to verify that<ul>
+    <li>Your web server is running at all</li>
+    <li>You managed to configure it correctly in order to execute the perl-CGI scripts</li>
+  </ul>
+  <p>The next step is to test if you can execute the CGIExport tool:</p>
+  <p>Try &quot;<a href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">http://&lt;your
+  host&gt;/archive/cgi/CGIExport.cgi&quot;</a>.<br>
+  You should see some HTML page, no error message.</p>
+  <p>For examples on how to call the CGIExport tool to actually access your archived data,
+  look at the example start page.<br>
+  When your WWW server setup was successful, you should be able to point your web browser to
+  http://localhost/archive/Default.htm and see that initial test page.</p>
   <h2>Microsoft Personal Web Server</h2>
   <ol>
     <li>Export the Test directory as e.g. &quot;/archive&quot;,</li>

@@ -19,9 +19,9 @@
 
 // This should match Make.ver
 #define VERSION 1
-#define RELEASE 2
+#define RELEASE 3
 
-#define VERSION_TXT "1.2"
+#define VERSION_TXT "1.3"
 
 // ----------------------------------------------------------
 // ArchiveEngine
@@ -53,14 +53,17 @@
 // CGIExport
 // ----------------------------------------------------------
 
+// Current options: BinArchive, MultiArchive
+#define CGIEXPORT_ARCHIVE_TYPE MultiArchive
+
 // Where is GNU-Plot?
 #ifdef WIN32
-#define GNUPLOT_PROGRAM "c:\\Progra~1\\gnuplot3.7\\wgnuplot.exe"
+#	define GNUPLOT_PROGRAM "c:\\Progra~1\\Gnuplot3.7\\wgnuplot.exe"
 #else
 // LEDA @ LANL
-#define GNUPLOT_PROGRAM "/opt/apache/htdocs/archive/cgi/gnuplot"
+//#	define GNUPLOT_PROGRAM "/opt/apache/htdocs/archive/cgi/gnuplot"
 // Linux
-// #define GNUPLOT_PROGRAM "/usr/bin/gnuplot"
+#	define GNUPLOT_PROGRAM "/usr/bin/gnuplot"
 #endif
 
 // The CGI tool adds cgi_body_start.txt and ..end.txt

@@ -99,6 +99,14 @@ void SampleMechanismMonitored::handleValue(Guard &guard,
             return;
         RawValue::copy(channel->dbr_time_type, channel->nelements,
                        channel->pending_value, value);
+        if (channel->isBackInTime(now))
+        {
+#   ifdef DEBUG_SAMPLING
+            LOG_MSG("SampleMechanismMonitored::handleValue %s: "
+                    "unresolved back in time\n", channel->getName().c_str());
+#   endif
+            return;
+        }
         RawValue::setTime(channel->pending_value, now);
         channel->buffer.addRawValue(channel->pending_value);
     }

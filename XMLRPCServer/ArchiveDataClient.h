@@ -106,3 +106,4 @@ private:
                      xmlrpc_value *data_array, CtrlInfo &ctrlinfo,
                      value_callback callback, void *callback_arg);
 };
+

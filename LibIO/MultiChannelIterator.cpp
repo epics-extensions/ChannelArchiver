@@ -22,11 +22,17 @@ MultiChannelIterator::MultiChannelIterator (const MultiArchive *archive)
 	_base_archive = 0;
 	_base_channel_iterator = 0;
 	_channel.setMultiChannelIterator (this);
+	_regex = 0;
 }
 
 MultiChannelIterator::~MultiChannelIterator ()
 {
 	clear ();
+	if (_regex)
+	{
+		_regex->release ();
+		_regex = 0;
+	}    
 }
 
 bool MultiChannelIterator::isValid () const
@@ -41,8 +47,13 @@ ChannelI *MultiChannelIterator::getChannel ()
 
 bool MultiChannelIterator::next ()
 {
-	++_channel_index;
-	_is_valid = _multi_archive->getChannel (_channel_index, *this);
+	do
+	{
+		++_channel_index;
+		_is_valid = _multi_archive->getChannel (_channel_index, *this);
+	}
+	while (_is_valid && _regex && _regex->doesMatch (_channel.getName())==false);
+
 	return _is_valid;
 }
 
@@ -59,6 +70,22 @@ void MultiChannelIterator::clear ()
 		delete _base_archive;
 		_base_archive = 0;
 	}
+	// keep _regex because clear is also
+	// called in the course of position(),
+	// where ArchiveI and ChannelIteratorI change,
+	// but the matching behaviour should stay
+}
+
+bool MultiChannelIterator::moveToMatchingChannel (const stdString &pattern)
+{
+	if (_regex)
+		_regex->release ();
+	_regex = RegularExpression::reference (pattern.c_str());
+
+	if (_is_valid && _regex && _regex->doesMatch (_channel.getName())==false)
+		return next ();
+
+	return _is_valid;
 }
 
 void MultiChannelIterator::position (size_t index, ArchiveI *archive, ChannelIteratorI *channel_iterator)

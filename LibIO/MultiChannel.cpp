@@ -67,13 +67,31 @@ bool MultiChannel::getValueAfterTime (const osiTime &time, ValueIteratorI *value
 
 bool MultiChannel::getValueBeforeTime (const osiTime &time, ValueIteratorI *values)
 {
-	// TODO: implement this
+	MultiValueIterator *multi_values = dynamic_cast<MultiValueIterator *> (values);
+	const MultiArchive *multi_archive = _channel_iterator->getArchive ();
+
+	if (multi_archive->getValueAtOrBeforeTime (_channel_iterator->getChannelIndex(),
+			*_channel_iterator, time, false/* needn't be earlier */, *multi_values))
+	{
+		return true;
+	}
+
+	multi_values->clear ();
 	return false;
 }
 
 bool MultiChannel::getValueNearTime (const osiTime &time, ValueIteratorI *values)
 {
-	// TODO: implement this
+	MultiValueIterator *multi_values = dynamic_cast<MultiValueIterator *> (values);
+	const MultiArchive *multi_archive = _channel_iterator->getArchive ();
+
+	if (multi_archive->getValueNearTime (_channel_iterator->getChannelIndex(),
+			*_channel_iterator, time, *multi_values))
+	{
+		return true;
+	}
+
+	multi_values->clear ();
 	return false;
 }
 

@@ -42,27 +42,27 @@ ValueI *MultiArchive::newValue (DbrType type, DbrCount count)
 
 bool MultiArchive::findFirstChannel (ChannelIteratorI *channel)
 {
-	MultiChannelIterator *iterator = dynamic_cast<MultiChannelIterator *>(channel);
-	return getChannel (0, *iterator);
+	MultiChannelIterator *multi_channel = dynamic_cast<MultiChannelIterator *>(channel);
+	return getChannel (0, *multi_channel);
 }
 
 bool MultiArchive::findChannelByName (const stdString &name, ChannelIteratorI *channel)
 {
-	MultiChannelIterator *iterator = dynamic_cast<MultiChannelIterator *>(channel);
+	MultiChannelIterator *multi_channel = dynamic_cast<MultiChannelIterator *>(channel);
 	for (size_t i=0; i<_channels.size(); ++i)
 	{
 		if (_channels[i]._name == name)
-			return getChannel (i, *iterator);
+			return getChannel (i, *multi_channel);
 	}
-	iterator->clear ();
+	multi_channel->clear ();
 	return false;
 }
 
 bool MultiArchive::findChannelByPattern (const stdString &regular_expression,
 	ChannelIteratorI *channel)
 {
-	// TODO: Use RegularExpression on _channels
-	return findFirstChannel (channel);
+	MultiChannelIterator *multi_channel = dynamic_cast<MultiChannelIterator *>(channel);
+	return findFirstChannel (channel) && multi_channel->moveToMatchingChannel (regular_expression);
 }
 
 bool MultiArchive::addChannel (const stdString &name, ChannelIteratorI *channel)
@@ -181,6 +181,49 @@ bool MultiArchive::getValueAtOrBeforeTime (size_t channel_index,
 			return value_iterator.isValid ();
 		}                    
 	}
+
+	return false;
+}
+
+bool MultiArchive::getValueNearTime (size_t channel_index,
+	MultiChannelIterator &channel_iterator,
+	const osiTime &time, MultiValueIterator &value_iterator) const
+{
+	if (channel_index >= _channels.size())
+		return false;
+
+	// Query all archives in MultiArchive for value nearest "time"
+	double t = double (time);
+    double best_bet = -1.0; // negative == invalid
+
+	const ChannelInfo &info = _channels[channel_index];
+	list<stdString>::const_iterator archs = _archives.begin();
+	for (/**/; archs != _archives.end(); ++archs)
+	{
+		Archive archive (new BinArchive (*archs));
+		ChannelIterator channel (archive);
+		if (archive.findChannelByName (info._name, channel))
+		{
+			ValueIterator value (archive);
+			if (! channel->getValueNearTime (time, value))
+				continue;
+
+			double distance = fabs(double(value->getTime()) - t);  
+			if (best_bet >= 0  &&  best_bet <= distance)
+				continue; // worse than what we found before
+
+			best_bet = distance;
+			value_iterator.position (&channel_iterator, value.getI());
+			channel_iterator.position (channel_index, archive.getI(), channel.getI());
+
+			value.detach ();	// Now ref'd by MultiValueIterator
+			archive.detach();	// Now ref'd by MultiChannelIterator
+			channel.detach();	// dito
+		}                    
+	}
+
+	if (best_bet >= 0)
+		return value_iterator.isValid ();
 
 	return false;
 }

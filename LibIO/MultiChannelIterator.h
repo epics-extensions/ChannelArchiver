@@ -14,6 +14,7 @@
 #include "ChannelIteratorI.h"
 #include "MultiChannel.h"
 #include "MultiArchive.h"
+#include <RegularExpression.h>
 
 BEGIN_NAMESPACE_CHANARCH
 
@@ -34,6 +35,7 @@ public:
 	// ---------------------------------------
 	// To be called by MultiArchive:
 	void clear ();
+	bool moveToMatchingChannel (const stdString &pattern);
 	void position (size_t index, ArchiveI *archive, ChannelIteratorI *channel_iterator);
 
 	// To be called by MultiChannel:
@@ -52,6 +54,7 @@ private:
 	ArchiveI *_base_archive;			// If valid, this is the actual archive...
 	ChannelIteratorI *_base_channel_iterator; // and channeliterator for the current channel
 	MultiChannel _channel;				// The current Channel (use only if _is_valid)
+	RegularExpression *_regex;
 };
 
 inline const MultiArchive *MultiChannelIterator::getArchive ()

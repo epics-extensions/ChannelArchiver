@@ -102,16 +102,19 @@ public:
 
 	// For given channel, set value_iterator to value at-or-after time.
 	// For has_to_be_later = true, the archive must contain more values,
-	// i.e. it won't position on the very last value that's stamped at "time"
+	// i.e. it won't position on the very last value that's stamped at "time" exactly
 	//
 	// For result=false, value_iterator could not be set.
-	// It will not be clear()ed, though, to allow stepping back!
+	// These routines will not clear() the value_iterator
+	// to allow stepping back when used from within next()/prev()!
 	bool getValueAtOrAfterTime (size_t channel_index, MultiChannelIterator &channel_iterator,
 		const osiTime &time, bool has_to_be_later,
 		MultiValueIterator &value_iterator) const;
 	bool getValueAtOrBeforeTime (size_t channel_index, MultiChannelIterator &channel_iterator,
 		const osiTime &time, bool has_to_be_earlier,
 		MultiValueIterator &value_iterator) const;
+	bool getValueNearTime (size_t channel_index, MultiChannelIterator &channel_iterator,
+		const osiTime &time, MultiValueIterator &value_iterator) const;
 
 private:
 	bool parseMasterFile (const stdString &master_file);

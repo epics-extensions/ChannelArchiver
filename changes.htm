@@ -12,11 +12,20 @@
   <h1>Channel Archiver Changes</h1>
   <ul>
     <li>04/??/2000<br>
-      <font color="#0000A0">Version 1.2 extended</font>:<br>
-      Adjustments for hp700 at BESSY<br>
-      Central Config.h file for sources under ChannelArchiver directory<br>
-      WinBrowser (and Exporter class) can export linear interpolated spreadsheet data<br>
-      TCL examples: better response to window resize</li>
+      <font color="#0000A0">Version 1.3</font>:<br>
+	  <UL>
+      <LI>"MultiArchive" can read more than one archive,
+	      easing the previous housekeeping problems:
+		  ArchiveEngine can now be restarted e.g. monthly,
+		  creating easier to manage subarchives
+		  which can still be viewed as a whole via the MultiArchive.
+      <LI>Central ArchiverConfig.h file for sources under ChannelArchiver directory,
+	      allowing compile-time configuration of Engine, Manager, CGIExport, ... in one place.
+      <LI>WinBrowser (and Exporter class) can export linear interpolated spreadsheet data.
+      <LI>Adjustments for hp700 at BESSY
+      <LI>TCL examples: better response to window resize.
+	  </UL>
+      </LI>
     <li>03/23/2000<br>
       <font color="#0000A0">Version 1.2</font>:<br>
       Optional password for stopping the ArchiveEngine over the Web, to be configured via

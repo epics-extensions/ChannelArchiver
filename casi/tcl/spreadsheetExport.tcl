@@ -12,7 +12,7 @@ source casiTools.tcl
 
 proc usage {} {
 	global argv0
-	puts "USAGE: $argv0 archive startTime endTime channelName { channelName }"
+	puts "USAGE: $argv0 index startTime endTime channelName { channelName }"
 	puts ""
 	puts "       start/endTime as \"YYYY/MM/DD hh:mm:ss\" in 24h format;"
 	puts "       startTime may be 'yesterday', endTime may be 'end'"
@@ -23,7 +23,7 @@ proc usage {} {
 	puts ""
 	puts "Example"
 	puts "-------"
-	puts "spreadsheetExport.tcl dir \"2000/03/23 10:19:09.000000000\" end fred freddy"
+	puts "spreadsheetExport.tcl index \"2000/03/23 10:19:09.000000000\" end fred freddy"
 	puts "Time                            fred            freddy"
 	puts "2000/03/23 10:19:09.000000000   0.622230947018  -0.370439261198"
 	puts "2000/03/23 10:19:10.460167853   0.698971152306  -0.370439261198"

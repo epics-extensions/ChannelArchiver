@@ -11,7 +11,7 @@
 # Dump all values for some channel, no error checking at all
 source casiTools.tcl
 
-set archiveName "../../Engine/Test/freq_directory"
+set archiveName "../../Engine/Test/index"
 set channelName "fred"
 set archive [ archive ]
 set channel [ channel ]

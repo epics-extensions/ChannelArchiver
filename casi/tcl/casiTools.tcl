@@ -62,7 +62,7 @@ if { $tcl_platform(platform) == "windows" } {
     load O.WIN32/casi.dll
 } elseif { $tcl_platform(platform) == "unix" } {
     if { $tcl_platform(os) == "Linux" } {
-	load /cs/epics/extensions/src/ChannelArchiver/casi/tcl/O.Linux/casi.so
+	load /home/ade/epics/supTop/extensions/R3.14.1_RH8/src/ChannelArchiver/casi/tcl/O.linux-x86/casi.so
     }
 }
 

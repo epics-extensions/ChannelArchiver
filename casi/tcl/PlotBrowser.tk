@@ -36,7 +36,7 @@ source casiGraph.tk
 
 proc usage {} {
 	global argv0
-	puts "USAGE: $argv0 archive channelName ?channelName? ..."
+	puts "USAGE: $argv0 archive-index channelName ?channelName? ..."
 
 	exit 1
 }      

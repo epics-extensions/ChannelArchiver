@@ -12,7 +12,7 @@ source casiTools.tcl
 
 proc usage {} {
 	global argv0
-	puts "USAGE: $argv0 archive"
+	puts "USAGE: $argv0 archive-index"
 	puts "\tFor all channels in archive,"
 	puts "\tthe last value..."
 

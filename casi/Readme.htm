@@ -9,25 +9,22 @@
 
 <blockquote>
   <h1><I>CASI</I> - Channel Archive Scripting Interface</h1>
-  See <a href="../doc/casi/default.htm">doc/casi/default.htm</a>
-  on how to use this SWIG-based scripting interface to the
-  ChannelArchiver I/O library.
+  <a href="../doc/casi/default.htm">doc/casi/default.htm</a>
+  has some more on how to use this SWIG-based scripting interface to the
+  ChannelArchiver I/O library. This is about the setup.
     
   <h2>Compilation</h2>
   This extension is not built as part of the standard make system
   because it involves too many other tools that are not yet uniformly
-  configurable as part of the EPICS make system.
+  configurable as part of the EPICS make system
+  (swig, perl, python, tcl and their associated libraries ...).
   <br>
-  Instead, there is a <a href="Makefile.WIN32">Makefile.WIN32</a> for
-  MS Visual C++'s &quot;nmake&quot; and a
-  <a href="Makefile.Unix">Makefile.Unix</a> for Unix' gnumake.
+  Instead, there is a Makefile.RH8 for RedHat 8 Linux and more.
   <p>
   Check the Makefiles for the possible targets like "perl", "python",
   ...
   For each CASI target, the corresponding scripting language
   has to be installed. In addition, SWIG is needed.
-  The <A HREF="Readme.txt">Readme.txt<A> file shows what I learned
-  about getting those to work.
   <br>
   In general, this is the suggested procedure:
   <ul>
@@ -35,17 +32,17 @@
       Tools, LibIO, Engine, ...
   <li>Verify that swig is installed, if necessary get it:
       <a href="http://www.swig.org">www.swig.org</a>
-  <li>Make sure that you have the tools that you intend to build this
-      extension for:
+  <li>Make sure that you have the tools for which you intend to build this
+      extension:
       tcl/tk, python, ... and know where their includes and libraries are.<br>
       (Hint: For RedHat Linux, this means you not only need to have
-      python installed but also the &quot;developer&quot; RPM for python)
+      python installed but also the python &quot;developer&quot; RPM)
   <li>Adjust Makefile.xxx to point to the correct path names for EPICS base,
       swig, tcl, python, ...
   <li>Call gnumake/nmake on your makefile, maybe specifying only the targets
       &quot;perl&quot; or &quot;python&quot; to skip building what you
       don't need, e.g.:<br>
-      <i>make -f Makefile.Unix python</i>
+      <i>make -f Makefile.RH8 tcl</i>
   </ul>
   SWIG was used to avoid platform dependencies. This also means that
   you have to check the swig manual first in case of errors. Link
@@ -56,9 +53,9 @@
   <h2>Usage with any scripting language</h2>
   The CASI software is one shared library each for python, tcl or
   perl, e.g. ChannelArchiver/casi/perl/O.Linux/casi.so.
-  On solaris I was not succesful in building shared C++ libraries,
-  so in that case a new tcl or python interpreter is built
-  that includes casi (and tk, BLT, ...).
+  (On solaris I was not succesful in building shared C++ libraries,
+   so in that case a new tcl or python interpreter is built
+   that includes casi, tk, BLT, ...).
   <br>
   In addition, EPICS base libraries are used (ca, Com, ...).
   <I>IF</I> EPICS base was built with shared libraries, you might have to
@@ -68,7 +65,6 @@
   or
   <pre>
   set PATH=s:\Epics\base\bin\WIN32;%PATH%</pre>
-
 
   <h2>Usage with Python</h2>
   You'll need python, of course.

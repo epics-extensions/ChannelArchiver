@@ -12,6 +12,7 @@ regsub ": (.*) \\$" $CVS(Author,HTTPd) "\\1" CVS(Author,HTTPd)
 
 namespace eval httpd {
   variable ::_port 4610
+  variable bytes
   variable _starttime
   variable _proto
   variable _page
@@ -68,6 +69,7 @@ You don't have permission to access this server.<P>
   
   fconfigure $fd -blocking 0
   set _query($fd) {}
+  set bytes($fd) ""
   fileevent $fd readable "httpd::getInput $fd"
 }
 
@@ -78,76 +80,90 @@ proc httpd::getInput {fd} {
   variable _method
   variable _gotargs
 
-  gets $fd lastline
-  lappend _query($fd) "$lastline"
+  append bytes($fd) [read $fd]
+  set bl [string bytelength $bytes($fd)]
 
-  set lQ [llength $_query($fd)]
-  if {$lQ == 1} {
-    set _proto($fd) ""
-    if {![regexp "^(GET|POOP) (/\[^ 	\]*)(.*)" [lindex $_query($fd) 0] all _method _page($fd) _proto($fd)]} {
-      fileevent $fd readable {}
-      sendError $fd "invalid request"
-      return
-    }
-    set _proto($fd) [string trim $_proto($fd)]
-    set _gotargs 0
-  }
+  if {[eof $fd]} { append bytes($fd) "\n" }
+  set nl [string first "\n" $bytes($fd)]
 
-  if {($lQ > 2) && ([lindex $_query($fd) [expr [llength $_query($fd)] - 2]] == "")} {
-    set $_query($fd) "$_query($fd)?$lastline"
-    set _gotargs 1
-  }
+  # as long as we have full lines...
+  while {$nl >= 0} {
 
-  if {(($_method == "GET") && 
-       (($_proto($fd) == "") || (($lQ >= 2) && ("$lastline" == "")))) ||
-      (($_method == "POST") && $_gotargs)} {
-    if {"$_page($fd)" == "/exit"} {
-      puts stderr "terminating on user-request."
-      puts $fd "<html><head><title>CAbgManager exit</title></head>"
-      puts $fd "<body bgcolor=\"\#aec9d2\">"
-      puts $fd "<TABLE BORDER=3>"
-      puts $fd "<TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5>"
-      puts $fd "Channel Archiver - bgManager terminated!"
-      puts $fd "</FONT></TD></TR>"
-      puts $fd "</TABLE>"
-      puts $fd "</body></html>"
-      close $fd
-      after 1000 Exit
-    }
-    if [regexp "(.*)\\?(.*)" $_page($fd) all page args] {
-      foreach arg [split $args "&"] {
-	if [regexp "(.*)=(.*)" $arg all name val] {
-	  set var($name) $val
-	}
-      }
-      if {![info exists var(ind)]} {
-	sendError $fd "index for command missing"
+    set lastline [string range $bytes($fd) 0 [expr $nl - 1]]
+    set bytes($fd) [string replace $bytes($fd) 0 $nl ""]
+
+    lappend _query($fd) "$lastline"
+
+    set lQ [llength $_query($fd)]
+    if {$lQ == 1} {
+      set _proto($fd) ""
+      if {![regexp "^(GET|POOP) (/\[^ 	\]*)(.*)" [lindex $_query($fd) 0] all _method _page($fd) _proto($fd)]} {
+	fileevent $fd readable {}
+	sendError $fd "invalid request"
 	return
       }
-      switch $page {
-	"/start" {
-	  Puts "manually starting \"[camMisc::arcGet $var(ind) descr]\""
-	  Busy $var(ind) "start in progress"
-	  camMisc::Release $var(ind)
-	  runArchiver $var(ind)
+      set _proto($fd) [string trim $_proto($fd)]
+      set _gotargs 0
+    }
+
+    if {($lQ > 2) && ([lindex $_query($fd) [expr [llength $_query($fd)] - 2]] == "")} {
+      set $_query($fd) "$_query($fd)?$lastline"
+      set _gotargs 1
+    }
+    
+    if {(($_method == "GET") && 
+	 (($_proto($fd) == "") || (($lQ >= 2) && ("$lastline" == "")))) ||
+	(($_method == "POST") && $_gotargs)} {
+      if {"$_page($fd)" == "/exit"} {
+	puts stderr "terminating on user-request."
+	puts $fd "<html><head><title>CAbgManager exit</title></head>"
+	puts $fd "<body bgcolor=\"\#aec9d2\">"
+	puts $fd "<TABLE BORDER=3>"
+	puts $fd "<TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5>"
+	puts $fd "Channel Archiver - bgManager terminated!"
+	puts $fd "</FONT></TD></TR>"
+	puts $fd "</TABLE>"
+	puts $fd "</body></html>"
+	close $fd
+	after 1000 Exit
+      }
+      if [regexp "(.*)\\?(.*)" $_page($fd) all page args] {
+	foreach arg [split $args "&"] {
+	  if [regexp "(.*)=(.*)" $arg all name val] {
+	    set var($name) $val
+	  }
 	}
-	"/stop" {
-	  Puts "manually stopping \"[camMisc::arcGet $var(ind) descr]\""
-	  Busy $var(ind) "stop in progress"
-	  stopArchiver $var(ind)
-	  camMisc::Block $var(ind)
-	}
-	default {
-	  sendError $fd "illegal command \"$page\""
+	if {![info exists var(ind)]} {
+	  sendError $fd "index for command missing"
 	  return
 	}
+	switch $page {
+	  "/start" {
+	    Puts "manually starting \"[camMisc::arcGet $var(ind) descr]\""
+	    Busy $var(ind) "start in progress"
+	    camMisc::Release $var(ind)
+	    runArchiver $var(ind)
+	  }
+	  "/stop" {
+	    Puts "manually stopping \"[camMisc::arcGet $var(ind) descr]\""
+	    Busy $var(ind) "stop in progress"
+	    stopArchiver $var(ind)
+	    camMisc::Block $var(ind)
+	  }
+	  default {
+	    sendError $fd "illegal command \"$page\""
+	    return
+	  }
+	}
+	sendCmdResponse $fd $page $var(ind)
+      } else {
+	sendOutput $fd
       }
-      sendCmdResponse $fd $page $var(ind)
-    } else {
-      sendOutput $fd
     }
+    array unset var ind
+
+    set nl [string first "\n" $bytes($fd)]
   }
-  array unset var ind
 }
 
 proc httpd::ed {p} {
@@ -170,7 +186,6 @@ proc httpd::sendCmdResponse {fd page ind} {
 }
 
 proc httpd::sendError {fd msg} {
-  variable _proto
   variable _query
   puts $fd "<HTML><HEAD>
 <TITLE>$msg</TITLE>
@@ -191,7 +206,7 @@ proc httpd::sendOutput {fd} {
   variable _query
   if {$_proto($fd) != ""} {
     puts $fd "$_proto($fd) 200 OK"
-    puts $fd "Server: Channel Archiver bgManager $tcl_platform(user)@$::_host:$::_port"
+    puts $fd "Server: Channel Archiver bgManager $tcl_platform(user)@$::_host:$::_port:$camMisc::cfg_file"
     puts $fd "Content-type: text/html"
     puts $fd ""
   }

@@ -39,7 +39,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "..\LibIO" /I "..\..\Tools" /I "..\..\..\..\base\include\os\WIN32" /I "..\..\..\..\base\include" /I "..\..\..\..\base\src\ca" /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\LibIO" /I "..\..\Tools" /I "..\..\..\..\base\include\os\WIN32" /I "..\..\..\..\base\include" /I "..\..\..\..\base\src\ca" /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\LibIO" /I "..\..\Tools" /I "\cs\epics\R3.13.5\base\include\os\WIN32" /I "\cs\epics\R3.13.5\base\include" /I "\cs\epics\R3.13.5\base\src\ca" /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -47,7 +47,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ca.lib Com.lib db.lib ws2_32.lib /nologo /subsystem:console /debug /machine:I386 /out:"Debug/ArchiveManager.exe" /pdbtype:sept /libpath:"..\..\..\..\base\lib\Win32"
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ca.lib Com.lib db.lib ws2_32.lib /nologo /subsystem:console /debug /machine:I386 /out:"Debug/ArchiveManager.exe" /pdbtype:sept /libpath:"..\..\..\..\base\lib\Win32"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ca.lib Com.lib db.lib ws2_32.lib /nologo /subsystem:console /debug /machine:I386 /out:"Debug/ArchiveManager.exe" /pdbtype:sept /libpath:"\cs\epics\R3.13.5\base\lib\Win32"
 # Begin Target
 
 # Name "Manager - Win32 Debug"

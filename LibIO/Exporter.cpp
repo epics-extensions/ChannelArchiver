@@ -192,6 +192,8 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
             channels[i]->getChannel()->getValueBeforeTime(_start, base[i]);
             if (base[i]->isValid() &&  ! base[i]->getValue()->isInfo())
                 prev_values[i] = base[i]->getValue()->clone();
+            else
+                channels[i]->getChannel()->getValueAfterTime(_start, base[i]);
         }
         else
             channels[i]->getChannel()->getValueAfterTime(_start, base[i]);

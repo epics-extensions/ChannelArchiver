@@ -21,12 +21,15 @@
 #include "EngineServer.h"
 #include <Filename.h>
 
-// wrongly defined for hp700 dce:
+#ifndef __HP_aCC
+// wrongly defined for hp700 dce,
+// but __HP_aCC needs it again?
 #undef open
 #undef close
+#endif
 
 USING_NAMESPACE_CHANARCH
-using namespace std;
+USE_STD_NAMESPACE
 
 // For communication sigint_handler -> main loop
 bool run = true;
@@ -86,7 +89,11 @@ int main (int argc, const char *argv[])
 	{
 		logfile = new ofstream;
 		logfile->open (log.get().c_str (), ios::out | ios::trunc);
+#		ifdef __HP_aCC
+		if (logfile->fail())
+#		else
 		if (! logfile->is_open())
+#		endif
 		{
 			cerr << "Cannot open logfile '" << log.get() << "'\n";
 			delete logfile;

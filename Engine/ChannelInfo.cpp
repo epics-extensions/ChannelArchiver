@@ -14,9 +14,8 @@
 #include <math.h>
 #include <iostream>
 
-using namespace std;
 USING_NAMESPACE_CHANARCH
-
+USE_STD_NAMESPACE
 
 //#define LOG_NSV(stuff)	LOG_MSG(stuff)
 #define LOG_NSV(stuff)	{}

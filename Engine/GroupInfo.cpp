@@ -2,7 +2,7 @@
 
 #include "GroupInfo.h"
 
-using namespace std;
+USE_STD_NAMESPACE
 USING_NAMESPACE_CHANARCH
 
 size_t GroupInfo::_next_ID = 0;

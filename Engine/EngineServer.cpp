@@ -33,7 +33,7 @@
 #endif
 #endif
 
-using namespace std;
+USE_STD_NAMESPACE
 USING_NAMESPACE_CHANARCH
 
 static void engineinfo (HTTPClientConnection *connection, const stdString &path)
@@ -221,7 +221,7 @@ static void channels (HTTPClientConnection *connection, const stdString &path)
 	}
 
 	page.openTable (1, "Name", 1, "Status", 0);
-	list<ChannelInfo *>::const_iterator channel;
+	list<ChannelInfo *>::iterator channel;
 	stdString link;
 	link.reserve(80);
 	for (channel=channels.begin(); channel!=channels.end(); ++channel)

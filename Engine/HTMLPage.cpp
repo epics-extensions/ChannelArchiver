@@ -12,7 +12,7 @@
 #include <strstream>
 #include <stdarg.h>
 
-using namespace std;
+USE_STD_NAMESPACE
 
 HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 {

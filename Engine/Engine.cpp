@@ -16,8 +16,8 @@
 #include <fdManager.h>
 #include <osiTimer.h>
 
-using namespace std;
 BEGIN_NAMESPACE_CHANARCH
+USE_STD_NAMESPACE
 
 static EngineServer *engine_server = 0;
 static WriteThread	write_thread;
@@ -106,13 +106,27 @@ static void fd_register (void *pfdctx, int fd, int opened)
 	// LOG_MSG ("CA " << (opened ? "registers" : "unregisters") << " fd " << fd << endl);
     if (opened)
 	{
-#		ifndef WIN32
-		unsigned
+		LOG_MSG ("CA registers fd " << fd << endl);
+
+		// Attempt to make this socket's input buffer as large as possible
+		// to have some headroom while the engine is busy writing.
+		// This doesn't work because CA's "flow control" kicks in anyway
+		// since it's based on "is ca_poll called in vain"
+		// instead of "is input buffer getting full above some high-water mark".
+		//
+		// Then there is the system dependency on the type of "len"
+		// -> use on known systems only for experimentation
+#		if defined(WIN32)
+#			define SOCK_LEN_T	int
+#		elif defined(Linux)
+#			define SOCK_LEN_T	sock_len_t
 #		endif
-		int len;
+
+#		if defined(SOCK_LEN_T)
+		SOCK_LEN_T len;
 		// Win32-default: 8k
 		int bufsize = 0x400000; // 4MB
-		while (1)
+		while (bufsize > 100)
 		{
 			len = sizeof (int);
 			if (setsockopt (fd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, len) == 0)
@@ -121,7 +135,8 @@ static void fd_register (void *pfdctx, int fd, int opened)
 		}
 
 		if (getsockopt (fd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, &len) == 0)
-			LOG_MSG ("CA registers fd " << fd << ", SO_RCVBUF " << bufsize << endl);
+			LOG_MSG ("Adjusted receive buffer to " << bufsize << endl);
+#		endif
 
 		// Just creating a CAfdReg will register it in fdManager:
 		CAfdReg *handler = new CAfdReg (fd);

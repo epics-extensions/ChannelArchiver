@@ -8,7 +8,7 @@
 #include "HTTPServer.h"
 #include "MsgLogger.h"
 
-using namespace std;
+USE_STD_NAMESPACE
 USING_NAMESPACE_TOOLS
 
 // HTTPServer ----------------------------------------------------------------------------------

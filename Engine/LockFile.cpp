@@ -7,7 +7,7 @@
 #include <fstream>
 #include "osiTimeHelper.h"
 
-using namespace std;
+USE_STD_NAMESPACE
 
 // Try to generate lock file.
 // Result: succesful?
@@ -16,7 +16,11 @@ bool Lockfile::Lock (const stdString &prog_name)
 	// Check for existing file
 	ifstream ifile;
 	ifile.open (_filename.c_str());
+#	ifdef __HP_aCC
+	if (! ifile.fail())
+#	else
 	if (ifile.is_open ())
+#	endif
 	{
 		char line[80];
 		ifile.getline (line, sizeof (line));
@@ -30,7 +34,11 @@ bool Lockfile::Lock (const stdString &prog_name)
 
 	ofstream ofile;
 	ofile.open (_filename.c_str());
+#	ifdef __HP_aCC
+	if (ofile.fail())
+#	else
 	if (! ofile.is_open ())
+#	endif
 	{
 		cerr << "cannot open lock file '" << _filename << "'\n";
 		return false;

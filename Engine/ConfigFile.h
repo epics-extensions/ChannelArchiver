@@ -6,7 +6,9 @@
 
 BEGIN_NAMESPACE_CHANARCH
 
+#ifdef USE_NAMESPACE_STD
 using std::ifstream;
+#endif
 
 //CLASS ConfigFile
 // This implementation of a CLASS Configuration will read

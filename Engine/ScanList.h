@@ -5,8 +5,9 @@
 #include "ChannelInfo.h"
 
 BEGIN_NAMESPACE_CHANARCH
-
+#ifdef USE_NAMESPACE_STD
 using std::list;
+#endif
 
 class SinglePeriodScanList
 {

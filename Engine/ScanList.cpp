@@ -1,7 +1,7 @@
 #include "ScanList.h"
 #include "float.h"
 
-using namespace std;
+USE_STD_NAMESPACE
 USING_NAMESPACE_CHANARCH
 
 //#define LOG_SCANLIST

@@ -38,7 +38,10 @@ protected:
 };
 
 inline void HTMLPage::out (const char *line, size_t length)
-{	::send (_socket, line, length, 0);	}
+{	
+	// un-const for compatibility w/ HP_aCC
+	::send (_socket, (char *)line, length, 0);
+}
 
 inline void HTMLPage::out (const char *line)
 {	out (line, strlen(line));	}

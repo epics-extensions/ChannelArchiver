@@ -1,11 +1,11 @@
 #include "Engine.h"
 #include "ConfigFile.h"
+#include <fstream>
 #include <Filename.h>
 #include <ctype.h>
 
 BEGIN_NAMESPACE_CHANARCH
-
-using namespace std;
+USE_STD_NAMESPACE
 
 void ConfigFile::setParameter (const stdString &parameter, char *value)
 {
@@ -143,7 +143,11 @@ bool ConfigFile::loadGroup (const stdString &group_name)
 	ifstream file;
 
 	file.open (group_name.c_str());
+#	ifdef __HP_aCC
+	if (file.fail())
+#	else
 	if (! file.is_open ())
+#	endif
 	{
 		LOG_MSG ("Config file '" << group_name << "': cannot open\n");
 		return false;
@@ -188,7 +192,11 @@ bool ConfigFile::saveGroup (const class GroupInfo *group)
 	Filename::build (_config_dir, group->getName(), filename);
 	ofstream file;
 	file.open (filename.c_str());
+#	ifdef __HP_aCC
+	if (file.fail())
+#	else
 	if (! file.is_open())
+#	endif
 	{
 		LOG_MSG ("Config file '" << filename << "': cannot create\n");
 		return false;

@@ -45,7 +45,7 @@ proc init {} {
     set script $f
     namespace inscope :: source $f
   }
-  cd $::pwd
+#  cd $::pwd
 
   set ::_host [info hostname]
   regsub "\\..*" $::_host "" ::_host
@@ -54,12 +54,27 @@ proc init {} {
   catch {signal trap SIGTERM {puts stderr "Terminating(TERM)..."; after 1 {exit -15}}}
   catch {signal trap SIGINT {puts stderr "Terminating(INT)..."; after 1 {Exit -2}}}
   catch {signal trap SIGQUIT {puts stderr "Terminating(QUIT)..."; after 1 {Exit -3}}}
+  catch {signal trap SIGUSR1 {after 1 {listJobs 0}}}
+  catch {signal trap SIGUSR2 {if {$::postJobs == 0} {after 1 {listJobs 1}}}}
+  catch {signal trap SIGHUP {if {[set ::postJobs [expr 1 - $::postJobs]]} {listJobs 1}}}
+
   catch {signal default SIGTSTP}
   catch {signal default SIGCONT}
   catch {signal default SIGCHLD}
 
   catch {wm withdraw .}
   Puts "Channel Archiver bgManager startup"
+}
+
+set ::postJobs 0
+proc listJobs { {verbose 0} } {
+  Puts "[llength [after info]] jobs currently scheduled" console
+  if {$verbose} {
+    foreach a [after info] {
+      Puts "Job $a: [lindex [after info $a] 0]" console
+    }
+    if {$::postJobs} {after 60000 listJobs 1}
+  }
 }
 
 ::init
@@ -69,7 +84,5 @@ httpd::init
 
 update
 
-while 1 {
-  after 3600000 {set setit 1}
-  vwait setit
-}
+# "dontsetit" mustn't ever be set!!!
+vwait dontsetit

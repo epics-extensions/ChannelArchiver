@@ -18,7 +18,6 @@ proc camComm::CheckRunning {i rvar} {
 
   regexp "\\((\[^,\]*)\[,\\)\]" $rvar all row
   if {![info exists ::lastArc($row)]} {set ::lastArc($row) ""}
-
   set start [clock seconds]
   if [catch {set sock [socket [camMisc::arcGet $i host] [camMisc::arcGet $i port]]}] {
     if {[file exists [file join [file dirname [camMisc::arcGet $i cfg]] BLOCKED]]} {
@@ -27,6 +26,7 @@ proc camComm::CheckRunning {i rvar} {
       if {[info exists ::tk_version]} {
 	condSet $rvar "NO"
       } else {
+	Puts "setting $rvar to \"NO\"" debug3
 	set $rvar "NO"
       }
     }
@@ -68,59 +68,60 @@ proc camComm::processAnswer {sock} {
   append ::bytes($sock) [read $sock]
   set bl [string bytelength $::bytes($sock)]
   if {[eof $sock]} { append ::bytes($sock) "\n" }
+
   set nl [string first "\n" $::bytes($sock)]
-
   # no full line yet...
-  if {$nl < 0} return
+  while {$nl >= 0} {
+    set nl [string first "\n" $::bytes($sock)]
+    set line [string range $::bytes($sock) 0 [expr $nl - 1]]
+    set ::bytes($sock) [string replace $::bytes($sock) 0 $nl ""]
 
-  set line [string range $::bytes($sock) 0 [expr $nl - 1]]
-  set ::bytes($sock) [string replace $::bytes($sock) 0 $nl ""]
-
-  switch $fstate($sock) {
-    open {
-      if {![regexp "^HTTP/.* 200 OK" $line]} {
-	condSet $fsvar($sock) "invalid response"
-	camComm::Close $sock
-      } else {
-	set fstate($sock) http
-      }
-    }
-    http {
-      if {[regexp "^Server: (.*)" $line all server]} {
-	if {"$server" != "ArchiveEngine"} {
-	  condSet $fsvar($sock) "unknown Server"
+    switch $fstate($sock) {
+      open {
+	if {![regexp "^HTTP/.* 200 OK" $line]} {
+	  condSet $fsvar($sock) "invalid response"
 	  camComm::Close $sock
 	} else {
-	  set fstate($sock) server
+	  set fstate($sock) http
 	}
       }
-    }
-    server {
-      if {"$line" == ""} {
-	set fstate($sock) body
+      http {
+	if {[regexp "^Server: (.*)" $line all server]} {
+	  if {"$server" != "ArchiveEngine"} {
+	    condSet $fsvar($sock) "unknown Server"
+	    camComm::Close $sock
+	  } else {
+	    set fstate($sock) server
+	  }
+	}
+      }
+      server {
+	if {"$line" == ""} {
+	  set fstate($sock) body
+	}
+      }
+      body {
+	if {[regexp ".*Started.*>(\[^<\]+)<" $line all started]} {
+	  condSet $fsvar($sock) "since [string range $started 0 18]"
+	  set fstate($sock) started
+	}
+      }
+      started {
+	if {[regexp ".*Archive.*>(\[^<\]+)<" $line all archive]} {
+	  condSet $fsvar($sock,arc) "$archive"
+	  set fstate($sock) end
+	}
+      }
+      end {
+	if {[eof $sock]} {
+	  camComm::Close $sock
+	}
+      }
+      closed {
       }
     }
-    body {
-      if {[regexp ".*Started.*>(\[^<\]+)<" $line all started]} {
-	condSet $fsvar($sock) "since [string range $started 0 18]"
-	set fstate($sock) started
-      }
-    }
-    started {
-      if {[regexp ".*Archive.*>(\[^<\]+)<" $line all archive]} {
-	condSet $fsvar($sock,arc) "$archive"
-	set fstate($sock) end
-      }
-    }
-    end {
-      if {[eof $sock]} {
-	camComm::Close $sock
-      }
-    }
-    closed {
-    }
+    set ::inAnswer 0
   }
-  set ::inAnswer 0
 }
 
 proc camComm::processTimeout {sock} {

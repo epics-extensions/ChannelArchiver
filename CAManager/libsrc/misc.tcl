@@ -83,6 +83,7 @@ set ::weekdays {
 }
 
 proc camMisc::init {} {
+Puts "camMisc::init" funcall
   variable cfg_file
   variable force_cfg_file
   variable reg_stem
@@ -123,6 +124,7 @@ proc camMisc::init {} {
 }
 
 proc camMisc::arcGet {index {key ""}} {
+Puts "camMisc::arcGet $index \"$key\"" funcallX
   variable _Archiver
   if {"$key" == ""} {
     return [lindex $_Archiver $index]
@@ -132,11 +134,13 @@ proc camMisc::arcGet {index {key ""}} {
 }
 
 proc camMisc::arcSet {index key value} {
+Puts "camMisc::arcSet $index \"$key\" \"$value\"" funcall
   variable _Archiver
   return [namespace inscope :: array set [lindex $_Archiver $index] [list $key $value]]
 }
 
 proc camMisc::arcNew {{index end}} {
+Puts "camMisc::arcNew $index" funcall
   variable _Archiver
   variable _newCnt
   if {"$index" == "end"} {
@@ -151,6 +155,7 @@ proc camMisc::arcNew {{index end}} {
 }
 
 proc camMisc::arcDel {index} {
+Puts "camMisc::arcDel $index" funcall
   variable _Archiver
   set arr [lindex $_Archiver $index]
   namespace inscope :: array unset $arr
@@ -158,6 +163,7 @@ proc camMisc::arcDel {index} {
 }
 
 proc camMisc::arcIdx {} {
+Puts "camMisc::arcIdx" funcall
   variable _Archiver
   set res {}
   for {set i 0} {$i < [llength $_Archiver]} {incr i} {
@@ -167,16 +173,19 @@ proc camMisc::arcIdx {} {
 }
 
 proc camMisc::Block {row {var x}} {
+Puts "camMisc::Block $row $var" funcall
   write_file [file join [file dirname [camMisc::arcGet $row cfg]] BLOCKED] ""
   set $var [lindex $::yesno 1]
 }
 
 proc camMisc::Release {row {var x}} {
+Puts "camMisc::Release $row $var" funcall
   file delete -force [file join [file dirname [camMisc::arcGet $row cfg]] BLOCKED]
   set $var  [lindex $::yesno 0]
 }
 
 proc luniq {list} {
+Puts "misc: luniq $list" funcall
   set res {}
   foreach i $list {
     if {[lsearch $res $i] < 0} {
@@ -186,31 +195,8 @@ proc luniq {list} {
   return $res
 }
 
-array set colormap {
-  error		red
-  command	blue
-  schedule	no
-  debug1	no
-  debug2	no
-  normal	normal
-}
-
-array set colorname {
-  error		"Errors/Warnings"
-  command	"Starts/Stops"
-  schedule	"Scheduled jobs"
-  debug1	"Debug 1"
-  debug2	"Debug 2"
-  normal	"Misc."
-}
-
-if {$::debug} {
-  set ::colormap(schedule) green
-  set ::colormap(debug1) normal
-  set ::colormap(debug2) orange
-}
-
 proc camMisc::recCopyCfg {file dir} {
+Puts "camMisc::recCopyCfg \"$file\" \"$dir\"" funcall
   set sdir [file dirname $file]
   file copy -force $file $dir
   for_file line $file {
@@ -221,6 +207,7 @@ proc camMisc::recCopyCfg {file dir} {
 }
 
 proc camMisc::isLocalhost {name} {
+Puts "camMisc::isLocalhost \"$name\"" funcall
   return [expr ![string compare -nocase $name $::_host] \
 	    || ![string compare -nocase $name "localhost"]]
 }

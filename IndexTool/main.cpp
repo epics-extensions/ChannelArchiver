@@ -5,12 +5,13 @@
 #include <epicsVersion.h>
 // Tools
 #include <AutoPtr.h>
+#include <BenchTimer.h>
 #include <stdString.h>
 #include <Filename.h>
-#include "ArchiverConfig.h"
-#include "ArgParser.h"
-#include "epicsTimeHelper.h"
-#include "FUX.h"
+#include <ArchiverConfig.h>
+#include <ArgParser.h>
+#include <epicsTimeHelper.h>
+#include <FUX.h>
 // Index
 #include <IndexFile.h>
 
@@ -99,7 +100,7 @@ bool create_masterindex(int RTreeM,
         return false;
     }
     if (verbose)
-        printf("Created master index '%s'.\n", index_name.c_str());
+        printf("Opened master index '%s'.\n", index_name.c_str());
     stdList<stdString>::const_iterator subs;
     for (subs = subarchives.begin(); subs != subarchives.end(); ++subs)
     {
@@ -110,7 +111,7 @@ bool create_masterindex(int RTreeM,
             continue;
         }
         if (verbose)
-            printf("Sub-index '%s'\n", sub_name.c_str());
+            printf("Adding sub-index '%s'\n", sub_name.c_str());
         for (ok = subindex.getFirstChannel(names);
              ok;
              ok = subindex.getNextChannel(names))
@@ -142,7 +143,7 @@ bool create_masterindex(int RTreeM,
     }
     index.close();
     if (verbose)
-        printf("Done with master index '%s'.\n", index_name.c_str());
+        printf("Closed master index '%s'.\n", index_name.c_str());
     return true;
 }
 
@@ -175,10 +176,16 @@ int main(int argc, const char *argv[])
         parser.usage();
         return -1;
     }
+    BenchTimer timer;
     if (!create_masterindex(RTreeM, parser.getArgument(0),
                             parser.getArgument(1)))
         return -1;
-
+    if (verbose > 0)
+    {
+        timer.stop();
+        printf("Time: %s\n", timer.toString().c_str());
+    }
+    
     return 0;
 }
 

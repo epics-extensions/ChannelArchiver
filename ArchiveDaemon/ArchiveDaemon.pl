@@ -24,7 +24,7 @@ use IO::Handle;
 use Data::Dumper;
 use XML::Simple;
 use POSIX 'setsid';
-use vars qw($opt_h $opt_p);
+use vars qw($opt_h $opt_p $opt_f);
 use Getopt::Std;
 
 # ----------------------------------------------------------------
@@ -634,19 +634,20 @@ sub usage()
 {
     print("USAGE: ArchiveDaemon [-p port]\n");
     print("\n");
-    print("\t-p <port> : TCP port number for HTTPD\n");
+    print("\t-p <port>: TCP port number for HTTPD\n");
+    print("\t-f file  : use file instead of $config_file\n");
     print("\n");
     print("This tool automatically starts, monitors and restarts\n");
     print("ArchiveEngines based on $config_file.");
     exit(-1);
 }
-
-if (!getopts('hp:')  ||  $#ARGV != -1  ||  $opt_h)
+if (!getopts('hp:f:')  ||  $#ARGV != -1  ||  $opt_h)
 {
     usage();
 }
+# Allow command line options to override various defaults
 $http_port = $opt_p if ($opt_p);
-
+$config_file = $opt_f if ($opt_f);
 add_message("Started");
 read_config($config_file);
 if (length($master_index_config) > 0)

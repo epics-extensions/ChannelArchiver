@@ -57,7 +57,7 @@ proc camComm::Close {token} {
   upvar #0 $token state
   catch {after cancel $::fsto($token)}
   if {[set i [lsearch -exact $::socks $state(sock)]] >= 0} { set ::socks [lreplace $::socks $i $i] }
-  array unset $token
+  ::http::cleanup $token
 }
 
 proc camComm::condSet {var val} {

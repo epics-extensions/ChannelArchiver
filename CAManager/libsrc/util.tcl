@@ -790,7 +790,7 @@ Puts "util: restartArchiver $i" funcall
 package require http
 
 proc cleanupHttp {tok} {
-  array unset $tok
+  ::http::cleanup $top
 }
 
 proc stopArchiver {i {forceStop 0} {action stop}} {

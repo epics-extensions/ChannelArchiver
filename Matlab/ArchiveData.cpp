@@ -59,6 +59,40 @@ void DateNum2epicsTime(double num, epicsTime &t)
 #include <octave/pager.h>
 #include <octave/Cell.h>
 
+class ValueInfo
+{
+public:
+    ValueInfo(int n) : times(n), values(n)
+    {}
+    ColumnVector times;
+    ColumnVector values;
+};
+
+static bool value_callback(void *arg,
+                           const char *name,
+                           size_t i,
+                           const CtrlInfo &info,
+                           DbrType type, DbrCount count,
+                           const RawValue::Data *value)
+{
+#ifdef DEBUG
+    stdString t, v, s;
+    RawValue::getTime(value, t);
+    RawValue::getValueString(v, type, count, value, &info);
+    RawValue::getStatus(value, s);
+    octave_stdout << i << " : " << t.c_str() << " " << v.c_str()
+                  << " " << s.c_str() << "\n";
+#endif
+    ValueInfo *vi = (ValueInfo *)arg;
+    vi->times(i) = epicsTime2DateNum(RawValue::getTime(value));
+    double d;
+    if (RawValue::getDouble(type, count, value, d))
+        vi->values(i) = d;
+    else
+        vi->values(i) = 0.0;
+    return true;
+}
+
 DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
 {
     octave_value_list retval;
@@ -169,7 +203,7 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
     {
         if (nargin < 6)
         {
-            error("Need URL, CMD, KEY, NAME, START, END\n");
+            error("Need URL, CMD, KEY, NAME, START, END [, COUNT[, HOW]]\n");
             return retval;
         }
         stdVector<stdString> names;
@@ -197,6 +231,12 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
         epicsTime start, end;
         DateNum2epicsTime(start_datenum, start);
         DateNum2epicsTime(end_datenum,   end);
+        int count = 100;
+        int how = 0;
+        if (nargin > 6)
+            count = (int)args(6).double_value();
+        if (nargin > 7)
+            how = (int)args(7).double_value();
 #ifdef DEBUG
         {
             size_t i, num = names.size();
@@ -206,9 +246,20 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
             epicsTime2string(start, txt);
             octave_stdout << "Start: " << txt.c_str() << "\n";
             epicsTime2string(end, txt);
-            octave_stdout << "End:  " << txt.c_str() << "\n";
+            octave_stdout << "End  : " << txt.c_str() << "\n";
+            octave_stdout << "Count: " << count << "\n";
+            octave_stdout << "How  : " << how << "\n";
         }
 #endif
+        ValueInfo val_info(count);
+        if (client.getValues(key, names, start, end, count, how,
+                             value_callback, (void *)&val_info))
+        {
+            retval.append(octave_value(val_info.times));
+            retval.append(octave_value(val_info.values));
+        }
+        else
+            error("'%s' failed\n", cmd.c_str());
     }
     else
         error("Unknown command '%s'\n", cmd.c_str());
@@ -356,7 +407,8 @@ void mexFunction(int nresult, mxArray *result[],
     {
         if (nargin < 6)
         {
-            mexErrMsgTxt("Need URL, CMD, KEY, NAME, START, END\n");
+            mexErrMsgTxt("Need URL, CMD, KEY, NAME, START, END "
+                         "[,COUNT[,HOW]]\n");
             return;
         }
         stdVector<stdString> names;
@@ -383,6 +435,12 @@ void mexFunction(int nresult, mxArray *result[],
         epicsTime start, end;
         DateNum2epicsTime(start_datenum, start);
         DateNum2epicsTime(end_datenum,   end);
+        int count = 100;
+        int how = 0;
+        if (nargin > 6)
+            count = (int)mxGetScalar(args[6]);   
+        if (nargin > 7)
+            how = (int)mxGetScalar(args[7]);   
 #ifdef DEBUG
         {
             size_t i, num = names.size();
@@ -390,7 +448,9 @@ void mexFunction(int nresult, mxArray *result[],
             for (i=0; i<num; ++i)
                 mexPrintf("Name: '%s'\n", names[i].c_str());
             mexPrintf("Start: %s\n", epicsTimeTxt(start,txt));
-            mexPrintf("End:   %s\n",  epicsTimeTxt(end,txt));
+            mexPrintf("End  : %s\n", epicsTimeTxt(end,txt));
+            mexPrintf("Count: %d\n", count);
+            mexPrintf("How  : %d\n", how);
         }
 #endif
     }

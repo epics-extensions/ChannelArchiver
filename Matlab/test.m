@@ -26,5 +26,9 @@ datestr(starts)
 datestr(ends)
 
 disp('Get Values:');
-ArchiveData(url, 'values', key, {'fred';'janet'}, datenum(2003,3,11), now)
+[times,values]=ArchiveData(url, 'values', key, 'fred', datenum(2004,2,25,16,44,55), now, 5);
+for i=1:length(times)
+    disp(sprintf('%s %g', datestr(times(i)), values(i)))
+end
 
+% ArchiveData(url, 'values', key, {'fred';'janet'}, datenum(2003,3,11), now, 42, 3)

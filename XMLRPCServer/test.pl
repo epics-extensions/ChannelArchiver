@@ -99,10 +99,10 @@ print("==================================================================\n");
 #@names = ( "fred" );
 @names = ( "Test_HPRF:IOC1:Load", "Test_HPRF:IOC1:FDAv" );
 
-($start, $startnano) = string2time("01/31/2003 02:05:00.000000000");
-($end, $endnano)   = string2time("01/31/2003 02:15:00.000000000");
+($start, $startnano) = string2time("01/01/2003 02:05:00.000000000");
+($end, $endnano)   = string2time("12/31/2003 02:15:00.000000000");
 
-$count = 10;
+$count = 10000;
 $how = 0;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:

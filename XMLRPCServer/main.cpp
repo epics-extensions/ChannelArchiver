@@ -458,6 +458,7 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     LOG_MSG("archiver.get_values\n");
     xmlrpc_value *names;
     xmlrpc_int32 key, start_sec, start_nano, end_sec, end_nano, count, how;
+    xmlrpc_int32 actual_count;
     // Extract arguments
     xmlrpc_parse_value(env, args, STR("(iAiiiiii)"),
                        &key, &names,
@@ -465,7 +466,11 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
                        &count, &how);    
     if (env->fault_occurred)
         return 0;
-    // TODO: Put an upper limit on count to avoid outrageous requests?
+    // Put an upper limit on count to avoid outrageous requests:
+    if (count > 10000)
+        actual_count = 10000;
+    else
+        actual_count = count;
     // Build start/end
     epicsTime start, end;
     pieces2epicsTime(start_sec, start_nano, start);
@@ -492,11 +497,11 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     switch (how)
     {
         case 0:
-            return get_data(env, key, name_vector, start, end, count, -1.0);
+            return get_data(env, key, name_vector, start, end, actual_count, -1.0);
         case 1:
             if (count <= 1)
                 count = 1;
-            return get_data(env, key, name_vector, start, end, count,
+            return get_data(env, key, name_vector, start, end, actual_count,
                             (end-start)/count);
     }
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_ARG_ERROR,

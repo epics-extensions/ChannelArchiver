@@ -52,8 +52,6 @@ proc camGUI::mainWindow {} {
   frame $table.f -bd 0
   frame $table.f.b -bd 1 -relief sunken
   pack $table.f.b -side bottom -expand t -fill both
-  $table spans 0,4 $row,1
-  $table window config 0,4 -sticky news -window $table.f
 
 
   initTable $table
@@ -111,6 +109,7 @@ proc camGUI::mainWindow {} {
       menu %W.m -tearoff 0
       %W.m add command -label Edit -command {camGUI::aEdit %W}
       %W.m add separator
+      %W.m add command -label "Block/Unblock" -command {toggleBlock %W}
       %W.m add command -label "Check if running" -command {camGUI::aCheck %W}
       %W.m add command -label "View/Edit configuration" -command {camGUI::aConfig %W}
       %W.m add separator

@@ -28,9 +28,6 @@ proc camGUI::aSwap {dir w} {
   $w delete row $row
   $w insert row -- $with -1
 
-  $w spans 0,4 [expr max([llength [camMisc::arcIdx]]+2, 8)],1
-  $w window config 0,4 -sticky news -window $w.f
-
   set camGUI::aEngines($with,$::iHost) "[camMisc::arcGet $with host]"
   set camGUI::aEngines($with,$::iPort) "[camMisc::arcGet $with port]"
   set camGUI::aEngines($with,$::iDescr) "[camMisc::arcGet $with descr]"

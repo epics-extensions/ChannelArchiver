@@ -20,23 +20,7 @@ proc camGUI::initTable {table} {
     set aEngines($i,$::iRun) Dunno
     set aEngines($i,$::iBlocked) Dunno
 
-    set camGUI::aEngines($i,$::iBlocked) [file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]
-    catch {destroy $table.f.f$i}
-    set f [frame $table.f.f$i -bd 1 -relief sunken]
-    label $f.l -text " "
-    checkbutton $f.c -variable camGUI::aEngines($i,$::iBlocked) -bd 1 \
-	-command "toggleBlock $i"
-    $f.c config -activebackground [$f cget -background]
-    bind $f.c <Enter> {
-      set ::status "inhibit restart of Archiver"
-    }
-    bind $f.c <Leave> {
-      set ::status ""
-    }
-    pack $f.l -side left
-    pack $f.c -fill both -expand t
-    pack $f -side top -fill x
-
+    set camGUI::aEngines($i,$::iBlocked) [lindex $::yesno [file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]]
     after 1 "camComm::CheckRunning $i camGUI::aEngines($i,$::iRun)"
   }
   for {set i [llength [camMisc::arcIdx]]} {$i < $row} {incr i} {

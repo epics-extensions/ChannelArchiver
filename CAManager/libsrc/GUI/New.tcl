@@ -10,22 +10,6 @@ proc camGUI::aNew {w} {
   if {[expr [.tf.t cget -rows] - 2] > [llength [camMisc::arcIdx]]} {
     $w delete row [expr [.tf.t cget -rows] - 2]
   }
-  set lst [expr [llength [camMisc::arcIdx]] - 1]
-
-  set f [frame $w.f.f$lst -bd 1 -relief sunken]
-  label $f.l -text " "
-  checkbutton $f.c -variable camGUI::aEngines($lst,$::iBlocked) \
-      -command "toggleBlock $lst"
-  $f.c config -activebackground [$f.c cget -background]
-  bind $f.c <Enter> {
-    set ::status "inhibit restart of Archiver"
-  }
-  bind $f.c <Leave> {
-    set ::status ""
-  }
-  pack $f.l -side left
-  pack $f.c -fill both -expand t
-  pack $f -side top -fill x
 
   set camGUI::aEngines($row,$::iHost) "$::_host"
   set ::var($row,port) 4711

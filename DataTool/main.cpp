@@ -239,77 +239,26 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
 #endif
 }
 
-void dump_index(const stdString &index_name, const stdString channel_name)
+void dot_index(const stdString &index_name, const stdString channel_name,
+               const stdString &dot_name)
 {
-#ifdef TODO
-    archiver_Index index;
-    if (!index.open(index_name.c_str()))
+    IndexFile index;
+    if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
                 index_name.c_str());
         return;
     }
-    channel_Name_Iterator *names;
-    if (channel_name.empty())
+    RTree *tree = index.getTree(channel_name);
+    if (!tree)
     {
-        names = index.getChannelNameIterator();
-        if (!names)
-        {
-            fprintf(stderr, "Cannot get name iterator for index '%s'\n",
-                    index_name.c_str());
-            return;
-        }
+        fprintf(stderr, "Cannot find '%s' in index '%s'\n",
+                channel_name.c_str(), index_name.c_str());
+        return;
     }
-    else
-        names = 0;
-    stdString name;
-    key_AU_Iterator *aus;
-    bool ok = true;
-    if (channel_name.empty())
-        ok = names->getFirst(&name);
-    else
-        name = channel_name;
-    key_Object key;
-    interval iv, key_iv;
-    stdString start, end;
-    while (ok)
-    {
-        printf("Channel '%s':\n", name.c_str());
-        if (!index.getEntireIndexedInterval(name.c_str(), &iv))
-        {
-            fprintf(stderr, "Cannot get interval for channel '%s'\n",
-                    name.c_str());
-        }       
-        else
-        {
-             epicsTime2string(iv.getStart(), start);
-             epicsTime2string(iv.getEnd(), end);    
-             printf("Total: %s - %s\n",
-                    start.c_str(), end.c_str());
-            aus = index.getKeyAUIterator(name.c_str());
-            if (aus)
-            {
-                bool have_au = aus->getFirst(iv, &key, &key_iv);
-                while (have_au)
-                {
-                    epicsTime2string(key_iv.getStart(), start);
-                    epicsTime2string(key_iv.getEnd(), end);    
-                    printf("'%s' @ 0x%lX: %s - %s\n",
-                           key.getPath(), key.getOffset(),
-                           start.c_str(), end.c_str());
-                    have_au = aus->getNext(&key, &key_iv);
-                }
-                delete aus;
-            }
-        }
-        if (channel_name.empty())
-            ok = names->getNext(&name);
-        else
-            ok = false;
-    }
-    if (names)
-        delete names;
-#endif
+    tree->makeDot(dot_name.c_str(), true);
+    delete tree;
+    index.close();
 }
 
 int main(int argc, const char *argv[])
@@ -321,51 +270,48 @@ int main(int argc, const char *argv[])
                      EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n"
                      );
-    CmdArgFlag help (parser, "help", "Show help");
-    CmdArgFlag verbose_flag (parser, "verbose", "Show more info");
-    CmdArgString list_index(parser, "list", "<index>", "List name info");
-    CmdArgString dir2index (parser, "dir2index", "<dir. file>",
-                             "Convert old directory file to RTree index");
-    CmdArgString index2dir (parser, "index2dir", "<index>",
-                             "Convert RTree index to old directory file");
-    CmdArgString dumpindex (parser, "dumpindex", "<index>",
-                             "Dump contents of RTree index");
-    CmdArgString output (parser, "output", "<file name>", "Output file");
+    parser.setArgumentsInfo("<index-file>");
+    CmdArgFlag help(parser, "help", "Show help");
+    CmdArgFlag verbose_flag(parser, "verbose", "Show more info");
+    CmdArgFlag list_index(parser, "list", "List channel name info");
+    CmdArgString dir2index(parser, "dir2index", "<dir. file>",
+                           "Convert old directory file to index");
+    CmdArgString index2dir(parser, "index2dir", "<dir. file>",
+                           "Convert index to old directory file");
+    CmdArgString dotindex(parser, "dotindex", "<dot filename>",
+                          "Dump contents of RTree index into dot file");
     CmdArgString channel_name (parser, "channel", "<name>", "Channel name");
     if (! parser.parse())
         return -1;
-    if (help   ||   parser.getArguments().size() > 0)
+    if (help   ||   parser.getArguments().size() != 1)
     {
         parser.usage();
         return -1;
     }
     verbose = verbose_flag;
+    stdString index_name = parser.getArgument(0);
 
-    if (list_index.get().length() > 0)
-        list_names(list_index);
+    if (list_index)
+        list_names(index_name);
     else if (dir2index.get().length() > 0)
     {
-        if (output.get().length() == 0)
-        {
-            fprintf(stderr, "Option dir2index requires output option\n");
-            return 1;
-        }
-        convert_dir_index(dir2index.get(), output.get());
+        convert_dir_index(dir2index, index_name);
         return 0;
     }
     else if (index2dir.get().length() > 0)
     {
-        if (output.get().length() == 0)
-        {
-            fprintf(stderr, "Option index2dir requires output option\n");
-            return 1;
-        }
-        convert_index_dir(index2dir.get(), output.get());
+        convert_index_dir(index_name, index2dir);
         return 0;
     }
-    else if (dumpindex.get().length() > 0)
+    else if (dotindex.get().length() > 0)
     {
-        dump_index(dumpindex, channel_name);
+        if (channel_name.get().length() <= 0)
+        {
+            fprintf(stderr, "Option -dotindex requires -channel\n");
+            return -1;
+        }
+        dot_index(index_name, channel_name, dotindex);
+        return 0;
     }
     else
     {

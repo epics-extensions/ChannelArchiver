@@ -3,7 +3,7 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
-USR_CXXFLAGS += -I ../../rtree
+USR_CXXFLAGS += -I ../../Tools -I ../../Storage -I ../../rtree
 
 SRCS += main.cpp
 

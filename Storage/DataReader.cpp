@@ -40,7 +40,8 @@ const RawValue::Data *RawDataReader::find(
         return false;
     // Get 1st data block
     if (start)
-        valid_datablock = tree->searchDatablock(*start, node, rec_idx, datablock);
+        valid_datablock = tree->searchDatablock(*start, node,
+                                                rec_idx, datablock);
     else
         valid_datablock = tree->getFirstDatablock(node, rec_idx, datablock);
     if (! valid_datablock)  // No values for this time in index
@@ -64,8 +65,10 @@ const RawValue::Data *RawDataReader::find(
                 datablock.data_filename.c_str(), datablock.data_offset);
         return 0;
     }
-    const RawValue::Data *found = findSample(node.record[rec_idx].start);
-    return found;
+    if (start)
+        return findSample(*start);
+    else
+        return findSample(node.record[rec_idx].start);       
 }
 
 // Read sample at val_idx

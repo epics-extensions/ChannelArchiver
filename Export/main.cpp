@@ -27,13 +27,16 @@ void get_names_for_pattern(IndexFile &index,
 {
     if (verbose)
         printf("Expanding pattern '%s'\n", pattern.c_str());
-    RegularExpression *regex =
-        RegularExpression::reference(pattern.c_str());
-    if (!regex)
+    RegularExpression *regex = 0;
+    if (pattern.length() > 0)
     {
-        fprintf(stderr, "Cannot allocate regular expression\n");
-        return;
-    }     
+        regex = RegularExpression::reference(pattern.c_str());
+        if (!regex)
+        {
+            fprintf(stderr, "Cannot allocate regular expression\n");
+            return;
+        }
+    }
     IndexFile::NameIterator name_iter;
     if (!index.getFirstChannel(name_iter))
     {
@@ -44,78 +47,39 @@ void get_names_for_pattern(IndexFile &index,
  	BinaryTree<stdString> channels;
     do
     {
-        if (!regex->doesMatch(name_iter.getName()))
-            continue; // skip what doesn't match regex
-        channels.add(name_iter.getName());
-    }
-    while (index.getNextChannel(name_iter));
-    regex->release();
-    // Sorted dump of names
-    channels.traverse(add_name2vector, (void *)&names);
-}
-
-// Used by list_channels & name_printer
-class ChannelInfo
-{
-public:
-    stdString name;
-    epicsTime start, end;
-
-    bool operator < (const ChannelInfo &rhs)
-    { return name < rhs.name; }
-
-    bool operator == (const ChannelInfo &rhs)
-    { return name == rhs.name; }
-};
-
-// "visitor" for BinaryTree of channel names
-static void name_printer(const ChannelInfo &info, void *arg)
-{
-    bool show_info = (bool) arg;
-    stdString s, e;
-    if (show_info)
-        printf("%s\t%s\t%s\n", info.name.c_str(),
-               epicsTimeTxt(info.start, s), epicsTimeTxt(info.end, e));
-    else
-        printf("%s\n", info.name.c_str());
-}
-
-bool list_channels(IndexFile &index, const stdString &pattern,
-                   bool show_info)
-{
-    RegularExpression *regex = 0;
-    if (pattern.length() > 0)
-        regex = RegularExpression::reference(pattern.c_str());
-    IndexFile::NameIterator name_iter;
-    if (!index.getFirstChannel(name_iter))
-    {
-        fprintf(stderr, "Cannot get channel name iterator\n");
-        return false;
-    }
-    // Put all names in binary tree
- 	BinaryTree<ChannelInfo> channels;
-    ChannelInfo info;
-    do
-    {
         if (regex && !regex->doesMatch(name_iter.getName()))
             continue; // skip what doesn't match regex
-        info.name = name_iter.getName();
-        if (show_info)
-        {
-            RTree *tree = index.getTree(info.name);
-            if (tree)
-            {
-                tree->getInterval(info.start, info.end);
-                delete tree;
-            }
-        }
-        channels.add(info);
+        channels.add(name_iter.getName());
     }
     while (index.getNextChannel(name_iter));
     if (regex)
         regex->release();
     // Sorted dump of names
-    channels.traverse(name_printer, (void *)show_info);
+    channels.traverse(add_name2vector, (void *)&names);
+}
+
+bool list_channels(IndexFile &index, stdVector<stdString> names,
+                   bool show_info)
+{
+    stdVector<stdString>::iterator name;
+    epicsTime start, end;
+    stdString s, e;
+    for (name = names.begin(); name != names.end(); ++name)
+    {
+        if (show_info)
+        {
+            RTree *tree = index.getTree((*name));
+            if (tree)
+            {
+                tree->getInterval(start, end);
+                delete tree;
+                printf("%s\t%s\t%s\n", (*name).c_str(),
+                       epicsTimeTxt(start, s), epicsTimeTxt(end, e));
+            }
+        }
+        else
+            printf("%s\n", (*name).c_str());
+    }
     return true;
 }
 
@@ -340,13 +304,14 @@ int main(int argc, const char *argv[])
     }
     if (verbose)
         printf("Opened index '%s'\n", index_name.c_str());    
-    if (names.size() == 0 && pattern.get().length() > 0)
+    if (names.size() == 0 &&
+        (do_list  ||  pattern.get().length() > 0))
         get_names_for_pattern(index, names, pattern);
     if (do_info)
-        result = list_channels(index, pattern, true);
-    if (do_list)
-        result = list_channels(index, pattern, false);
-    if (names.size() > 0)
+        result = list_channels(index, names, true);
+    else if (do_list)
+        result = list_channels(index, names, false);
+    else if (names.size() > 0)
         result = dump_spreadsheet(index, names, start, end,
                                   interpol, status_text,
                                   output, GNUPlot, image) ? 0 : -1;

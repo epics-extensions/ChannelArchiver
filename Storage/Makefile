@@ -7,7 +7,7 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 #USR_CXXFLAGS += -pg
 #USR_LDFLAGS  += -pg
 
-USR_CXXFLAGS += -I ../../rtree
+USR_CXXFLAGS += -I ../../Tools -I ../../rtree
 
 # Includes to be installed
 INC += StorageTypes.h

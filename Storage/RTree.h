@@ -100,11 +100,16 @@ public:
     bool insertDatablock(const epicsTime &start, const epicsTime &end,
                          Offset data_offset, stdString data_filename);
     
-    /// Locate entry that includes start time.
+    /// Locate entry after start time.
 
     /// Updates Node & i and returns true if found.
     ///
-    ///
+    /// Specifically, the last record with data at or just before
+    /// the start time is returned, so that the user can then decide
+    /// if and how that value might extrapolate onto the start time.
+    /// There's one exception: When requesting a start time
+    /// that preceeds the first available data point, so that there is
+    /// no previous data point, the very first record is returned.
     bool search(const epicsTime &start, Node &node, int &i);
 
     /// Like search(), but also gets datablock ref'ed by node&i.

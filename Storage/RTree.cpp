@@ -437,12 +437,13 @@ bool RTree::search(const epicsTime &start, Node &node, int &i)
             LOG_MSG("RTree::search cannot read node @ 0x%lX\n", node.offset);
             return false;
         }
-        for (go=false, i=0;  i<RTreeM;  ++i)
-        {   // Find left-most record that includes our target interval
+        if (start < node.record[0].start) // request before start of tree?
+            return getFirst(node, i);
+        for (go=false, i=RTreeM-1;  i>=0;  --i)
+        {   // Find right-most record with data at-or-before 'start'
             if (node.record[i].child_or_ID == 0)
-                continue;
-            if (node.record[i].start <= start &&
-                node.record[i].end >= start)
+                continue; // nothing
+            if (node.record[i].start <= start)
             {
                 if (node.isLeaf)   // Found!
                     return true;
@@ -450,6 +451,7 @@ bool RTree::search(const epicsTime &start, Node &node, int &i)
                 {   // Search subtree
                     node.offset = node.record[i].child_or_ID;
                     go = true;
+                    break;
                 }
             }
         }

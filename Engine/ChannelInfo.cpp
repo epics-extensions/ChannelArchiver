@@ -386,7 +386,7 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     }
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
 
-#if defined(ENGINE_DEBUG) && ENGINE_DEBUG>5
+#ifdef ENGINE_DEBUG
     stdString time, val, stat;
     me->_new_value->getTime(time);
     me->_new_value->getValue(val); 

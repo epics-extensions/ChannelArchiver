@@ -106,10 +106,10 @@ void SampleMechanismMonitored::value_callback(struct event_handler_args args)
     }
     else
     {
-        LOG_MSG("SampleMechanismMonitored::value_callback %s\n",
-                channel->name.c_str());
-        RawValue::show(stdout, channel->dbr_time_type,
-                       channel->nelements, value, &channel->ctrl_info);   
+        //LOG_MSG("SampleMechanismMonitored::value_callback %s\n",
+        //        channel->name.c_str());
+        //RawValue::show(stdout, channel->dbr_time_type,
+        //               channel->nelements, value, &channel->ctrl_info);   
         // Add every monitor to the ring buffer, only check for back-in-time
         epicsTime stamp = RawValue::getTime(value);
         if (me->isGoodTimestamp(stamp, now))

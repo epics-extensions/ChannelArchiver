@@ -465,6 +465,7 @@ bool RawValue::write(DbrType type, DbrCount count, size_t size,
                      MemoryBuffer<dbr_time_string> &cvt_buffer,
                      DataFile *datafile, FileOffset offset)
 {
+    LOG_ASSERT(datafile->is_writable());
     cvt_buffer.reserve(size);
     dbr_time_string *buffer = cvt_buffer.mem();
 
@@ -499,11 +500,19 @@ bool RawValue::write(DbrType type, DbrCount count, size_t size,
 #undef TO_DISK
     }
 
-    if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
-        (FileOffset) ftell(datafile->file) != offset  ||
-        fwrite(buffer, size, 1, datafile->file) != 1)
+    if (fseek(datafile->file, offset, SEEK_SET) != 0  ||
+        (FileOffset)ftell(datafile->file) != offset)
     {
-        LOG_MSG("RawValue::write write error\n");
+        LOG_MSG("RawValue::write seek error: '%s' @ 0x%X\n",
+                datafile->getFilename().c_str(), offset);
+        return false;
+    }
+    size_t written = fwrite(buffer, 1, size, datafile->file);
+    if (written != size)
+    {
+        LOG_MSG("RawValue::write write error: '%s' @ 0x%X, %d != %d\n",
+                datafile->getFilename().c_str(), offset,
+                written, size);
         return false;
     }
     return true;

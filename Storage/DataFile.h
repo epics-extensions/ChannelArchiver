@@ -45,6 +45,10 @@ public:
     ///
     void release();
 
+    /// Returns true if DataFile is writable.
+    bool is_writable() const
+    { return for_write; }
+
     /// For synchr. with a file that's actively written
     /// by another prog. is might help to reopen:
     ///

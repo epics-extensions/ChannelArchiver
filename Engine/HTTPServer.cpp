@@ -148,15 +148,19 @@ void HTTPServer::cleanup()
         if (client->isDone())
         {
             clients = _clients.erase(clients);
+#           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
             LOG_MSG("HTTPClientConnection cleanup of #%d (done)\n",
                     client->getNum());
+#           endif
             delete client;
         }
         else if ((now - client->getBirthTime()) > HTTPD_CLIENT_TIMEOUT)
         {
             clients = _clients.erase(clients);
+#           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
             LOG_MSG("HTTPClientConnection cleanup of #%d (timeout)\n",
                     client->getNum());
+#           endif
             delete client;
         }
         else
@@ -213,7 +217,7 @@ HTTPClientConnection::HTTPClientConnection(HTTPServer *server,
 
 HTTPClientConnection::~HTTPClientConnection()
 {
-#ifdef HTTPD_DEBUG
+#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
     LOG_MSG("HTTPClientConnection::~HTTPClientConnection #%d "
             "(used socket %d)\n", _num, _socket);
 #endif

@@ -101,7 +101,10 @@ public:
     ///
     void addEvent(Guard &guard, dbr_short_t status, dbr_short_t severity,
                   const epicsTime &time);
-        
+
+    /// Time stamp of last value added to archive
+    const epicsTime &getLastStamp(Guard &guard) const;
+
 private:
     stdString   name;
     double      period; // Sample period, max period, ..(see SampleMechanism)
@@ -178,6 +181,12 @@ inline bool ArchiveChannel::isDisabled(Guard &guard) const
 {
     guard.check(mutex);
     return disabled_count >= (int)groups.size();
+}
+
+inline const epicsTime &ArchiveChannel::getLastStamp(Guard &guard) const
+{
+    guard.check(mutex);
+    return last_stamp_in_archive;
 }
 
 #endif

@@ -62,9 +62,12 @@ public:
     /// Call this in a "main loop" as often as possible
     bool process();
 
-    /// Add/list groups/channels
-    stdList<ArchiveChannel *> channels;// all the channels
-    stdList<GroupInfo *> groups;    // scan-groups of channels
+    /// All the channels of this engine.
+    stdList<ArchiveChannel *> &getChannels(Guard &guard);
+
+    /// All the groups.
+    stdList<GroupInfo *> &getGroups(Guard &guard);
+    
     GroupInfo *findGroup(Guard &guard, const stdString &name);
     GroupInfo *addGroup(Guard &guard, const stdString &name);
     ArchiveChannel *findChannel(Guard &guard, const stdString &name);
@@ -115,6 +118,9 @@ private:
     Engine(const stdString &index_name);
     void writeArchive();
 
+    stdList<ArchiveChannel *> channels;// all the channels
+    stdList<GroupInfo *> groups;    // scan-groups of channels
+    
     struct ca_client_context *ca_context;
     
     epicsTime       start_time;
@@ -139,6 +145,18 @@ private:
 
 // The only, global Engine object:
 extern Engine *theEngine;
+
+inline stdList<ArchiveChannel *> &Engine::getChannels(Guard &guard)
+{
+    guard.check(mutex);
+    return channels;
+}
+
+inline stdList<GroupInfo *> &Engine::getGroups(Guard &guard)
+{
+    guard.check(mutex);
+    return groups;
+}
 
 inline const stdString &Engine::getDescription() const
 {   return description; }

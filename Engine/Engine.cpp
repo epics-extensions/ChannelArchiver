@@ -236,6 +236,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     if (new_channel)
     {
         // TODO: Check the locking of the file access
+        // OK because Engine is locked?
         IndexFile index(RTreeM);
         if (index.open(index_name.c_str(), false))
         {   // Is channel already in Archive?
@@ -252,27 +253,30 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                                             block.data_filename, false);
                     if (datafile)
                     {
-                        AutoPtr<DataHeader> header(
-                            datafile->getHeader(block.data_offset));
-                        if (header)
                         {
-                            epicsTime last_stamp(header->data.end_time);
-                            CtrlInfo ctrlinfo;
-                            ctrlinfo.read(datafile, header->data.ctrl_info_offset);
-                            channel->init(engine_guard, guard,
-                                          header->data.dbr_type,
-                                          header->data.dbr_count,
-                                          &ctrlinfo,
-                                          &last_stamp);
-                            stdString stamp_txt;
-                            epicsTime2string(last_stamp, stamp_txt);
-                            LOG_MSG("'%s' could be initialized from storage.\n"
-                                    "Data file '%s' @ 0x%lX\n"
-                                    "Last Stamp: %s\n",
-                                    channel_name.c_str(),
-                                    block.data_filename.c_str(),
-                                    block.data_offset,
-                                    stamp_txt.c_str());
+                            AutoPtr<DataHeader> header(
+                                datafile->getHeader(block.data_offset));
+                            if (header)
+                            {
+                                epicsTime last_stamp(header->data.end_time);
+                                CtrlInfo ctrlinfo;
+                                ctrlinfo.read(datafile,
+                                              header->data.ctrl_info_offset);
+                                channel->init(engine_guard, guard,
+                                              header->data.dbr_type,
+                                              header->data.dbr_count,
+                                              &ctrlinfo,
+                                              &last_stamp);
+                                stdString stamp_txt;
+                                epicsTime2string(last_stamp, stamp_txt);
+                                LOG_MSG("'%s' initialized from storage.\n"
+                                        "Data file '%s' @ 0x%lX\n"
+                                        "Last Stamp: %s\n",
+                                        channel_name.c_str(),
+                                        block.data_filename.c_str(),
+                                        block.data_offset,
+                                        stamp_txt.c_str());
+                            }
                         }
                         datafile->release();
                         DataFile::close_all();
@@ -345,6 +349,7 @@ stdString Engine::makeDataFileName()
 
 void Engine::writeArchive()
 {
+    LOG_MSG("Engine: writing\n");
     Guard engine_guard(mutex);
     is_writing = true;
     IndexFile index(RTreeM);

@@ -62,7 +62,7 @@ static void engineinfo(HTTPClientConnection *connection,
         
         page.tableLine("Archive ", theEngine->getIndexName().c_str(), 0);
         
-        cvtUlongToString(theEngine->channels.size(), line);
+        cvtUlongToString(theEngine->getChannels(guard).size(), line);
         page.tableLine("Channels", line, 0);
         
 #ifdef SHOW_DIR
@@ -217,12 +217,13 @@ static void config(HTTPClientConnection *connection, const stdString &path)
 static void channels(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Channels");
-    theEngine->mutex.lock();
     page.openTable(1, "Name", 1, "Status", 0);
     stdList<ArchiveChannel *>::const_iterator channel;
     stdString link;
     link.reserve(80);
-    for (channel=theEngine->channels.begin(); channel != theEngine->channels.end(); ++channel)
+    Guard guard(theEngine->mutex);
+    stdList<ArchiveChannel *> &channels = theEngine->getChannels(guard);
+    for (channel = channels.begin(); channel != channels.end(); ++channel)
     {
         link = "<A HREF=\"channel/";
         link += (*channel)->getName();
@@ -235,7 +236,6 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
                         "connected" : "<FONT COLOR=#FF0000>disconnected</FONT>"),
                        0);
     }
-    theEngine->mutex.unlock();
     page.closeTable();
 }
 
@@ -317,7 +317,8 @@ void groups(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Groups");
     Guard guard(theEngine->mutex);
-    if (theEngine->groups.empty())
+    stdList<GroupInfo *> &groups = theEngine->getGroups(guard);
+    if (groups.empty())
     {
         page.line("<I>no groups</I>");
         return;
@@ -330,7 +331,7 @@ void groups(HTTPClientConnection *connection, const stdString &path)
     name.reserve(80);
     page.openTable(1, "Name", 1, "ID", 1, "Enabled", 1, "Channels",
                    1, "Connected", 0);
-    for (group=theEngine->groups.begin(); group!=theEngine->groups.end(); ++group)
+    for (group=groups.begin(); group!=groups.end(); ++group)
     {
         name = "<A HREF=\"group/";
         name += (*group)->getName();
@@ -381,7 +382,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     page.tableLine("Name", group_name.c_str(), 0);
     page.tableLine("ID", id, 0);
     page.closeTable();
-    if (theEngine->channels.empty())
+    if (theEngine->getChannels(guard).empty())
     {
         page.line("no channels");
         return;
@@ -506,15 +507,20 @@ static void channelGroups(HTTPClientConnection *connection,
     }
 
     HTMLPage page(connection->getSocket(), "Archiver Engine");
-    page.out("<H2>Group membership for channel ");
+    page.out("<H2>Channel '");
     page.out(channel_name);
-    page.line("</H2>");
+    page.line("'</H2>");
+    Guard guard(channel->mutex);
+    stdString s;
+    epicsTime2string(channel->getLastStamp(guard), s);
+    page.line("Last time stamp: ");
+    page.line(s.c_str());
+    page.out("<H2>Group membership</H2>");
     page.openTable(1, "Group", 1, "ID", 1, "Enabled", 0);
     stdList<GroupInfo *>::const_iterator group;
     stdString link;
     link.reserve(80);
     char id[10];
-    Guard guard(channel->mutex);
     stdList<class GroupInfo *> &groups = channel->getGroups(guard);
     for (group=groups.begin(); group!=groups.end(); ++group)
     {

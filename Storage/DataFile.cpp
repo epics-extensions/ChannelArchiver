@@ -18,7 +18,7 @@
 #include "DataFile.h"
 #include "CtrlInfo.h"
 
-//#define LOG_DATAFILE
+// #define LOG_DATAFILE
 
 // List of all DataFiles currently open
 // We assume that there aren't that many open,
@@ -37,14 +37,16 @@ DataFile::DataFile(const stdString &dirname,
     reopen();
     ref_count = 1;
 #ifdef LOG_DATAFILE
-    LOG_MSG("DataFile %s opened\n", filename.c_str());
+    LOG_MSG("DataFile %s (%c) opened\n",
+            filename.c_str(), (for_write?'W':'R'));
 #endif
 }
 
 DataFile::~DataFile ()
 {
 #ifdef LOG_DATAFILE
-    LOG_MSG("DataFile %s closed\n", filename.c_str());
+    LOG_MSG("DataFile %s (%c) closed\n",
+            filename.c_str(), (for_write?'W':'R'));
 #endif
     if (file)
         fclose(file);
@@ -87,8 +89,14 @@ DataFile *DataFile::reference(const stdString &dirname,
     while (i != open_data_files.end ())
     {
         file = *i;
-        if (file->getFilename() == filename)
+        if (file->getFilename() == filename  &&
+            file->for_write == for_write)
         {
+#ifdef LOG_DATAFILE
+            LOG_MSG("DataFile %s (%c) is cached (%d)\n",
+                    filename.c_str(),
+                    (for_write?'W':'R'), file->ref_count);
+#endif
             file->reference();
             return file;
         }
@@ -141,6 +149,10 @@ bool DataFile::close_all(bool verbose)
         }
         else
         {
+#ifdef LOG_DATAFILE
+            LOG_MSG("DataFile::close_all: %s released (%d)\n",
+                    file->filename.c_str(), file->ref_count);
+#endif
             i = open_data_files.erase(i);
             delete file;
         }

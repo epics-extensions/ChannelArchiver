@@ -84,7 +84,7 @@ if {[regexp "Windows" $tcl_platform(os)]} {
 
 package require Tclx
 
-Puts "Installing CAManager Version 1.0\n\n" error
+Puts "Installing CAManager Version 1.1\n\n" error
 
 Puts "Searching Tcl/TK interpreters:\n" action
 set interp [info nameofexecutable]

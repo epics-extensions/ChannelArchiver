@@ -28,8 +28,8 @@ public:
 
 	/*
 	*	@param au_Address is the pointer to the memory block to which the address of 
-	*	the AU; write -1 if errors occured
-	*	@return false, if errors occured, or the AU has already existed; true otherwise
+	*	the AU, if the AU is not yet in the list; or -1 is written
+	*	@return false, if errors occured; true otherwise
 	*/
 	bool addAU(archiver_Unit * a, long * au_Address) ;	
 

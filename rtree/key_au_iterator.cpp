@@ -136,8 +136,13 @@ bool key_AU_Iterator::checkInterval(long leaf_Address, interval * leaf_Interval)
 bool key_AU_Iterator::getKey(long leaf_Address, key_Object * result)
 {
 	current_Entry.attach(index_File, leaf_Address);
-	long key_Address;
-	if(current_Entry.readKeyAddress(&key_Address) == false) return false;
+	long key_Pointer_Address;
+	if(current_Entry.readKeyPointer(&key_Pointer_Address) == false) return false;
+    au_Pointer_List aupl(index_File);
+    aupl.init(leaf_Address);
+	long key_Address = aupl.getKeyAUAddress();
+    if(key_Address < 0) return false;
+
 	archiver_Unit au;
 	au.attach(index_File, key_Address);
 	if(au.readKey() == false) return false;	

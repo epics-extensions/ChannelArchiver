@@ -11,6 +11,7 @@ LIB_SRCS += archiver_unit.cpp
 LIB_SRCS += array_list.cpp
 LIB_SRCS += au_list.cpp
 LIB_SRCS += au_list_iterator.cpp
+LIB_SRCS += au_pointer_list.cpp
 LIB_SRCS += bin_io.cpp
 LIB_SRCS += channel_name_iterator.cpp
 LIB_SRCS += cntu.cpp
@@ -26,6 +27,7 @@ LIB_SRCS += r_tree.cpp
 LIB_SRCS += r_tree_free_space_manager.cpp
 LIB_SRCS += r_tree_root.cpp
 
+
 # Library to build
 LIBRARY_HOST := rtree
 
@@ -38,3 +40,29 @@ Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 
 include $(TOP)/configure/RULES
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -20,7 +20,13 @@ public:
 	archiver_Index();
 	~archiver_Index();
 
-        bool verbose;
+    long getFileSize()
+        {
+            fseek(f, 0, SEEK_END);
+            return ftell(f);
+        }
+
+    bool verbose;
 
 	/**
 	*	Is used only inside addDataFromAnotherIndex()
@@ -181,7 +187,7 @@ public:
 	bool isInstanceValid() const;	
 private:
     bool create(short m, short hash_Table_Size);
-	FILE * f;						
+	FILE * f;
 	file_allocator fa;
 	cntu_Table t;
 	r_Tree r;	

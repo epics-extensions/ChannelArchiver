@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include "file_allocator.h"
 #include "archiver_unit.h"
-#include "au_pointer.h"
 #include "r_entry.h"
 
 /**
@@ -23,8 +22,8 @@
 class au_Pointer_List 
 {
 public:
-	au_Pointer_List(file_allocator * fa, long r_Tree_Offset);
-
+	au_Pointer_List(file_allocator * fa);
+    au_Pointer_List(FILE * f); //just for reads
 	/**
 	*	Loads the key AUP address
 	*	@return false if errors occured; true otherwise
@@ -32,10 +31,21 @@ public:
 	bool init(long entry_Address);
 	bool isEmpty() const	{return is_Empty;}
 
+    /**
+    *  needed for getLatestAU() and udateAU()     
+    */
+    bool onlyOneAU() const {return (current_Size - supply) == 1;}   //needed for getLatestAU()
+
+    /*
+    *   @return the address of the key AU   
+    */
+    long getKeyAUAddress();
 	/**
 	*	The standard list operations; for insert criteria, see above
+    *   Note: Since AUs are added by iterating through the leaves,
+    *   a previous iteration can set the previous_Key_AU_Address
 	*/
-	bool insertAUPointer(long au_Address); 
+	bool insertAUPointer(long au_Address, long previous_Key_AU_Address); 
 	bool deleteAUPointer(long au_Address);		
 	
 	/**
@@ -44,17 +54,21 @@ public:
 	*/
 	long copyList();						
 	
-	void dump(FILE * text_File);
+	void dump(FILE * text_File, const char * separator = "|");
 
 private:
-	bool isTheSameAsPreviousKey(long au_Address);
+    bool move();
+	bool flushToFile();
+    bool writeAUAddress(long value, long aup_Address); //takes care of supply decrease
+
+
 	FILE * f;				//f & fa are pointers to the outside
 	file_allocator * fa;
-	const long r_Tree_Offset;
 	long entry_Address;
-	long key_AUP_Address;
+	long list_Address;
+	short current_Size;
+    short supply;
 	bool is_Empty;
-	bool previous_Key_Compared;
 };
 
 #endif // _AU_POINTER_LIST_H_=======

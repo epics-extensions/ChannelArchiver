@@ -189,19 +189,22 @@ int run()
     //2 AUs per channel
     char channel[100];
     my_Index.open("names_test.dat", false);
+    my_Index.verbose = false;
 	FILE * names = fopen("names.txt", "r");
     if(names == 0)
     {
         printf("names.txt not in this directory\n");
         return 0;
     }
+    bool test = true;
 	while(!feof(names))
 	{
 		fscanf(names, "%s", channel);
-		for (int i=0; i< 2;i++)
+        for (int i=0; i< 2;i++)
 		{
 			au = archiver_Unit(key_Object("10.dat", i), interval(12 + i, 0, 14 + i, 0), 0);
-			my_Index.addAU(channel, au);
+            my_Index.addAU(channel, au);
+            printf("%s\n", channel);
 		}
 	}
 	fclose(names);

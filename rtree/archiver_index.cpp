@@ -13,7 +13,12 @@
 
 
 archiver_Index::archiver_Index()
-:f(0), m(0), read_Only(true), global_Priority(-1){}
+:f(0), m(0), read_Only(true), global_Priority(-1)
+{
+    this->verbose = false;
+    file_allocator::minimum_size = 0;
+    file_allocator::file_size_increment = 200*1024*1024;
+}
 
 archiver_Index::~archiver_Index()
 {
@@ -218,12 +223,17 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 	delete ali;
 	return false;
 }
-	
+
 bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au) 
 {
+    struct timeval before, after;
 	if(!isInstanceValid() || read_Only) return false;
 	if(au.isAUValid() == false) return false;
-	long root_Pointer;
+
+    ///////
+    gettimeofday(&before, 0);
+
+    long root_Pointer;
 	long au_List_Pointer;
 	if(t.addCNTU(channel_Name, &root_Pointer, &au_List_Pointer) == false) return false;
 	if(root_Pointer < 0 || au_List_Pointer < 0)
@@ -231,12 +241,29 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 		printf("Couldn't add the cntu \"%s\" to the table\n", channel_Name);
 		return false;
 	}
+    ////////
+    gettimeofday(&after, 0);
+    long length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);
+    if (verbose)
+        printf("It takes %ld microseconds to find the channel\n", length_Of_Time);
+
+    ////////
+    gettimeofday(&before, 0);
 
 	au_List l = au_List(&fa);
 	l.init(au_List_Pointer);
-	long au_Address;
-	bool result = l.addAU(&au, &au_Address);
 
+    long au_Address;
+	bool result = l.addAU(&au, &au_Address);
+    //////////
+    gettimeofday(&after, 0);
+    length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);
+    if (verbose)
+        printf("It takes %ld microseconds to add an AU to the list\n", length_Of_Time);
+
+    gettimeofday(&before, 0);
+
+    
     //both cases possible: AU needs an update, or need to be just inserted
     if(au_Address > 0)
 	{	
@@ -244,7 +271,13 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 		r.attach(&fa, root_Pointer) == false) return false;
 		if(result == true)	
 		{
-			return r.addAU(au_Address);	
+			bool ret = r.addAU(au_Address);
+            gettimeofday(&after, 0);
+            length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);
+            if (verbose)
+                printf("It takes %ld microseconds to add an AU to the tree\n", length_Of_Time);
+            return ret;
+            
 		}
 		else
 		{
@@ -280,6 +313,7 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 						printf("An existing AU has a later end time than the one that was tried to be added\n");
 						return false;
 					}
+                    if(r.removeAU(au_Address) == false) return false;
 					if(new_Priority > -1)	
 					{
 						au.setPriority(new_Priority);
@@ -291,10 +325,7 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 						au.setInterval(new_Interval);
 						if(au.writeInterval() == false) return false;
 					}
-
-                    //rebuild the tree
-                    au_List_Iterator ali = au_List_Iterator(f, au_List_Pointer);
-					return r.rebuild(ali);
+					return r.addAU(au_Address);
 				}
 				//no update needed
 				else return true;

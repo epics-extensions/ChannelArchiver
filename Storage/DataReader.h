@@ -22,6 +22,7 @@
 class DataReader
 {
 public:
+    DataReader();
     virtual ~DataReader();
     
     /// Locate data.
@@ -39,6 +40,12 @@ public:
     virtual const RawValue::Data *find(const stdString &channel_name,
                                        const epicsTime *start) = 0;
 
+    /// Did find() find the channel at all?
+
+    /// In case find() returns 0, there's the question if the channel
+    /// has no data or doesn't exist at all. This routine tells you.
+    bool channel_found;
+    
     /// Returns next value or 0.
     virtual const RawValue::Data *next() = 0;
 

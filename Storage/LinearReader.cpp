@@ -14,7 +14,9 @@ const RawValue::Data *LinearReader::find(
     const stdString &channel_name, const epicsTime *start)
 {
     this->channel_name = channel_name;
-    if (!(reader_data = reader.find(channel_name, start)))
+    reader_data = reader.find(channel_name, start);
+    channel_found = reader_data != 0;
+    if (!channel_found)
         return 0;
     if (start)
         end_of_bin = *start;

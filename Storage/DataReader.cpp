@@ -12,6 +12,11 @@
 
 #undef DEBUG_DATAREADER
 
+DataReader::DataReader()
+{
+    channel_found = false;
+}
+
 DataReader::~DataReader()
 {}
 
@@ -75,9 +80,11 @@ const RawValue::Data *RawDataReader::find(
     const epicsTime *start)
 {
     this->channel_name = channel_name;
+    channel_found = false;
     // Get tree
     if (!(tree = index.getTree(channel_name)))
-        return false;
+        return 0;
+    channel_found = true;
     node = new RTree::Node(tree->getM(), true);
     // Get 1st data block
     if (start)

@@ -48,6 +48,9 @@ class SpreadsheetReader
     /// Returns name of channel i=0...getNum()-1.
     virtual const stdString &getName(size_t i) const;
 
+    /// Returns channel_found of reader i.
+    virtual bool getChannelFound(size_t i) const;
+
     /// Returns value of channel i=0...getNum()-1.
 
     /// The result might be 0 in case a channel
@@ -105,6 +108,9 @@ inline size_t SpreadsheetReader::getNum() const
 
 inline const stdString &SpreadsheetReader::getName(size_t i) const
 {   return reader[i]->channel_name; }
+
+inline bool SpreadsheetReader::getChannelFound(size_t i) const
+{   return reader[i]->channel_found; }
 
 inline const RawValue::Data *SpreadsheetReader::getValue(size_t i) const
 {   return value[i]; }

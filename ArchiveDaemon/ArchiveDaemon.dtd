@@ -7,4 +7,7 @@
 <!ELEMENT config (#PCDATA)> <!-- path -->
 <!ELEMENT daily  (#PCDATA)> <!-- HH:MM -->
 <!ELEMENT hourly (#PCDATA)> <!-- (double) hours -->
-<!ELEMENT timed  (#PCDATA)> <!-- HH:MM/HH:MM  (start time, duration)-->
+
+<!-- Under development, do not use! -->
+<!ELEMENT timed  (#PCDATA)>
+<!-- HH:MM/HH:MM  (start time, duration)-->

@@ -50,6 +50,6 @@ bench_LDFLAGS=$(ArchiveDataClientTest_LDFLAGS)
 include $(TOP)/configure/RULES
 
 cgiinstall:
-	cp O.$(EPICS_HOST_ARCH)/DummyDataServer /var/www/cgi-bin/xmlrpc/DummyDataServer.cgi
-	cp O.$(EPICS_HOST_ARCH)/ArchiveDataServer /var/www/cgi-bin/xmlrpc/ArchiveDataServer.cgi
+	cp O.$(EPICS_HOST_ARCH)/DummyDataServer /var/www/html/archive/cgi/DummyDataServer.cgi
+	cp O.$(EPICS_HOST_ARCH)/ArchiveDataServer /var/www/html/archive/cgi/ArchiveDataServer.cgi
 

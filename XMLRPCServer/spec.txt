@@ -53,8 +53,10 @@ name: The channel name.
 
 meta := { int32 type;
           type==0: string states[],
-          type==1: disp_high, disp_low, alarm_high, alarm_low,
-                   warn_high, warn_low, prec, units
+          type==1: double disp_high, double disp_low,
+	           double alarm_high, double alarm_low,
+                   double warn_high, double warn_low,
+                   int prec, string units
         }
 
 type:  string	0

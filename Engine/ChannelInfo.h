@@ -48,10 +48,10 @@ public:
     bool setValueType(DbrType type, DbrCount count);
     void setCtrlInfo(const CtrlInfoI *info);
 
-    void setLastArchiveStamp(const osiTime &stamp)
+    void setLastArchiveStamp(const epicsTime &stamp)
                                                { _last_archive_stamp = stamp; }
-    const osiTime& getLastArchiveStamp() const { return _last_archive_stamp; }
-    const osiTime& getExpectedNextTime() const { return _expected_next_time; }
+    const epicsTime& getLastArchiveStamp() const { return _last_archive_stamp; }
+    const epicsTime& getExpectedNextTime() const { return _expected_next_time; }
     
     const CtrlInfoI &getCtrlInfo() const       { return _ctrl_info; }
     size_t getValsPerBuffer() const            { return _vals_per_buffer; }
@@ -62,7 +62,7 @@ public:
     bool isMonitored() const                   { return _monitored; }
     void setMonitored(bool monitored)          { _monitored = monitored; }
     bool isConnected() const                   { return _connected; }
-    const osiTime &getConnectTime() const      { return _connect_time; }
+    const epicsTime &getConnectTime() const      { return _connect_time; }
     const char *getHost() const;
 
     void startCaConnection(bool new_channel);
@@ -81,10 +81,10 @@ public:
     // in the ring buffer unless there's a change.
     // This call will force it to write the
     // repeat count out up to 'now'.
-    size_t flushRepeats(const osiTime &now);
+    size_t flushRepeats(const epicsTime &now);
 
     void addEvent(dbr_short_t status, dbr_short_t severity,
-                  const osiTime &time);
+                  const epicsTime &time);
     void addEvent(ValueI *value);
 
     // (Try to) enable/disable this channel
@@ -101,7 +101,7 @@ public:
     
     void write(class Archive &archive, ChannelIterator &channel);
     void shutdown(class Archive &archive, ChannelIterator &channel,
-                  const osiTime &now);
+                  const epicsTime &now);
 
     // Check if Ring buffer is big enough, fits _value etc.
     void checkRingBuffer();
@@ -129,7 +129,7 @@ private:
     bool                _connected;    // CA: currently connected?
     bool                _ever_written; // ever archived since connected?
     chid                _chid;
-    osiTime             _connect_time; // when did _connected change?
+    epicsTime             _connect_time; // when did _connected change?
     Mechanism           _mechanism;    // scanned via get or monitor?
 
     CtrlInfoI           _ctrl_info;    // has to be copy, not * !
@@ -142,15 +142,15 @@ private:
     ValueI              *_previous_value;// for change detection
     ValueI              *_tmp_value;     // for making values in addEvent
 
-    ThreadSemaphore     _write_lock;
+    epicsMutex          _write_lock;
     ValueI              *_write_value;  // tmp for write (different thread!)
 
     unsigned short      _vals_per_buffer; // see enum: INIT_VALS_PER_BUF ...
     CircularBuffer      _buffer;    // buffer in memory, later written to disk
     
-    osiTime             _expected_next_time;
-    osiTime             _last_archive_stamp; // last time stamp in Archie
-    osiTime             _had_null_time;
+    epicsTime             _expected_next_time;
+    epicsTime             _last_archive_stamp; // last time stamp in Archie
+    epicsTime             _had_null_time;
 
     ChannelInfo(const ChannelInfo &rhs); // not defined
     ChannelInfo & operator = (const ChannelInfo &rhs); // not defined
@@ -167,7 +167,7 @@ private:
 
     bool isRepeated(const ValueI *value);
     void addToRingBuffer(const ValueI *value);
-    void handleNewScannedValue(osiTime &stamp);
+    void handleNewScannedValue(epicsTime &stamp);
     void handleDisabling();
 };
 

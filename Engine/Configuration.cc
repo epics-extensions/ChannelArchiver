@@ -1,6 +1,17 @@
-// Configuration.cc
-// Stub-file to handle different file-extension preferences
-// between MS Visual C++ and the EPICS make system
-//
+#include "Configuration.h"
 
-#include "Configuration.cpp"
+Configuration::~Configuration ()
+{ }
+
+bool Configuration::save ()
+{	return false; }
+
+bool Configuration::saveEngine ()
+{	return save ();	}
+
+bool Configuration::saveChannel (const class ChannelInfo *channel)
+{	return save ();	}
+
+bool Configuration::saveGroup (const class GroupInfo *group)
+{	return save ();	}
+

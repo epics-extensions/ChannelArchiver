@@ -1,8 +1,8 @@
 #ifndef __CIRCULARBUFFER_H__
 #define __CIRCULARBUFFER_H__
 
-#include <ValueI.h>
-#include <Thread.h>
+#include<ValueI.h>
+#include<epicsMutex.h>
 
 // Circular buffer:
 // Each channel has one to buffer the incoming values
@@ -31,7 +31,7 @@ public:
     {   return _overwrites; }
 
     void resetOverwrites()
-    {   _lock.take(); _overwrites = 0; _lock.give();    }
+    {   _lock.lock(); _overwrites = 0; _lock.unlock();    }
 
     void addRawValue(const RawValueI::Type *raw_value);
 
@@ -46,7 +46,7 @@ private:
     RawValueI::Type *getElement(RawValueI::Type *buf, size_t i);
     RawValueI::Type *getNextElement();
 
-    ThreadSemaphore _lock;
+    epicsMutex      _lock;
     DbrType         _type;
     DbrCount        _count;
     RawValueI::Type *_buffer;
@@ -63,25 +63,21 @@ inline RawValueI::Type *CircularBuffer::getElement(RawValueI::Type *buf,
 
 inline void CircularBuffer::addRawValue(const RawValueI::Type *raw_value)
 {
-    if (_lock.take())
-    {
-        memcpy(getNextElement(), raw_value, _element_size);
-        _lock.give();
-    }
+    _lock.lock();
+    memcpy(getNextElement(), raw_value, _element_size);
+    _lock.unlock();
 }
 
 inline size_t CircularBuffer::getCount()
 {
     size_t count;
-    if (! _lock.take())
-        return 0;
-    
+    _lock.lock();
     if (_head >= _tail)
         count = _head - _tail;
     else    
         //     #(tail .. end)      + #(start .. head)
         count = (_num - _tail - 1) + (_head + 1);
-    _lock.give();
+    _lock.unlock();
 
     return count;
 }
@@ -90,9 +86,7 @@ inline const RawValueI::Type *CircularBuffer::removeRawValue()
 {
     RawValueI::Type *val;
 
-    if (!_lock.take())
-        return 0;
-    
+    _lock.lock();
     if (_tail == _head)
         val = 0;
     else
@@ -102,7 +96,7 @@ inline const RawValueI::Type *CircularBuffer::removeRawValue()
 
         val = getElement(_buffer, _tail);
     }
-    _lock.give();
+    _lock.unlock();
     return val;
 }
 

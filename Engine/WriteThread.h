@@ -1,27 +1,33 @@
+// WriteThread                               -*- c++ -*-
 #ifndef __WRITETHREAD_H__
 #define __WRITETHREAD_H__
 
-#include <Thread.h>
+#include <epicsThread.h>
+#include <epicsMutex.h>
 
 // This Thread is started/stopped by the Engine class.
 //
 // It handles all the Archive writes,
 // it doesn't do any ChannelAccess.
-class WriteThread : public GenericThread
+class WriteThread : public epicsThreadRunable
 {
 public:
     WriteThread()
-        : _wait(true) // initially taken
+        : _thread(*this, "WriteThread",
+                  epicsThreadGetStackSize(epicsThreadStackBig),
+                  epicsThreadPriorityMedium)
     {
         _go = true;
         _writing = false;
+        _wait.lock(); // initially taken
+        _thread.start();
     }
 
     // request this thread to exit ASAP
     void stop()
     {
         _go = false;
-        _wait.give();
+        _wait.unlock();
     }
 
     bool isRunning() const
@@ -35,16 +41,17 @@ public:
             LOG_MSG("Warning: WriteThread called while busy\n");
             return;
         }
-        if (! _wait.give())
+        if (! _wait.unlock())
             LOG_MSG("WriteThread::write: cannot give semaphore\n");
     }
 
-    virtual int run();
+    virtual void run();
 
 private:
-    ThreadSemaphore _wait;
-    bool            _go;
-    bool            _writing;
+    epicsThread  _thread;
+    epicsMutex   _wait;
+    mutable bool _go;
+    mutable bool _writing;
 };
 
 #endif //__WRITETHREAD_H__

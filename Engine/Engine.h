@@ -12,7 +12,6 @@
 #define __ENGINE_H__
 
 #include "../ArchiverConfig.h"
-#include <Thread.h>
 #include "GroupInfo.h"
 #include "ScanList.h"
 #include "Configuration.h"
@@ -79,9 +78,9 @@ public:
     double getGetThreshold();
 
     // Engine Info: Started, where, info about write thread
-    const osiTime &getStartTime() const   { return _start_time; }
+    const epicsTime &getStartTime() const { return _start_time; }
     const stdString &getDirectory() const { return _directory;  }
-    const osiTime &getWriteTime() const   { return _last_written; }
+    const epicsTime &getWriteTime() const { return _last_written; }
     bool isWriting() const                { return _is_writing; }
     
     // Add channel to ScanList.
@@ -100,13 +99,13 @@ private:
     ~Engine();
     friend class ToAvoidGNUWarning;
 
-    osiTime         _start_time;
+    epicsTime       _start_time;
     stdString       _directory;
     stdString       _description;
     bool            _is_writing;
     
     
-    ThreadSemaphore     _channels_lock;
+    epicsMutex      _channels_lock;
     stdList<ChannelInfo *> _channels;// all the channels
     stdList<GroupInfo *> _groups;    // scan-groups of channels
 
@@ -116,12 +115,12 @@ private:
     double          _write_period;   // period between writes to archive file
     double          _default_period; // default if not specified by Channel
     int             _buffer_reserve; // 2-> alloc. buffs for 2x expected data
-    osiTime         _last_written;   // time this took place
+    epicsTime       _last_written;   // time this took place
     unsigned long   _secs_per_file;  // roughly: data file period
     double          _future_secs;    // now+_future_secs is considered wrong
 
     Configuration   *_configuration;
-    ThreadSemaphore _archive_lock;
+    epicsMutex      _archive_lock;
     Archive         *_archive;
 
 #ifdef USE_PASSWD
@@ -146,12 +145,12 @@ inline stdList<ChannelInfo *> *Engine::getChannels()
 
 inline stdList<ChannelInfo *> *Engine::lockChannels()
 {
-    _channels_lock.take();
+    _channels_lock.lock();
     return &_channels;
 }
 
 inline void Engine::unlockChannels()
-{   _channels_lock.give(); }
+{   _channels_lock.unlock(); }
 
 inline const stdList<GroupInfo *> &Engine::getGroups()
 {   return _groups; }
@@ -189,12 +188,12 @@ inline bool Engine::addToScanList(ChannelInfo *channel)
 
 inline Archive &Engine::lockArchive()
 {
-    _archive_lock.take();
+    _archive_lock.lock();
     return *_archive;
 }
 
 inline void Engine::unlockArchive()
-{   _archive_lock.give(); }
+{   _archive_lock.unlock(); }
 
 inline ValueI *Engine::newValue(DbrType type, DbrCount count)
 {   return _archive->newValue(type, count); }

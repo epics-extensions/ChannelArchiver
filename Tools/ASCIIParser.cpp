@@ -25,7 +25,7 @@ ASCIIParser::~ASCIIParser()
 
 bool ASCIIParser::open(const stdString &file_name)
 {
-    _file = fopen(file_name.c_str(), "r");
+    _file = fopen(file_name.c_str(), "rt");
     return _file != 0;
 }
 
@@ -65,7 +65,7 @@ bool ASCIIParser::nextLine()
 		if (*ch == '#')
 			continue; // try next line
 
-        // remove training white space
+        // remove trailing white space
         i = strlen(ch);
         while (i > 0  && isspace(ch[i-1]))
             --i;

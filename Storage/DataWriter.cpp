@@ -57,7 +57,9 @@ DataWriter::DataWriter(IndexFile &index,
         return;
     }
     RTree::Datablock block;
-    if (tree->getLatestDatablock(block))        
+    RTree::Node node;
+    int idx;
+    if (tree->getLastDatablock(node, idx, block))        
     {   // - There is a data file and buffer
         datafile = DataFile::reference(index.getDirectory(),
                                        block.data_filename, true);
@@ -156,7 +158,7 @@ DataWriter::~DataWriter()
         header->write();
         if (tree)
         {
-            if (!tree->updateLatestDatablock(
+            if (!tree->updateLastDatablock(
                     header->data.begin_time, header->data.end_time,
                     header->offset, header->datafile->getBasename()))
             {
@@ -259,7 +261,7 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
     // Update index entry for the old header
     if (tree)
     {
-        if (!tree->updateLatestDatablock(
+        if (!tree->updateLastDatablock(
                 header->data.begin_time, header->data.end_time,
                 header->offset, header->datafile->getBasename()))
         {

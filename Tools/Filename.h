@@ -1,7 +1,4 @@
-// FilenameTool: Routines for handling file names,
-// should support Unix and Win32
-// -kuk- 1999
-
+// -*- c++ -*-
 #ifndef __FILENAMETOOL_H__
 #define __FILENAMETOOL_H__
 

@@ -14,16 +14,15 @@
 #include"ToolsConfig.h"
 #include<stdio.h>
 
-//CLASS ASCIIParser
-//
-// Helper class for programming an ASCII-file parser:
-//
-// <UL>
-// <LI>Opens/closes file,
-// <LI>skips comments (number sign),
-// <LI>extracts parameter and value from "parameter=value" lines.
-// </UL>
+/// \ingroup Tools
 
+/// Helper class for programming an ASCII-file parser:
+
+/// The ASCIIParser assists in writing an ASCII file parser:
+/// - Opens/closes file,
+/// - skips comments (number sign),
+/// - removes leading and trainling white space from lines,
+/// - extracts parameter and value from "parameter=value" lines.
 class ASCIIParser
 {
 public:
@@ -31,26 +30,35 @@ public:
     
     virtual ~ASCIIParser();
     
-    //* Open file for parsing.
-    //
-    // Result: true for success
+    /// Open file for parsing.
+    
+    /// Result: true for success
+    ///
+    ///
     bool open(const stdString &file_name);
 
-    //* Read next line from file, skipping comment lines.
-    //
-    // Result: false for error, hit end of file, ...
+    /// Read next line from file, skipping comment lines.
+    
+    /// Result: false for error, hit end of file, ...
+    ///
+    ///
     bool nextLine();
 
-    //* Get current line as string, excluding '\n'
+    /// Get current line as string, excluding '\n'.
+
+    ///
+    ///
+    ///
     const stdString & getLine() const;
 
-    //* Get number of current line
+    /// Get number of current line
     size_t getLineNo() const;
 
-    //* Try to extract parameter=value pair
-    // from current line.
-    //
-    // Result: found parameter?
+    /// Try to extract parameter=value pair from current line.
+    
+    /// Result: found parameter?
+    ///
+    ///
     bool getParameter(stdString &parameter, stdString &value);
 
 private:

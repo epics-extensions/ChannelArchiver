@@ -119,13 +119,16 @@ public:
     
     /// Return range covered by this RTree
     bool getInterval(epicsTime &start, epicsTime &end);
-
+    
+    enum InsertResult { InsError, InsOK, InsExisted };
+    
     /// Insert interval start...end with ID into tree.
-    bool insert(const epicsTime &start, const epicsTime &end, Offset ID);
+    InsertResult insert(const epicsTime &start,
+                        const epicsTime &end, Offset ID);
 
     /// Create and insert a new Datablock.
-    bool insertDatablock(const epicsTime &start, const epicsTime &end,
-                         Offset data_offset, stdString data_filename);
+    InsertResult insertDatablock(const epicsTime &start, const epicsTime &end,
+                                 Offset data_offset, stdString data_filename);
     
     /// Locate entry after start time.
 
@@ -137,41 +140,41 @@ public:
     /// There's one exception: When requesting a start time
     /// that preceeds the first available data point, so that there is
     /// no previous data point, the very first record is returned.
-    bool search(const epicsTime &start, Node &node, int &i);
+    bool search(const epicsTime &start, Node &node, int &i) const;
 
     /// Like search(), but also gets datablock ref'ed by node&i.
     bool searchDatablock(const epicsTime &start, Node &node, int &i,
-                         Datablock &block);
+                         Datablock &block) const;
     
     /// Locate first entry.
-    bool getFirst(Node &node, int &i);
+    bool getFirst(Node &node, int &i) const;
 
-    /// Like getFirst(), but also gets datablock
-    bool getFirstDatablock(Node &node, int &i, Datablock &block);
+    /// Set node & record index to last entry in tree.
+    bool getLast(Node &node, int &i) const;
+
+    /// Like getFirst(), but also gets datablock.
+    bool getFirstDatablock(Node &node, int &i, Datablock &block) const;
     
-    /// Locate last entry.
-    bool getLatest(Node &node, int &i);
+    /// Like getLast(), but also gets datablock.
+    bool getLastDatablock(Node &node, int &i, Datablock &block) const;
     
-    /// If node & i were set to a valid entry by search(), update to prev
-    bool prev(Node &node, int &i)
+    /// If node & i were set to a valid entry by search(), update to prev.
+    bool prev(Node &node, int &i) const
     {    return prev_next(node, i, -1); }
     
-    /// If node & i were set to a valid entry by search(), update to next
-    bool next(Node &node, int &i)
+    /// If node & i were set to a valid entry by search(), update to next.
+    bool next(Node &node, int &i) const
     {    return prev_next(node, i, +1); }
 
-    bool nextDatablock(Node &node, int &i, Datablock &block);
+    /// Absolutely no clue what this one could do.
+    bool prevDatablock(Node &node, int &i, Datablock &block) const;
+
+    /// \see prevDatablock()
+    bool nextDatablock(Node &node, int &i, Datablock &block) const;
     
     /// Remove entry from tree.
     bool remove(const epicsTime &start, const epicsTime &end, Offset ID);
 
-    /// Set node & record index to last entry in tree
-
-    /// (Used by Engine to append to last data block)
-    ///
-    ///
-    bool getLatestDatablock(Datablock &block);
-    
     /// Special 'update' call for usage by the ArchiveEngine.
 
     /// The engine usually appends to the last buffer.
@@ -183,16 +186,16 @@ public:
     /// to update the end time and then it'll follow with an insert().
     /// \return True if start & ID refer to the existing last block
     ///         and the end time was succesfully updated.
-    bool updateLatest(const epicsTime &start,
-                      const epicsTime &end, Offset ID);
+    bool updateLast(const epicsTime &start,
+                    const epicsTime &end, Offset ID);
 
     /// Tries to update existing datablock.
 
     /// Tries to use updateLatest, will then fall back to insertDatablock.
     ///
     ///
-    bool updateLatestDatablock(const epicsTime &start, const epicsTime &end,
-                               Offset data_offset, stdString data_filename);
+    bool updateLastDatablock(const epicsTime &start, const epicsTime &end,
+                             Offset data_offset, stdString data_filename);
     
     /// Create a graphviz 'dot' file.
     void makeDot(const char *filename, bool show_data=false);
@@ -200,7 +203,7 @@ public:
     /// Returns true if tree passes self test, otherwise prints errors.
     bool selfTest();
 
-    size_t cache_misses, cache_hits; 
+    mutable size_t cache_misses, cache_hits; 
 
 private:
     FileAllocator &fa;
@@ -214,9 +217,9 @@ private:
     // Offset to the root = content of what's at anchor
     Offset root_offset;
 
-    AVLTree<Node> node_cache;
+    mutable AVLTree<Node> node_cache;
 
-    bool read_node(Node &node);
+    bool read_node(Node &node) const;
 
     bool write_node(const Node &node);
     
@@ -238,7 +241,7 @@ private:
 
     bool condense_tree(Node &node);
 
-    bool prev_next(Node &node, int &i, int dir);
+    bool prev_next(Node &node, int &i, int dir) const;
 };
 
 

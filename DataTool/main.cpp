@@ -252,6 +252,35 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
 #endif
 }
 
+void dump_datablocks(const stdString &index_name, const stdString &channel_name)
+{
+    IndexFile index;
+    if (!index.open(index_name))
+    {
+        fprintf(stderr, "Cannot open index '%s'\n",
+                index_name.c_str());
+        return;
+    }
+    RTree *tree = index.getTree(channel_name);
+    RTree::Datablock block;
+    RTree::Node node;
+    stdString start, end;
+    int idx;
+    bool ok;
+    printf("Datablocks for channel '%s':\n", channel_name.c_str());
+    for (ok = tree->getFirstDatablock(node, idx, block);
+         ok;
+         ok = tree->nextDatablock(node, idx, block))
+    {
+        printf("'%s' @ 0x%lX: %s - %s\n",
+               block.data_filename.c_str(), block.data_offset,
+               epicsTimeTxt(node.record[idx].start, start),
+               epicsTimeTxt(node.record[idx].end, end));
+    }
+    delete tree;
+    index.close();
+}
+
 void dot_index(const stdString &index_name, const stdString channel_name,
                const stdString &dot_name)
 {
@@ -291,6 +320,7 @@ int main(int argc, const char *argv[])
                            "Convert old directory file to index");
     CmdArgString index2dir(parser, "index2dir", "<dir. file>",
                            "Convert index to old directory file");
+    CmdArgFlag dump_blocks(parser, "blocks", "List channel's data blocks");
     CmdArgString dotindex(parser, "dotindex", "<dot filename>",
                           "Dump contents of RTree index into dot file");
     CmdArgString channel_name (parser, "channel", "<name>", "Channel name");
@@ -302,6 +332,13 @@ int main(int argc, const char *argv[])
         parser.usage();
         return -1;
     }
+    if ((dump_blocks || dotindex.get().length() > 0)
+        && channel_name.get().length() <= 0)
+    {
+        fprintf(stderr, "Options 'blocks' and 'dotindex' require 'channel'.\n");
+        return -1;
+    }
+
     verbose = verbose_flag;
     stdString index_name = parser.getArgument(0);
 
@@ -319,13 +356,13 @@ int main(int argc, const char *argv[])
         convert_index_dir(index_name, index2dir);
         return 0;
     }
+    else if (dump_blocks)
+    {
+        dump_datablocks(index_name, channel_name);
+        return 0;
+    }
     else if (dotindex.get().length() > 0)
     {
-        if (channel_name.get().length() <= 0)
-        {
-            fprintf(stderr, "Option -dotindex requires -channel\n");
-            return -1;
-        }
         dot_index(index_name, channel_name, dotindex);
         return 0;
     }

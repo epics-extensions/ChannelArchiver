@@ -194,6 +194,8 @@ void GNUPlotExporter::exportChannelList(
             }
             ++value;
         }
+        // time == stamp of last value.
+        // If _start was in the future, time==_start.
         if (last_was_data && isValidTime(_end)) // end hack
         {
             fprintf(f, "# extrapolated onto end time from ");

@@ -41,7 +41,6 @@ HTTPServer *HTTPServer::create(short port)
     SOCKET s = epicsSocketCreate(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in  local;
 
-    // TODO: use osiSock.h : aToIPAddr
     local.sin_family = AF_INET;
     local.sin_port = htons (port);
 #   ifdef WIN32
@@ -211,7 +210,7 @@ HTTPClientConnection::~HTTPClientConnection()
 {
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
     LOG_MSG("HTTPClientConnection::~HTTPClientConnection #%d "
-            "(used socket %d)\n", _num, _socket);
+            "(used socket %d)\n", num, socket);
 #endif
     if (! done)
     {
@@ -247,10 +246,15 @@ void HTTPClientConnection::run()
     while (!handleInput())
     {
     }
+    // The delay and shutdown seem to help Mozilla
+    // to read the web page before it stops because
+    // the connection quits.
+    epicsThreadSleep(2.0);
+    shutdown(socket, 2);
     epicsSocketDestroy(socket);
     done = true;
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
-    LOG_MSG("HTTPClientConnection::run #%d closed socket %d\n", _num, _socket);
+    LOG_MSG("HTTPClientConnection::run #%d closed socket %d\n", num, socket);
 #   endif
 }
 

@@ -74,9 +74,17 @@ void ArchiveChannel::startCA(Guard &guard)
         chid_valid = true;
     }
     else
-    {
-        // re-get control information
-        // TODO
+    {   // Re-get control information for this channel
+        int status = ca_array_get_callback(
+            ca_field_type(ch_id)+DBR_CTRL_STRING,
+            ca_element_count(ch_id),
+            ch_id, control_callback, this);
+        if (status != ECA_NORMAL)
+        {
+            LOG_MSG("'%s': ca_array_get_callback error in "
+                    "caLinkConnectionHandler: %s",
+                    name.c_str(), ca_message(status));
+        }
     }
     theEngine->need_CA_flush = true;
 }
@@ -290,6 +298,7 @@ bool ArchiveChannel::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
 void ArchiveChannel::control_callback(struct event_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
+    bool was_connected = me->connected;
     Guard guard(me->mutex);
     if (arg.status == ECA_NORMAL &&
         me->setup_ctrl_info(arg.type, arg.dbr))
@@ -300,7 +309,8 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
         me->init(engine_guard, guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
                  ca_element_count(arg.chid));
         me->connected = true;
-        me->mechanism->handleConnectionChange(guard);
+        if (was_connected != me->connected)
+            me->mechanism->handleConnectionChange(guard);
     }
     else
     {
@@ -308,7 +318,8 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
         me->connection_time = epicsTime::getCurrent();
         me->connected = false;
         me->pending_value_set = false;
-        me->mechanism->handleConnectionChange(guard);
+        if (was_connected != me->connected)
+            me->mechanism->handleConnectionChange(guard);
     }
 }
 
@@ -322,8 +333,6 @@ void ArchiveChannel::handleDisabling(Guard &guard, const RawValue::Data *value)
     bool criteria = RawValue::isZero(dbr_time_type, value) == false;
     if (criteria && !currently_disabling)
     {   // wasn't disabling -> disabling
-        // TODO: Add this value, so that we see what value
-        //       triggered the disabled state!
         currently_disabling = true;
         stdList<GroupInfo *>::iterator g;
         for (g=groups.begin(); g!=groups.end(); ++g)

@@ -284,6 +284,12 @@ static bool decodeTimes (const CGIInput &cgi, osiTime &start, osiTime &end)
 		if (! string2osiTime(end_txt, end))
 			return false;
 	}
+    if (start > end)
+    {
+        osiTime t = start;
+        start = end;
+        end = t;
+    }
 
 	return true;
 }

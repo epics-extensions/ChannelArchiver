@@ -20,12 +20,22 @@
       <li>Thomas Birke improved the CGI interface:
           List of channels is now shown in the "Names" box,
           the online plot will by default show reduced data
-          which looks identical to the full data but runs quicker.
+          which looks identical to the full data but runs quicker (see
+          below).
+      <li>Introducing the BucketingValueIteratorI. It performs
+          data-reduction by returning at most 4 (first, min, max and last)
+          values per <em>bucket</em> (a timeslice).<br>
+          This is especially useful for producing plots of the retrieved
+          data. If you specify the bucket-width as the (time-)width of one
+          pixel of the output image, the amount of data to plot can be
+          dramatically reduced.
       <li>ArchiveEngine should now store one sample after a
           re-connect. That sample might have an adjusted time stamp,
 	  not the original IOC time stamp, because the preceding
           "disconnect" status is written with a time stamp from the
           host that runs the ArchiveEngine.
+      <li>The ArchiveEngine has now a command line option to switch off the
+          online-configuration web-interface.
       </ul>
     <li>07/25/2001<br>
       Patch #4:<br>

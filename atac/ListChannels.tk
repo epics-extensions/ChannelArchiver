@@ -2,6 +2,16 @@
 # -*- tcl -*- \
 	exec atac $0 ${1+"$@"}
 
+# --------------------------------------------------------
+# $Id$
+#
+# Please refer to NOTICE.txt,
+# included as part of this distribution,
+# for legal information.
+#
+# Kay-Uwe Kasemir, kasemir@lanl.gov
+# --------------------------------------------------------
+
 # List all channel names in a list-box
 #
 

@@ -1,9 +1,16 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
 //
 // A T A C . c p p 
 //
 // "A Tcl Archive Client"
-//
-// KUK
 //
 // Could be based on swig?
 // Almost long enough to be split in several sources?
@@ -15,12 +22,6 @@
 
 #if TCL_MAJOR_VERSION < 8
 #error TCL version 8 or better required
-#endif
-
-#ifndef ATAC_VERSION
-#define ATAC_VERSION 0
-#define ATAC_RELEASE 0
-#define ATAC_VERSION_STRING "ATAC_VERSION.ATAC_RELEASE"
 #endif
 
 // "Un-const char" cast
@@ -290,7 +291,7 @@ static int archive_open (ClientData clientData, Tcl_Interp *interp,
 {
 	try
 	{
-		ArchiveI *archive = new ARCHIVE_TYPE (Tcl_GetStringFromObj (objv[2], 0));
+		ArchiveI *archive = new ATAC_ARCHIVE_TYPE (Tcl_GetStringFromObj (objv[2], 0));
 		return newHandle (interp, new ArchiveHandle (archive));
 	}
 	catch (ArchiveException &e)
@@ -1286,10 +1287,10 @@ DLLEXPORT int Atac_Init (Tcl_Interp *interp)
 	Tcl_CreateObjCommand (interp, "value", atac_valueCmd, 0, 0);
 
 	// define package for pkg_mkIndex
-	Tcl_PkgProvide (interp, "atac", ATAC_VERSION_STRING);
+	Tcl_PkgProvide (interp, "atac", VERSION_TXT);
 
 	// make version information available as global variable
-	Tcl_SetVar (interp, "atac_version", ATAC_VERSION_STRING, TCL_GLOBAL_ONLY);
+	Tcl_SetVar (interp, "atac_version", VERSION_TXT, TCL_GLOBAL_ONLY);
 
 	return TCL_OK;
 }

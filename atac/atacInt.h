@@ -7,12 +7,12 @@
 #define INCLUDE_ATACINT_H
 
 #include "atac.h"
+#include "../ArchiverConfig.h"
 #include <BinArchive.h>
+#include <MultiArchive.h>
 #include <ArchiveException.h>
 #include <ExpandingValueIteratorI.h>
 
 USING_NAMESPACE_CHANARCH
-
-#define ARCHIVE_TYPE BinArchive
 
 #endif

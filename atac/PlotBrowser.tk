@@ -2,6 +2,18 @@
 # -*- tcl -*- \
 	exec atac $0 ${1+"$@"}
 
+
+# --------------------------------------------------------
+# $Id$
+#
+# Please refer to NOTICE.txt,
+# included as part of this distribution,
+# for legal information.
+#
+# Kay-Uwe Kasemir, kasemir@lanl.gov
+# --------------------------------------------------------
+
+
 #######################################################################
 # Demo of plotting from archive with BLT
 #######################################################################
@@ -226,7 +238,7 @@ update
 # use first channel to determine time range
 # by fetching "count" samples
 set key 0
-set count 100
+set count 200
 getLastSamples $key $count
 
 # Fill this time range for remaining channels

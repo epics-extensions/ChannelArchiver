@@ -182,13 +182,13 @@ $weekdays{We} = 3;
 $weekdays{Th} = 4;
 $weekdays{Fr} = 5;
 $weekdays{Sa} = 6;
-$weekdays[0] = "Su";
-$weekdays[1] = "Mo";
-$weekdays[2] = "Tu";
-$weekdays[3] = "We";
-$weekdays[4] = "Th";
-$weekdays[5] = "Fr";
-$weekdays[6] = "Sa";
+$weekdays[0] = "Sunday";
+$weekdays[1] = "Monday";
+$weekdays[2] = "Tuesday";
+$weekdays[3] = "Wednesday";
+$weekdays[4] = "Thursday";
+$weekdays[5] = "Friday";
+$weekdays[6] = "Saturday";
 
 # ----------------------------------------------------------------
 # Message Queue
@@ -258,10 +258,12 @@ sub read_config($)
 	if (defined($engine->{weekly}))
 	{
 	    my ($daytxt, $daily) = split(/ /, $engine->{weekly}[0]);
+	    my ($daychars) = substr($daytxt, 0, 2);
 	    die ("Engine '$config[$#config]{desc}': " .
-		 "Unknown day name in weekly config $engine->{weekly}[0]")
-		unless defined($weekdays{$daytxt});	    
-	    $config[$#config]{day} = $weekdays{$daytxt};
+		 "Unknown day name '$daytxt' " .
+		 "in weekly config $engine->{weekly}[0]")
+		unless defined($weekdays{$daychars});	    
+	    $config[$#config]{day} = $weekdays{$daychars};
 	    $config[$#config]{daily} = $daily;
 	}
 	elsif (defined($engine->{daily}))

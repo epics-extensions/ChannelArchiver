@@ -11,8 +11,6 @@ INC += StorageTypes.h
 INC += HashTable.h
 INC += DirectoryFile.h
 INC += OldDataWriter.h
-# in between
-INC += TreeDataWriter.h
 # Current
 INC += CtrlInfo.h
 INC += RawValue.h
@@ -32,8 +30,6 @@ LIB_SRCS += HashTable.cpp
 LIB_SRCS += DirectoryFile.cpp
 LIB_SRCS += OldDataWriter.cpp
 LIB_SRCS += OldDataReader.cpp
-# in between
-LIB_SRCS += TreeDataWriter.cpp
 # Current
 LIB_SRCS += CtrlInfo.cpp
 LIB_SRCS += RawValue.cpp

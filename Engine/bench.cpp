@@ -19,8 +19,6 @@ gopher0, 2x333Mhz, RAID5          8600
 // Tools
 #include <ArgParser.h>
 // Storage
-#include <archiver_index.h>
-#include <TreeDataWriter.h>
 #include <DataWriter.h>
 #include <DataReader.h>
 #include <DirectoryFile.h>
@@ -49,51 +47,6 @@ bool write_samples(const stdString &index_name,
     DataWriter::file_size_limit = 10*1024*1024;
     DataWriter * writer =
         new DataWriter(index,
-                       channel_name, info,
-                       dbr_type, dbr_count, 2.0,
-                       samples);
-    dbr_time_double *data =  RawValue::allocate(dbr_type, dbr_count, 1);
-    data->status = 0;
-    data->severity = 0;
-    size_t i;
-    for (i=0; i<samples; ++i)
-    {
-        data->value = (double) i;
-        RawValue::setTime(data, epicsTime::getCurrent());
-        if (!writer->add(data))
-        {
-            fprintf(stderr, "Write error with value %d/%d\n",
-                    i, samples);
-            break;
-        }   
-    }
-    RawValue::free(data);
-    delete writer;
-    DataFile::close_all();
-    index.close();
-    return true;
-}
-
-bool tree_write_samples(const stdString &index_name,
-                   const stdString &channel_name,
-                   size_t samples)
-{
-    archiver_Index index;
-    CtrlInfo info;
-
-    if (!index.open(index_name.c_str(), false))
-    {
-        fprintf(stderr, "Cannot create index '%s'\n",
-                index_name.c_str());
-        return false;
-    }
-    info.setNumeric (2, "socks",
-                     0.0, 10.0,
-                     0.0, 1.0, 9.0, 10.0);
-    DbrType dbr_type = DBR_TIME_DOUBLE;
-    DbrCount dbr_count = 1;
-    TreeDataWriter * writer =
-        new TreeDataWriter(index,
                        channel_name, info,
                        dbr_type, dbr_count, 2.0,
                        samples);
@@ -218,7 +171,6 @@ int main (int argc, const char *argv[])
     parser.setHeader("Archive Benchmark\n");
     parser.setArgumentsInfo("<index>");
     CmdArgFlag old(parser, "old", "Use old directory file");
-    CmdArgFlag rtree(parser, "rtree", "Use rtree code");
     CmdArgInt samples(parser, "samples", "<count>",
                       "Number of samples to write");
     CmdArgString channel_name(parser, "channel", "<name>",
@@ -253,9 +205,7 @@ int main (int argc, const char *argv[])
     {
         count = samples.get();
         start = epicsTime::getCurrent ();
-        if (rtree)
-            tree_write_samples(index_name, channel_name.get(), count);
-        else if (old)
+        if (old)
             old_write_samples(index_name, channel_name.get(), count);
         else
             write_samples(index_name, channel_name.get(), count);

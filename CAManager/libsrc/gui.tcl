@@ -606,7 +606,6 @@ proc camGUI::aEdit {w} {
       } else {
 	incr matches [regexp $re $var($row,archive)]
       }
-      puts stderr "   $matches"
     }
     if {$matches <= 0} {
       set dirwarn "For a Run/Rerun-mode of \"$var($row,start)\"\n"
@@ -1369,6 +1368,7 @@ proc camGUI::aPrefs {} {
   wm title .prefs "Preferences"
   label .prefs.xxx
 
+  # copy globals to locals
   set ::TdontCheckAtAll $::dontCheckAtAll
   set ::TcheckInt $::checkInt
   set ::TbgCheckInt $::bgCheckInt
@@ -1428,6 +1428,7 @@ proc camGUI::aPrefs {} {
   packTree .prefs {
     {frame h1 {-bd 1 -relief sunken} {-fill x -padx 4}}
     {button ok {-text Ok -command {
+      # if "OK" -> copy locals to globals
       set ::settingsSaved 0
       lassign [list $::T_port $::TcheckInt $::TdontCheckAtAll $::TcheckBgMan $::TbgCheckInt $::TbgUpdateInt] ::_port ::checkInt ::dontCheckAtAll ::checkBgMan ::bgCheckInt ::bgUpdateInt
       destroy .prefs
@@ -1443,7 +1444,7 @@ proc camGUI::aPrefs {} {
 
   if {"$::_port" != "$::_oport"} {
     SaveSettings
-    tk_dialog .confirm "Notice" "Changes will take effect after restart of CAbgManager!" warning 0 Close
+    MessageBox warning "Notice" "Port change" "Changes will take effect after restart of CAbgManager!" "" {OK} .
   }
 }
 
@@ -1474,7 +1475,6 @@ proc camGUI::pXec {cmd w} {
   fconfigure $wr -buffering none
   fconfigure $er -buffering none
   $w configure -state normal
-#  regsub -all "/\[^ \]*/" "$cmd" ".../" c
   eval $w insert end "\"$cmd\n\"" command
   $w configure -state disabled
   if [regexp ">" $cmd] {
@@ -1490,7 +1490,7 @@ set ::settingsSaved 1
 
 proc camGUI::SaveSettings {{fh -1}} {
   if {$::settingsSaved && ($fh == -1)} return
-  set wh 0
+  set wh -1
   if {$camMisc::force_cfg_file} {
     if {$fh == -1} {
       if [catch {set wh [open $camMisc::cfg_file.N w+]}] exit
@@ -1520,7 +1520,7 @@ proc camGUI::SaveSettings {{fh -1}} {
   save $wh ::bgCheckInt $::bgCheckInt bgCheckInt
   save $wh ::bgUpdateInt $::bgUpdateInt bgUpdateInt
   save $wh ::multiVersion $::multiVersion multiVersion
-  if {$fh != -1} { 
+  if {$wh != $fh} { 
     close $wh 
     file rename -force $camMisc::cfg_file.N $camMisc::cfg_file
   }
@@ -1528,7 +1528,7 @@ proc camGUI::SaveSettings {{fh -1}} {
 }
 
 proc camGUI::save {wh var val desc {p ""}} {
-  if {"$::tcl_platform(platform)" == "unix"} {
+  if {$wh >= 0} {
     puts $wh "set $var {$val}"
   } else {
     registry set "$camMisc::reg_stem\\Settings$p" $desc $val

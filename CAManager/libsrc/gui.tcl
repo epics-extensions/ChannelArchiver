@@ -151,7 +151,7 @@ proc camGUI::checkJob {} {
   set ::busyIndicator "@"
   for {set row 0} {$row < [llength [camMisc::arcIdx]]} {incr row} {
     camComm::condSet camGUI::aEngines($row,$::iBlocked) \
-	[lindex $::yesno [file exists [file join [file dirname [camMisc::arcGet $row cfg]] BLOCKED]]]
+	[lindex $::yesno [Blockfile $row]]
 	
     after 10 camComm::CheckRunning $row camGUI::aEngines($row,$::iRun)
     update
@@ -1044,7 +1044,7 @@ proc camGUI::initTable {table} {
     set aEngines($i,$::iBlocked) Dunno
 
     set camGUI::aEngines($i,$::iBlocked) \
-	[lindex $::yesno [file exists [file join [file dirname [camMisc::arcGet $i cfg]] BLOCKED]]]
+	[lindex $::yesno [file exists [Blockfile $i]]]
     after 1 "camComm::CheckRunning $i camGUI::aEngines($i,$::iRun)"
   }
   for {set i [llength [camMisc::arcIdx]]} {$i < $row} {incr i} {

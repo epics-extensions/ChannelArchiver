@@ -187,13 +187,13 @@ Puts "camMisc::arcIdx" funcall
 
 proc camMisc::Block {row {var x}} {
 Puts "camMisc::Block $row $var" funcall
-  write_file [file join [camMisc::arcGet $row mstr] BLOCKED] ""
+  write_file [Blockfile $row] ""
   set $var [lindex $::yesno 1]
 }
 
 proc camMisc::Release {row {var x}} {
 Puts "camMisc::Release $row $var" funcall
-  file delete -force [file join [camMisc::arcGet $row mstr] BLOCKED]
+  file delete -force [Blockfile $row]
   set $var  [lindex $::yesno 0]
 }
 

@@ -284,6 +284,10 @@ proc checkstate {arr ind op} {
   }
 }
 
+proc Blockfile {row} {
+  return [file join [camMisc::arcGet $row mstr] BLOCKED]
+}
+
 # returns start- and stop-time, when an archiver is SUPPOSED to run!
 proc duetime {i {run X} {timespec X}} {
 Puts "util: duetime $i $run \"$timespec\"" funcall
@@ -572,7 +576,7 @@ Puts "util: runArchiver $i $forceRun $verbose" funcall
   }
   set ::lastArc($i) $archive
 
-  if {!$forceRun && [file exists [file join $ROOT BLOCKED]]} {
+  if {!$forceRun && [file exists [Blockfile $i]]} {
     if { ![info exists ::wasError($i)] || ($::wasError($i) != 3) } {
       Puts "start of \"$descr\" blocked!" error
       set ::wasError($i) 3
@@ -780,7 +784,7 @@ Puts "util: restartArchiver $i" funcall
 proc stopArchiver {i {forceStop 0} {action stop}} {
 Puts "util: stopArchiver $i $forceStop $action" funcall
   array unset ::sched $i,stop,*
-  if {!$forceStop && [file exists [camMisc::arcGet $i mstr]/BLOCKED]} {
+  if {!$forceStop && [file exists [Blockfile $i]]} {
     Puts "$action of \"[camMisc::arcGet $i descr]\" blocked" error
     return 0
   }

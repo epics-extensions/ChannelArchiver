@@ -20,7 +20,7 @@ proc camComm::CheckRunning {i rvar} {
   if {![info exists ::lastArc($row)]} {set ::lastArc($row) ""}
   set start [clock seconds]
   if [catch {set sock [socket [camMisc::arcGet $i host] [camMisc::arcGet $i port]]}] {
-    if {[file exists [file join [file dirname [camMisc::arcGet $i cfg]] BLOCKED]]} {
+    if {[file exists [Blockfile $i]]} {
       condSet $rvar "BLOCKED"
     } else {
       if {[info exists ::tk_version]} {

@@ -1,10 +1,19 @@
-all:    oct
+all:    octave matlab
 
-oct:	ArchiveData.oct
+octave:	ArchiveData.oct
 
-mex:
-	@echo "No clue, yet"
+matlab: ArchiveData.mexglx
 
+# Both Octave and Matlab include
+# compilation tools mkoctfile resp. mex
+# which handle all the magic.
+# In theory, we only provide the include & link
+# directives for the archiver & xml-rpc.
+# Even better: At least on Unix, both mkoctfile & mex
+# understand the same -v, -I, -L & -l syntax for that.
+
+# Do you want verbose compilation?
+# FLAGS = -v
 # Includes -------------------------------------------
 # Archiver
 FLAGS += -I../../../include
@@ -21,17 +30,17 @@ FLAGS += -L$(EPICS_BASE_RELEASE)/lib/$(EPICS_HOST_ARCH) -ldbStaticHost -lCom -lc
 FLAGS += -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok
 
 ArchiveData.oct: ArchiveData.cpp
-	mkoctfile -v -DOCTAVE $(FLAGS) ArchiveData.cpp
+	mkoctfile -DOCTAVE $(FLAGS) ArchiveData.cpp
 
-# Mex ideas:
-#
-# Ideally, you simply type
-#   mex ArchiveData.cpp
-# Under RedHat Linux with Matlap 6p1 that worked, but
-# when trying to use the stuff I'd get an error
+ArchiveData.mexglx: ArchiveData.cpp
+	mex $(FLAGS) ArchiveData.cpp
+
+# In reality, your milage will vary.
+# Matlab 6p1 under Linux gave this runtime error:
 # "...undefined symbol: __gxx_personality_v0".
 # Fix: Compile like this from within matlab:
 #   eval(['mex -v -f ' matlabroot '/bin/cxxopts.sh ArchiveData.cpp'])
+# ... but then you'd have to add all the other FLAGS into that.
 
 clean:
 	-rm ArchiveData.oct

@@ -7,7 +7,7 @@
 //
 // kasemir@lanl.gov
 
-#undef DEBUG
+#define DEBUG
 
 // Generic Stuff -------------------------------------------------------
 #include <ArchiveDataClient.h>
@@ -15,21 +15,14 @@
 // Octave Stuff --------------------------------------------------------
 #ifdef OCTAVE
 #include <octave/oct.h>
-//#include <octave/config.h>
-//#include <iostream.h>
-//#include <octave/defun-dld.h>
-//#include <octave/error.h>
-//#include <octave/oct-obj.h>
 #include <octave/pager.h>
-//#include <octave/symtab.h>
-//#include <octave/variables.h>
 DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
 {
     octave_value_list retval;
     int nargin = args.length();
     if (nargin < 2)
     {
-        error("Need at least two arguments\n");
+        error("At least two arguments (URL, CMD) required\n");
         return retval;
     }
     if (!(args(0).is_string() && args(1).is_string()))
@@ -128,14 +121,44 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
 #else
 // Matlab Stuff --------------------------------------------------------
 #include "mex.h"
-void mexFunction(int nlhs, mxArray *plhs[],
-                 int nrhs, const mxArray *prhs[])
+
+static bool get_string(const mxArray *arg, char **buf, const char *name)
 {
-    if (nrhs < 2)
+    int buflen = mxGetNumberOfElements(arg) + 1;
+    *buf = (char *)mxCalloc(buflen, sizeof(char));
+    if (mxGetString(arg, *buf, buflen) != 0)
     {
-        mexErrMsgTxt("At least two arguments (URL, cmd) required\n");
+        mexErrMsgIdAndTxt("ArchiveData", "Could not fetch %s", name);
+        return false;
+    }
+    return true;
+}
+
+void mexFunction(int nresult, mxArray *result[],
+                 int nargin, const mxArray *args[])
+{
+    if (nargin < 2)
+    {
+        mexErrMsgTxt("At least two arguments (URL, cmd) required.");
         return;
     }
+    if (!(mxIsChar(args[0]) && mxIsChar(args[1])))
+    {
+        mexErrMsgTxt("URL & CMD must be strings.");
+        return;
+    }
+    char *url, *cmd;
+    int key = 0;
+    if (! (get_string(args[0], &url, "URL") &&
+           get_string(args[1], &cmd, "CMD")))
+        return;
+    if (nargin >= 3)
+        key = (int)mxGetScalar(args[2]);
+#ifdef DEBUG
+    mexPrintf("URL='%s'\n", url);
+    mexPrintf("CMD='%s'\n", cmd);
+    mexPrintf("KEY=%d\n", key);
+#endif
 }
 
 #endif

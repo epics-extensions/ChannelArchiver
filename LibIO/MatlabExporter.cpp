@@ -11,6 +11,11 @@
 #include <fstream>
 #include <iostream>
 
+MatlabExporter::MatlabExporter(ArchiveI *archive)
+        : Exporter(archive)
+{
+}
+
 MatlabExporter::MatlabExporter(ArchiveI *archive, const stdString &filename)
         : Exporter(archive, filename)
 {

@@ -35,6 +35,7 @@ public:
     stdString _title;
     stdString _cgi_path;
     stdString _command;
+    stdString _format;
     stdString _directory;
     stdString _pattern;
     stdVector<stdString> _names;

@@ -1,4 +1,4 @@
-// Exporter.h
+// Exporter.h -*- c++ -*-
 
 #ifndef __EXPORTER_H__
 #define __EXPORTER_H__
@@ -28,6 +28,7 @@ public:
     // When left empty, <I>cout</I> is used.
     //
     // See also: CLASS FilenameTool
+    Exporter(ArchiveI *archive);
     Exporter(ArchiveI *archive, const stdString &filename);
 
     virtual ~Exporter() {}
@@ -108,6 +109,8 @@ protected:
 
     // Will be called after dumping the actual values.
     virtual void post_scriptum(const stdVector<stdString> &channel_names) {}
+private:
+    void init(ArchiveI *archive);
 };
 
 inline void Exporter::setStart(const osiTime &start)   { _start = start; }

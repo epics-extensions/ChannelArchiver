@@ -20,7 +20,7 @@
 static const char *start_file = "cgi_body_start.txt";
 static const char *end_file = "cgi_body_end.txt";
 
-HTMLPage::HTMLPage ()
+HTMLPage::HTMLPage()
 {
     _started = false;
     _fill = true;
@@ -29,27 +29,28 @@ HTMLPage::HTMLPage ()
     _interpol = 0;
 }
 
-void HTMLPage::start ()
+void HTMLPage::start()
 {
     std::cout << "Content-type: text/html\n"
               << "Pragma: no-cache\n"
               << "\n"
               << "<HTML>\n"
+              << "<META Creator: EPICS ChannelArchiver CGIExport>\n"
               << "<HEAD>\n"
               << "<TITLE>" << _title << "</TITLE>\n";
 
     std::ifstream file;
-    file.open (start_file);
+    file.open(start_file);
 #ifdef  __HP_aCC
     if (! file.fail())
 #else
-    if (file.is_open ())
+    if (file.is_open())
 #endif
     {
         char line[200];
         while (! file.eof())
         {
-            file.getline (line, sizeof (line));
+            file.getline(line, sizeof (line));
             std::cout << line << "\n";
         }
     }
@@ -59,15 +60,15 @@ void HTMLPage::start ()
                   << "<BODY bgcolor=\"#FFFFFF\">\n"
                   << "<FONT face=\"Comic Sans MS, Arial, Helvetica\">\n"
                   << "<BLOCKQUOTE>\n"
-                  << "<! create '" << start_file << "' to replace this default header ---->\n\n";
+                  << "<! create '" << start_file
+                  << "' to replace this default header ---->\n\n";
     }
     _started = true;
 }
 
-static void makeSelect (const char *name, int start, int end, int select)
+static void makeSelect(const char *name, int start, int end, int select)
 {
-    std::cout << "<! select: " << select << ">\n"
-              << "<SELECT NAME=" << name << " SIZE=1>\n";
+    std::cout << "           <SELECT NAME=" << name << " SIZE=1>\n";
 
     for (int i=start; i<=end; ++i)
     {
@@ -79,90 +80,125 @@ static void makeSelect (const char *name, int start, int end, int select)
             std::cout << "0";
         std::cout << i << "</OPTION> ";
     }
-    std::cout << "</SELECT>\n";
+    std::cout << "\n           </SELECT>\n";
 }
 
 // Print the interface stuff
-void HTMLPage::interFace () const
+void HTMLPage::interFace() const
 {
     size_t i;
     int year, month, day, hour, min, sec;
     unsigned long nano;
 
     std::cout << "<FORM METHOD=\"GET\" ACTION=\"" << _cgi_path << "\">\n";
-    std::cout << "<INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\"" << _directory << "\">\n";
-    std::cout << "<TABLE cellpadding=1>\n";
-    std::cout << "<TR><TD>Pattern:</TD><TD><INPUT TYPE=\"TEXT\" NAME=\"PATTERN\" VALUE=\"" <<
-            _pattern << "\" SIZE=40 MAXLENGTH=100> (regular expression)</TD></TR>\n";
-    std::cout << "<TR><TD>Names:</TD><TD><TEXTAREA NAME=NAMES ROWS=5 COLS=40>";
+    std::cout << "  <INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\""
+              << _directory << "\">\n";
+    std::cout << "  <TABLE cellpadding=1>\n";
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD>Pattern:</TD>\n";
+    std::cout << "      <TD><INPUT NAME=\"PATTERN\" VALUE=\""
+              <<            _pattern << "\" SIZE=40 MAXLENGTH=100>\n";
+    std::cout << "          <INPUT TYPE=submit NAME=COMMAND VALUE=LIST>\n";
+    std::cout << "          <INPUT TYPE=submit NAME=COMMAND VALUE=INFO>\n";
+    std::cout << "      </TD>\n";
+    std::cout << "  </TR>\n";
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD valign=\"top\">Names:</TD>\n";
+    std::cout << "      <TD><TEXTAREA NAME=NAMES ROWS=5 COLS=40>";
     for (i=0; i<_names.size(); ++i)
         std::cout << _names[i] << "\n";
-    std::cout << "</TEXTAREA></TD></TR>\n";
-    std::cout << "<TR><TD>Interpolate:</TD><TD><INPUT TYPE=TEXT NAME=INTERPOL VALUE=\"" << _interpol << "\" SIZE=5 MAXLENGTH=10> secs,   ";
-    std::cout << "Round: <INPUT TYPE=TEXT NAME=ROUND VALUE=\"" << _round << "\" SIZE=5 MAXLENGTH=10> secs,   ";
-    std::cout << "Fill:<INPUT TYPE=CHECKBOX NAME=FILL";
-    if (_fill)
-        std::cout << " CHECKED";
-    std::cout << ">  Status:<INPUT TYPE=CHECKBOX NAME=STATUS";
-    if (_status)
-        std::cout << " CHECKED";
-    std::cout << "></TD></TR>\n";
+    std::cout << "</TEXTAREA>\n";
+    std::cout << "      </TD>\n";
+    std::cout << "  </TR>\n";
 
-    osiTime2vals (_start, year, month, day, hour, min, sec, nano);
-    std::cout << "<TR><TD>Start:</TD><TD>Day (m/d/y)\n";
-    makeSelect ("STARTMONTH",    1,   12, month);
-    makeSelect ("STARTDAY"  ,    1,   31, day);
-    makeSelect ("STARTYEAR" , 1998, 2003, year);
+    osiTime2vals(_start, year, month, day, hour, min, sec, nano);
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD>Start:</TD><TD>Day (m/d/y)\n";
+    makeSelect("STARTMONTH",    1,   12, month);
+    makeSelect("STARTDAY"  ,    1,   31, day);
+    makeSelect("STARTYEAR" , 1998, 2005, year);
     std::cout << "Time (h:m:s)";
-    makeSelect ("STARTHOUR" ,    0,   23, hour);
-    makeSelect ("STARTMINUTE" ,  0,   59, min);
-    makeSelect ("STARTSECOND" ,  0,   59, sec);
-    std::cout << "</TD></TR>\n";
+    makeSelect("STARTHOUR" ,    0,   23, hour);
+    makeSelect("STARTMINUTE" ,  0,   59, min);
+    makeSelect("STARTSECOND" ,  0,   59, sec);
+    std::cout << "      </TD>\n";
+    std::cout << "  </TR>\n";
 
-    osiTime2vals (_end, year, month, day, hour, min, sec, nano);
-    std::cout << "<TR><TD>End:</TD><TD>Day (m/d/y)\n";
-    makeSelect ("ENDMONTH",    1,   12, month);
-    makeSelect ("ENDDAY"  ,    1,   31, day);
-    makeSelect ("ENDYEAR" , 1998, 2003, year);
+    osiTime2vals(_end, year, month, day, hour, min, sec, nano);
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD>End:</TD><TD>Day (m/d/y)\n";
+    makeSelect("ENDMONTH",    1,   12, month);
+    makeSelect("ENDDAY"  ,    1,   31, day);
+    makeSelect("ENDYEAR" , 1998, 2005, year);
     std::cout << "Time (h:m:s)";
-    makeSelect ("ENDHOUR" ,    0,   23, hour);
-    makeSelect ("ENDMINUTE" ,  0,   59, min);
-    makeSelect ("ENDSECOND" ,  0,   59, sec);
-    std::cout << "</TD></TR>\n";
+    makeSelect("ENDHOUR" ,    0,   23, hour);
+    makeSelect("ENDMINUTE" ,  0,   59, min);
+    makeSelect("ENDSECOND" ,  0,   59, sec);
+    std::cout << "      </TD>\n";
+    std::cout << "  </TR>\n";
 
-    std::cout << "<TR><TD>Command:</TD>\n";
-    std::cout << "<TD><TABLE CELLPADDING=3>\n";
-    std::cout << "   <TR>\n";
-    std::cout << "   <TD><input TYPE=submit NAME=COMMAND VALUE=LIST> </TD>\n";
-    std::cout << "   <TD><input TYPE=submit NAME=COMMAND VALUE=INFO> </TD>\n";
-    std::cout << "   <TD><input TYPE=submit NAME=COMMAND VALUE=PLOT> </TD>\n";
-    std::cout << "   <TD><input TYPE=submit NAME=COMMAND VALUE=GET>  </TD>\n";
-    std::cout << "   <TD><input TYPE=submit NAME=COMMAND VALUE=DEBUG></TD>\n";
-    std::cout << "   </TR>\n";
-    std::cout << "   </TABLE>\n";
-    std::cout << "</TD>\n";
-    std::cout << "</TR>\n";
-
-    std::cout << "</TABLE>\n";
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD valign=\"top\">\n";
+    std::cout << "          <input TYPE=submit NAME=COMMAND VALUE=GET>\n";
+    std::cout << "      </TD>\n";
+    std::cout << "      <TD>\n";
+    std::cout << "        <TABLE cellpadding=2>\n";
+    std::cout << "        <TR>\n";
+    std::cout << "   	     <TD valign=top>Format:</td>\n";
+    std::cout << "           <TD valign=top>"
+              << "              <input type=radio name=FORMAT ";
+    if (_format == "PLOT")
+        std::cout << "checked=1 ";
+    std::cout <<                "value=PLOT>Plot<br>\n";
+    std::cout << "              <input type=radio name=FORMAT ";
+    if (_format.empty() || _format == "SPREADSHEET")
+        std::cout << "checked=1 ";
+    std::cout <<                "value=SPREADSHEET"
+              <<                ">Spreadsheet<br>\n";
+    std::cout << "              <input type=radio name=FORMAT ";
+    if (_format == "EXCEL")
+        std::cout << "checked=1 ";
+    std::cout <<                "value=EXCEL>Excel-File<br>\n";
+    std::cout << "              <input type=radio name=FORMAT ";
+    if (_format == "MATLAB")
+        std::cout << "checked=1 ";
+    std::cout      <<                "value=MATLAB>Matlab\n";
+    std::cout << "           </td>\n";
+    std::cout << "           <td></td>\n";
+    std::cout << "           <td valign=top align=right>\n";
+    std::cout <<                 "Status:<br>\n";
+    std::cout <<                 "Fill:<br>\n";
+    std::cout <<                 "Interpolate:<br>\n";
+    std::cout << "           </td>\n";
+    std::cout << "           <td>\n";
+    std::cout << "              <input name=STATUS type=checkbox value=ON> (show channel status)<br>\n";
+    std::cout << "              <input name=FILL type=checkbox value=ON> (step-func. interpolation)<br>\n";
+    std::cout << "              <input maxLength=10 name=INTERPOL size=5 value=0> secs (linear)\n";
+    std::cout << "           </TD>\n";
+    std::cout << "        </TR>\n";
+    std::cout << "        </TABLE>\n";
+    std::cout << "      </TD>\n";
+    std::cout << "  </TR>\n";
+    std::cout << "  </TABLE>\n";
     std::cout << "</FORM>\n";
 }
 
-HTMLPage::~HTMLPage ()
+HTMLPage::~HTMLPage()
 {
     if (_started)
     {
         std::ifstream file;
-        file.open (end_file);
+        file.open(end_file);
 #ifdef  __HP_aCC
         if (! file.fail())
 #else
-        if (file.is_open ())
+        if (file.is_open())
 #endif
         {
             char line[200];
             while (! file.eof())
             {
-                file.getline (line, sizeof (line));
+                file.getline(line, sizeof (line));
                 std::cout << line << "\n";
             }
         }
@@ -178,8 +214,11 @@ HTMLPage::~HTMLPage ()
     }
 }
 
-void HTMLPage::header (const stdString &text, int level) const
+void HTMLPage::header(const stdString &text, int level) const
 {
     std::cout << "<H" << level << ">" << text << "</H" << level << ">\n";
 }
+
+
+
 

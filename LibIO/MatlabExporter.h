@@ -13,6 +13,7 @@
 class MatlabExporter : public Exporter
 {
 public:
+    MatlabExporter(ArchiveI *archive);
     MatlabExporter(ArchiveI *archive, const stdString &filename);
 
     virtual void exportChannelList(const stdVector<stdString> &channel_names);

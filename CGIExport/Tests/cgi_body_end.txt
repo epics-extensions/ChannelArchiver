@@ -1,16 +1,27 @@
   <font size="1">
   <h3>Command Explanation:</h3>
   <ul>
-    <li><B>List</B> all channels that match <I>pattern</I></li>
-    <li>Show <B>Info</B> on channels that match <I>pattern</I> or a in <I>names</I> list</li>
-    <li><B>Plot</B> channels that match ... &amp; are within time range</li>
-    <li><B>Get</B> spreadsheet intended to be saved &amp; loaded into e.g. Excel</li>
+    <li><B>List</B>: List all channels that match <I>pattern</I></li>
+    <li><B>Info</B>: Show info on channels that match <I>pattern</I>
+         or are in <I>names</I> list</li>
+    <li><B>Get</B>: Get values for given channels that are within
+        time range</li>
+    <ul>
+        <li><B>Plot</B>: Get simple online plot.
+        <li><B>Spreadsheet</B>: Get a spreadsheet-type text file.
+        <li><B>Excel</B>: Same, but with HTTP hints that ask the web
+			 browser to open the file in Excel
+        <li><B>Matlab</B>: Get a Matlab command file.
+        <li><B>Status</B>: Export the channel status
+	                   (disconnected, ...).
+			   Not supported for all formats.
+    </ul>
   </ul>
 
   <h3>Hints concerning...</h3>
   <ul>
-    <li><A HREF=../RegEx.htm><I>pattern</I> Expressions</A></li>
-    <li><A HREF=../Rounding.htm>the <I>round</I> field</A></li>
+    <li><A HREF=../RegEx.htm>Regular Expressions for the <I>pattern</I> field</A></li>
+    <li><A HREF=../Rounding.htm>Filling, Interpolation</A></li>
     <li><A HREF=../SpreadSheet.htm>Spreadsheet programs</A></li>
   </ul>
 

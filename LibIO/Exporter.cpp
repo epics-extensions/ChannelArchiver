@@ -41,7 +41,7 @@ static osiTime findRoundedTime(const stdVector<ValueIteratorI *> &values,
                                double round)
 {
     const osiTime start = findOldestValue(values);
-    double double_start = double (start);
+    double double_start = double(start);
     double double_time, middle = 0.0;
     size_t i, num_in_range = 0;
 
@@ -61,10 +61,20 @@ static osiTime findRoundedTime(const stdVector<ValueIteratorI *> &values,
     return num_in_range > 1 ? osiTime (middle / num_in_range) : start;
 }
 
-Exporter::Exporter (ArchiveI *archive, const stdString &filename)
-:   _archive (archive)
+Exporter::Exporter(ArchiveI *archive)
 {
+    init(archive);
+}
+
+Exporter::Exporter(ArchiveI *archive, const stdString &filename)
+{
+    init(archive);
     _filename = filename;
+}
+
+void Exporter::init(ArchiveI *archive)
+{
+    _archive = archive;
     _undefined_value = "#N/A";
     _show_status = false;
     _round_secs = 0.0;
@@ -118,7 +128,7 @@ void Exporter::printTime(std::ostream *out, const osiTime &time)
 #endif
 }
 
-void Exporter::printValue (std::ostream *out, const osiTime &time, const ValueI *v)
+void Exporter::printValue(std::ostream *out, const osiTime &time, const ValueI *v)
 {
     // skip values which are Archiver specials
     size_t ai;

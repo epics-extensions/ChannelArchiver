@@ -73,6 +73,10 @@
 // Current options: BinArchive, MultiArchive
 #define CGIEXPORT_ARCHIVE_TYPE MultiArchive
 
+// Disable the DEBUG command if you feel it's dangerous
+// since it might invite hackers:
+//#define NO_CGI_DEBUG
+
 // Where is GNU-Plot?
 // Linux, default for Unix:
 #define GNUPLOT_PROGRAM "/usr/bin/gnuplot"
@@ -100,7 +104,7 @@
 // directory which could be under the archive interface
 // like this directory:
 //
-//    ..../MainPage.htm       <- page that starts this program
+//    ..../Default.htm        <- page that starts this program
 //    ..../cgi/CGIExport.cgi  <- that's us now
 //    ..../cgi/tmp/.....      <- where we will create our tmp files
 // This define needs to be set such that the CGI tool

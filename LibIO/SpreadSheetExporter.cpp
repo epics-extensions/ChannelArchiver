@@ -2,6 +2,16 @@
 
 #include "SpreadSheetExporter.h"
 
+SpreadSheetExporter::SpreadSheetExporter(ArchiveI *archive)
+    : Exporter(archive)
+{}
+
+SpreadSheetExporter::SpreadSheetExporter(ArchiveI *archive,
+                                         const stdString &filename)
+    : Exporter(archive, filename)
+{}
+
+
 // Will be called before actually outputting anything.
 // This routine might write header information
 // and adjust the following settings for this Exporter

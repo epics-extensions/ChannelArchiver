@@ -9,6 +9,27 @@
 
 <blockquote>
   <h1>Channel Archive CGI Interface</h1>
+  The following examples show some ways of linking to
+  the CGIExport tool from a web page.<br>
+  
+  You should try to understand the HTML text
+  and then come up with your own web pages.<br>
+  
+  The links on this page assume that the web server
+  was setup according to the ChannelArchiver/doc/cgiexport/setup.html.
+
+  <h2>CGIExport: Supported CGI parameters</h2>
+
+  To see if the web server is configured correctly to
+  execute the CGIExport tool at all,
+  try a link like this which will cause the tool
+  to display supported parameters:<br>
+  <P ALIGN=CENTER>
+   <A HREF="cgi/CGIExport.cgi?COMMAND=HELP">
+   cgi/CGIExport.cgi?COMMAND=HELP</A>
+  </P>
+
+
   <h2>Take 1</h2>
   This example allows you to start the CGI interface
   for a user-supplied archive file:
@@ -18,10 +39,18 @@
 	VALUE="../../Engine/Test/freq_directory" SIZE="40"
 	MAXLENGTH="100">
         <input TYPE="submit" NAME="COMMAND" VALUE="START">
+        <input TYPE="submit" NAME="COMMAND" VALUE="DEBUG">
   </form>
   This is probably not what you want for "end user access".
   <BR>
-  But it's very useful for testing.
+  But it's very useful for testing, especially the DEBUG command:<br>
+  CGIExport will dump the parameters and the environment,
+  so you can check why e.g. the tool might fail to be able to
+  open an archive.
+  <br>
+  <I>If you feel that the information from the DEBUG command is dangerous
+  because it might invite hackers,
+  compile the CGITool without debug information.</I>
 
   <h2>Take 2</h2>
   This example launches the CGI interface with a predefined archive:<BR>
@@ -55,16 +84,6 @@
   on the CGIExport-generated web page
   can be invoced directly as shown in this example.
 
-  <h2>Take 5</h2>
-  One useful application can be a link to the DEBUG command:
-	<P ALIGN=CENTER>
-	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2FEngine%2FTest%2Ffreq_directory&COMMAND=DEBUG">
-	  Debug Archive</A>
-	</P>
-  <P>
-  If you feel that the information from the DEBUG command is dangerous
-  because it might invite hackers,
-  compile the CGITool without debug information.
 
  <HR>
 

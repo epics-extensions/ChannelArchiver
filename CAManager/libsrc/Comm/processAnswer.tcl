@@ -5,7 +5,8 @@ proc camComm::processAnswer {sock} {
     open {
       if {![regexp "^HTTP/.* 200 OK" $line]} {
 	condSet $fsvar($sock) "invalid response"
-	Close $sock
+	set fstate($sock) closed
+	after 1 "camComm::Close $sock"
       } else {
 	set fstate($sock) http
       }
@@ -14,7 +15,8 @@ proc camComm::processAnswer {sock} {
       if {[regexp "^Server: (.*)" $line all server]} {
 	if {"$server" != "ArchiveEngine"} {
 	  condSet $fsvar($sock) "unknown Server"
-	  Close $sock
+	  set fstate($sock) closed
+	  after 1 "camComm::Close $sock"
 	} else {
 	  set fstate($sock) server
 	}
@@ -37,11 +39,13 @@ proc camComm::processAnswer {sock} {
 	set fstate($sock) end
       }
     }
-    default {
+    end {
       if {[eof $sock]} {
-#	fileevent $sock readable ""
-	Close $sock
+	set fstate($sock) closed
+	after 1 "camComm::Close $sock"
       }
+    }
+    closed {
     }
   }
 }

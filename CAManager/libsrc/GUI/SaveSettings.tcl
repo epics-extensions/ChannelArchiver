@@ -1,16 +1,22 @@
 set ::MagicLine "# and now the settings.... (BTW: don't modify this line!!!)"
+set ::settingsSaved 1
 
-proc camGUI::SaveSettings {} {
+proc camGUI::SaveSettings {{fh -1}} {
+  if {$::settingsSaved && ($fh == -1)} return
   set wh 0
   if {$camMisc::force_cfg_file} {
-    if [catch {set wh [open $camMisc::cfg_file.N w+]}] exit
-    set hadit 0
-    for_file line $camMisc::cfg_file {
-      if {!$hadit && ($line != $::MagicLine)} {
-	puts $wh $line
-      } else {
-	set hadit 1
+    if {$fh == -1} {
+      if [catch {set wh [open $camMisc::cfg_file.N w+]}] exit
+      set hadit 0
+      for_file line $camMisc::cfg_file {
+	if {!$hadit && ($line != $::MagicLine)} {
+	  puts $wh $line
+	} else {
+	  set hadit 1
+	}
       }
+    } else {
+      set wh $fh
     }
     puts $wh "$::MagicLine\n"
   }
@@ -24,10 +30,14 @@ proc camGUI::SaveSettings {} {
   save $wh ::dontCheckAtAll $::dontCheckAtAll dontCheckAtAll
   save $wh ::checkInt $::checkInt checkInt
   save $wh ::checkBgMan $::checkBgMan checkBgMan
-  if {$wh != "0"} { 
+  save $wh ::bgCheckInt $::bgCheckInt bgCheckInt
+  save $wh ::bgUpdateInt $::bgUpdateInt bgUpdateInt
+  save $wh ::multiVersion $::multiVersion multiVersion
+  if {$wh != $fh} { 
     close $wh 
     file rename -force $camMisc::cfg_file.N $camMisc::cfg_file
   }
+  set ::settingsSaved 1
 }
 
 proc save {wh var val desc {p ""}} {

@@ -10,7 +10,11 @@ proc camGUI::packTree {w tree} {
     regsub -all "%p" $var $w var
     if {$var != {}} {set $var $w.$name}
     eval $type $w.$name $options
-    packTree $w.$name $sub
+    set W $w.$name
+    if [regexp "TitleFrame" $type] {
+      set W [$W getframe]
+    }
+    packTree $W $sub
     eval pack $w.$name $packopt
   }
 }

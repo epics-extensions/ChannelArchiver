@@ -24,14 +24,14 @@ proc camGUI::aModArchive {w} {
 
   TitleFrame $f.rename -text "Rename a Channel" -font [$f.l cget -font]
   set c [$f.rename getframe]
-  combobox $c.from "rename channel" left ::var(info,$::tl_cnt,cpfrm) {}
+  combobox $c.from "rename channel " left ::var(info,$::tl_cnt,cpfrm) {}
   entrybox $c.to "to" left ::var(info,$::tl_cnt,cpto)
   pack $c.from $c.to -side left -padx 8 -pady 4
   pack $f.rename -side top -fill x -padx 4 -pady 4
 
   TitleFrame $f.del -text "Delete a Channel" -font [$f.l cget -font]
   set d [$f.del getframe]
-  combobox $d.delete "delete channel" left ::var(info,$::tl_cnt,delete) {}
+  combobox $d.delete "delete channel " left ::var(info,$::tl_cnt,delete) {}
   pack $d.delete -side left -padx 8 -pady 4
   pack $f.del -side top -fill x -padx 4 -pady 4
 

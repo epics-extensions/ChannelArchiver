@@ -12,7 +12,7 @@ proc httpd::sendOutput {fd} {
       puts $fd ""
    }
   puts $fd "<html><head><title>Channel Archiver - bgManager ($tcl_platform(user)@$::_host:$::_port)</title>"
-  puts $fd "<meta http-equiv=refresh content=10>"
+  puts $fd "<meta http-equiv=refresh content=$::bgUpdateInt>"
   puts $fd "</head>"
   puts $fd "<body bgcolor=\"\#aec9d2\">"
   puts $fd "<TABLE BORDER=3>"

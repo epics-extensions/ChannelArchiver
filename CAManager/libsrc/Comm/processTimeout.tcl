@@ -1,10 +1,10 @@
 proc camComm::processTimeout {sock} {
   global fstate fsvar fsto
   if {"$fstate($sock)" != "closed"} {
-    fileevent $sock readable ""
     condSet $fsvar($sock) "TIMEOUT"
-    Close $sock
+    set fstate($sock) closed
+    after 1 "camComm::Close $sock"
   }
-  array unset fstate $sock
+#  array unset fstate $sock
   update
 }

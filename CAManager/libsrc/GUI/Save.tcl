@@ -31,8 +31,8 @@ proc camGUI::aSave {} {
       puts $o " }"
     }
     puts $o "}\n"
+    SaveSettings $o
     close $o
-    SaveSettings
   } else {
     
     set stem $camMisc::reg_stem

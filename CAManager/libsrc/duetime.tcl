@@ -49,7 +49,6 @@ proc duetime {i {run X} {timespec X}} {
       set starttime [clock scan "[lindex $timespec 0] [lindex $timespec 1]"]
       set delta [clock scan "[lindex $timespec 3] [lindex $timespec 4]"]
       incr delta -$starttime
-#      if {$starttime < $now} {set starttime 0}
     }
     always {
       set starttime 0
@@ -94,6 +93,7 @@ if {$::debug} {
     {month "10 12:00:00"}
     {month "20 12:00:00"}
     {month "28 12:00:00"}
+    {timerange "10/28/2001 12:00:00 - 10/28/2001 13:00:00"}
   }
   foreach sample $xamples {
     lassign $sample run timespec

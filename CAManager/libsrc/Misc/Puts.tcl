@@ -7,11 +7,16 @@ array set colormap {
   normal	normal
 }
 
+if {$::debug} {
+  set ::colormap(debug1) normal
+  set ::colormap(debug2) orange
+}
+
 proc Puts {s {color normal}} {
   set color $::colormap($color)
-  if {$color == "no"} return
   set now "[clock format [clock seconds] -format %Y/%m/%d\ %H:%M:%S]: "
   if {$::debug} {puts stderr "$now$s"}
+  if {$color == "no"} return
   if {$color != "normal"} {
     set s "<font color=$color>$s</font>"
   }

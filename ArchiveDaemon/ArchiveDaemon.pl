@@ -107,20 +107,30 @@ my (@indices);
 
 my (@message_queue);
 
-my ($last_index_update);
+my ($start_time_text);
+
+my ($last_check) = 0;
+
+my ($last_index_update) = 0;
 
 # ----------------------------------------------------------------
 # Message Queue
 # ----------------------------------------------------------------
 
+sub time_as_text($)
+{
+    my ($seconds) = @ARG;
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+	= localtime($seconds);
+    return sprintf("%04d/%02d/%02d %02d:%02d:%02d",
+		   1900+$year, 1+$mon, $mday, $hour, $min, $sec);
+}
+
 sub add_message($)
 {
     my ($msg) = @ARG;
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime;
     shift @message_queue if ($#message_queue >= $message_queue_length-1);
-    push @message_queue,
-    sprintf("%04d/%02d/%02d %02d:%02d:%02d: <I>%s</I>",
-	    1900+$year, 1+$mon, $mday, $hour, $min, $sec, $msg);
+    push @message_queue, sprintf("%s: <I>%s</I>", time_as_text(time), $msg);
 }
 
 # ----------------------------------------------------------------
@@ -331,6 +341,18 @@ sub handle_HTTP_status($)
     html_stop($client);
 }
 
+sub handle_HTTP_info($)
+{
+    my ($client) = @ARG;
+    html_start($client, 1);
+    print $client "<H1>Archive Daemon</H1>\n";
+    print $client "Config File: $config_file<p>\n";
+    print $client "Daemon start time: $start_time_text<p>\n";
+    print $client "Last Check: ", time_as_text($last_check), "<p>\n";
+    print $client "Index Update: ", time_as_text($last_index_update), "<p>\n";
+    html_stop($client);
+}
+
 # Used by check_HTTPD to dispatch requests
 sub handle_HTTP_request($$)
 {
@@ -347,6 +369,11 @@ sub handle_HTTP_request($$)
 	elsif ($URL eq '/status')
 	{
 	    handle_HTTP_status($client);
+	    return 1;
+	}
+	elsif ($URL eq '/info')
+	{
+	    handle_HTTP_info($client);
 	    return 1;
 	}
 	elsif ($URL eq '/stop')
@@ -461,7 +488,7 @@ sub start_engine($$)
 	my ($cmd) = "cd \"$dir\";" .
 	    "$ArchiveEngine -d \"$engine->{desc}\" -l $EngineLog " .
 	    "-p $engine->{port} $cfg $index >$null 2>&1 &";
-	print("Engine Command: '$cmd'\n");
+	print(time_as_text(time), ": Command: '$cmd'\n");
 	system($cmd);
 	if (add_index("$dir/$index", \@indices))
 	{
@@ -478,7 +505,7 @@ sub run_indextool()
     $cfg = basename($master_index_config);
     $cmd = "cd $dir;$ArchiveIndexTool $cfg master_index " .
 	">$ArchiveIndexLog 2>&1 &";
-    print("Index Command: '$cmd'\n");
+    print(time_as_text(time), ": Command: '$cmd'\n");
     add_message("Running Index Tool");
     system($cmd);
     $last_index_update = time;
@@ -530,7 +557,8 @@ sub stop_engine($$)
     {
 	return 1 if ($line =~ m'Engine will quit');
     }
-    print("Engine $host:$port won't quit.\nResponse : @doc\n");
+    print(time_as_text(time),
+	  ": Engine $host:$port won't quit.\nResponse : @doc\n");
     return 0;
 }
 
@@ -634,8 +662,9 @@ sub start_engines($)
 # ----------------------------------------------------------------
 sub usage()
 {
-    print("USAGE: ArchiveDaemon [-p port]\n");
+    print("USAGE: ArchiveDaemon [options]\n");
     print("\n");
+    print("Options:\n");
     print("\t-p <port>: TCP port number for HTTPD\n");
     print("\t-f file  : use file instead of $config_file\n");
     print("\n");
@@ -671,8 +700,8 @@ if ($daemonization)
     setsid                  or die "Can't start a new session: $!";
     open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
 }
+$start_time_text = time_as_text(time);
 my ($httpd) = create_HTTPD($http_port);
-my ($last_check) = 0;
 my ($now);
 $last_index_update = 0;
 while (1)

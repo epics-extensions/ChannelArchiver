@@ -212,11 +212,8 @@ void ArchiveChannel::write(Guard &guard, IndexFile &index)
     size_t num_samples = buffer.getCount();
     if (num_samples <= 0)
         return;
-    DataWriter writer(index,
-                      name, ctrl_info,
-                      dbr_time_type, nelements,
-                      period,
-                      num_samples);
+    DataWriter writer(index, name, ctrl_info, dbr_time_type, nelements,
+                      period, num_samples);
     const RawValue::Data *value;
     while (num_samples-- > 0)
     {
@@ -227,12 +224,14 @@ void ArchiveChannel::write(Guard &guard, IndexFile &index)
                     name.c_str());
             break;
         }
-        if (! writer.add(value))
+        DataWriter::DWA add_result = writer.add(value);
+        if (add_result == DataWriter::DWA_Error)
         {
-            LOG_MSG("'%s': Couldn't write value\n",
-                    name.c_str());
+            LOG_MSG("'%s': Couldn't write value\n", name.c_str());
             break;
         }
+        else if (add_result == DataWriter::DWA_Back)
+            LOG_MSG("'%s': back-in-time write value\n", name.c_str());
     }
     buffer.resetOverwrites();
 }

@@ -58,7 +58,7 @@ bool write_samples(const stdString &index_name,
     {
         data->value = (double) i;
         RawValue::setTime(data, epicsTime::getCurrent());
-        if (!writer->add(data))
+        if (writer->add(data) != DataWriter::DWA_Yes)
         {
             fprintf(stderr, "Write error with value %d/%d\n",
                     i, samples);

@@ -129,8 +129,14 @@ public:
     
     /// Return range covered by this RTree
     bool getInterval(epicsTime &start, epicsTime &end);
-    
-    enum YNE { YNE_Error, YNE_Yes, YNE_No };
+
+    /// Yes-no-error type of return used by RTree methods.
+    enum YNE
+    {
+        YNE_Error, ///< Error.
+        YNE_Yes,   ///< Success.
+        YNE_No     ///< Didn't do anything, but all's fine.
+    };
     
     /// Create and insert a new Datablock.
 
@@ -138,7 +144,7 @@ public:
     ///       for a given start and end time, the RTree code assumes
     ///       that it stays that way. I.e. if we try to indert the same
     ///       start/end/offset/file again, this will result in a NOP
-    ///       and return YNENo.
+    ///       and return YNE_No.
     ///       It is an error to insert the same offset/file again with
     ///       a different start and/or end time!
     YNE insertDatablock(const epicsTime &start, const epicsTime &end,

@@ -105,7 +105,7 @@ void determine_period_and_samples(IndexFile &index,
     period = header->data.period;
     num_samples = header->data.num_samples;
     if (verbose > 2)
-        printf("Period %g, at least %lu samples. ",
+        printf("Last source buffer: Period %g, %lu samples.\n",
                period, (unsigned long) num_samples);
     delete header;
 }
@@ -117,7 +117,7 @@ void copy(const stdString &index_name, const stdString &copy_name,
     IndexFile::NameIterator names;
     bool                    channel_ok;
     const RawValue::Data   *value;
-    size_t                  channel_count = 0, value_count = 0, count;
+    size_t                  channel_count = 0, value_count = 0, count, back;
     double                  period = 1.0;
     size_t                  num_samples = 4096;    
     BenchTimer              timer;
@@ -127,8 +127,8 @@ void copy(const stdString &index_name, const stdString &copy_name,
     if (dir1 == dir2)
     {
         printf("You have to assert that the new index (%s)\n"
-               "is in a different directory than the old index\n"
-               "(%s)\n", index_name.c_str(), copy_name.c_str());
+               "is in a  directory different from the old index\n"
+               "(%s)\n", copy_name.c_str(), index_name.c_str());
         return;
     }
     if (! (index.open(index_name) && new_index.open(copy_name, false)))
@@ -140,17 +140,25 @@ void copy(const stdString &index_name, const stdString &copy_name,
     for (channel_ok = index.getFirstChannel(names);
          channel_ok;  channel_ok = index.getNextChannel(names))
     {
+        const stdString &channel_name = names.getName();
         if (verbose > 1)
         {
-            printf("Channel '%s': ", names.getName().c_str());
+            printf("Channel '%s': ", channel_name.c_str());
+            if (verbose > 3)
+                printf("\n");
             fflush(stdout);
         }
         DataWriter *writer = 0;
-        count = 0;
-        determine_period_and_samples(index, names.getName(),
-                                     period, num_samples);
-        for (value = reader.find(names.getName(), start);
-             value; value = reader.next())
+        count = back = 0;
+        determine_period_and_samples(index, channel_name, period, num_samples);
+        value = reader.find(channel_name, start);
+        while (value && start && RawValue::getTime(value) < *start)
+        {
+            if (verbose > 2)
+                printf("Skipping sample before start time\n");
+            value = reader.next();
+        }
+        for (/**/; value; value = reader.next())
         {
             if (end  &&  RawValue::getTime(value) >= *end)
                 break;
@@ -167,16 +175,40 @@ void copy(const stdString &index_name, const stdString &copy_name,
                     return;
                 }
             }
-            if (!writer->add(value))
+            if (RawValue::getTime(value) < writer->getLastStamp())
+            {
+                ++back;
+                if (verbose > 2)
+                    printf("Skipping %lu back-in-time values\r",
+                           (unsigned long) back);
+                continue;
+            }
+            DataWriter::DWA add_status = writer->add(value);
+            if (add_status == DataWriter::DWA_Error)
             {
                 printf("DataWriter::add failed\n");
                 break;
             }
+            else if (add_status == DataWriter::DWA_Back)
+            {
+                printf("DataWriter::add still claims back-in-time\n");
+                continue;
+            }
             ++count;
+            if (verbose > 3 && (count % 1000 == 0))
+                printf("Copied %lu values\r", (unsigned long) count);
+                
         }
         delete writer;
         if (verbose > 1)
-            printf("%lu values\n", (unsigned long) count);
+        {
+            if (back)
+                printf("%lu values, %lu back-in-time                       \n",
+                       (unsigned long) count, (unsigned long) back);
+            else
+                printf("%lu values                                         \n",
+                       (unsigned long) count);
+        }
         ++channel_count;
         value_count += count;
     }

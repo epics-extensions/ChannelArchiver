@@ -164,17 +164,17 @@ public:
         FileOffset      next_offset;    ///< abs. offs. of data header in next buffer
         FileOffset      prev_offset;    ///< abs. offs. of data header in prev buffer
         FileOffset      curr_offset;    ///< rel. offs. from data header to free entry
-        unsigned long   num_samples;    ///< number of samples written in this buffer
+        unsigned long   num_samples;    ///< number of samples in this buffer
         FileOffset      ctrl_info_offset;  ///< abs. offset to CtrlInfo
-        unsigned long   buf_size;       ///< disk space alloc. for this channel including sizeof(DataHeader)
-        unsigned long   buf_free;       ///< remaining space f. channel in this file
+        unsigned long   buf_size;       ///< disk space alloc. for this buffer including sizeof(DataHeader)
+        unsigned long   buf_free;       ///< remaining bytes in this buffer
         DbrType         dbr_type;       ///< ca type of data
         DbrCount        dbr_count;      ///< array dimension of this data type
         char            pad[4];         ///< to align double period...
         double          period;         ///< period at which the channel is archived (secs)
         epicsTimeStamp  begin_time;     ///< first time stamp of data in this file
         epicsTimeStamp  next_file_time; ///< first time stamp of data in the next file
-        epicsTimeStamp  end_time;       ///< last time this file was updated
+        epicsTimeStamp  end_time;       ///< last time stamp in this buffer
         char            prev_file[FilenameLength]; ///< basename for prev. buffer
         char            next_file[FilenameLength]; ///< basename for next buffer
     } data;

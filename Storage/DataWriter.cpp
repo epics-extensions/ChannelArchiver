@@ -120,14 +120,24 @@ DataWriter::~DataWriter()
     }
 }
 
-bool DataWriter::add(const RawValue::Data *data)
+epicsTime DataWriter::getLastStamp()
+{
+    if (header)
+        return epicsTime(header->data.end_time);
+    return nullTime;
+}
+
+DataWriter::DWA DataWriter::add(const RawValue::Data *data)
 {
     if (!header) // In here, we should always have a header
-        return false;
+        return DWA_Error;
+    epicsTime data_stamp = RawValue::getTime(data);
+    if (data_stamp < header->data.end_time)
+        return DWA_Back;
     if (available <= 0) // though it might be full
     {
         if (!addNewHeader(false))
-            return false;
+            return DWA_Error;
         available = header->available();
     }
     // Add the value
@@ -143,13 +153,12 @@ bool DataWriter::add(const RawValue::Data *data)
     header->data.curr_offset += raw_value_size;
     header->data.num_samples += 1;
     header->data.buf_free    -= raw_value_size;
-    epicsTime time = RawValue::getTime(data);
     if (header->data.num_samples == 1) // first entry?
-        header->data.begin_time = time;
-    header->data.end_time = time;
+        header->data.begin_time = data_stamp;
+    header->data.end_time = data_stamp;
     // Note: we didn't write the header nor update the index,
     // that'll happen when we close the DataWriter!
-    return true;
+    return DWA_Yes;
 }
 
 // Create name "<today>[-serial]"

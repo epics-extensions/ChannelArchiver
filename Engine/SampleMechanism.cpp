@@ -6,7 +6,7 @@
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
-#define DEBUG_SAMPLING
+#undef DEBUG_SAMPLING
 
 SampleMechanism::SampleMechanism(class ArchiveChannel *channel)
         : channel(channel), wasWrittenAfterConnect(false)

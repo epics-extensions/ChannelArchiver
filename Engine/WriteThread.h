@@ -27,15 +27,13 @@ public:
     bool isRunning() const
     {   return _go; }
 
-    void write(const osiTime &now)
+    void write()
     {
         if (_writing)
         {
             LOG_MSG("Warning: WriteThread called while busy\n");
             return;
         }
-        
-        _now = now;
         if (! _wait.give())
             LOG_MSG("WriteThread::write: cannot give semaphore\n");
     }
@@ -43,7 +41,6 @@ public:
     virtual int run();
 
 private:
-    osiTime         _now;
     ThreadSemaphore _wait;
     bool            _go;
     bool            _writing;

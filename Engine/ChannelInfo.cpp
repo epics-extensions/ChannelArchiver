@@ -14,8 +14,8 @@
 #include <math.h>
 #include <iostream>
 
-//#define LOG_NSV(stuff)    LOG_MSG(stuff)
-#define LOG_NSV(stuff)  {}
+#define LOG_NSV(stuff)    LOG_MSG(stuff)
+//#define LOG_NSV(stuff)  {}
 
 // Helper:
 // print chid
@@ -68,7 +68,8 @@ ChannelInfo::ChannelInfo ()
     _disabled = 0;
     _monitored = false;
     _connected = false;
-    _get_mechanism = none;
+    _ever_written = false;
+    _mechanism = none;
     _vals_per_buffer = INIT_VALS_PER_BUF;
     _period = 1;            // Default scan period
     _chid = 0;
@@ -100,16 +101,17 @@ ChannelInfo::~ChannelInfo ()
     delete _new_value;
 }
 
-void ChannelInfo::setPeriod (double sample)
+void ChannelInfo::setPeriod (double secs)
 {
-    if (sample <= 0.0)
+    if (secs <= 0.0)
     {
         LOG_MSG (osiTime::getCurrent() << ", " << _name
-                 << ": setPeriod called with " << sample << ", changed to 30 secs\n");
-        sample = 30.0;
+                 << ": setPeriod called with " << secs
+                 << ", changed to 30 secs\n");
+        secs = 30.0;
     }
 
-    _period = sample;
+    _period = secs;
     checkRingBuffer ();
 }
 
@@ -183,6 +185,7 @@ void ChannelInfo::caLinkConnectionHandler (struct connection_handler_args arg)
                  << ": CA disconnect\n");
         // Flush everything until the disconnect happened
         me->_connected = false;
+        me->_ever_written = false;
         me->_new_value_set = false;
         me->_connectTime = osiTime::getCurrent ();
         me->flushRepeats (me->_connectTime);
@@ -197,23 +200,21 @@ void ChannelInfo::caLinkConnectionHandler (struct connection_handler_args arg)
         }
         return;
     }
-    //LOG_MSG (osiTime::getCurrent() << ", " << me->getName ()
-    //         << ": CA connect\n");
+    // else: (re-)connected
 
-    // get control information for this channel
+    // Get control information for this channel
     // TODO: This is only requested on connect
     // - similar to the previous engine or DM.
     // How do we learn about changes, since you might actually change
     // a channel without rebooting an IOC?
-    int status = ca_array_get_callback (ca_field_type(arg.chid)
-                                        +DBR_CTRL_STRING, 1,
-                                        me->_chid, caControlHandler, me);
-
+    int status = ca_array_get_callback(ca_field_type(arg.chid)
+                                       +DBR_CTRL_STRING, 1,
+                                       me->_chid, caControlHandler, me);
     if (status != ECA_NORMAL)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << me->getName ()
-            << ": ca_array_get_callback failed in caLinkConnectionHandler: "
-            << ca_message (status) << "\n");
+        LOG_MSG(osiTime::getCurrent() << ", " << me->getName()
+                << ": ca_array_get_callback error in caLinkConnectionHandler: "
+                << ca_message (status) << "\n");
     }
     // ChannelInfo is not really considered 'connected' until
     // we received the control information...
@@ -286,57 +287,55 @@ static bool setup_CtrlInfo (DbrType type, CtrlInfoI &info, const void *raw)
 }
 
 // Called by CA for new control information
-void ChannelInfo::caControlHandler (struct event_handler_args arg)
+void ChannelInfo::caControlHandler(struct event_handler_args arg)
 {
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
     bool was_connected = me->_connected;
 
-    //LOG_MSG (osiTime::getCurrent() << ", " << me->getName ()
-    //         << ": CA control information\n");
     if (arg.status != ECA_NORMAL)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << me->_name <<
+        LOG_MSG(osiTime::getCurrent() << ", " << me->_name <<
                 ": Bad control information, CA status "
-                 << ca_message(arg.status) << "\n");
-        LOG_MSG (me->_chid << "\n");
-        if (me->_new_value  &&  me->_get_mechanism != none)
+                << ca_message(arg.status) << "\n");
+        LOG_MSG(me->_chid << "\n");
+        if (me->_new_value  &&  me->_mechanism != none)
         {
-            LOG_MSG ("...ignored since it seems to be a re-connect\n");
+            LOG_MSG("...ignored since it seems to be a re-connect\n");
             me->_connected = true;
         }
     }
     else
     {
-        if (setup_CtrlInfo (arg.type, me->_ctrl_info, arg.dbr))
+        if (setup_CtrlInfo(arg.type, me->_ctrl_info, arg.dbr))
             me->_connected = true;
         else
         {
-            LOG_MSG ("ERROR: Unknown CA control information: "
-                     << me->getName () << "\n");
+            LOG_MSG("ERROR: Unknown CA control information: "
+                    << me->_name << "\n");
             me->_connected = false;
         }
-        me->_connectTime = osiTime::getCurrent ();
+        me->_connectTime = osiTime::getCurrent();
 
-        DbrType dbr_type = DbrType (ca_field_type(arg.chid)+DBR_TIME_STRING);
+        DbrType dbr_type = DbrType(ca_field_type(arg.chid)+DBR_TIME_STRING);
         DbrCount nelements = ca_element_count(arg.chid);
         // size or type might have changed...
-        me->setValueType (dbr_type, nelements);
+        me->setValueType(dbr_type, nelements);
 
         // Already subscribed or first connection?
-        if (me->_get_mechanism == none   ||
-            (me->isMonitored() && me->_get_mechanism != use_monitor)  )
+        if (me->_mechanism == none   ||
+            (me->isMonitored() && me->_mechanism != use_monitor)  )
         {
             if (!me->isMonitored()  &&  theEngine->addToScanList (me))
-                me->_get_mechanism = use_get;
+                me->_mechanism = use_get;
             else
             {
                 // Engine will not scan this: add a monitor for this channel
                 int status;
-                status = ca_add_masked_array_event (dbr_type, nelements,
-                                                    me->_chid,
-                                                    caEventHandler, me,
-                                                    0.0, 0.0, 0.0, (evid *)0,
-                                                    DBE_LOG);
+                status = ca_add_masked_array_event(dbr_type, nelements,
+                                                   me->_chid,
+                                                   caEventHandler, me,
+                                                   0.0, 0.0, 0.0, (evid *)0,
+                                                   DBE_LOG);
                 if (status != ECA_NORMAL)
                 {
                     LOG_MSG ("CA ca_add_array_event ('" << me->getName ()
@@ -344,7 +343,7 @@ void ChannelInfo::caControlHandler (struct event_handler_args arg)
                              << ca_message (status) << "\n");
                     return;
                 }
-                me->_get_mechanism = use_monitor;
+                me->_mechanism = use_monitor;
             }
         }
     }
@@ -358,7 +357,7 @@ void ChannelInfo::caControlHandler (struct event_handler_args arg)
 }
 
 // Callback for values (monitored)
-void ChannelInfo::caEventHandler (struct event_handler_args arg)
+void ChannelInfo::caEventHandler(struct event_handler_args arg)
 {
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
     if (!me || !me->_new_value)
@@ -368,7 +367,7 @@ void ChannelInfo::caEventHandler (struct event_handler_args arg)
         return;
     }
 
-    me->_new_value->copyIn (reinterpret_cast<const RawValueI::Type *>(arg.dbr));
+    me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
     //LOG_MSG (me->getName () << " : CA monitor      "
     //         << *me->_new_value << endl);
 #   ifdef CA_STATISTICS
@@ -457,20 +456,21 @@ void ChannelInfo::addToRingBuffer (const ValueI *value)
         return;
     }
 
-    if (value->getTime () < _last_buffer_time)
+    if (value->getTime() < _last_archive_stamp)
     {
         LOG_MSG (osiTime::getCurrent() << ", " << _name
-                 << ": back in time\n");
-        LOG_MSG ("Prev:  " << _last_buffer_time << "\n");
+                 << ": Ring buffer back-in-time\n");
+        LOG_MSG ("Prev:  " << _last_archive_stamp << "\n");
         LOG_MSG ("Value: " << *value << "\n");
     }
 
-    size_t ow = _buffer.getOverWrites ();
-    _buffer.addRawValue (value->getRawValue ());
+    size_t ow = _buffer.getOverWrites();
+    _buffer.addRawValue(value->getRawValue());
+    _ever_written = true;
     if (ow <= 0  &&  _buffer.getOverWrites () > 0)
         LOG_MSG (osiTime::getCurrent() << ", " << _name << ": "
-            << _buffer.getOverWrites () << " overwrites\n");
-    _last_buffer_time = value->getTime ();
+            << _buffer.getOverWrites() << " overwrites\n");
+    setLastArchiveStamp(value->getTime());
 }
 
 // Event (value with special status/severity):
@@ -500,12 +500,12 @@ void ChannelInfo::addEvent (dbr_short_t status, dbr_short_t severity,
     memset (_tmp_value->getRawValue (), 0, _tmp_value->getRawValueSize());
     _tmp_value->setStatus (status, severity);
 
-    if (time > _last_buffer_time)
+    if (time > _last_archive_stamp)
         _tmp_value->setTime (time);
     else
     {   // adjust time because this event has to be added to archive somehow
-        _last_buffer_time += adjust;
-        _tmp_value->setTime (_last_buffer_time);
+        _last_archive_stamp += adjust;
+        _tmp_value->setTime (_last_archive_stamp);
     }
     addToRingBuffer (_tmp_value);
     _previous_value_set = false; // events are not repeat-counted, _previous_value is unset
@@ -514,32 +514,30 @@ void ChannelInfo::addEvent (dbr_short_t status, dbr_short_t severity,
 // To make handleNewValue more readable:
 // We are scanned, _new_value is OK,
 // but: were there repeats? shall we really add it?
-inline void ChannelInfo::handleNewScannedValue ()
+void ChannelInfo::handleNewScannedValue (osiTime &stamp)
 {
-    osiTime stamp = _new_value->getTime ();
     size_t repeat_count;
-
+    
     if (!_previous_value)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << _name
-                 << ": handleNewScannedValue called without _previous_value\n");
+        LOG_MSG(osiTime::getCurrent() << ", " << _name
+                << ": handleNewScannedValue called without _previous_value\n");
         return;
     }
-
     LOG_NSV ("handleNewScannedValue: got " << *_new_value);
-
+    
     // 1) Scanned: only saved on change, otherwise calculate repeat counts:
     if (_previous_value_set &&
-        _previous_value->hasSameValue (*_new_value) &&
+        _previous_value->hasSameValue(*_new_value) &&
         _previous_value->getStat() == _new_value->getStat() &&
         _previous_value->getSevr() == _new_value->getSevr())
     {
         LOG_NSV (" - repeat\n");
         return;
     }
-
+    
     if (_expected_next_time == nullTime)
-        _expected_next_time = roundTimeUp (stamp, _period);
+        _expected_next_time = roundTimeUp(stamp, _period);
     else if (stamp < _expected_next_time)
     {
         LOG_NSV (" - made pending\n");
@@ -550,28 +548,29 @@ inline void ChannelInfo::handleNewScannedValue ()
 
     // 2) Save close to _expected_next_time.
     // _new_value is more recent than _expected_next_time,
-    // but maybe something's left that was valid at the exact _expected_next_time:
+    // but maybe something's left that was valid at the exact
+    // _expected_next_time:
     if (_pending_value_set)
     {
-        LOG_NSV (" - made pending\n");
-        LOG_NSV (" unpending:                " << *_pending_value << "\n");
-        stamp = _pending_value->getTime ();
-        repeat_count = flushRepeats (stamp);
-        addToRingBuffer (_pending_value);
+        LOG_NSV(" - made pending\n");
+        LOG_NSV(" unpending:                " << *_pending_value << "\n");
+        stamp = _pending_value->getTime();
+        repeat_count = flushRepeats(stamp);
+        addToRingBuffer(_pending_value);
         // remember this value for comparison next time
-        _previous_value->copyValue (*_pending_value);
+        _previous_value->copyValue(*_pending_value);
         _previous_value_set = true;
         // _new_value wasn't saved, it's now pending
-        _pending_value->copyValue (*_new_value);
+        _pending_value->copyValue(*_new_value);
         // _pending_value_set == true still holds
-        stamp = _pending_value->getTime ();
+        stamp = _pending_value->getTime();
     }
     else
     {
-        repeat_count = flushRepeats (stamp);
-        addToRingBuffer (_new_value);
+        repeat_count = flushRepeats(stamp);
+        addToRingBuffer(_new_value);
         // remember this value for comparison next time
-        _previous_value->copyValue (*_new_value);
+        _previous_value->copyValue(*_new_value);
         _previous_value_set = true;
     }
 
@@ -580,8 +579,8 @@ inline void ChannelInfo::handleNewScannedValue ()
     else
         _expected_next_time += _period;
     if (_expected_next_time <= stamp)
-        _expected_next_time = roundTimeUp (stamp, _period);
-    LOG_NSV (" next time:                " << _expected_next_time << "\n");
+        _expected_next_time = roundTimeUp(stamp, _period);
+    LOG_NSV(" next time:                " << _expected_next_time << "\n");
 }
 
 bool ChannelInfo::isDisabling(const GroupInfo *group) const
@@ -620,48 +619,63 @@ inline void ChannelInfo::handleDisabling ()
 
 // Called from caEventHandler or (SinglePeriod-)ScanList,
 // _new_value is already set
-void ChannelInfo::handleNewValue ()
+void ChannelInfo::handleNewValue()
 {
-    osiTime now = osiTime::getCurrent ();
+    osiTime now = osiTime::getCurrent();
     osiTime stamp = _new_value->getTime();
 
-    if (! isValidTime (stamp))
+    if (! isValidTime(stamp))
     {
         if ((double(now) - double(_had_null_time)) > (60.0*60*24))
         {   // quite frequent, limit messages to once a day
             LOG_MSG (now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                << " : Invalid/null time stamp\n\t"
-                << *_new_value << "\n");
+                     << " : Invalid/null time stamp\n\t"
+                     << *_new_value << "\n");
             _had_null_time = now;
         }
         _new_value_set = false;
         return;
     }
-
+    
     if ((stamp > now) &&
         (double(stamp) - double(now) > theEngine->getIgnoredFutureSecs()))
     {
         LOG_MSG (now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                 << " : Futuristic time stamp\n\t"
-                << *_new_value << "\n");
+                 << " : Ignoring futuristic time stamp\n\t"
+                 << *_new_value << "\n");
         _new_value_set = false;
         return;
     }
     
     _new_value_set = true;
-
-    if (stamp > _last_buffer_time) // Don't go back in time
+    if (isDisabled())  // Ignore while disabled
+        return;
+    if (stamp <= _last_archive_stamp)
     {
-        if (isDisabled())  // Ignore while disabled
-            return;
-        if (_monitored) // save all monitors
+        // Ignore back-in-time values, except after startup:
+        if (_ever_written)
         {
-            addToRingBuffer(_new_value);
-            _expected_next_time = roundTimeUp(stamp, _period);
+            _new_value_set = false;
+            return;
         }
-        else
-            handleNewScannedValue();
+        // round up to indicate artificial value
+        stamp = roundTimeUp(now, 1.0);
+        if (stamp <= _last_archive_stamp)
+        {
+            LOG_MSG (now << ", " << _name << ", IOC " << ca_host_name(_chid)
+                     << " : Unresolvable back-in-time value\n\t"
+                     << *_new_value << "\n");
+            return;
+        }
+        _new_value->setTime(stamp);
     }
+    if (_monitored) // save all monitors
+    {
+        addToRingBuffer(_new_value);
+        _expected_next_time = roundTimeUp(stamp, _period);
+    }
+    else
+        handleNewScannedValue(stamp);
     handleDisabling ();
 }
 
@@ -714,7 +728,7 @@ void ChannelInfo::disable (ChannelInfo *cause)
     _expected_next_time = nullTime;
 }
 
-void ChannelInfo::enable (ChannelInfo *cause)
+void ChannelInfo::enable(ChannelInfo *cause)
 {
     if (_disabling.any())   // 'Disabling' channel has to be kept alive
         return;
@@ -722,18 +736,19 @@ void ChannelInfo::enable (ChannelInfo *cause)
     // Check if enabled by all groups
     if (_disabled <= 0)
     {
-        LOG_MSG (osiTime::getCurrent() << ": Channel " << _name << " is not disabled, ERROR!\n");
+        LOG_MSG(osiTime::getCurrent() << ": Channel " << _name
+                << " is not disabled, ERROR!\n");
         return;
     }
-    if (--_disabled > 0)
+    if (-- _disabled > 0)
         return;
-
+    
     if (isConnected() && _new_value_set)
     {
         // Write last value as if it came right now:
         // (value did come in, it just wasn't written)
-        _new_value->setTime (cause->_new_value->getTime());
-        handleNewValue ();
+        _new_value->setTime(cause->_new_value->getTime());
+        handleNewValue();
     }
 }
 

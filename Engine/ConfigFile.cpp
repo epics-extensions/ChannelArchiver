@@ -4,46 +4,60 @@
 #include <Filename.h>
 #include <ctype.h>
 
-void ConfigFile::setParameter (const stdString &parameter, char *value)
+void ConfigFile::setParameter(const stdString &parameter, char *value)
 {
     if (parameter == "write_freq"  ||  parameter == "write_period")
     {
-        double num = atof (value);
-        theEngine->setWritePeriod ((num < 0 ? 0.1 : num));
+        double num = atof(value);
+        theEngine->setWritePeriod((num < 0 ? 0.1 : num));
     }
     else if (parameter == "save_default" || parameter == "default_period")
     {
-        double num = atof (value);
+        double num = atof(value);
         if (num <= 0)
         {
-            LOG_MSG ("Config file '" << _file_name << "'(" << _line_no << "): invalid period " << value << "\n");
+            LOG_MSG ("Config file '" << _file_name << "'(" << _line_no
+                     << "): invalid period " << value << "\n");
             return;
         }
-        theEngine->setDefaultPeriod (num);
+        theEngine->setDefaultPeriod(num);
     }
     else if (parameter == "buffer_reserve")
     {
-        int num = atoi (value);
+        int num = atoi(value);
         if (num <= 0)
         {
-            LOG_MSG ("Config file '" << _file_name << "'(" << _line_no << "): invalid buffer_reserve " << value << "\n");
+            LOG_MSG ("Config file '" << _file_name << "'(" << _line_no
+                     << "): invalid buffer_reserve " << value << "\n");
             return;
         }
-        theEngine->setBufferReserve (num);
+        theEngine->setBufferReserve(num);
     }
     else if (parameter == "get_threshold")
-        theEngine->setGetThreshold (atof (value));
-    else if (parameter == "file_size")
-        theEngine->setSecsPerFile (atoi (value) * 3600); // arg: hours per file, i.e. 24
+        theEngine->setGetThreshold (atof(value));
+    else if (parameter == "file_size")// arg: hours per file, i.e. 24
+        theEngine->setSecsPerFile(atoi(value) * 3600);
+    else if (parameter == "ignored_future") // arg: hours
+    {
+        double num = atof(value);
+        if (num < 0)
+        {
+            LOG_MSG ("Config file '" << _file_name << "'(" << _line_no
+                     << "): invalid hour specification " << value << "\n");
+            return;
+        }
+        theEngine->setIgnoredFutureSecs(num*60*60);
+    }
     else if (parameter == "group")
     {
-        char *pos = strchr (value, '\r');
+        char *pos = strchr(value, '\r');
         if (pos)
             *pos = '\0';
-        loadGroup (value);
+        loadGroup(value);
     }
     else
-        LOG_MSG ("Config file '" << _file_name << "'(" << _line_no << "): parameter '" << parameter << "' is ignored\n");
+        LOG_MSG ("Config file '" << _file_name << "'(" << _line_no
+                 << "): parameter '" << parameter << "' is ignored\n");
 }
 
 bool ConfigFile::getChannel (std::ifstream &in, stdString &channel, double &period, bool &monitor, bool &disable)
@@ -208,6 +222,7 @@ bool ConfigFile::saveGroup (const class GroupInfo *group)
     file << "!default_period\t" << theEngine->getDefaultPeriod() << "\n";
     file << "!get_threshold\t" << theEngine->getGetThreshold() << "\n";
     file << "!file_size\t" << theEngine->getSecsPerFile()/3600 << "\n";
+    file << "!ignored_future\t"<<theEngine->getIgnoredFutureSecs()/3600<<"\n";
     file << "!buffer_reserve\t" << theEngine->getBufferReserve() << "\n";
     file << "\n";
 

@@ -14,7 +14,28 @@
   The "patches" are then used to debug those new things.
   
   <ul>
-    <li>01/??/2001<br>
+    <li>02/??/2001<br>
+      Patch #1:<br>
+       <ul>
+       <li>Engine adds "Archive_Off" on shutdown instead of
+           trying to hack this in on restart. This is different
+	   from original prototype but makes more sense to me.
+       <li>New config parameter <I>!ignored_future &lt;hours&gt</I>
+       <li>On restart, the current value is archived, if necessary
+           the time stamp is adjusted.
+	   Previously, the "current" time stamp of operator input
+	   channels was likely to be older than the "Archive_Off"
+	   mark. As a consequence, it wasn't archived.
+	   This is correct in one way but also confusing for the
+	   retrieval because you see an old value, then archive off
+	   and then nothing.
+	   The new behaviour matches what's happening on
+           disable/enable:
+	   After a re-enable, the current value is written
+	   with a time stamp that matches the "enabling" event.
+       <li>Added MatLab examples to the casi/perl directory.
+       </ul>
+    <li>01/29/2001<br>
       <font color="#0000A0">Version 1.6</font>:<br>
        <ul>
        <li>Removed atac, the old tcl-only scripting interface.

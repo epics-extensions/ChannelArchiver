@@ -128,12 +128,14 @@ static void fd_register(void *pfdctx, int fd, int opened)
         while (bufsize > 100)
         {
             len = sizeof(int);
-            if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, len) == 0)
+            if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
+                           (char *)&bufsize, len) == 0)
                 break;
             bufsize /= 2;
         }
 
-        if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, &len) == 0)
+        if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF,
+                       (char *)&bufsize, &len) == 0)
             LOG_MSG("Adjusted receive buffer to " << bufsize << "\n");
 #       endif
 
@@ -162,7 +164,8 @@ Engine::Engine(const stdString &directory_file_name)
     static bool the_one_and_only = true;
 
     if (! the_one_and_only)
-        throwDetailedArchiveException(Unsupported, "Cannot run more than one Engine");
+        throwDetailedArchiveException(
+            Unsupported, "Cannot run more than one Engine");
     _start_time = osiTime::getCurrent();
     _directory = directory_file_name;
 
@@ -174,8 +177,10 @@ Engine::Engine(const stdString &directory_file_name)
     _buffer_reserve = 3;
     _get_threshhold = 20.0;
     _secs_per_file = BinArchive::SECS_PER_DAY;
+    _future_secs = 6*60*60;
     _configuration = 0; // init. so that setSecsPerFile works
-    _archive = new Archive(new ENGINE_ARCHIVE_TYPE(directory_file_name, true /* for write */));
+    _archive = new Archive(
+        new ENGINE_ARCHIVE_TYPE(directory_file_name, true /* for write */));
     setSecsPerFile(_secs_per_file);
 
     if (ca_task_initialize() != ECA_NORMAL)
@@ -192,8 +197,8 @@ Engine::Engine(const stdString &directory_file_name)
     engine_server = new EngineServer();
 
     // Incoming CA activity will cause the fileDescriptorManager to wake up,
-    // outgoing CA events need to be scheduled through a periodic excursion to channel access.
-    // The CaPoller timer takes care of that:
+    // outgoing CA events need to be scheduled through a periodic excursion
+    // to channel access. The CaPoller timer takes care of that:
     ca_poller = new CaPoller(twentyth_second);
     write_thread.create();
 
@@ -235,10 +240,11 @@ void Engine::shutdown()
     while (channel!=_channels.end())
     {
         (*channel)->flushRepeats(now);
+        (*channel)->addEvent(0, ARCH_STOPPED, now);
         ++channel;
     }
     unlockChannels();
-    writeArchive(now);
+    writeArchive();
 
     LOG_MSG("Done.\n");
     theEngine = 0;
@@ -276,8 +282,11 @@ bool Engine::process()
 {
     osiTime now = osiTime::getCurrent();
 
-    // wait for channel access event
-    // we wait this little so that the ca_get channels are < 50 msec
+    // FiledescriptorManager: also keeps the osiTimer ticking.
+    // - keeps osiTimer ticking
+    // - on registered file descriptors, channel access events
+    //   result in faster reaction
+    // We wait this little so that the ca_get channels are < 50 msec
     // away from the time stamp required for the get
     fileDescriptorManager.process(fiftyth_second);
 
@@ -288,7 +297,7 @@ bool Engine::process()
     ca_poll();
     if ((double(now) - double(_last_written)) >= _write_period)
     {
-        write_thread.write(now);
+        write_thread.write();
         // _last_written is modified after the archiving is done.
         // If there is slowness in the file writing - we will check
         // it less frequently - thus overwriting the archive circular
@@ -297,7 +306,8 @@ bool Engine::process()
         _last_written = osiTime::getCurrent();
         if (! write_thread.isRunning())
         {
-            LOG_MSG(osiTime::getCurrent() << ": WriteThread stopped, Engine quits also\n");
+            LOG_MSG(osiTime::getCurrent()
+                    << ": WriteThread stopped. Engine quits, too.\n");
             return false;
         }
     }
@@ -370,14 +380,13 @@ ChannelInfo *Engine::addChannel(GroupInfo *group, const stdString &channel_name,
     }
     else
     {
-        // For existing channels: minimize period, maximize monitor feature etc.
+        // For existing channels: minimize period, maximize monitor feature
         if (channel_info->isMonitored())
             monitored = true;
         if (channel_info->getPeriod() < period)
             period = channel_info->getPeriod();
         new_channel = false;
     }
-
     group->addChannel(channel_info);
     channel_info->addToGroup(group, disabling);
     channel_info->setMonitored(monitored);
@@ -398,10 +407,9 @@ ChannelInfo *Engine::addChannel(GroupInfo *group, const stdString &channel_name,
                     // ChannelInfo copies CtrlInfo, so it's still
                     // valid after archive is closed!
                     channel_info->setCtrlInfo(last_value->getCtrlInfo());
-                    channel_info->setValueType(last_value->getType(), last_value->getCount());
-                    // Add an archive stopped status to the file,
-                    // assume it was stopped just after the last value:
-                    channel_info->addEvent(0, ARCH_STOPPED, arch_channel->getLastTime() + osiTime(period));
+                    channel_info->setValueType(last_value->getType(),
+                                               last_value->getCount());
+                    channel_info->setLastArchiveStamp(last_value->getTime());
                 }
             }
             else
@@ -478,7 +486,7 @@ void Engine::setSecsPerFile(double secs_per_file)
 }
 
 // Called by WriteThread as well as Engine on shutdown!
-void Engine::writeArchive(const osiTime &now)
+void Engine::writeArchive()
 {
 #   ifdef CA_STATISTICS
     size_t missing_CA = ChannelInfo::_missing_CA_values;

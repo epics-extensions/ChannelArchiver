@@ -62,6 +62,28 @@ Options:
     <li><em>!write_period &lt;seconds&gt;<br>
       </em>Time between writes to disk<br>
       (default: 30 sec.)
+    <li><em>!ignored_future &lt;hours&gt;<br>
+      </em>
+      Defines "too far in the future" as "now + ignored_future".
+      Time stamps beyond that are ignored.<br>
+      Details: For strange reasons, the Engine sometimes receives
+      values with invalid time stamps.
+      The most common example is a "Zero" time stamp:
+      After an IOC reboots, all records have a zero time stamp
+      until they are processed.
+      For passive records, as commonly used for operator input,
+      this time stamp will stay zero until someone enters a value
+      on an operator screen or via a safe/restore utility.
+      The Engine cannot archive those values because the retrieval
+      relies on the values being sorted in time. A zero time stamp
+      does not fit in.<br>
+      Should an IOC (for some unknown reason) produce a value with
+      an outrageous time stamp, e.g. "1/2/2035", another problem occurs:
+      Since the archiver cannot go back in time, it cannot add
+      further values to this channel until the date "1/2/2035"
+      is reached. Consequently, future time stamps have to 
+      be ignored.
+      (default: 6h)
     <li><em>!get_threshold &lt;seconds&gt;<br>
       </em>Channel Access offers two options for getting values:<br>
       Issue a CA 'get' request or establish a monitor/callback

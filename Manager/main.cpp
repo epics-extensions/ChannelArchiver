@@ -185,7 +185,7 @@ void seek_time (const stdString &archive_name, const stdString &channel_name, co
 // Huge repeat counts can be suppressed.
 //
 // (this makes the code more complicated to read...)
-void export (const stdString &archive_name, 
+void do_export (const stdString &archive_name, 
 			 const stdString &channel_pattern,
 			 const osiTime &start, const osiTime &end,
 			 const stdString &new_dir_name,
@@ -591,7 +591,7 @@ int main (int argc, const char *argv[])
 		{
 			if (channel_pattern.get().empty ())
 				channel_pattern.set (channel_name.get());
-			export (archive_name, channel_pattern, start, end, channel_pattern, (size_t) repeat_limit.get());
+			do_export (archive_name, channel_pattern, start, end, export_archive, (size_t) repeat_limit.get());
 		}
 		else if (channel_name.get().empty ())
 			list_channels (archive_name, channel_pattern);

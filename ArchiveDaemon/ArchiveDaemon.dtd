@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- DTD for the ArchiveDaemon Configuration -->
 <!ELEMENT engines (engine+)>
-<!ELEMENT engine (desc,port,config,(daily|hourly)?)>
+<!ELEMENT engine (desc,port,config,(daily|hourly|timed)?)>
 <!ELEMENT desc   (#PCDATA)> <!-- Text -->
 <!ELEMENT port   (#PCDATA)> <!-- TCP port number -->
 <!ELEMENT config (#PCDATA)> <!-- path -->
 <!ELEMENT daily  (#PCDATA)> <!-- HH:MM -->
 <!ELEMENT hourly (#PCDATA)> <!-- (double) hours -->
+<!ELEMENT timed  (#PCDATA)> <!-- HH:MM/HH:MM  (start time, duration)-->

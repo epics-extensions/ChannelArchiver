@@ -73,8 +73,7 @@ bool IndexFile::open(const stdString &filename, bool readonly)
     Filename::getDirname(filename, dirname);
     return true;
   open_error:
-    fclose(f);
-    f=0;
+    close();
     return false;
 }
 

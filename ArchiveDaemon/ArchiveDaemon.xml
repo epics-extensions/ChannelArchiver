@@ -5,7 +5,7 @@
       <desc>Demo</desc>
       <port>4812</port>
       <config>/home/ade/epics/supTop/extensions/R3.14.4/src/ChannelArchiver/ArchiveDaemon/excas.xml</config>
-      <daily>18:26</daily>
+      <daily>02:00</daily>
    </engine>
    <engine>
       <desc>Demo 2</desc>

@@ -41,6 +41,12 @@ my ($logfile) = "ArchiveDaemon.log";
 # TCP Port of ArchiveDaemon's HTTPD
 my ($http_port) = 4610;
 
+# The master index configuration that this tool creates or updates
+my ($master_index_config) = "indexconfig.xml";
+
+# The DTD for that file
+my ($master_index_dtd) = "indexconfig.dtd";
+
 # What ArchiveEngine to use. Just "ArchiveEngine" works if it's in the path.
 my ($ArchiveEngine) = "ArchiveEngine";
 
@@ -74,6 +80,8 @@ my ($html_stop) = '</BLOCKQUOTE>
 </BODY>
 </HTML>';
 
+my ($daemonization) = 1;
+
 # ----------------------------------------------------------------
 # Globals
 # ----------------------------------------------------------------
@@ -89,6 +97,9 @@ my ($html_stop) = '</BLOCKQUOTE>
 # -- adjusted at runtime
 # 'started' => 0 or start time text from running engine.
 my (@config);
+
+# Array of index file names (for IndexTool)
+my (@indices);
 
 # ----------------------------------------------------------------
 # Config File
@@ -115,20 +126,63 @@ sub read_config($)
     }
 }
 
-sub dump_config()
+# ----------------------------------------------------------------
+# IndexTool Config File
+# ----------------------------------------------------------------
+
+# Reads an IndexTool config according to indexconfig.dtd,
+# returning an array of index file names
+sub read_indexconfig($)
 {
-    my ($engine);
-    printf("ArchiveDaemon Configuration:\n");
-    foreach $engine ( @config )
+    my ($file) = @ARG;
+    my $parser = XML::Simple->new();
+    my $doc = $parser->XMLin($file, ForceArray=>1);
+    my ($index, @indices);
+    foreach $index ( @{$doc->{archive}} )
     {
-	print("Engine '$engine->{desc}', port $engine->{port}:\n");
-	print(" Config '$engine->{config}'\n");
-	print(" Started: $engine->{started}\n");
-	if (defined($engine->{daily}))
-	{
-	    print(" Daily restart at $engine->{daily}\n");
-	}
+	push @indices, $index->{index}[0];
     }
+    return @indices;
+}
+
+# Add a new index file to the array (unless it's already in there)
+# Note 1: It needs a REFERENCE to the index array!
+# Note 2: Returns "1" if the array was modified
+sub add_index($$)
+{
+    my ($nindex, $indices) = @ARG;
+    my ($index);
+    foreach $index ( @{$indices} )
+    {
+	return 0 if ($nindex eq $index);
+    }
+    # insert new index at head of @indices
+    @{$indices} = ( $nindex, @{$indices} );
+    return 1;
+}
+
+# Write IndexTool config file
+sub write_indexconfig($@)
+{
+    my ($filename, @indices) = @ARG;
+    my ($index);
+    unless (open(INDEX, ">$filename"))
+    {
+	print "Cannot create $filename\n";
+	return;
+    }
+    print INDEX "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n";
+    print INDEX "<!DOCTYPE indexconfig SYSTEM \"$master_index_dtd\">\n"
+	if (length($master_index_dtd) > 0);
+    print INDEX "<indexconfig>\n";
+    foreach $index ( @indices )
+    {
+	print INDEX "\t<archive>\n";
+	print INDEX "\t\t<index>$index</index>\n";
+	print INDEX "\t</archive>\n";
+    }
+    print INDEX "</indexconfig>\n";
+    close(INDEX);
 }
 
 # ----------------------------------------------------------------
@@ -347,6 +401,11 @@ sub start_engine($$)
 	    "-p $engine->{port} $cfg $index >$null 2>&1 &";
 	print("\tCommand: '$cmd'\n");
 	system($cmd);
+	if (add_index("$dir/$index", \@indices))
+	{
+	    write_indexconfig($master_index_config, @indices);
+	    print("Updated $master_index_config\n");
+	}
 }
 
 # Connects to HTTPD at host/port and reads a URL,
@@ -448,6 +507,7 @@ sub check_restart($$)
 	my ($hour, $minute) = split ':', $engine->{daily};
 	$restart_secs = timelocal(0,$minute,$hour,$n_mday,$n_mon,$n_year);
 	printf("\tFor today that's %s\n", scalar localtime($restart_secs));
+	# Restart if we're past the restart time and the engine's too old:
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
 	    stop_engine($host, $engine->{port});
@@ -506,15 +566,17 @@ sub start_engines($)
 # Main
 # ----------------------------------------------------------------
 read_config($config_file);
-
+if (length($master_index_config) > 0)
+{
+    @indices = read_indexconfig($master_index_config);
+}  
 print("Read $config_file, will disassociate from terminal\n");
 print("and from now on only respond via\n");
 print("          http://localhost:$http_port\n");
 print("You can also monitor the log file:\n");
 print("          $logfile\n");
-
-# Daemonization, see perldoc perlipc
-if (1)
+# Daemonization, see "perldoc perlipc"
+if ($daemonization)
 {
     open STDIN, "/dev/null" or die "Cannot disassociate STDIN\n";
     open STDOUT, ">$logfile" or die "Cannot create $logfile\n";
@@ -523,7 +585,6 @@ if (1)
     setsid                  or die "Can't start a new session: $!";
     open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
 }
-dump_config();
 my ($httpd) = create_HTTPD($http_port);
 my ($last_check) = 0;
 my ($now);

@@ -293,8 +293,9 @@ void NameHash::showStats(FILE *f)
     }
     fprintf(f, "Hash table fill ratio: %ld out of %ld entries (%ld %%)\n",
             used_entries, ht_size, used_entries*100/ht_size);
-    fprintf(f, "Average list length  : %ld entries\n",
-            total_list_length / used_entries);
+    if (used_entries > 0)
+        fprintf(f, "Average list length  : %ld entries\n",
+                total_list_length / used_entries);
     fprintf(f, "Maximum list length  : %ld entries\n", max_length);
 }
 

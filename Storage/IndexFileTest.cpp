@@ -4,7 +4,7 @@
 
 bool index_test()
 {
-    IndexFile index;
+    IndexFile index(3);
 
     if (!index.open("index", false))
         return false;

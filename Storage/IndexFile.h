@@ -26,7 +26,7 @@ class IndexFile
 public:
     static const long cookie = 0x43414931; // == 'CAI1', Chan. Arch. Index 1
 
-    IndexFile();
+    IndexFile(int RTreeM);
 
     /// The hash table size used for new channel name tables.
     static long ht_size;
@@ -82,6 +82,7 @@ public:
     bool check(int level);
     
 private:
+    int RTreeM;
     FILE *f;
     FileAllocator fa;
     NameHash names;

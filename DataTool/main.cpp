@@ -11,13 +11,13 @@
 #include "DataFile.h"
 #include "IndexFile.h"
 
-bool verbose;
+int verbose;
 
 // TODO: copy program that combines sub-archives
 
 void show_hash_info(const stdString &index_name)
 {
-    IndexFile index;
+    IndexFile index(3);
     if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
@@ -30,7 +30,7 @@ void show_hash_info(const stdString &index_name)
 
 void list_names(const stdString &index_name)
 {
-    IndexFile index;
+    IndexFile index(3);
     if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
@@ -39,11 +39,7 @@ void list_names(const stdString &index_name)
     }
     IndexFile::NameIterator names;
     if (!index.getFirstChannel(names))
-    {
-        fprintf(stderr, "Cannot get name iterator for index '%s'\n",
-                index_name.c_str());
         return;
-    }
     epicsTime stime, etime;
     stdString start, end;
     RTree *tree;
@@ -56,8 +52,9 @@ void list_names(const stdString &index_name)
             continue;
         }
         tree->getInterval(stime, etime);
-        printf("Channel '%s': %s - %s\n",
+        printf("Channel '%s' (M=%d): %s - %s\n",
                names.getName().c_str(),
+               tree->getM(),
                epicsTimeTxt(stime, start),
                epicsTimeTxt(etime, end));
         delete tree;
@@ -66,14 +63,15 @@ void list_names(const stdString &index_name)
     index.close();
 }
 
-void convert_dir_index(const stdString &dir_name, const stdString &index_name)
+void convert_dir_index(int RTreeM,
+                       const stdString &dir_name, const stdString &index_name)
 {
     DirectoryFile dir;
     if (!dir.open(dir_name))
         return;
 	
     DirectoryFileIterator channels = dir.findFirst();
-    IndexFile index;
+    IndexFile index(RTreeM);
     if (verbose)
         printf("Opened directory file '%s'\n", dir_name.c_str());
     if (!index.open(index_name, false))
@@ -256,39 +254,95 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
 #endif
 }
 
-void dump_datablocks(const stdString &index_name, const stdString &channel_name)
+unsigned long dump_datablocks_for_channel(IndexFile &index,
+                                          const stdString &channel_name,
+                                          unsigned long &direct_count,
+                                          unsigned long &chained_count)
 {
-    IndexFile index;
-    if (!index.open(index_name))
-    {
-        fprintf(stderr, "Cannot open index '%s'\n",
-                index_name.c_str());
-        return;
-    }
+    direct_count = chained_count = 0;
     RTree *tree = index.getTree(channel_name);
     RTree::Datablock block;
-    RTree::Node node;
+    RTree::Node node(tree->getM(), true);
     stdString start, end;
     int idx;
     bool ok;
-    printf("Datablocks for channel '%s':\n", channel_name.c_str());
+    if (verbose > 2)
+        printf("Datablocks for channel '%s': ", channel_name.c_str());
     for (ok = tree->getFirstDatablock(node, idx, block);
          ok;
          ok = tree->getNextDatablock(node, idx, block))
     {
-        printf("'%s' @ 0x%lX: %s - %s\n",
-               block.data_filename.c_str(), block.data_offset,
-               epicsTimeTxt(node.record[idx].start, start),
-               epicsTimeTxt(node.record[idx].end, end));
+        ++direct_count;
+        if (verbose > 2)
+            printf("'%s' @ 0x%lX: %s - %s\n",
+                   block.data_filename.c_str(), block.data_offset,
+                   epicsTimeTxt(node.record[idx].start, start),
+                   epicsTimeTxt(node.record[idx].end, end));
+        while (tree->getNextChainedBlock(block))
+        {
+            ++chained_count;
+            if (verbose > 2)
+                printf("---  '%s' @ 0x%lX\n",
+                       block.data_filename.c_str(), block.data_offset);
+        }
     }
     delete tree;
+    return direct_count + chained_count;
+}
+
+unsigned long dump_datablocks(const stdString &index_name,
+                              const stdString &channel_name)
+{
+    unsigned long direct_count, chained_count;
+    IndexFile index(3);
+    if (!index.open(index_name))
+    {
+        fprintf(stderr, "Cannot open index '%s'\n",
+                index_name.c_str());
+        return 0;
+    }
+    dump_datablocks_for_channel(index, channel_name,
+                                direct_count, chained_count);
     index.close();
+    printf("%ld data blocks, %ld hidden blocks, %ld total\n",
+           direct_count, chained_count,
+           direct_count + chained_count);
+    return direct_count + chained_count;
+}
+
+unsigned long dump_all_datablocks(const stdString &index_name)
+{
+    unsigned long total = 0, direct = 0, chained = 0, channels = 0;
+    IndexFile index(3);
+    if (!index.open(index_name))
+    {
+        fprintf(stderr, "Cannot open index '%s'\n",
+                index_name.c_str());
+        return 0;
+    }
+    IndexFile::NameIterator names;
+    if (!index.getFirstChannel(names))
+        return 0;
+    do
+    {
+        ++channels;
+        unsigned long direct_count, chained_count;
+        total += dump_datablocks_for_channel(index, names.getName(),
+                                             direct_count, chained_count);
+        direct += direct_count;
+        chained += chained_count;
+    }
+    while (index.getNextChannel(names));
+    index.close();
+    printf("Total: %ld channels, %ld datablocks\n", channels, total);
+    printf("       %ld visible datablocks, %ld hidden\n", direct, chained);
+    return total;
 }
 
 void dot_index(const stdString &index_name, const stdString channel_name,
                const stdString &dot_name)
 {
-    IndexFile index;
+    IndexFile index(3);
     if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
@@ -318,7 +372,7 @@ bool seek_time(const stdString &index_name,
                 start_txt.c_str());
         return false;
     }
-    IndexFile index;
+    IndexFile index(3);
     if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
@@ -329,7 +383,7 @@ bool seek_time(const stdString &index_name,
     if (tree)
     {
         RTree::Datablock block;
-        RTree::Node node;
+        RTree::Node node(tree->getM(), true);
         int idx;
         if (tree->searchDatablock(start, node, idx, block))
         {
@@ -355,14 +409,14 @@ bool seek_time(const stdString &index_name,
 
 bool check (const stdString &index_name)
 {
-    IndexFile index;
+    IndexFile index(3);
     if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
                 index_name.c_str());
         return false;
     }
-    bool ok = index.check((verbose?1:0));
+    bool ok = index.check(verbose);
     index.close();
     return ok;
 }
@@ -378,19 +432,22 @@ int main(int argc, const char *argv[])
                      );
     parser.setArgumentsInfo("<index-file>");
     CmdArgFlag help(parser, "help", "Show help");
-    CmdArgFlag verbose_flag(parser, "verbose", "Show more info");
+    CmdArgInt verbosity(parser, "verbose", "<level>", "Show more info");
     CmdArgFlag list_index(parser, "list", "List channel name info");
     CmdArgString dir2index(parser, "dir2index", "<dir. file>",
                            "Convert old directory file to index");
     CmdArgString index2dir(parser, "index2dir", "<dir. file>",
                            "Convert index to old directory file");
+    CmdArgInt RTreeM(parser, "M", "<1-100>", "RTree M value");
     CmdArgFlag dump_blocks(parser, "blocks", "List channel's data blocks");
+    CmdArgFlag all_blocks(parser, "Blocks", "List all data blocks");
     CmdArgString dotindex(parser, "dotindex", "<dot filename>",
                           "Dump contents of RTree index into dot file");
     CmdArgString channel_name (parser, "channel", "<name>", "Channel name");
     CmdArgFlag hashinfo(parser, "hashinfo", "Show Hash table info");
     CmdArgString seek_test(parser, "seek", "<time>", "Perform seek test");
     CmdArgFlag test(parser, "test", "Perform some consistency tests");
+    RTreeM.set(50);
     if (! parser.parse())
         return -1;
     if (help   ||   parser.getArguments().size() != 1)
@@ -403,11 +460,11 @@ int main(int argc, const char *argv[])
          seek_test.get().length() > 0)
         && channel_name.get().length() <= 0)
     {
-        fprintf(stderr, "Options 'blocks' and 'dotindex' require 'channel'.\n");
+        fprintf(stderr,
+                "Options 'blocks' and 'dotindex' require 'channel'.\n");
         return -1;
     }
-
-    verbose = verbose_flag;
+    verbose = verbosity;
     stdString index_name = parser.getArgument(0);
 
     if (list_index)
@@ -416,12 +473,17 @@ int main(int argc, const char *argv[])
         show_hash_info(index_name);
     else if (dir2index.get().length() > 0)
     {
-        convert_dir_index(dir2index, index_name);
+        convert_dir_index(RTreeM, dir2index, index_name);
         return 0;
     }
     else if (index2dir.get().length() > 0)
     {
         convert_index_dir(index_name, index2dir);
+        return 0;
+    }
+    else if (all_blocks)
+    {
+        dump_all_datablocks(index_name);
         return 0;
     }
     else if (dump_blocks)

@@ -36,9 +36,6 @@
 //
 // --> NFS is bad, small RTreeM values are bad.
 
-// #define RTreeM 3
-#define RTreeM 50
-
 /// \ingroup Storage
 /// \@{
 
@@ -85,11 +82,15 @@ public:
     class Node
     {
     public:
-        Node(bool leaf = true);
+        Node(int M, bool leaf);
+        Node(const Node &);
+        ~Node();
+
+        Node &operator = (const Node &);
         
         bool    isLeaf;  ///< Node or Leaf?        
         Offset  parent;  ///< 0 for root
-        Record  record[RTreeM]; ///< index records of this node
+        Record  *record; ///< index records of this node
         Offset  offset;  ///< Location in file
         
         /// Write to file at offset (needs to be set beforehand)
@@ -100,6 +101,9 @@ public:
 
         /// Obtain interval covered by this node
         bool getInterval(epicsTime &start, epicsTime &end) const;
+    private:
+        int M;
+        bool operator == (const Node &); // not impl.
     };
 
     /// \see constructor Rtree()
@@ -113,10 +117,14 @@ public:
     RTree(FileAllocator &fa, Offset anchor);
     
     /// Initialize empty tree. Compare to reattach().
-    bool init();
+    bool init(int M);
 
     /// Re-attach to an existing tree. Compare to init().
     bool reattach();
+
+    /// The 'M' value, i.e. Node size, of this RTree.
+    int getM() const
+    { return M; }
     
     /// Return range covered by this RTree
     bool getInterval(epicsTime &start, epicsTime &end);
@@ -184,7 +192,12 @@ public:
     void makeDot(const char *filename);
 
     /// Returns true if tree passes self test, otherwise prints errors.
-    bool selfTest();
+
+    /// On success, nodes will contain the number of nodes in the tree
+    /// and record contains the number of used records.
+    /// One can compare that to the total number of available records,
+    /// nodes*getM().
+    bool selfTest(unsigned long &nodes, unsigned long &records);
 
     mutable size_t cache_misses, cache_hits; 
 
@@ -200,13 +213,16 @@ private:
     // Offset to the root = content of what's at anchor
     Offset root_offset;
 
+    int M;
+    
     mutable AVLTree<Node> node_cache;
 
     bool read_node(Node &node) const;
 
     bool write_node(const Node &node);
     
-    bool self_test_node(Offset n, Offset p, epicsTime start, epicsTime end);
+    bool self_test_node(unsigned long &nodes, unsigned long &records,
+                        Offset n, Offset p, epicsTime start, epicsTime end);
     
     void make_node_dot(FILE *dot, FILE *f, Offset node_offset);
 

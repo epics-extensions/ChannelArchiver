@@ -89,7 +89,7 @@ public:
 private:
     IndexFile &index;
     RTree     *tree;
-    RTree::Node node;// used to iterate
+    RTree::Node *node;// used to iterate
     int rec_idx; 
     bool valid_datablock; // are node/idx on valid datablock? 
     RTree::Datablock datablock; // the current datablock

@@ -22,7 +22,7 @@ bool add_tree_to_master(const stdString &index_name,
                         RTree *index)
 {
     RTree::Datablock block;
-    RTree::Node node;
+    RTree::Node node(subtree->getM(), true);
     int idx;
     bool ok;
     stdString datafile, start, end;
@@ -64,12 +64,13 @@ bool add_tree_to_master(const stdString &index_name,
     return true;
 }
 
-bool create_masterindex(const stdString &config_name,
+bool create_masterindex(int RTreeM,
+                        const stdString &config_name,
                         const stdString &index_name)
 {
     ASCIIParser config_parser;
     IndexFile::NameIterator names;
-    IndexFile index, subindex;
+    IndexFile index(RTreeM), subindex(RTreeM);
     RTree *tree, *subtree;
     bool ok;
     if (!config_parser.open(config_name))
@@ -142,7 +143,9 @@ int main(int argc, const char *argv[])
                      );
     parser.setArgumentsInfo("<archive list file> <output index>");
     CmdArgFlag help  (parser, "help", "Show Help");
+    CmdArgInt RTreeM (parser, "M", "<1-100>", "RTree M value");
     CmdArgInt verbose_flag (parser, "verbose", "<level>", "Show more info");
+    RTreeM.set(50);
     if (! parser.parse())
         return -1;
     verbose = verbose_flag;
@@ -159,7 +162,7 @@ int main(int argc, const char *argv[])
         parser.usage();
         return -1;
     }
-    if (!create_masterindex(parser.getArgument(0),
+    if (!create_masterindex(RTreeM, parser.getArgument(0),
                             parser.getArgument(1)))
         return -1;
 

@@ -5,10 +5,10 @@ use Time::Local;
 use Frontier::Client;
 
 # Setup URL
-$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
 #$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
-#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
-#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveServer1.cgi';
+#$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyDataServer.cgi';
+#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyDataServer1.cgi';
+$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveDataServer1.cgi';
 
 if ($#ARGV == 0)
 {
@@ -42,7 +42,6 @@ foreach $result ( @{$results} )
     print("Key $key: '$result->{name}' in '$result->{path}'\n");
 }
 
-
 # string name[] = archdat.get_names(string pattern)
 if (0)
 {
@@ -61,6 +60,8 @@ if (0)
 	}
 	print("Altogether $count names\n");
 }
+
+print("Using key=$key for the following\n");
 
 print("==================================================================\n");
 print("Request with pattern:\n");

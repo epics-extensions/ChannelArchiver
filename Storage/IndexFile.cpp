@@ -13,7 +13,7 @@
 
 long IndexFile::ht_size = 1009;
 
-IndexFile::IndexFile() : f(0), names(fa, 4)
+IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
 {}
 
 bool IndexFile::open(const stdString &filename, bool readonly)
@@ -100,7 +100,7 @@ RTree *IndexFile::addChannel(const stdString &channel)
         return false;
     }
     tree = new RTree(fa, tree_anchor);
-    if (tree->init() && names.insert(channel, tree_anchor))
+    if (tree->init(RTreeM) && names.insert(channel, tree_anchor))
         return tree;
     delete tree;
     return 0;
@@ -146,10 +146,14 @@ bool IndexFile::check(int level)
     NameIterator names;
     RTree *tree;
     bool have_name;
+    unsigned long channels = 0;
+    unsigned long total_nodes=0, total_used_records=0, total_records=0;
+    unsigned long nodes, records;
     for (have_name = getFirstChannel(names);
          have_name;
          have_name = getNextChannel(names))
     {
+        ++channels;
         tree = getTree(names.getName());
         if (!tree)
         {
@@ -159,15 +163,22 @@ bool IndexFile::check(int level)
         }
         printf(".");
         fflush(stdout);
-        if (!tree->selfTest())
+        if (!tree->selfTest(nodes, records))
         {
             printf("RTree for channel '%s' is broken\n",
                    names.getName().c_str());
             delete tree;
             return false;
         }
+        total_nodes += nodes;
+        total_used_records += records;
+        total_records += nodes * tree->getM();
         delete tree;
     }
     printf("\nAll RTree self-tests check out fine\n");
+    printf("%ld channels\n", channels);
+    printf("Total: %ld nodes, %ld records out of %ld are used (%.1lf %%)\n",
+           total_nodes, total_used_records, total_records,
+           total_used_records*100.0/total_records);
     return true;
 }

@@ -55,7 +55,7 @@ DataWriter::DataWriter(IndexFile &index,
         return;
     }
     RTree::Datablock block;
-    RTree::Node node;
+    RTree::Node node(tree->getM(), true);
     int idx;
     if (tree->getLastDatablock(node, idx, block))        
     {   // - There is a data file and buffer

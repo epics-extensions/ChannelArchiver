@@ -14,7 +14,7 @@ DataReader::~DataReader()
 
 
 RawDataReader::RawDataReader(IndexFile &index)
-        : index(index), tree(0), rec_idx(0), valid_datablock(false),
+        : index(index), tree(0), node(0), rec_idx(0), valid_datablock(false),
           type_changed(false), ctrl_info_changed(false),
           data(0), header(0)
 {}
@@ -23,6 +23,8 @@ RawDataReader::~RawDataReader()
 {
     if (tree)
         delete tree;
+    if (node)
+        delete node;
     if (data)
         RawValue::free(data);
     if (header)
@@ -38,19 +40,20 @@ const RawValue::Data *RawDataReader::find(
     // Get tree
     if (!(tree = index.getTree(channel_name)))
         return false;
+    node = new RTree::Node(tree->getM(), true);
     // Get 1st data block
     if (start)
-        valid_datablock = tree->searchDatablock(*start, node,
+        valid_datablock = tree->searchDatablock(*start, *node,
                                                 rec_idx, datablock);
     else
-        valid_datablock = tree->getFirstDatablock(node, rec_idx, datablock);
+        valid_datablock = tree->getFirstDatablock(*node, rec_idx, datablock);
     if (! valid_datablock)  // No values for this time in index
         return 0;
 #ifdef DEBUG_DATAREADER
     {
         stdString s, e;
-        epicsTime2string(node.record[rec_idx].start, s);
-        epicsTime2string(node.record[rec_idx].end, e);
+        epicsTime2string(node->record[rec_idx].start, s);
+        epicsTime2string(node->record[rec_idx].end, e);
         printf("First Block: %s @ 0x%lX: %s - %s\n",
                datablock.data_filename.c_str(),
                datablock.data_offset,
@@ -68,7 +71,7 @@ const RawValue::Data *RawDataReader::find(
     if (start)
         return findSample(*start);
     else
-        return findSample(node.record[rec_idx].start);       
+        return findSample(node->record[rec_idx].start);       
 }
 
 // Read sample at val_idx
@@ -77,15 +80,15 @@ const RawValue::Data *RawDataReader::next()
     if (!(header && valid_datablock))
         return 0;
     if (val_idx >= header->data.num_samples            ||
-        RawValue::getTime(data) > node.record[rec_idx].end)
+        RawValue::getTime(data) > node->record[rec_idx].end)
     {   // Need to get another block
-        valid_datablock = tree->getNextDatablock(node, rec_idx, datablock);
+        valid_datablock = tree->getNextDatablock(*node, rec_idx, datablock);
         if (!valid_datablock)
             return 0;
 #ifdef DEBUG_DATAREADER
         stdString s, e;
-        epicsTime2string(node.record[rec_idx].start, s);
-        epicsTime2string(node.record[rec_idx].end, e);
+        epicsTime2string(node->record[rec_idx].start, s);
+        epicsTime2string(node->record[rec_idx].end, e);
         printf("Next  Block: %s @ 0x%lX: %s - %s\n",
                datablock.data_filename.c_str(), datablock.data_offset,
                s.c_str(), e.c_str());
@@ -97,7 +100,7 @@ const RawValue::Data *RawDataReader::next()
             header = 0;
             return 0;
         }
-        return findSample(node.record[rec_idx].start);
+        return findSample(node->record[rec_idx].start);
     }
     // Read next sample in current block       
     FileOffset offset =

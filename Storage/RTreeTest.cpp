@@ -23,6 +23,14 @@ static TestData man_data1[] =
     { "6", "7", "FileA",  0x60 },
 };
 
+static TestData man_data2[] =
+{
+    { "4", "6", "FileB",  0x10 },
+    { "6", "8", "FileB",  0x20 },
+    { "8", "9", "FileB",  0x30 },
+    { "9","10", "FileB",  0x40 },
+};
+
 static TestData fill_data[] =
 {
     { "10", "11", "10-11",  1 },
@@ -41,16 +49,18 @@ static TestData fill_data[] =
     { "18", "23", "18-23", 14 }, // left overlaps 3 records
 };
 
-bool fill_test(const TestData *data, int num, const char *dotfile)
+bool fill_test(const char *index_name,
+               const TestData *data, int num, const char *dotfile)
 {
-    FILE *f = fopen("test/tree.tst", "w+b");
+    FILE *f = fopen(index_name, "w+b");
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
     FileAllocator fa;
     fa.attach(f, RTree::anchor_size);
     RTree tree(fa, 0);
-    tree.init();
-    if (!tree.selfTest())
+    tree.init(3);
+    unsigned long nodes, records;
+    if (!tree.selfTest(nodes, records))
     {
         fprintf(stderr, "Self test failed\n");
         return false;
@@ -80,12 +90,15 @@ bool fill_test(const TestData *data, int num, const char *dotfile)
         }
         if (i==(num-1))
             tree.makeDot("index1.dot");
-        if (!tree.selfTest())
+        if (!tree.selfTest(nodes, records))
         {
             fprintf(stderr, "Self test failed\n");
             return false;
         }
     }
+    printf("%ld nodes, %ld used records, %ld records total (%.1lf %%)\n",
+           nodes, records, nodes*tree.getM(),
+           records*100.0/(nodes*tree.getM()));
     tree.makeDot(dotfile);
     if (fa.dump(0))
         puts("OK: FileAllocator's view of the tree");
@@ -107,14 +120,15 @@ bool dump_blocks()
     fa.attach(f, RTree::anchor_size);
     RTree tree(fa, 0);
     tree.reattach();
-    if (!tree.selfTest())
+    unsigned long nodes, records;
+    if (!tree.selfTest(nodes, records))
     {
         fprintf(stderr, "Self test failed\n");
         return false;
     }
     stdString s, e;
     RTree::Datablock block;
-    RTree::Node node;
+    RTree::Node node(tree.getM(), true);
     int idx;
     bool ok;
     for (ok = tree.getFirstDatablock(node, idx, block);
@@ -138,10 +152,14 @@ bool dump_blocks()
 int main()
 {
     initEpicsTimeHelper();
-    if (!fill_test(man_data1, sizeof(man_data1)/sizeof(TestData),
+    if (!fill_test("index1", man_data1, sizeof(man_data1)/sizeof(TestData),
                    "man_data1.dot"))
         return -1;
-    if (!fill_test(fill_data, sizeof(fill_data)/sizeof(TestData),
+    if (!fill_test("index2", man_data2, sizeof(man_data2)/sizeof(TestData),
+                   "man_data2.dot"))
+        return -1;
+    if (!fill_test("test/tree.tst",
+                   fill_data, sizeof(fill_data)/sizeof(TestData),
                    "test/test_data1.dot"))
         return -1;
     if (!dump_blocks())

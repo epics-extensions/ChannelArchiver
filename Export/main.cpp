@@ -39,10 +39,7 @@ void get_names_for_pattern(IndexFile &index,
     }
     IndexFile::NameIterator name_iter;
     if (!index.getFirstChannel(name_iter))
-    {
-        fprintf(stderr, "Cannot get channel name iterator\n");
-        return;
-    }
+        return; // No names
     // Put all names in binary tree
     BinaryTree<stdString> channels;
     do

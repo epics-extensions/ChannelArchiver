@@ -207,7 +207,7 @@ if (($opt_l or $opt_m) and length($opt_k) <= 0)
     exit(-1);
 }
 
-$opt_u = 'http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi'
+$opt_u = 'http://localhost/archive/cgi/ArchiveDataServer.cgi'
     unless (length($opt_u) > 0);
 
 print("Connecting to Archive Data Server URL '$opt_u'\n") if ($opt_v);

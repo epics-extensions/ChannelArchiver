@@ -527,7 +527,6 @@ sub html_stop($)
     print $client "</FONT>\n";
     print $client "<P><HR WIDTH=50% ALIGN=LEFT>\n";
     print $client "<A HREF=\"/\">-Engines-</A>\n";
-    print $client "<A HREF=\"/status\">-Status-</A>\n";
     print $client "<A HREF=\"/info\">-Info-</A>  \n";
     print $client time_as_text(time);
     print $client "<br>\n";
@@ -679,26 +678,35 @@ sub handle_HTTP_main($)
 sub handle_HTTP_status($)
 {
     my ($client) = @ARG;
-    my ($engine, $total, $running, $channels, $connected);
+    my ($engine, $total, $disabled, $running, $channels, $connected);
     html_start($client, 1);
     print $client "<H1>Archive Daemon Status</H1>\n";
+    print $client "# Description|Port|Running|Connected|Channels<BR>\n";  
     $total = $#config + 1;
-    $running = $channels = $connected = 0;
+    $disabled = $running = $channels = $connected = 0;
     foreach $engine ( @config )
     {
-	if ($engine->{started})
+	print $client "ENGINE $engine->{desc}|";
+	print $client "$engine->{port}|";
+	if ($engine->{disabled})
+	{
+	    print $client "disabled|0|0<br>\n";
+	    ++$disabled;
+	}
+	elsif ($engine->{started})
 	{
 	    ++$running;
 	    $channels += $engine->{channels};
 	    $connected += $engine->{connected};
+	    print $client "running|$engine->{connected}|$engine->{channels}<br>\n";
+	}
+	else
+	{
+	    print $client "down|0|0<br>\n";
 	}
     }
-    print $client "<FONT COLOR=#FF0000>" if ($running != $total);
-    print $client "$running of $total engines are running<p>\n";
-    print $client "</FONT>" if ($running != $total);
-    print $client "<FONT COLOR=#FF0000>" if ($channels != $connected);
-    print $client "$connected of $channels channels are connected\n";
-    print $client "</FONT>" if ($channels != $connected);
+    print $client "# engines|disabled|running|connected|channels<BR>\n";  
+    print $client "#TOTAL $total|$disabled|$running|$connected|$channels<BR>\n";  
     html_stop($client);
 }
 

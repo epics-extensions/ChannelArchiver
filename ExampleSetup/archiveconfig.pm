@@ -22,7 +22,6 @@ package archiveconfig;
 # $daemons[0]->{name} = "demosys";     # Daemon name (directory)
 # $daemons[0]->{desc} = "Test daemon"; # .. description
 # $daemons[0]->{port} = 4000;          # .. port
-# $daemons[0]->{status} = "unknown";   # .. status
 # .. and the engines under this daemon w/ their name, desc, port, ...
 # $daemons[0]->{engines}[0]->{name} = "engine1";
 # $daemons[0]->{engines}[0]->{desc} = "Test Engine 1";
@@ -30,6 +29,11 @@ package archiveconfig;
 # $daemons[0]->{engines}[0]->{restart} = "daily";
 # $daemons[0]->{engines}[0]->{time} = "08:00";
 #
+# update_status adds the following info:
+# $daemons[0]->{running} = true/false;
+# $daemons[0]->{engines}[0]->{status} = "running", "disabled", "down";
+# $daemons[0]->{engines}[0]->{channels} = 0...
+# $daemons[0]->{engines}[0]->{connected} = 0...
 # kasemirk@ornl.gov
 
 require Exporter;
@@ -74,7 +78,10 @@ sub parse_config_file($$)
 	    $daemons[$di]->{name} = $name;
 	    $daemons[$di]->{desc} = $desc;
 	    $daemons[$di]->{port} = $port;
-	    $daemons[$di]->{status} = "unknown";
+	    $daemons[$di]->{running} = 0;
+	    $daemons[$di]->{disabled} = 0;
+	    $daemons[$di]->{channels} = 0;
+	    $daemons[$di]->{connected} = 0;
 	    $ei = 0;
 	}
 	elsif ($type eq "ENGINE")
@@ -106,9 +113,9 @@ sub dump_config($)
     print("Configuration Dump:\n");
     foreach $daemon ( @{ $daemons } )
     {
-	printf("Daemon '%s': Port %d, description '%s', status %s\n",
+	printf("Daemon '%s': Port %d, description '%s'\n",
 	       $daemon->{name},  $daemon->{port},
-	       $daemon->{desc}, $daemon->{status});
+	       $daemon->{desc});
 	foreach $engine ( @{ $daemon->{engines} } )
 	{
 	    printf("    Engine '%s', port %d, description '%s'\n",
@@ -159,37 +166,35 @@ sub read_URL($$$)
 sub update_status($$)
 {
     my ($daemons, $opt_d) = @ARG;
-    my ($daemon);
-    my (@html, $engines, $channels);
+    my (@html, $line, $daemon, $engine);
     foreach $daemon ( @{ $daemons } )
     {
+	# Assume the worst until we learn more
+	$daemon->{running} = 0;
+	foreach $engine ( @{ $daemon->{engines} } )
+	{
+	    $engine->{status} = "down";
+	    $engine->{connected} = 0;
+	    $engine->{channels} = 0;
+	}
 	@html = read_URL($localhost, $daemon->{port}, "/status");
 	print "Response from $daemon->{desc}:\n" if ($opt_d);
 	print @html if ($opt_d);
-	if ($#html < 14)
-        {
-            $daemon->{status} = "<font color=#FF0000>NOT RUNNING</font>";
-        }
-	elsif ($html[8] =~ "Archive Daemon")
-        {
-            # 3 of 3 engines are running<p>
-            if ($html[14] =~ "(.+)<p>")
-            {
-                $engines = $1;
-	        if ($html[15] =~ "([0-9]+) of ([0-9]+) channels")
-                {
-                     $daemon->{status} = "$engines<br>$1 of $2 channels connected";
-                }
-            }
-            else
-            {
-                $daemon->{status} = "<font color=#FF0000>CHECK ENGINES</font>";
-            }
-        }
-        else
-        {
-            $daemon->{status} = "<font color=#FF0000>CHECK DEAMON</font>";
-        }
+	foreach $line ( @html )
+	{
+	    if ($line =~ m"\AENGINE ([^|]*)\|([0-9]+)\|([^|]+)\|([0-9]+)\|([0-9]+)")
+	    {
+		$daemon->{running} = 1;
+		foreach $engine ( @{ $daemon->{engines} } )
+		{
+		    next if ($engine->{port} != $2);
+		    $engine->{status} = $3;
+		    $engine->{connected} = $4;
+		    $engine->{channels} = $5;
+		    last;
+		}
+	    }
+	}
     }
 }
 

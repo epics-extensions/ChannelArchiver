@@ -78,7 +78,14 @@ XML
         print $out "     <td width=\"10%\">&nbsp;</td>\n";
         print $out "     <td width=\"5%\">$daemon->{port}</td>\n";
         print $out "     <td width=\"20%\">$daemon->{desc}</td>\n";
-        print $out "     <td width=\"35%\">$daemon->{status}</td>\n";
+	if ($daemon->{running})
+	{
+	    print $out "     <td width=\"35%\">Running</td>\n";
+	}
+	else
+	{
+	    print $out "     <td width=\"35%\"><FONT color=#FF0000>Down</FONT></td>\n";
+	}
 	print $out "	 <td width=\"5%\">&nbsp;</td>\n";
 	print $out "	 <td width=\"10%\">&nbsp;</td>\n";
         print $out "  </tr>\n";
@@ -89,13 +96,21 @@ XML
             print $out "     <td width=\"10%\"><A HREF=\"http://$localhost:$engine->{port}\">$engine->{name}</A></td>\n";
             print $out "     <td width=\"5%\">$engine->{port}</td>\n";
             print $out "     <td width=\"20%\">$engine->{desc}</td>\n";
-            print $out "     <td width=\"35%\">&nbsp;</td>\n";
+	    if ($engine->{status} eq "running")
+	    {
+		print $out "     <td width=\"35%\">$engine->{connected} of $engine->{channels} connected.</td>\n";
+	    }
+	    else
+	    {
+		print $out "     <td width=\"35%\"><FONT color=#FF0000>$engine->{status}</FONT></td>\n";
+	    }
+
+
             print $out "     <td width=\"10%\">$engine->{restart}</td>\n";
             print $out "     <td width=\"5%\">$engine->{time}</td>\n";
             print $out "  </tr>\n";
 	}
     }
-
     print $out "<hr><p>\n";
     print $out "Last Update: ", time_as_text(time), "<p>\n";
     print $out "</table>\n";

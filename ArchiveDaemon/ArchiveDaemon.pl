@@ -1126,6 +1126,18 @@ sub start_engine($$)
 	    "-p $engine->{port} $cfg $index >$null 2>&1 &";
 	print(time_as_text(time), ": Command: '$cmd'\n");
 	system($cmd);
+	# Create symlink from this new index ('2005/03_21/index')
+	# to 'current index' in the engine directory
+	# for quicker retrieval of current data
+	# when there is no need to use the master_index
+	# which gets updated later.
+	my ($here) = readlink("$dir/current_index");
+        # if link exists, remove it
+	if (defined($here)) 
+	{
+	   unlink("$dir/current_index");
+        }
+        symlink("$dir/$index", "$dir/current_index");
 	if (add_index("$dir/$index"))
 	{
 	    write_indexconfig(1);

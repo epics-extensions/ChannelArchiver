@@ -753,6 +753,7 @@ void CBrowserDlg::OnExport()
 		switch (dlg.m_interpol)
 		{
 		case CDlgExport::Raw:
+			break;
 		case CDlgExport::Linear:
 			if (dlg.m_seconds > 0.0)
 				export->setLinearInterpolation (dlg.m_seconds);

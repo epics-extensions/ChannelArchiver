@@ -15,7 +15,9 @@
       Patch #1:<br>
       <ul>
       <li>New doc/libio/Layout.htm
-      <li>Fixes for SGI, cleaning up signal handling in Engine/main.cpp
+      <li>Fixes for SGI, cleaning up signal handling in
+          Engine/main.cpp
+      <li>CHAR data type is now supported, treated like a number.
       </ul>
     <li>06/27/2000<br>
       <font color="#0000A0">Version 1.4</font>:<br>
@@ -91,7 +93,7 @@
       Intruduced version/release scheme to better keep track of changes since the software is no
       longer only at LANL.<br>
       First Release, <font color="#0000A0">Version 1.0</font>.<br>
-      Fixed memory leak on RedHat 6.x (should appear on all systems that use that version og
+      Fixed memory leak on RedHat 6.x (should appear on all systems that use that version of
       egcs) by replacing std::string with self-written stdString, maintaining API.<br>
       Fixed CtrlInfo size problem for compatibility with wrong size calculation of original
       engine. </li>
@@ -102,7 +104,7 @@
       WinBrowser: Fixed axis plotting code.</li>
     <li>12/18/1999<br>
       I/O Library: Split pure interface classes from the actual implementation for the original,
-      binary data file format. This will now allow the independedn developement of other data
+      binary data file format. This will now allow the independent developement of other data
       file formats. <br>
       ATAC: Started TCL interface to the I/O library. </li>
     <li>11/08/1999<br>

@@ -55,4 +55,13 @@ In my case, the 's:' drive is actually served by a Linux box via
 Samba. Matlab didn't see the newly created DLLs until I
 changed directory to someplace else and then back to casi/matlab.
 
+* Installation
+You have to add ChannelArchiver/casi/matlab to your Matlab
+search path, e.g. interactily inside Matlab via "File/Set Path".
+Or copy all the *.m and *.dll files <somewhere> and then
+add <somewhere> to the search path.
 
+Since the MEX DLLs reference the usual EPICS DLLs (Com.dll, ...),
+EPICS/base/bin/WIN32 has to be in the OS PATH
+(similar: add the shared-lib. path to LD_LIBRARY_PATH on Unix
+ in case you built EPICS base with shared libraries).

@@ -37,6 +37,14 @@ public:
     bool checkUser(const stdString &user, const stdString &pass);
 #endif
 
+    //* Lock for all the engine info:
+    // groups, channels, next write time, ...
+    // All but
+    // - archive
+    // - data within one ChannelInfo
+    void lock()             { _engine_lock.lock();   }
+    void unlock()           { _engine_lock.unlock(); }
+    
     //* Arb. description string
     const stdString &getDescription() const;
     void setDescription(const stdString &description);
@@ -45,15 +53,10 @@ public:
     bool process();
 
     //* Add/list groups/channels
+    const stdList<ChannelInfo *> &getChannels();
     const stdList<GroupInfo *> &getGroups();
     GroupInfo *findGroup(const stdString &name);
     GroupInfo *addGroup(const stdString &name);
-
-    // Get current channel list, locked and unlocked
-    stdList<ChannelInfo *> *getChannels();
-    stdList<ChannelInfo *> *lockChannels();
-    // has to be called after lockChannels
-    void unlockChannels();
 
     ChannelInfo *findChannel(const stdString &name);
     ChannelInfo *addChannel(GroupInfo *group, const stdString &channel_name,
@@ -88,8 +91,6 @@ public:
     // channel has to prepare a monitor.
     bool addToScanList(ChannelInfo *channel);
 
-    Archive &lockArchive();
-    void unlockArchive();
     ValueI *newValue(DbrType type, DbrCount count);
 
     void writeArchive();
@@ -99,13 +100,13 @@ private:
     ~Engine();
     friend class ToAvoidGNUWarning;
 
+    epicsMutex      _engine_lock;
+    
     epicsTime       _start_time;
     stdString       _directory;
     stdString       _description;
     bool            _is_writing;
     
-    
-    epicsMutex      _channels_lock;
     stdList<ChannelInfo *> _channels;// all the channels
     stdList<GroupInfo *> _groups;    // scan-groups of channels
 
@@ -120,6 +121,9 @@ private:
     double          _future_secs;    // now+_future_secs is considered wrong
 
     Configuration   *_configuration;
+
+    // Archive: Used by WriteThread,
+    // sometimes Engine (to get CtrlInfo for new channels)
     epicsMutex      _archive_lock;
     Archive         *_archive;
 
@@ -140,17 +144,9 @@ inline void Engine::setConfiguration(Configuration *c)
 inline Configuration *Engine::getConfiguration()
 {   return _configuration;  }
 
-inline stdList<ChannelInfo *> *Engine::getChannels()
-{   return &_channels; }
 
-inline stdList<ChannelInfo *> *Engine::lockChannels()
-{
-    _channels_lock.lock();
-    return &_channels;
-}
-
-inline void Engine::unlockChannels()
-{   _channels_lock.unlock(); }
+inline const stdList<ChannelInfo *> &Engine::getChannels()
+{   return _channels; }
 
 inline const stdList<GroupInfo *> &Engine::getGroups()
 {   return _groups; }
@@ -185,15 +181,6 @@ inline bool Engine::addToScanList(ChannelInfo *channel)
     }
     return false;
 }
-
-inline Archive &Engine::lockArchive()
-{
-    _archive_lock.lock();
-    return *_archive;
-}
-
-inline void Engine::unlockArchive()
-{   _archive_lock.unlock(); }
 
 inline ValueI *Engine::newValue(DbrType type, DbrCount count)
 {   return _archive->newValue(type, count); }

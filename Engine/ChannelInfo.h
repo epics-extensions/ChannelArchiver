@@ -67,13 +67,13 @@ public:
 
     void startCaConnection(bool new_channel);
 
-    // Issue CA get for _value, no ca_pend_io in here!
-    void issueCaGet();
+    // Issue CA get_callback for _value
+    void issueCaGetCallback();
 
     // Called by Engine
     // ------------------------------------------------------------
 
-    // Called from caEventHandler or ScanList, _value is already set
+    // Called from caEventHandler, _value is already set
     void handleNewValue();
 
     // For scanned channels,

@@ -17,14 +17,11 @@ class SinglePeriodScanList
 {
 public:
     SinglePeriodScanList(double period);
-    // returns false on timeout
-    bool scan();
+    void scan();
 
-    double      _period;    // Scan period in seconds
-    epicsTime     _next_scan; // Next time this list is due
+    double                 _period;    // Scan period in seconds
+    epicsTime              _next_scan; // Next time this list is due
     stdList<ChannelInfo *> _channels;
-private:
-    double  _min_wait, _max_wait;
 };
 
 class ScanList

@@ -342,7 +342,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
     }
 }
 
-// Callback for values (monitored)
+// Callback for values (from monitor or get_callback)
 void ChannelInfo::caEventHandler(struct event_handler_args arg)
 {
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
@@ -352,25 +352,23 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
                 ca_name(arg.chid));
         return;
     }
-
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
-    // LOG_NSV(me->getName() << " : CA monitor      " << *me->_new_value << "\n");
+    // LOG_NSV("caEventHandler %s\n", me->getName());
     me->handleNewValue();
 }
 
 // Issue CA get for _scanned_value, no ca_pend_io in here!
-void ChannelInfo::issueCaGet ()
+void ChannelInfo::issueCaGetCallback()
 {
     if (!_new_value)
     {
-        LOG_MSG("No value description in issueCaGet '%s'!\n",
+        LOG_MSG("No value description in issueCaGetCallback '%s'!\n",
                 _name.c_str());
         return;
     }
-    if (ca_array_get(_new_value->getType(), _new_value->getCount(),
-                     _chid, _new_value->getRawValue())
-        != ECA_NORMAL)
-        LOG_MSG("ca_array_get (%s) failed\n", _name.c_str());
+    if (ca_array_get_callback(_new_value->getType(), _new_value->getCount(),
+                              _chid, caEventHandler, this) != ECA_NORMAL)
+        LOG_MSG("ca_array_get_callback(%s) failed\n", _name.c_str());
 }
 
 // Define the type of value for this ChannelInfo.

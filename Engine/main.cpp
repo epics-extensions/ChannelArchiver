@@ -84,7 +84,6 @@ int main(int argc, const char *argv[])
     EngineServer::_nocfg = (bool)nocfg;
     HTMLPage::_nocfg = (bool)nocfg;
     
-    // Arg. 1 might be the index_name to use:
     const stdString &config_name = parser.getArgument (0);
     stdString index_name = parser.getArgument (1);
 

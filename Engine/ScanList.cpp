@@ -18,44 +18,18 @@
 SinglePeriodScanList::SinglePeriodScanList(double period)
 {
     _period   = period;
-    _min_wait = DBL_MAX;
-    _max_wait = 0.0;
 }
 
 // returns false on timeout
-bool SinglePeriodScanList::scan()
+void SinglePeriodScanList::scan()
 {
     // fetch channels
     stdList<ChannelInfo *>::iterator channel;
     for (channel = _channels.begin(); channel != _channels.end(); ++channel)
     {
         if ((*channel)->isConnected())
-            (*channel)->issueCaGet();
+            (*channel)->issueCaGetCallback();
     }
-
-#   ifdef LOG_SCANLIST
-    epicsTime start = epicsTime::getCurrent();
-#   endif
-    
-    if (ca_pend_io(10.0) != ECA_NORMAL)
-        return false;
-
-#   ifdef LOG_SCANLIST
-    double elapsed = double(epicsTime::getCurrent()) - double(start);
-    if (elapsed > _max_wait)
-        _max_wait = elapsed;
-    if (elapsed < _min_wait)
-        _min_wait = elapsed;
-#   endif
-
-    // add values to circular buffer
-    for (channel = _channels.begin(); channel != _channels.end(); ++channel)
-    {
-        if ((*channel)->isConnected())
-            (*channel)->handleNewValue();
-    }
-
-    return true;
 }
 
 ScanList::ScanList()
@@ -65,17 +39,6 @@ ScanList::ScanList()
 
 ScanList::~ScanList()
 {
-#   ifdef LOG_SCANLIST
-    stdList<SinglePeriodScanList>::iterator li;
-    LOG_MSG("Statistics for Time spend in ca_pend_io\n");
-    LOG_MSG("=======================================\n");
-    for (li = _period_lists.begin(); li != _period_lists.end(); ++li)
-    {
-        LOG_MSG("ScanList " << li->_period << " s wait: min "
-                << li->_min_wait << ", max " << li->_max_wait << "\n");
-    }
-#   endif
-
     while (!_period_lists.empty())
     {
         SinglePeriodScanList *sl = _period_lists.front();
@@ -134,10 +97,8 @@ void ScanList::scan(const epicsTime &deadline)
             // make sure it's in the future:
             while (deadline > (*li)->_next_scan)
                 (*li)->_next_scan += rounded_period;
-            if (! (*li)->scan())
-            {
-                LOG_MSG("ScanList timeout for period %g\n", (*li)->_period);
-            }
+            (*li)->scan();
+            
             if (_next_list_scan == nullTime ||
                 _next_list_scan > (*li)->_next_scan)
                 _next_list_scan = (*li)->_next_scan;

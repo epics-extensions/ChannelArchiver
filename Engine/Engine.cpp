@@ -101,15 +101,15 @@ void Engine::shutdown()
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now;
     now = epicsTime::getCurrent();
-    Archive &archive = lockArchive();
-    ChannelIterator channel(archive);
-    lockChannels();
+
+    _archive_lock.lock();
+    ChannelIterator channel(*_archive);
     try
     {
         stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
         while (channel_info != _channels.end())
         {
-            (*channel_info)->shutdown(archive, channel, now);
+            (*channel_info)->shutdown(*_archive, channel, now);
             ++channel_info;
         }
     }
@@ -117,9 +117,8 @@ void Engine::shutdown()
     {
         LOG_MSG("Engine::shutdown caught %s\n", e.what());
     }
-    unlockChannels();
     channel->releaseBuffer();
-    unlockArchive();
+    _archive_lock.unlock();
 
     LOG_MSG("Done.\n");
     theEngine = 0;
@@ -128,17 +127,14 @@ void Engine::shutdown()
 
 Engine::~Engine()
 {
-    ca_task_exit();
+    ca_context_destroy();
     delete _archive;
 
-    lockChannels();
     while (! _channels.empty())
     {
         delete _channels.back();
         _channels.pop_back();
     }
-    unlockChannels();
-
     while (! _groups.empty())
     {
         delete _groups.back();
@@ -196,14 +192,18 @@ bool Engine::process()
 
 GroupInfo *Engine::findGroup(const stdString &name)
 {
+    GroupInfo *found = 0;
     stdList<GroupInfo *>::iterator group = _groups.begin();
     while (group != _groups.end())
     {
         if ((*group)->getName() == name)
-            return *group;
+        {
+            found = *group;
+            break;
+        }
         ++group;
     }
-    return 0;
+    return found;
 }
 
 GroupInfo *Engine::addGroup(const stdString &name)
@@ -217,7 +217,6 @@ GroupInfo *Engine::addGroup(const stdString &name)
         group->setName(name);
         _groups.push_back(group);
     }
-
     if (_configuration)
         _configuration->saveGroup(group);
 
@@ -228,7 +227,7 @@ ChannelInfo *Engine::findChannel(const stdString &name)
 {
     ChannelInfo *found = 0;
 
-    stdList<ChannelInfo *>::iterator channel = getChannels()->begin();
+    stdList<ChannelInfo *>::iterator channel = _channels.begin();
     while (channel != _channels.end())
     {
         if ((*channel)->getName() == name)
@@ -249,7 +248,6 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
     ChannelInfo *channel_info = findChannel(channel_name);
     bool new_channel;
 
-    lockChannels();
     if (!channel_info)
     {
         channel_info = new ChannelInfo();
@@ -274,14 +272,14 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
 
     if (new_channel)
     {
-        Archive &archive = lockArchive();
+        _archive_lock.lock();
         try
         {
             // Is channel already in Archive?
-            ChannelIterator arch_channel(archive);
-            if (archive.findChannelByName(channel_name, arch_channel))
+            ChannelIterator arch_channel(*_archive);
+            if (_archive->findChannelByName(channel_name, arch_channel))
             {   // extract previous knowledge from Archive
-                ValueIterator last_value(archive);
+                ValueIterator last_value(*_archive);
                 if (arch_channel->getLastValue(last_value))
                 {
                     // ChannelInfo copies CtrlInfo, so it's still
@@ -293,16 +291,15 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
                 }
             }
             else
-                archive.addChannel(channel_name, arch_channel);
+                _archive->addChannel(channel_name, arch_channel);
         }
         catch (ArchiveException &e)
         {
             LOG_MSG("Engine::addChannel: caught\n%s\n", e.what());
         }
-        unlockArchive();
+        _archive_lock.unlock();
     }
     channel_info->startCaConnection(new_channel);
-    unlockChannels();
 
     if (_configuration)
         _configuration->saveChannel(channel_info);
@@ -315,14 +312,12 @@ void Engine::setWritePeriod(double period)
     _write_period = period;
     _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
 
-    lockChannels();
     stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
     while (channel_info != _channels.end())
     {
         (*channel_info)->checkRingBuffer();
         ++channel_info;
     }
-    unlockChannels();
 
     if (_configuration)
         _configuration->saveEngine();
@@ -370,16 +365,15 @@ void Engine::setSecsPerFile(double secs_per_file)
 void Engine::writeArchive()
 {
     _is_writing = true;
-    Archive &archive = lockArchive();
-    ChannelIterator channel(archive);
-    lockChannels();
+    _archive_lock.lock();
+    ChannelIterator channel(*_archive);
     try
     {
         stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
         while (channel_info != _channels.end() &&
                write_thread.isRunning())
         {
-            (*channel_info)->write(archive, channel);
+            (*channel_info)->write(*_archive, channel);
             ++channel_info;
         }
     }
@@ -387,12 +381,8 @@ void Engine::writeArchive()
     {
         LOG_MSG("Engine::writeArchive caught %s\n", e.what());
     }
-    unlockChannels();
     channel->releaseBuffer();
-    unlockArchive();
+    _archive_lock.unlock();
     _is_writing = false;
 }
-
-
-
 

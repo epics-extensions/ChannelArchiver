@@ -45,10 +45,13 @@ static void engineinfo(HTTPClientConnection *connection,
     HTMLPage page(connection->getSocket(), "Archive Engine");
     stdString s;
     char line[100];
-    
+
     page.openTable(2, "Engine Info", 0);
     page.tableLine("Name", "ArchiveEngine", 0);
     page.tableLine("Version", VERSION_TXT ", built " __DATE__, 0);
+
+    theEngine->lock();
+    
     page.tableLine("Description", theEngine->getDescription().c_str(), 0);
     
     epicsTime2string(theEngine->getStartTime(), s);
@@ -56,14 +59,9 @@ static void engineinfo(HTTPClientConnection *connection,
 
     page.tableLine("Archive ", theEngine->getDirectory().c_str(), 0);
 
-    stdList<ChannelInfo *> *channels = theEngine->getChannels();
-    if (channels)
-    {
-        cvtUlongToString(channels->size(), line);
-        page.tableLine("Channels", line, 0);
-    }
-    else
-        page.tableLine("Channels", "? not available ?", 0);
+    const stdList<ChannelInfo *> &channels = theEngine->getChannels();
+    cvtUlongToString(channels.size(), line);
+    page.tableLine("Channels", line, 0);
     
 #ifdef SHOW_DIR
     char dir[100];
@@ -71,8 +69,8 @@ static void engineinfo(HTTPClientConnection *connection,
     page.tableLine("Directory ", dir, 0);
 #endif
 
-    epicsTime2string(theEngine->getWriteTime(), s);
-    page.tableLine("Last write check", s.c_str(), 0);
+    epicsTime2string(theEngine->getNextWriteTime(), s);
+    page.tableLine("Next write time", s.c_str(), 0);
 
     page.tableLine("Currently writing",
                    (const char *)
@@ -91,8 +89,10 @@ static void engineinfo(HTTPClientConnection *connection,
     page.tableLine("Web Clients (total)", line, 0);
 
     cvtUlongToString((unsigned long) connection->getClientCount(), line);
-    page.tableLine("Web Clients (current)", line, 0);
 
+    theEngine->unlock();
+
+    page.tableLine("Web Clients (current)", line, 0);
     page.closeTable();
 }
 
@@ -212,18 +212,15 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Channels");
 
-    stdList<ChannelInfo *> *channels = theEngine->getChannels();
-    if (!channels  ||  channels->empty())
-    {
-        page.line("<I>no channels</I>");
-        return;
-    }
+    theEngine->lock();
+    
+    const stdList<ChannelInfo *> &channels = theEngine->getChannels();
 
     page.openTable(1, "Name", 1, "Status", 0);
-    stdList<ChannelInfo *>::iterator channel;
+    stdList<ChannelInfo *>::const_iterator channel;
     stdString link;
     link.reserve(80);
-    for (channel=channels->begin(); channel!=channels->end(); ++channel)
+    for (channel=channels.begin(); channel != channels.end(); ++channel)
     {
         link = "<A HREF=\"channel/";
         link += (*channel)->getName();
@@ -235,6 +232,7 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
                         "connected" : "<FONT COLOR=#FF0000>not conn.</FONT>"),
                        0);
     }
+    theEngine->unlock();
     page.closeTable();
 }
 
@@ -331,7 +329,9 @@ static void channelInfo(HTTPClientConnection *connection, const stdString &path)
 {
     stdString channel_name = path.substr(9);
 
+    theEngine->lock();
     ChannelInfo *channel = theEngine->findChannel(channel_name);
+    theEngine->unlock();
     if (! channel)
     {
         connection->error("No such channel: " + channel_name);
@@ -348,9 +348,11 @@ static void channelInfo(HTTPClientConnection *connection, const stdString &path)
 void groups(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Groups");
+    theEngine->lock();
     const stdList<GroupInfo *> &group_list = theEngine->getGroups();
     if (group_list.empty())
     {
+        theEngine->unlock();
         page.line("<I>no groups</I>");
         return;
     }
@@ -386,6 +388,8 @@ void groups(HTTPClientConnection *connection, const stdString &path)
                          "Yes" : "<FONT COLOR=#FF0000>No</FONT>"),
                         channels, connected, 0);
     }
+
+    theEngine->unlock();
     
     sprintf(channels, "%d", total_channel_count);
     if (total_channel_count != total_connect_count)
@@ -400,9 +404,11 @@ void groups(HTTPClientConnection *connection, const stdString &path)
 static void groupInfo(HTTPClientConnection *connection, const stdString &path)
 {
     const stdString group_name = path.substr(7);
+    theEngine->lock();
     const GroupInfo *group = theEngine->findGroup(group_name);
     if (! group)
     {
+        theEngine->unlock();
         connection->error("No such group: " + group_name);
         return;
     }
@@ -419,6 +425,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     const stdList<ChannelInfo *>& channels = group->getChannels();
     if (channels.empty())
     {
+        theEngine->unlock();
         page.line("no channels");
         return;
     }
@@ -430,6 +437,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     stdList<ChannelInfo *>::const_iterator channel;
     for (channel = channels.begin(); channel != channels.end(); ++channel)
         channelInfoLine(page, *channel);
+    theEngine->unlock();
     page.closeTable();
 }
 
@@ -446,9 +454,11 @@ static void addChannel(HTTPClientConnection *connection,
         connection->error("Channel and group names must not be empty");
         return;
     }
+    theEngine->lock();
     GroupInfo *group = theEngine->findGroup(group_name);
     if (!group)
     {
+        theEngine->unlock();
         stdString msg = "Cannot find group " + group_name;
         connection->error(msg);
         return;
@@ -474,6 +484,7 @@ static void addChannel(HTTPClientConnection *connection,
         page.line("</I> was added to");
     else
         page.line("</I> could not be added");
+    theEngine->unlock();
     page.out(" to group <I>");
     page.out(group_name);
     page.line("</I>.");
@@ -494,10 +505,12 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
     page.line("<H1>Groups</H1>");
     page.out("Group <I>");
     page.out(group_name);
+    theEngine->lock();
     if (theEngine->addGroup(group_name))
         page.line("</I> was added to the engine.");
     else
         page.line("</I> could not be added to the engine.");
+    theEngine->unlock();
 }
 
 static void parseGroup(HTTPClientConnection *connection, const stdString &path)
@@ -516,6 +529,7 @@ static void parseGroup(HTTPClientConnection *connection, const stdString &path)
     page.out("Group <I>");
     page.out(group_name);
 
+    theEngine->lock();
     Configuration *cfg = theEngine->getConfiguration();
     if (cfg->loadGroup(group_name))
     {
@@ -524,6 +538,7 @@ static void parseGroup(HTTPClientConnection *connection, const stdString &path)
     }
     else
         page.line("</I> could not be added to the engine.<P>");
+    theEngine->unlock();
 }
 
 static void channelGroups(HTTPClientConnection *connection, const stdString &path)
@@ -532,9 +547,11 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
     args.parse(path.substr(15).c_str());
     stdString channel_name = args.find("CHANNEL");
 
+    theEngine->lock();
     ChannelInfo *channel = theEngine->findChannel(channel_name);
     if (! channel)
     {
+        theEngine->unlock();
         connection->error("No such channel: " + channel_name);
         return;
     }
@@ -547,6 +564,7 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
     const stdList<GroupInfo *> group_list = channel->getGroups();
     if (group_list.empty())
     {
+        theEngine->unlock();
         page.line("This channel does not belong to any groups.");
         return;
     }
@@ -564,6 +582,7 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
         link += "</A>";
         page.tableLine(link.c_str(), 0);
     }
+    theEngine->unlock();
     page.closeTable();
 }
 

@@ -12,7 +12,7 @@
 #include <ArchiverConfig.h>
 #include <ArgParser.h>
 #include <epicsTimeHelper.h>
-#include <FUX.h>
+#include <IndexConfig.h>
 #include <Lockfile.h>
 // Index
 #include <IndexFile.h>
@@ -80,33 +80,17 @@ bool add_tree_to_master(const stdString &index_name,
     return true;
 }
 
-bool parse_config(const stdString &config_name,
-                  stdList<stdString> &subarchives)
-{
-    FUX fux;
-    FUX::Element *e, *doc = fux.parse(config_name.c_str());
-    if (!(doc && doc->name == "indexconfig"))
-    {
-        fprintf(stderr, "Cannot parse '%s'\n", config_name.c_str());
-        return false;
-    }
-    stdList<FUX::Element *>::const_iterator els;
-    for (els=doc->children.begin(); els!=doc->children.end(); ++els)
-        if ((e = (*els)->find("index")))
-            subarchives.push_back(e->value);
-    return true;
-}
 
 bool create_masterindex(int RTreeM,
                         const stdString &config_name,
                         const stdString &index_name,
                         bool reindex)
 {
-    stdList<stdString> subarchives;
+    IndexConfig config;
     if (reindex)
-        subarchives.push_back(config_name);
+        config.subarchives.push_back(config_name);
     else
-        if (!parse_config(config_name, subarchives))
+        if (!config.parse(config_name))
             return false;
     IndexFile::NameIterator names;
     IndexFile index(RTreeM), subindex(RTreeM);
@@ -120,7 +104,8 @@ bool create_masterindex(int RTreeM,
     if (verbose)
         printf("Opened master index '%s'.\n", index_name.c_str());
     stdList<stdString>::const_iterator subs;
-    for (subs = subarchives.begin(); subs != subarchives.end(); ++subs)
+    for (subs  = config.subarchives.begin();
+         subs != config.subarchives.end(); ++subs)
     {
         const stdString &sub_name = *subs;
         if (!subindex.open(sub_name))

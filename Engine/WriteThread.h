@@ -31,7 +31,8 @@ public:
     {
         if (_writing)
         {
-            LOG_MSG(osiTime::getCurrent() << ": Warning: WriteThread called while busy\n");
+            stdString t;
+            LOG_MSG("Warning: WriteThread called while busy\n");
             return;
         }
         if (! _wait.give())

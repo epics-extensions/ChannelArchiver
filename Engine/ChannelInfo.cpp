@@ -14,43 +14,39 @@
 #include <math.h>
 #include <iostream>
 
-//#define LOG_NSV(stuff)    LOG_MSG(stuff)
-#define LOG_NSV(stuff)  {}
-
 // Helper:
 // print chid
-//
-static std::ostream & operator << (std::ostream &o, const chid &chid)
+static void show_chid(FILE *f, const chid &chid)
 {
     short typ = ca_field_type(chid);
     const char *type_txt = (typ > 0  &&  typ < dbr_text_dim) ?
                            dbr_text[typ] : dbr_text_invalid;
 
-    o << "CHID: " << ca_name(chid) << "\n";
-    o << "\ttype/count: " << type_txt << "(" << typ << ") / "
-      << ca_element_count(chid) << "\n";
-    o << "\thost: " << ca_host_name(chid) << "\n";
-    o << "\tuser ptr: " << ca_puser(chid) << "\n";
-    o << "\tca state: ";
+    fprintf(f, "CHID: %s\n", ca_name(chid));
+    fprintf(f, "\ttype/count: %s (%d) / %d\n",
+            type_txt, typ, ca_element_count(chid));
+    fprintf(f, "\thost: %s\n", ca_host_name(chid));
+    fprintf(f, "\tuser ptr: 0x%lX\n", (unsigned long) ca_puser(chid));
+    fprintf(f, "\tca state: ");
     switch (ca_state(chid))
     {
     case cs_never_conn:
-        o << "cs_never_conn: valid chid, IOC not found\n";
+        fprintf(f, "cs_never_conn: valid chid, IOC not found\n");
         break;
     case cs_prev_conn:
-        o << "cs_prev_conn   valid chid, IOC was found, but unavailable\n";
+        fprintf(f,
+                "cs_prev_conn   valid chid, IOC was found, but unavailable\n");
         break;
     case cs_conn:
-        o << "cs_conn:       valid chid, IOC was found, still available\n";
+        fprintf(f,
+                "cs_conn:       valid chid, IOC was found, still available\n");
         break;
     case cs_closed:
-        o << "cs_closed:     invalid chid\n";
+        fprintf(f, "cs_closed:     invalid chid\n");
         break;
     default:
-        o << ca_state(chid) << " (undefined)\n";
+        fprintf(f, "%d (undefined)\n", ca_state(chid));
     }
-
-    return o;
 }
 
 // Locking:
@@ -96,12 +92,10 @@ void ChannelInfo::setPeriod(double secs)
 {
     if (secs <= 0.0)
     {
-        LOG_MSG(_name
-                << ": setPeriod called with " << secs
-                << ", changed to 30 secs\n");
+        LOG_MSG("'%s': setPeriod called with %g, changed to 30 secs\n",
+                _name.c_str(), secs);
         secs = 30.0;
     }
-
     _period = secs;
     checkRingBuffer();
 }
@@ -137,7 +131,7 @@ void ChannelInfo::startCaConnection(bool new_channel)
                                    caLinkConnectionHandler, this)
             != ECA_NORMAL)
         {
-            LOG_MSG("ca_search_and_connect (" << _name << ") failed\n");
+            LOG_MSG("'%s': ca_search_and_connect failed\n", _name.c_str());
         }
     }
     else
@@ -153,9 +147,9 @@ void ChannelInfo::startCaConnection(bool new_channel)
                                                caControlHandler, this);
             if (status != ECA_NORMAL)
             {
-                LOG_MSG("CA ca_array_get_callback for " << getName()
-                        << " failed in startCaConnection:"
-                        << ca_message(status) << "\n");
+                LOG_MSG("'%s': CA ca_array_get_callback"
+                        " failed in startCaConnection: %s\n",
+                        getName().c_str(), ca_message(status));
                 return;
             }
         }
@@ -173,8 +167,7 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
 
     if (ca_state(arg.chid) != cs_conn)
     {
-        LOG_MSG(me->getName()
-                << ": CA disconnect\n");
+        LOG_MSG("'%s': CA disconnect\n", me->getName().c_str());
         // Flush everything until the disconnect happened
         me->_connected = false;
         // add a disconnect event
@@ -206,9 +199,9 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
                                        me->_chid, caControlHandler, me);
     if (status != ECA_NORMAL)
     {
-        LOG_MSG(me->getName()
-                << ": ca_array_get_callback error in caLinkConnectionHandler: "
-                << ca_message (status) << "\n");
+        LOG_MSG("'%s': ca_array_get_callback error in "
+                "caLinkConnectionHandler: %s",
+                me->getName().c_str(), ca_message (status));
     }
     // ChannelInfo is not really considered 'connected' until
     // we received the control information...
@@ -289,10 +282,8 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
 
     if (arg.status != ECA_NORMAL)
     {
-        LOG_MSG(me->_name <<
-                ": Bad control information, CA status "
-                << ca_message(arg.status) << "\n");
-        LOG_MSG(me->_chid << "\n");
+        LOG_MSG("'%s': Bad control information, CA status %s\n",
+                me->_name.c_str(), ca_message(arg.status));
         if (me->_new_value  &&  me->_mechanism != none)
         {
             LOG_MSG("...ignored since it seems to be a re-connect\n");
@@ -305,8 +296,8 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
             me->_connected = true;
         else
         {
-            LOG_MSG("ERROR: Unknown CA control information: "
-                    << me->_name << "\n");
+            LOG_MSG("'%s' ERROR: Unknown CA control information\n",
+                    me->_name.c_str());
             me->_connected = false;
         }
         me->_connect_time = osiTime::getCurrent();
@@ -333,9 +324,8 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
                                                    DBE_LOG);
                 if (status != ECA_NORMAL)
                 {
-                    LOG_MSG("CA ca_add_array_event ('" << me->getName()
-                            << "') failed:"
-                            << ca_message(status) << "\n");
+                    LOG_MSG("'%s' CA ca_add_array_event failed: %s\n",
+                            me->_name.c_str(), ca_message(status));
                     return;
                 }
                 me->_mechanism = use_monitor;
@@ -345,8 +335,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
 
     if (!was_connected  &&  me->_connected)
     {
-        LOG_MSG(me->_name
-                << ": Connected\n");
+        LOG_MSG("'%s': Connected\n", me->_name.c_str());
         stdList<GroupInfo *>::iterator g;
         for (g=me->_groups.begin(); g!=me->_groups.end(); ++g)
             (*g)->incConnectedChannels();
@@ -359,13 +348,13 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
     if (!me || !me->_new_value)
     {
-        LOG_MSG (ca_name(arg.chid)
-                 << ": caEventHandler called without ChannelInfo\n");
+        LOG_MSG("'%s': caEventHandler called without ChannelInfo\n",
+                ca_name(arg.chid));
         return;
     }
 
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
-    LOG_NSV(me->getName() << " : CA monitor      " << *me->_new_value << "\n");
+    // LOG_NSV(me->getName() << " : CA monitor      " << *me->_new_value << "\n");
     me->handleNewValue();
 }
 
@@ -374,13 +363,14 @@ void ChannelInfo::issueCaGet ()
 {
     if (!_new_value)
     {
-        LOG_MSG("No value description in issueCaGet '" << _name << "!\n");
+        LOG_MSG("No value description in issueCaGet '%s'!\n",
+                _name.c_str());
         return;
     }
     if (ca_array_get(_new_value->getType(), _new_value->getCount(),
                      _chid, _new_value->getRawValue())
         != ECA_NORMAL)
-        LOG_MSG("ca_array_get (" << _name << ") failed\n");
+        LOG_MSG("ca_array_get (%s) failed\n", _name.c_str());
 }
 
 // Define the type of value for this ChannelInfo.
@@ -433,25 +423,27 @@ void ChannelInfo::addToRingBuffer(const ValueI *value)
 {
     if (! value)
     {
-        LOG_MSG (_name
-                 << ": addToRingBuffer called without value\n");
+        LOG_MSG ("'%s': addToRingBuffer called without value\n",
+                 _name.c_str());
         return;
     }
     
     if (value->getTime() < _last_archive_stamp)
     {
-        LOG_MSG (_name
-                 << ": Ring buffer back-in-time\n");
-        LOG_MSG ("Prev:  " << _last_archive_stamp << "\n");
-        LOG_MSG ("Value: " << *value << "\n");
+        stdString t;
+        LOG_MSG("'%s': Ring buffer back-in-time\n", _name.c_str());
+        osiTime2string(_last_archive_stamp, t);
+        LOG_MSG("Prev:  %s\n", t.c_str());
+        osiTime2string(value->getTime(), t);
+        LOG_MSG("Value: %s\n", t.c_str());
     }
 
     size_t ow = _buffer.getOverwrites();
     _buffer.addRawValue(value->getRawValue());
     _ever_written = true;
     if (ow <= 0  &&  _buffer.getOverwrites() > 0)
-        LOG_MSG (_name << ": "
-                 << _buffer.getOverwrites() << " overwrites\n");
+        LOG_MSG ("'%s': %d overwrites\n",
+                 _name.c_str(), _buffer.getOverwrites());
     setLastArchiveStamp(value->getTime());
 }
 
@@ -463,9 +455,9 @@ void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
 {
     if (!_tmp_value)
     {
-        LOG_MSG(_name << ", IOC "
-                << ca_host_name(_chid)
-                << " : Cannot add event because data type is unknown\n");
+        LOG_MSG("'%s', IOC %s: "
+                "Cannot add event because data type is unknown\n",
+                _name.c_str(), ca_host_name(_chid));
         return;
     }
 
@@ -474,8 +466,8 @@ void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
         const osiTime &pend_time = _pending_value->getTime();
         if (pend_time < event_time)
         {
-            LOG_NSV(" Event!, unpending:            "
-                    << *_pending_value << "\n");
+            //            LOG_NSV(" Event!, unpending:            "
+            //      << *_pending_value << "\n");
             flushRepeats(_pending_value->getTime());
             addToRingBuffer(_pending_value);
             _pending_value_set = false;
@@ -551,9 +543,12 @@ void ChannelInfo::handleNewValue()
     {
         if ((double(now) - double(_had_null_time)) > (60.0*60*24))
         {   // quite frequent, limit messages to once a day
-            LOG_MSG(now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                    << " : Invalid/null time stamp\n\t"
-                    << *_new_value << "\n");
+            LOG_MSG("'%s', , IOC %s: Invalid/null time stamp\n\t",
+                    _name.c_str(), ca_host_name(_chid));
+            stdString t, s;
+            osiTime2string(_new_value->getTime(), t);
+            _new_value->getStatus(s);
+            LOG_MSG("%s %s\n", t.c_str(), s.c_str());
             _had_null_time = now;
         }
         _new_value_set = false;
@@ -563,18 +558,21 @@ void ChannelInfo::handleNewValue()
     if ((stamp > now) &&
         (double(stamp) - double(now) > theEngine->getIgnoredFutureSecs()))
     {
-        LOG_MSG(now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                << " : Ignoring futuristic time stamp\n\t"
-                << *_new_value << "\n");
+        LOG_MSG("'%s', , IOC %s: Ignoring futuristic time stamp\n",
+                _name.c_str(), ca_host_name(_chid));
+        stdString t, s;
+        osiTime2string(_new_value->getTime(), t);
+        _new_value->getStatus(s);
+        LOG_MSG("%s %s\n", t.c_str(), s.c_str());
         _new_value_set = false;
         return;
     }
 
     if (!_ever_written)
     {
-        LOG_NSV(now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                << " : write first value after connection\n\t"
-                << *_new_value << "\n");
+        //LOG_NSV(now << ", " << _name << ", IOC " << ca_host_name(_chid)
+        //       << " : write first value after connection\n\t"
+        //      << *_new_value << "\n");
         addEvent(_new_value);
         return;
     }
@@ -594,9 +592,14 @@ void ChannelInfo::handleNewValue()
         stamp = roundTimeUp(now, 1.0);
         if (stamp <= _last_archive_stamp)
         {
-            LOG_MSG(now << ", " << _name << ", IOC " << ca_host_name(_chid)
-                    << " : Unresolvable back-in-time value\n\t"
-                    << *_new_value << "\n");
+            LOG_MSG("'%s', , IOC %s: Unresolvable back-in-time value\n",
+                    _name.c_str(), ca_host_name(_chid));
+            stdString t, s;
+            osiTime2string(_new_value->getTime(), t);
+            _new_value->getStatus(s);
+            LOG_MSG("%s %s\n", t.c_str(), s.c_str());
+            osiTime2string(_last_archive_stamp, t);
+            LOG_MSG("Previously archived value %s\n", t.c_str());
             return;
         }
         _new_value->setTime(stamp);
@@ -618,19 +621,18 @@ void ChannelInfo::handleNewScannedValue(osiTime &stamp)
 {
     if (!_previous_value)
     {
-        LOG_MSG(_name
-                << ": handleNewScannedValue called "
-                "without _previous_value\n");
+        LOG_MSG("'%s': handleNewScannedValue called "
+                "without _previous_value\n", _name.c_str());
         return;
     }
-    LOG_NSV("handleNewScannedValue: " << *_new_value);
+    //LOG_NSV("handleNewScannedValue: " << *_new_value);
     
     // New value, but not due to be saved? Update pending value!
     if (_expected_next_time == nullTime)
         _expected_next_time = roundTimeUp(stamp, _period);
     else if (stamp < _expected_next_time)
     {
-        LOG_NSV(" - pending\n");
+        //LOG_NSV(" - pending\n");
         _pending_value->copyValue(*_new_value);
         _pending_value_set = true;
         return;// Add only if expected_next_time exceeded
@@ -641,16 +643,16 @@ void ChannelInfo::handleNewScannedValue(osiTime &stamp)
     size_t repeat_count = 0;
     if (_pending_value_set)
     {
-        LOG_NSV(" - pending\n");
+        //LOG_NSV(" - pending\n");
         bool pending_is_repeated = isRepeated(_pending_value);
         if (pending_is_repeated)
         {
-            LOG_NSV(" unpending:            " << *_pending_value
-                    << " - repeat\n");
+            //LOG_NSV(" unpending:            " << *_pending_value
+            //        << " - repeat\n");
         }
         else
         {
-            LOG_NSV(" unpending:            " << *_pending_value << "\n");
+            //LOG_NSV(" unpending:            " << *_pending_value << "\n");
             stamp = _pending_value->getTime();
             repeat_count = flushRepeats(stamp);
             addToRingBuffer(_pending_value);
@@ -667,7 +669,7 @@ void ChannelInfo::handleNewScannedValue(osiTime &stamp)
     {
         if (isRepeated(_new_value))
         {
-            LOG_NSV(" - repeat\n");
+            //LOG_NSV(" - repeat\n");
             return;
         }
         repeat_count = flushRepeats(stamp);
@@ -683,7 +685,7 @@ void ChannelInfo::handleNewScannedValue(osiTime &stamp)
         _expected_next_time += _period;
     if (_expected_next_time <= stamp)
         _expected_next_time = roundTimeUp(stamp, _period);
-    LOG_NSV("\nnext time:             " << _expected_next_time << "<---\n");
+    //LOG_NSV("\nnext time:             " << _expected_next_time << "<---\n");
 }
 
 bool ChannelInfo::isDisabling(const GroupInfo *group) const
@@ -747,8 +749,8 @@ void ChannelInfo::enable(ChannelInfo *cause)
     // Check if enabled by all groups
     if (_disabled <= 0)
     {
-        LOG_MSG(_name
-                << " is not disabled, ERROR!\n");
+        LOG_MSG("'%s' cannot be enabled since it is not disabled, ERROR!\n",
+                _name.c_str());
         return;
     }
     if (-- _disabled > 0)
@@ -781,7 +783,8 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
 
     if (! archive.findChannelByName(_name, channel))
     {
-        LOG_MSG ("ChannelInfo::write: Cannot find " << _name << "\n");
+        LOG_MSG ("ChannelInfo::write: Cannot find '%s'\n",
+                 _name.c_str());
         return;
     }
 
@@ -802,8 +805,8 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
 
         if (! channel->addValue(*_write_value))
         {
-            LOG_MSG("Fatal: cannot add values in writeArchive ("
-                    << _name << ")\n");
+            LOG_MSG("Fatal: cannot add values in writeArchive '%s'\n",
+                    _name.c_str());
             break;
         }
 

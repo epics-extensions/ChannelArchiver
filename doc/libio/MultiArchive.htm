@@ -15,11 +15,11 @@ an ASCII file with the following format:
 <UL>
 <LI>Comments (starting with a number-sign) and empty lines are ignored
 <LI>The very first line must be<BR>
-    <PRE>master_version=1</PRE>
+    <PRE>master_version=&lt;version number&gt;</PRE>
     There must be no comments preceding this line!
 <LI>All remaining lines list one archive name per line
 </UL>
-<H2>Example</H2>
+<H2>Example 1</H2>
 <PRE>
  master_version=1
  # First check the "fast" archive
@@ -31,6 +31,48 @@ an ASCII file with the following format:
  /archives/main/2001_02/dir
  /archives/main/2001/dir
 </PRE>
+<H2>Example 2</H2>
+<PRE>
+ master_version=2
+ # First check the "fast" archive
+ 05/29/2001 00:00:00 05/30/2001 00:00:00 /archives/fast/dir
+ # Then check the "main" archive
+ 05/01/2001 00:00:00 06/01/2001 00:00:00 /archives/main/2001_05/dir
+ 04/01/2001 00:00:00 05/01/2001 00:00:00 /archives/main/2001_04/dir
+ 03/01/2001 00:00:00 04/01/2001 00:00:00 /archives/main/2001_03/dir
+ 02/01/2001 00:00:00 03/01/2001 00:00:00 /archives/main/2001_02/dir
+ 01/01/2001 00:00:00 01/01/2002 00:00:00 /archives/main/2001/dir
+</PRE>
+<p>
+If valid timestamps are provided during construction of the Archive-object,
+only those sub-archives, that match the given time interval, are used for
+retrieval.<br>In version <em>1</em> all sub-archives are opened and the
+min-/max-timestamps are retrieved.<br>In version <em>2</em> the time-intervals
+for the sub-archives have to be in the master-file.
+<H2>Differences - performance using a real-world example</h2>
+      A MultiArchive consisting of ~50 weekly archives containing ~3000
+      channels worth ~1GB of data each.<br>
+      Command: <em>ArchiveExport &lt;MultiArchive&gt; -match &lt;pattern&gt;
+      <dl>
+      <dt><b>Plain (old style) access (no timestamps)</b>
+      <dd>All 50 archives are searched for a channel matching &lt;pattern&gt; and
+	  data within timestamp is retrieved<br><font color=red>&rArr; ~100 seconds</font>
+      <dt><b>Plain access (with timestamps)</b>
+      <dd>All 50 archives are opened and if the min and max timestamp in
+	  the archive intersect the given interval, it is appended to the
+	  list of archives to search.
+	  Only a few archives are searched for a channel matching &lt;pattern&gt; and
+	  data within timestamp is retrieved<br><font color=red>&rArr; ~6 seconds</font>
+      <dt><b>Fastest access (with timestamps)</b>
+      <dd>The MultiArchive-file itself contains a start- and stop-timestamp
+          for each archive. If the min and max timestamp provided for
+	  the archive intersect the given interval, it is appended to the
+	  list of archives to search.
+	  Only a few archives are searched for a channel matching &lt;pattern&gt; and
+	  data within timestamp is retrieved<br><font color=red>&rArr; ~2 seconds</font>
+      </dl>
+      The absolute times measured will vary depending on platform/hardware,
+      but the ratio will remain!
 <P>
 The most recent sub-archive has to be listed first,
 followed by the next one back in time and so on
@@ -72,7 +114,9 @@ listed first.
 <LI>
 Open a MultiArchive for the given master file
 <PRE>
-   MultiArchive(const stdString &master_file);
+   MultiArchive(const stdString &master_file, 
+		const osiTime &from = nullTime,
+		const osiTime &to = nullTime);
 </PRE>
 <LI>
 All virtuals from <A HREF="ArchiveI.htm#Main">ArchiveI</A> are implemented,

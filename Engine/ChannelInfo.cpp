@@ -496,9 +496,8 @@ void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
 {
     if (!_tmp_value)
     {
-        LOG_MSG("'%s', IOC %s: "
-                "Cannot add event because data type is unknown\n",
-                _name.c_str(), ca_host_name(_chid));
+        LOG_MSG("'%s': Cannot add event because data type is unknown\n",
+                _name.c_str());
         return;
     }
 

@@ -29,12 +29,17 @@ public:
     static bool isValid(const char *name)
     {	return name[0] != '\0';	}
 
-    //* Build filename from dir. and basename
+    /// Build filename from dir. and basename
 	static void build(const stdString &dirname, const stdString &basename,
                       stdString &filename);
 
-	//* Get dir. or basename from full pathname
+    /// Returns true if filename contains a path/directory
+    static bool containsPath(const stdString &filename);
+    
+	/// Get directory (path) from full path/filename
 	static void getDirname(const stdString &filename, stdString &dirname);
+
+    /// Get basename from full filename
 	static void getBasename(const stdString &filename, stdString &basename);
 };
 

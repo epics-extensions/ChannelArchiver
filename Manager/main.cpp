@@ -30,7 +30,7 @@
 #include <ArgParser.h>
 #include <Filename.h>
 #include <epicsTimeHelper.h>
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "BinArchive.h"
 #include "BinValueIterator.h"
 #include "ExpandingValueIteratorI.h"

@@ -17,7 +17,7 @@
 #include<Filename.h>
 #include<BinaryTree.h>
 #include<RegularExpression.h>
-#include"../ArchiverConfig.h"
+#include"ArchiverConfig.h"
 #include"Exporter.h"
 #include"GNUPlotExporter.h"
 #include"MatlabExporter.h"

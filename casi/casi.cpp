@@ -18,13 +18,13 @@
 
 // Convert into time text format...
 //
-static const char *osi2txt(const osiTime &osi)
+static const char *epicsTime2txt(const epicsTime &epicsTime)
 {
      static char txt[80];
      int year, month, day, hour, min, sec;
      unsigned long nano;
 
-     osiTime2vals(osi, year, month, day, hour, min, sec, nano);
+     epicsTime2vals(epicsTime, year, month, day, hour, min, sec, nano);
 
      sprintf(txt, "%4d/%02d/%02d %02d:%02d:%02d.%09d",
              year, month, day, hour, min, sec, nano);
@@ -34,7 +34,7 @@ static const char *osi2txt(const osiTime &osi)
 // Convert from time text in "YYYY/MM/DD hh:mm:ss" format
 // as used by the archiver with 24h hours and (maybe) fractional seconds
 //
-static bool text2osi(const char *text, osiTime &osi)
+static bool text2epicsTime(const char *text, epicsTime &epicsTime)
 {
     int     year, month, day, hour, minute;
     double  second;
@@ -47,7 +47,7 @@ static bool text2osi(const char *text, osiTime &osi)
     int secs = (int)second;
     unsigned long nano = (unsigned long) ((second - secs) * 1000000000L);
 
-    vals2osiTime(year, month, day, hour, minute, secs, nano, osi);
+    vals2epicsTime(year, month, day, hour, minute, secs, nano, epicsTime);
 
     return true;
 }
@@ -190,14 +190,14 @@ const char *archive::nextFileTime(const char *current_time)
     if (! archive)
         throwDetailedArchiveException(Invalid, "no BinArchive");
 
-    osiTime time;
-    if (! text2osi(current_time, time))
+    epicsTime time;
+    if (! text2epicsTime(current_time, time))
         throwDetailedArchiveException(Invalid, "invalid time");
 
-    osiTime next;
+    epicsTime next;
     archive->calcNextFileTime(time, next);
 
-    return osi2txt(next);
+    return epicsTime2txt(next);
 }
 
 // ----------------------------------------------------------------
@@ -246,7 +246,7 @@ const char *channel::getFirstTime() const
         throwDetailedArchiveException(Invalid,
                                        "getFirstTime called "
                                        "for invalid channel");
-    return osi2txt(_iter->getChannel()->getFirstTime());
+    return epicsTime2txt(_iter->getChannel()->getFirstTime());
 }
 
 const char *channel::getLastTime() const
@@ -256,7 +256,7 @@ const char *channel::getLastTime() const
                                        "getLastTime called "
                                        "for invalid channel");
 
-    return osi2txt(_iter->getChannel()->getLastTime());
+    return epicsTime2txt(_iter->getChannel()->getLastTime());
 }
 
 // internal helper routine
@@ -298,14 +298,14 @@ bool channel::getValueAfterTime(const char *time, value &v) const
                                        "getValueAfterTime called "
                                        "for invalid channel");
         
-    osiTime osi;
-    if (! text2osi(time, osi))
+    epicsTime epicsTime;
+    if (! text2epicsTime(time, epicsTime))
     {
         v.setIter(0);
         return false;
     }
 
-    return _iter->getChannel()->getValueAfterTime(osi, v._iter);
+    return _iter->getChannel()->getValueAfterTime(epicsTime, v._iter);
 }
 
 bool channel::getValueBeforeTime(const char *time, value &v) const
@@ -314,14 +314,14 @@ bool channel::getValueBeforeTime(const char *time, value &v) const
         throwDetailedArchiveException(Invalid,
                                        "getValueBeforeTime called "
                                        "for invalid channel");
-    osiTime osi;
-    if (! text2osi(time, osi))
+    epicsTime epicsTime;
+    if (! text2epicsTime(time, epicsTime))
     {
         v.setIter (0);
         return false;
     }
 
-    return _iter->getChannel()->getValueBeforeTime(osi, v._iter);
+    return _iter->getChannel()->getValueBeforeTime(epicsTime, v._iter);
 }
 
 bool channel::getValueNearTime(const char *time, value &v) const
@@ -330,14 +330,14 @@ bool channel::getValueNearTime(const char *time, value &v) const
         throwDetailedArchiveException(Invalid,
                                        "getValueNearTime called "
                                        "for invalid channel");
-    osiTime osi;
-    if (! text2osi(time, osi))
+    epicsTime epicsTime;
+    if (! text2epicsTime(time, epicsTime))
     {
         v.setIter(0);
         return false;
     }
 
-    return _iter->getChannel()->getValueNearTime(osi, v._iter);
+    return _iter->getChannel()->getValueNearTime(epicsTime, v._iter);
 }
 
 int channel::lockBuffer(const value &value)
@@ -517,18 +517,16 @@ const char *value::time() const
     if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
-    return osi2txt (getVal()->getTime());
+    return epicsTime2txt (getVal()->getTime());
 }
 
 double value::getDoubleTime() const
 {
-    osiTime cur_time;
     if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
-    cur_time = getVal()->getTime();
-    return ((double)cur_time);
-
+    struct timeval tv = getVal()->getTime();
+    return (double)tv.tv_sec + tv.tv_usec/1e6;
 }
 
 bool value::isRepeat() const
@@ -603,8 +601,8 @@ int value::determineChunk(const char *until)
     if (!_iter)
         throwDetailedArchiveException(Invalid,
                                       "invalid Value");
-    osiTime time;
-    if (! text2osi(until, time))
+    epicsTime time;
+    if (! text2epicsTime(until, time))
         return 0;
         
     return _iter->determineChunk (time);
@@ -635,10 +633,10 @@ void value::setTime (const char *ts)
    if (!_valI)
       throwDetailedArchiveException(Invalid, "invalid Value");
 
-   osiTime osi;
-   if (!text2osi(ts, osi))
+   epicsTime epicsTime;
+   if (!text2epicsTime(ts, epicsTime))
       throwDetailedArchiveException(Invalid, "invalid Time");
-   _valI->setTime(osi);
+   _valI->setTime(epicsTime);
 }
 
 void value::clone(value& src)

@@ -4,7 +4,7 @@
 #include <ToolsConfig.h>
 #include <epicsTimeHelper.h>
 #include <ArgParser.h>
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "BinArchive.h"
 #include "MultiArchive.h"
 #include "GNUPlotExporter.h"

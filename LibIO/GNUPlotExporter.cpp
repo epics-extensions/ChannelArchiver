@@ -4,7 +4,7 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "ArchiveException.h"
 #include "GNUPlotExporter.h"
 #include "LinInterpolValueIteratorI.h"

@@ -3,6 +3,7 @@
 include ../../Make.cfg
 
 #	includes to install from this subproject
+INC += ArchiverConfig.h
 INC += ArchiveTypes.h
 INC += ArchiveException.h
 INC += ArchiveI.h

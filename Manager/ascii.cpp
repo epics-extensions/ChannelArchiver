@@ -11,7 +11,7 @@
 // ASCII read/write routines
 //
 
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "BinArchive.h"
 #include <ASCIIParser.h>
 #include <stdlib.h>

@@ -10,7 +10,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include <ArchiveI.h>
 #include "ActionEdit.h"
 #include "PlotCanvas.h"

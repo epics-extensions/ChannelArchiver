@@ -1,7 +1,7 @@
 // BrowserDlg.cpp
 
 #include "stdafx.h"
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include <BinArchive.h>
 #include <MultiArchive.h>
 #include <ArchiveException.h>

@@ -11,7 +11,7 @@
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "GroupInfo.h"
 #include "ScanList.h"
 #include "Configuration.h"

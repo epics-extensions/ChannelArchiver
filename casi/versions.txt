@@ -133,18 +133,4 @@ setenv CXX g++          # Set CXX to your C++ compiler
 gmake
 gmake install
 gmake nuke
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
 

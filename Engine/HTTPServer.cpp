@@ -12,7 +12,7 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "HTTPServer.h"
 #include "MsgLogger.h"
 

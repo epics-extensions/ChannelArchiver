@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include <ToolsConfig.h>
 #include <epicsTimeHelper.h>
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "NetTools.h"
 #include "HTMLPage.h"
 

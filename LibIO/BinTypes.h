@@ -1,7 +1,7 @@
 #ifndef __BINTYPES_H__
 #define __BINTYPES_H__
 
-#include "../ArchiverConfig.h"
+#include "ArchiverConfig.h"
 #include "ArchiveTypes.h"
 #include <db_access.h>
 #include <epicsTime.h>

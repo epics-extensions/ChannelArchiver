@@ -5,10 +5,8 @@
 // Index
 #include "RTree.h"
 
-#undef DEBUG_OVERLAP
-
 #define RecordSize  (8+8+4)
-#define NodeSize  (1+4+RecordSize*RTreeM)
+#define NodeSize    (1+4+RecordSize*RTreeM)
 
 long RTree::Datablock::getSize() const
 {   //  next_ID, data offset, name size, name (w/o '\0')
@@ -29,7 +27,7 @@ bool RTree::Datablock::read(FILE *f)
 {
     if (fseek(f, offset, SEEK_SET))
     {
-        fprintf("Datablock seek error @ 0x%lX\n", offset);
+        LOG_MSG("Datablock seek error @ 0x%lX\n", offset);
         return false;
     }
     short len;
@@ -37,131 +35,29 @@ bool RTree::Datablock::read(FILE *f)
     if (!(readLong(f, &next_ID) && readLong(f, &data_offset) &&
           readShort(f, &len)))
     {
-        fprintf("Datablock read error @ 0x%lX\n", offset);
+        LOG_MSG("Datablock read error @ 0x%lX\n", offset);
         return false;
     }
     if (len >= (short)sizeof(buf)-1)
     {
-        LOG_MSG("Datablock::read: Filename exceeds buffer (%d)\n", len);
+        LOG_MSG("Datablock::read: Filename exceeds buffer (%d)\n",len);
         return false;
     }
     if (fread(buf, len, 1, f) != 1)
     {
-        fprintf("Datablock filename read error @ 0x%lX\n", offset);
+        LOG_MSG("Datablock filename read error @ 0x%lX\n", offset);
         return false;
     }
     buf[len] = '\0';
     data_filename.assign(buf, len);
     if ((short)data_filename.length() != len)
     {
-        fprintf("Datablock filename length error @ 0x%lX\n", offset);
+        LOG_MSG("Datablock filename length error @ 0x%lX\n", offset);
         return false;
     }
     return true;
 }
     
-// Check if intervals s1...e1 and s2...e2 overlap.
-// Note: They might touch, e.g. s1 <= e1  <= s2 <= e2,
-//       that's still not considered an overlap
-inline bool do_intervals_overlap(const epicsTime &s1, const epicsTime &e1,
-                                 const epicsTime &s2, const epicsTime &e2)
-{
-    if (e1 <= s2   ||  e2 <= s1)
-        return false;
-    return true;
-}
-
-// Does interval s1..e1 cover (totally overlap) s2..e2 ?
-inline bool interval_covers_other(const epicsTime &s1, const epicsTime &e1,
-                                  const epicsTime &s2, const epicsTime &e2)
-{
-    return s1 <= s2  &&  e1 >= e2;
-}
-
-// If entries s1..e1(ID1) and s2..e2(ID2) overlap,
-// identify the (up to 3) non-overlapping new intervals
-// and their IDs.
-// In the region of overlap, the first interval "wins",
-// i.e. has a higher priority.
-// Entries s1.. and s2.. will be modified.
-// s3.. will be set if s1 was 'inside' s2 and hence we end
-// up with 3 non-overlapping intervals.
-//
-// An IDx = 0 indicates 'not used'.
-static void resolve_overlap(epicsTime &s1, epicsTime &e1,
-                            RTree::Offset &ID1,
-                            epicsTime &s2, epicsTime &e2,
-                            RTree::Offset &ID2,
-                            epicsTime &s3, epicsTime &e3,
-                            RTree::Offset &ID3)
-{
-    LOG_ASSERT(do_intervals_overlap(s1, e1, s2, e2));
-#ifdef DEBUG_OVERLAP
-    stdString txt1, txt2;
-    printf("Overlap: %s..%s (%ld)", 
-           epicsTimeTxt(s1, txt1), epicsTimeTxt(e1, txt2), ID1);
-    printf(" and %s..%s (%ld)\n",
-           epicsTimeTxt(s2, txt1), epicsTimeTxt(e2, txt2), ID2);
-#endif
-    // Sort the time stamps of intervals s1.. and s2...
-    InsertionSort<epicsTime, 4> t;
-    t.insert(s1); t.insert(e1); t.insert(s2); t.insert(e2);
-    // We could now have up to 3 intervals: t0..t1, t1..t2, t2..t3.
-    // How do the original intervals map to these, that is:
-    // What IDs belong to which of the new intervals?
-    RTree::Offset ID[3];
-    if (interval_covers_other(s1, e1, t[0], t[1]))
-        ID[0] = ID1; // check s1..e1/ID1 first to give it priority
-    else if (interval_covers_other(s2, e2, t[0], t[1]))
-        ID[0] = ID2;
-    else
-        ID[0] = 0;    
-    if (interval_covers_other(s1, e1, t[1], t[2]))
-        ID[1] = ID1;
-    else if (interval_covers_other(s2, e2, t[1], t[2]))
-        ID[1] = ID2;
-    else
-        ID[1] = 0;
-    if (interval_covers_other(s1, e1, t[2], t[3]))
-        ID[2] = ID1;
-    else if (interval_covers_other(s2, e2, t[2], t[3]))
-        ID[2] = ID2;
-    else
-        ID[2] = 0;
-#ifdef DEBUG_OVERLAP
-    printf("Separated: %s..%s (%ld);", 
-           epicsTimeTxt(t[0], txt1), epicsTimeTxt(t[1], txt2), ID[0]);
-    printf(" %s..%s (%ld);", 
-           epicsTimeTxt(t[1], txt1), epicsTimeTxt(t[2], txt2), ID[1]);
-    printf(" %s..%s (%ld)\n", 
-           epicsTimeTxt(t[2], txt1), epicsTimeTxt(t[3], txt2), ID[2]);
-#endif
-    // Check if we can combine the new intervals since they use the same IDs.
-    if (ID[2]  &&  ID[1] == ID[2])
-    {
-        t.set(2, t[3]);
-        ID[2] = 0;
-    }
-    if (ID[1]  &&  ID[0] == ID[1])
-    {
-        t.set(1, t[2]);
-        t.set(2, t[3]);
-        ID[1] = ID[2];
-        ID[2] = 0;
-    }
-    s1 = t[0]; e1 = t[1]; ID1 = ID[0];
-    s2 = t[1]; e2 = t[2]; ID2 = ID[1];
-    s3 = t[2]; e3 = t[3]; ID3 = ID[2];
-#ifdef DEBUG_OVERLAP
-    printf("Merged: %s..%s (%ld);", 
-           epicsTimeTxt(t[0], txt1), epicsTimeTxt(t[1], txt2), ID[0]);
-    printf(" %s..%s (%ld);", 
-           epicsTimeTxt(t[1], txt1), epicsTimeTxt(t[2], txt2), ID[1]);
-    printf(" %s..%s (%ld)\n", 
-           epicsTimeTxt(t[2], txt1), epicsTimeTxt(t[3], txt2), ID[2]);
-#endif
- }
-
 static bool writeEpicsTime(FILE *f, const epicsTime &t)
 {
     epicsTimeStamp stamp = t;
@@ -506,10 +402,11 @@ void RTree::make_node_dot(FILE *dot, FILE *f, Offset node_offset)
         for (i=0; i<RTreeM; ++i)
         {
             datablock.offset = node.record[i].child_or_ID;
-            while (datablock.offset)
-            {
+            if (datablock.offset)
                 fprintf(dot, "\tnode%ld:f%d->id%ld;\n",
                         node.offset, i, datablock.offset);
+            while (datablock.offset)
+            {
                 if (!datablock.read(f))
                 {
                     LOG_MSG("RTree::make_node_dot cannot read data "
@@ -688,17 +585,12 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
                                   Offset data_offset,
                                   const stdString &data_filename)
 {
-    if (start > end)
-    {
-        LOG_MSG("RTree::insert: illegal interval %s...%s\n",
-                epicsTimeTxt(start, txt1), epicsTimeTxt(end, txt2));
-        return YNE_Error;
-    }
     stdString txt1, txt2;
-    int i,j;
-    YNE yne;
+    YNE       yne;
+    int       i,j;
     Datablock block, new_block;
-    Node node;
+    Node      node;
+    LOG_ASSERT(start <= end);
     node.offset = root_offset;
     if (!choose_leaf(start, end, node))
     {
@@ -709,29 +601,59 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
     {   
         if (node.record[i].child_or_ID == 0)
             break;
+        // Check for the 4 possible overlap situations.
+        // Note: Overlap! Just "touching" is not an "overlap".
+        // Block is added to all record that cover it so that
+        // we'll find it right away when re-building a master index.
         if (node.record[i].start <= start  &&  end <= node.record[i].end)
-        {   // (1) Datablock fully covered by existing record
-            yne = is_block_under_record(node, i, data_offset, data_filename, block);
-            if (yne == YNE_Error  ||  yne == YNE_Yes)
+            // (1) Existing record:  |------------|
+            //     New block      :     |---|
+            //     ==> Add block to existing record
+            return add_block_to_record(node, i, data_offset, data_filename);
+        if (start < node.record[i].start  &&
+            node.record[i].start < end && node.record[i].end <= end)
+        {   // (2) Existing record:         |-------|
+            //     New block      :     |--------|
+            //     ==> Add non-overlap  |###|           
+            yne = add_block_to_record(node, i, data_offset, data_filename);
+            if (yne == YNE_Error  ||  yne == YNE_No)
+                return yne; // Error or already know that block.
+            return insertDatablock(start, node.record[i].start,
+                                   data_offset, data_filename);
+        }
+        if (node.record[i].start <= start && start < node.record[i].end &&
+            node.record[i].end < end)
+        {   // (3) Existing record:     |-------|
+            //     New block      :        |--------|
+            //     ==> Add non-overla p         |###|
+            yne = add_block_to_record(node, i, data_offset, data_filename);
+            if (yne == YNE_Error  ||  yne == YNE_No)
                 return yne;
-            if (!write_new_datablock(data_offset, data_filename, new_block))
-                return YNE_Error;
-            block.next_ID = new_block.offset;
-            if (!block.write(fa.getFile()))
-                return YNE_Error;
-            return YNE_Yes;
+            return insertDatablock(node.record[i].end, end,
+                                   data_offset, data_filename);
         }
-        if (do_intervals_overlap(node.record[i].start, node.record[i].end,
-                                 start, end))
+        if (start < node.record[i].start && node.record[i].end < end)
         {
-            printf("NOT YET\n");
-            return YNE_Error;
+            // (4) Existing record:        |---|
+            //     New block      :     |----------|
+            //     ==> Add non-overlaps |##| + |###|
+            yne = add_block_to_record(node, i, data_offset, data_filename);
+            if (yne == YNE_Error  ||  yne == YNE_No)
+                return yne;
+            yne = insertDatablock(start, node.record[i].start,
+                                  data_offset, data_filename);
+            if (yne == YNE_Error  ||  yne == YNE_No)
+                return yne;
+            return insertDatablock(node.record[i].end, end,
+                                   data_offset, data_filename);
         }
-        // Special: records sorted in time
-        if (end <= node.record[i].start) // new entry belongs into rec[i]
+        // Otherwise: records are sorted in time. Does new entry belong here?
+        if (end <= node.record[i].start)
             break;
     }
-    // Need to insert new data into record[i]
+    // Need to insert new block and record at record[i]
+    if (!write_new_datablock(data_offset, data_filename, new_block))
+        return YNE_Error;
     Record overflow;
     if (i<RTreeM)
     {
@@ -740,18 +662,18 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
             node.record[j] = node.record[j-1];
         node.record[i].start = start;
         node.record[i].end = end;
-        node.record[i].child_or_ID = ID;
+        node.record[i].child_or_ID = new_block.offset;
         if (!write_node(node))
         {
             LOG_MSG("RTree::insert cannot write node\n");
-            return InsError;
+            return YNE_Error;
         }
     }
     else
     {
         overflow.start = start;
         overflow.end = end;
-        overflow.child_or_ID = ID;
+        overflow.child_or_ID = new_block.offset;
     }
     if (overflow.child_or_ID)
     {   // Did either new entry or shifting result in overflow?
@@ -759,34 +681,40 @@ RTree::YNE RTree::insertDatablock(const epicsTime &start,
         if (!(new_node.offset = fa.allocate(NodeSize)))
         {
             LOG_MSG("RTree::insert cannot allocate new node\n");
-            return InsError;
+            return YNE_Error;
         }
         new_node.record[0] = overflow;
-        return adjust_tree(node, &new_node) ? InsOK : InsError;
+        return adjust_tree(node, &new_node) ? YNE_Yes : YNE_Error;
     }
-    return adjust_tree(node, 0) ? InsOK : InsError;
+    return adjust_tree(node, 0) ? YNE_Yes : YNE_Error;
 }
 
-// See if the record (node:i) already contains the
-// block for data_offset&file.
-// If No, block is positioned on last block in record's block list.
-RTreeM::YNE RTreeM::is_block_under_record(const Node &node, int i,
-                                          Offset data_offset,
-                                          const stdString &data_filename,
-                                          Datablock &block)
+// Yes  : new block offset/filename was added under node/i.
+// No   : block with offset/filename was already there
+// Error: something's messed up
+RTree::YNE RTree::add_block_to_record(const Node &node, int i,
+                                      Offset data_offset,
+                                      const stdString &data_filename)
 {
     LOG_ASSERT(node.isLeaf);
+    Datablock block;
     block.next_ID = node.record[i].child_or_ID;
-    while (block.next_ID)
+    while (block.next_ID) // run over blocks under record
     {
         block.offset = block.next_ID;
         if (!block.read(fa.getFile()))
             return YNE_Error;
         if (block.data_offset == data_offset &&
             block.data_filename == data_filename)
-            return YNE_Yes;
+            return YNE_No;
     }
-    return YNE_No;
+    // Block's now the last in the chain
+    Datablock new_block;
+    if (!write_new_datablock(data_offset,
+                             data_filename, new_block))
+        return YNE_Error;
+    block.next_ID = new_block.offset;
+    return block.write(fa.getFile()) ? YNE_Yes : YNE_Error;
 }
 
 // Configure block for data_offset/name,
@@ -795,16 +723,27 @@ bool RTree::write_new_datablock(Offset data_offset,
                                 const stdString &data_filename,
                                 Datablock &block)
 {
-    block.offset = fa.allocate(block.getSize());
     block.next_ID = 0;
     block.data_offset = data_offset;
     block.data_filename = data_filename;
+    block.offset = fa.allocate(block.getSize());
     if (!(block.offset && block.write(fa.getFile())))
     {
-        fprintf(stderr, "RTree::write_new_datablock(%s @ 0x%lX) failed\n",
+        LOG_MSG("RTree::write_new_datablock(%s @ 0x%lX) failed\n",
                 data_filename.c_str(), data_offset);
         return false;
     }
+    return true;
+}
+
+// Check if intervals s1...e1 and s2...e2 overlap.
+// Note: They might touch, e.g. s1 <= e1  <= s2 <= e2,
+//       that's still not considered an overlap
+inline bool do_intervals_overlap(const epicsTime &s1, const epicsTime &e1,
+                                 const epicsTime &s2, const epicsTime &e2)
+{
+    if (e1 <= s2   ||  e2 <= s1)
+        return false;
     return true;
 }
 

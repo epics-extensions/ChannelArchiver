@@ -217,10 +217,9 @@ private:
 
     bool prev_next(Node &node, int &i, int dir) const;
     
-    YNE is_block_under_record(const Node &node, int i,
-                              Offset data_offset,
-                              const stdString &data_filename,
-                              Datablock &block);
+    YNE add_block_to_record(const Node &node, int i,
+                            Offset data_offset,
+                            const stdString &data_filename);
     
     bool write_new_datablock(Offset data_offset,
                              const stdString &data_filename,

@@ -1,6 +1,6 @@
 # Example on how to link the non-shared library
 
-BASE=/cs/epics/R3.13.3/base
+BASE=/cs/epics/R3.13.5/base
 
 echo "Building O.$HOST_ARCH/CGIExport..."
 cd O.$HOST_ARCH

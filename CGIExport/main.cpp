@@ -159,7 +159,7 @@ static void cmdInfo(HTMLPage &page)
 	Info			 info;
 	try
 	{
-		Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory, page._start, page._end));
+		Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory));
 		ChannelIterator channel(archive);
 
 		if (page._names.empty())

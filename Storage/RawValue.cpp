@@ -529,7 +529,7 @@ void RawValue::show(FILE *file,
         return;
     }
     getValueString(txt, type, count, value, info);
-    fprintf(file, "%s\t%s\%s\n",
+    fprintf(file, "%s\t%s\t%s\n",
             time.c_str(), txt.c_str(), stat.c_str());
 }   
 

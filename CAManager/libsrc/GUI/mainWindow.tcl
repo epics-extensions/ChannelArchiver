@@ -22,6 +22,7 @@ proc camGUI::mainWindow {} {
       {command "&Info" {} "Info on Archive" {Ctrl i} -command {camGUI::aInfo .tf.t}}
       {command "&Test" {} "Test an Archive" {Ctrl t} -command {camGUI::aTest .tf.t}}
       {command "E&xport" {} "Export an Archive" {Ctrl x} -command {camGUI::aExport .tf.t}}
+      {command "&Modify" {} "Copy/Delete Channels in an Archive" {Ctrl m} -command {camGUI::aModArchive .tf.t}}
     }
     "&Help" all help 0 {
       {command "&About" {} "Version Info" {Ctrl a} -command {camGUI::aAbout}}
@@ -55,27 +56,27 @@ proc camGUI::mainWindow {} {
   Button $f.start -text Start -bd 1 -relief $brel \
       -command "camGUI::aStart $table" -state disabled \
       -helptype variable -helpvar ::status \
-      -helptext "start the selected ArchiveEngine"
+      -helptext "start the selected Archiver"
   Button $f.stop -text Stop -bd 1 -relief $brel \
       -command "camGUI::aStop $table" -state disabled \
       -helptype variable -helpvar ::status \
-      -helptext "stop the selected ArchiveEngine (may restart if not blocked)"
+      -helptext "stop the selected Archiver (may restart if not blocked)"
   Button $f.new -text New -bd 1 -relief $brel \
       -command "camGUI::aNew $table" \
       -helptype variable -helpvar ::status \
-      -helptext "create a new ArchiveEngine"
+      -helptext "create a new Archiver"
   Button $f.delete -text Delete -bd 1 -relief $brel \
       -command "camGUI::aDelete $table" -state disabled \
       -helptype variable -helpvar ::status \
-      -helptext "delete the selected ArchiveEngine (without stopping it))"
+      -helptext "delete the selected Archiver (without stopping it))"
   Button $f.edit -text Edit -bd 1 -relief $brel \
       -command "camGUI::aEdit $table" -state disabled \
       -helptype variable -helpvar ::status \
-      -helptext "edit properties of selected ArchiveEngine (restricted if ArchiveEngine is runnung)"
+      -helptext "edit properties of selected Archiver (restricted if Archiver is runnung)"
   Button $f.check -text Check -bd 1 -relief $brel \
       -command "camGUI::aCheck $table" \
       -helptype variable -helpvar ::status \
-      -helptext "manually check which ArchiveEngines are running"
+      -helptext "manually check which Archivers are running"
   Button $f.xport -text Export -bd 1 -relief $brel \
       -command "camGUI::aXport $table" \
       -helptype variable -helpvar ::status \

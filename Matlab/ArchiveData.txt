@@ -41,7 +41,9 @@ data = ArchiveData(URL, 'values', KEY, NAME, START, END [, COUNT[, HOW]])
    The resulting DATA is a 3-by-N matrix of N samples.
    Row 1 gives the date numbers of the samples (suitable for e.g. datestr()),
    row 2 gives the nanoseconds of the time stamps (in case you care),
-   row 3 gives the values.
+   row 3 gives the values in case the samples are scalars.
+   rows 3, 4, 5, .... give the elements of the sample in case the
+         channel is an array.
 
    If you provide a cell array with more than one name for NAME,
    the result is not a single DATA matrix but a list of matrices:

@@ -21,10 +21,12 @@ end
 data=ArchiveData(url, 'values', key, name, t0, t1, count, how);
 times=data(1,:);
 micros=round(data(2,:)*1e6);
-values=data(3,:);
+values=data(3:size(data,1),:)';
 if nargout < 1
     for i=1:size(data,2)
-        disp(sprintf('%s.%06d %g', ...
-             datestr(times(i)), micros(i), values(i)))
+%        disp(sprintf('%s.%06d %g',datestr(times(i)), micros(i), values(i)))
+        disp(sprintf('%s%s', ...
+                     sprintf('%s.%06d',datestr(times(i)), micros(i)), ...
+                     sprintf(' %g', values(i,:))))
     end
 end

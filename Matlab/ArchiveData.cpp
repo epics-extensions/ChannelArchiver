@@ -24,10 +24,6 @@
 #include <epicsTimeHelper.h>
 #include <ArchiveDataClient.h>
 
-// Returning rows for datenum, nanoseconds, value,
-// one column per sample.
-#define DATA_ROWS 3
-
 #ifdef OCTAVE
 // For an unknown reason, octave has a ~1sec rounding problem.
 #    define SplitSecondTweak      (1.0/24/60/60/2)
@@ -35,7 +31,8 @@
 #    define SplitSecondTweak      0.0
 #endif
 
-static void epicsTime2DateNum(const epicsTime &t, double &seconds, double &nanoseconds)
+static void epicsTime2DateNum(const epicsTime &t,
+                              double &seconds, double &nanoseconds)
 {
     xmlrpc_int32 secs, nano;
     epicsTime2pieces(t, secs, nano);
@@ -64,36 +61,43 @@ void DateNum2epicsTime(double num, epicsTime &t)
 #include <octave/Cell.h>
 #include <octave/lo-ieee.h>
 
+// ValueInfo is used to temporarily store all the
+// samples that we get from the network data server.
+// It's allocated with 'count' samples,
+// and after we get all the data, we'll check how
+// many samples we actually received, so that
+// we can then return that used portion as the
+// result of the mex routine.
 class ValueInfo
 {
 public:
-    ValueInfo(size_t num, size_t count) : num(num)
+    ValueInfo(size_t num_channels, size_t num_samples)
+            : num_channels(num_channels), num_samples(num_samples)
     {
-        data = (Matrix **) calloc(num, sizeof(Matrix *));
-        used_columns = (size_t *)calloc(num, sizeof(size_t));
-        size_t i;
-        for (i=0; i<num; ++i)
-            data[i] = new Matrix(DATA_ROWS, count);
+        data = (Matrix **) calloc(num_channels, sizeof(Matrix *));
+        array_sizes = (size_t *)calloc(num_channels, sizeof(size_t));
+        used_columns = (size_t *)calloc(num_channels, sizeof(size_t));
     }
     ~ValueInfo()
     {
         free(used_columns);
+        free(array_sizes);
         size_t i;
-        for (i=0; i<num; ++i)
+        for (i=0; i<num_channels; ++i)
             if (data[i])
                 delete data[i];
         free(data);
     }
-    Matrix **data;
-    size_t *used_columns;
-private:
-    size_t num;
+    Matrix **data;        // One matrix per channel.
+    size_t *array_sizes;  // .. per channel. ==1 for scalars.
+    size_t *used_columns; // used matrix lines for each channel.
+    size_t num_channels, num_samples;
 };
 
 static bool value_callback(void *arg,
                            const char *name,
-                           size_t n,
-                           size_t i,
+                           size_t n, // channel index
+                           size_t i, // value index
                            const CtrlInfo &info,
                            DbrType type, DbrCount count,
                            const RawValue::Data *value)
@@ -107,11 +111,27 @@ static bool value_callback(void *arg,
                   << " " << s.c_str() << "\n";
 #endif
     ValueInfo *vi = (ValueInfo *)arg;
+    if (i == 0)
+    {   // allocate storage
+            vi->data[n] = new Matrix(2+count, vi->num_samples);
+            vi->array_sizes[n] = count;
+    }
     Matrix *m = vi->data[n];
     epicsTime2DateNum(RawValue::getTime(value), m->elem(0, i), m->elem(1, i));
-    if (RawValue::isInfo(value)  ||
-        RawValue::getDouble(type, count, value, m->elem(2, i)) == false)
-        m->elem(2, i) = octave_NaN;
+    int ai;
+    bool valid = true;
+    if (RawValue::isInfo(value))
+        valid = false;
+    else
+        for (ai=0; ai<count; ++ai)
+            if (!RawValue::getDouble(type, count, value, m->elem(2+ai, i), ai))
+            {
+                valid = false;
+                break;
+            }
+    if (!valid)
+        for (ai=0; ai<count; ++ai)
+            m->elem(2+ai, i) = octave_NaN;
     vi->used_columns[n] = i+1;
     return true;
 }
@@ -292,7 +312,8 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.txt")
         {
             for (i=0; i<num; ++i)
             {
-                val_info.data[i]->resize(DATA_ROWS, val_info.used_columns[i]);
+                val_info.data[i]->resize(2+val_info.array_sizes[i],
+                                         val_info.used_columns[i]);
                 retval.append(octave_value(*val_info.data[i]));
             }
         }
@@ -310,22 +331,27 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.txt")
 // -----------------------------------------------------------------------
 #include "mex.h"
 
+// Similar to the ValueInfo used for Octave.
+// The octave case is a bit simpler because octave
+// allows shrinking/resizing of a matrix.
 class ValueInfo
 {
 public:
-    ValueInfo(size_t num, size_t count) : num(num)
+    ValueInfo(size_t num_channels, size_t num_samples)
+            : num_channels(num_channels),
+              num_samples(num_samples)
     {
-        data = (mxArray **) mxCalloc(num, sizeof(mxArray *));
-        used_columns = (size_t *)calloc(num, sizeof(size_t));
-        size_t i;
-        for (i=0; i<num; ++i)
-            data[i] = mxCreateDoubleMatrix(DATA_ROWS, count, mxREAL);
+        data = (mxArray **) mxCalloc(num_channels, sizeof(mxArray *));
+        array_sizes = (size_t *)calloc(num_channels, sizeof(size_t));
+        used_columns = (size_t *)calloc(num_channels, sizeof(size_t));
     }
+
     ~ValueInfo()
     {
         free(used_columns);
+        free(array_sizes);
         size_t i;
-        for (i=0; i<num; ++i)
+        for (i=0; i<num_channels; ++i)
             if (data[i])
                 mxDestroyArray(data[i]);
         mxFree(data);
@@ -335,23 +361,24 @@ public:
     {
         if (used_columns[n] <= 0)
             return 0;
-        mxArray *sub = mxCreateDoubleMatrix(DATA_ROWS, used_columns[n], mxREAL);
+        mxArray *sub = mxCreateDoubleMatrix(2+array_sizes[n],
+                                            used_columns[n], mxREAL);
         const double *src = mxGetPr(data[n]);
         double *dst = mxGetPr(sub);
-        memcpy(dst, src, sizeof(double)*DATA_ROWS*used_columns[n]);
+        memcpy(dst, src, sizeof(double)*(2+array_sizes[n])*used_columns[n]);
         return sub;
     }
-    
-    mxArray **data;
-    size_t *used_columns;
-private:
-    size_t num;
+
+    mxArray **data;       // One matrix per channel.
+    size_t *array_sizes;  // .. per channel. ==1 for scalars.
+    size_t *used_columns; // used matrix lines for each channel.
+    size_t num_channels, num_samples;
 };
 
 static bool value_callback(void *arg,
                            const char *name,
-                           size_t n,
-                           size_t i,
+                           size_t n, // channel index
+                           size_t i, // value index
                            const CtrlInfo &info,
                            DbrType type, DbrCount count,
                            const RawValue::Data *value)
@@ -364,14 +391,33 @@ static bool value_callback(void *arg,
     mexPrintf("%d : %s %s %s\n", i, t.c_str(), v.c_str(), s.c_str());
 #endif
     ValueInfo *vi = (ValueInfo *)arg;
-    mxAssert(mxGetM(vi->data[n]) == DATA_ROWS, "Dimensions don't match");
-    mxAssert(mxGetN(vi->data[n]) > i, "Too much data");
+    if (i == 0)
+    {   // allocate storage
+        vi->data[n] = mxCreateDoubleMatrix(2+count, vi->num_samples, mxREAL);
+        vi->array_sizes[n] = count;
+    }
+    else
+    {   // check for changes in size
+        mxAssert(mxGetM(vi->data[n]) == 2+count, "Dimensions don't match");
+        mxAssert(mxGetN(vi->data[n]) > i, "Too much data");
+    }
     double *data = mxGetPr(vi->data[n]);
-#define elem(r,c)  data[(r)+(c)*DATA_ROWS]
+#define elem(c,r)  data[(c)+(r)*(2+count)]
     epicsTime2DateNum(RawValue::getTime(value), elem(0, i), elem(1, i));
-    if (RawValue::isInfo(value)  ||
-        RawValue::getDouble(type, count, value, elem(2, i)) == false)
-        elem(2, i) = mxGetNaN();
+    int ai;
+    bool valid = true;
+    if (RawValue::isInfo(value))
+        valid = false;
+    else
+        for (ai=0; ai<count; ++ai)
+            if (!RawValue::getDouble(type, count, value, elem(2+ai, i), ai))
+            {
+                valid = false;
+                break;
+            }
+    if (!valid)
+        for (ai=0; ai<count; ++ai)
+            elem(2+ai, i) = mxGetNaN();
 #undef elem
     vi->used_columns[n] = i+1;
     return true;

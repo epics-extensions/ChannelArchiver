@@ -10,6 +10,7 @@ eval('is_matlab=length(matlabroot)>0;', 'is_matlab=0;')
 url='http://bogart/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
 url='http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
 
+% Show Server Info
 ml_arch_info(url);
 [ver, desc, hows]=ml_arch_info(url);
 h_raw=0;
@@ -18,13 +19,17 @@ h_average=2;
 h_plot=3;
 h_linear=4;
 
+% List served archives (keys)
 ml_arch_archives(url);
 [keys,names,paths]=ml_arch_archives(url);
 
+% List channels of an archive
 names={ 'Test_HPRF:Kly1:Pwr_Fwd_Out', 'Test_HPRF:SSA1:Pwr_Fwd_Out' }
 key=4;
 ml_arch_names(url, key, 'IOC');
 ml_arch_names(url, key, names{1});
+
+% Get data
 ml_arch_get(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20),...
             h_sheet, 20);
 ml_arch_get(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20),...
@@ -32,7 +37,17 @@ ml_arch_get(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20),...
 ml_arch_plot(url, key, names{1}, ...
 	     datenum(2003, 1, 18), datenum(2003, 1, 20), h_plot, 500);
 
-% Getting & handling 2 PVs at once:
+% Get a channel that's an array
+ml_arch_get(url, key, 'ExampleArray', datenum(2004, 3, 5), datenum(2004, 3, 6),...
+            h_raw, 20);
+[times, micros, values] = ml_arch_get(url, key, 'ExampleArray', ...
+            datenum(2004, 3, 5), datenum(2004, 3, 6), h_raw, 100);
+xlabel('');
+mesh(values(50:70,:));
+
+pause;
+
+% Getting & handling 2 PVs at once, directly calling the mex/oct routine:
 t0 = datenum(2003, 1, 18);
 t1 = t0 + 2;
 [out, in]=ArchiveData(url, 'values', key, names, t0, t1, 500, h_plot);

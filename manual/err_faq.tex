@@ -20,6 +20,21 @@ the ArchiveEngine? Does it work with the environment settings and user
 ID under which you are trying to run the ArchiveEngine?
 
 \noindent
+\textbf{Why do I get \#N/A, why are there missing values in my spreadsheet?}\\
+There are two main reasons for not having any data: There might not
+have been any data available because the respective channel was
+disconnected or the archive engine was off. When you look at the
+status of the channel, those cases might reveil themselves by status
+values like ``Disconnected'' or ``Archive Off''.
+The ArchiveEngine might also have crashed, not getting a chance to
+write ``Archive Off''. That would be a likely case if no channel has
+data for your time range of interest.
+The most common reason for missing values, however, simply results
+from the fact that we archive the original time stamps and you are
+trying to look at more than one channel at a time. See the section on
+time stamp correlation on page~\pageref{sec:timestampcorr}.  
+
+\noindent
 \textbf{Back in time?}\\
 The archiver relies on the world going forward in time. When
 retrieving samples from an archive, we expect the time stamps to be

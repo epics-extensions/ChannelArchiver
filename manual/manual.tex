@@ -87,14 +87,20 @@
 \author{kasemir@lanl.gov}
 \maketitle
 
+\pagenumbering{roman}
 \tableofcontents
-
+\newpage
 \pagestyle{headings}
+\pagenumbering{arabic}
+\setcounter{page}{1}
 
 \input{overview}
 \input{background}
 \input{engine}
-\input{errors}
+\input{err_faq}
+
+\chapter{Internals}
+\input{binary}
 
 \printindex
 

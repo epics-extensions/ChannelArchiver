@@ -168,7 +168,7 @@ void DataWriter::makeDataFileName(int serial, stdString &name)
 }
 
 // Create new DataFile that's below file_size_limit in size.
-DataFile *DataWriter::createNewDataFile()
+DataFile *DataWriter::createNewDataFile(size_t headroom)
 {
     DataFile *datafile;
     int serial=0;
@@ -190,8 +190,15 @@ DataFile *DataWriter::createNewDataFile()
             datafile->release();
             return 0;
         }
-        if (file_size < file_size_limit)
+        if (file_size+headroom < file_size_limit)
             return datafile;
+        if (datafile->is_new_file)
+        {
+            LOG_MSG ("DataWriter(%s): "
+                     "Cannot create a new data file within file size limit\n",
+                     channel_name.c_str());
+            return datafile; // Use anyway
+        }
         ++serial;
         datafile->release();
     }
@@ -227,19 +234,24 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
     DataFile  *datafile;
     FileOffset ctrl_info_offset;
     bool       new_datafile = false;    // Need to use new DataFile?
+    size_t     headroom = 0;
     if (header == 0)
         new_datafile = true;            // Yes, because there's none.
     else
-    {
+    {   // Check how big the current data file would get
         FileOffset file_size;
         if (! header->datafile->getSize(file_size))
             return false;
-        if (file_size >= file_size_limit) // Yes: reached max. size.
+        headroom = header->datafile->getHeaderSize(dbr_type, dbr_count,
+                                                     next_buffer_size);
+        if (new_ctrl_info)
+            headroom += ctrl_info.getSize();
+        if (file_size+headroom > file_size_limit) // Yes: reached max. size.
             new_datafile = true;
     }
     if (new_datafile)
     {
-        if (! (datafile = createNewDataFile()))
+        if (! (datafile = createNewDataFile(headroom)))
             return false;
         new_ctrl_info = true;
     }

@@ -123,6 +123,7 @@ bool DataFile::getSize(FileOffset &size) const
 
 bool DataFile::reopen ()
 {
+    is_new_file = false;
     if (file)
         fclose(file);
     // Try existing
@@ -131,8 +132,11 @@ bool DataFile::reopen ()
     else
         file = fopen(filename.c_str(), "rb");
     // Try to create a new one
-    if (file==0  && for_write)
+    if (file==0 && for_write)
+    {
         file = fopen(filename.c_str(), "w+b");
+        is_new_file = true;
+    }
     // Got any?
     if (file == 0)
     {   
@@ -189,6 +193,14 @@ DataHeader *DataFile::getHeader(FileOffset offset)
     return 0;
 }
 
+size_t DataFile::getHeaderSize(DbrType dbr_type, DbrCount dbr_count,
+                               size_t num_samples)
+{
+    size_t raw_value_size = RawValue::getSize(dbr_type, dbr_count);
+    size_t buf_free = num_samples * raw_value_size;
+    return buf_free + sizeof(DataHeader::DataHeaderData);
+}
+
 DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
                                 double period, size_t num_samples)
 {
@@ -206,7 +218,8 @@ DataHeader *DataFile::addHeader(DbrType dbr_type, DbrCount dbr_count,
     header->data.dbr_count = dbr_count;
     header->data.period = period;
     header->data.buf_free = num_samples * raw_value_size;
-    header->data.buf_size = header->data.buf_free + sizeof(DataHeader::DataHeaderData);
+    header->data.buf_size =
+        header->data.buf_free + sizeof(DataHeader::DataHeaderData);
     if (!header->write())
     {
         LOG_MSG("DataFile::addHeader(%s): Cannot write new header\n",

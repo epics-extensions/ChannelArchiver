@@ -28,7 +28,7 @@
 class DataFile
 {
 public:
-    /// Reference a data file
+    /// Reference a data file.
     
     /// \param dirname: Path/directory up to the filename
     /// \param basename: filename inside dirname
@@ -37,10 +37,13 @@ public:
     static DataFile *reference(const stdString &dirname,
                                const stdString &basename, bool for_write);
 
-    /// Add reference to current DataFile
+    /// Add reference to current DataFile.
     DataFile *reference();
 
-    /// De-reference a data file (Call instead of delete)
+    /// Indicates if this file was newly created.
+    bool is_new_file;
+    
+    /// De-reference a data file (Call instead of delete).
 
     /// \sa close_all
     ///
@@ -84,6 +87,10 @@ public:
     /// 
     class DataHeader *getHeader(FileOffset offset);
 
+    /// Get size of a header with given parameters.
+    size_t getHeaderSize(DbrType dbr_type, DbrCount dbr_count,
+                         size_t num_samples);
+    
     /// Add a new DataHeader to the file.
     
     /// \return Alloc'ed header or 0.

@@ -51,7 +51,7 @@ private:
     size_t raw_value_size;
 
     void makeDataFileName(int serial, stdString &name);
-    DataFile *createNewDataFile();
+    DataFile *createNewDataFile(size_t headroom);
 
     // Sets next_buffer_size to at least 'start',
     // so that buffers get bigger and bigger up to

@@ -3,47 +3,52 @@
 
 #include <ToolsConfig.h>
 
-// MemoryBuffer<T>:
-// Can be used like pointer to T
-// which has reserved size,
-// may grow in size (new, no realloc)
-// and is deallocated automatically.
+/// \ingroup Tools A memory region that can be resized.
+
+/// A MemoryBuffer<T> which has reserved size,
+/// may grow in size (new, no realloc)
+/// and is automatically deallocated.
 template <class T>
 class MemoryBuffer
 {
 public:
-	MemoryBuffer () : _mem(0), _size(0)	{}
+    /// Constructor: Buffer is initially empty.
+	MemoryBuffer() : memory(0), size(0)	{}
 
-	~MemoryBuffer ()
+    /// Desstructor.
+	~MemoryBuffer()
 	{
-		if (_mem)
-			delete [] _mem;
+		if (memory)
+			delete [] memory;
 	}
 
-	// Reserve memory space, may grow current buffer
-	void reserve (size_t wanted)
+	/// Reserve or grow buffer.
+	void reserve(size_t wanted)
 	{
-		if (_size < wanted)
+		if (size < wanted)
 		{
-			if (_mem)
-				delete [] _mem;
-			_mem = new char [wanted];
-			_size = wanted;
+			if (memory)
+				delete [] memory;
+			memory = new char [wanted];
+			size = wanted;
 		}
 	}
 
-	// Access as (T *)
+	/// Access as (T *)
 	const T *mem () const
-	{	return (const T *)_mem; }
-	T *mem ()
-	{	return (T *)      _mem; }
+	{	return (const T *)memory; }
 
+	/// Access as (T *)
+	T *mem ()
+	{	return (T *) memory; }
+
+    /// Get current size.
 	size_t getBufferSize () const
-	{	return _size; }
+	{	return size; }
 
 private:
-	char	*_mem;
-	size_t	_size;
+	char	*memory;
+	size_t	size;
 };
 
 #endif //__MEMORYBUFFER_H__

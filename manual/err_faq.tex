@@ -87,3 +87,14 @@ server, therefore we do not know the value type of the channel
 and thus we cannot allocate a data buffer in which to write this
 special event-type of value.
 
+\noindent
+\textbf{Cannot create a new data file within file size limit}\\
+You specified a rather small file size limit (file\_size option in the
+ArchiveEngine configuration), and the currently required buffer size
+for a single channel already exceeds that file size limit.
+The Engine will actually go ahead and create a bigger file in the hope
+that this avoids data loss.
+
+One example that could cause this: You try to archive array channels,
+where each individual sample is already quite big, and picked a tiny
+file\_size. 

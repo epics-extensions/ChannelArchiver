@@ -144,6 +144,9 @@ public:
 
     void show(FILE *f) const;
 
+    size_t getSize() const
+    {   return _infobuf.mem()->size; }
+    
 protected:
 	const char *getState(size_t state, size_t &len) const;
 

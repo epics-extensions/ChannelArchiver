@@ -54,10 +54,11 @@ public:
 	// to hold the units or all the state_strings
 };
 
+/// CtrlInfo holds the meta-information for values: Units, limits, ...
+
 /// A value is archived with control information.
 /// Several values might share the same control information
 /// for efficiency.
-///
 /// The control information is variable in size
 /// because it holds units or state strings.
 class CtrlInfo
@@ -72,13 +73,15 @@ public:
 	bool operator != (const CtrlInfo &rhs) const
 	{	return ! (*this == rhs);	}
 
-	/// Type of Value:
+	/// Type defines the type of value
 	typedef enum
 	{
-		Invalid = 0,
-		Numeric = 1,
-		Enumerated = 2
+		Invalid = 0,   ///< Undefined
+		Numeric = 1,   ///< A numeric CtrlInfo: Limits, units, ...
+		Enumerated = 2 ///< An enumerated CtrlInfo: Strings
 	}	Type;
+
+    /// Get the Type for this CtrlInfo
 	Type getType() const;
 
 	/// Read Control Information:

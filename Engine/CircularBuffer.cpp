@@ -111,7 +111,7 @@ void CircularBuffer::allocate(DbrType type, DbrCount count, size_t num)
         return;
     
     // Since head == tail indicates empty, we can only
-    // hold max_index-1 elements. Upp num by one to account for that
+    // hold max_index-1 elements. Inc num by one to account for that:
     ++num;
 	if (buffer)
 		RawValue::free(buffer);

@@ -17,17 +17,20 @@
 #include "CircularBuffer.h"
 #include "SampleMechanism.h"
 
+/// Used by the ArchiveEngine to define a 'Channel'.
+
 /// An ArchiveChannel holds almost all the information
 /// for an archived channel:
 /// Name, CA connection info, value ring buffer.
 ///
-/// The actual sampling details are handled by a SampleMechanism
+/// The actual sampling details are handled by a SampleMechanism.
 class ArchiveChannel
 {
 public:
     friend class SampleMechanism;
     friend class SampleMechanismMonitored;
-    
+
+    /// Create an ArchiveChannel
     ArchiveChannel(const stdString &name,
                    double period, SampleMechanism *mechanism);
     ~ArchiveChannel();
@@ -38,23 +41,25 @@ public:
     /// Exception: The CA callbacks.
     epicsMutex mutex;
 
+    /// Get name of channel.
     const stdString &getName() const;
 
+    /// Get period. Meaning depends on SampleMechanism.
     double getPeriod() const;
 
     /// A channel belongs to at least one group,
-    /// and might disable some of the groups to which it belongs
+    /// and might disable some of the groups to which it belongs.
     stdList<class GroupInfo *> groups;
 
-    /// Add a channel to a group & keep track of disabling
+    /// Add a channel to a group & keep track of disabling.
     void addToGroup(class GroupInfo *group, bool disabling);
     
-    /// Get the current sample mechanism (never NULL)
+    /// Get the current sample mechanism (never NULL).
     const SampleMechanism *getMechanism() const;
 
     /// Start CA communication: Get control info, maybe subscribe, ...
     /// Can be called repeatedly, e.g. after changing the
-    /// SampleMechanism or to toggle a re-get of the control information
+    /// SampleMechanism or to toggle a re-get of the control information.
     void startCA();
 
     /// Is the CA connection currently good?
@@ -66,15 +71,30 @@ public:
     /// Is this channel disabled?
     bool isDisabled() const;
 
-    /// Disable this channel
+    /// Disable this channel.
     void disable(const epicsTime &when);
 
-    /// Enable this channel
+    /// Enable this channel.
     void enable(const epicsTime &when);
 
-    /// Write current buffer content to archive
-    void write(class Archive &archive, class ChannelIterator &channel);
+    /// Initialize value type etc.
+
+    /// It's used by the engine for channels that are already in the
+    /// archive, so we know ASAP what we'd otherwis only learn from the CA connection.
+    /// Pass 0 to ctrl_info or last_stamp if they're unknown.
+    void init(DbrType dbr_time_type, DbrCount nelements,
+              const CtrlInfo *ctrl_info = 0, const epicsTime *last_stamp = 0);
     
+    /// Write current ring buffer content to archive.
+    void write(class Archive &archive, class ChannelIterator &channel);
+
+    /// Add an event to the buffer (special status/severity)
+
+    /// The time might be adjusted to be >= the last stamp
+    /// in the archive.
+    ///
+    void addEvent(dbr_short_t status, dbr_short_t severity, const epicsTime &time);
+        
 private:
     stdString       name;
     double          period; // Sample period, max period, ... up to SampleMechanism
@@ -90,8 +110,8 @@ private:
     // All from here down to '---' are only valid if connected==true
     bool            connected;
     epicsTime       connection_time;
-    short           dbr_time_type;
-    unsigned long   nelements;  // == 0 -> data type is not known
+    DbrType         dbr_time_type;
+    DbrCount        nelements;  // == 0 -> data type is not known
     CtrlInfo        ctrl_info;
     // Value buffer in memory, later written to disk.
     // Should hold values arriving up to 'period' plus some
@@ -111,9 +131,6 @@ private:
     bool currently_disabling; // is this channel currently disabling its groups?
     void handleDisabling(const RawValue::Data *value);
 
-    /// Add an event to the buffer (special status/severity)
-    void addEvent(dbr_short_t status, dbr_short_t severity, const epicsTime &time);
-    
     // Bookkeeping and value checking stuff, used between ArchiveChannel
     // and SampleMechanism
     epicsTime last_stamp_in_archive; // for back-in-time checks

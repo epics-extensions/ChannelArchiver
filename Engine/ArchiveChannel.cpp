@@ -95,13 +95,34 @@ void ArchiveChannel::enable(const epicsTime &when)
     --disabled_count;
     // Try to write the last value we got while disabled
     if (connected && pending_value_set)
-    {
-        LOG_MSG("'%s': re-enabled, writing the most recent value\n",
-                name.c_str());
-        RawValue::setTime(pending_value, when);
-        buffer.addRawValue(pending_value);
+    {   // Assert we don't go back in time
+        if (when >= last_stamp_in_archive)
+        {
+            LOG_MSG("'%s': re-enabled, writing the most recent value\n",
+                    name.c_str());
+            RawValue::setTime(pending_value, when);
+            buffer.addRawValue(pending_value);
+            last_stamp_in_archive = when;
+        }
         pending_value_set = false;
     }
+}
+
+void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
+                          const CtrlInfo *ctrl_info, const epicsTime *last_stamp)
+{
+    this->dbr_time_type = dbr_time_type;
+    this->nelements = nelements;
+    buffer.allocate(dbr_time_type, nelements,
+                    theEngine->suggestedBufferSize(period));
+    if (pending_value)
+        RawValue::free(pending_value);
+    pending_value = RawValue::allocate(dbr_time_type, nelements, 1);
+    pending_value_set = false;
+    if (ctrl_info)
+        this->ctrl_info = *ctrl_info;
+    if (last_stamp)
+        last_stamp_in_archive = *last_stamp;
 }
 
 void ArchiveChannel::write(Archive &archive, ChannelIterator &channel)
@@ -276,14 +297,8 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
     {
         LOG_MSG("%s: received control info\n", me->name.c_str());
         me->connection_time = epicsTime::getCurrent();
-        me->dbr_time_type = ca_field_type(arg.chid)+DBR_TIME_STRING;
-        me->nelements = ca_element_count(arg.chid);
-        me->buffer.allocate(me->dbr_time_type, me->nelements,
-                            theEngine->suggestedBufferSize(me->period));
-        if (me->pending_value)
-            RawValue::free(me->pending_value);
-        me->pending_value = RawValue::allocate(me->dbr_time_type, me->nelements, 1);
-        me->pending_value_set = false;
+        me->init(ca_field_type(arg.chid)+DBR_TIME_STRING,
+                 ca_element_count(arg.chid));
         me->connected = true;
         me->mechanism->handleConnectionChange();
     }
@@ -343,16 +358,13 @@ void ArchiveChannel::addEvent(dbr_short_t status, dbr_short_t severity,
     RawValue::Data *value = buffer.getNextElement();
     memset(value, 0, RawValue::getSize(dbr_time_type, nelements));
     RawValue::setStatus(value, status, severity);
-    RawValue::setTime(value, event_time);
-
-#ifdef TODO
-    // maybe this is nonsense?
-    static double adjust = 0.0l;
-
-    if (value->getTime() <= _last_archive_stamp)
-    {   // adjust time, event has to be added to archive somehow!
-        _last_archive_stamp += adjust;
-        value->setTime(_last_archive_stamp);
+    if (event_time < last_stamp_in_archive)
+    {   // adjust time, event has to be added to archive
+        RawValue::setTime(value, last_stamp_in_archive);
     }
-#endif
+    else
+    {
+        last_stamp_in_archive = event_time;
+        RawValue::setTime(value, event_time);
+    }
 }

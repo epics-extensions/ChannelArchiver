@@ -13,6 +13,9 @@
 #include <fdManager.h>
 #include <epicsTimeHelper.h>
 #include "ArchiveException.h"
+#include "DirectoryFile.h"
+#include "BinChannel.h"
+#include "BinValueIterator.h"
 #include "Engine.h"
 #include "EngineServer.h"
 
@@ -45,7 +48,7 @@ Engine::Engine(const stdString &directory_file_name)
         throwDetailedArchiveException(
             Unsupported, "Cannot run more than one Engine");
     _start_time = epicsTime::getCurrent();
-    _directory = directory_file_name;
+    directory = directory_file_name;
     is_writing = false;
     _description = "EPICS Channel Archiver Engine";
     the_one_and_only = false;
@@ -108,16 +111,17 @@ void Engine::shutdown()
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now;
     now = epicsTime::getCurrent();
-#ifdef TODO
     mutex.lock();
     ChannelIterator channel(*_archive);
     try
     {
-        stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
-        while (channel_info != _channels.end())
+        stdList<ArchiveChannel *>::iterator ch;
+        for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
-            (*channel_info)->shutdown(*_archive, channel, now);
-            ++channel_info;
+            (*ch)->mutex.lock();
+            (*ch)->addEvent(0, ARCH_STOPPED, now);
+            (*ch)->write(*_archive, channel);
+            (*ch)->mutex.unlock();
         }
     }
     catch (ArchiveException &e)
@@ -126,7 +130,6 @@ void Engine::shutdown()
     }
     channel->releaseBuffer();
     mutex.unlock();
-#endif
     LOG_MSG("Closing archive\n");
     delete _archive;
 
@@ -228,34 +231,43 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
     group->addChannel(channel);
     channel->addToGroup(group, disabling);
 
-#ifdef TODO
     if (new_channel)
     {
         try
         {
+            DirectoryFile index(directory, true);     
             // Is channel already in Archive?
-            ChannelIterator arch_channel(*_archive);
-            if (_archive->findChannelByName(channel_name, arch_channel))
+            DirectoryFileIterator dfi = index.find(channel_name);            
+            if (dfi.isValid())
             {   // extract previous knowledge from Archive
-                ValueIterator last_value(*_archive);
-                if (arch_channel->getLastValue(last_value))
+                BinValueIterator vi;
+                dfi.getChannel()->getLastValue(&vi);
+                if (vi.isValid())
                 {
-                    // ChannelInfo copies CtrlInfo, so it's still
-                    // valid after archive is closed!
-                    channel_info->setCtrlInfo(last_value->getCtrlInfo());
-                    channel_info->setValueType(last_value->getType(),
-                                               last_value->getCount());
-                    channel_info->setLastArchiveStamp(last_value->getTime());
+                    const ValueI *last_value = vi.getValue();
+                    epicsTime last_stamp = last_value->getTime();
+                    channel->init(last_value->getType(),
+                                  last_value->getCount(),
+                                  last_value->getCtrlInfo(),
+                                  &last_stamp);
+
+                    stdString stamp;
+                    epicsTime2string(last_stamp, stamp);
+                    LOG_MSG("'%s' could be initialized from storage.\n"
+                            "Last Stamp: %s\n",
+                            channel_name.c_str(),
+                            stamp.c_str());
                 }
             }
             else
-                _archive->addChannel(channel_name, arch_channel);
+                index.add(channel_name);
         }
         catch (ArchiveException &e)
         {
             LOG_MSG("Engine::addChannel: caught\n%s\n", e.what());
         }
     }
+#ifdef TODO
     if (_configuration)
         _configuration->saveChannel(channel_info);
 #endif

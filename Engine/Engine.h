@@ -100,7 +100,7 @@ public:
 
     /// Engine Info: Started, where, info about writes
     const epicsTime &getStartTime() const { return _start_time; }
-    const stdString &getDirectory() const { return _directory;  }
+    const stdString &getDirectory() const { return directory;  }
     const epicsTime &getNextWriteTime() const { return _next_write_time; }
     bool isWriting() const                { return is_writing; }
     
@@ -119,7 +119,7 @@ private:
     struct ca_client_context *ca_context;
     
     epicsTime       _start_time;
-    stdString       _directory;
+    stdString       directory;
     stdString       _description;
     bool            is_writing;
     

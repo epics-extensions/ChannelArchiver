@@ -16,6 +16,8 @@
 
 class ArchiveChannel;
 
+/// Base class for all sampling mechanisms.
+
 /// SampleMechanism is used by the ArchiveChannel
 /// to handle the actual data sampling.
 /// Subscribe or add to scan list,
@@ -36,6 +38,8 @@ protected:
     // Need to provide 'now' for the future test 
     bool isGoodTimestamp(const epicsTime &stamp, const epicsTime &now);
 };
+
+/// A SampleMechanism that stores each CA event (monitor).
 
 /// This implementation of a SampleMechanism subscribes
 /// to a channel (CA monitor) and stores every incoming value.

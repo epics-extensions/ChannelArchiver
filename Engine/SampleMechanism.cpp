@@ -69,6 +69,7 @@ void SampleMechanismMonitored::handleConnectionChange()
                 return;
             }
             theEngine->need_CA_flush = true;
+            have_subscribed = true;
         }
         // CA should automatically send an initial monitor.
         // Tell groups that we are connected
@@ -129,8 +130,3 @@ void SampleMechanismMonitored::value_callback(struct event_handler_args args)
     channel->handleDisabling(value);
     channel->mutex.unlock();
 }
-
-
-
-
-

@@ -43,9 +43,17 @@
 //
 // On Win32, signal() is good enough.
 // On Unix, this does not work in a multithreaded program,
-// so sigaction() should be used
-#ifndef WIN32
+// so sigaction() should be used.
+//
+// On solaris I couldn't get it to compile, struct sigaction
+// isn't there.
+// This might be a feature or our local installation, though.
 #define HAVE_SIGACTION
+#ifdef WIN32
+#undef HAVE_SIGACTION
+#endif
+#ifdef SOLARIS
+#undef HAVE_SIGACTION
 #endif
 
 // ----------------------------------------------------------
@@ -66,13 +74,19 @@
 #define CGIEXPORT_ARCHIVE_TYPE MultiArchive
 
 // Where is GNU-Plot?
+// Linux, default for Unix:
+#define GNUPLOT_PROGRAM "/usr/bin/gnuplot"
+
+// Default for Win32
 #ifdef WIN32
-#	define GNUPLOT_PROGRAM "c:\\Progra~1\\Gnuplot3.7\\wgnuplot.exe"
-#else
+#undef GNUPLOT_PROGRAM
+#define GNUPLOT_PROGRAM "c:\\Progra~1\\Gnuplot3.7\\wgnuplot.exe"
+#endif
+
 // LEDA @ LANL
-//#	define GNUPLOT_PROGRAM "/opt/apache/htdocs/archive/cgi/gnuplot"
-// Linux
-#	define GNUPLOT_PROGRAM "/usr/bin/gnuplot"
+#ifdef SOLARIS
+#undef GNUPLOT_PROGRAM
+#define GNUPLOT_PROGRAM "/opt/apache/htdocs/archive/cgi/gnuplot"
 #endif
 
 // The CGI tool adds cgi_body_start.txt and ..end.txt

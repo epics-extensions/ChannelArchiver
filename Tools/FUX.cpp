@@ -1,3 +1,6 @@
+// System
+#include <unistd.h>
+
 // Tools
 #include "MsgLogger.h"
 #include "FUX.h"
@@ -9,6 +12,7 @@
 #include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/util/XMLString.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
+#include <xercesc/framework/URLInputSource.hpp>
 XERCES_CPP_NAMESPACE_USE
 #else
 #include <xmlparse.h>
@@ -258,6 +262,8 @@ void FUXErrorHandler::fatalError(const SAXParseException& exception)
 
 FUX::Element *FUX::parse(const char *file_name)
 {
+    if (file_name[0] == '\0' or !file_name)
+       return 0;
     try
     {
         XMLPlatformUtils::Initialize();
@@ -286,7 +292,30 @@ FUX::Element *FUX::parse(const char *file_name)
         //parser->setEntityResolver(&entity_resolver);
         parser->setContentHandler(&content_handler);
         parser->setErrorHandler(&error_handler);
-        parser->parse(file_name);
+
+        // This is nuts.
+        // I would like to be able to use
+        // "../some_dir/file.xml"
+        // as well as
+        // "http://server/dir/file.xml"
+        // In the former case, all files are intepreted
+        // relative to where the executable binary is installed
+        // (e.g. $EPICS_EXTENSIONS/bin/linux/ArchiveExport)
+        // on some systems (OS X/Darwin) while on Linux,
+        // it's relative to where we _invoke_ the executable.
+        // So in here we preprend the cwd to make it work the
+        // same in both cases.
+        if (strchr(file_name, ':')  ||  // Assume it starts with file: or http: ...
+            file_name[0] == '/')        // It's an absolute path
+            parser->parse(file_name);
+        else
+        {
+            char path[1023];
+            getcwd(path, sizeof(path)-1);
+            strncat(path, "/", sizeof(path)-1);
+            strncat(path, file_name, sizeof(path)-1);
+            parser->parse(path);
+        }
         delete parser;
         XMLPlatformUtils::Terminate();
         if (state == error)

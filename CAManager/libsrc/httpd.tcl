@@ -116,7 +116,7 @@ proc httpd::getInput {fd} {
 	(($_method == "POST") && $_gotargs)} {
       if {"$_page($fd)" == "/exit"} {
 	puts stderr "terminating on user-request."
-	puts $fd "<html><head><title>CAbgManager exit</title></head>"
+	puts $fd "<html><head><title>CAbgManager exit</title><META HTTP-EQUIV=\"Pragma\" CONTENT=\"no-cache\"></head>"
 	puts $fd "<body bgcolor=\"\#aec9d2\">"
 	puts $fd "<TABLE BORDER=3>"
 	puts $fd "<TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5>"
@@ -125,7 +125,8 @@ proc httpd::getInput {fd} {
 	puts $fd "</TABLE>"
 	puts $fd "</body></html>"
 	close $fd
-	after 1000 Exit
+	after 1 Exit
+	return
       }
       if [regexp "(.*)\\?(.*)" $_page($fd) all page args] {
 	foreach arg [split $args "&"] {
@@ -176,6 +177,7 @@ proc httpd::ed {p} {
 proc httpd::sendCmdResponse {fd page ind} {
   puts $fd "<HTML><HEAD>
 <meta http-equiv=refresh content=\"0; URL=http://[info hostname]:$::_port/\">
+<meta http-equiv=\"Pragma\" content=\"no-cache\">
 <TITLE>ArchiveEngine \"[camMisc::arcGet $ind descr]\" ${page}ed</TITLE>
 </HEAD><BODY bgcolor=\"\#aec9d2\">
 <TABLE BORDER=3><TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5><em>[camMisc::arcGet $ind descr]</em> [ed ${page}]</FONT></TD></TR></TABLE>
@@ -189,6 +191,7 @@ proc httpd::sendError {fd msg} {
   variable _query
   puts $fd "<HTML><HEAD>
 <TITLE>$msg</TITLE>
+<meta http-equiv=\"Pragma\" content=\"no-cache\">
 </HEAD><BODY bgcolor=\"\#aec9d2\">
 <TABLE BORDER=3><TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5>$msg</FONT></TD></TR></TABLE>
 <PRE>
@@ -212,6 +215,7 @@ proc httpd::sendOutput {fd} {
   }
   puts $fd "<html><head><title>Channel Archiver - bgManager ($tcl_platform(user)@$::_host:$::_port)</title>"
   puts $fd "<meta http-equiv=refresh content=$::bgUpdateInt>"
+  puts $fd "<meta http-equiv=\"Pragma\" content=\"no-cache\">"
   puts $fd "</head>"
   puts $fd "<body bgcolor=\"\#aec9d2\">"
   puts $fd "<TABLE BORDER=3>"

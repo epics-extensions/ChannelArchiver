@@ -15,7 +15,7 @@ background="blueback.jpg">
   for a user-supplied archive file:
   <form METHOD="GET" ACTION="cgi/CGIExport.cgi">
         Archive:
-        <input TYPE="TEXT" NAME="DIRECTORY" VALUE="../../../CATests/LEDA/dir" SIZE="40"
+        <input TYPE="TEXT" NAME="DIRECTORY" VALUE="../../Engine/Test/freq_directory" SIZE="40"
         MAXLENGTH="100">
         <input TYPE="submit" NAME="COMMAND" VALUE="START">
   </form>
@@ -26,7 +26,7 @@ background="blueback.jpg">
   <h2>Take 2</h2>
   This example launches the CGI interface with a predefined archive:<BR>
 	<P ALIGN=CENTER>
-	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2F..%2FCATests%2FLEDA%2Fdir&COMMAND=START">
+	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2FEngine%2FTest%2Ffreq_directory&COMMAND=START">
 	  Go to Archive</A>
 	</P>
   <P>
@@ -37,7 +37,7 @@ background="blueback.jpg">
   This example launches the CGI interface with a predefined archive
   and initiates the "LIST" command:<BR>
 	<P ALIGN=CENTER>
-	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2F..%2FCATests%2FLEDA%2Fdir&COMMAND=LIST">
+	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2FEngine%2FTest%2Ffreq_directory&COMMAND=LIST">
 	  List names in "Project XXX" Archive</A>
 	</P>
   <P>
@@ -47,8 +47,8 @@ background="blueback.jpg">
   Launch the CGI interface with a predefined archive
   and immediately run the "INFO" command on two predefined channels:<BR>
 	<P ALIGN=CENTER>
-	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2F..%2FCATests%2FLEDA%2Fdir&COMMAND=INFO&NAMES=ChannelA%0D%0AChannelB%0D%0A">
-	  Info for ChannelA, ChannelB</A>
+	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2FEngine%2FTest%2Ffreq_directory&COMMAND=INFO&NAMES=fred%0D%0Ajane%0D%0A">
+	  Info for fred, jane</A>
 	</P>
   <P>
   All the commands that you can access via the form fields and buttons
@@ -58,7 +58,7 @@ background="blueback.jpg">
   <h2>Take 5</h2>
   One useful application can be a link to the DEBUG command:
 	<P ALIGN=CENTER>
-	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2F..%2FCATests%2FLEDA%2Fdir&COMMAND=DEBUG">
+	  <A HREF="cgi/CGIExport.cgi?DIRECTORY=..%2F..%2FEngine%2FTest%2Ffreq_directory&COMMAND=DEBUG">
 	  Debug Archive</A>
 	</P>
   <P>

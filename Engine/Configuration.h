@@ -3,8 +3,6 @@
 
 #include "GroupInfo.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS Configuration
 // Interface for defining (persistent) configuration information:
 //
@@ -55,7 +53,5 @@ public:
 	// Default implementation: call save()
 	virtual bool saveGroup (const class GroupInfo *group);
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif //__CONFIGURATION_H__

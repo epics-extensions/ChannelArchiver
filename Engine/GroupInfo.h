@@ -3,8 +3,6 @@
 
 #include "ChannelInfo.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS GroupInfo
 // Several Channels,
 // in the Engine identified by ChannelInfo,
@@ -18,40 +16,38 @@ BEGIN_NAMESPACE_CHANARCH
 class GroupInfo
 {
 public:
-	GroupInfo ();
-	GroupInfo (const GroupInfo &);
+    GroupInfo ();
+    GroupInfo (const GroupInfo &);
 
-	void setName (const stdString &name)			{ _name = name; }
-	const stdString &getName () const				{ return _name; }
+    void setName (const stdString &name)            { _name = name; }
+    const stdString &getName () const               { return _name; }
 
-	// Disabling channels use the ID
-	// to see if they disable this group:
-	size_t getID ()	const							{ return _ID; }
+    // Disabling channels use the ID
+    // to see if they disable this group:
+    size_t getID () const                           { return _ID; }
 
-	void addChannel (ChannelInfo *channel);
+    void addChannel (ChannelInfo *channel);
 
-	const list<ChannelInfo *>&getChannels () const	{ return _members; }
+    const stdList<ChannelInfo *>&getChannels () const   { return _members; }
 
-	void disable (ChannelInfo *cause);
-	void enable (ChannelInfo *cause);
-	bool isEnabled () const							{ return _disabled <= 0; }
+    void disable (ChannelInfo *cause);
+    void enable (ChannelInfo *cause);
+    bool isEnabled () const                         { return _disabled <= 0; }
 
-	// Info on connected channels out of getChannels.size():
-	size_t getConnectedChannels () const			{ return _num_connected; }
-	void incConnectedChannels ()					{ ++ _num_connected; }
-	void decConnectedChannels ()					{ if (_num_connected > 0) --_num_connected; }
+    // Info on connected channels out of getChannels.size():
+    size_t getConnectedChannels () const            { return _num_connected; }
+    void incConnectedChannels ()                    { ++ _num_connected; }
+    void decConnectedChannels ()                    { if (_num_connected > 0) --_num_connected; }
 
 private:
-	GroupInfo & operator = (const GroupInfo &); // not impl.
+    GroupInfo & operator = (const GroupInfo &); // not impl.
 
-	static size_t	_next_ID;
-	size_t			_ID;
-	size_t			_num_connected;
-	stdString		_name;
-	list<ChannelInfo *>	_members;
-	size_t			_disabled;	// disabled by how many channels?
+    static size_t   _next_ID;
+    size_t          _ID;
+    size_t          _num_connected;
+    stdString       _name;
+    stdList<ChannelInfo *>  _members;
+    size_t          _disabled;  // disabled by how many channels?
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif //__GROUPINFO_H__

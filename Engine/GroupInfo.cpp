@@ -2,9 +2,6 @@
 
 #include "GroupInfo.h"
 
-USE_STD_NAMESPACE
-USING_NAMESPACE_CHANARCH
-
 size_t GroupInfo::_next_ID = 0;
 
 GroupInfo::GroupInfo ()
@@ -28,7 +25,7 @@ GroupInfo::GroupInfo (const GroupInfo &rhs)
 void GroupInfo::addChannel (ChannelInfo *channel)
 {
 	// Is Channel already in group?
-	list<ChannelInfo *>::iterator i;
+	stdList<ChannelInfo *>::iterator i;
 	for (i=_members.begin(); i!=_members.end(); ++i)
 		if (*i == channel)
 			return;
@@ -44,7 +41,7 @@ void GroupInfo::disable (ChannelInfo *cause)
 	if (_disabled != 1) // Was already disabled?
 		return;
 
-	list<ChannelInfo *>::iterator i;
+	stdList<ChannelInfo *>::iterator i;
 	for (i=_members.begin(); i!=_members.end(); ++i)
 		(*i)->disable (cause);
 }
@@ -62,7 +59,7 @@ void GroupInfo::enable (ChannelInfo *cause)
 	if (_disabled > 0) // Still disabled?
 		return;
 
-	list<ChannelInfo *>::iterator i;
+	stdList<ChannelInfo *>::iterator i;
 	for (i=_members.begin(); i!=_members.end(); ++i)
 		(*i)->enable (cause);
 }

@@ -11,9 +11,6 @@
 #include "ScanList.h"
 #include "float.h"
 
-USE_STD_NAMESPACE
-USING_NAMESPACE_CHANARCH
-
 //#define LOG_SCANLIST
 
 SinglePeriodScanList::SinglePeriodScanList ()
@@ -26,7 +23,7 @@ SinglePeriodScanList::SinglePeriodScanList ()
 bool SinglePeriodScanList::scan ()
 {
     // fetch channels
-    list<ChannelInfo *>::iterator   channel;
+    stdList<ChannelInfo *>::iterator   channel;
     for (channel = _channels.begin(); channel != _channels.end(); ++channel)
     {
         if ((*channel)->isConnected())
@@ -66,7 +63,7 @@ ScanList::ScanList ()
 ScanList::~ScanList ()
 {
 #   ifdef LOG_SCANLIST
-    list<SinglePeriodScanList>::iterator li;
+    stdList<SinglePeriodScanList>::iterator li;
     LOG_MSG ("Statistics for Time spend in ca_pend_io\n");
     LOG_MSG ("=======================================\n");
     for (li = _period_lists.begin(); li != _period_lists.end(); ++li)
@@ -79,7 +76,7 @@ ScanList::~ScanList ()
 
 void ScanList::addChannel (ChannelInfo *channel)
 {
-    list<SinglePeriodScanList>::iterator li;
+    stdList<SinglePeriodScanList>::iterator li;
     SinglePeriodScanList *list;
 
     // find a scan list with suitable period
@@ -118,7 +115,7 @@ void ScanList::addChannel (ChannelInfo *channel)
 // Scan all channels that are due at/after deadline
 void ScanList::scan (const osiTime &deadline)
 {
-    list<SinglePeriodScanList>::iterator li;
+    stdList<SinglePeriodScanList>::iterator li;
     unsigned long rounded_period;
 
     // find expired list
@@ -132,8 +129,8 @@ void ScanList::scan (const osiTime &deadline)
                 li->_next_scan += rounded_period;
             if (! li->scan ())
             {
-                LOG_MSG (osiTime::getCurrent() <<
-                    ": ScanList timeout for period " << li->_period << endl);
+                LOG_MSG(osiTime::getCurrent() <<
+                        ": ScanList timeout for period " << li->_period << "\n");
             }
             if (_next_list_scan == nullTime || _next_list_scan > li->_next_scan)
                 _next_list_scan = li->_next_scan;

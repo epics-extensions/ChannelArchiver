@@ -10,14 +10,8 @@
 
 #ifndef __SCANLIST_H__
 #define __SCANLIST_H__
-#include <list>
 #include <osiTime.h>
 #include "ChannelInfo.h"
-
-BEGIN_NAMESPACE_CHANARCH
-#ifdef USE_NAMESPACE_STD
-using std::list;
-#endif
 
 class SinglePeriodScanList
 {
@@ -29,7 +23,7 @@ public:
 
     double      _period;    // Scan period in seconds
     osiTime     _next_scan; // Next time this list is due
-    list<ChannelInfo *> _channels;
+    stdList<ChannelInfo *> _channels;
 
 private:
     double  _min_wait, _max_wait;
@@ -53,10 +47,8 @@ public:
     {   return !!(now > _next_list_scan); } // !! to avoid int->bool warning
 
 private:
-    list<SinglePeriodScanList>  _period_lists;
-    osiTime                     _next_list_scan;
+    stdList<SinglePeriodScanList> _period_lists;
+    osiTime                       _next_list_scan;
 };
-
-END_NAMESPACE_CHANARCH
 
 #endif //__SCANLIST_H__

@@ -3,8 +3,6 @@
 
 #include <Thread.h>
 
-BEGIN_NAMESPACE_TOOLS
-
 // This Thread is started/stopped by the Engine class.
 //
 // It handles all the Archive writes,
@@ -50,7 +48,5 @@ private:
     bool            _go;
     bool            _writing;
 };
-
-END_NAMESPACE_TOOLS
 
 #endif //__WRITETHREAD_H__

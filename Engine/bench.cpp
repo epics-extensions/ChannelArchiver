@@ -43,9 +43,6 @@ FILE: stdio (fopen, ...)
 
 */
 
-USING_NAMESPACE_CHANARCH
-USE_STD_NAMESPACE
-
 const size_t COUNT=10000;
 
 int main ()

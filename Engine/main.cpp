@@ -29,9 +29,6 @@
 //#undef close
 //#endif
 
-USING_NAMESPACE_CHANARCH
-USE_STD_NAMESPACE
-
 // For communication sigint_handler -> main loop
 bool run = true;
 
@@ -43,14 +40,14 @@ static void signal_handler (int sig)
 #endif
     run = false;
 
-    cerr << "Exiting on signal " << sig << ", please be patient!\n";
+    std::cerr << "Exiting on signal " << sig << ", please be patient!\n";
 }
 
-static ofstream *logfile = 0;
+static std::ofstream *logfile = 0;
 
 static void LoggerPrintRoutine (void *arg, const stdString &text)
 {
-    cout << text;
+    std::cout << text;
     if (logfile)
     {
         *logfile << text;
@@ -90,15 +87,15 @@ int main (int argc, const char *argv[])
     
     if (log.get().length() > 0)
     {
-        logfile = new ofstream;
-        logfile->open (log.get().c_str (), ios::out | ios::trunc);
+        logfile = new std::ofstream;
+        logfile->open (log.get().c_str (), std::ios::out | std::ios::trunc);
 #       ifdef __HP_aCC
         if (logfile->fail())
 #       else
         if (! logfile->is_open())
 #       endif
         {
-            cerr << "Cannot open logfile '" << log.get() << "'\n";
+            std::cerr << "Cannot open logfile '" << log.get() << "'\n";
             delete logfile;
             logfile = 0;
         }
@@ -130,8 +127,8 @@ int main (int argc, const char *argv[])
     }
     catch (GenericException &e)
     {
-        cerr << "Cannot start archive engine:\n";
-        cerr << e.what ();
+        std::cerr << "Cannot start archive engine:\n";
+        std::cerr << e.what ();
         return -1;
     }
 
@@ -147,13 +144,13 @@ int main (int argc, const char *argv[])
         action.sa_flags = 0;
         if (sigaction (SIGINT, &action, 0) ||
             sigaction (SIGTERM, &action, 0))
-            cerr << "Error setting signal handler\n";
+            std::cerr << "Error setting signal handler\n";
 #else
         signal (SIGINT, signal_handler);
         signal (SIGTERM, signal_handler);
 #endif
 
-        cerr << "\n------------------------------------------\n"
+        std::cerr << "\n------------------------------------------\n"
              << "Engine Running.\n"
              << "Started " << osiTime::getCurrent() << "\n"
              << "Stop via web browser at http://localhost:"
@@ -165,8 +162,8 @@ int main (int argc, const char *argv[])
     }
     catch (GenericException &e)
     {
-        cerr << "Exception caugh in main loop:\n";
-        cerr << e.what ();
+        std::cerr << "Exception caugh in main loop:\n";
+        std::cerr << e.what ();
     }
 
     // If engine is not shut down properly (ca_task_exit !),

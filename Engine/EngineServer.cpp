@@ -41,9 +41,6 @@
 #endif
 #endif
 
-USE_STD_NAMESPACE
-USING_NAMESPACE_CHANARCH
-
 static void engineinfo (HTTPClientConnection *connection,
                         const stdString &path)
 {
@@ -203,7 +200,7 @@ static void channels (HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page (connection->getSocket(), "Channels");
 
-    list<ChannelInfo *> &channels = theEngine->lockChannels ();
+    stdList<ChannelInfo *> &channels = theEngine->lockChannels ();
     if (channels.empty ())
     {
         page.line ("<I>no channels</I>");
@@ -212,7 +209,7 @@ static void channels (HTTPClientConnection *connection, const stdString &path)
     }
 
     page.openTable (1, "Name", 1, "Status", 0);
-    list<ChannelInfo *>::iterator channel;
+    stdList<ChannelInfo *>::iterator channel;
     stdString link;
     link.reserve(80);
     for (channel=channels.begin(); channel!=channels.end(); ++channel)
@@ -240,7 +237,7 @@ static void channelInfoTable (HTMLPage &page)
 
 static void channelInfoLine (HTMLPage &page, const ChannelInfo *channel)
 {
-    strstream ca_state, period, bufsize, disabling;
+    std::strstream ca_state, period, bufsize, disabling;
 
     if (channel->isConnected ())
         ca_state << "connected";
@@ -324,14 +321,14 @@ static void channelInfo (HTTPClientConnection *connection, const stdString &path
 void groups (HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page (connection->getSocket(), "Groups");
-    const list<GroupInfo *> &group_list = theEngine->getGroups ();
+    const stdList<GroupInfo *> &group_list = theEngine->getGroups ();
     if (group_list.empty ())
     {
         page.line ("<I>no groups</I>");
         return;
     }
 
-    list<GroupInfo *>::const_iterator group;
+    stdList<GroupInfo *>::const_iterator group;
     size_t  channel_count, connect_count;
     stdString name;
     name.reserve(80);
@@ -343,7 +340,7 @@ void groups (HTTPClientConnection *connection, const stdString &path)
         name += "\">";
         name += (*group)->getName ();
         name += "</A>";
-        strstream id, channels, connected;
+        std::strstream id, channels, connected;
         id << (*group)->getID() << '\0';
         channel_count = (*group)->getChannels().size();
         connect_count = (*group)->getConnectedChannels ();
@@ -377,7 +374,7 @@ static void groupInfo (HTTPClientConnection *connection, const stdString &path)
 
     HTMLPage page (connection->getSocket(), "Group Info");
 
-    strstream id;
+    std::strstream id;
     id << group->getID() << '\0';
     page.openTable (2, "Group", 0);
     page.tableLine ("Name", group_name.c_str(), 0);
@@ -385,7 +382,7 @@ static void groupInfo (HTTPClientConnection *connection, const stdString &path)
     page.closeTable ();
     id.rdbuf()->freeze (false);
 
-    const list<ChannelInfo *>& channels = group->getChannels ();
+    const stdList<ChannelInfo *>& channels = group->getChannels ();
     if (channels.empty())
     {
         page.line ("no channels");
@@ -396,7 +393,7 @@ static void groupInfo (HTTPClientConnection *connection, const stdString &path)
     page.line ("<H2>Channels:</H2>");
 
     channelInfoTable (page);
-    list<ChannelInfo *>::const_iterator channel;
+    stdList<ChannelInfo *>::const_iterator channel;
     for (channel = channels.begin(); channel != channels.end(); ++channel)
         channelInfoLine (page, *channel);
     page.closeTable ();
@@ -512,8 +509,7 @@ static void channelGroups (HTTPClientConnection *connection, const stdString &pa
     page.out (channel_name);
     page.line ("</H1>");
 
-    const list<GroupInfo *> group_list = channel->getGroups ();
-
+    const stdList<GroupInfo *> group_list = channel->getGroups ();
     if (group_list.empty())
     {
         page.line ("This channel does not belong to any groups.");
@@ -521,7 +517,7 @@ static void channelGroups (HTTPClientConnection *connection, const stdString &pa
     }
 
     page.openTable (2, "Group", 0);
-    list<GroupInfo *>::const_iterator group;
+    stdList<GroupInfo *>::const_iterator group;
     stdString link;
     link.reserve(80);
     for (group=group_list.begin(); group!=group_list.end(); ++group)

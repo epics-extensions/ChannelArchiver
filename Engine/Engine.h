@@ -18,8 +18,6 @@
 #include "Configuration.h"
 #include "BinArchive.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 //CLASS Engine
 class Engine
 {
@@ -48,11 +46,11 @@ public:
     bool process ();
 
     //* Add/list groups/channels
-    const list<GroupInfo *> &getGroups ();
+    const stdList<GroupInfo *> &getGroups ();
     GroupInfo *findGroup (const stdString &name);
     GroupInfo *addGroup (const stdString &name);
 
-    list<ChannelInfo *> &lockChannels ();
+    stdList<ChannelInfo *> &lockChannels ();
     void unlockChannels ();
 
     ChannelInfo *findChannel (const stdString &name);
@@ -101,9 +99,9 @@ private:
     stdString       _description;
 
     ThreadSemaphore     _channels_lock;
-    list<ChannelInfo *> _channels;      // all the channels
+    stdList<ChannelInfo *> _channels;      // all the channels
 
-    list<GroupInfo *>   _groups;        // scan-groups of channels
+    stdList<GroupInfo *>   _groups;        // scan-groups of channels
 
     double          _get_threshhold;
     ScanList        _scan_list;         // list of scanned (not monitored) channels
@@ -135,7 +133,7 @@ inline void Engine::setConfiguration (Configuration *c)
 inline Configuration *Engine::getConfiguration ()
 {   return _configuration;  }
 
-inline list<ChannelInfo *> &Engine::lockChannels ()
+inline stdList<ChannelInfo *> &Engine::lockChannels ()
 {
     _channels_lock.take ();
     return _channels;
@@ -144,7 +142,7 @@ inline list<ChannelInfo *> &Engine::lockChannels ()
 inline void Engine::unlockChannels ()
 {   _channels_lock.give(); }
 
-inline const list<GroupInfo *> &Engine::getGroups ()
+inline const stdList<GroupInfo *> &Engine::getGroups ()
 {   return _groups; }
 
 inline double Engine::getIgnoredFutureSecs() const
@@ -190,8 +188,6 @@ inline ValueI *Engine::newValue (DbrType type, DbrCount count)
 {
     return _archive->newValue (type, count);
 }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__ENGINE_H__
  

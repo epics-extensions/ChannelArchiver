@@ -9,13 +9,10 @@
 // --------------------------------------------------------
 
 #include "Engine.h"
-#include "fdManager.h"
-#include "Histogram.h"
+//#include "fdManager.h"
+//#include "Histogram.h"
 #include <math.h>
 #include <iostream>
-
-USING_NAMESPACE_CHANARCH
-USE_STD_NAMESPACE
 
 //#define LOG_NSV(stuff)    LOG_MSG(stuff)
 #define LOG_NSV(stuff)  {}
@@ -23,7 +20,7 @@ USE_STD_NAMESPACE
 // Helper:
 // print chid
 //
-static ostream & operator << (ostream &o, const chid &chid)
+static std::ostream & operator << (std::ostream &o, const chid &chid)
 {
     short typ = ca_field_type(chid);
     const char *type_txt = (typ > 0  &&  typ < dbr_text_dim) ?
@@ -125,7 +122,7 @@ void ChannelInfo::addToGroup (GroupInfo *group, bool disabling)
     _disabling.set (group->getID(), disabling);
     
     // Is Channel already in group?
-    list<GroupInfo *>::iterator i;
+    stdList<GroupInfo *>::iterator i;
     for (i=_groups.begin(); i!=_groups.end(); ++i)
         if (*i == group)
             return;
@@ -176,7 +173,7 @@ void ChannelInfo::startCaConnection (bool new_channel)
 // * CA also calls this routine when a connection is broken
 void ChannelInfo::caLinkConnectionHandler (struct connection_handler_args arg)
 {
-    list<GroupInfo *>::iterator g;
+    stdList<GroupInfo *>::iterator g;
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
     bool was_connected = me->_connected;
 
@@ -315,7 +312,7 @@ void ChannelInfo::caControlHandler (struct event_handler_args arg)
         else
         {
             LOG_MSG ("ERROR: Unknown CA control information: "
-                     << me->getName () << endl);
+                     << me->getName () << "\n");
             me->_connected = false;
         }
         me->_connectTime = osiTime::getCurrent ();
@@ -354,7 +351,7 @@ void ChannelInfo::caControlHandler (struct event_handler_args arg)
 
     if (!was_connected  &&  me->_connected)
     {
-        list<GroupInfo *>::iterator g;
+        stdList<GroupInfo *>::iterator g;
         for (g=me->_groups.begin(); g!=me->_groups.end(); ++g)
             (*g)->incConnectedChannels ();
     }
@@ -601,7 +598,7 @@ inline void ChannelInfo::handleDisabling ()
     if (criteria && !_currently_disabling)
     {
         _currently_disabling = true;
-        list<GroupInfo *>::iterator g;
+        stdList<GroupInfo *>::iterator g;
         for (g=_groups.begin(); g!=_groups.end(); ++g)
         {
             if (isDisabling(*g))
@@ -611,7 +608,7 @@ inline void ChannelInfo::handleDisabling ()
     else
     if (!criteria && _currently_disabling)
     {
-        list<GroupInfo *>::iterator g;
+        stdList<GroupInfo *>::iterator g;
         for (g=_groups.begin(); g!=_groups.end(); ++g)
         {
             if (isDisabling(*g))

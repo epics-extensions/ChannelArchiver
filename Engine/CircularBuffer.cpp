@@ -2,8 +2,6 @@
 #include "MsgLogger.h"
 #include "Engine.h"
 
-USING_NAMESPACE_CHANARCH
-
 // Initial: tail = head = 0.
 //
 // valid entries:

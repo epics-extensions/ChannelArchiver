@@ -6,8 +6,6 @@
 #include "WriteThread.h"
 #include "Engine.h"
 
-USING_NAMESPACE_CHANARCH
-
 int WriteThread::run ()
 {
 #ifdef HAVE_SIGACTION
@@ -54,8 +52,6 @@ int WriteThread::run ()
     }
     return 0;
 }
-
-
 
 
 

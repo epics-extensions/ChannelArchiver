@@ -25,7 +25,7 @@ HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 	line ("<HTML>");
 	if (refresh > 0)
 	{
-		strstream	linebuf;
+        std::strstream	linebuf;
 		linebuf << "<META HTTP-EQUIV=\"Refresh\" CONTENT=" << refresh << ">" << '\0';
 		line (linebuf.str());
 		linebuf.rdbuf()->freeze (false);
@@ -63,7 +63,7 @@ HTMLPage::~HTMLPage ()
 
 	if (_refresh > 0)
 	{
-		strstream	linebuf;
+        std::strstream	linebuf;
 		linebuf << "This page will update every " << _refresh << " seconds..." << '\0';
 		line (linebuf.str());
 		linebuf.rdbuf()->freeze (false);
@@ -101,7 +101,7 @@ void HTMLPage::openTable (size_t colspan, const char *column, ...)
 	{
 		if (colspan > 1)
 		{
-			strstream buf;
+			std::strstream buf;
 			buf << "<TH COLSPAN=" << colspan << " BGCOLOR=#000000><FONT COLOR=#FFFFFF>" << '\0';
 			out (buf.str());
 		}

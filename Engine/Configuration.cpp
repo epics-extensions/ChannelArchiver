@@ -1,7 +1,5 @@
 #include "Configuration.h"
 
-BEGIN_NAMESPACE_CHANARCH
-
 Configuration::~Configuration ()
 { }
 
@@ -17,4 +15,3 @@ bool Configuration::saveChannel (const class ChannelInfo *channel)
 bool Configuration::saveGroup (const class GroupInfo *group)
 {	return save ();	}
 
-END_NAMESPACE_CHANARCH

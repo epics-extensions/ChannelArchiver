@@ -15,9 +15,6 @@
 #include "HTTPServer.h"
 #include "MsgLogger.h"
 
-USE_STD_NAMESPACE
-USING_NAMESPACE_TOOLS
-
 // HTTPServer ----------------------------------------------
 
 HTTPServer *HTTPServer::create (short port)

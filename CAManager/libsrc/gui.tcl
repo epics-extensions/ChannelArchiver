@@ -396,7 +396,7 @@ proc camGUI::checkentry {val Descr descr w tl {absFn 0}} {
     set fnchars "\[^/<>\]+"
     set re "^"
     if {$absFn} {
-      if {{[regexp "Windows" $::tcl_platform(os)]} {
+      if {[regexp "Windows" $::tcl_platform(os)]} {
 	append re "(.:)?"
       }
       append re "/"

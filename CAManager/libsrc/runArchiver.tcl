@@ -1,4 +1,4 @@
-proc runArchiver {i} {
+proc runArchiver {i {forceRun 0}} {
   array unset ::sched $i,start
   set now [clock seconds]
   foreach attr {port descr cfg cfgc} {
@@ -7,9 +7,9 @@ proc runArchiver {i} {
   foreach attr {log archive} {
     set $attr [clock format $now -format [camMisc::arcGet $i $attr]]
   }
-#  cd "[file dirname $cfg]"
+  #  cd "[file dirname $cfg]"
   set cwd "[file dirname $cfg]"
-  if {[file exists $cwd/BLOCKED]} {
+  if {!$forceRun && [file exists $cwd/BLOCKED]} {
     if { ![info exists ::wasBlocked($i)] || !$::wasBlocked($i) } {
       Puts "start of \"[camMisc::arcGet $i descr]\" blocked!" error
       set ::wasBlocked($i) 1
@@ -76,7 +76,7 @@ proc runArchiver {i} {
   set cfg "[file tail $cfg]"
   set archive "[file tail $archive]"
   file delete -force $cwd/archive_active.lck
-#  Puts "ArchiveEngine -p $port -description \"$descr\" -log $log $cfg $archive" command
+  #  Puts "ArchiveEngine -p $port -description \"$descr\" -log $log $cfg $archive" command
   Puts "start \"[camMisc::arcGet $i descr]\"" command
   cd $cwd
   if {$cfgc} {
@@ -84,5 +84,5 @@ proc runArchiver {i} {
   } else {
     exec ArchiveEngine -p $port -description "$descr" -log $log $cfg $archive >&runlog &
   }
-  scheduleStop $i
+  if {!$forceRun} {scheduleStop $i}
 }

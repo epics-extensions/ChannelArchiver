@@ -1,6 +1,6 @@
-proc stopArchiver {i} {
+proc stopArchiver {i {forceStop 0}} {
   array unset ::sched $i,stop,*
-  if {[file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]} {
+  if {!$forceStop && [file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]} {
     Puts "stop of \"[camMisc::arcGet $i descr]\" blocked" error
     return
   }

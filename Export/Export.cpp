@@ -12,7 +12,7 @@ int main(int argc, const char *argv[])
     CmdArgParser parser(argc, argv);
     parser.setArgumentsInfo(" <directory file> { channel }");
     CmdArgString start_time (parser,
-                             "start", "<time>", "Format: mm/dd/yy hh:mm:ss[.nano-secs]");
+                             "start", "<time>", "Format: \"mm/dd/yy[ hh:mm:ss[.nano-secs]]\"");
     CmdArgString end_time   (parser,
                              "end", "<time>", "(exclusive)");
     CmdArgFlag   fill       (parser,

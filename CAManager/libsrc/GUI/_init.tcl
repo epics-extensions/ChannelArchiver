@@ -66,6 +66,7 @@ source Edit.tcl
 source Exit.tcl
 source Export.tcl
 source Info.tcl
+source ModArchive.tcl
 source New.tcl
 source Open.tcl
 source Prefs.tcl

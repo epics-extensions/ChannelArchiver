@@ -324,7 +324,8 @@ static bool exportFunc(HTMLPage &page, Format format,
 
 		if (format == fmt_GNUPlot)
 		{
-			GNUPlotExporter *gnu = new GNUPlotExporter(archive, tempfilebase);
+			GNUPlotExporter *gnu = 
+			   new GNUPlotExporter(archive, tempfilebase, page._reduce?600:0);
 			gnu->makeImage();
 #ifndef WIN32
             // Pipe based on _pipe call only works fro console apps.
@@ -646,6 +647,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	page._directory = cgi.find("DIRECTORY");
 	page._pattern = cgi.find("PATTERN");
 	page._interpol = atof(cgi.find ("INTERPOL").c_str());
+	page._reduce = cgi.find("REDUCE").length()==0;
 	page._glob = cgi.find("GLOB").length()>0;
 	page._fill = cgi.find("FILL").length()>0;
 	page._status = cgi.find("STATUS").length()>0;

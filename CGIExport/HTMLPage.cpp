@@ -26,6 +26,7 @@ HTMLPage::HTMLPage()
     _glob = true;
     _fill = true;
     _status = false;
+    _reduce = true;
     _interpol = 0;
 }
 
@@ -139,7 +140,7 @@ void HTMLPage::interFace() const
     std::cout << "      <TD>End:</TD><TD colspan=4>Day (m/d/y)\n";
     makeSelect("ENDMONTH",    1,   12, month);
     makeSelect("ENDDAY"  ,    1,   31, day);
-    makeSelect("ENDYEAR" , 1998, 2005, year);
+    makeSelect("ENDYEAR" , 1998, 2010, year);
     std::cout << "Time (h:m:s)";
     makeSelect("ENDHOUR" ,    0,   23, hour);
     makeSelect("ENDMINUTE" ,  0,   59, min);
@@ -153,8 +154,9 @@ void HTMLPage::interFace() const
     if (_format == "PLOT")
         std::cout << "checked=1 ";
     std::cout <<            "value=PLOT>Plot</TD>\n";
-    std::cout << "      <TD align=right>Status:</TD>\n";
-    std::cout << "      <TD><input name=STATUS type=checkbox value=ON> (show channel status)</TD>\n";
+    std::cout << "      <TD align=right>All Data:</TD>\n";
+    std::cout << "      <TD><input name=REDUCE type=checkbox value=ON"
+	      << (!_reduce?" checked=1":"") << "> (plot data is reduced otherwise)</TD>\n";
     std::cout << "      <TD></TD>\n";
     std::cout << "  </TR>\n";
     std::cout << "  <TR>\n";
@@ -163,8 +165,9 @@ void HTMLPage::interFace() const
     if (_format.empty() || _format == "SPREADSHEET")
         std::cout << "checked=1 ";
     std::cout <<            "value=SPREADSHEET>Spreadsheet</TD>\n";
-    std::cout << "      <TD align=right>Fill:</TD>\n";
-    std::cout << "      <TD><input name=FILL type=checkbox value=ON> (step-func. interpolation)</TD>\n";
+    std::cout << "      <TD align=right>Status:</TD>\n";
+    std::cout << "      <TD><input name=STATUS type=checkbox value=ON"
+	      << (_status?" checked=1":"") << "> (show channel status)</TD>\n";
     std::cout << "      <TD></TD>\n";
     std::cout << "  </TR>\n";
     std::cout << "  <TR>\n";
@@ -173,8 +176,9 @@ void HTMLPage::interFace() const
     if (_format == "EXCEL")
         std::cout << "checked=1 ";
     std::cout <<           "value=EXCEL>Excel-File</TD>\n";
-    std::cout << "      <TD align=right>Interpolate:</TD>\n";
-    std::cout << "      <TD><input maxLength=10 name=INTERPOL size=5 value=0> secs (linear)</TD>\n";
+    std::cout << "      <TD align=right>Fill:</TD>\n";
+    std::cout << "      <TD><input name=FILL type=checkbox value=ON"
+	      << (_fill?" checked=1":"") << "> (step-func. interpolation)</TD>\n";
     std::cout << "      <TD></TD>\n";
     std::cout << "  </TR>\n";
     std::cout << "  <TR>\n";
@@ -183,7 +187,9 @@ void HTMLPage::interFace() const
     if (_format == "MATLAB")
         std::cout << "checked=1 ";
     std::cout <<           "value=MATLAB>Matlab</TD>\n";
-    std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD align=right>Interpolate:</TD>\n";
+    std::cout << "      <TD><input maxLength=10 name=INTERPOL size=5 value="
+	      << _interpol << "> secs (linear)</TD>\n";
     std::cout << "      <TD></TD>\n";
     std::cout << "      <TD></TD>\n";
     std::cout << "  </TR>\n";

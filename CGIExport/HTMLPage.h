@@ -43,6 +43,7 @@ public:
     bool _glob;
     bool _fill;
     bool _status;
+    bool _reduce;
     osiTime _start;
     osiTime _end;
 

@@ -13,6 +13,7 @@
 #include "archiver_index.h"
 
 bool verbose;
+bool test;
 
 void list_names(const stdString &index_name)
 {
@@ -103,15 +104,18 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
                        start.c_str(),
                        end.c_str());
             }
-            archiver_Unit au = archiver_Unit(
-                key_Object(header->datafile->getBasename().c_str(),
-                           header->offset),
-                interval(header->data.begin_time,
-                         header->data.end_time), 1);
-            if (!index.addAU(channels.entry.data.name, au))
+            if (test == false)
             {
-                fprintf(stderr, "addAU failed\n");
-                break;
+                archiver_Unit au = archiver_Unit(
+                    key_Object(header->datafile->getBasename().c_str(),
+                               header->offset),
+                    interval(header->data.begin_time,
+                             header->data.end_time), 1);
+                if (!index.addAU(channels.entry.data.name, au))
+                {
+                    fprintf(stderr, "addAU failed\n");
+                    break;
+                }
             }
             header->read_next();
         }
@@ -317,6 +321,7 @@ int main(int argc, const char *argv[])
                      );
     CmdArgFlag help (parser, "help", "Show help");
     CmdArgFlag verbose_flag (parser, "verbose", "Show more info");
+    CmdArgFlag test_flag (parser, "test", "Internal test flag");
     CmdArgString list_index(parser, "list", "<index>", "List name info");
     CmdArgString dir2index (parser, "dir2index", "<dir. file>",
                              "Convert old directory file to RTree index");
@@ -334,7 +339,8 @@ int main(int argc, const char *argv[])
         return -1;
     }
     verbose = verbose_flag;
-
+    test = test_flag;
+    
     if (list_index.get().length() > 0)
         list_names(list_index);
     else if (dir2index.get().length() > 0)

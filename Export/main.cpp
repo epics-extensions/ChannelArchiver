@@ -456,8 +456,8 @@ int main(int argc, const char *argv[])
         delta = double(linear);
     }
     // Open index
-    //IndexFile index(50);
-    ListIndex index;
+    IndexFile index(50);
+    //ListIndex index;
     if (!index.open(index_name.c_str()))
     {
         fprintf(stderr, "Cannot open index '%s'\n",

@@ -8,8 +8,9 @@ REQUEST="$1";
 
 export REQUEST_METHOD=POST
 export CONTENT_TYPE=text/xml
-export CONTENT_LENGTH=`wc --bytes <$REQUEST`
-export SERVERCONFIG=test.xml
+export CONTENT_LENGTH=`wc -c <$REQUEST`
+export SERVERCONFIG=`pwd`/test.xml
+echo "Length: $CONTENT_LENGTH"
 cat $REQUEST | O.${EPICS_HOST_ARCH}/ArchiveDataServer
 
 #cat /tmp/archserver.log

@@ -28,6 +28,11 @@
 //       It won't work on VAX/VMS systems!
 #define CONVERSION_REQUIRED 
 
+// This seems to work for Mac OS X
+#if defined(__POWERPC__) && defined(__APPLE__)
+#undef CONVERSION_REQUIRED
+#endif
+
 // Some even more generic things are configured in ToolsConfig.h!
 
 // ----------------------------------------------------------

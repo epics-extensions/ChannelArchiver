@@ -2,7 +2,7 @@
 <methodCall>
 <methodName>archiver.names</methodName>
 <params>
-<param><value><i4>3</i4></value></param>
+<param><value><i4>1</i4></value></param>
 <param><value><string></string></value></param>
 </params>
 </methodCall>

@@ -1,35 +1,46 @@
 % -*- text-mode -*-
 
 figure(1);
-clf;
-subplot(1,1,1);
+subplot(1,3,1);
 
-% fred, freddy, jane, janet each have date/value vectors,
-% but taken at different points in time.
-%
-% Interpolate onto matching dates:
-d0=datenum('03-22-2000 17:03:00');
-d1=datenum('03-22-2000 17:10:00');
-di=linspace(d0,d1,200);
+d0=datenum('03-22-2000 19:40:00');
+d1=datenum('03-22-2000 19:50:00');
+di=linspace(d0,d1,1000);
+vi=interp1(fred.d,fred.v,di);
 
-Z(1,:)=interp1(fred.d,fred.v,di);
-Z(2,:)=interp1(freddy.d,freddy.v,di);
-Z(3,:)=interp1(jane.d,jane.v,di);
-Z(4,:)=interp1(janet.d,janet.v,di);
-surf(di,1:4,Z);
-view(-90,90);
-axis tight;
-colorbar;
-shading interp;
+% deltaT[sec]
+dT=(di(2)-di(1))*24*60*60
+Hz=1/dT
 
-title('{\bfArchive Data Display:}{\it"Waterfall"}')
-xlabel('Date: March 22^{nd}, 2000')
-datetick('x');
-set(gca,'YTick',[1 2 3 4]);
-set(gca,'YTickLabel',{'fred','freddy','jane','janet'});
-zlabel('value')
-rotate3d on
-text(datenum('03-22-2000 17:08:30'), 3.5, 10, '\leftarrow Excursion!')
+plot(di,vi,'b-');
+datetick;
+axis tight
+xlabel('Time on March 22^{nd},2000');
+title('Value');
+hold on;
+plot(fred.d,fred.v,'r.');
+hold off;
 
+subplot(1,3,2);
+f=fft(vi);
+f(1)=0; % ignore DC
+n=length(f);
+power=abs(f(1:n/2)).^2;
+nyquist=Hz/2
+freq=(1:n/2)/(n/2)*nyquist;
+plot(freq,power);
+axis([0 nyquist 0 100]);
+xlabel('\omega [Hz]');
+title('Frequencies');
 
-rotate3d on;
+subplot(1,3,3);
+period=1./freq;
+plot(period,power);
+axis([0 20 0 60]);
+axis 'auto y';
+xlabel('\DeltaT [sec]');
+title('Periods');
+th=text(9.6,36.5,'\DeltaT\approx9s!\newline     \downarrow');
+set(th,'HorizontalAlignment','center');
+set(th,'VerticalAlignment','bottom');
+zoom on;

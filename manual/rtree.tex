@@ -44,7 +44,11 @@ extended this concept to handle time ranges by requiring that the leaf
 node entries are non-overlapping and sorted in time.
 
 Each RTree node consists of several records. How many records there are
-per node is determined by a tunable parameter $M$.
+per node is determined by a tunable parameter $M$:
+The archiver tools use $M$ as the upper limit of records
+per node, i.e.\ a node will simply contain up to $M$ records.
+(The literature often applies $M$ in a slightly different way,
+where nodes contain up to $2M-1$ records.)
 The records in the leave nodes of the tree point to data block
 information (i.e.\ path to a data file and offset inside that data
 file) and the time range that is covered by the data block.
@@ -92,9 +96,28 @@ over those from FileB whenever there is an overlap.
 The examples used a small number for $M$ so that one can see the tree
 structure even though we only have a few data blocks. Bigger values of
 $M$ will reduce the number of read and write operations because the
-tree is accessed node by node. On the other hand, the time to access a
-single node with its $M$ records grows slightly with $M$. A value of
-$M=50$ seems to be a good compromise.
+tree is accessed node by node, reading respectively writing all $M$
+records of a node in one system call. A big $M$ value will also reduce the
+height of the tree, as well as the number of nodes and read/write
+calls. On the other hand, the size of a node obviously grows with $M$,
+and the time for reading respectively writing a single node can
+slightly increase. In general, the number of read/write system calls
+has a bigger impact on the performance than the size of the individual
+reads/writes.
+The records within a node are accessed via a linear search over all
+the records in a node. A bigger $M$ will require slightly more CPU
+time for this linear search, which again is neglegible compared to the
+time required for disk access.
+Overall, a bigger $M$ is likely to increase performance because it
+reduces the number of disk accesses.
+The mayor drawback to a big $M$ results from possible fragmentation:
+If you create many small sub-archives, each tree of the sub-archive
+will only contain few entries. The minimum size of the tree as well as
+the size increment whenever a new node needs to be added is determined
+by $M$. Big values of $M$ can result in a lot of unused space in the
+index file, creating unnecessarily big index files.
+Section \ref{sec:perfstats} will present some quantitative details on
+the performance of the RTree index.
 
 \subsection{Implementation Details}
 

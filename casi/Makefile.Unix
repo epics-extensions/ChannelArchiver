@@ -14,7 +14,7 @@ BASE=/cs/epics/R3.13.3/base
 EXT=../../../../..
 INCLUDES  = -I../.. -I$(EXT)/include -I$(BASE)/include
 INCLUDES += -I$(BASE)/include/os/$(HOST_ARCH) -I$(BASE)/src/ca
-LIBS = -L $(EXT)/lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARCH) -lca -ldb -lCom -lpthread
+LIBS = -L $(EXT)/lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARCH) -lca -lDb -lCom -lpthread
 
 # Solaris @ LANL
 #LIBS += -ldl  -lsocket -lnsl -lm

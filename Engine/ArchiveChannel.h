@@ -115,8 +115,8 @@ public:
               DbrType dbr_time_type, DbrCount nelements,
               const CtrlInfo *ctrl_info = 0, const epicsTime *last_stamp = 0);
     
-    /// Write current ring buffer content to archive.
-    void write(Guard &guard, class IndexFile &index);
+    /// Write current ring buffer content to archive. Returns count written.
+    unsigned long write(Guard &guard, class IndexFile &index);
 
     /// Add an event to the buffer (special status/severity)
 

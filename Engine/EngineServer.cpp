@@ -69,7 +69,10 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path)
         getcwd(dir, sizeof line);                 
         page.tableLine("Directory ", line, 0);
 #endif
-        sprintf(line, "%.3f sec", theEngine->getLastWriteDuration(engine_guard));
+        sprintf(line, "%lu", theEngine->getWriteCount(engine_guard));
+        page.tableLine("Write Count", line, 0);
+
+        sprintf(line, "%.3f sec", theEngine->getWriteDuration(engine_guard));
         page.tableLine("Write Duration", line, 0);
 
         epicsTime2string(theEngine->getNextWriteTime(engine_guard), s);

@@ -243,12 +243,13 @@ void ArchiveChannel::init(Guard &engine_guard, Guard &guard,
         last_stamp_in_archive = *last_stamp;
 }
 
-void ArchiveChannel::write(Guard &guard, IndexFile &index)
+unsigned long ArchiveChannel::write(Guard &guard, IndexFile &index)
 {
+    unsigned long count = 0;
     guard.check(mutex);
     size_t i, num_samples = buffer.getCount();
     if (num_samples <= 0)
-        return;
+        return count;
     DataWriter writer(index, name, ctrl_info, dbr_time_type, nelements,
                       period, num_samples);
     const RawValue::Data *value;
@@ -268,8 +269,10 @@ void ArchiveChannel::write(Guard &guard, IndexFile &index)
         }
         else if (add_result == DataWriter::DWA_Back)
             LOG_MSG("'%s': back-in-time write value\n", name.c_str());
+        ++count;
     }
     buffer.resetOverwrites();
+    return count;
 }
 
 // CA callback for connects and disconnects

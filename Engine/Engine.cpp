@@ -341,8 +341,9 @@ stdString Engine::makeDataFileName()
     return stdString(buffer);
 }
 
-void Engine::writeArchive(Guard &engine_guard)
+unsigned long Engine::writeArchive(Guard &engine_guard)
 {
+    unsigned long count = 0;
     //LOG_MSG("Engine: writing\n");
     is_writing = true;
     IndexFile index(RTreeM);
@@ -352,7 +353,7 @@ void Engine::writeArchive(Guard &engine_guard)
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
             Guard guard((*ch)->mutex);
-            (*ch)->write(guard, index);
+            count += (*ch)->write(guard, index);
         }
         index.close();
     }
@@ -364,6 +365,7 @@ void Engine::writeArchive(Guard &engine_guard)
     DataFile::close_all();
     is_writing = false;
     //LOG_MSG("Engine: writing done.\n");
+    return count;
 }
 
 bool Engine::process()
@@ -396,12 +398,13 @@ bool Engine::process()
         write_delay = next_write_time - now;            
         if (write_delay <= 0.0)
         {
-            writeArchive(engine_guard);
+            unsigned long count = writeArchive(engine_guard);
             epicsTime end = epicsTime::getCurrent();
             double duration = end - now;
             if (duration < 0.0)
                 duration = 0.0;
-            last_write_duration = 0.95*last_write_duration + 0.05*duration;
+            write_duration = 0.99*write_duration + 0.01*duration;
+            write_count = (99*write_count + count)/100;
             next_write_time = roundTimeUp(end, write_period);
             do_wait = false;
         }

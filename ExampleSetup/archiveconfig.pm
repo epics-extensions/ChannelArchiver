@@ -49,7 +49,7 @@ use Data::Dumper;
 
 # Timeout used when reading a HTTP client or ArchiveEngine.
 # 10 seconds is reasonable.
-my ($read_timeout) = 10;
+my ($read_timeout) = 30;
 
 my ($localhost) = hostname();
 

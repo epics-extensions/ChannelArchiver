@@ -14,7 +14,6 @@ use archiveconfig;
 
 # Globals, Defaults
 my ($config_name) = "/arch/archiveconfig.csv";
-my ($read_timeout) = 30;
 my ($localhost) = hostname();
 
 # Configuration info filled by parse_config_file
@@ -42,8 +41,8 @@ $config_name = $opt_c  if (length($opt_c) > 0);
 
 @daemons = parse_config_file($config_name, $opt_d);
 
-my ($daemon, $engine, @html, $line, $channels, $time);
-printf "Engine              Port      Channels  Write Duration\n";
+my ($daemon, $engine, @html, $line, $channels, $count, $time);
+printf "Engine              Port      Channels  Val. Count Write Duration\n";
 foreach $daemon ( @daemons )
 {
     foreach $engine ( @{ $daemon->{engines} } )
@@ -51,6 +50,7 @@ foreach $daemon ( @daemons )
 	printf("    Engine '%s', %s:%d, description '%s'\n",
 	       $engine->{name}, $localhost, $engine->{port}, $engine->{desc}) if ($opt_d);
 	$channels = "<unknown>";
+	$count = "<unknown>";
 	$time = "<unknown>";
 	@html = read_URL($localhost, $engine->{port}, "/");
 	foreach $line ( @html )
@@ -59,13 +59,18 @@ foreach $daemon ( @daemons )
 	    {
 		$channels = $1;
 	    }
+	    if ($line =~ m"Write Count.*>([0-9.]+)<")
+	    {
+		$count = $1;
+	    }
 	    if ($line =~ m"Write Duration.*>([0-9.]+ sec)<")
 	    {
 		$time = $1;
 		last;
 	    }
 	}
-	printf "%-20s%-10d%-10s%s\n", $engine->{name}, $engine->{port}, $channels, $time;
+	printf "%-20s%-10d%-10s%-11s%s\n",
+               $engine->{name}, $engine->{port}, $channels, $count, $time;
     }
 }
 

@@ -19,7 +19,7 @@ LIBS = -L $(EXT)/lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARC
 # Solaris @ LANL
 #LIBS += -ldl  -lsocket -lnsl -lm
 
-# compiler, linker
+# compiler, also used as linker
 CC = g++
 
 # C compiler flags
@@ -57,6 +57,7 @@ PY_FLAGS =
 
 # Perl(5) settings
 PERL_INC=-I/usr/lib/perl5/5.00503/i386-linux/CORE
+PERL_LIB=
 
 all::	tcl python perl
 
@@ -100,9 +101,9 @@ perl::	dirs
 
 
 clean::
-	rm -f python/O.$(HOST_ARCH)/*
-	rm -f tcl/O.$(HOST_ARCH)/*
-	rm -f perl/O.$(HOST_ARCH)/*
+	rm -rf python/O.$(HOST_ARCH)
+	rm -rf tcl/O.$(HOST_ARCH)
+	rm -rf perl/O.$(HOST_ARCH)
 
 
 

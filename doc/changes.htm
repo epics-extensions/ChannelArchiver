@@ -15,15 +15,22 @@
   The "patches" are then used to debug those new things.
   
   <ul>
-    <li>01/22/2001<br>
-      Patch #2:<br>
+    <li>01/??/2001<br>
+      <font color="#0000A0">Version 1.6</font>:<br>
        <ul>
+       <li>Removed atac, the old tcl-only scripting interface.
+       <li>Removed namespaces. Though a good idea, Microsoft C++
+           is for now the only compiler that implements them and
+	   actually uses namespaces in the supplied library.
+	   I should burn the books that told me to use namespaces.
        <li>Engine now ignores stamps which are 24h in the future,
            compared to the clock of the machine where the engine
 	   is running.
 	   (hardcoded in getIgnoredFutureSecs(), Engine/Engine.h)
        <li>Removed ASSERTs in Engine/ChannelInfo, replaced by
            error messages.
+       <li>replaced some usage of std::strbuf with sprintf
+           because strbuf's operators caused unexplainable lockup.
        <li>The scripting interface CASI now works with perl,
            but so far on Linux only.
            I'm trying to find the correct combination of

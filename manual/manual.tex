@@ -83,7 +83,7 @@
 \title{\Huge Channel Archiver Manual\\[1cm]
 \includegraphics[width=3cm]{logo101}
 }
-\date{R3.14.4 Version, Nov. 2003}
+\date{R3.14.4 Version,\\ \today.}
 \maketitle
 \newpage
 
@@ -113,19 +113,24 @@ Nick Pattengale.
 
 \input{overview}
 \input{background}
-\input{engine}
-\input{export}
-\input{dataserver}
-\input{err_faq}
 
-\chapter{Internals}
+\input{engine}
+
+\input{retrieval}
+\input{export}
+\input{javaclient}
+\input{dataserver}
 \input{xmlrpc}
 \clearpage
+
+\chapter{Data Storage} \label{chap:storage}
 \input{rtree}
 \input{binary}
 \input{stats}
+
 \input{install}
 
+\input{err_faq}
 \input{changes}
 
 \input{bib}

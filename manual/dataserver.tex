@@ -1,4 +1,4 @@
-\chapter{Data Server} \label{sec:dataserver}
+\section{Data Server} \label{sec:dataserver}
 The archiver toolset includes a network data server.
 By running this data server on a computer that has
 physical access to your archived data, be it because the data resides
@@ -31,7 +31,7 @@ XML-RPC handles the data type conversions. For details on how to use
 XML-RPC from your code, refer to section \ref{sec:xmlprotocol} on page
 \pageref{sec:xmlprotocol}.
 
-\section{Installation} % ---------------------------------------------
+\subsection{Installation} % ---------------------------------------------
 After successful compilation in ChannelArchiver/XMLRPCServer, you will
 have a program ``ArchiveDataServer''. You need to copy that binary as
 ``ArchiveDataServer.cgi'' into your web server's CGI directory and
@@ -63,7 +63,7 @@ What follows is an example setup for the Apache Web Server under Linux:
    file, more about which next.
 \end{enumerate}
 
-\section{Setup}
+\subsection{Setup}
 You need to prepare an XML-formatted configuration file for the
 ArchiveDataServer that follows the DTD from listing
 \ref{lst:serverconfigdtd}. Note that the ArchiveDataServer might not

@@ -1,7 +1,43 @@
 \chapter{ArchiveEngine}
 
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=\textwidth}{engine}
+\end{center}
+\caption{\label{fig:engine}Archive Engine, refer to text.}
+\end{figure}
+
+\noindent The ArchiveEngine is an EPICS ChannelAccess client. It can
+save any channel served by any ChannelAccess server. One ArchiveEngine
+can archive data from more than one CA server. For more details on the
+CA server data sources, refer to section \ref{sec:datasource} on page
+\pageref{sec:datasource}.  The ArchiveEngine supports the sampling
+options that were described in section \ref{sec:sampling} on page
+\pageref{sec:sampling}.  The ArchiveEngine is configured with an XML
+file that lists what channels to archive and how. Each given channel
+can have a different periodic scan rate or be archived in monitor mode
+(on change).  One design target was: Archive 10000 values per second,
+be it 1000 channels that change at 10Hz each or 10000 channels which
+change at 1Hz.
+
+The ArchiveEngine saves the full information available via
+ChannelAccess: The value, time stamp and status as well as
+control information like units, display and alarm limits, ...  
+The data is written to an archive in the form of local disk files,
+specifically index and data files.  Chapter \ref{chap:storage}
+provides details on the file formats.
+While running, status and configuration of the ArchiveEngine are
+accessible via a built-in web server, accessible via any web browser
+on the network.  The chapter on data retrieval, beginning on page
+\pageref{chap:retrieval}, introduces the available retrieval tools
+that allow users to look at the archived data.
+
 \section{Configuration}
-To be in XML.
+The ArchiveEngine expects an XML-type configuration file that follows
+the document type description format from listing
+\ref{lst:engineconfigdtd}. Listing \ref{lst:engineconfigex} provides
+an example. In the following subsections, we describe the various XML
+elements of the configuration file.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for
     the Archive Engine
@@ -10,13 +46,282 @@ To be in XML.
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example
     Archive Engine Configuration},label=lst:engineconfigex]{../Engine/engineconfig.xml}
 
+\clearpage
+
+\subsection{write\_period}
+This is a \INDEX{Global Option} that needs to precede any group and
+channel definitions.  It configures the write period of the Archive
+Engine in seconds. The default value of 30 seconds means that the
+engine will write to Storage every 30 seconds.
+
+\subsection{get\_threshold}
+This global option determines when the archive engine switches from
+``Sampled'' operation to ``Sampled using monitors'' as described in
+section \ref{sec:sampling}.
+
+\subsection{file\_size}
+This global option determines when the archive engine will create a
+new data file. The default of 100 means that the engine will continue
+to write to a data file until that file reaches a size of
+approximately 100~MB, at which point a new data file is created.
+
+\subsection{ignored\_future}
+Defines ``too far in the future'' as ``now $+$ ignored\_future''.
+Samples with time stamps beyond that time are ignored.  Details: For
+strange reasons, the Engine sometimes receives values with invalid
+time stamps. The most common example is a ``Zero'' time stamp: After
+an IOC reboots, all records have a zero time stamp until they are
+processed. For passive records, as commonly used for operator input,
+this time stamp will stay zero until someone enters a value on an
+operator screen or via a safe/restore utility. The Engine cannot
+archive those values because the retrieval relies on the values being
+sorted in time. A zero time stamp does not fit in.
+
+Should an IOC (for some unknown reason) produce a value with an
+outrageous time stamp, e.g. "1/2/2035", another problem occurs: Since
+the archiver cannot go back in time, it cannot add further values to
+this channel until the date "1/2/2035" is reached.  Consequently,
+future time stamps have to be ignored. (default: 6h)
+
+\subsection{buffer\_reserve} \label{sec:reserve}
+To buffer the samples between writes to the disk, the engine keeps a
+memory buffer for each channel. The size of this buffer is
+$$ buffer\_reserve \times \frac{write\_period}{scan\_period}
+$$ Since writes can be delayed by other tasks running on the same
+computer as well as disk activity etc., the buffer is bigger than the
+minimum required: buffer\_reserve defaults to 3.
+
+\subsection{group}
+Every channel belongs to a group of channels. The configuration file
+must define at least one group. For organizational or aesthetic
+purposes, you might add more groups. One important use of groups is
+related to the ``disable'' feature, see section \ref{sec:disable}.
+
+\subsubsection{name}
+This mandatory sub-element of a group defines its name.
+
+\subsection{channel}
+This element defines a channel by providing its name and the sampling
+options. A channel can be part of more than one group. To accomplish
+this, simply list the channel as part of all the groups to which it
+should belong.
+
+\subsubsection{name}
+This mandatory sub-element of a channel defines its name. Any name
+acceptable for ChannelAccess is allowed. The archive engine does not
+perform any name checking, it simply passes the name on to the CA
+client library, which in turn tries to resolve the name on the
+network.  Ultimately, the configuration of your data servers decides
+what channel names are available.
+
+\subsubsection{period}
+This mandatory sub-element of a channel defines the sampling period.
+In case of periodic sampling, this is the period at which the periodic
+sampling attempts to operate. In case of monitored channels (see next
+option), this is the estimated rate of change of the channel.
+The period is specified in units of seconds.
+
+If a channel is listed more than once, for example as part of
+different groups, the channel will still only be sampled once. The
+sampling mechanism is determined by maximizing the data rate. If, for
+example, the channel ``X'' is once configured for periodic sampling
+every 30 seconds and once as a monitor with an estimated period or one
+second, the channel will in fact be monitored with an estimated period
+of 1 second.
+
+\subsubsection{monitor}
+Either ``monitor'' or ``scan'' needs to be provided as part of a
+channel configuration to select the sampling method.  In the case of
+``monitor'', the channel will be monitored, that is: Each change
+received via ChannelAccess will be stored. The ``period'' tag is used
+to determine the in-memory buffer size of the engine. That means: If
+samples arrive much more frequently than estimated via the ``period''
+tag, the archive engine might drop samples. (See also
+``buffer\_reserve'', \ref{sec:reserve}
+
+\subsubsection{scan}
+As an alternative to the ``monitor'' tag, ``scan'' can be used to
+select periodic sampling. The preceding ``period'' tag determines the
+sampling period.
+
+\subsubsection{disable} \label{sec:disable}
+This optional sub-element of a channel turns the channel into a
+``disabling'' channel for the group. Whenever the value of the channel
+is non-zero, sampling of the whole group will be disabled until the
+channel returns to zero.
+
+This is useful for e.g.\ a group of channels related to power
+supplies: Whenever the power supply is off, we might want to disable
+scanning of the power supplies' voltage and current because those
+channels will only yield noise. By disabling the sampling based on a
+``Power Supply is Off'' channel, we can avoid storing those values
+which are of no interest.
+
+\NOTE There is no ``enabling'' feature (yet), meaning: The channel
+marked as ``disable'' will disable its group whenever it is non-zero,
+there is no ``enable'' flag that would enable archiving of a group
+whenever the flagged channel is non-zero.
+
 \section{Starting and Stopping}
-As before.
+\subsection{Starting}
+The ArchiveEngine is a command-line program that displays usage
+information similar to the following:
 
-\section{Web Interface}
-As before.
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+ArchiveEngine Version 2.1.0, EPICS 3.14.4
+ 
+USAGE: ArchiveEngine [Options] <config-file> <index-file>
+ 
+Options:
+  -port <port>         Web server TCP port
+  -description <text>  description for HTTP display
+  -log <filename>      write logfile
+  -nocfg               disable online configuration
+\end{lstlisting}
 
-\section{Threads}
+\noindent Minimally, the engine is therefore started by simply naming the
+configuration file and the path to the index file, which can be in the
+local directory:
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+ArchiveEngine engineconfig.xml ./index
+\end{lstlisting}
+
+\noindent After collecting some data, the ArchiveEngine will create the
+specified index file together with data files in the same directory
+that contains the index file.
+
+\subsection{``-log'' Option}
+This option causes the ArchiveEngine to create a log file into which
+all the messages that otherwise only appear on the standard output are copied.
+
+\subsection{``-description'' Option}
+This option allows setting the description string that gets displayed
+on the main page of the engine's built-in HTTP server, see
+section \ref{sec:enginehttp}.
+
+\subsection{``-port'' Option}
+This option configures the TCP port of the engine's HTTP server, again
+see section \ref{sec:enginehttp}. The default port number is 4812.
+
+If you think this number stinks for a default, you are not too far off
+base: In Germany, there is a very well known Au-de-Cologne called
+4711.  Since forty-seven-eleven is therefore easily remembered by
+anybody from Germany, adding 1 to each 47 and 11 naturally results in
+an equally easy to remember 4812.
+And for those who fail to appreciate the German-centered default port
+number, the ``-port'' option allows you to pick a number of your
+personal fancy.
+
+\subsection{``-nocfg'' Option}
+This option disables the ``Config'' page of the engine's HTTP server,
+in case you want to prohibit online changes.
+
+\subsection{The ``archive\_active.lck'' File}
+You can only run one ArchiveEngine per directory because it creates
+the index and data files in there.  When running, this lock file is
+created. The ArchiveEngine will refuse to run if this file already
+exists.  After shutdown, the ArchiveEngine will remove this lock file.
+If the ArchiveEngine crashes or is not stopped gracefully by the
+operating system, this lock file will be left behind.  You cannot
+start the ArchiveEngine again until you remove the lock file. This is
+a reminder for you to check the cause of the improper shutdown and
+maybe check the data files for corruption.
+
+\NOTE This is no 100\%\ dependable check. Data corruption occurs when
+two engines attempt to write to the same index and data files. The
+lock file, however, is created in the directory where the
+ArchiveEngine was started, which could be different from the directory
+where the data gets written. Example:
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+cd /some/dir
+ArchiveEngine -p 7654 engineconfig.xml /my/data/index &
+
+cd /another/dir
+ArchiveEngine -p 7655 engineconfig.xml /my/data/index &
+\end{lstlisting}
+
+\noindent This is a sure-fire way to corrupt the data in
+``/my/data/index'' and the accompanying data files because two
+ArchiveEngines are writing to the same archive.
+
+\subsection{More than one ArchiveEngine}
+You can run multiple ArchiveEngines on the same
+computer. But they must
+\begin{enumerate}
+\item be in separate directories. See the preceding discussion of
+      the lock file which is meant to assist in avoiding this
+      problem.
+\item use a different TCP port number for the built-in web server
+\end{enumerate}
+In practice this means that you have to create different directories
+on the disk, one per ArchiveEngine, and in there run the
+ArchiveEngines with different "-p $<$port$>$" options.
+
+\subsection{Stopping}
+While the ArchiveEngine can be stopped by pressing ``CTRL-C''
+or using the equivalent ``kill'' command in Unix, the preferred method is
+via the built-in web server. Use any web browser and point it to
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+http://<host where engine is running>:<port>/stop
+\end{lstlisting}
+
+\noindent Per default, the engine uses 4812, so you could use the
+following URL to stop that engine on the local computer:
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+http://localhost:4812
+\end{lstlisting}
+
+% -------------------------------------------------------------------------------
+\section{Web Interface} \label{sec:enginehttp} % --------------------------------
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=0.8\textwidth}{engine_main}
+\end{center}
+\caption{\label{fig:engine:main}Main Page of Archive Engine's HTTPD}
+\end{figure}
+
+The ArchiveEngine has a built-in web server (HTTP Daemon) for status
+and configuration information.  You can use any web browser to access
+this web server.  You can do that on the computer where the
+ArchiveEngine is running as well as from other computers, be it a PC
+or Macintosh or other system as long as that computer can reach the
+machine that is running the ArchiveEngine via the network.  You do
+\emph{not} need a web server like the Apache web server for Unix or
+the Internet Information Server for Win32 to use this. The
+ArchiveEngine \emph{itself} acts as a web server.
+
+You \emph{cannot} view archived data with this mechanism.  See the
+documentation on data retrieval (chapter \ref{chap:retrieval}) for
+that, because the archive engine's HTTPD is meant for access to the
+status and configuration of the running engine, not for accessing the
+data samples.
+
+To access the ArchiveEngine's web server, you need to know the
+Internet name of the machine that is running the ArchiveEngine as well
+as the TCP port.  If you are on the same machine, use ``localhost''.
+The port is configured when you start the ArchiveEngine, it defaults
+to 4812. Then use any web browser and point it to
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+ http://<host where engine is running>:<port>
+\end{lstlisting}
+
+\noindent Example for an ArchiveEngine running on the local machine with the
+default port number:
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+http://localhost:4812
+\end{lstlisting}
+
+\noindent The start page of the ArchiveEngine web server should look
+similar to the one shown in Fig.~\ref{fig:engine:main}.
+
+
+\section{Threads} % ----------------------------------------------------------
 The ArchiveEngine uses several threads:
 \begin{itemize}
 \item A main thread that reads the initial configuration and then

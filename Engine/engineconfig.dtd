@@ -8,13 +8,13 @@
                          buffer_reserve)*, group+)>
 <!ELEMENT group (name,channel+)>
 <!ELEMENT channel (name,period,(scan|monitor),disable?)>
-<!ELEMENT write_period (#PCDATA)><!-- int "seconds" -->
-<!ELEMENT get_threshold (#PCDATA)><!-- int "seconds" -->
+<!ELEMENT write_period (#PCDATA)><!-- int seconds -->
+<!ELEMENT get_threshold (#PCDATA)><!-- int seconds -->
 <!ELEMENT file_size (#PCDATA)><!-- MB -->
-<!ELEMENT ignored_future (#PCDATA)><!-- double "hours" -->
-<!ELEMENT buffer_reserve (#PCDATA)><!-- int "times"   -->
+<!ELEMENT ignored_future (#PCDATA)><!-- double hours -->
+<!ELEMENT buffer_reserve (#PCDATA)><!-- int times -->
 <!ELEMENT name (#PCDATA)>
-<!ELEMENT period (#PCDATA)><!-- double "seconds" -->
+<!ELEMENT period (#PCDATA)><!-- double seconds -->
 <!ELEMENT scan EMPTY>
 <!ELEMENT monitor EMPTY>
 <!ELEMENT disable EMPTY>

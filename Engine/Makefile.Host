@@ -16,6 +16,10 @@ ArchiveEngine_SRCS += WriteThread.cc
 ArchiveEngine_SRCS += HTTPServer.cc
 ArchiveEngine_SRCS += Configuration.cc
 ArchiveEngine_SRCS += ConfigFile.cc
+SCRIPTS += Tools/stopEngine.py
+SCRIPTS += Tools/stopEngine.tcl
+SCRIPTS += Tools/startEngine
+
 
 PROD := ArchiveEngine
 

@@ -25,9 +25,9 @@ proc camGUI::aNew {w} {
   pack $w.f$row.c -fill both -expand t
   $w window config $row,4 -sticky news -window $w.f$row
   set camGUI::aEngines($row,$::iHost) "$::_host"
-  set ::var($row,port) 4710
+  set ::var($row,port) 4711
   set ::ports [getPorts -1]
-  spinPort $row 1
+#  spinPort $row 1
   set camGUI::aEngines($row,$::iPort) "$::var($row,port)"
   set camGUI::aEngines($row,$::iDescr) "<enter description>"
   set camGUI::aEngines($row,$::iRun) ""

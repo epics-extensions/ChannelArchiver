@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
 #
 # ArchiveDaemon is a perl script that reads
-# a configuration file which lists what Archive
-# Engines should run on the local machine and how.
+# a configuration file which lists what Archive Engines
+# should run on the local machine and how.
 #
 # It will start engines, maybe periodically stop and
 # restart them.
@@ -29,7 +29,7 @@ use POSIX 'setsid';
 # Configurables
 # ----------------------------------------------------------------
 
-# Turning this on (1) disables caching and might help with debugging.
+# Setting this to 1 disables(!) caching and might help with debugging.
 # $OUTPUT_AUTOFLUSH=1;
 
 # Config file read by ArchiveDaemon
@@ -38,7 +38,7 @@ my ($config_file) = "ArchiveDaemon.xml";
 # Log file, created in current directory
 my ($logfile) = "ArchiveDaemon.log";
 
-# Port of ArchiveDaemon's HTTPD
+# TCP Port of ArchiveDaemon's HTTPD
 my ($http_port) = 4610;
 
 # What ArchiveEngine to use. Just "ArchiveEngine" works if it's in the path.
@@ -85,7 +85,6 @@ my ($html_stop) = '</BLOCKQUOTE>
 # 'desc' => Engine's Description
 # 'port' => TCP port of Engine's HTTPD
 # 'config' => Configuration file
-# 'index' => Index file
 # 'daily' => "hh:mm" of daily restart
 # -- adjusted at runtime
 # 'started' => 0 or start time text from running engine.
@@ -108,7 +107,6 @@ sub read_config($)
 	$config[$#config]{desc} = $engine->{desc}[0];
 	$config[$#config]{port} = $engine->{port}[0];
 	$config[$#config]{config} = $engine->{config}[0];
-	$config[$#config]{index} = $engine->{index}[0];
 	if (defined($engine->{daily}))
 	{
 	    $config[$#config]{daily} = $engine->{daily}[0];
@@ -125,7 +123,6 @@ sub dump_config()
     {
 	print("Engine '$engine->{desc}', port $engine->{port}:\n");
 	print(" Config '$engine->{config}'\n");
-	print(" Index '$engine->{index}'\n");
 	print(" Started: $engine->{started}\n");
 	if (defined($engine->{daily}))
 	{
@@ -174,16 +171,9 @@ sub handle_HTTP_main($)
     foreach $engine ( @config )
     {
 	print $client "<TR>";
-	if ($engine->{started})
-	{
-	    print $client "<TH BGCOLOR=#FFFFFF>" .
-		"<A HREF=\"http://$host:$engine->{port}\">" .
-		"$engine->{desc}</A></TH>";
-	}
-	else
-	{
-	    print $client "<TH BGCOLOR=#FFFFFF>$engine->{desc}</TH>";
-	}
+	print $client "<TH BGCOLOR=#FFFFFF>" .
+	    "<A HREF=\"http://$host:$engine->{port}\">" .
+	    "$engine->{desc}</A></TH>";
 	print $client "<TD ALIGN=CENTER>$engine->{port}</TD>";
 	if ($engine->{daily})
 	{
@@ -320,14 +310,32 @@ sub check_HTTPD($)
 # Engine Start/Stop Stuff
 # ----------------------------------------------------------------
 
-# Attempt to start one engine
-sub start_engine($$$$$)
+# Return what the given engine should use for an index name,
+# including the relative path with YYYY/MM_DD etc. if applicable.
+sub make_indexname($$)
 {
-	my ($desc, $cfg, $index, $log, $port) = @ARG;
-	my ($dump) = "/dev/null";
-	my ($dir) = dirname($cfg);
-	$cfg = basename($cfg);
-	print("Starting Archive Engine '$desc': $host:$port\n");
+    my ($now, $engine) = @ARG;
+    if (defined($engine->{daily}))
+    {
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+	    = localtime($now);
+	return sprintf("%04d/%02d_%02d/index", 1900+$year, 1+$mon, $mday);
+    }
+    else
+    {
+	return "index";
+    }
+}
+
+# Attempt to start one engine
+sub start_engine($$)
+{
+	my ($now, $engine) = @ARG;
+	my ($null) = "/dev/null";
+	my ($dir) = dirname($engine->{config});
+	my ($cfg) = basename($engine->{config});
+	my ($index) = make_indexname($now, $engine);
+	print("Starting Engine '$engine->{desc}': $host:$engine->{port}\n");
 	my ($path) = dirname("$dir/$index");
 	if (not -d $path)
 	{
@@ -335,8 +343,8 @@ sub start_engine($$$$$)
 	    mkpath($path);
 	}
 	my ($cmd) = "cd \"$dir\";" .
-	    "$ArchiveEngine -d \"$desc\" -l $log -p $port $cfg $index " .
-	    ">$dump 2>&1 &";
+	    "$ArchiveEngine -d \"$engine->{desc}\" -l engine.log " .
+	    "-p $engine->{port} $cfg $index >$null 2>&1 &";
 	print("\tCommand: '$cmd'\n");
 	system($cmd);
 }
@@ -416,20 +424,22 @@ sub check_engine($$)
     return ($desc, $started);
 }
 
-sub check_restart($$$)
+# Check if now's the time to restart a given engine
+sub check_restart($$)
 {
-    my ($engine, $now, $started) = @ARG;
+    my ($now, $engine) = @ARG;
     my ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$wday,$yday,$isdst);
-    my ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec, $nano, $engine_secs);
-    my ($restart_secs);
-
+    my ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec, $nano);
+    my ($engine_secs, $restart_secs);
+    
     ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$wday,$yday,$isdst)
 	= localtime($now);
     ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec, $nano)
-	= split '[/ :.]', $started;
-    $engine_secs = timelocal($e_sec,$e_min,$e_hour,$e_mday,$e_mon-1,$e_year-1900);
+	= split '[/ :.]', $engine->{started};
+    $engine_secs
+	= timelocal($e_sec,$e_min,$e_hour,$e_mday,$e_mon-1,$e_year-1900);
 
-    print ("\tEngine was started $started\n");
+    print ("\tEngine was started $engine->{started}\n");
     printf("\tIt's now           %02d/%02d/%04d %02d:%02d:%02d\n",
            1+$n_mon, $n_mday, 1900+$n_year, $n_hour, $n_min, $n_sec);
 
@@ -441,8 +451,7 @@ sub check_restart($$$)
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
 	    stop_engine($host, $engine->{port});
-	    start_engine($engine->{desc}, $engine->{config}, $engine->{index},
-			 "engine.log", $engine->{port});
+	    start_engine($now, $engine);
 	}
     }
 }
@@ -454,10 +463,8 @@ sub check_restarts($)
     my ($engine);
     foreach $engine ( @config )
     {
-	if ($engine->{started})
-	{
-	    check_restart($engine, $now, $engine->{started});
-	}
+	next unless ($engine->{started});
+	check_restart($now, $engine);
     }
 }
 
@@ -484,14 +491,14 @@ sub check_engines($)
 }
 
 # Attempt to start all engines in config that are not marked as 'running'
-sub start_engines()
+sub start_engines($)
 {
+    my ($now) = @ARG;
     my ($engine, $desc, $started);
     foreach $engine ( @config )
     {
 	next if ($engine->{started});
-	start_engine($engine->{desc}, $engine->{config}, $engine->{index},
-		     "engine.log", $engine->{port});
+	start_engine($now, $engine);
     }
 }
 
@@ -527,7 +534,7 @@ while (1)
     {
 	check_restarts($now);
 	check_engines($now);
-	start_engines();
+	start_engines($now);
 	$last_check = time;
     }
     check_HTTPD($httpd);

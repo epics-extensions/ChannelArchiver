@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DTD for the ArchiveDaemon Configuration         -->
+<!ELEMENT engines (engine+)>
+<!ELEMENT engine (desc,port,config,daily?)>
+<!ELEMENT desc (#PCDATA)>  <!-- Text -->
+<!ELEMENT port (#PCDATA)>  <!-- TCP port number -->
+<!ELEMENT config (#PCDATA)><!-- path -->
+<!ELEMENT daily (#PCDATA)> <!-- HH:MM -->

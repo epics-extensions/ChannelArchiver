@@ -122,4 +122,13 @@
 
 #define EXPORT_ARCHIVE_TYPE MultiArchive
 
+// ----------------------------------------------------------
+// WinBrowser
+// ----------------------------------------------------------
+
+// (This is more of a test program. You should use the CGIExport tool
+//  or the tcl/tk extension instead)
+
+#define WINBROWSER_ARCHIVE_TYPE MultiArchive
+
 #endif

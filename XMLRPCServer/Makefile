@@ -8,9 +8,9 @@ USR_CXXFLAGS += -I ../../Storage -I ../../rtree
 # Compare to output of `xmlrpc-c-config cgi-server --cflags`
 USR_CXXFLAGS += -I/usr/local/include
 
-DummyServer_SRCS += DummyServer.cpp
-ArchiveServer_SRCS += ServerConfig main.cpp
-TESTPROD_HOST := DummyServer ArchiveServer bench
+DummyDataServer_SRCS += DummyServer.cpp
+ArchiveDataServer_SRCS += ServerConfig main.cpp
+TESTPROD_HOST := DummyDataServer ArchiveDataServer bench
 
 PROD_LIBS_DEFAULT  := Storage    Tools    ca Com
 PROD_LIBS_WIN32    := StorageObj ToolsObj ca Com
@@ -37,6 +37,6 @@ bench_LDFLAGS=-L/usr/lib -L/usr/local/lib -lxmlrpc_client -L/usr/lib -lmd5 -lwww
 include $(TOP)/configure/RULES
 
 cgiinstall:
-	cp O.$(EPICS_HOST_ARCH)/DummyServer /var/www/cgi-bin/xmlrpc/DummyServer.cgi
-	cp O.$(EPICS_HOST_ARCH)/ArchiveServer /var/www/cgi-bin/xmlrpc/ArchiveServer.cgi
+	cp O.$(EPICS_HOST_ARCH)/DummyDataServer /var/www/cgi-bin/xmlrpc/DummyDataServer.cgi
+	cp O.$(EPICS_HOST_ARCH)/ArchiveDataServer /var/www/cgi-bin/xmlrpc/ArchiveDataServer.cgi
 

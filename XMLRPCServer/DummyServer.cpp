@@ -6,13 +6,8 @@
 #include <xmlrpc_cgi.h>
 // Tools
 #include "RegularExpression.h"
-
-#define ARCH_VER 1
-
-// The xml-rpc API defines "char *" strings
-// for what should be "const char *".
-// This macro helps avoid those "deprected conversion" warnings of g++
-#define STR(s) ((char *)((const char *)s))
+// XMLRPCServer
+#include "DataServer.h"
 
 static const char *names[] =
 {
@@ -26,12 +21,10 @@ static const char *names[] =
 // desc   a string description
 //
 // { int32  ver, string desc } = archdat.info()
-xmlrpc_value *info(xmlrpc_env *env,
-                   xmlrpc_value *args,
-                   void *user)
+xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
     char txt[100];
-    sprintf(txt, "Channel Archiver Data Server V%d",
+    sprintf(txt, "Channel Archiver Dummy Data Server V%d",
             ARCH_VER);
     return xmlrpc_build_value(env,
                               STR("{s:i,s:s}"),
@@ -39,18 +32,45 @@ xmlrpc_value *info(xmlrpc_env *env,
                               STR("desc"), STR(txt));
 }
 
+// {int32 key, string name, string path}[] = archiver.archives()
+xmlrpc_value *get_archives(xmlrpc_env *env, xmlrpc_value *args, void *user)
+{
+    // Create result
+    xmlrpc_value *archive, *result = xmlrpc_build_value(env, STR("()"));
+    if (!result)
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
+                                       "Cannot create result");
+        return 0;
+    }
+    archive = xmlrpc_build_value(env, STR("{s:i,s:s,s:s}"),
+                                 STR("key"),  (xmlrpc_int32)42,
+                                 STR("name"), STR("Dummy 1"),
+                                 STR("path"), STR("/dev/null/index1"));
+    xmlrpc_array_append_item(env, result, archive);
+    xmlrpc_DECREF(archive);
+    archive = xmlrpc_build_value(env, STR("{s:i,s:s,s:s}"),
+                                 STR("key"),  (xmlrpc_int32)47,
+                                 STR("name"), STR("Dummy 2"),
+                                 STR("path"), STR("/dev/null/index2"));
+    xmlrpc_array_append_item(env, result, archive);
+    xmlrpc_DECREF(archive);
+    
+    return result;
+}
+
 // {string name, int32 start_sec, int32 start_nano,
 //               int32 end_sec,   int32 end_nano}[]
-// = archiver.get_names(string pattern)
+// = archiver.get_names(int32 key, string pattern)
 xmlrpc_value *get_names(xmlrpc_env *env,
                         xmlrpc_value *args,
                         void *user)
 {
     RegularExpression *re = 0;
+    xmlrpc_int32 key;
     char *pattern;
     size_t pattern_len; 
-    xmlrpc_parse_value(env, args, STR("(s#)"),
-                       &pattern, &pattern_len);
+    xmlrpc_parse_value(env, args, STR("(is#)"), &key, &pattern, &pattern_len);
     if (env->fault_occurred)
         return NULL;
     if (pattern_len > 0)
@@ -112,14 +132,14 @@ xmlrpc_value *get_values(xmlrpc_env *env,
     xmlrpc_value *names;
     xmlrpc_value *name_val, *results, *result, *meta;
     xmlrpc_value *values, *val_array, *value;
-    xmlrpc_int32 start_sec, start_nano, end_sec, end_nano, count, how;
+    xmlrpc_int32 key, start_sec, start_nano, end_sec, end_nano, count, how;
     xmlrpc_int32 secs, nano;
     xmlrpc_int32 name_count, name_index, name_len, i;
     char *name;
 
     // Extract arguments
-    xmlrpc_parse_value(env, args, STR("(Aiiiiii)"),
-                       &names,
+    xmlrpc_parse_value(env, args, STR("(iAiiiiii)"),
+                       &key, &names,
                        &start_sec, &start_nano, &end_sec, &end_nano,
                        &count, &how);
     if (env->fault_occurred)
@@ -180,16 +200,20 @@ int main(int argc, const char *argv[])
     xmlrpc_cgi_init(XMLRPC_CGI_NO_FLAGS);
 
     xmlrpc_cgi_add_method_w_doc(STR("archiver.info"),
-                                &info, 0,
+                                &get_info, 0,
                                 STR("S:"),
                                 STR("Get info"));
-    xmlrpc_cgi_add_method_w_doc(STR("archiver.get_names"),
+    xmlrpc_cgi_add_method_w_doc(STR("archiver.archives"),
+                                &get_archives, 0,
+                                STR("A:"),
+                                STR("Get archives"));
+    xmlrpc_cgi_add_method_w_doc(STR("archiver.names"),
                                 &get_names, 0,
-                                STR("A:s"),
+                                STR("A:is"),
                                 STR("Get channel names"));
-    xmlrpc_cgi_add_method_w_doc(STR("archiver.get_values"),
+    xmlrpc_cgi_add_method_w_doc(STR("archiver.values"),
                                 &get_values, 0,
-                                STR("A:siiiiii"),
+                                STR("A:iAiiiiii"),
                                 STR("Get values"));
     xmlrpc_cgi_process_call();
     xmlrpc_cgi_cleanup();

@@ -29,3 +29,8 @@
 // meta.type as returned by archiver.get_values
 #define META_TYPE_ENUM    0
 #define META_TYPE_NUMERIC 1
+
+// The xml-rpc API defines "char *" strings
+// for what should be "const char *".
+// This macro helps avoid those "deprected conversion" warnings of g++
+#define STR(s) ((char *)((const char *)s))

@@ -19,11 +19,6 @@
 static FILE *logfile;
 #endif
 
-// The xml-rpc API defines "char *" strings
-// for what should be "const char *".
-// This macro helps avoid those "deprected conversion" warnings of g++
-#define STR(s) ((char *)((const char *)s))
-
 // Return name of configuration file from environment or 0
 const char *get_config_name(xmlrpc_env *env)
 {
@@ -358,9 +353,7 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
                               STR("desc"), STR(txt));
 }
 
-// {string name, int32 start_sec, int32 start_nano,
-//               int32 end_sec,   int32 end_nano}[]
-// = archiver.archives()
+// {int32 key, string name, string path}[] = archiver.archives()
 xmlrpc_value *get_archives(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
 #ifdef LOGFILE
@@ -394,7 +387,7 @@ xmlrpc_value *get_archives(xmlrpc_env *env, xmlrpc_value *args, void *user)
 
 // {string name, int32 start_sec, int32 start_nano,
 //               int32 end_sec,   int32 end_nano}[]
-// = archiver.names(key, string pattern)
+// = archiver.names(int32 key, string pattern)
 xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
 #ifdef LOGFILE
@@ -553,11 +546,11 @@ int main(int argc, const char *argv[])
                                 STR("Get archives"));
     xmlrpc_cgi_add_method_w_doc(STR("archiver.names"),
                                 &get_names, 0,
-                                STR("A:s"),
+                                STR("A:is"),
                                 STR("Get channel names"));
     xmlrpc_cgi_add_method_w_doc(STR("archiver.values"),
                                 &get_values, 0,
-                                STR("A:siiiiii"),
+                                STR("A:iAiiiiii"),
                                 STR("Get values"));
     xmlrpc_cgi_process_call();
     xmlrpc_cgi_cleanup();

@@ -7,8 +7,8 @@
 #include <xmlrpc.h>
 #include <xmlrpc_client.h>
 
-//#define URL "http://localhost/cgi-bin/xmlrpc/DummyServer.cgi"
-#define URL "http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi"
+#define URL "http://localhost/cgi-bin/xmlrpc/DummyServer.cgi"
+//#define URL "http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi"
 
 void die_if_fault_occurred(xmlrpc_env *env)
 {
@@ -73,7 +73,8 @@ void show_meta(xmlrpc_env *env, xmlrpc_value *meta)
 }
 
 // Dump 'values' part of returned value
-void show_data(xmlrpc_env *env, xmlrpc_int32 type, xmlrpc_int32 count, xmlrpc_value *data_array)
+void show_data(xmlrpc_env *env, xmlrpc_int32 type,
+               xmlrpc_int32 count, xmlrpc_value *data_array)
 {
     int i, num;
     int v, v_num;
@@ -139,9 +140,10 @@ void get_values(xmlrpc_env *env, xmlrpc_int32 count_to_get)
 {
     xmlrpc_int32 end = time(0);
     xmlrpc_int32 start = end - count_to_get;
-    xmlrpc_value *result = xmlrpc_client_call(env, URL, "archiver.get_values",
-                                              "((ssss)iiiiii)",
-                                              "fred", "freddy", "Jimmy", "James",
+    xmlrpc_value *result = xmlrpc_client_call(env, URL, "archiver.values",
+                                              "(i(ssss)iiiiii)",
+                                              (xmlrpc_int32)42,
+                                              "fred","freddy","Jimmy","James",
                                               start, (xmlrpc_int32) 2,
                                               end, (xmlrpc_int32) 4,
                                               count_to_get, (xmlrpc_int32)0);

@@ -5,9 +5,9 @@ use Time::Local;
 use Frontier::Client;
 
 # Setup URL
-#$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
+$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
+#$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
 #$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
-$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
 #$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveServer1.cgi';
 
 if ($#ARGV == 0)
@@ -65,6 +65,7 @@ if (0)
 print("==================================================================\n");
 print("Request with pattern:\n");
 print("==================================================================\n");
+print("...IOC...\n");
 $results = $server->call('archiver.names', $key, "IOC");
 foreach $result ( @{$results} )
 {
@@ -73,6 +74,16 @@ foreach $result ( @{$results} )
 	$end   = time2string($result->{end_sec},   $result->{end_nano});
 	print("Channel $name, $start - $end\n");
 }
+print("...fred...\n");
+$results = $server->call('archiver.names', $key, "fred");
+foreach $result ( @{$results} )
+{
+	$name = $result->{name};
+	$start = time2string($result->{start_sec}, $result->{start_nano});
+	$end   = time2string($result->{end_sec},   $result->{end_nano});
+	print("Channel $name, $start - $end\n");
+}
+
 
 
 # result = archiver.get_values(string name[],

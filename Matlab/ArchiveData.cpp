@@ -7,7 +7,7 @@
 //
 // kasemir@lanl.gov
 
-#define DEBUG
+#undef DEBUG
 
 // Generic Stuff -------------------------------------------------------
 #include <ArchiveDataClient.h>
@@ -39,59 +39,89 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
     }
     const std::string &url = args(0).string_value();
     const std::string &cmd = args(1).string_value();
+    int key = 0;
+    if (nargin >= 3)
+    {
+        if (!args(2).is_real_scalar())
+        {
+            error("KEY must be a number");
+            return retval;
+        }
+        key = args(2).int_value();
+    }
 #ifdef DEBUG
     octave_stdout << "URL='" << url << "'\n";
     octave_stdout << "CMD='" << cmd << "'\n";
+    octave_stdout << "KEY='" << key << "'\n";
 #endif
+    ArchiveDataClient client(url.c_str());
     if (cmd == "info")
     {
-        ArchiveDataClient    client(url.c_str());
         int                  version;
         stdString            description;
         stdVector<stdString> how_strings, stat_strings;
         stdVector<ArchiveDataClient::SeverityInfo> sevr_infos;
-        if (client.getInfo(version, description, how_strings, stat_strings,
-                           sevr_infos))
+        if (client.getInfo(version, description, how_strings,
+                           stat_strings, sevr_infos))
         {
             retval.append(octave_value((double)version));
             retval.append(octave_value(description.c_str()));
         }
         else
-            error("'info' failed\n");
+            error("'%s' failed\n", cmd.c_str());
     }
     else if (cmd == "archives")
     {
-        ArchiveDataClient                         client(url.c_str());
         stdVector<ArchiveDataClient::ArchiveInfo> archives;
         if (client.getArchives(archives))
         {
-            size_t i, num = archives.size();
-            octave_value_list keys;
+            size_t        i, num = archives.size();
+            ColumnVector  keys(num);
             string_vector names(num);
             for (i=0; i<num; ++i)
             {
-                keys.append(octave_value((double)archives[i].key));
+                keys(i) = (double)archives[i].key;
                 names[i] = archives[i].name.c_str();
             }
             retval.append(octave_value(keys));
             retval.append(octave_value(names));
         }
         else
-            error("'archives' failed\n");
+            error("'%s' failed\n", cmd.c_str());
+    }
+    else if (cmd == "names")
+    {
+        if (nargin < 3 || nargin > 4)
+        {
+            error("Need URL, CMD, KEY [, PATTERN]\n");
+            return retval;
+        }
+        stdString pattern;
+        if (nargin == 4)
+        {
+            if (!args(3).is_string())
+            {
+                error("PATTERN must be a string");
+                return retval;
+            }
+            pattern = args(3).string_value().c_str();
+        }
+        stdVector<ArchiveDataClient::NameInfo> name_infos;
+        if (client.getNames(key, pattern, name_infos))
+        {
+            size_t i, num = name_infos.size();
+            string_vector names(num);
+            for (i=0; i<num; ++i)
+            {
+                names[i] = name_infos[i].name.c_str();
+            }
+            retval.append(octave_value(names));
+        }
+        else
+            error("'%s' failed\n", cmd.c_str());
     }
     else
-    {
-        error("Unknown command %s\n", cmd.c_str());
-    }
-#if 0
-    int key = args(1).int_value();
-    if (!args(1).is_real_scalar())
-    {
-        error("key must be a number");
-        return retval;
-    }
-#endif
-    
+        error("Unknown command '%s'\n", cmd.c_str());
     return retval;
 }
 

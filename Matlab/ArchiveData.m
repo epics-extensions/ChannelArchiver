@@ -15,6 +15,9 @@
 %
 % [keys, names] = ArchiveData(URL, 'archives')
 %    Lists available archives by key and name.
+%
+% [names] = ArchiveData(URL, 'names', KEY [, PATTERN])
+%    Lists available archives by key and name.
 
 % kasemir@lanl.gov
 

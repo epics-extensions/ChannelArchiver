@@ -26,8 +26,7 @@
 
 RawValue::Data * RawValue::allocate(DbrType type, DbrCount count, size_t num)
 {
-    size_t size = num*getSize(type, count);
-    return (Data *) malloc(size);
+    return (Data *) calloc(num, getSize(type, count));
 }
 
 void RawValue::free(Data *value)

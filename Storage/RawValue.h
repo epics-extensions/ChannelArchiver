@@ -45,8 +45,10 @@ public:
     /// Had to pick one of the dbr_time_xxx
     typedef dbr_time_double Data;
 
-    /// Allocate/free space for num samples of type/count.
+    /// Allocate space (via calloc) for num samples of type/count.
     static Data * allocate(DbrType type, DbrCount count, size_t num);
+
+    /// Free space for num samples of type/count.
     static void free(Data *value);
 
     /// Calculate size of a single value of type/count

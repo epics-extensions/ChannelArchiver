@@ -1,15 +1,19 @@
 # This file is for NMAKE, for building on Win32 with MS Visual C++
 # (tried 6.0, SP 3)
 #
+# Call with "nmake -f Makefile.WIN32"
+#
 # This file assumes that the vcvars32 script has been run first,
 # i.e. PATH, INCLUDE, LIB are set for the compiler/linker
-
+#
+# You have to check the settings that refer to the
+# location of SWIG, Perl, TCL, ...
 
 MODULE    = casi
 HOST_ARCH=WIN32
 
 # SWIG Installation
-SWIG      = c:\sys\swig1.1\swig -c++
+SWIG      = d:\sys\swig1.1\swig -c++
 
 # Includes/links for EPICS extensions, base
 # Note: these are relative to e.g. the tcl/O.WIN32 directory!
@@ -26,21 +30,31 @@ CC = cl -nologo -MD
 CFLAGS = -GX -GR -DWIN32 -D_X86_ $(INCLUDES)
 
 # Tcl settings
-TCL      = c:\progra~1\tcl
+#TCL      = c:\progra~1\tcl
+TCL      = d:\sys\tcl
 TCL_INC  = -I$(TCL)\include
 TCL_LIB  = $(TCL)\lib\tcl80.lib
 
 # Python settings
-PYTHON   = c:\Progra~1\python
+#PYTHON   = c:\Progra~1\python
+PYTHON   = d:\sys\python
 PY_INC   = -I$(PYTHON)\include
 PY_LIB   = $(PYTHON)\libs\python15.lib
 PY_FLAGS = /D __WIN32__
+
+# Perl settings - not working...
+PERL       = d:\sys\Perl
+PERL_INC   = -I$(PERL)\lib\CORE
+PERL_LIB   = d:\perl315\Release\perl300.lib
+#PERL_FLAGS = /DWIN32 /DMSWIN32 /DWIN32IO_IS_STDIO
+PERL_FLAGS = /DWIN32 /DMSWIN32 /DPERL_OBJECT /DCPerl=CPerlObj
 
 all::	dirs tcl python
 
 dirs::
 	-@mkdir tcl\O.WIN32
 	-@mkdir python\O.WIN32
+	-@mkdir perl\O.WIN32
 
 tcl::
 	cd tcl\O.WIN32
@@ -56,21 +70,19 @@ python::
 	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(PY_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casic.dll
 	cd ..\..
 
-# Perl settings - not working...
-PERL_INC   = -Id:\sys\Perl\lib\CORE
-PERL_LIB   = d:\perl315\Release\perl300.lib
-PERL_FLAGS = /DWIN32 /DMSWIN32 /DPERL_OBJECT 
+#	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(PERL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
+#	cd ..
 
 perl::
-	cd perl
-	$(SWIG) -c++ -perl5 -I.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../$(MODULE).i
-	$(CC) -c $(CFLAGS) $(PERL_FLAGS) $(PERL_INC) ../$(MODULE).cpp $(MODULE)_wrap.cpp
-	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(PERL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
+	cd perl\O.WIN32
+	$(SWIG) -c++ -perl5 -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../$(MODULE).i
+	$(CC) -c $(CFLAGS) $(PERL_FLAGS) $(PERL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp
 	cd ..
+
+
 
 clean::
 	del tcl\O.WIN32\*
 	del python\O.WIN32\*
-
 
 

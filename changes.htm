@@ -20,10 +20,15 @@
        <ul>
        <li>Engine now ignores stamps which are 24h in the future,
            compared to the clock of the machine where the engine
-	   is running
+	   is running.
 	   (hardcoded in getIgnoredFutureSecs(), Engine/Engine.h)
        <li>Removed ASSERTs in Engine/ChannelInfo, replaced by
-           error messages
+           error messages.
+       <li>The scripting interface CASI now works with perl,
+           but so far on Linux only.
+           I'm trying to find the correct combination of
+	   SWIG, tcl, python, perl, perl-DBI and perl-DBD-Oracle
+	   that works on Linux and Win32.
        </ul>
     <li>11/20/2000<br>
       Patch #1:<br>

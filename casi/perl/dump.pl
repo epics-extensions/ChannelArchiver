@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 use English;
 
 # Set search path for the Perl module (casi.pm)

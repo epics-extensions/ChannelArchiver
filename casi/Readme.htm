@@ -47,10 +47,27 @@
   but except for the swig manual and your system docs you're on
   your own with that...
 
+  <h2>Usage with any scripting language</h2>
+  The CASI software is one shared library each for python, tcl or
+  perl, e.g. ChannelArchiver/casi/perl/O.Linux/casi.so.
+  On solaris I was not succesful in building shared C++ libraries,
+  so in that case a new tcl or python interpreter is built
+  that includes casi (and tk, BLT, ...).
+  <br>
+  In addition, EPICS base libraries are used (ca, Com, ...).
+  <I>IF</I> EPICS base was built with shared libraries, you might have to
+  set your search path to include those:
+  <pre>
+  export LD_LIBRARY_PATH=/home/kasemir/Epics/base/bin/Linux</pre>
+  or
+  <pre>
+  set PATH=s:\Epics\base\bin\WIN32;%PATH%</pre>
+
+
   <h2>Usage with Python</h2>
   You'll need python, of course.
   I tried Python 1.5 as it comes with Redhat 6.1.
-  It's also available for Win32 from
+  It's available for Win32 as well from
   <a href="http://www.python.org">http://www.python.org</a>.
   <br>
   For running the example scripts you also need:
@@ -67,10 +84,47 @@
   <li>Pmw, the python meta widget library, also from
       <a href="http://www.python.org">www.python.org</a>
   </ul>
-  Set PYTHONPATH to include the casi directory
+
+
+  There is a casiTools.py module that imports the casi shared lib.
+  For this to work, set PYTHONPATH to include the casi directory
   (where casi.py and casic.dll/so/??? have
-  been created in the compilation step), e.g.<br>
-  export PYTHONPATH=/home/kasemir/Epics/extensions/src/ChannelArchiver/casi/python/O.Linux<br>
+  been created in the compilation step), e.g.
+  <pre>
+  export PYTHONPATH=/home/kasemir/Epics/extensions/src/ChannelArchiver/casi/python/O.Linux</pre>
+  or
+  <pre>
+  set PYTHONPATH=s:\Epics\extensions\src\ChannelArchiver\casi\python\O.WIN32</pre>
+  
+  <h2>Usage with Perl</h2>
+  So far this is for Linux only, not much else available.
+  After building, casi/perl/O.Linux (for Linux) will
+  contain a casi.html file. casi/perl/dump.pl shows some very basic
+  usage. LD_LIBRARY_PATH has to be set.
+
+
+  <h2>Usage with TCL</h2>
+  Python (for GUIs or bigger tasks) or Perl (for text crunching)
+  are much better languages than TCL.
+  <br>
+  Example:
+  <pre>
+  Python:  a = b + c
+  Perl:    $a = $b + $c;
+  tcl      set a [ expr $b + $c ]
+  </pre>
+  If you still believe that you have to use TCL:
+  Try building casi for Python first. Then find a tcl that works with
+  the tk and BLT versions that Python required.
+  <br>
+  When you install python binaries for Win32, TCL is usually
+  included.
+  <p>
+  All the TCL/wish examples include casiTools.tcl which in turn
+  loads the shared casi library.
+  You might have to adjust the code in there to find the location
+  of the shared library.
+
 
   <h2>Something completely unrelated:</h2>
   <em>If you have time to spare, go by air.</em>

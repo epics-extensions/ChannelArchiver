@@ -20,12 +20,12 @@ LIBS = -L $(EXT)/lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARC
 #LIBS += -ldl  -lsocket -lnsl -lm
 
 # compiler, linker
-CC = g++ -g
+CC = g++
 
 # C compiler flags
 # -GX: support exceptions
 # RedHat 6.1
-CFLAGS = -fPIC -D_X86_ $(INCLUDES)
+CFLAGS = -g -fPIC -D_X86_ $(INCLUDES)
 # Solaris @ LANL
 #CFLAGS = $(INCLUDES)
 
@@ -58,7 +58,8 @@ PY_FLAGS =
 # Perl(5) settings
 PERL_INC=-I/usr/lib/perl5/5.00503/i386-linux/CORE
 
-all::	tcl python
+all::	tcl python perl
+
 
 static::	static-tcl static-python
 
@@ -101,6 +102,7 @@ perl::	dirs
 clean::
 	rm -f python/O.$(HOST_ARCH)/*
 	rm -f tcl/O.$(HOST_ARCH)/*
+	rm -f perl/O.$(HOST_ARCH)/*
 
 
 

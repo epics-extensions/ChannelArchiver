@@ -79,6 +79,8 @@ void DataHeader::write (LowLevelIO &file, FileOffset offset) const
 //////////////////////////////////////////////////////////////////////
 
 // Map of all DataFiles currently open
+#define USE_STD_MAP
+
 #ifdef USE_STD_MAP
 
 typedef map<stdString, DataFile *> FileMap;
@@ -86,7 +88,7 @@ static FileMap  open_data_files;
 
 #else
 
-// Linear - yuck!
+// In case std::map does not work: Linear replacement - yuck!
 // ... but OK because not many files in list
 //     and here we have a handle on what's going on,
 //     different from <map>
@@ -161,7 +163,7 @@ DataFile *DataFile::reference (const stdString &filename, bool for_write)
     FileMap::iterator i = open_data_files.find (filename);
     if (i == open_data_files.end ())
     {
-        file = new DataFile (filename);
+        file = new DataFile (filename, for_write);
         open_data_files.insert (FileMap::value_type (file->getFilename(), file));
     }
     else

@@ -11,6 +11,7 @@ SWIG = swig -c++ -dhtml
 BASE=../../../../../../base
 INCLUDES = -I../.. -I../../../../../include -I$(BASE)/include
 LIBS = -L ../../../../../lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARCH) -lca -ldb -lCom
+LIBS += -ldl -lpthread
 
 # compiler, linker
 CC = g++
@@ -22,7 +23,8 @@ CFLAGS = -fPIC -D_X86_ $(INCLUDES)
 # Python settings
 PYTHON   = python1.5
 PY_INC   = -I/usr/include/$(PYTHON)
-PY_LIB   = /usr/lib/$(PYTHON)/config/lib$(PYTHON).a
+PY_INC  += -I/usr/lib/$(PYTHON)/config
+PY_LIB   = -L/usr/lib/$(PYTHON)/config
 PY_FLAGS = 
 
 # Tcl settings
@@ -30,7 +32,8 @@ TCL = 8.0
 TCL_INC = -I/usr/include
 TCL_LIB = -L/usr/lib -ltcl$(TCL)
 
-all::	dirs python tcl
+all::	static-python
+#all::	dirs python tcl
 
 dirs::
 	-mkdir tcl/O.$(HOST_ARCH)
@@ -39,7 +42,12 @@ dirs::
 python::	dirs
 	(cd python/O.$(HOST_ARCH);$(SWIG) -python -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i)
 	(cd python/O.$(HOST_ARCH);$(CC) -c $(CFLAGS) $(PY_FLAGS) $(PY_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp)
-	(cd python/O.$(HOST_ARCH);$(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(PY_LIB) $(LIBS)  -o casic.so)
+	(cd python/O.$(HOST_ARCH);$(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(PY_LIB) -l$(PYTHON) $(LIBS)  -o casic.so)
+
+static-python::	dirs
+	(cd python/O.$(HOST_ARCH);$(SWIG) -python -shadow -lembed.i -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i)
+	(cd python/O.$(HOST_ARCH);$(CC) -c $(CFLAGS) $(PY_FLAGS) $(PY_INC) -DHAVE_CONFIG_H ../../$(MODULE).cpp $(MODULE)_wrap.cpp)
+	(cd python/O.$(HOST_ARCH);$(CC) $(MODULE).o $(MODULE)_wrap.o $(PY_LIB) -l$(PYTHON) $(LIBS) -o casipython)
 
 tcl::	dirs
 	(cd tcl/O.$(HOST_ARCH);$(SWIG) -tcl8 -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i)
@@ -50,7 +58,8 @@ static::
 
 
 clean::
-	rm -f O.$(HOST_ARCH)/*
+	rm -f python/O.$(HOST_ARCH)/*
+	rm -f tcl/O.$(HOST_ARCH)/*
 
 
 

@@ -12,16 +12,12 @@
 #include "ExpandingValueIteratorI.h"
 #include "Filename.h"
 #include "epicsTimeHelper.h"
+#include <epicsMath.h> // math.h + isinf + isnan
 
-#ifdef WIN32
-#include <float.h>
-static int finite(double value)
+static int isfinite(double value)
 {
-    return _finite(value);
+    return !(isinf(value) ||  isnan(value));
 }
-#else
-#include <math.h>
-#endif
 
 const char *GNUPlotExporter::imageExtension()
 {   return ".png"; }
@@ -54,7 +50,7 @@ static void printTimeAndValue(FILE *f, const epicsTime &time,
             ::printTime(f, time);
             if (value.getCount() > 1) fprintf(f, "\t%d", ai);
             v = value.getDouble(ai);
-            if (!finite(v))
+            if (!isfinite(v))
                 v = 0.0;
             if (prec > 0)
                 fprintf(f, "\t%.*f\n", prec, v);
@@ -69,7 +65,7 @@ static void printTimeAndValue(FILE *f, const epicsTime &time,
         stdString txt;
         value.getStatus(txt);
         v = value.getDouble();
-        if (!finite(v))
+        if (!isfinite(v))
             v = 0.0;
         if (prec > 0)
             fprintf(f, "\t%.*f\t%s\n", prec, v, txt.c_str());

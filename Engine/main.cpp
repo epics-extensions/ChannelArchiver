@@ -138,8 +138,11 @@ int main(int argc, const char *argv[])
     theEngine->shutdown ();    
     LOG_MSG ("Removing lockfile.\n");
     lock_file.Unlock ();
-    if (logfile)
-        fclose(logfile);
     LOG_MSG ("Done.\n");
+    if (logfile)
+    {
+        fclose(logfile);
+        logfile = 0;
+    }
     return 0;
 }

@@ -1,3 +1,15 @@
+# This is to get the CVS-revision-code into the source...
+set Revision ""
+set Date ""
+set Author ""
+set CVS(Revision,Util) "$Revision$"
+set CVS(Date,Util) "$Date$"
+set CVS(Author,Util) "$Author$"
+
+regsub ": (.*) \\$" $CVS(Revision,Util) "\\1" CVS(Revision,Util)
+regsub ": (.*) \\$" $CVS(Date,Util) "\\1" CVS(Date,Util)
+regsub ": (.*) \\$" $CVS(Author,Util) "\\1" CVS(Author,Util)
+
 if {[info exists env(DEBUG)]} {
   set ::debug 1
 } else {

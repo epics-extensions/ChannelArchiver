@@ -16,15 +16,15 @@
 set Revision ""
 set Date ""
 set Author ""
-set CVS(Revision) "$Revision$"
-set CVS(Date) "$Date$"
-set CVS(Author) "$Author$"
+set CVS(Revision,bgManager) "$Revision$"
+set CVS(Date,bgManager) "$Date$"
+set CVS(Author,bgManager) "$Author$"
 
-regsub ": (.*) \\$" $CVS(Revision) "\\1" CVS(Revision)
-regsub ": (.*) \\$" $CVS(Date) "\\1" CVS(Date)
-regsub ": (.*) \\$" $CVS(Author) "\\1" CVS(Author)
+regsub ": (.*) \\$" $CVS(Revision,bgManager) "\\1" CVS(Revision,bgManager)
+regsub ": (.*) \\$" $CVS(Date,bgManager) "\\1" CVS(Date,bgManager)
+regsub ": (.*) \\$" $CVS(Author,bgManager) "\\1" CVS(Author,bgManager)
 
-set CVS(Version) "Version: 1.0 (Rev. $CVS(Revision))"
+set CVS(Version) "Version: 1.1"
 
 proc init {} {
   global INCDIR

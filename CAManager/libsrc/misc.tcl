@@ -1,3 +1,15 @@
+# This is to get the CVS-revision-code into the source...
+set Revision ""
+set Date ""
+set Author ""
+set CVS(Revision,Misc) "$Revision$"
+set CVS(Date,Misc) "$Date$"
+set CVS(Author,Misc) "$Author$"
+
+regsub ": (.*) \\$" $CVS(Revision,Misc) "\\1" CVS(Revision,Misc)
+regsub ": (.*) \\$" $CVS(Date,Misc) "\\1" CVS(Date,Misc)
+regsub ": (.*) \\$" $CVS(Author,Misc) "\\1" CVS(Author,Misc)
+
 namespace eval camMisc {
   variable cfg_file_d "<Registry>"
   variable force_cfg_file_d 0

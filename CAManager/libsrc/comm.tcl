@@ -1,3 +1,15 @@
+# This is to get the CVS-revision-code into the source...
+set Revision ""
+set Date ""
+set Author ""
+set CVS(Revision,Comm) "$Revision$"
+set CVS(Date,Comm) "$Date$"
+set CVS(Author,Comm) "$Author$"
+
+regsub ": (.*) \\$" $CVS(Revision,Comm) "\\1" CVS(Revision,Comm)
+regsub ": (.*) \\$" $CVS(Date,Comm) "\\1" CVS(Date,Comm)
+regsub ": (.*) \\$" $CVS(Author,Comm) "\\1" CVS(Author,Comm)
+
 namespace eval camComm {
 }
 

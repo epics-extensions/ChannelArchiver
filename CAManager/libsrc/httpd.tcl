@@ -1,3 +1,15 @@
+# This is to get the CVS-revision-code into the source...
+set Revision ""
+set Date ""
+set Author ""
+set CVS(Revision,HTTPd) "$Revision$"
+set CVS(Date,HTTPd) "$Date$"
+set CVS(Author,HTTPd) "$Author$"
+
+regsub ": (.*) \\$" $CVS(Revision,HTTPd) "\\1" CVS(Revision,HTTPd)
+regsub ": (.*) \\$" $CVS(Date,HTTPd) "\\1" CVS(Date,HTTPd)
+regsub ": (.*) \\$" $CVS(Author,HTTPd) "\\1" CVS(Author,HTTPd)
+
 namespace eval httpd {
   variable ::_port 4610
   variable _starttime

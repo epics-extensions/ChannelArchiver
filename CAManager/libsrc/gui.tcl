@@ -1,3 +1,15 @@
+# This is to get the CVS-revision-code into the source...
+set Revision ""
+set Date ""
+set Author ""
+set CVS(Revision,GUI) "$Revision$"
+set CVS(Date,GUI) "$Date$"
+set CVS(Author,GUI) "$Author$"
+
+regsub ": (.*) \\$" $CVS(Revision,GUI) "\\1" CVS(Revision,GUI)
+regsub ": (.*) \\$" $CVS(Date,GUI) "\\1" CVS(Date,GUI)
+regsub ": (.*) \\$" $CVS(Author,GUI) "\\1" CVS(Author,GUI)
+
 option add *textBackground white widgetDefault
 option add *borderWidth 1 widgetDefault
 option add *buttonForeground black widgetDefault
@@ -51,7 +63,13 @@ proc camGUI::init {} {
 
 
 proc camGUI::aAbout {} {
-  tk_dialog .about "About CAManager" "CAManager\n$::CVS(Version)\n$::CVS(Date)\nThomas Birke <birke@lanl.gov>" info 0 ok
+  set msg ""
+  foreach n [array names ::CVS Revision,*] {
+    regsub "Revision," $n "" n
+    append msg "$n:\tRev. $::CVS(Revision,$n), $::CVS(Date,$n), $::CVS(Author,$n)\n"
+  }
+  MessageBox none "About CAManager" "CAManager - $::CVS(Version)" \
+      $msg "Thomas Birke <birke@lanl.gov>" {Close} .
 }
 
 proc camGUI::actionDialog {title} {
@@ -1153,8 +1171,10 @@ proc camGUI::MessageBox {icon title head txt tail buttons parent} {
 
   pack $mb.text -side right -fill both -expand t -padx 8 -pady 8
 
-  label $mb.bitmap -bitmap $icon
-  pack $mb.bitmap -side left -padx 4 -pady 4
+  if {$icon != "none"} {
+    label $mb.bitmap -bitmap $icon
+    pack $mb.bitmap -side left -padx 4 -pady 4
+  }
   pack $mb -fill both -expand t
 
   wm withdraw .msgbox

@@ -16,15 +16,15 @@
 set Revision ""
 set Date ""
 set Author ""
-set CVS(Revision) "$Revision$"
-set CVS(Date) "$Date$"
-set CVS(Author) "$Author$"
+set CVS(Revision,Manager) "$Revision$"
+set CVS(Date,Manager) "$Date$"
+set CVS(Author,Manager) "$Author$"
 
-regsub ": (.*) \\$" $CVS(Revision) "\\1" CVS(Revision)
-regsub ": (.*) \\$" $CVS(Date) "\\1" CVS(Date)
-regsub ": (.*) \\$" $CVS(Author) "\\1" CVS(Author)
+regsub ": (.*) \\$" $CVS(Revision,Manager) "\\1" CVS(Revision,Manager)
+regsub ": (.*) \\$" $CVS(Date,Manager) "\\1" CVS(Date,Manager)
+regsub ": (.*) \\$" $CVS(Author,Manager) "\\1" CVS(Author,Manager)
 
-set CVS(Version) "Version: 1.0 (Rev. $CVS(Revision))"
+set CVS(Version) "Version: 1.1"
 
 proc init {} {
   global INCDIR tcl_platform
@@ -50,7 +50,7 @@ camGUI::init
 camGUI::mainWindow
 wm title . "Channel Archive Manager"
 wm geom . [wm geom .]
-set ::status "Channel Archive Manager - $CVS(Version) - $CVS(Date)"
+set ::status "Channel Archive Manager - $CVS(Version) - $CVS(Date,Manager)"
 after 1 checkForBgManager
-after 10000 checkJob
+after 10000 camGUI::checkJob
 after 3000 {set ::status ""}

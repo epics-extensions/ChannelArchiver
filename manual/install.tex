@@ -9,7 +9,7 @@ prerequisites:
 \item EPICS Base R3.14.4 (or later) needs to be built and installed.\\
       Unless you are running Linux, this might require getting a
       compiler, perl and gnumake.
-\item An EPICS extensions setup: config directory with the RELEASE
+\item An EPICS extensions setup: ``configure'' directory with the RELEASE
       file appropriately configured to point to your EPICS base installation.
 \item ChannelArchiver sources, placed in the ``src'' subdirectory of
       your EPICS extensions directory tree. 
@@ -26,6 +26,12 @@ source tools and libraries are required which are listed in the
 following subsections. They are included in the ``ThirdParty''
 subdirectory of the archiver sources.
 
+With all the required ``ThirdParty'' components in place, building the
+ChannelArchiver should be reduced to typing ``make'' in the
+ChannelArchiver source directory, followed by the option setup of the
+Matlab/octave glue code which is described in a README file in the
+Matlab subdirectory of the ChannelArchiver sources.
+
 \subsection{XML-RPC}
 The archiver's network data server uses XML-RPC. The \INDEX{XML-RPC
 Setup} requires the installation of at least the C/C++ support. The
@@ -40,14 +46,13 @@ For C and C++, we use xmlrpc-c from
 The Makefiles in ChannelArchiver/XMLRPCServer assume this to be
 installed in the default location, that is under /usr/local.
 
-With RedHat~6.2, xmlrpc-c compiled out of the box.
-Under RedHat~9.0 and Mandrake~10, it ran into a compile-time error
-that could be fixed by un-commenting ``using namespace std;'' in the
-header file which reported the error.
-Under Mandrake~10, there were additional errors that can be fixed
-by replacing includes for ``strstream.h'' with ``strstream'' in the
-affected files.
-Both RedHat AS and Mandrake 10 needed additional packages, see below.
+With RedHat~6.2, xmlrpc-c compiled out of the box.  Under RedHat~9.0
+and Mandrake~10, it ran into a compile-time error that could be fixed
+by un-commenting ``using namespace std;'' in the header file which
+reported the error.  Under Fedora Core~2 and Mandrake~10, there were
+additional errors that can be fixed by replacing includes for
+``strstream.h'' with ``strstream'' in the affected files.  Both RedHat
+AS and Mandrake 10 needed additional packages, see below.
 
 \NOTE The default serialization code in xmlrpc-c-0.9.9 will serialize
 sufficiently small numbers as zero, which means that e.g.\ many of
@@ -66,7 +71,7 @@ cd xmlrpc-c-0.9.9
 ./configure
 # Patch for serialization and name spaces
 patch -p1 <../patch_xmlrpc-c-0.9.9
-# Mandrake 10 patch for strstream
+# Fedora and Mandrake 10 patch for strstream
 # SKIP THIS PATCH ON REDHAT 9!
 patch -p1 <../patch_xmlrpc-c-0.9.9_strstream
 make
@@ -87,7 +92,8 @@ The following are also provided in the ThirdParty subdirectory:
 
 \subsubsection{w3c-libwww}
 Needed to compile the XML-RPC library, doesn't seem to come with
-Mandrake~10.
+Mandrake~10. For Readhat or Fedora, you can instead install the libwww
+and libwww-devel RPMs that come with the OS.
 \begin{lstlisting}[keywordstyle=\sffamily]
 cd ChannelArchiver/ThirdParty
 tar vzoxf w3c-libwww-5.4.0.tgz
@@ -157,6 +163,23 @@ perl Makefile.PL
 su
 make install
 \end{lstlisting}
+
+\subsection{Frontier}
+Frontier is an XML-RPC library for perl.
+It is used for tests of the XML-RPC Archive Data Server,
+including the ArchiveDataClient.pl test script.
+Under RedHat 9.0, Fedora 2 and Mandrake 10, it was sufficient to install
+Frontier-RPC-0.07b4 like this:
+\begin{lstlisting}[keywordstyle=\sffamily]
+tar vzoxf Frontier-RPC-0.07b4.tar.gz
+cd Frontier-RPC-0.07b4
+perl Makefile.PL
+su
+make install
+\end{lstlisting}
+
+\noindent RedHat 6.2 was hopeless because many of the required perl
+packages were missing.
 
 \section{Installation}
 There are no specific installation procedures for the ArchiveEngine,

@@ -52,7 +52,7 @@ DataWriter::DataWriter(archiver_Index &index,
     {   // - There is no datafile, no buffer
         // Create data file
         stdString data_file_name = makeDataFileName();
-        datafile = DataFile::reference("", // TODO index.getDirname(),
+        datafile = DataFile::reference(index.getDirectory(),
                                        data_file_name, true);
         if (! datafile)
         {
@@ -88,7 +88,7 @@ DataWriter::DataWriter(archiver_Index &index,
     {   // - There is a data file and buffer
         stdString data_file_name = au.getKey().getPath();
         FileOffset offset = au.getKey().getOffset();
-        datafile = DataFile::reference("", // TODO index.getDirname(),
+        datafile = DataFile::reference(index.getDirectory(),
                                        data_file_name, true);
         if (!datafile)
         {

@@ -84,7 +84,7 @@ void old_add(const stdString &index_name)
     delete index;
 }
 
-void add(const stdString &index_name, int count)
+void add(const stdString &index_name, const stdString &channel_name, int count)
 {
     DataWriter *writer;
 
@@ -94,7 +94,6 @@ void add(const stdString &index_name, int count)
         fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
         return;
     }
-    stdString channel_name = "jane";
     CtrlInfo ctrl_info;
     ctrl_info.setNumeric(3, "Volt",
                          -10.0, 10.0,
@@ -125,7 +124,8 @@ void add(const stdString &index_name, int count)
 }
 
 void old_value_dump(const stdString &index_name,
-                    const stdString &channel_name, epicsTime *start)
+                    const stdString &channel_name,
+                    epicsTime *start, epicsTime *end)
 {
     DirectoryFile index;
     if (!index.open(index_name))
@@ -136,7 +136,7 @@ void old_value_dump(const stdString &index_name,
     OldDataReader *reader = new OldDataReader(index);
 
     const RawValue::Data *data = reader->find(channel_name, start);
-    while (data)
+    while (data  &&   (!end  ||  RawValue::getTime(data) < *end))
     {
         if (start)
         {
@@ -167,7 +167,7 @@ void value_dump(const stdString &index_name,
     DataReader *reader = new DataReader(index);
 
     const RawValue::Data *data = reader->find(channel_name, start, end);
-    while (data)
+    while (data  &&   (!end  ||  RawValue::getTime(data) < *end))
     {
         if (start)
         {
@@ -190,12 +190,17 @@ int main(int argc, const char *argv[])
     CmdArgParser parser(argc, argv);
     parser.setHeader("Strorage lib. test\n");
     parser.setArgumentsInfo("<index>");
-    CmdArgFlag   dump (parser, "dump",
-                       "Dump values");
-    CmdArgString start(parser, "start", "<mm/dd/yyyy hh:mm:ss.nnnnnnnn>",
-                       "Start time");
-    CmdArgInt    add_values(parser, "add", "<count>",
-                            "Add values");
+    CmdArgString channel(parser, "channel", "<name>", "Channel namex");
+    CmdArgFlag   headers(parser, "headers", "Dump header information");
+    CmdArgFlag   dump   (parser, "dump", "Dump values");
+    CmdArgString start  (parser, "start", "<mm/dd/yyyy hh:mm:ss.nnnnnnnn>",
+                         "Start time");
+    CmdArgString end    (parser, "end", "<mm/dd/yyyy hh:mm:ss.nnnnnnnn>",
+                         "End time");
+    CmdArgInt add_values(parser, "add", "<count>", "Add values");
+    CmdArgFlag   old    (parser, "old", "Use old directory file routines");
+
+    channel.set("jane");
     if (parser.parse() == false)
         return -1;
     if (parser.getArguments().size() != 1)
@@ -204,22 +209,28 @@ int main(int argc, const char *argv[])
         return -1;
     }
     stdString index_name = parser.getArgument(0);
-
-    epicsTime *start_time = 0;
-
+    epicsTime *start_time = 0, *end_time = 0;
     if (start.isSet())
     {
         start_time = new epicsTime;
         string2epicsTime(start.get(), *start_time);
     }
-
-    //header_dump(*index_name);
+    if (end.isSet())
+    {
+        end_time = new epicsTime;
+        string2epicsTime(end.get(), *end_time);
+    }
+    if (headers)
+        header_dump(index_name);
     if (add_values.get() > 0)
-        add(index_name, add_values.get());
-
+        add(index_name, channel, add_values.get());
     if (dump)
-        //old_value_dump(index_name, "jane", start_time);
-        value_dump(index_name, "jane", start_time, 0);
+    {
+        if (old)
+            old_value_dump(index_name, channel, start_time, end_time);
+        else
+            value_dump(index_name, channel, start_time, end_time);
+    }
         
     return 0;
 }

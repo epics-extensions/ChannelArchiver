@@ -73,9 +73,9 @@ private:
     class DataHeader *header;
     size_t val_idx; // current index in data buffer
 
-    DataHeader *getHeader(const stdString &dirname,
-                          const stdString &basename,
-                          FileOffset offset);
+    bool getHeader(const stdString &dirname, const stdString &basename,
+                   FileOffset offset);
+    const RawValue::Data *findSample(const epicsTime &start);
 };
 
 /// @}

@@ -1,3 +1,4 @@
+#! /bin/env python
 # $Id$
 
 import Pmw

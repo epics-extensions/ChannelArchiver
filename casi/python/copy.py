@@ -1,3 +1,4 @@
+#! /bin/env python
 # $id$
 #
 # Simple all values, all channels copy demo.

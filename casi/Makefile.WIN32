@@ -43,18 +43,18 @@ dirs::
 	-@mkdir python\O.WIN32
 
 tcl::
-	cd tcl/O.WIN32
+	cd tcl\O.WIN32
 	$(SWIG) -tcl8 -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i
 	$(CC) -c $(CFLAGS) $(TCL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp
 	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(TCL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
-	cd ../..
+	cd ..\..
 
 python::
-	cd python/O.WIN32
+	cd python\O.WIN32
 	$(SWIG) -python -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i
 	$(CC) -c $(CFLAGS) $(PY_FLAGS) $(PY_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp
 	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(PY_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casic.dll
-	cd ../..
+	cd ..\..
 
 # Perl settings - not working...
 PERL_INC   = -Id:\sys\Perl\lib\CORE

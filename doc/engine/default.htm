@@ -2,50 +2,39 @@
 
 <head>
 <title>Archive Engine</title>
+<link REL="STYLESHEET" HREF="../style.css" TYPE="text/css">
 </head>
 
 <body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
-<font FACE="Comic Sans MS,Arial, Helvetica">
 
 <blockquote>
-  <h1><a name="Main">Archive Engine</a></h1>
-  <p>This new engine is intended to replace &quot;chan_arch&quot;, the solaris-only
-  prototype implementation of the ChannelArchiver data sampling engine.<br>
-  It reads the same configuration files as the current engine, it should also generate
-  binary-compatible data files.</p>
+  <h1>Archive Engine</h1>
+  This ArchiveEngine collects samples via ChannelAccess
+  and stores them.
+  This engine is intended to replace &quot;chan_arch&quot;,
+  the solaris-only prototype implementation.
+  It reads the same configuration files,
+  it should also generate binary-compatible data files.
+  <br>
+  The ArchiveEngine is portable, running on Win32 and various
+  Unixes including Linux. Status and configuration are accessible
+  via a built-in HTTP server, so it's not limited to single status
+  GUI per engine, portable and networked.
+
   <h2>Usage</h2>
-  <p>See<ol>
-    <li><a HREF="usage.htm">beginning of user manual...</a></li>
-    <li><a href="times.htm">about timing</a></li>
-    <li><a href="perform.htm">about performance</a></li>
-    <li><a href="Threads.htm">about threads</a></li>
+  Please refer to the following documents concerning
+  <ol>
+    <li><a href="times.htm">fundamental operation and timing</a>
+    <li><a HREF="usage.htm">usage, configuration</a>
+    <li><a href="perform.htm">performance</a>
+    <li><a href="Threads.htm">thread internals</a>
   </ol>
-  <h2>Improvements over chan_arch:</h2>
-  <ul>
-    <li>Portable: Running on Win32, Linux, Solaris.</li>
-    <li>Build-in X11 GUI replaced by HTTP server</li>
-    <ul>
-      <li>no longer limited to single status GUI per engine</li>
-      <li>portable</li>
-      <li>networked</li>
-      <li>use any web-browser for a status display by pointing it to<br>
-        <em>http://&lt;machine where engine is running&gt;:&lt;engine's port&gt;<br>
-        </em>The port defaults to 4812 unless changed by a command line option.</li>
-    </ul>
-  </ul>
+
   <h2>Some Status-Display Examples</h2>
-  <p><img src="engine.gif" width="521" height="541" alt="engine.gif (22219 bytes)"></p>
-  <p><img src="groupinfo.gif" width="491" height="408" alt="groupinfo.gif (15794 bytes)"></p>
-  <h2>Implementation Details</h2>
-  <h3>I/O Library</h3>
-  <p>The Engine uses the ChannelArchiver <a href="../libio/default.htm">I/O library</a>
-  which handles portable access to the data storage. </p>
-  <h3>Configuration Interface</h3>
-  <p>While the engine does by default read the original configuration files, the new system
-  also updates those files in order to make interactive changes persistent. It is also
-  prepared for replacing this file-based configuration system with e.g. an approach that
-  keeps configuration information in a database (See <a HREF="index.htm">API</a>). </p>
+  <img src="engine.gif" width="521" height="541">
+  <p>
+  <img src="groupinfo.gif" width="491" height="408">
+
 </blockquote>
-</font>
 </body>
 </html>

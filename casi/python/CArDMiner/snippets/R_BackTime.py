@@ -1,8 +1,10 @@
+# $Id$
+#
 ########################################################
 #### This snippet simply skips values that go back in
 #### time
 ########################################################
-
+	
 #$GLBL
 #$END_GLBL
 
@@ -24,7 +26,7 @@ except NameError:
 value_time = valI.time()
 
 if value_prev_time > value_time:
-        skip_value = "YES"
+	skip_value = "YES"
 
 #### To suppress entry to log when value is skipped comment
 #### out the next two lines (add #'s)

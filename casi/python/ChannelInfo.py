@@ -1,3 +1,6 @@
+#! /bin/env python
+# $Id$
+
 from Tkinter import *
 from ErrorDlg import ErrorDlg
 import Pmw, casi, sys

@@ -1,3 +1,4 @@
+#! /bin/env python
 # $Id$
 #
 # Attempt on a GUI for archive information,

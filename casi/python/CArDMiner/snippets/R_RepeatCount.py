@@ -1,8 +1,10 @@
+# $Id$
+#
 ########################################################
 #### This snippet simply skips values that have a
 #### REPEAT or EST_REPEAT count greater than maxRepeatCount
 ########################################################
-
+   
 #$GLBL
 from re import search
 from string import atoi
@@ -52,4 +54,12 @@ mins = int((et/60)%60)
 hours = int(et/3600)
 the_logger.AddLine("Archive Sythesis took: " + str(hours) + ":" + str(mins) + ":" + str(secs) + " hours:mins:secs")
 #$END_POST
+
+
+
+
+
+
+
+
 

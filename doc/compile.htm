@@ -1,0 +1,124 @@
+<html>
+
+<head>
+<title>ChannelArchiver</title>
+<link REL="STYLESHEET" HREF="style.css" TYPE="text/css">
+</head>
+
+<body BACKGROUND="blueback.jpg">
+
+<blockquote>
+  <h1>Compilation</h1>
+
+  <h2>Compiler</h2>
+  <i>You need a C++ compiler that is at least somehow
+     up to the standard C++ library as defined
+     in the 1997 Stroustrup C++ book.</i>
+  This means you need a more recent C++ compiler than e.g.
+  the SUNWspro "CC" that might be installed on your system.
+  The <a href="libio/default.htm">description of the I/O library</a>
+  gives some reasons for this.
+
+  <h2>Configuration</h2>
+  There are some variables to be set in Tools/ToolsConfig.h.
+  The #defines concerning NAMESPACE and&nbsp; CPP_EDITION depend on the
+  compiler that you have:
+  <ul>
+    <li>Microsoft Visual C++ 6.0 can do namespaces and conforms
+        to CPP_EDITION=3.
+    <li>Recent GNU compilers are usable with CPP_EDITION=2<br>
+        RedHat 6.0-6.2 Linux comes with egcs-2.91.66 ... 2.95,<br>
+	RedHat 5.2 with egcs-2.90.29 is also OK (but cannot do NAMESPACE).
+  </ul>
+  Unfortunately, C++ object files are rarely recognized by different compilers.
+  This means that you have to compile <em>all</em> the C++ code with
+  the <em>same compiler.</em>
+  If you use g++ for the ChannelArchiver, the C++ part of EPICS base
+  has to be compiled with the same compiler (some files in base/src/libCom).
+  Otherwise you'll see link errors like missing "osiTime" classes.
+ 
+  <h2>Make system</h2>
+  Most parts of the ChannelArchiver use the standard EPICS make system
+  for extensions (Makefile, Makefile.Host).
+  This allows building for WIN32 and UNIX.
+  The master ChannelArchiver/Makefile will build the Tools &amp;
+  LibIO libraries first, then Manager, ..., Engine.
+  <br>
+  Because the ChannelArchiver uses files in the Tools directory,
+  it should be parallel to the ChannelArchiver tree like this:
+  <ul>
+    <li>...../extensions/config</li>
+    <li>...../extensions/src/Tools</li>
+    <li>...../extensions/src/ChannelArchiver</li>
+    <li>...../extensions/src/ChannelArchiver/LibIO</li>
+    <li>...../extensions/src/ChannelArchiver/Engine</li>
+    <li>...</li>
+  </ul>
+  Neither the name &quot;extensions&quot; nor &quot;src&quot;
+  is imperative here. The point is that relative to ChannelArchiver
+  there are ../Tools and ../../config directories.
+  If your setup is different, you will have to change the makefiles.
+  <br>
+  For the Winbrowser, only MS Visual C++ project files are included
+  because this tool is not portable to Unix.
+  <br>
+  For CASI, a Makefile.Win32 and Makefile.Unix is included
+  because the EPICS make-system doesn't handle SWIG, tcl and python.
+
+  <h2>MS Visual C++ specials</h2>
+  For MS Visual C++, alternative project files are included
+  in addition to most makefiles.
+  When using those, the sources under Tools &amp; LibIO are compiled
+  as individial object files to ease developement &amp; debugging
+  (for me. If you don't like it, don't use it).
+  <br>
+  Also caused by this multi-platform developement with differnet make
+  systems:
+  <ol>
+    <li>The real code is contained in *.cpp files.
+        Since the EPICS make system works on *.cc
+	files only, these *.cc files are stubs, simply inclusing the
+        *.cpp files.
+    <li>Though I'm trying to avoid this by using CVS,
+        some files might accidentially and partially
+	be in &quot;DOS&quot; format.
+        This can cause warnings in a
+        UNIX build, but hasn't been a problem so far,
+	except for Makefile used on Unix which have to be
+	in Unix format, while MSVC project files
+	have to be in DOS format.
+  </ol>
+
+  <h2>Use of EPICS base</h2>
+  net_convert.h and osiTime.* might cause compile errors.
+  Otherwise, neither MS VC++ nor g++ (egcs-2.91.66) should give
+  severe warnings that relate to the ChannelArchiver
+  files except for many warning in Tools/gnu_regex.c (only used w/ WIN32).
+
+  <h3>net_convert.h</h3>
+  LibIO depends on base/src/ca/net_convert.h and osiTime.*.
+  Hopefully the functionality of net_convert.h will some day be
+  exported from base.
+  For now I just use net_convert.h as it is
+  by adding base/src/ca to the include path.<br>
+  With some versions of EPICS base this has caused problems for
+  WIN32, Linux and other architectures that require byte-swapping:
+  If you get missing dbr_htond messages from the linker,
+  your net_convert.h and convert.c don't export those functions.<br>
+  Solution:
+  Find where the missing routines are defined in net_convert.h as
+  macros and make sure that they are not disabled,
+  (i.e. moved into convert.c and not exported from there).
+
+  <h3>osiTime</h3>
+  osiTime.* has seen some changes between EPICS releases.
+  I based LibIO on EPICS/base Version 3.13.1..0 (no typo)
+  but it also compiles with 3.13.1.1 and 3.13.3.<br>
+  The #define OLD_osiTime is used to determine the osiTime version.<br>
+  (I tried to base this on the settings in EPICS
+   base/include/epicsVersion.h but the
+  resulting switch was messy and probably always incomplete.)</p>
+
+</blockquote>
+</body>
+</html>

@@ -1,6 +1,7 @@
 // DirectoryFile.cpp
 //////////////////////////////////////////////////////////////////////
 
+#include "LowLevelIO.h"
 #include "DirectoryFile.h"
 #include "ArchiveException.h"
 #include "MsgLogger.h"

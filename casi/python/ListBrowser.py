@@ -1,3 +1,4 @@
+#! /bin/env python
 # --------------------------------------------------------
 # $Id$
 #
@@ -173,22 +174,16 @@ class ListBrowser:
         endStamp = self.__end.get()
         self.__listBackward (endStamp)
 
-
-                
-## #################################
-## #	Button-procedures
-## #
-## proc showInfo {} {
-##     global archiveName channelName
-##     createChannelInfo $archiveName $channelName
-## }
-
-
 def usage ():
     global argv0
     print "USAGE: %s archive channelName \[ endTime \]" % sys.argv[0]
-    print "       endTime as \"YYYY/MM/DD hh:mm:ss\" in 24h format"
-    
+    print "  endTime as \"YYYY/MM/DD hh:mm:ss\" in 24h format"
+    print ""
+    print "Example:"
+    print "  %s ../../Engine/Test/freq_directory fred" % sys.argv[0]
+    print ""
+    print "Exports:"
+    print "  ListBrowser.ListBrowser(root, archive name, channel name, end time stamp)"
     sys.exit (1)
 
 if __name__ == '__main__':
@@ -208,6 +203,7 @@ if __name__ == '__main__':
         else:
             end = 0
     
-    root = None
-    dlg = ListBrowser (Tk(), archiveName, channelName, end)
+    root = Tk()
+    root.iconify()
+    dlg = ListBrowser (root, archiveName, channelName, end)
     print dlg.activate ()

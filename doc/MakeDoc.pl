@@ -64,7 +64,7 @@ sub OpenFile ($) # filename
 <HEAD>
 <TITLE>Class Documentation</TITLE>
 <BODY $background>
-<FONT FACE="Comic Sans MS,Arial, Helvetica">
+<link REL="STYLESHEET" HREF="../style.css" TYPE="text/css">
 <BLOCKQUOTE>
 HEADER
 }
@@ -87,7 +87,6 @@ INDEX
 Created from sources with <I>MakeDoc</I> Perl script.
 </FONT>
 </BLOCKQUOTE>
-</FONT>
 </P>
 </BODY>
 FOOT

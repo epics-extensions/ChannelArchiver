@@ -2,34 +2,87 @@
 
 <head>
 <title>I/O Library</title>
+<link REL="STYLESHEET" HREF="../style.css" TYPE="text/css">
 </head>
 
 <body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
-<font FACE="Comic Sans MS,Arial, Helvetica">
 
 <blockquote>
-  <h1><a name="Main">ChannelArchiver I/O Library</a></h1>
-  <h3>Purpose</h3>
-  <p>All Channel Archiver Tools are based on this I/O library.<br>
-  Currently it supports these data storage formats:<ul>
+  <h1>ChannelArchiver I/O Library</h1>
+
+  <h2>Purpose</h2>
+  All Channel Archiver Tools are based on this I/O library.
+  Currently it supports these data storage formats:
+  <ul>
     <li>BinArchive: A binary archive of interlinked files.<br>
-      For maintaining these files, see <a href="../manager/default.htm">ArchiveManager</a>
-      documentation.</li>
-    <li>MultiArchive: A set of BinArchives. See <a href="MultiArchive.htm">doc/libio/MultiArchive.h</a></li>
-    <li>Possible future ideas: some SDDS-based format, an RDB interface, ??</li>
+      For maintaining these files, see the cardminer tool
+      as well as the <a href="../manager/default.htm">ArchiveManager</a>
+      documentation.
+    <li>MultiArchive: A set of BinArchives.
+        See <a href="MultiArchive.htm">doc/libio/MultiArchive.h</a>
+    <li>Possible future ideas: some SDDS-based format, an RDB interface, etc.
   </ul>
+
+  <h2>Coding standards</h2>
+  <h3>Class design</h3>
+  I tried to follow the suggestions of Meyers'
+  <em>Effective C++ books</em>
+  and also aim to keep the I/O library open for
+  replacment of the data file format.
+  Please note that this tends to bloat the code a bit.
+  Example: A number in a C program could be defined as simply
+  <pre>float number;</pre>
+  In a hardcore C++ program on the other hand this turns into
+  <pre>class Number : public ObjectTreeRoot
+{
+    Number (float number)       { _number = number;       }
+    float get ()                { return _number;         }
+    void set (float number)     { _number = number;       }
+    ostream & << (ostream &o)   { o << _number; return o; }
+private:
+    float _number;
+};</pre>
+
+  This is comparably more code. The advantage is that
+  it allows for transparent changes of the number's type.
+  If all inlined, the C++ code needn't be slower
+  nor will the object code be bigger.
+  But it sure is more source code.
+  And I didn't even use an abstract number base class...
+  <br>
+  To remain reasonable, this standard is not applied to each "number"
+  but it <em>is</em> being followed for the Archive, Channel
+  and Value related I/O classes.
+  This already kept the Manager, CGIExport and casi tools
+  independent from the used Archive type (BinArchive or MultiArchive).
+  <br>
+  <a href="Layout.htm">Layout.htm</a> explains the class layout
+  in more detail,
+  <a HREF="index.htm">index.htm</a> is a commented Class Reference
+  generated from the header files.
+
   <h3>Standard C++ library</h3>
-  <p>The new (1997) standard C++ library for string, list, map, exception, ... classes is
-  used whenever possible to prevent reinvention. For historic reasons there are already some
-  similar classes &amp; templates in EPICS base, but those are not used.</p>
-  <p>std::string showed a memory leak with RedHat 6.1 (that version of egcs g++, that is).<br>
-  Tools/stdString is meant as a replacement. It can be used like std::string but implements
-  only what was necessary so far.</p>
+  The standard C++ library as defined in the 1997 Stroustrup book
+  contains string, list, map, exception, ... classes.
+  It is used whenever possible to prevent reinvention.
+  While there are some similar classes in EPICS base,
+  those are not used because they don't constitute as complete
+  a suite.
+  <br>
+  Unfortunately, std::string showed a memory leak with RedHat 6.1
+  (that version of egcs g++ to be specific).
+  Tools/stdString was introduced as a replacement. It can be used
+  like std::string but implements only what was necessary so far.
+
   <h3>Namespaces</h3>
-  <p>Whenever possible, code it enclosed in a namespace Tools or ChanArch.</p>
-  <p><a href="Layout.htm">Layout: Ideas, how to use</a></p>
-  <p><a HREF="index.htm#Main">Class Reference</a> (generated from header files)</p>
+  Whenever possible, code it enclosed in a namespace
+  <em>Tools</em> or <em>ChanArch.</em>
+  For MS Visual C++ this is  even required because of conflicts
+  with the "list" definition in resourceLib.h.
+  It can be disabled via a #define in ToolsConfig.h.
+
 </blockquote>
-</font>
 </body>
 </html>
+
+

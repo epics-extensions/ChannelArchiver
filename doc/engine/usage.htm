@@ -2,68 +2,104 @@
 
 <head>
 <title>Archive Engine</title>
+<link REL="STYLESHEET" HREF="../style.css" TYPE="text/css">
 </head>
 
-<body BGCOLOR="#F0F0FF" BACKGROUND="../blueback.jpg">
-<font FACE="Comic Sans MS,Arial, Helvetica">
+<body BACKGROUND="../blueback.jpg">
 
 <blockquote>
-  <h1><a name="Usage">Archive Engine Usage</a></h1>
-  <h2>Configuration Files</h2>
-  <p>This new engine is intended to read the same configuration files as the current engine,
-  so you might want to check the previous documentation until this manual has better
-  content. </p>
-  <p>Basic layout of config files: </p>
-  <pre>  <em>&lt;ChannelName&gt;  &lt;Period&gt; [Monitor] [Disable]</em></pre>
+  <h1>Archive Engine Usage</h1>
+  When called, the ArchiveEngine displays usage information
+  similar to this:
+<pre>
+USAGE:  ArchiveEngine [Options] &lt;config-file&gt; [&lt;directory-file&gt;]
+
+Options:
+        -port <port>                   WWW server's TCP port (default 4812)
+        -description <text>            description for HTTP display
+        -log <filename>                write logfile
+
+        Default directory-file: 'freq_directory'
+</pre>
+
+  <h2>Configuration File</h2>
+  The ArchiveEngine reads an ASCII configuration file on startup.
+  The basic layout of this file is:<br>
+  <em>&lt;ChannelName&gt;  &lt;Period&gt; [Monitor] [Disable]</em>
   <ul>
-    <li>The scan <em>period</em> is given in seconds </li>
-    <li>a monitored channel is archived <em>on change</em>.<br>
-      The scan period should then be the estimated rate of change because it is used to allocate
+    <li>The scan <em>period</em> is given in seconds.
+    <li>A <em>Monitor</em> channel is archived on change.<br>
+      The scan period should then be the estimated rate of change
+      because it is used to allocate
       internal buffers.<br>
-      When you get &quot;overrun&quot; warning messages from the running engine, the estimated
-      period for that monitored channel needs to be decreased.</li>
-    <li>a disabling channel will disable the current group</li>
+      When you get &quot;overrun&quot; warning messages from the
+      running engine, the estimated
+      period for that monitored channel needs to be decreased.
+      <br>
+      See <a href="times.htm">times.htm</a>for more on
+      periodic operation vs. monitors.
+    <li>A <em>Disable</em> channel will disable the current group
+        of channels.
+	This is useful when e.g. all channels related to a
+	Power Supply are put in one group.
+	When the PS is switched off, the group can be disabled
+	in order to avoid archiving the irrelevant noise.
+	Please note that the disabling channel will
+	stop the group when it has a non-zero value.
+	When more complicated expressions are needed
+	to determine the "disable" state, a CALC record
+	or other database logic can be used on the IOC.
   </ul>
   <p>Special commands:<ul>
     <li><em># ......</em><br>
-      Comment, ignored by engine.</li>
+      Comment, ignored by engine.
     <li><em>!group &lt;filename&gt;</em><br>
-      Read given file and treat all channels in there as a group</li>
+      Read given file and treat all channels in there as a group.
+      This allows the grouping necessary for the "Disable" mechanism.
     <li><em>!default_period &lt;seconds&gt;<br>
       </em>When no period is provided, this value will be used.<br>
-      (default: 1 sec.)</li>
+      (default: 1 sec.)
     <li><em>!write_period &lt;seconds&gt;<br>
       </em>Time between writes to disk<br>
-      (default: 30 sec.)</li>
+      (default: 30 sec.)
     <li><em>!get_threshold &lt;seconds&gt;<br>
       </em>Channel Access offers two options for getting values:<br>
-      Issue a CA 'get' request or establish a monitor/callback for each change.<br>
-      If the sample rate is below the 'get_threshold' or the 'Monitor' flag was specified, a
-      Channel Access monitor will be used.<br>
-      This means that the Engine is passive, it receives every change from the IOC and then
-      decicides whether to save that as a new sample or not.<br>
-      When the channel changes much more often than the archiving rate, many of the incoming
-      monitors are irgnored but still show as network traffic.<br>
-      Therefore a threshold is used:<br>
-      If the sample period is greater than the 'get_threshold', a 'get' call will be used for
-      each sample. In this case the ArchiveEngine actively requests a value each time a channel
-      is to be sampled.<br>
-      (default: 20 sec.)</li>
+      Issue a CA 'get' request or establish a monitor/callback
+      for each change.<br>
+      If the sample rate is below the 'get_threshold' or
+      the 'Monitor' flag was specified, a
+      Channel Access monitor will be used.
+      This means that the Engine is passive.
+      It receives every change from the IOC and then
+      decicides whether to save that as a new sample or not.
+      When the channel changes much more often than the archiving
+      rate, many of the incoming monitors are ignored but still show
+      as network traffic.<br>
+      Therefore a threshold is used:
+      If the sample period is greater than the 'get_threshold',
+      a 'get' call will be used for each sample.
+      In this case the ArchiveEngine actively requests a value
+      each time a channel is to be sampled.<br>
+      (default: 20 sec.)
     <li><em>!buffer_reserve</em><br>
-      To buffer the samples between writes to the disk, the engine keeps a memory buffer for
-      each channel.<br>
+      To buffer the samples between writes to the disk,
+      the engine keeps a memory buffer for each channel.<br>
       The size of this buffer is<br>
-      &nbsp;&nbsp;&nbsp; <em>buffer_reserve * write_period/scan_period<br>
-      </em>Since writes can be delayed by other tasks, disk activity etc., the buffer is usually
-      bigger than the minimum required: buffer_reserve defaults to 3.<br>
-      If you get &quot;override&quot; messages, you should</li>
-    <ul>
-      <li>Check if the offending channel is tagged <em>Monitor</em>. In that case the <em>period</em>
-        estimate might bee too large. </li>
-      <li>Increase <em>buffer_reserve</em> (global for all channels)</li>
-    </ul>
+      &nbsp;&nbsp;<em>buffer_reserve * write_period/scan_period</em><br>
+      Since writes can be delayed by other tasks, disk activity etc.,
+      the buffer is usually bigger than the minimum required:
+      buffer_reserve defaults to 3.<br>
+      If you get &quot;override&quot; messages, you should
+      <ul>
+         <li>Check if the offending channel is tagged
+	     <em>Monitor</em>.
+	     In that case the <em>period</em> estimate might bee too
+	     large.
+	 <li>Increase <em>buffer_reserve</em> (global for all channels)
+      </ul>
     <li>others...</li>
   </ul>
+
   <h2>Start/stop</h2>
   <p>The engine is started like this:</p>
   <pre><em>ArchiveEngine [options] &lt;config-file&gt;</em></pre>
@@ -91,6 +127,7 @@
   &quot;cfg&quot; subdirectory. After a shutdown, a system like cvs or edit-and-compare can
   then be used to merge the online changes into the original files. (better ideas welcome)</p>
 </blockquote>
-</font>
 </body>
 </html>
+
+

@@ -1,3 +1,4 @@
+#! /bin/env python
 # $Id$
 #
 # Please refer to NOTICE.txt,

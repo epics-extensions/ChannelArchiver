@@ -1,7 +1,7 @@
+#! /bin/env python
 # $Id$
 
 import regsub, time, casi
-
  
 #// Please note the two fundamentally different time formats
 #// which are used in the following description:

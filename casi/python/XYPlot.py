@@ -1,3 +1,4 @@
+#! /bin/env python
 # $Id$
 
 # Please refer to NOTICE.txt,
@@ -169,7 +170,7 @@ class XYPlot:
 
 
 def usage ():
-    print "USAGE: %s archive xChannelName yChannelName \[ time \]" % sys.argv[0]
+    print "USAGE: %s archive xChannelName yChannelName [ time ]" % sys.argv[0]
     print "       time as \"YYYY/MM/DD hh:mm:ss\" in 24h format"
     sys.exit (1)
 
@@ -193,6 +194,7 @@ if __name__ == "__main__":
         time='0'
         
     root=Tk()
+    root.iconify()
     Pmw.initialise()
     XYPlot (root, archiveName, xChannelName, yChannelName, time)
 

@@ -1,11 +1,20 @@
 # THE perl script for testing the Archiver's XML-RPC server.
 
+use English;
 use Frontier::Client;
 
 # Setup URL
 $server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
 $server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
 #$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
+
+if ($#ARGV == 0)
+{
+    $server_url = $ARGV[0];
+}
+
+print("Connecting to Archive Data Server URL '$server_url'\n");
+
 $server = Frontier::Client->new(url => $server_url);
 
 print("Info:\n");
@@ -27,7 +36,7 @@ foreach $result ( @{$results} )
 }
 
 print("Request with pattern:\n");
-$results = $server->call('archiver.get_names', "fred");
+$results = $server->call('archiver.get_names', "IOC");
 foreach $result ( @{$results} )
 {
 	$name = $result->{name};
@@ -45,7 +54,7 @@ foreach $result ( @{$results} )
 print("Get Values:\n");
 @names = ( "fred", "freddy", "Jimmy", "James" );
 #@names = ( "fred" );
-$count = 10;
+$count = 42;
 $end = time();
 $start = $end - $count;
 $how = 0;

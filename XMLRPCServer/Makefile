@@ -10,7 +10,7 @@ USR_CXXFLAGS += -I/usr/local/include
 
 DummyServer_SRCS += DummyServer.cpp
 ArchiveServer_SRCS += main.cpp
-TESTPROD_HOST := DummyServer ArchiveServer bench clienttest
+TESTPROD_HOST := DummyServer ArchiveServer bench
 
 PROD_LIBS_DEFAULT := rtree Storage Tools ca Com
 PROD_LIBS_WIN32 := rtreeObj StorageObj ToolsObj ca Com
@@ -41,3 +41,8 @@ bench_LDFLAGS=-L/usr/lib -L/usr/local/lib -lxmlrpc_client -L/usr/lib -lmd5 -lwww
 clienttest_LDFLAGS=-L/usr/lib -L/usr/local/lib -lxmlrpc_client -L/usr/lib -lmd5 -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib   
 
 include $(TOP)/configure/RULES
+
+cgiinstall:
+	cp O.$(EPICS_HOST_ARCH)/DummyServer /var/www/cgi-bin/xmlrpc/DummyServer.cgi
+	cp O.$(EPICS_HOST_ARCH)/ArchiveServer /var/www/cgi-bin/xmlrpc/ArchiveServer.cgi
+

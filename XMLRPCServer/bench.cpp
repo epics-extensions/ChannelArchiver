@@ -7,7 +7,8 @@
 #include <xmlrpc.h>
 #include <xmlrpc_client.h>
 
-#define URL "http://localhost/cgi-bin/xmlrpc/DummyServer.cgi"
+//#define URL "http://localhost/cgi-bin/xmlrpc/DummyServer.cgi"
+#define URL "http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi"
 
 void die_if_fault_occurred(xmlrpc_env *env)
 {
@@ -27,12 +28,13 @@ void get_version(xmlrpc_env *env)
     
     xmlrpc_int32 ver;
     char *desc;
-    xmlrpc_parse_value(env, result, "{s:i,s:s,*}",
+    size_t len;
+    xmlrpc_parse_value(env, result, "{s:i,s:s#,*}",
                        "ver", &ver,
-                       "desc", &desc);
+                       "desc", &desc, &len);
     die_if_fault_occurred(env);
+    printf("Version %d, Desc. '%s' (%d)\n", ver, desc, len);
     xmlrpc_DECREF(result);
-    printf("Version %d, Desc. %s\n", ver, desc);
 }
 
 // Dump 'meta' part of returned value

@@ -6,25 +6,57 @@
 #include <xmlrpc.h>
 #include <xmlrpc_cgi.h>
 // Tools
-#include "RegularExpression.h"
+#include <RegularExpression.h>
+#include <BinaryTree.h>
+// Storage
+#include <SpreadsheetReader.h>
+// XMLRPCServer
+#include "DataServerFaults.h"
 
 #define ARCH_VER 1
 #define LOGFILE "/tmp/archserver.log"
-
-char log_line[200];
-
 
 // The xml-rpc API defines "char *" strings
 // for what should be "const char *".
 // This macro helps avoid those "deprected conversion" warnings of g++
 #define STR(s) ((char *)((const char *)s))
 
-static const char *names[] =
+char log_line[200];
+
+const char *get_index(xmlrpc_env *env)
 {
-    "fred", "freddy", "jane", "janet", "Egon",
-    "Fritz", "Ernie", "Bert", "Bimbo"
-};
-#define NUM_NAMES  (sizeof(names)/sizeof(const char *))
+    const char *name = getenv("INDEX");
+    if (!name)
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
+                                       "INDEX is undefined");
+        return 0;
+    }
+    return name;
+}
+
+archiver_Index *open_index(xmlrpc_env *env)
+{
+    archiver_Index *index = new archiver_Index;
+    if (!index)
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
+                                       "Cannot allocate index");
+        return 0;
+    }
+    const char *name = get_index(env);
+    if (env->fault_occurred)
+        return 0;
+    if (!index->open(name))
+    {
+        delete index;
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
+                                       "Cannot open index '%s'",
+                                       name);
+        return 0;
+    }
+    return index;
+}
 
 // archdat.info returns version information.
 // ver    numeric version
@@ -35,15 +67,64 @@ xmlrpc_value *info(xmlrpc_env *env,
                    xmlrpc_value *args,
                    void *user)
 {
-    char txt[100];
-    sprintf(txt, "Channel Archiver Data Server V%d",
-            ARCH_VER);
+    char txt[200];
+    const char *index = get_index(env);
+    sprintf(txt, "Channel Archiver Data Server V%d\nIndex '%s'",
+            ARCH_VER, index);
     return xmlrpc_build_value(env,
                               STR("{s:i,s:s}"),
                               STR("ver"), ARCH_VER,
                               STR("desc"), STR(txt));
 }
 
+// Used by get_names
+class ChannelInfo
+{
+public:
+    stdString name;
+    epicsTime start, end;
+
+    bool operator < (const ChannelInfo &rhs)
+    { return name < rhs.name; }
+
+    bool operator == (const ChannelInfo &rhs)
+    { return name == rhs.name; }
+
+    class UserArg
+    {
+    public:
+        xmlrpc_env *env;
+        xmlrpc_value *result;
+    };
+    
+    // "visitor" for BinaryTree of channel names
+    static void add_name_to_result(const ChannelInfo &info, void *arg)
+    {
+        UserArg *user_arg = (UserArg *)arg;
+        xmlrpc_value *channel;
+
+        epicsTimeStamp start = info.start;
+        epicsTimeStamp end = info.end;
+        time_t_wrapper start_secs = info.start;
+        time_t_wrapper end_secs = info.end;
+        
+        channel = xmlrpc_build_value(user_arg->env,
+                                     STR("{s:s,s:i,s:i,s:i,s:i}"),
+                                     "name", info.name.c_str(),
+                                     "start_sec", start_secs,
+                                     "start_nano", start.nsec,
+                                     "end_sec", end_secs,
+                                     "end_nano", end.nsec);
+        if (channel)
+        {
+            xmlrpc_array_append_item(user_arg->env,
+                                     user_arg->result, channel);
+            xmlrpc_DECREF(channel);
+        }
+    }
+};
+
+    
 // {string name, int32 start_sec, int32 start_nano,
 //               int32 end_sec,   int32 end_nano}[]
 // = archiver.get_names(string pattern)
@@ -51,7 +132,8 @@ xmlrpc_value *get_names(xmlrpc_env *env,
                         xmlrpc_value *args,
                         void *user)
 {
-    RegularExpression *re = 0;
+    // Get args, maybe setup pattern
+    RegularExpression *regex = 0;
     char *pattern;
     size_t pattern_len; 
     xmlrpc_parse_value(env, args, STR("(s#)"),
@@ -60,38 +142,58 @@ xmlrpc_value *get_names(xmlrpc_env *env,
         return NULL;
     if (pattern_len > 0)
     {
-        re = RegularExpression::reference(pattern);
+        regex = RegularExpression::reference(pattern);
     }
-
-    xmlrpc_value *result, *channel;
-    result = xmlrpc_build_value(env, STR("()"));
-
-    struct tm tm;
-    tm.tm_sec = 1;
-    tm.tm_min = 2;
-    tm.tm_hour = 3;
-    tm.tm_mday = 1;
-    tm.tm_mon = 0;
-    tm.tm_year = 75;
-    tm.tm_isdst = -1;       
-    time_t start = mktime(&tm);
-    size_t i;
-    for (i=0; i<NUM_NAMES; ++i)
+    // Open Index
+    archiver_Index *index = open_index(env);
+    if (env->fault_occurred)
+        return 0;
+    // Create result
+    xmlrpc_value *result = xmlrpc_build_value(env, STR("()"));
+    if (!result)
     {
-        if (re &&
-            re->doesMatch(names[i]) == false)
-            continue;
-        channel = xmlrpc_build_value(env, STR("{s:s,s:i,s:i,s:i,s:i}"),
-                                     "name", names[i],
-                                     "start_sec", start,
-                                     "start_nano", i,
-                                     "end_sec", time(0),
-                                     "end_nano", i);
-        xmlrpc_array_append_item(env, result, channel);
-        xmlrpc_DECREF(channel);
-    }    
-    if (re)
-        re->release();
+        delete index;
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
+                                       "Cannot create result");
+        return 0;
+    }  
+    channel_Name_Iterator *cni = index->getChannelNameIterator();
+    if (!cni)
+    {
+        delete index;
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
+                                       "Cannot get name iterator");
+        return 0;
+    }
+    // Put all names in binary tree
+ 	BinaryTree<ChannelInfo> channels;
+    ChannelInfo info;
+    interval range;
+    bool ok;
+    for (ok = cni->getFirst(&info.name); ok; ok = cni->getNext(&info.name))
+    {
+        if (regex && !regex->doesMatch(info.name.c_str()))
+            continue; // skip what doesn't match regex
+        if (index->getEntireIndexedInterval(info.name.c_str(), &range))
+        {
+            info.start = range.getStart();
+            info.end = range.getEnd();
+        }
+        else
+        {
+            info.start = info.end = nullTime;
+        }
+        channels.add(info);
+    }
+    delete cni;
+    delete index;
+    if (regex)
+        regex->release();
+    // Sorted dump of names
+    ChannelInfo::UserArg user_arg;
+    user_arg.env = env;
+    user_arg.result = result;
+    channels.traverse(ChannelInfo::add_name_to_result, (void *)&user_arg);    
     return result;
 }
 
@@ -128,7 +230,16 @@ xmlrpc_value *get_values(xmlrpc_env *env,
                        &start_sec, &start_nano, &end_sec, &end_nano,
                        &count, &how);
     if (env->fault_occurred)
-        return NULL;
+        return 0;
+
+    if (count == 42)
+    {
+        xmlrpc_env_set_fault_formatted(
+            env, ARCH_DAT_SERV_FAULT,
+            "I don't like count==%d", count);
+        return 0;
+    }
+
     name_count = xmlrpc_array_size(env, names);
     // Build result for each requested channel name
     results = xmlrpc_build_value(env, STR("()"));

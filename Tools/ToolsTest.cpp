@@ -736,6 +736,10 @@ void test_bitset()
 
 int main ()
 {
+#ifdef TEST_STRING
+    test_string();
+#endif
+
 #ifdef TEST_BITSET
     test_bitset();
 #endif
@@ -744,9 +748,6 @@ int main ()
     avl_test();
 #endif
     
-#ifdef TEST_STRING
-    test_string();
-#endif
 #ifdef TEST_TIME
     struct local_tm_nano_sec tm;
     tm.ansi_tm.tm_year = 2003 - 1900;

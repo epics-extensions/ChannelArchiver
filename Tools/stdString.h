@@ -37,6 +37,7 @@ public:
 
 	/// Concatenations
 	/// (prefer reserve() && += to + for performance)
+    stdString & append(const char *s, size_type len);
 	stdString & operator += (const stdString &rhs);
 	stdString & operator += (const char *rhs);
 	stdString & operator += (char ch);
@@ -139,53 +140,27 @@ inline stdString & stdString::operator = (const char *s)
 
 inline stdString & stdString::operator += (const stdString &rhs)
 {
-	if (rhs._len > 0)
-	{
-		if (reserve (_len + rhs._len))
-		{
-			memcpy (_str+_len, rhs._str, rhs._len);
-			_len += rhs._len;
-			_str[_len] = '\0';
-		}
-	}
-	return *this;
+    return append(rhs._str, rhs._len);
 }
 
 inline stdString & stdString::operator += (const char *rhs)
 {
     if (rhs)
-    {
-        size_t rhs_len = strlen(rhs);
-        if (rhs_len > 0)
-        {
-            if (reserve (_len + rhs_len))
-            {
-                memcpy (_str+_len, rhs, rhs_len);
-                _len += rhs_len;
-                _str[_len] = '\0';
-            }
-        }
-    }
+        return append(rhs, strlen(rhs));
     return *this;
 }
 
 inline stdString & stdString::operator += (char ch)
 {
-	if (reserve (_len + 1))
-	{
-		_str[_len] = ch;
-		_len += 1;
-		_str[_len] = '\0';
-	}
-	return *this;
+    return append(&ch, 1);
 }
 
 inline stdString operator + (const stdString &lhs, const stdString &rhs)
 {
-    stdString   result;
-	if (result.reserve (lhs._len + rhs._len))
+    stdString result;
+	if (result.reserve(lhs._len + rhs._len))
 	{
-		result.assign (lhs._str, lhs._len);
+		result.assign(lhs._str, lhs._len);
 		result += rhs;
 	}
 	return result;

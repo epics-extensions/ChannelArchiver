@@ -22,6 +22,20 @@ stdString & stdString::assign(const char *s, size_type len)
 	return *this;
 }
 
+stdString & stdString::append(const char *s, size_type len)
+{
+	if (len > 0)
+	{
+		if (reserve (_len + len))
+		{
+			memcpy (_str+_len, s, len);
+			_len += len;
+			_str[_len] = '\0';
+		}
+	}
+	return *this;
+}
+
 int stdString::compare(const stdString &rhs) const
 {
 	if (_str)

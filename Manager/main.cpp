@@ -322,7 +322,7 @@ void compare (const stdString &archive_name, const stdString &target_name)
     ValueIterator src_val (src);
     ValueIterator dst_val (dst);
 
-    for (src.findFirstChannel (src_chan); src_chan; ++src_chan)
+    for (src.findFirstChannel (src_chan); run && src_chan; ++src_chan)
     {
         cout << src_chan->getName () << " : ";
 
@@ -347,6 +347,7 @@ void compare (const stdString &archive_name, const stdString &target_name)
         }
         if (! src_val)
             cout << " OK\n";
+        cout.flush ();
     }
 }
 

@@ -13,15 +13,12 @@ Xerces XML Library, see "Setup, Installation" in manual.
 * Frontier-RPC-0.07b4.tar.gz
 An XML-RPC library for perl, see guess what.
 
-* XML-Simple-2.09.tar.gz
-An XML reader for perl, used by the ArchiveDaemon.
-See ...
-
-* XML-Parser-2.34.tar.gz
-XML Parser for perl. If you don't already have it,
-you need it for Frontier.
-
 * expat-1.95.8.tar.gz
 Another XML parser. If you don't already have it, you 
 might need it for the other packages.
 
+* XML-Simple-2.09.tar.gz, XML-Parser-2.34.tar.gz,
+  libwww-perl-5.800.tar.gz, HTML-Parser-3.36.tar.gz, HTML-Tagset-3.03.tar.gz,
+  URI-1.31.tar.gz
+More perl libraries that you might need to make
+Frontier work.

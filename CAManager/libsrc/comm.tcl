@@ -40,9 +40,7 @@ proc camComm::CheckRunning {i rvar} {
 
 proc camComm::Close {sock} {
   global fstate fsto
-#  fileevent $sock readable ""
   catch {after cancel $fsto($sock)}
-#  array unset fstate $sock
   set fstate($sock) closed
   close $sock
   if {[set i [lsearch -exact $::socks $sock]] >= 0} { set ::socks [lreplace $::socks $i $i] }
@@ -108,7 +106,6 @@ proc camComm::processAnswer {sock} {
     }
     end {
       if {[eof $sock]} {
-#	set fstate($sock) closed
 	camComm::Close $sock
       }
     }
@@ -125,6 +122,5 @@ proc camComm::processTimeout {sock} {
     set fstate($sock) closed
     camComm::Close $sock
   }
-#  array unset fstate $sock
   update
 }

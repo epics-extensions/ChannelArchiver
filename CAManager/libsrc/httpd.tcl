@@ -19,7 +19,6 @@ namespace eval httpd {
   variable _method
   variable _gotargs
   variable _timefmt "%Y/%m/%d %H:%M:%S"
-#  catch {source $camMisc::rcdir/settings}
 }
 
 proc httpd::init {} {
@@ -85,7 +84,7 @@ proc httpd::getInput {fd} {
       puts $fd "<html><head><title>CAbgManager exit</title></head>"
       puts $fd "<body bgcolor=\"\#aec9d2\">"
       puts $fd "<TABLE BORDER=3>"
-      puts $fd "<TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>"
+      puts $fd "<TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5>"
       puts $fd "Channel Archiver - bgManager terminated!"
       puts $fd "</FONT></TD></TR>"
       puts $fd "</TABLE>"
@@ -94,7 +93,6 @@ proc httpd::getInput {fd} {
       after 1000 Exit
     }
     if [regexp "(.*)\\?(.*)" $_page($fd) all page args] {
-#      puts stderr [join $_query($fd) "\n"]
       foreach arg [split $args "&"] {
 	if [regexp "(.*)=(.*)" $arg all name val] {
 	  set var($name) $val
@@ -142,7 +140,7 @@ proc httpd::sendCmdResponse {fd page ind} {
 <meta http-equiv=refresh content=\"0; URL=http://[info hostname]:$::_port/\">
 <TITLE>ArchiveEngine \"[camMisc::arcGet $ind descr]\" ${page}ed</TITLE>
 </HEAD><BODY bgcolor=\"\#aec9d2\">
-<TABLE BORDER=3><TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5><em>[camMisc::arcGet $ind descr]</em> [ed ${page}]</FONT></TD></TR></TABLE>
+<TABLE BORDER=3><TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5><em>[camMisc::arcGet $ind descr]</em> [ed ${page}]</FONT></TD></TR></TABLE>
 <p>You'll be taken back to the main-page automatically in a few seconds...
 </BODY></HTML>
 "
@@ -155,7 +153,7 @@ proc httpd::sendError {fd msg} {
   puts $fd "<HTML><HEAD>
 <TITLE>$msg</TITLE>
 </HEAD><BODY bgcolor=\"\#aec9d2\">
-<TABLE BORDER=3><TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>$msg</FONT></TD></TR></TABLE>
+<TABLE BORDER=3><TR><TD BGCOLOR=\"#FFFFFF\"><FONT SIZE=5>$msg</FONT></TD></TR></TABLE>
 <PRE>
 $_query($fd)
 </PRE>
@@ -169,7 +167,6 @@ proc httpd::sendOutput {fd} {
   variable _timefmt
   variable _proto
   variable _query
-#  puts stderr [join $_query($fd) "\n"]
    if {$_proto($fd) != ""} {
       puts $fd "$_proto($fd) 200 OK"
       puts $fd "Server: Channel Archiver bgManager $tcl_platform(user)@$::_host:$::_port"

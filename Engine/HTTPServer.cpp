@@ -221,7 +221,7 @@ HTTPClientConnection::~HTTPClientConnection()
     if (! _done)
     {
         LOG_MSG("HTTPClientConnection: Shutdown of #%d",_num);
-        shutdown(_socket, SHUT_RDWR);
+        shutdown(_socket, SD_BOTH); // SD_BOTH == SHUT_RDWR (osiSock)
         socket_close(_socket);
     }
 }
@@ -247,7 +247,8 @@ void HTTPClientConnection::run()
     struct linger linger;
     linger.l_onoff = 1;
     linger.l_linger = 30;
-    setsockopt(_socket, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger));
+    setsockopt(_socket, SOL_SOCKET, SO_LINGER,
+               (const char *)&linger, sizeof(linger));
 
     while (!handleInput())
     {

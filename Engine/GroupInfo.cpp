@@ -11,58 +11,58 @@ size_t GroupInfo::next_ID = 0;
 GroupInfo::GroupInfo (const stdString &name)
 {
     this->name = name;
-	ID = next_ID++;
-	num_connected = 0;
-	disable_count = 0;
+    ID = next_ID++;
+    num_connected = 0;
+    disable_count = 0;
 }
 
 void GroupInfo::addChannel(Guard &channel_guard, ArchiveChannel *channel)
 {
-	// Is Channel already in group?
-	stdList<ArchiveChannel *>::iterator i;
-	for (i=members.begin(); i!=members.end(); ++i)
-		if (*i == channel)
-			return;
-	members.push_back(channel);
+    // Is Channel already in group?
+    stdList<ArchiveChannel *>::iterator i;
+    for (i=members.begin(); i!=members.end(); ++i)
+        if (*i == channel)
+            return;
+    members.push_back(channel);
     if (disable_count > 0) // disable right away?
         channel->disable(channel_guard, epicsTime::getCurrent());
 }
 
-// called by ArchiveChannel while channel is locked
+// called by ArchiveChannel
 void GroupInfo::disable(ArchiveChannel *cause, const epicsTime &when)
 {
-	LOG_MSG("'%s' disables group '%s'\n",
+    LOG_MSG("'%s' disables group '%s'\n",
             cause->getName().c_str(), name.c_str());
-	++disable_count;
-	if (disable_count != 1) // Was already disabled?
-		return;
-	stdList<ArchiveChannel *>::iterator i;
-	for (i=members.begin(); i!=members.end(); ++i)
+    ++disable_count;
+    if (disable_count != 1) // Was already disabled?
+        return;
+    stdList<ArchiveChannel *>::iterator i;
+    for (i=members.begin(); i!=members.end(); ++i)
     {
         Guard guard((*i)->mutex);
-		(*i)->disable(guard, when);
+        (*i)->disable(guard, when);
     }
 }
 
-// called by ArchiveChannel while channel is locked
+// called by ArchiveChannel
 void GroupInfo::enable(ArchiveChannel *cause, const epicsTime &when)
 {
-	LOG_MSG("'%s' enables group '%s'\n",
+    LOG_MSG("'%s' enables group '%s'\n",
             cause->getName().c_str(), name.c_str());
-	if (disable_count <= 0)
-	{
-		LOG_MSG("Group %d is not disabled, ERROR!\n", name.c_str());
-		return;
-	}
-	--disable_count;
-	if (disable_count > 0) // Still disabled?
-		return;
+    if (disable_count <= 0)
+    {
+        LOG_MSG("Group %d is not disabled, ERROR!\n", name.c_str());
+        return;
+    }
+    --disable_count;
+    if (disable_count > 0) // Still disabled?
+        return;
 
-	stdList<ArchiveChannel *>::iterator i;
-	for (i=members.begin(); i!=members.end(); ++i)
+    stdList<ArchiveChannel *>::iterator i;
+    for (i=members.begin(); i!=members.end(); ++i)
     {
         Guard guard((*i)->mutex);
-		(*i)->enable(guard, when);
+        (*i)->enable(guard, when);
     }
 }
 

@@ -51,20 +51,19 @@ Engine::Engine(const stdString &index_name)
     static bool the_one_and_only = true;
 
     LOG_ASSERT(the_one_and_only);
-    _start_time = epicsTime::getCurrent();
+    start_time = epicsTime::getCurrent();
     RTreeM = 50;
     this->index_name = index_name;
     is_writing = false;
     description = "EPICS Channel Archiver Engine";
     the_one_and_only = false;
 
-    _get_threshhold = 20.0;
-    _write_period = 30;
-    _default_period = 1.0;
-    _buffer_reserve = 3;
-    _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
-    _secs_per_file = 60*60*24; // One day
-    _future_secs = 6*60*60;
+    get_threshhold = 20.0;
+    write_period = 30;
+    buffer_reserve = 3;
+    next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
+    secs_per_file = 60*60*24; // One day
+    future_secs = 6*60*60;
 
     // Initialize CA library for multi-treaded use and
     // add exception handler to avoid aborts from CA
@@ -87,8 +86,9 @@ void Engine::create(const stdString &index_name)
     theEngine = new Engine(index_name);
 }
 
-bool Engine::attachToCAContext()
+bool Engine::attachToCAContext(Guard &guard)
 {
+    guard.check(mutex);
     if (ca_attach_context(ca_context) != ECA_NORMAL)
     {
         LOG_MSG("ca_attach_context failed for thread 0x%08X (%s)\n",
@@ -157,8 +157,9 @@ bool Engine::checkUser(const stdString &user, const stdString &pass)
 }
 #endif   
 
-GroupInfo *Engine::findGroup(const stdString &name)
+GroupInfo *Engine::findGroup(Guard &guard, const stdString &name)
 {
+    guard.check(mutex);
     stdList<GroupInfo *>::iterator group = groups.begin();
     while (group != groups.end())
     {
@@ -169,14 +170,15 @@ GroupInfo *Engine::findGroup(const stdString &name)
     return 0;
 }
 
-GroupInfo *Engine::addGroup(const stdString &name)
+GroupInfo *Engine::addGroup(Guard &guard, const stdString &name)
 {
+    guard.check(mutex);
     if (name.empty())
     {
         LOG_MSG("Engine::addGroup: No name given\n");
         return 0;
     }
-    GroupInfo *group = findGroup(name);
+    GroupInfo *group = findGroup(guard, name);
     if (!group)
     {
         group = new GroupInfo(name);
@@ -185,8 +187,9 @@ GroupInfo *Engine::addGroup(const stdString &name)
     return group;
 }
 
-ArchiveChannel *Engine::findChannel(const stdString &name)
+ArchiveChannel *Engine::findChannel(Guard &guard, const stdString &name)
 {
+    guard.check(mutex);
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
     {
@@ -197,12 +200,14 @@ ArchiveChannel *Engine::findChannel(const stdString &name)
     return 0;
 }
 
-ArchiveChannel *Engine::addChannel(GroupInfo *group,
+ArchiveChannel *Engine::addChannel(Guard &engine_guard,
+                                   GroupInfo *group,
                                    const stdString &channel_name,
                                    double period, bool disabling,
                                    bool monitored)
 {
-    ArchiveChannel *channel = findChannel(channel_name);
+    engine_guard.check(mutex);
+    ArchiveChannel *channel = findChannel(engine_guard, channel_name);
     bool new_channel;
     if (!channel)
     {
@@ -254,7 +259,8 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                             epicsTime last_stamp(header->data.end_time);
                             CtrlInfo ctrlinfo;
                             ctrlinfo.read(datafile, header->data.ctrl_info_offset);
-                            channel->init(guard, header->data.dbr_type,
+                            channel->init(engine_guard, guard,
+                                          header->data.dbr_type,
                                           header->data.dbr_count,
                                           &ctrlinfo,
                                           &last_stamp);
@@ -284,10 +290,11 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
     return channel;
 }
 
-void Engine::setWritePeriod(double period)
+void Engine::setWritePeriod(Guard &guard, double period)
 {
-    _write_period = period;
-    _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
+    guard.check(mutex);
+    write_period = period;
+    next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
 
 #ifdef TODO
     stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
@@ -304,26 +311,23 @@ void Engine::setWritePeriod(double period)
 #endif
 }
 
-void Engine::setDescription(const stdString &description)
+void Engine::setDescription(Guard &guard, const stdString &description)
 {
+    guard.check(mutex);
     this->description = description;
 }
 
-void Engine::setDefaultPeriod(double period)
+void Engine::setGetThreshold(Guard &guard, double get_threshhold)
 {
-    _default_period = period;
+    guard.check(mutex);
+    this->get_threshhold = get_threshhold;
     // TODO config_file.save();
 }
 
-void Engine::setGetThreshold(double get_threshhold)
+void Engine::setBufferReserve(Guard &guard, int reserve)
 {
-    _get_threshhold = get_threshhold;
-    // TODO config_file.save();
-}
-
-void Engine::setBufferReserve(int reserve)
-{
-    _buffer_reserve = reserve;
+    guard.check(mutex);
+    buffer_reserve = reserve;
     // TODO config_file.save();
 }
 
@@ -334,12 +338,14 @@ stdString Engine::makeDataFileName()
     char buffer[80];                                                                 
     epicsTime now = epicsTime::getCurrent();
     epicsTime2vals(now, year, month, day, hour, min, sec, nano);
-    sprintf(buffer, "%04d%02d%02d-%02d%02d%02d", year, month, day, hour, min, sec);
+    sprintf(buffer, "%04d%02d%02d-%02d%02d%02d",
+            year, month, day, hour, min, sec);
     return stdString(buffer);
 }
 
 void Engine::writeArchive()
 {
+    Guard engine_guard(mutex);
     is_writing = true;
     IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
@@ -368,12 +374,12 @@ bool Engine::process()
     double scan_delay, write_delay;
     bool do_wait = true;
 
-    if (_scan_list.isDueAtAll())
+    if (scan_list.isDueAtAll())
     {
-        scan_delay = _scan_list.getDueTime() - now;
+        scan_delay = scan_list.getDueTime() - now;
         if (scan_delay <= 0.0)
         {
-            _scan_list.scan(now);
+            scan_list.scan(now);
             do_wait = false;
         }
     }
@@ -384,11 +390,11 @@ bool Engine::process()
         scan_delay = 0.5;
     }
     
-    write_delay = _next_write_time - now;            
+    write_delay = next_write_time - now;            
     if (write_delay <= 0.0)
     {
         writeArchive();
-        _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
+        next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
         do_wait = false;
     }
     if (need_CA_flush)

@@ -87,7 +87,8 @@ public:
     /// archive, so we know ASAP what we'd otherwis only learn from the
     /// CA connection.
     /// Pass 0 to ctrl_info or last_stamp if they're unknown.
-    void init(Guard &guard, DbrType dbr_time_type, DbrCount nelements,
+    void init(Guard &engine_guard, Guard &guard,
+              DbrType dbr_time_type, DbrCount nelements,
               const CtrlInfo *ctrl_info = 0, const epicsTime *last_stamp = 0);
     
     /// Write current ring buffer content to archive.

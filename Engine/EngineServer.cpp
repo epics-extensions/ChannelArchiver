@@ -54,8 +54,7 @@ static void engineinfo(HTTPClientConnection *connection,
     page.tableLine("Version", ARCH_VERSION_TXT ", built " __DATE__, 0);
     if (theEngine)
     {
-        theEngine->mutex.lock();
-        
+        Guard guard(theEngine->mutex);
         page.tableLine("Description", theEngine->getDescription().c_str(), 0);
         
         epicsTime2string(theEngine->getStartTime(), s);
@@ -72,22 +71,18 @@ static void engineinfo(HTTPClientConnection *connection,
         page.tableLine("Directory ", dir, 0);
 #endif
         
-        epicsTime2string(theEngine->getNextWriteTime(), s);
+        epicsTime2string(theEngine->getNextWriteTime(guard), s);
         page.tableLine("Next write time", s.c_str(), 0);
         
         page.tableLine("Currently writing",
                        (const char *)
                        (theEngine->isWriting() ? "Yes" : "No"), 0);
         
-        sprintf(line, "%f sec", theEngine->getDefaultPeriod());
-        page.tableLine("Default Period", line, 0);
-        
         sprintf(line, "%f sec", theEngine->getWritePeriod());
         page.tableLine("Write Period", line, 0);
         
         sprintf(line, "%f sec", theEngine->getGetThreshold());
-        page.tableLine("Get Threshold", line, 0); 
-        theEngine->mutex.unlock();
+        page.tableLine("Get Threshold", line, 0);
     }
     else
     {
@@ -301,9 +296,8 @@ static void channelInfo(HTTPClientConnection *connection,
 {
     stdString channel_name = path.substr(9);
 
-    theEngine->mutex.lock();
-    ArchiveChannel *channel = theEngine->findChannel(channel_name);
-    theEngine->mutex.unlock();
+    Guard guard(theEngine->mutex);
+    ArchiveChannel *channel = theEngine->findChannel(guard, channel_name);
     if (! channel)
     {
         connection->error("No such channel: " + channel_name);
@@ -322,14 +316,12 @@ static void channelInfo(HTTPClientConnection *connection,
 void groups(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Groups");
-    theEngine->mutex.lock();
+    Guard guard(theEngine->mutex);
     if (theEngine->groups.empty())
     {
-        theEngine->mutex.unlock();
         page.line("<I>no groups</I>");
         return;
     }
-
     stdList<GroupInfo *>::const_iterator group;
     size_t  channel_count, connect_count;
     size_t  total_channel_count=0, total_connect_count=0;
@@ -360,10 +352,7 @@ void groups(HTTPClientConnection *connection, const stdString &path)
                         ((*group)->isEnabled() ?
                          "Yes" : "<FONT COLOR=#FF0000>No</FONT>"),
                         channels, connected, 0);
-    }
-
-    theEngine->mutex.unlock();
-    
+    }    
     sprintf(channels, "%d", total_channel_count);
     if (total_channel_count != total_connect_count)
         sprintf(connected, "<FONT COLOR=#FF0000>%d</FONT>",
@@ -378,15 +367,13 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
 {
     stdString group_name = path.substr(7);
     CGIDemangler::unescape(group_name);
-    theEngine->mutex.lock();
-    const GroupInfo *group = theEngine->findGroup(group_name);
+    Guard guard(theEngine->mutex);
+    const GroupInfo *group = theEngine->findGroup(guard, group_name);
     if (! group)
     {
-        theEngine->mutex.unlock();
         connection->error("No such group: " + group_name);
         return;
     }
-
     HTMLPage page(connection->getSocket(), "Group Info");
     char id[10];
     cvtUlongToString((unsigned long) group->getID(), id);
@@ -396,7 +383,6 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     page.closeTable();
     if (theEngine->channels.empty())
     {
-        theEngine->mutex.unlock();
         page.line("no channels");
         return;
     }
@@ -407,12 +393,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     stdList<ArchiveChannel *>::const_iterator channel;
     for (channel = group_channels.begin();
          channel != group_channels.end(); ++channel)
-    {
-        (*channel)->mutex.lock();
         channelInfoLine(page, *channel);
-        (*channel)->mutex.unlock();
-    }
-    theEngine->mutex.unlock();
     page.closeTable();
 }
 
@@ -429,38 +410,32 @@ static void addChannel(HTTPClientConnection *connection,
         connection->error("Channel and group names must not be empty");
         return;
     }
-    theEngine->mutex.lock();
-    GroupInfo *group = theEngine->findGroup(group_name);
+    Guard guard(theEngine->mutex);
+    GroupInfo *group = theEngine->findGroup(guard, group_name);
     if (!group)
     {
-        theEngine->mutex.unlock();
         stdString msg = "Cannot find group " + group_name;
         connection->error(msg);
         return;
     }
-
     double period = atof(args.find("PERIOD").c_str());
     if (period <= 0)
-        period = theEngine->getDefaultPeriod();
-
+        period = 1.0;
     bool monitored = false;
     if (atoi(args.find("MONITOR").c_str()) > 0)
         monitored = true;
-
     bool disabling = false;
     if (atoi(args.find("DISABLE").c_str()) > 0)
         disabling = true;
-
     HTMLPage page(connection->getSocket(), "Add Channel");
     page.out("Channel <I>");
     page.out(channel_name);
-    theEngine->attachToCAContext();
-    if (theEngine->addChannel(group, channel_name, period,
+    theEngine->attachToCAContext(guard);
+    if (theEngine->addChannel(guard, group, channel_name, period,
                                disabling, monitored))
         page.line("</I> was added to");
     else
         page.line("</I> could not be added");
-    theEngine->mutex.unlock();
     page.out(" to group <I>");
     page.out(group_name);
     page.line("</I>.");
@@ -481,12 +456,11 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
     page.line("<H1>Groups</H1>");
     page.out("Group <I>");
     page.out(group_name);
-    theEngine->mutex.lock();
-    if (theEngine->addGroup(group_name))
+    Guard guard(theEngine->mutex);
+    if (theEngine->addGroup(guard, group_name))
         page.line("</I> was added to the engine.");
     else
         page.line("</I> could not be added to the engine.");
-    theEngine->mutex.unlock();
 }
 
 static void parseConfig(HTTPClientConnection *connection,
@@ -504,17 +478,16 @@ static void parseConfig(HTTPClientConnection *connection,
     page.line("<H1>Configuration</H1>");
     page.out("Configuration <I>");
     page.out(config_name);
-    theEngine->mutex.lock();
-    theEngine->attachToCAContext();
-    EngineConfig config(theEngine);
-    if (config.read(config_name))
+    Guard guard(theEngine->mutex);
+    theEngine->attachToCAContext(guard);
+    EngineConfig config;
+    if (config.read(guard, theEngine, config_name))
     {
         // theEngine->config_file.save(); TODO
         page.line("</I> was loaded.");
     }
     else
         page.line("</I> could not be loaded.<P>");
-    theEngine->mutex.unlock();
 }
 
 static void channelGroups(HTTPClientConnection *connection,
@@ -523,12 +496,11 @@ static void channelGroups(HTTPClientConnection *connection,
     CGIDemangler args;
     args.parse(path.substr(15).c_str());
     stdString channel_name = args.find("CHANNEL");
-
-    theEngine->mutex.lock();
-    ArchiveChannel *channel = theEngine->findChannel(channel_name);
+    Guard engine_guard(theEngine->mutex);
+    ArchiveChannel *channel =
+        theEngine->findChannel(engine_guard, channel_name);
     if (! channel)
     {
-        theEngine->mutex.unlock();
         connection->error("No such channel: " + channel_name);
         return;
     }
@@ -556,7 +528,6 @@ static void channelGroups(HTTPClientConnection *connection,
                        ((*group)->isEnabled() ?
                         "Yes" : "<FONT COLOR=#FF0000>No</FONT>"), 0);
     }
-    theEngine->mutex.unlock();
     page.closeTable();
 }
 

@@ -11,6 +11,7 @@
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
+// Engine
 #include "ArchiverConfig.h"
 #include "GroupInfo.h"
 #include "ScanList.h"
@@ -48,12 +49,12 @@ public:
     
     /// Arb. description string
     const stdString &getDescription() const;
-    void setDescription(const stdString &description);
+    void setDescription(Guard &guard, const stdString &description);
 
     /// Called by other threads (EngineServer)
     /// which need to issue CA calls within the context
     /// of the Engine
-    bool attachToCAContext();
+    bool attachToCAContext(Guard &guard);
 
     /// Set to make the Engine flush CA requests in next process call
     bool need_CA_flush;
@@ -64,19 +65,18 @@ public:
     /// Add/list groups/channels
     stdList<ArchiveChannel *> channels;// all the channels
     stdList<GroupInfo *> groups;    // scan-groups of channels
-    GroupInfo *findGroup(const stdString &name);
-    GroupInfo *addGroup(const stdString &name);
-    ArchiveChannel *findChannel(const stdString &name);
-    ArchiveChannel *addChannel(GroupInfo *group, const stdString &channel_name,
-                            double period, bool disabling, bool monitored);
+    GroupInfo *findGroup(Guard &guard, const stdString &name);
+    GroupInfo *addGroup(Guard &guard, const stdString &name);
+    ArchiveChannel *findChannel(Guard &guard, const stdString &name);
+    ArchiveChannel *addChannel(Guard &guard, GroupInfo *group,
+                               const stdString &channel_name,
+                               double period, bool disabling, bool monitored);
 
     /// Engine configuration
-    void   setWritePeriod(double period);
-    double getWritePeriod() const;
-    void   setDefaultPeriod(double period);
-    double getDefaultPeriod();
+    void   setWritePeriod(Guard &guard, double period);
+    double getWritePeriod() const;   
     int    getBufferReserve() const;
-    void   setBufferReserve(int reserve);
+    void   setBufferReserve(Guard &guard, int reserve);
 
     enum {
         SECS_PER_DAY = 60*60*24,
@@ -86,54 +86,54 @@ public:
     /// Determine the suggested buffer size for a value
     /// with given scan period based on how often we write
     /// and the buffer reserve
-    size_t suggestedBufferSize(double period);
+    size_t suggestedBufferSize(Guard &guard, double period);
     
     /// Engine ignores time stamps which are later than now+future_secs
     double getIgnoredFutureSecs() const;
-    void setIgnoredFutureSecs(double secs);
+    void setIgnoredFutureSecs(Guard &guard, double secs);
 
     /// Channels w/ period > threshold are scanned, not monitored
-    void   setGetThreshold(double get_threshhold);
+    void   setGetThreshold(Guard &guard, double get_threshhold);
     double getGetThreshold();
 
     /// Engine Info: Started, where, info about writes
-    const epicsTime &getStartTime() const { return _start_time; }
+    const epicsTime &getStartTime() const { return start_time; }
     const stdString &getIndexName() const { return index_name;  }
-    const epicsTime &getNextWriteTime() const { return _next_write_time; }
-    bool isWriting() const                { return is_writing; }
+    const epicsTime &getNextWriteTime(Guard &guard) const
+    { return next_write_time; }
+    bool isWriting() const        { return is_writing; }
     
     /// Add channel to ScanList.
     /// If result is false,
     /// channel has to prepare a monitor.
-    bool addToScanList(ArchiveChannel *channel);
+    bool addToScanList(Guard &guard, ArchiveChannel *channel);
 
     stdString makeDataFileName();
     
-    void writeArchive();
 
 private:
     Engine(const stdString &index_name);
+    void writeArchive();
 
     struct ca_client_context *ca_context;
     
-    epicsTime       _start_time;
+    epicsTime       start_time;
     int             RTreeM;
     stdString       index_name;
     stdString       description;
     bool            is_writing;
     
-    double          _get_threshhold;
-    ScanList        _scan_list;      // list of scanned, not monitored channels
+    double          get_threshhold;
+    ScanList        scan_list;      // list of scanned, not monitored channels
 
-    double          _write_period;   // period between writes to archive file
-    double          _default_period; // default if not specified by Channel
-    int             _buffer_reserve; // 2-> alloc. buffs for 2x expected data
-    epicsTime       _next_write_time;// when to write again
-    double          _secs_per_file;  // roughly: data file period
-    double          _future_secs;    // now+_future_secs is considered wrong
+    double          write_period;   // period between writes to archive file
+    int             buffer_reserve; // 2-> alloc. buffs for 2x expected data
+    epicsTime       next_write_time;// when to write again
+    double          secs_per_file;  // roughly: data file period
+    double          future_secs;    // now+_future_secs is considered wrong
 
 #ifdef USE_PASSWD
-    stdString       _user, _pass;
+    stdString       user, pass;
 #endif
 };
 
@@ -144,30 +144,30 @@ inline const stdString &Engine::getDescription() const
 {   return description; }
 
 inline double Engine::getGetThreshold()
-{   return _get_threshhold; }
+{   return get_threshhold; }
 
 inline double Engine::getWritePeriod() const
-{   return _write_period; }
-
-inline double Engine::getDefaultPeriod()
-{   return _default_period; }
+{   return write_period; }
 
 inline int Engine::getBufferReserve() const
-{   return _buffer_reserve; }
+{   return buffer_reserve; }
 
 inline double Engine::getIgnoredFutureSecs() const
-{   return _future_secs; }
+{   return future_secs; }
 
-inline void Engine::setIgnoredFutureSecs(double secs)
-{   _future_secs = secs; }
-
-inline size_t Engine::suggestedBufferSize(double period)
+inline void Engine::setIgnoredFutureSecs(Guard &guard, double secs)
 {
-    size_t	num;
+    guard.check(mutex);
+    future_secs = secs;
+}
 
-	if (_write_period <= 0)
+inline size_t Engine::suggestedBufferSize(Guard &guard, double period)
+{
+    guard.check(mutex);
+    size_t	num;
+	if (write_period <= 0)
 		return 100;
-    num = (size_t)(_write_period * _buffer_reserve / period);
+    num = (size_t)(write_period * buffer_reserve / period);
 	if (num < 3)
 		num = 3;
     return num;

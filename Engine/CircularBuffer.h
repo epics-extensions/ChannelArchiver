@@ -5,9 +5,11 @@
 #ifdef CIRCBUF_TEST
 #include <stdlib.h>
 #else
-#include <epicsMutex.h>
+// Storage
 #include <RawValue.h>
 #endif
+
+/// \ingroup Engine In-Memory buffer for values.
 
 /// Circular buffer:
 /// Each ArchiveChannel has one to buffer the incoming values

@@ -118,7 +118,7 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
     }
 }
 
-void ArchiveChannel::init(Guard &guard,
+void ArchiveChannel::init(Guard &engine_guard, Guard &guard,
                           DbrType dbr_time_type, DbrCount nelements,
                           const CtrlInfo *ctrl_info,
                           const epicsTime *last_stamp)
@@ -127,7 +127,7 @@ void ArchiveChannel::init(Guard &guard,
     this->dbr_time_type = dbr_time_type;
     this->nelements = nelements;
     buffer.allocate(dbr_time_type, nelements,
-                    theEngine->suggestedBufferSize(period));
+                    theEngine->suggestedBufferSize(engine_guard, period));
     if (pending_value)
         RawValue::free(pending_value);
     pending_value = RawValue::allocate(dbr_time_type, nelements, 1);
@@ -296,14 +296,15 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
     {
         LOG_MSG("%s: received control info\n", me->name.c_str());
         me->connection_time = epicsTime::getCurrent();
-        me->init(guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
+        Guard engine_guard(theEngine->mutex);
+        me->init(engine_guard, guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
                  ca_element_count(arg.chid));
         me->connected = true;
         me->mechanism->handleConnectionChange(guard);
     }
     else
     {
-        LOG_MSG("%s: ERROR, control info request failed\n", me->name.c_str());
+        LOG_MSG("%s: ERROR, control_callback info request failed\n", me->name.c_str());
         me->connection_time = epicsTime::getCurrent();
         me->connected = false;
         me->pending_value_set = false;

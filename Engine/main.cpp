@@ -102,13 +102,15 @@ int main(int argc, const char *argv[])
     Lockfile lock_file("archive_active.lck");
     if (! lock_file.Lock (argv[0]))
         return -1;
-
-    Engine::create(index_name);
-    if (! description.get().empty())
-        theEngine->setDescription(description);
-    EngineConfig config(theEngine);
-    run = config.read(config_name);
     
+    Engine::create(index_name);
+    {
+        Guard guard(theEngine->mutex);
+        if (! description.get().empty())
+            theEngine->setDescription(guard, description);
+        EngineConfig config;
+        run = config.read(guard, theEngine, config_name);
+    }
 #ifdef ENGINE_DEBUG
     LOG_MSG("ChannelArchiver thread 0x%08X entering main loop\n",
             epicsThreadGetIdSelf());

@@ -34,13 +34,14 @@ void show_hash_info(const stdString &index_name)
     index.close();
 }
 
-void list_names(const stdString &index_name)
+void list_names(const stdString &index_name, bool channel_detail)
 {
     IndexFile index(3);
     IndexFile::NameIterator names;
     epicsTime stime, etime, t0, t1;
     stdString directory, start, end;
-    bool ok, first =true;
+    bool ok;
+    size_t count = 0;
     if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
@@ -59,16 +60,16 @@ void list_names(const stdString &index_name)
             continue;
         }
         tree->getInterval(stime, etime);
-        printf("Channel '%s' (M=%d): %s - %s\n",
-               names.getName().c_str(),
-               tree->getM(),
-               epicsTimeTxt(stime, start),
-               epicsTimeTxt(etime, end));
-        if (first)
+	if (channel_detail)
+            printf("Channel '%s' (M=%d): %s - %s\n",
+                   names.getName().c_str(),
+                   tree->getM(),
+                   epicsTimeTxt(stime, start),
+                   epicsTimeTxt(etime, end));
+        if (count == 0)
         {
             t0 = stime;
             t1 = etime;
-            first = false;
         }
         else
         {
@@ -77,9 +78,11 @@ void list_names(const stdString &index_name)
             if (t1 < etime)
                 t1 = etime;
         }
+        ++count;
     }
     index.close();
-    printf("Overall time range: %s - %s\n",
+    printf("%u channels, %s - %s\n",
+           (unsigned int)count,
            epicsTimeTxt(t0, start), epicsTimeTxt(t1, end));
 }
 
@@ -621,6 +624,7 @@ int main(int argc, const char *argv[])
     parser.setArgumentsInfo("<index-file>");
     CmdArgFlag help          (parser, "help", "Show help");
     CmdArgInt verbosity      (parser, "verbose", "<level>", "Show more info");
+    CmdArgFlag info          (parser, "info", "Simple archive info");
     CmdArgFlag list_index    (parser, "list", "List channel name info");
     CmdArgString copy_index  (parser, "copy", "<new index>", "Copy channels");
     CmdArgString start_time  (parser, "start", "<time>",
@@ -684,8 +688,10 @@ int main(int argc, const char *argv[])
             printf("Using end time   %s\n", epicsTimeTxt(*end, txt));
     }
     // What's requested?
-    if (list_index)
-        list_names(index_name);
+    if (info)
+	list_names(index_name, false);
+    else if (list_index)
+        list_names(index_name, true);
     else if (copy_index.get().length() > 0)
     {
         copy(index_name, copy_index, RTreeM, start, end, channel_name);

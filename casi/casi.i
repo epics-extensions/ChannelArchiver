@@ -26,7 +26,20 @@ an UnknownError.
  */
 #undef list
 #undef assert
-#include <MultiArchive.h>
+#undef open
+#undef write
+#undef read
+#undef eof
+
+#undef setbuf
+
+
+#include "ToolsConfig.h"
+#include "GenericException.h"
+class ArchiveI;
+class ChannelIteratorI;
+class ValueIteratorI;
+
 #include "archive.h"
 #include "channel.h"
 #include "value.h"

@@ -3,7 +3,7 @@
 use English;
 
 # Set search path for the Perl module (casi.pm)
-use lib "/home/kasemir/Epics/extensions/src/ChannelArchiver/casi/perl/O.Linux";
+use lib "O." . $ENV{HOST_ARCH};
 
 # For this to succeed, the OS must be able to find the
 # shared library (e.g. casi.so, casi.dll).

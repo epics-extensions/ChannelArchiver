@@ -1,3 +1,4 @@
+# -*- makefile -*-
 # This file is for NMAKE, for building on Win32 with MS Visual C++
 # (tried 6.0, SP 3)
 #
@@ -9,7 +10,6 @@
 # You have to check the settings that refer to the
 # location of SWIG, Perl, TCL, ...
 
-MODULE    = casi
 HOST_ARCH=WIN32
 
 # SWIG Installation
@@ -45,11 +45,10 @@ PY_FLAGS = /D __WIN32__
 # Perl settings - not working...
 PERL       = d:\sys\Perl
 PERL_INC   = -I$(PERL)\lib\CORE
-PERL_LIB   = d:\perl315\Release\perl300.lib
-#PERL_FLAGS = /DWIN32 /DMSWIN32 /DWIN32IO_IS_STDIO
-PERL_FLAGS = /DWIN32 /DMSWIN32 /DPERL_OBJECT /DCPerl=CPerlObj
+PERL_LIB   = $(PERL)\lib\CORE\perlcore.lib
+PERL_FLAGS = /DWIN32 /DMSWIN32 /DPERL_OBJECT /DHAS_BOOL
 
-all::	dirs tcl python
+all::	dirs tcl python perl
 
 dirs::
 	-@mkdir tcl\O.WIN32
@@ -58,31 +57,29 @@ dirs::
 
 tcl::
 	cd tcl\O.WIN32
-	$(SWIG) -tcl8 -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i
-	$(CC) -c $(CFLAGS) $(TCL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp
-	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(TCL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
+	$(SWIG) -tcl8 -I../.. -o casi_wrap.cpp -d casi ../../casi.i
+	$(CC) -c $(CFLAGS) $(TCL_INC) ../../casi.cpp casi_wrap.cpp
+	$(CC) -LD casi.obj casi_wrap.obj $(TCL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
 	cd ..\..
 
 python::
 	cd python\O.WIN32
-	$(SWIG) -python -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i
-	$(CC) -c $(CFLAGS) $(PY_FLAGS) $(PY_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp
-	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(PY_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casic.dll
+	$(SWIG) -python -shadow -I../.. -o casi_wrap.cpp -d casi ../../casi.i
+	$(CC) -c $(CFLAGS) $(PY_FLAGS) $(PY_INC) ../../casi.cpp casi_wrap.cpp
+	$(CC) -LD casi.obj casi_wrap.obj $(PY_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casic.dll
 	cd ..\..
 
-#	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(PERL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
-#	cd ..
 
 perl::
 	cd perl\O.WIN32
-	$(SWIG) -c++ -perl5 -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../$(MODULE).i
-	$(CC) -c $(CFLAGS) $(PERL_FLAGS) $(PERL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp
+	$(SWIG) -perl5 -shadow -I../.. -o casi_wrap.cpp -d casi ../../casi.i
+	$(CC) -c $(CFLAGS) $(PERL_FLAGS) $(PERL_INC) ../../casi.cpp casi_wrap.cpp
+	$(CC) -LD casi.obj casi_wrap.obj $(PERL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
 	cd ..
-
 
 
 clean::
 	del tcl\O.WIN32\*
 	del python\O.WIN32\*
-
+	del perl\O.WIN32\*
 

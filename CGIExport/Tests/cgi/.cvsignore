@@ -1,2 +1,6 @@
-CGIExport.cgi
-
+O.*
+*.ncb
+*.opt
+*.dll
+Debug
+Release

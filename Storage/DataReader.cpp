@@ -243,7 +243,7 @@ const RawValue::Data *DataReader::next()
     if (!(header && valid_datablock))
         return 0;
     if (val_idx >= header->data.num_samples            ||
-        RawValue::getTime(data) >= valid_interval.getEnd())
+        RawValue::getTime(data) > valid_interval.getEnd())
     {   // Need to get another block
         valid_datablock = au_iter->getNext(&datablock, &valid_interval);
         if (!valid_datablock)

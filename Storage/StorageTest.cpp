@@ -8,6 +8,50 @@
 #include "OldDataReader.h"
 #include "DataReader.h"
 
+bool verbose;
+
+void old_list_channels(const stdString &index_name)
+{
+    DirectoryFile dir;
+    if (!dir.open(index_name))
+    {
+        fprintf(stderr, "Cannot open dir. file %s\n",
+                index_name.c_str());
+        return;
+    }
+    DirectoryFileIterator dfi = dir.findFirst();
+    while (dfi.isValid())
+    {
+        printf("%s\n", dfi.entry.data.name);
+        dfi.next();
+    }
+}
+
+void list_channels(const stdString &index_name)
+{
+    archiver_Index index;
+    if (!index.open(index_name.c_str()))
+    {
+        fprintf(stderr, "Cannot open index %s\n",
+                index_name.c_str());
+        return;
+    }
+    channel_Name_Iterator *cni = index.getChannelNameIterator();
+    if (!cni)
+    {
+        fprintf(stderr, "Cannot get channel name iterator\n");
+        return;
+    }
+    stdString name;
+    bool ok = cni->getFirst(&name);
+    while (ok)
+    {
+        printf("%s\n", name.c_str());
+        ok = cni->getNext(&name);
+    }
+    delete cni;
+}
+
 void header_dump(const stdString &index_name)
 {
     DirectoryFile index;
@@ -169,7 +213,7 @@ void value_dump(const stdString &index_name,
     const RawValue::Data *data = reader->find(channel_name, start, end);
     while (data  &&   (!end  ||  RawValue::getTime(data) < *end))
     {
-        if (start)
+        if (start && verbose)
         {
             if (RawValue::getTime(data) < *start)
                 printf("< ");
@@ -188,9 +232,11 @@ void value_dump(const stdString &index_name,
 int main(int argc, const char *argv[])
 { 
     CmdArgParser parser(argc, argv);
-    parser.setHeader("Strorage lib. test\n");
+    parser.setHeader("Storage lib. test\n");
     parser.setArgumentsInfo("<index>");
-    CmdArgString channel(parser, "channel", "<name>", "Channel namex");
+    CmdArgFlag   verb_flag(parser, "verbose", "Be verbose");
+    CmdArgString channel(parser, "channel", "<name>", "Channel name");
+    CmdArgFlag   list_chans(parser, "list", "List Channel names");
     CmdArgFlag   headers(parser, "headers", "Dump header information");
     CmdArgFlag   dump   (parser, "dump", "Dump values");
     CmdArgString start  (parser, "start", "<mm/dd/yyyy hh:mm:ss.nnnnnnnn>",
@@ -208,6 +254,7 @@ int main(int argc, const char *argv[])
         parser.usage();
         return -1;
     }
+    verbose = verb_flag;
     stdString index_name = parser.getArgument(0);
     epicsTime *start_time = 0, *end_time = 0;
     if (start.isSet())
@@ -219,6 +266,13 @@ int main(int argc, const char *argv[])
     {
         end_time = new epicsTime;
         string2epicsTime(end.get(), *end_time);
+    }
+    if (list_chans)
+    {
+        if (old)
+            old_list_channels(index_name);
+        else
+            list_channels(index_name);
     }
     if (headers)
         header_dump(index_name);

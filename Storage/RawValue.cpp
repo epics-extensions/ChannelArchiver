@@ -218,84 +218,72 @@ void RawValue::show(FILE *file,
 {
     stdString time, stat;
     int i;
-    // Print time - status
+    // Print time, get status
     getTime(value, time);
     getStatus(value, stat);
-    fprintf(file, "%s\t%s", time.c_str(), stat.c_str());
     if (isInfo(value))
     {   // done
-        fputs("\n", file);
+        fprintf(file, "%s\t%s\n", time.c_str(), stat.c_str());
         return;
     }
+    fprintf(file, "%s\t", time.c_str());
     // print value
     switch (type)
     {
         case DBR_TIME_STRING:
-            fprintf(file, "\t'%s'\n", ((dbr_time_string *)value)->value);
-            return;
+            fprintf(file, "\t'%s'",
+                    ((dbr_time_string *)value)->value);
+            break;
         case DBR_TIME_ENUM:
             i = ((dbr_time_enum *)value)->value;
             if (info)
             {
                 stdString state;
                 info->getState(i, state);
-                fprintf(file, "%s (%d)\n", state.c_str(), i);
+                fprintf(file, "%s (%d)", state.c_str(), i);
             }
             else
-                fprintf(file, "%d\n", i);
-            return;
+                fprintf(file, "%d", i);
+            break;
         case DBR_TIME_CHAR:
         {
             dbr_char_t *val = &((dbr_time_char *)value)->value;
             for (i=0; i<count; ++i)
             {
-                if (i+1 >= count)
-                    fprintf(file, "%d\n", (int)*val);
-                else
-                    fprintf(file, "%d\t", (int)*val);
+                fprintf(file, "%d\t", (int)*val);
                 ++val;
             }
-            return;
+            break;
         }
-            
         case DBR_TIME_SHORT:
         {
             dbr_short_t *val = &((dbr_time_short *)value)->value;
             for (i=0; i<count; ++i)
             {
-                if (i+1 >= count)
-                    fprintf(file, "%d\n", (int)*val);
-                else
-                    fprintf(file, "%d\t", (int)*val);
+                fprintf(file, "%d\t", (int)*val);
                 ++val;
             }
-            return;
+            break;
         }
         case DBR_TIME_LONG:
         {
             dbr_long_t *val = &((dbr_time_long *)value)->value;
             for (i=0; i<count; ++i)
             {
-                if (i+1 >= count)
-                    fprintf(file, "%ld\n", (long)*val);
-                else
-                    fprintf(file, "%ld\t", (long)*val);
+                fprintf(file, "%ld\t", (long)*val);
                 ++val;
             }
-            return;
+            break;
         }
         case DBR_TIME_FLOAT:
         {
             dbr_float_t *val = &((dbr_time_float *)value)->value;
             for (i=0; i<count; ++i)
             {
-                if (i+1 >= count)
-                    fprintf(file, "%f\n", (double)*val);
-                else
-                    fprintf(file, "%f\t", (double)*val);
+                fprintf(file, "%f\t", (double)*val);
                 ++val;
             }
-            return;
+            break;
         }
         case DBR_TIME_DOUBLE:
         {
@@ -305,9 +293,6 @@ void RawValue::show(FILE *file,
                 int prec = info->getPrecision();
                 for (i=0; i<count; ++i)
                 {
-                    if (i+1 >= count)
-                        fprintf(file, "%.*f\n", prec,(double)*val);
-                else
                     fprintf(file, "%.*f\t", prec, (double)*val);
                     ++val;
                 }
@@ -316,18 +301,17 @@ void RawValue::show(FILE *file,
             {
                 for (i=0; i<count; ++i)
                 {
-                    if (i+1 >= count)
-                        fprintf(file, "%f\n", (double)*val);
-                else
                     fprintf(file, "%f\t", (double)*val);
                     ++val;
                 }
             }
-            return;
+            break;
         }
         default:
             fprintf(file, "<cannot decode>\n");
+            return;
     }
+    fprintf(file, "%s\n", stat.c_str());
 }   
 
 bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,

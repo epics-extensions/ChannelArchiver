@@ -34,6 +34,7 @@ void SinglePeriodScanList::scan()
 
 ScanList::ScanList()
 {
+    _is_due_at_all = false;
     _next_list_scan = nullTime;
 }
 
@@ -72,6 +73,7 @@ void ScanList::addChannel(ChannelInfo *channel)
     list->_channels.push_back(channel);
     if (_next_list_scan == nullTime || _next_list_scan > list->_next_scan)
         _next_list_scan = list->_next_scan;
+    _is_due_at_all = true;
 
 #   ifdef LOG_SCANLIST
     LOG_MSG("Channel '" << channel->getName()

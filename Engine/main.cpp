@@ -140,8 +140,10 @@ int main(int argc, const char *argv[])
                 "Stop via web browser at http://localhost:%d/stop\n"
                 "------------------------------------------\n",
                 EngineServer::_port);
-        while (run  &&  theEngine->process())
-        {}
+        while (run)
+        {
+            theEngine->process();
+        }
     }
     catch (GenericException &e)
     {

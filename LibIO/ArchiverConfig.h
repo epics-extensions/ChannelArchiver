@@ -41,7 +41,7 @@
 
 // >5: all
 #define ENGINE_DEBUG 4
-#define HTTPD_DEBUG  5
+#define HTTPD_DEBUG  4
 // HTTP clients older than this timeout
 // are killed
 #define HTTPD_CLIENT_TIMEOUT 30

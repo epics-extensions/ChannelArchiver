@@ -221,7 +221,11 @@ HTTPClientConnection::~HTTPClientConnection()
     if (! _done)
     {
         LOG_MSG("HTTPClientConnection: Shutdown of #%d",_num);
+#ifdef SHUT_RDWR
+        shutdown(_socket, SHUT_RDWR);
+#else
         shutdown(_socket, SD_BOTH); // SD_BOTH == SHUT_RDWR (osiSock)
+#endif
         socket_close(_socket);
     }
 }

@@ -12,6 +12,8 @@
 #include <epicsTimeHelper.h>
 #include <math.h>
 
+#define DEBUG_CI
+
 #if 0
 // Helper:
 // print chid
@@ -117,6 +119,9 @@ void ChannelInfo::startCaConnection(bool new_channel)
 {
     if (new_channel)
     {
+#       ifdef DEBUG_CI
+        printf("ca_create_channel(%s)\n", _name.c_str());
+#       endif
         if (ca_create_channel(_name.c_str(),
                               caLinkConnectionHandler, this,
                               CA_PRIORITY_ARCHIVE, &_chid) != ECA_NORMAL)
@@ -157,13 +162,13 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
 
     me->lock();
     bool was_connected = me->_connected;
-#ifdef ENGINE_DEBUG
-    LOG_MSG("caLinkConnectionHandler(%s), thread 0x%08X: %s, now: %s\n",
-            me->getName().c_str(), epicsThreadGetIdSelf(),
-            (was_connected ? "was connected" : "wasn't connected"),
-            (ca_state(arg.chid) == cs_conn ? "connected" : "disconnected")
-            );
-#endif
+#   ifdef DEBUG_CI
+    printf("caLinkConnectionHandler(%s), thread 0x%08X: %s, now: %s\n",
+           me->getName().c_str(), (unsigned int)epicsThreadGetIdSelf(),
+           (was_connected ? "was connected" : "wasn't connected"),
+           (ca_state(arg.chid) == cs_conn ? "connected" : "disconnected")
+           );
+#   endif
     if (ca_state(arg.chid) != cs_conn)
     {
         LOG_MSG("'%s': CA disconnect\n", me->getName().c_str());
@@ -193,7 +198,7 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
         // - similar to the previous engine or DM.
         // How do we learn about changes, since you might actually change
         // a channel without rebooting an IOC?
-        // Note: CA used to be proken here; DBR_CTRL... only worked with
+        // Note: CA used to be broken here; DBR_CTRL... only worked with
         //       count==1 for arrays. We'll get the full value later
         int status = ca_array_get_callback(ca_field_type(arg.chid)
                                            +DBR_CTRL_STRING, 1,
@@ -285,11 +290,11 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
     me->lock();
     bool was_connected = me->_connected;
 
-#ifdef ENGINE_DEBUG
-    LOG_MSG("caControlHandler(%s), thread 0x%08X: %s\n",
-            me->getName().c_str(), epicsThreadGetIdSelf(),
-            (was_connected ? "was connected" : "wasn't connected"));
-#endif
+#   ifdef DEBUG_CI
+    printf("caControlHandler(%s), thread 0x%08X: %s\n",
+           me->getName().c_str(), (unsigned int)epicsThreadGetIdSelf(),
+           (was_connected ? "was connected" : "wasn't connected"));
+#   endif
 
     if (arg.status != ECA_NORMAL)
     {
@@ -318,11 +323,11 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
         // size or type might have changed...
         me->setValueType(dbr_type, nelements);
 
-#if defined(ENGINE_DEBUG) && ENGINE_DEBUG > 4
-        LOG_MSG("caControlHandler(%s) got CtrlInfo for %s [%d]\n",
-                me->getName().c_str(),
-                dbr_type_to_text(dbr_type), nelements);
-#endif
+#       ifdef DEBUG_CI
+        printf("caControlHandler(%s) got CtrlInfo for %s [%d]\n",
+               me->getName().c_str(),
+               dbr_type_to_text(dbr_type), nelements);
+#       endif
         
         // Already subscribed or first connection?
         if (me->_mechanism == none   ||
@@ -330,20 +335,12 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
         {
             if (!me->isMonitored()  &&  theEngine->addToScanList(me))
             {
-#ifdef ENGINE_DEBUG
-                LOG_MSG("caControlHandler(%s) added to scan list\n",
-                        me->getName().c_str());
-#endif
                 me->_mechanism = use_get;
             }
             else
             {
                 // Engine will not scan this: add a monitor for this channel
                 int status;
-#ifdef ENGINE_DEBUG
-                LOG_MSG("caControlHandler(%s) subscribing to events\n",
-                        me->getName().c_str());
-#endif
                 status = ca_add_masked_array_event(dbr_type, nelements,
                                                    me->_chid,
                                                    caEventHandler, me,
@@ -386,15 +383,11 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     }
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
 
-#ifdef ENGINE_DEBUG
-    stdString time, val, stat;
-    me->_new_value->getTime(time);
-    me->_new_value->getValue(val); 
-    me->_new_value->getStatus(stat);
-    LOG_MSG("caEventHandler(%s), thread 0x%08X: %s %s %s\n",
-            me->getName().c_str(), epicsThreadGetIdSelf(),
-            time.c_str(), val.c_str(), stat.c_str());
-#endif
+#   ifdef DEBUG_CI
+    printf("caEventHandler(%s), thread 0x%08X:\n",
+            me->getName().c_str(), (unsigned int)epicsThreadGetIdSelf());
+    me->_new_value->show(stdout);
+#   endif
 
     me->handleNewValue();
     me->unlock();
@@ -409,13 +402,14 @@ void ChannelInfo::issueCaGetCallback()
                 _name.c_str());
         return;
     }
-#ifdef ENGINE_DEBUG
-    LOG_MSG("issueCaGetCallback(%s), thread 0x%08X\n",
-            getName().c_str(), epicsThreadGetIdSelf());
-#endif
+#   ifdef DEBUG_CI
+    printf("issueCaGetCallback(%s), thread 0x%08X\n",
+           getName().c_str(), (unsigned int)epicsThreadGetIdSelf());
+#   endif
     if (ca_array_get_callback(_new_value->getType(), _new_value->getCount(),
                               _chid, caEventHandler, this) != ECA_NORMAL)
         LOG_MSG("ca_array_get_callback(%s) failed\n", _name.c_str());
+    theEngine->needCAflush();
 }
 
 // Define the type of value for this ChannelInfo.
@@ -506,8 +500,11 @@ void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
         const epicsTime &pend_time = _pending_value->getTime();
         if (pend_time < event_time)
         {
-            //            LOG_NSV(" Event!, unpending:            "
-            //      << *_pending_value << "\n");
+#ifdef DEBUG_CI
+            printf("Event!, unpending: ");
+            _pending_value->show(stdout);
+            printf("\n");
+#endif
             flushRepeats(_pending_value->getTime());
             addToRingBuffer(_pending_value);
             _pending_value_set = false;
@@ -542,7 +539,7 @@ void ChannelInfo::addEvent(ValueI *value)
 
 // To make handleNewValue more readable:
 // _value is set, check if we should disable anything based on it
-inline void ChannelInfo::handleDisabling ()
+void ChannelInfo::handleDisabling()
 {
     if (_disabling.empty())
         return;
@@ -610,9 +607,9 @@ void ChannelInfo::handleNewValue()
 
     if (!_ever_written)
     {
-        //LOG_NSV(now << ", " << _name << ", IOC " << ca_host_name(_chid)
-        //       << " : write first value after connection\n\t"
-        //      << *_new_value << "\n");
+#       ifdef DEBUG_CI
+        printf("%s: write first value after connection\n", _name.c_str());
+#       endif
         addEvent(_new_value);
         return;
     }
@@ -659,40 +656,57 @@ void ChannelInfo::handleNewValue()
 // but: were there repeats? shall we really add it?
 void ChannelInfo::handleNewScannedValue(epicsTime &stamp)
 {
+#   ifdef DEBUG_CI
+    printf("handleNewScannedValue(%s)\n", _name.c_str());
+#   endif    
     if (!_previous_value)
     {
         LOG_MSG("'%s': handleNewScannedValue called "
                 "without _previous_value\n", _name.c_str());
         return;
     }
-    //LOG_NSV("handleNewScannedValue: " << *_new_value);
-    
+
     // New value, but not due to be saved? Update pending value!
     if (_expected_next_time == nullTime)
-        _expected_next_time = roundTimeUp(stamp, _period);
+    {
+        _expected_next_time = roundTimeDown(stamp, _period);
+
+#       ifdef DEBUG_CI
+        stdString time_txt;
+        epicsTime2string(_expected_next_time, time_txt);
+        printf("expected_next corrected to %s\n", time_txt.c_str());
+#       endif
+    }
     else if (stamp < _expected_next_time)
     {
-        //LOG_NSV(" - pending\n");
+#       ifdef DEBUG_CI        
+        printf("stamp < expected - pending\n");
+#       endif
         _pending_value->copyValue(*_new_value);
         _pending_value_set = true;
         return;// Add only if expected_next_time exceeded
     }
 
     // _new_value, time to take a sample.
-    // Have pending value?
+    // Have pending value that's just before this time slot,
+    // so we ought to save that one?
     size_t repeat_count = 0;
     if (_pending_value_set)
     {
-        //LOG_NSV(" - pending\n");
         bool pending_is_repeated = isRepeated(_pending_value);
         if (pending_is_repeated)
         {
-            //LOG_NSV(" unpending:            " << *_pending_value
-            //        << " - repeat\n");
+#           ifdef DEBUG_CI        
+            printf("Would store the last pending value, "
+                   "but it's repeated, so we keep waiting\n");
+#           endif
         }
         else
         {
-            //LOG_NSV(" unpending:            " << *_pending_value << "\n");
+#           ifdef DEBUG_CI        
+            printf("Storing the last pending value, "
+                   "making this one pending\n");
+#           endif
             stamp = _pending_value->getTime();
             repeat_count = flushRepeats(stamp);
             addToRingBuffer(_pending_value);
@@ -709,10 +723,15 @@ void ChannelInfo::handleNewScannedValue(epicsTime &stamp)
     {
         if (isRepeated(_new_value))
         {
-            //LOG_NSV(" - repeat\n");
+#           ifdef DEBUG_CI        
+            printf("Repeat...\n");
+#           endif
             return;
         }
         repeat_count = flushRepeats(stamp);
+#       ifdef DEBUG_CI        
+        printf("Stored\n");
+#       endif
         addToRingBuffer(_new_value);
         // remember this value for comparison next time
         _previous_value->copyValue(*_new_value);
@@ -725,7 +744,12 @@ void ChannelInfo::handleNewScannedValue(epicsTime &stamp)
         _expected_next_time += _period;
     if (_expected_next_time <= stamp)
         _expected_next_time = roundTimeUp(stamp, _period);
-    //LOG_NSV("\nnext time:             " << _expected_next_time << "<---\n");
+
+#  ifdef DEBUG_CI
+    stdString time_txt;
+    epicsTime2string(_expected_next_time, time_txt);
+    printf("next time: %s\n", time_txt.c_str());
+#   endif
 }
 
 bool ChannelInfo::isDisabling(const GroupInfo *group) const

@@ -1,4 +1,4 @@
-// --------------------------------------------------------
+// ------------------------------------------- -*- c++ -*-
 // $Id$
 //
 // Please refer to NOTICE.txt,
@@ -37,11 +37,16 @@ public:
     // Scan all channels that are due at/after deadline
     void scan(const epicsTime &deadline);
 
+    // Does the scan list contain anyting?
+    bool isDueAtAll()
+    {   return _is_due_at_all; }
+    
     // When should scan() be called ?
     const epicsTime &getDueTime() const
     {   return  _next_list_scan; }
 
 private:
+    bool _is_due_at_all;
     stdList<SinglePeriodScanList *> _period_lists;
     epicsTime                       _next_list_scan;
 };

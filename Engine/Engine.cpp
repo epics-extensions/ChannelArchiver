@@ -166,17 +166,25 @@ bool Engine::checkUser(const stdString &user, const stdString &pass)
 
 bool Engine::process()
 {
-    epicsTime now = epicsTime::getCurrent();
-
     // scan, write or wait?
-    double scan_delay  = _scan_list.getDueTime() - now;
-    double write_delay = _next_write_time        - now;
-    bool   do_wait = true;
-    if (scan_delay <= 0.0)
+    epicsTime now = epicsTime::getCurrent();
+    double scan_delay, write_delay;
+    bool do_wait = true;
+
+    write_delay = _next_write_time - now;            
+
+    if (_scan_list.isDueAtAll())
     {
-        _scan_list.scan(now);
-        do_wait = false;
+        scan_delay = _scan_list.getDueTime() - now;
+        if (scan_delay <= 0.0)
+        {
+            _scan_list.scan(now);
+            do_wait = false;
+        }
     }
+    else
+        scan_delay = write_delay;
+    
     if (write_delay <= 0.0)
     {
         write_thread.write();
@@ -185,29 +193,32 @@ bool Engine::process()
         // it less frequently - thus overwriting the archive circular
         // buffer - thus causing events to be discarded at the monitor
         // receive callback
-        _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
         if (! write_thread.isRunning())
         {
             LOG_MSG("WriteThread stopped. Engine quits, too.\n");
             return false;
         }
+        _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
         do_wait = false;
     }
-
-    if (do_wait)
-    {
-        if (write_delay < scan_delay)
-            epicsThreadSleep(write_delay);
-        else
-            epicsThreadSleep(scan_delay);
-    }
-
     if (_need_CA_flush)
     {
         ca_flush_io();
         _need_CA_flush = false;
     }
-    
+    if (do_wait)
+    {
+        if (write_delay < scan_delay)
+        {
+            printf("Sleeping %g sec until write\n", write_delay);
+            epicsThreadSleep(write_delay);
+        }
+        else
+        {
+            printf("Sleeping %g sec until scan\n", scan_delay);
+            epicsThreadSleep(scan_delay);
+        }
+    }
     return true;
 }
 

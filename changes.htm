@@ -12,54 +12,61 @@
   <h1>Channel Archiver Changes</h1>
   <ul>
     <li>06/??/2000<br>
-		Patch# 6:<br>
-		Engine: used 1 month as file default, not 24h<br>
-		Engine: more thread safe signal catching<br>
-		HTTPServer: Empty client would linger open and
-			    cause Engine to hang.
-			    Those could be cause by keeping the
-			    "Reload" button down in the web browser.
-			    How those connections are closed.
-			    Hammering the HTTPServer does still
-			    consume CPU up to the point were the 
-			    WriteThread cannot run,
-			    so overwrites can occur.
-			    But things should be fine afterwards.
-			    The best solution might be a seperate,
-			    lower-priority thread for the HTTPServer.
-			    This is put off for now.<br>
-		LibIO/Bin*: replace stdio by low level IO
-		            (open/read/write)
-			    to track down thread-related problems.<br>
+      <font color="#0000A0">Version 1.4</font>:<br>
+      <UL>
+      <li>Scripting support moved to SWIG,
+          replacing the tcl-only ATAC API.
+      <li>Scripting supports write-access to archive
+      </UL>
+    <li>06/26/2000<br>
+        Patch# 6:<br>
+	Engine: used 1 month as file default, not 24h<br>
+        Engine: more thread safe signal catching<br>
+        HTTPServer: Empty client would linger open and
+	            cause Engine to hang.
+		    Those could be cause by keeping the
+                    "Reload" button down in the web browser.
+                    How those connections are closed.
+                    Hammering the HTTPServer does still
+                    consume CPU up to the point were the 
+                    WriteThread cannot run,
+                    so overwrites can occur.
+                    But things should be fine afterwards.
+                    The best solution might be a seperate,
+                    lower-priority thread for the HTTPServer.
+                    This is put off for now.<br>
+        LibIO/Bin*: replace stdio by low level IO
+                    (open/read/write)
+                    to track down thread-related problems.<br>
     <li>06/14/2000<br>
-		Patch# 5:<br>
-		Testing: SWIG for scripting interface,<br>
-		replacing ATAC with CASI - "Channel Archiver Scripting Interface"<br>
-		Currently: ported tcl scripts to slightly different API,
-		creating python support.<br>
+                Patch# 5:<br>
+                Testing: SWIG for scripting interface,<br>
+                replacing ATAC with CASI - "Channel Archiver Scripting Interface"<br>
+                Currently: ported tcl scripts to slightly different API,
+                creating python support.<br>
     <li>06/02/2000<br>
-		Patches:<br>
-		More careful checking for "MultiArchive" master file.<br>
-		Other fixes to help Chris Larrieu compile with some HPUX compiler:
-		Overlooked namespace std issues, rdbuf()->freeze().
+                Patches:<br>
+                More careful checking for "MultiArchive" master file.<br>
+                Other fixes to help Chris Larrieu compile with some HPUX compiler:
+                Overlooked namespace std issues, rdbuf()->freeze().
     <li>05/25/2000<br>
-		Patches:<br>
-		Optional namespace std,<br>
-		removed nested class definition for LibIO/CtrlInfoI.
+                Patches:<br>
+                Optional namespace std,<br>
+                removed nested class definition for LibIO/CtrlInfoI.
     <li>05/04/2000<br>
       <font color="#0000A0">Version 1.3</font>:<br>
-	  <UL>
+          <UL>
       <LI>"MultiArchive" can read more than one archive,
-	      easing the previous housekeeping problems:
-		  ArchiveEngine can now be restarted e.g. monthly,
-		  creating easier to manage subarchives
-		  which can still be viewed as a whole via the MultiArchive.
+              easing the previous housekeeping problems:
+                  ArchiveEngine can now be restarted e.g. monthly,
+                  creating easier to manage subarchives
+                  which can still be viewed as a whole via the MultiArchive.
       <LI>Central ArchiverConfig.h file for sources under ChannelArchiver directory,
-	      allowing compile-time configuration of Engine, Manager, CGIExport, ... in one place.
+              allowing compile-time configuration of Engine, Manager, CGIExport, ... in one place.
       <LI>WinBrowser (and Exporter class) can export linear interpolated spreadsheet data.
       <LI>Adjustments for hp700 at BESSY
       <LI>TCL examples: better response to window resize.
-	  </UL>
+          </UL>
       </LI>
     <li>03/23/2000<br>
       <font color="#0000A0">Version 1.2</font>:<br>

@@ -144,7 +144,9 @@ const RawValue::Data *RawDataReader::next()
             // Try to get more samples from Datafile, ignoring RTree.
 #ifdef DEBUG_DATAREADER
             stdString txt;
-            printf("RawDataReader reached end:\n");
+            printf("RawDataReader reached end for '%s' in '%s':\n",
+                   header->datafile->getBasename().c_str(),
+                   header->datafile->getDirname().c_str());
             printf("Sample %d of %lu\n",
                    val_idx, (unsigned long)header->data.num_samples);
 #endif
@@ -166,7 +168,7 @@ const RawValue::Data *RawDataReader::next()
                 stdString txt;
                 printf("Using new data block %s @ 0x%X:\n",
                        header->datafile->getFilename().c_str(),
-                       (unsigned long)header->offset);
+                       (unsigned int)header->offset);
 #endif
                 return findSample(header->data.begin_time);
             }

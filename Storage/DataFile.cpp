@@ -21,7 +21,7 @@
 
 // TODO: Convert to BinIO?
 
-// #define LOG_DATAFILE
+#undef LOG_DATAFILE
 
 // List of all DataFiles currently open
 // We assume that there aren't that many open,
@@ -54,13 +54,23 @@ DataFile::~DataFile ()
         fclose(file);
 }
 
-DataFile *DataFile::reference(const stdString &dirname,
-                              const stdString &basename, bool for_write)
+DataFile *DataFile::reference(const stdString &req_dirname,
+                              const stdString &req_basename, bool for_write)
 {
     DataFile *file;
-    stdString filename;
+    stdString dirname, basename, filename;
 
-    Filename::build(dirname, basename, filename);
+    Filename::build(req_dirname, req_basename, filename);
+    Filename::getDirname(filename, dirname);
+    Filename::getBasename(filename, basename);
+#ifdef LOG_DATAFILE
+    LOG_MSG("reference('%s', '%s', %s)\n",
+            req_dirname.c_str(),
+            req_basename.c_str(),
+            (for_write ?  "read/write" : "read-only"));
+    LOG_MSG("normalized: '%s' + '%s' = %s)\n",
+            dirname.c_str(), basename.c_str(), filename.c_str());
+#endif
     stdList<DataFile *>::iterator i = open_data_files.begin();
     while (i != open_data_files.end ())
     {

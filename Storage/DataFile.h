@@ -36,6 +36,10 @@ public:
     /// \param dirname: Path/directory up to the filename
     /// \param basename: filename inside dirname
     /// \param for_write: open for writing or read-only?
+    /// The reference call will normalize the dirname/basename/filename.
+    /// As an example, it's acceptable to pass a basename that still
+    /// contains pieces of a pathname, which will then be moved
+    /// into the dirname.
     /// \sa release
     static DataFile *reference(const stdString &dirname,
                                const stdString &basename, bool for_write);
@@ -120,6 +124,8 @@ private:
     friend class RawValue;
     // Attach DataFile to disk file of given name.
     // Existing file is opened, otherwise new one is created.
+    // Unlike the reference() call, the constructor
+    // expexts a normalized dirname/basename/filename.
     DataFile(const stdString &dirname,
              const stdString &basename,
              const stdString &filename, bool for_write);

@@ -4,7 +4,10 @@ S u p p o r t   f o r   M a t l a b
 
 * So far...
 the LibIO provides a MatlabExporter class.
-It's used by e.g. the command-line ArchiveExport tool.
+It's used by e.g. the command-line ArchiveExport and WinBrowser tool.
+
+For casi there is a ml_dump.pl perl script that generates the same
+output format.
 
 * Format
 Each channel is exported as a structure with these elements:

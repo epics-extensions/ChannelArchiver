@@ -1,3 +1,13 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #include "HTMLPage.h"
 #include <strstream>
 #include <stdarg.h>
@@ -30,7 +40,7 @@ HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 	line ("</TITLE>");
 	line ("</HEAD>");
 	line ("");
-	line ("<BODY BGCOLOR=#AEC9D2>");
+	line ("<BODY BGCOLOR=#AEC9D2 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>");
 	line ("<FONT FACE=\"Arial, Comic Sans MS, Helvetica\">");
 	line ("<BLOCKQUOTE>");
 
@@ -46,8 +56,13 @@ HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 
 HTMLPage::~HTMLPage ()
 {
-	line ("");
+	line ("<P><HR WIDTH=50% ALIGN=LEFT>");
+
+	line ("<A HREF=\"/\">-Main-</A>  ");
+	line ("<A HREF=\"/groups\">-Groups-</A>  ");
+	line ("<A HREF=\"/config\">-Config.-</A>  ");
 	line ("<BR>");
+
 	if (_refresh > 0)
 	{
 		strstream	linebuf;
@@ -140,14 +155,3 @@ void HTMLPage::closeTable ()
 {
 	line ("</TABLE>");
 }
-
-void HTMLPage::indexLink (const char *URL, const char *info)
-{
-	line ("<P><HR WIDTH=50% ALIGN=LEFT>");
-	out ("<A HREF=\"");
-	out (URL);
-	out ("\">");
-	out (info);
-	line ("</A>");
-}
-

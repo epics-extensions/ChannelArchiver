@@ -100,8 +100,6 @@ static void engineinfo (HTTPClientConnection *connection, const stdString &path)
 		line.freeze (false);
 	}
 	page.closeTable ();
-
-	page.indexLink ("/groups", "groups...");
 }
 
 #ifdef USE_PASSWD
@@ -160,7 +158,7 @@ static void stop (HTTPClientConnection *connection, const stdString &path)
 	run = false;
 }
 
-static void help (HTTPClientConnection *connection, const stdString &path)
+static void config (HTTPClientConnection *connection, const stdString &path)
 {
 	HTMLPage page (connection->getSocket(), "Archive Engine Config.");
 
@@ -208,8 +206,6 @@ static void help (HTTPClientConnection *connection, const stdString &path)
 	page.line ("	</TABLE>");
 	page.line ("	</FORM>");
 	page.line ("</UL>");
-
-	page.indexLink ("/", "main");
 }
 
 static void channels (HTTPClientConnection *connection, const stdString &path)
@@ -243,8 +239,6 @@ static void channels (HTTPClientConnection *connection, const stdString &path)
 	}
 	theEngine->unlockChannels ();
 	page.closeTable ();
-
-	page.indexLink ("/", "main");
 }
 
 static void channelInfoTable (HTMLPage &page)
@@ -334,8 +328,6 @@ static void channelInfo (HTTPClientConnection *connection, const stdString &path
 	channelInfoTable (page);
 	channelInfoLine (page, channel);
 	page.closeTable ();
-
-	page.indexLink ("/", "main");
 }
 
 void groups (HTTPClientConnection *connection, const stdString &path)
@@ -380,8 +372,6 @@ void groups (HTTPClientConnection *connection, const stdString &path)
 		connected.freeze (false);
 	}
 	page.closeTable ();
-
-	page.indexLink ("/help", "more...");
 }
 
 static void groupInfo (HTTPClientConnection *connection, const stdString &path)
@@ -419,8 +409,6 @@ static void groupInfo (HTTPClientConnection *connection, const stdString &path)
 	for (channel = channels.begin(); channel != channels.end(); ++channel)
 		channelInfoLine (page, *channel);
 	page.closeTable ();
-
-	page.indexLink ("/", "main");
 }
 
 static void addChannel (HTTPClientConnection *connection, const stdString &path)
@@ -466,7 +454,6 @@ static void addChannel (HTTPClientConnection *connection, const stdString &path)
 	page.out (" to group <I>");
 	page.out (group_name);
 	page.line ("</I>.");
-	page.indexLink ("/", "main");
 }
 
 static void addGroup (HTTPClientConnection *connection, const stdString &path)
@@ -488,7 +475,6 @@ static void addGroup (HTTPClientConnection *connection, const stdString &path)
 		page.line ("</I> was added to the engine.");
 	else
 		page.line ("</I> could not be added to the engine.");
-	page.indexLink ("/", "main");
 }
 
 static void parseGroup (HTTPClientConnection *connection, const stdString &path)
@@ -515,7 +501,6 @@ static void parseGroup (HTTPClientConnection *connection, const stdString &path)
 	}
 	else
 		page.line ("</I> could not be added to the engine.<P>");
-	page.indexLink ("/", "main");
 }
 
 static void channelGroups (HTTPClientConnection *connection, const stdString &path)
@@ -558,7 +543,6 @@ static void channelGroups (HTTPClientConnection *connection, const stdString &pa
 		page.tableLine (link.c_str(), 0);
 	}
 	page.closeTable ();
-	page.indexLink ("/", "main");
 }
 
 static PathHandlerList	handlers[] =
@@ -567,7 +551,8 @@ static PathHandlerList	handlers[] =
 	{ "/stop?", 6, stop	},
 #endif
 	{ "/stop", 0, stop	}, // list "old" handler for users who still use it (will give error)
-	{ "/help", 0, help	},
+	{ "/help", 0, config	},
+	{ "/config", 0, config	},
 	{ "/channels", 0, channels	},
 	{ "/groups", 0, groups },
 	{ "/channel/", 9, channelInfo },

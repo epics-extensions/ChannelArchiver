@@ -1,3 +1,13 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __HTMLPAGE_H__
 #define __HTMLPAGE_H__
 #include "ArchiveTypes.h"
@@ -21,8 +31,6 @@ public:
 	void openTable (size_t colspan, const char *column, ...);
 	void tableLine (const char *item, ...);
 	void closeTable ();
-
-	void indexLink (const char *URL, const char *info);
 
 protected:
 	SOCKET _socket;

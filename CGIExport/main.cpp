@@ -1,17 +1,24 @@
-// main.cpp
-//
+// --------------------------------------------------------
 // $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
 
 #ifdef WIN32
 #pragma warning (disable: 4786)
 #endif
 
-#include "Config.h"
+#include "../ArchiverConfig.h"
 #include "GNUPlotExporter.h"
-#include "ArgParser.h"
+#include <ArgParser.h>
+#include <Filename.h>
+#include <BinaryTree.h>
 #include "HTMLPage.h"
 #include "CGIInput.h"
-#include "Filename.h"
 
 // Use "Bin" archive:
 #include "BinArchive.h"
@@ -56,75 +63,7 @@ void showEnvironment (HTMLPage &page, char *envp[])
 	cout << "</PRE>\n";
 }
 
-//
-// Tree:
-// Sorted binary tree for "Items" that support "<" operator
-//
-template<class Item>
-class TreeItem
-{
-public:
-	Item		_item;
-	TreeItem	*_left;
-	TreeItem	*_right;
-};
-
-template<class Item>
-class Tree
-{
-public:
-	Tree ()
-	{	_root = 0; }
-	~Tree ()
-	{	cleanup (_root); }
-
-	void add (const Item &item)
-	{
-		TreeItem<Item> *n = new TreeItem<Item>;
-		n->_item = item;
-		n->_left = 0;
-		n->_right = 0;
-
-		insert (n, &_root);
-	}
-
-	void traverse (void (*visit) (const Item &item))
-	{	visit_inorder (visit, _root); }
-
-private:
-	TreeItem<Item>	*_root;
-
-	void insert (TreeItem<Item> *new_item, TreeItem<Item> **node)
-	{
-		if (*node == 0)
-			*node = new_item;
-		else if (new_item->_item  <  (*node)->_item)
-			insert (new_item, & ((*node)->_left));
-		else
-			insert (new_item, & ((*node)->_right));
-	}
-
-	void visit_inorder (void (*visit) (const Item &item), TreeItem<Item> *node)
-	{
-		if (node)
-		{
-			visit_inorder (visit, node->_left);
-			visit (node->_item);
-			visit_inorder (visit, node->_right);
-		}
-	}
-
-	void cleanup (TreeItem<Item> *node)
-	{
-		if (node)
-		{
-			cleanup (node->_left);
-			cleanup (node->_right);
-			delete node;
-		}
-	}
-};
-
+// "visitor" for BinaryTree of channel names
 static void listChannelsTraverser (const stdString &item)
 {
 	cout << "<TR><TD>"
@@ -134,7 +73,7 @@ static void listChannelsTraverser (const stdString &item)
 
 void listChannels (HTMLPage &page, const stdString &archive_name, const stdString &pattern)
 {
-	Tree<stdString> channels;
+	BinaryTree<stdString> channels;
 
 	try
 	{
@@ -172,6 +111,7 @@ public:
 bool operator < (const class Info &a, const class Info &b)
 {	return a.channel < b.channel; }
 
+// Visitor routine for BinaryTree<Info>
 static void listInfoTraverser (const Info &info)
 {
 	cout << "<TR><TD>" << info.channel
@@ -182,8 +122,8 @@ static void listInfoTraverser (const Info &info)
 
 void listInfo (HTMLPage &page, const stdString &archive_name, const vector<stdString> &names)
 {
-	Tree<Info>	infos;
-	Info		info;
+	BinaryTree<Info>	infos;
+	Info				info;
 	try
 	{
 		Archive archive (new ARCHIVE_TYPE (archive_name));
@@ -223,8 +163,8 @@ void listInfo (HTMLPage &page, const stdString &archive_name, const vector<stdSt
 
 void listInfo (HTMLPage &page, const stdString &archive_name, const stdString &pattern)
 {
-	Tree<Info>	infos;
-	Info		info;
+	BinaryTree<Info>	infos;
+	Info				info;
 	try
 	{
 		Archive archive (new ARCHIVE_TYPE (archive_name));
@@ -509,7 +449,7 @@ int main (int argc, const char *argv[], char *envp[])
 		page.start ("DEBUG Information");
 		page.header ("DEBUG Information",1);
 
-		cout << "<I>CGIExport Version " CGIEXPORT_VERSION ", built " __DATE__ "</I>\n";
+		cout << "<I>CGIExport Version " << VERSION << "." << RELEASE << ", built " __DATE__ "</I>\n";
 
 		page.header ("Variables",2);
 		const map<stdString, stdString> &var_map = cgi.getVars ();

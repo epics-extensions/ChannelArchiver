@@ -34,6 +34,10 @@ public:
 
 	virtual ~Exporter () {}
 
+	//* Allowed number of channels to export
+	// (limited for performance reason)
+	void setMaxChannelCount (size_t limit);
+
 	//* Set start/end time. Default: dump from whole archive
 	void setStart (const osiTime &start);
 	void setEnd (const osiTime &end);
@@ -42,6 +46,8 @@ public:
 	// all timestamps within 'secs' will be
 	// regarded as the same point in time
 	void setTimeRounding (double secs);
+
+	void setLinearInterpolation (double secs);
 
 	//* When using filled values,
 	// missing entries (when the value has not changed since the last entry)
@@ -69,6 +75,7 @@ protected:
 	stdString _filename;
 	osiTime	_start, _end;
 	double _round_secs;
+	double _linear_interpol_secs;
 	bool _fill;
 	bool _be_verbose;
 
@@ -93,6 +100,7 @@ protected:
 
 	bool _is_array;
 	size_t _datacount;
+	size_t _max_channel_count;
 
 	// Will be called after dumping the actual values.
 	virtual void post_scriptum (const vector<stdString> &channel_names) {}
@@ -107,12 +115,26 @@ inline void Exporter::setTimeRounding (double secs)
 {
 	_fill = false;
 	_round_secs = secs;
+	_linear_interpol_secs = 0.0;
+}
+
+inline void Exporter::setLinearInterpolation (double secs)
+{
+	_fill = false;
+	_round_secs = 0.0;
+	_linear_interpol_secs = secs;
 }
 
 inline void Exporter::useFilledValues ()
 {	
 	_fill = true;
 	_round_secs = 0.0;
+	_linear_interpol_secs = 0.0;
+}
+
+inline void Exporter::setMaxChannelCount (size_t limit)
+{
+	_max_channel_count = limit;
 }
 
 END_NAMESPACE_CHANARCH

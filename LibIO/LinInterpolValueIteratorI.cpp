@@ -56,6 +56,15 @@ bool LinInterpolValueIteratorI::prev ()
 	return interpolate (_time) != 0;
 }
 
+size_t LinInterpolValueIteratorI::determineChunk (const osiTime &until)
+{
+	// How many values are there?
+	// Cannot say easily without actually interpolating them...
+	if (_base->isValid ())
+		return 1;
+	return 0;
+}
+
 // Generate CLASS Value for given time
 const ValueI * LinInterpolValueIteratorI::interpolate (const osiTime &time)
 {

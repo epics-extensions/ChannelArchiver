@@ -1,3 +1,5 @@
+// $Id$
+//
 // Exporter.cpp
 //
 // Base class for tools that export data from a ChannelArchive
@@ -9,10 +11,9 @@
 
 #include "Exporter.h"
 #include "ExpandingValueIteratorI.h"
+#include "LinInterpolValueIteratorI.h"
 #include "ArchiveException.h"
 #include <fstream>
-
-#define MAX_CHANNEL_COUNT	10
 
 BEGIN_NAMESPACE_CHANARCH
 using namespace std;
@@ -68,11 +69,13 @@ Exporter::Exporter (ArchiveI *archive, const stdString &filename)
 	_undefined_value = "#N/A";
 	_show_status = false;
 	_round_secs = 0.0;
+	_linear_interpol_secs = 0.0;
 	_fill = false;
 	_be_verbose = false;
 	_time_col_val_format = false;
 	_is_array = false;
 	_datacount = 0;
+	_max_channel_count = 10;
 }
 
 void Exporter::exportMatchingChannels (const stdString &channel_name_pattern)
@@ -165,12 +168,12 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 	const ValueI *v;
 
 	_datacount = 0;
-	if (channel_names.size() > MAX_CHANNEL_COUNT)
+	if (channel_names.size() > _max_channel_count)
 	{
 		strstream info;
 		info << "You tried to export " << channel_names.size() << " channels.\n"
 			"For performance reason you are limited to export "
-			<< MAX_CHANNEL_COUNT << " channels at once" << '\0';
+			<< _max_channel_count << " channels at once" << '\0';
 		throwDetailedArchiveException (Invalid, info.str());
 		info.freeze (false); // well, never reached ...
 		return;
@@ -190,7 +193,12 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 		}
 		base[i] = _archive->newValueIterator ();
 		channels[i]->getChannel()->getValueAfterTime (_start, base[i]);
-		values[i] = new ExpandingValueIteratorI (base[i]);
+
+		if (_linear_interpol_secs > 0.0)
+			values[i] = new LinInterpolValueIteratorI (base[i], _linear_interpol_secs);
+		else
+			values[i] = new ExpandingValueIteratorI (base[i]);
+
 		prev_values[i] = 0;
 
 		if (values[i]->isValid() && values[i]->getValue()->getCount() > 1)

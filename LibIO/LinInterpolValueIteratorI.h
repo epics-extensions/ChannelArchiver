@@ -41,16 +41,19 @@ public:
 
 	~LinInterpolValueIteratorI ();
 
+	// virtuals from ValueIteratorI
+	bool isValid () const;
+	const ValueI * getValue () const;
+	bool next ();
+	bool prev ();
+
+	size_t determineChunk (const osiTime &until);
+
 	//* This method will return <I>deltaT</I>,
 	// not the original scan period of the underlying
 	// base iterator
 	double getPeriod () const;
 
-	bool isValid () const;
-	const ValueI * getValue () const;
-	bool next ();
-	bool prev ();
-	
 	//* Get interpolated CLASS Value for an arbitrary time stamp.
 	//
 	// Use <I>++</I> or <I>-- operators</I> to get the next/prev.

@@ -65,8 +65,7 @@ public:
     stdList<class GroupInfo *> &getGroups(Guard &guard);
     
     /// Add a channel to a group & keep track of disabling.
-    void addToGroup(Guard &guard, class GroupInfo *group,
-                    bool disabling, bool disconnecting);
+    void addToGroup(Guard &guard, class GroupInfo *group, bool disabling);
     
     /// Get the current sample mechanism (never NULL).
     const SampleMechanism *getMechanism(Guard &guard) const;
@@ -96,13 +95,11 @@ public:
     /// A set bit indicates a group that this channel disables.
     const BitSet &getGroupsToDisable(Guard &guard) const;
 
-    bool disconnectOnDisable() const;
-    
     /// Is this channel disabled?
     bool isDisabled(Guard &guard) const;
 
     /// Disable this channel.
-    void disable(Guard &guard, const epicsTime &when);
+    void disable(Guard &engine_guard, Guard &guard, const epicsTime &when);
 
     /// Enable this channel.
     void enable(Guard &guard, const epicsTime &when);
@@ -175,7 +172,6 @@ private:
     // to which this channel belongs might disable a group.
     // The group then comes back and disables all its channels.
     int disabled_count; // See isDisabled()
-    bool disconnect_on_disable;
     BitSet groups_to_disable; // Bit is set -> we disable that group
     bool currently_disabling; // Is this channel disabling/disconnecting its groups?
     void handleDisabling(Guard &guard, const RawValue::Data *value);
@@ -221,11 +217,6 @@ inline const BitSet &ArchiveChannel::getGroupsToDisable(Guard &guard) const
 {
     guard.check(mutex);
     return groups_to_disable;
-}
-
-inline bool ArchiveChannel::disconnectOnDisable() const
-{
-    return disconnect_on_disable;
 }
 
 inline bool ArchiveChannel::isDisabled(Guard &guard) const

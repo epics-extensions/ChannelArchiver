@@ -28,7 +28,7 @@ SampleMechanismMonitored::SampleMechanismMonitored(ArchiveChannel *channel)
 
 void SampleMechanismMonitored::destroy(Guard &engine_guard, Guard &guard)
 {
-    if (have_subscribed)
+    if (have_subscribed && channel && channel->chid_valid)
     {
 #       ifdef DEBUG_SAMPLING
         LOG_MSG("'%s': Unsubscribing\n", channel->getName().c_str());
@@ -89,6 +89,8 @@ void SampleMechanismMonitored::handleConnectionChange(Guard &engine_guard,
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
         wasWrittenAfterConnect = false;
+        if (!channel->chid_valid)
+            have_subscribed = false;
     }
 }
 
@@ -317,7 +319,7 @@ SampleMechanismMonitoredGet::SampleMechanismMonitoredGet(
 
 void SampleMechanismMonitoredGet::destroy(Guard &engine_guard, Guard &guard)
 {
-    if (have_subscribed)
+    if (have_subscribed && channel && channel->chid_valid)
     {
 #       ifdef DEBUG_SAMPLING
         LOG_MSG("'%s': Unsubscribing\n", channel->getName().c_str());
@@ -384,6 +386,8 @@ void SampleMechanismMonitoredGet::handleConnectionChange(Guard &engine_guard,
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
         wasWrittenAfterConnect = false;
+        if (!channel->chid_valid)
+            have_subscribed = false;
     }   
 }
 

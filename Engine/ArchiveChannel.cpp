@@ -8,7 +8,7 @@
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
-#undef DEBUG_CHANNEL
+#define DEBUG_CHANNEL
 
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
 {
@@ -22,7 +22,6 @@ ArchiveChannel::ArchiveChannel(const stdString &name, double period)
     pending_value = 0;
     disabled_count = 0;
     currently_disabling = false;
-    disconnect_on_disable = false;
 }
 
 ArchiveChannel::~ArchiveChannel()
@@ -75,19 +74,13 @@ void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard,
                         theEngine->suggestedBufferSize(engine_guard, period));
 }
 
-void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group,
-                                bool disabling, bool disconnecting)
+void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
 {
     guard.check(mutex);
     size_t id = group->getID();
-    if (disconnecting)
-        disabling = disconnecting;
     // bit in 'disabling' indicates if we could disable that group
     groups_to_disable.grow(id + 1);
     groups_to_disable.set(id, disabling);
-    // Should channel disconnect instead of disable?
-    if (disconnecting)
-        disconnect_on_disable = true;
     // Is Channel already in group?
     stdList<GroupInfo *>::iterator i;
     for (i=groups.begin(); i!=groups.end(); ++i)
@@ -104,13 +97,13 @@ void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group,
 void ArchiveChannel::startCA(Guard &guard)
 {
     guard.check(mutex);
-    if (!theEngine)
-        return;
     if (chid_valid)
         return;
+#ifdef DEBUG_CHANNEL
+    LOG_MSG("CA create channel '%s'\n", name.c_str());
+#endif
     // Unlock around CA lib. calls to prevent deadlocks in callbacks
     guard.unlock();
-    //LOG_MSG("CA create channel '%s'\n", name.c_str());
     // I have seen the first call to ca_create_channel take
     // about 10 second when the EPICS_CA_ADDR_LIST pointed
     // to a computer outside of my private office network.
@@ -128,7 +121,8 @@ void ArchiveChannel::startCA(Guard &guard)
         return;
     }
     chid_valid = true;
-    theEngine->need_CA_flush = true;
+    if (theEngine)
+        theEngine->need_CA_flush = true;
 }
 
 void ArchiveChannel::stopCA(Guard &engine_guard, Guard &guard)
@@ -136,7 +130,9 @@ void ArchiveChannel::stopCA(Guard &engine_guard, Guard &guard)
     guard.check(mutex);
     if (!chid_valid)
         return;
-    //LOG_MSG("CA clear channel '%s'\n", name.c_str());
+#ifdef DEBUG_CHANNEL
+    LOG_MSG("CA clear channel '%s'\n", name.c_str());
+#endif
     chid_valid = false;
     handleConnectionChange(engine_guard, guard, false);
     guard.unlock(); // Unlock around CA lib calls.
@@ -165,7 +161,8 @@ void ArchiveChannel::issueCaGet(Guard &guard)
     }
 }
 
-void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
+void ArchiveChannel::disable(Guard &engine_guard,
+                             Guard &guard, const epicsTime &when)
 {
     guard.check(mutex);
     ++disabled_count;
@@ -174,11 +171,19 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
         LOG_MSG("Channel '%s': Disable count is messed up (%d)\n",
                 name.c_str(), disabled_count);
     }
-    if (isDisabled(guard))
-        addEvent(guard, 0, ARCH_DISABLED, when);
-    // Next incoming value will go into pending_value,
-    // for now clear it:
+    if (!isDisabled(guard))
+        return;
+#ifdef DEBUG_CHANNEL
+    LOG_MSG("Channel '%s' disabled\n", name.c_str());
+#endif
+    addEvent(guard, 0, ARCH_DISABLED, when);
+    // Next incoming value will go into pending_value, for now clear it:
     pending_value_set = false;
+    // In case we're asked to disconnect _and_ this channel
+    // doesn't need to stay connected because it disables other channels,
+    // stop CA
+    if (theEngine->disconnectOnDisable(engine_guard) && groups_to_disable.empty())
+        stopCA(engine_guard, guard);
 }
 
 void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
@@ -190,19 +195,27 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
         LOG_MSG("Channel '%s': Disable count is messed up (%d)\n",
                 name.c_str(), disabled_count);
     }
+#ifdef DEBUG_CHANNEL
+    LOG_MSG("Channel '%s' enabled\n", name.c_str());
+#endif
     // Try to write the last value we got while disabled
-    if (connected && pending_value_set)
-    {   // Assert we don't go back in time
-        if (when >= last_stamp_in_archive)
-        {
-            //LOG_MSG("'%s': re-enabled, writing the most recent value\n",
-            //        name.c_str());
-            RawValue::setTime(pending_value, when);
-            buffer.addRawValue(pending_value);
-            last_stamp_in_archive = when;
+    if (connected)
+    {
+        if (pending_value_set)
+        {   // Assert we don't go back in time
+            if (when >= last_stamp_in_archive)
+            {
+                //LOG_MSG("'%s': re-enabled, writing the most recent value\n",
+                //        name.c_str());
+                RawValue::setTime(pending_value, when);
+                buffer.addRawValue(pending_value);
+                last_stamp_in_archive = when;
+            }
+            pending_value_set = false;
         }
-        pending_value_set = false;
     }
+    else
+        startCA(guard);
 }
 
 void ArchiveChannel::init(Guard &engine_guard, Guard &guard,

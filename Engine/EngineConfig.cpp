@@ -99,6 +99,10 @@ bool EngineConfig::read(Guard &engine_guard, class Engine *engine,
             }
             SampleMechanismGet::max_repeat_count = (size_t) d;
         }
+        else if (e->name == "disconnect")
+        {
+            engine->setDisconnectOnDisable(engine_guard);
+        }
         else if (e->name == "group")
         {
             if (!handle_group(engine_guard, engine, e))
@@ -186,6 +190,9 @@ bool EngineConfig::write(Guard &engine_guard, class Engine *engine)
     e->value = buf;
     doc->add(e);
 
+    if (engine->disconnectOnDisable(engine_guard))
+        doc->add(new FUX::Element(doc, "disconnect"));
+
     const stdList<GroupInfo *> &groups = engine->getGroups(engine_guard);
     stdList<GroupInfo *>::const_iterator gi;
     for (gi = groups.begin(); gi != groups.end(); ++gi)
@@ -253,25 +260,21 @@ bool EngineConfig::handle_channel(Guard &engine_guard, Engine *engine,
     ++els;
     bool monitor = (*els)->name == "monitor";
     bool disabling = false;
-    bool disconnecting = false;
     ++els;
     while (els != channel->children.end())
     {
         if ((*els)->name == "disable")
             disabling = true;
-        else if ((*els)->name == "disconnect")
-            disconnecting = true;
         ++els;
     }
 #   ifdef DEBUG_ENGINECONFIG
     printf("'%s' - '%s': period %g, %s%s%s\n",
            group->getName().c_str(), name.c_str(), period,
            (monitor ? "monitor" : "scan"),
-           (disabling ? ", disabling" : ""),
-           (disconnecting ? ", disconnecting" : ""));
+           (disabling ? ", disabling" : ""));
 #   endif
-    return engine->addChannel(engine_guard, group, name, period, disabling,
-                              disconnecting, monitor) != 0;
+    return engine->addChannel(engine_guard, group, name, period,
+                              disabling, monitor) != 0;
 }
 
 /// EOF EngineConfig

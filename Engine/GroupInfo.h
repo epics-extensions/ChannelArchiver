@@ -46,14 +46,19 @@ public:
     { return ID; }
 
     /// Add channel to this group. NOP if already group member.
-    void addChannel(Guard &channel_guard, class ArchiveChannel *channel);
+    void addChannel(Guard &engine_guard, Guard &channel_guard,
+                    class ArchiveChannel *channel);
 
     /// Return current list of group members
     const stdList<class ArchiveChannel *>&getChannels () const
     { return members; }
 
+    /// Disable all channels of this group.
     void disable(class ArchiveChannel *cause, const epicsTime &when);
+
+    /// Enable all channels of this group.
     void enable(class ArchiveChannel *cause, const epicsTime &when);
+    
     bool isEnabled() const
     { return disable_count <= 0; }
 

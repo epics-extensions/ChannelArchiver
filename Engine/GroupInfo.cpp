@@ -3,6 +3,7 @@
 // Tools
 #include "MsgLogger.h"
 // Engine
+#include "Engine.h"
 #include "GroupInfo.h"
 #include "ArchiveChannel.h"
 
@@ -16,7 +17,8 @@ GroupInfo::GroupInfo (const stdString &name)
     disable_count = 0;
 }
 
-void GroupInfo::addChannel(Guard &channel_guard, ArchiveChannel *channel)
+void GroupInfo::addChannel(Guard &engine_guard, Guard &channel_guard,
+                           ArchiveChannel *channel)
 {
     // Is Channel already in group?
     stdList<ArchiveChannel *>::iterator i;
@@ -25,7 +27,8 @@ void GroupInfo::addChannel(Guard &channel_guard, ArchiveChannel *channel)
             return;
     members.push_back(channel);
     if (disable_count > 0) // disable right away?
-        channel->disable(channel_guard, epicsTime::getCurrent());
+        channel->disable(engine_guard, channel_guard,
+                         epicsTime::getCurrent());
 }
 
 // called by ArchiveChannel
@@ -36,11 +39,14 @@ void GroupInfo::disable(ArchiveChannel *cause, const epicsTime &when)
     ++disable_count;
     if (disable_count != 1) // Was already disabled?
         return;
+    if (!theEngine)
+        return;
+    Guard engine_guard(theEngine->mutex);
     stdList<ArchiveChannel *>::iterator c;
     for (c=members.begin(); c!=members.end(); ++c)
     {
         Guard guard((*c)->mutex);
-        (*c)->disable(guard, when);
+        (*c)->disable(engine_guard, guard, when);
     }
 }
 

@@ -206,7 +206,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                                    GroupInfo *group,
                                    const stdString &channel_name,
                                    double period, bool disabling,
-                                   bool disconnecting, bool monitored)
+                                   bool monitored)
 {
     engine_guard.check(mutex);
     ArchiveChannel *channel = findChannel(engine_guard, channel_name);
@@ -233,8 +233,8 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     if (channel->getPeriod(guard) > period)
         channel->setPeriod(engine_guard, guard, period);
     channel->setMechanism(engine_guard, guard, mechanism);
-    group->addChannel(guard, channel);
-    channel->addToGroup(guard, group, disabling, disconnecting);
+    group->addChannel(engine_guard, guard, channel);
+    channel->addToGroup(guard, group, disabling);
     IndexFile index(RTreeM);
     if (index.open(index_name.c_str(), false))
     {   // Is channel already in Archive?

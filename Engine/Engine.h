@@ -120,8 +120,7 @@ public:
     ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);
     ArchiveChannel *addChannel(Guard &engine_guard, GroupInfo *group,
                                const stdString &channel_name,
-                               double period, bool disabling,
-                               bool disconnecting, bool monitored);
+                               double period, bool disabling, bool monitored);
     void incNumConnected(Guard &engine_guard);
     void decNumConnected(Guard &engine_guard);
     size_t getNumConnected(Guard &engine_guard);
@@ -145,6 +144,10 @@ public:
     void   setGetThreshold(Guard &engine_guard, double get_threshhold);
     double getGetThreshold();
 
+    /// Should "disabled" channels also disconnect from CA?
+    void setDisconnectOnDisable(Guard &engine_guard);
+    bool disconnectOnDisable(Guard &engine_guard);
+    
     /// Engine Info: Started, where, info about writes
     const epicsTime &getStartTime() const { return start_time; }
     const stdString &getIndexName() const { return index_name;  }
@@ -182,6 +185,7 @@ private:
     bool            is_writing;
     
     double          get_threshhold;
+    bool            disconnect_on_disable;
     ScanList        scan_list;      // list of scanned, not monitored channels
 
     double          write_period;   // period between writes to archive file
@@ -215,6 +219,16 @@ inline const stdString &Engine::getDescription() const
 inline double Engine::getGetThreshold()
 {   return get_threshhold; }
 
+
+inline void Engine::setDisconnectOnDisable(Guard &engine_guard)
+{
+    disconnect_on_disable = true;
+}
+
+inline bool Engine::disconnectOnDisable(Guard &engine_guard)
+{
+    return disconnect_on_disable;
+}
 
 inline void Engine::incNumConnected(Guard &engine_guard)
 {

@@ -94,7 +94,9 @@ public:
     };
 
     //* Open a MultiArchive for the given master file
-    MultiArchive(const stdString &master_file);
+    MultiArchive(const stdString &master_file, 
+		 const osiTime &from = nullTime,
+		 const osiTime &to = nullTime);
 
     //* All virtuals from CLASS ArchiveI are implemented,
     // except that the "write" routines fail for this read-only archive type.
@@ -132,7 +134,8 @@ private:
     friend class MultiChannelIterator;
     friend class MultiChannel;
     
-    bool parseMasterFile(const stdString &master_file);
+    bool parseMasterFile(const stdString &master_file, 
+			 const osiTime &from, const osiTime &to);
 
     // Fill _channels from _archives
     void queryAllArchives();

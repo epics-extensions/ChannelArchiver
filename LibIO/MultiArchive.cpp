@@ -18,10 +18,11 @@
 #include <BinaryTree.h>
 
 // Open a MultiArchive for the given master file
-MultiArchive::MultiArchive(const stdString &master_file)
+MultiArchive::MultiArchive(const stdString &master_file, 
+			   const osiTime &from, const osiTime &to)
 {
     _queriedAllArchives = false;
-    if (! parseMasterFile(master_file))
+    if (! parseMasterFile(master_file, from, to))
         throwDetailedArchiveException(OpenError, master_file);
 }
 
@@ -34,7 +35,8 @@ ValueIteratorI *MultiArchive::newValueIterator() const
 ValueI *MultiArchive::newValue(DbrType type, DbrCount count)
 {   return 0; }
 
-bool MultiArchive::parseMasterFile(const stdString &master_file)
+bool MultiArchive::parseMasterFile(const stdString &master_file,
+				   const osiTime &from, const osiTime &to)
 {
 #ifdef DEBUG_MULTIARCHIVE
     LOG_MSG("MultiArchive::parseMasterFile\n");
@@ -65,19 +67,86 @@ bool MultiArchive::parseMasterFile(const stdString &master_file)
     if (! parser.open(master_file))
         return false;
 
+    // Performance of MultiArchive:
+    // Example:
+    //     50 (weekly) Archives, each ~1GB / ~3000 channels
+    //     All in 1 MultiArchive
+    //     Command: ArchiveExport -start <T0> -end <T1> <MultiArchive> -match <any pattern>
+    //
+    //  1. plain, searching all archives in MultiArchive
+    //     (master_version=1)                            ~90 seconds
+    //  2. searching all archives that intersect timerange
+    //     (exteded master_version=1)                    ~6 seconds
+    //  3. searching all archives that intersect timerange
+    //     (master_version=2)                            ~2 seconds
+
     stdString parameter, value;
     if (parser.nextLine()                      &&
         parser.getParameter(parameter, value)  &&
-        parameter == "master_version"          &&
-        value == "1")
-    {
-        while (parser.nextLine())
-        {
+        parameter == "master_version") {
+       if (value == "1")
+       {
+	  // version 1 has one archive to search per line
+	  while (parser.nextLine())
+	  {
+	     if (!isValidTime(from) && !isValidTime(to)) {
+		// No timestamps
+		// -> we have to use every Archive in the Multi-Archive
+		_archives.push_back(parser.getLine());
+	     } else {
+		// avoiding to search archives that can't contain queried
+		// values at all should save some time...
+		Archive archive(new BinArchive(parser.getLine()));
+		ChannelIterator channel(archive);
+		osiTime start, end, time;
+
+		for (archive.findChannelByPattern(".*", channel); channel; ++channel)
+		{
+		   time = channel->getFirstTime();
+		   if (isValidTime(time) &&  (time < start  ||  start == nullTime))
+		      start = time;
+		   time = channel->getLastTime();
+		   if (time > end)
+		      end = time;
+		}
+	     
+		if ( (!isValidTime(from) || ( from < start ) ) &&
+		     (!isValidTime(to)   || ( to >= end ) ) ) {
 #ifdef DEBUG_MULTIARCHIVE
-            LOG_MSG("sub-archive: " << parser.getLine() << "\n");
+		   LOG_MSG("sub-archive: " << parser.getLine() << "\n");
 #endif
-            _archives.push_back(parser.getLine());
-        }
+		   _archives.push_back(parser.getLine());
+		}
+	     }
+	  }
+       } else if (value == "2") {
+	  // version 2 has 2 timestamps (from, to) and an archive per line
+	  // the timestamps denote the times for which the archive contains
+	  // values
+	  while (parser.nextLine())
+	  {
+	     osiTime f, t;
+	     string2osiTime(parser.getLine().substr(0, 19), f);
+	     string2osiTime(parser.getLine().substr(20, 19), t);
+	     if ( !isValidTime(f) || !isValidTime(t) ) {
+		LOG_MSG("Invalid timestamp in master file: '" <<
+			master_file << "' line " <<
+			parser.getLineNo() << "!\n");
+		continue;
+	     }
+	     if ( (!isValidTime(from) || ( from < t ) ) &&
+		  (!isValidTime(to)   || ( to >= f ) ) ) {
+#ifdef DEBUG_MULTIARCHIVE
+		LOG_MSG("sub-archive: " << parser.getLine() << "\n");
+#endif
+		_archives.push_back(parser.getLine().substr(40));
+	     }
+	  }
+       } else {
+	  LOG_MSG("Invalid master file '" << master_file
+		  << "', unknown version '" << value << "'\n");
+	  return false;
+       }
     }
     else
     {

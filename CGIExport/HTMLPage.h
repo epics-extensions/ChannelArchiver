@@ -41,6 +41,7 @@ public:
     stdVector<stdString> _names;
     double _round;
     double _interpol;
+    bool _glob;
     bool _fill;
     bool _status;
     osiTime _start;

@@ -2,7 +2,7 @@
 
 [General Info]
 Version=1
-LastClass=CDlgExport
+LastClass=CBrowserDlg
 LastTemplate=CDialog
 NewFileInclude1=#include "stdafx.h"
 NewFileInclude2=#include "WinBrowser.h"
@@ -13,9 +13,9 @@ Class2=CBrowserDlg
 Class3=CAboutDlg
 
 ResourceCount=4
-Resource1=IDD_WINBROWSER_DIALOG
+Resource1=IDD_ABOUTBOX
 Resource2=IDR_MAINFRAME
-Resource3=IDD_ABOUTBOX
+Resource3=IDD_WINBROWSER_DIALOG
 Class4=CDlgExport
 Resource4=IDD_EXPORT
 
@@ -32,7 +32,7 @@ ImplementationFile=BrowserDlg.cpp
 Filter=D
 BaseClass=CDialog
 VirtualFilter=dWC
-LastObject=IDC_AUTOZOOM
+LastObject=IDC_USE_REGEX
 
 [CLS:CAboutDlg]
 Type=0

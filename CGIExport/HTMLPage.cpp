@@ -23,6 +23,7 @@ static const char *end_file = "cgi_body_end.txt";
 HTMLPage::HTMLPage()
 {
     _started = false;
+    _glob = true;
     _fill = true;
     _status = false;
     _round = 0;
@@ -94,9 +95,14 @@ void HTMLPage::interFace() const
     std::cout << "  <INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\""
               << _directory << "\">\n";
     std::cout << "  <TABLE cellpadding=1>\n";
-    std::cout << "  <TR>\n";
-    std::cout << "      <TD>Pattern:</TD>\n";
-    std::cout << "      <TD><INPUT NAME=\"PATTERN\" VALUE=\""
+    std::cout << "  <TR valign=top>\n";
+    std::cout << "      <TD>Pattern:<br>\n";
+    std::cout << "          <INPUT name=GLOB type=checkbox value=ON";
+    if (_glob)
+        std::cout << " checked=1";
+    std::cout <<            ">glob\n";
+    std::cout << "      </TD>\n";
+    std::cout << "      <TD colspan=4><INPUT NAME=\"PATTERN\" VALUE=\""
               <<            _pattern << "\" SIZE=40 MAXLENGTH=100>\n";
     std::cout << "          <INPUT TYPE=submit NAME=COMMAND VALUE=LIST>\n";
     std::cout << "          <INPUT TYPE=submit NAME=COMMAND VALUE=INFO>\n";
@@ -104,7 +110,7 @@ void HTMLPage::interFace() const
     std::cout << "  </TR>\n";
     std::cout << "  <TR>\n";
     std::cout << "      <TD valign=\"top\">Names:</TD>\n";
-    std::cout << "      <TD><TEXTAREA NAME=NAMES ROWS=5 COLS=40>";
+    std::cout << "      <TD colspan=4><TEXTAREA NAME=NAMES ROWS=5 COLS=40>";
     for (i=0; i<_names.size(); ++i)
         std::cout << _names[i] << "\n";
     std::cout << "</TEXTAREA>\n";
@@ -113,7 +119,7 @@ void HTMLPage::interFace() const
 
     osiTime2vals(_start, year, month, day, hour, min, sec, nano);
     std::cout << "  <TR>\n";
-    std::cout << "      <TD>Start:</TD><TD>Day (m/d/y)\n";
+    std::cout << "      <TD>Start:</TD><TD colspan=4>Day (m/d/y)\n";
     makeSelect("STARTMONTH",    1,   12, month);
     makeSelect("STARTDAY"  ,    1,   31, day);
     makeSelect("STARTYEAR" , 1998, 2005, year);
@@ -126,7 +132,7 @@ void HTMLPage::interFace() const
 
     osiTime2vals(_end, year, month, day, hour, min, sec, nano);
     std::cout << "  <TR>\n";
-    std::cout << "      <TD>End:</TD><TD>Day (m/d/y)\n";
+    std::cout << "      <TD>End:</TD><TD colspan=4>Day (m/d/y)\n";
     makeSelect("ENDMONTH",    1,   12, month);
     makeSelect("ENDDAY"  ,    1,   31, day);
     makeSelect("ENDYEAR" , 1998, 2005, year);
@@ -138,46 +144,44 @@ void HTMLPage::interFace() const
     std::cout << "  </TR>\n";
 
     std::cout << "  <TR>\n";
-    std::cout << "      <TD valign=\"top\">\n";
-    std::cout << "          <input TYPE=submit NAME=COMMAND VALUE=GET>\n";
-    std::cout << "      </TD>\n";
-    std::cout << "      <TD>\n";
-    std::cout << "        <TABLE cellpadding=2>\n";
-    std::cout << "        <TR>\n";
-    std::cout << "   	     <TD valign=top>Format:</td>\n";
-    std::cout << "           <TD valign=top>"
-              << "              <input type=radio name=FORMAT ";
+    std::cout << "      <TD><input TYPE=submit NAME=COMMAND VALUE=GET></TD>\n";
+    std::cout << "      <TD><input type=radio name=FORMAT ";
     if (_format == "PLOT")
         std::cout << "checked=1 ";
-    std::cout <<                "value=PLOT>Plot<br>\n";
-    std::cout << "              <input type=radio name=FORMAT ";
+    std::cout <<            "value=PLOT>Plot</TD>\n";
+    std::cout << "      <TD align=right>Status:</TD>\n";
+    std::cout << "      <TD><input name=STATUS type=checkbox value=ON> (show channel status)</TD>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "  </TR>\n";
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD><input type=radio name=FORMAT ";
     if (_format.empty() || _format == "SPREADSHEET")
         std::cout << "checked=1 ";
-    std::cout <<                "value=SPREADSHEET"
-              <<                ">Spreadsheet<br>\n";
-    std::cout << "              <input type=radio name=FORMAT ";
+    std::cout <<            "value=SPREADSHEET>Spreadsheet</TD>\n";
+    std::cout << "      <TD align=right>Fill:</TD>\n";
+    std::cout << "      <TD><input name=FILL type=checkbox value=ON> (step-func. interpolation)</TD>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "  </TR>\n";
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD><input type=radio name=FORMAT ";
     if (_format == "EXCEL")
         std::cout << "checked=1 ";
-    std::cout <<                "value=EXCEL>Excel-File<br>\n";
-    std::cout << "              <input type=radio name=FORMAT ";
+    std::cout <<           "value=EXCEL>Excel-File</TD>\n";
+    std::cout << "      <TD align=right>Interpolate:</TD>\n";
+    std::cout << "      <TD><input maxLength=10 name=INTERPOL size=5 value=0> secs (linear)</TD>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "  </TR>\n";
+    std::cout << "  <TR>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD><input type=radio name=FORMAT ";
     if (_format == "MATLAB")
         std::cout << "checked=1 ";
-    std::cout      <<                "value=MATLAB>Matlab\n";
-    std::cout << "           </td>\n";
-    std::cout << "           <td></td>\n";
-    std::cout << "           <td valign=top align=right>\n";
-    std::cout <<                 "Status:<br>\n";
-    std::cout <<                 "Fill:<br>\n";
-    std::cout <<                 "Interpolate:<br>\n";
-    std::cout << "           </td>\n";
-    std::cout << "           <td>\n";
-    std::cout << "              <input name=STATUS type=checkbox value=ON> (show channel status)<br>\n";
-    std::cout << "              <input name=FILL type=checkbox value=ON> (step-func. interpolation)<br>\n";
-    std::cout << "              <input maxLength=10 name=INTERPOL size=5 value=0> secs (linear)\n";
-    std::cout << "           </TD>\n";
-    std::cout << "        </TR>\n";
-    std::cout << "        </TABLE>\n";
-    std::cout << "      </TD>\n";
+    std::cout <<           "value=MATLAB>Matlab</TD>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD></TD>\n";
+    std::cout << "      <TD></TD>\n";
     std::cout << "  </TR>\n";
     std::cout << "  </TABLE>\n";
     std::cout << "</FORM>\n";

@@ -69,15 +69,23 @@ void MatlabExporter::exportChannelList(
     *out << "% Channels: "  "\n";
     for (i=0; i<num; ++i)
         *out << "%  " << channel_names[i] << "\n";
-    *out <<  "%\n";
-    *out <<  "% Struct: t - time string\n";
-    *out <<  "%         v - value\n";
+    *out << "%\n";
+    *out << "% Struct: t - time string\n";
+    *out << "%         v - value\n";
     if (_show_status)
         *out <<  "%         s - status\n";
-    *out <<  "%         d - date number\n";
-    *out <<  "%         l - length of data\n";
-    *out <<  "%         n - name\n";
-    *out <<  "%\n";
+    *out << "%         d - date number\n";
+    *out << "%         l - length of data\n";
+    *out << "%         n - name\n";
+    *out << "%\n";
+    *out << "% Example for generic plot func. that can handle this data:\n";
+    *out << "%\n";
+    *out << "%  function archdataplot(data)\n";
+    *out << "%\n";
+    *out << "%  plot(data.d, data.v);\n";
+    *out << "%  datetick('x');\n";
+    *out << "%  xlabel([data.t{1} ' - ' data.t{data.l}]);\n";
+    *out << "%  title(data.n);\n";
     
     for (i=0; i<num; ++i)
     {
@@ -103,7 +111,7 @@ void MatlabExporter::exportChannelList(
             ++_datacount;
             ++line;
             osiTime2vals (time, year, month, day, hour, min, sec, nano);
-            sprintf(info, "%s.t(%d)={'%02d-%02d-%04d %02d:%02d:%02d.%09ld;'};",
+            sprintf(info, "%s.t(%d)={'%02d-%02d-%04d %02d:%02d:%02d.%09ld'};",
                     channel_names[i].c_str(), line,
                     month, day, year, hour, min, sec, nano);
             *out << info << "\n";

@@ -12,24 +12,24 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include "../ArchiverConfig.h"
-#include "GNUPlotExporter.h"
-#include "MatlabExporter.h"
-#include <ArgParser.h>
-#include <Filename.h>
-#include <BinaryTree.h>
-#include "HTMLPage.h"
-#include "CGIInput.h"
-
-#include "BinArchive.h"
-#include "MultiArchive.h"
+#include"../ArchiverConfig.h"
+#include"GNUPlotExporter.h"
+#include"MatlabExporter.h"
+#include<ArgParser.h>
+#include<Filename.h>
+#include<BinaryTree.h>
+#include<RegularExpression.h>
+#include"HTMLPage.h"
+#include"CGIInput.h"
+#include"BinArchive.h"
+#include"MultiArchive.h"
 
 // getcwd
 #ifdef WIN32
-#include <direct.h>
-#include <process.h>
+#include<direct.h>
+#include<process.h>
 #else
-#include <unistd.h>
+#include<unistd.h>
 #endif
 
 stdString GNUPlot = GNUPLOT_PROGRAM;
@@ -49,6 +49,7 @@ static void usage(HTMLPage &page)
 #endif
     std::cout << "<LI>DIRECTORY: Archive's directory file, often 'freq_directory'\n";
 	std::cout << "<LI>PATTERN:   Regular expression for channel names\n";
+	std::cout << "<LI>GLOB:      If defined, shell glob is used instead of Regular expression\n";
 	std::cout << "<LI>NAMES:     List of channel names\n";
     std::cout << "<LI>FORMAT:    PLOT | MATLAB | EXCEL | SPREADSHEET<br>\n"
               << "(used by COMMAND=GET)\n";
@@ -95,7 +96,14 @@ static void cmdList(HTMLPage &page)
 	{
 		Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory));
 		ChannelIterator channel(archive);
-		archive.findChannelByPattern(page._pattern, channel);
+
+        if (page._glob)
+        {
+            stdString expr = RegularExpression::fromGlobPattern(page._pattern);
+            archive.findChannelByPattern(expr, channel);
+        }
+        else
+            archive.findChannelByPattern(page._pattern, channel);
 
 		while (channel)
 		{
@@ -150,7 +158,13 @@ static void cmdInfo(HTMLPage &page)
 
 		if (page._names.empty())
 		{
-			archive.findChannelByPattern(page._pattern, channel);
+            if (page._glob)
+            {
+                stdString expr = RegularExpression::fromGlobPattern(page._pattern);
+                archive.findChannelByPattern(expr, channel);
+            }
+            else
+                archive.findChannelByPattern(page._pattern, channel);
 			while (channel)
 			{
 				info.channel = channel->getName();
@@ -341,7 +355,15 @@ static bool exportFunc(HTMLPage &page, Format format, const char *temp_file_base
 		if (page._interpol > 0.0)
 			exporter->setLinearInterpolation(page._interpol);
 		if (page._names.empty())
-			exporter->exportMatchingChannels(page._pattern);
+        {
+            if (page._glob)
+            {
+                stdString expr = RegularExpression::fromGlobPattern(page._pattern);
+                exporter->exportMatchingChannels(expr);
+            }
+            else
+                exporter->exportMatchingChannels(page._pattern);
+        }
 		else
 			exporter->exportChannelList(page._names);
 
@@ -580,6 +602,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	page._pattern = cgi.find("PATTERN");
 	page._round = atof(cgi.find ("ROUND").c_str());
 	page._interpol = atof(cgi.find ("INTERPOL").c_str());
+	page._glob = cgi.find("GLOB").length()>0;
 	page._fill = cgi.find("FILL").length()>0;
 	page._status = cgi.find("STATUS").length()>0;
 	getNames(cgi.find("NAMES"), page._names);

@@ -149,11 +149,10 @@ bool RawDataReader::getHeader(const stdString &dirname,
     if (!Filename::isValid(basename))
         goto no_header;
     // Read new header
-    // If index tells us the full path: OK, otherwise look
-    // in index'es directory
-    if (Filename::containsPath(basename))
+    if (basename[0] == '/')
+        // Index gave us the data file with the full path
         datafile = DataFile::reference("", basename, false);
-    else
+    else // Look relative to the index's directory
         datafile = DataFile::reference(dirname, basename, false);
     if (!datafile)
     {

@@ -13,32 +13,58 @@
 #include <LinearReader.h>
 // XMLRPCServer
 #include "DataServer.h"
+#include "ServerConfig.h"
 
-#define ARCH_VER 1
-#define LOGFILE "/tmp/archserver.log"
+#ifdef LOGFILE
 static FILE *logfile;
+#endif
 
 // The xml-rpc API defines "char *" strings
 // for what should be "const char *".
 // This macro helps avoid those "deprected conversion" warnings of g++
 #define STR(s) ((char *)((const char *)s))
 
-// Return name of index from environment or 0
-const char *get_index(xmlrpc_env *env)
+// Return name of configuration file from environment or 0
+const char *get_config_name(xmlrpc_env *env)
 {
-    const char *name = getenv("INDEX");
+    const char *name = getenv("SERVERCONFIG");
     if (!name)
     {
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
-                                       "INDEX is undefined");
+                                       "SERVERCONFIG is undefined");
         return 0;
     }
     return name;
 }
 
-// Return open index or 0
-IndexFile *open_index(xmlrpc_env *env)
+bool get_config(xmlrpc_env *env, ServerConfig &config)
 {
+    const char *config_name = get_config_name(env);
+    if (env->fault_occurred)
+        return false;
+    if (!config.read(config_name))
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
+                                       "Cannot open config '%s'",
+                                       config_name);
+        return false;
+    }
+    return true;
+}
+
+// Return open index for given key or 0
+IndexFile *open_index(xmlrpc_env *env, int key)
+{
+    ServerConfig config;
+    if (!get_config(env, config))
+        return 0;
+    stdString index_name;
+    if (!config.find(key, index_name))
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
+                                       "Invalid key %d", key);
+        return 0;
+    } 
     IndexFile *index = new IndexFile;
     if (!index)
     {
@@ -46,21 +72,19 @@ IndexFile *open_index(xmlrpc_env *env)
                                        "Cannot allocate index");
         return 0;
     }
-    const char *name = get_index(env);
-    if (env->fault_occurred)
-        return 0;
-    if (index->open(name))
+    if (index->open(index_name))
         return index;
     delete index;
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
-                                   "Cannot open index '%s'", name);
+                                   "Cannot open index '%s'",
+                                   index_name.c_str());
     return 0;
 }
 
 // epicsTime -> time_t-type of seconds & nanoseconds
 void epicsTime2pieces(const epicsTime &t,
                       xmlrpc_int32 &secs, xmlrpc_int32 &nano)
-{   // This is lame, calling twice on epicsTime's conversions
+{   // TODO: This is lame, calling epicsTime's conversions twice
     epicsTimeStamp stamp = t;
     time_t time;
     epicsTimeToTime_t(&time, &stamp);
@@ -103,6 +127,9 @@ public:
         xmlrpc_int32 ss, sn, es, en;
         epicsTime2pieces(info.start, ss, sn);
         epicsTime2pieces(info.end, es, en);        
+
+        LOG_MSG("Found name '%s'\n", info.name.c_str());
+
         xmlrpc_value *channel = xmlrpc_build_value(
             user_arg->env,
             STR("{s:s,s:i,s:i,s:i,s:i}"),
@@ -208,6 +235,7 @@ void encode_value(xmlrpc_env *env,
 // Returns raw values if interpol <= 0.0.
 // Returns 0 on error.
 xmlrpc_value *get_data(xmlrpc_env *env,
+                       int key,
                        const stdVector<stdString> names,
                        const epicsTime &start, const epicsTime &end,
                        long count, double interpol)
@@ -216,11 +244,13 @@ xmlrpc_value *get_data(xmlrpc_env *env,
     DataReader     *reader = 0;
     xmlrpc_value   *results = 0;
 
+#ifdef LOGFILE
     stdString txt;
     LOG_MSG("Start: %s\n", epicsTimeTxt(start, txt));
     LOG_MSG("End  : %s\n", epicsTimeTxt(end, txt));
     LOG_MSG("Interpolating onto %g seconds\n", interpol);
-    index = open_index(env);
+#endif
+    index = open_index(env, key);
     if (env->fault_occurred)
         goto exit_from_get_data;
     if (interpol <= 0.0)
@@ -244,7 +274,9 @@ xmlrpc_value *get_data(xmlrpc_env *env,
     name_count = names.size();
     for (i=0; i<name_count; ++i)
     {
+#ifdef LOGFILE
         LOG_MSG("Handling '%s'\n", names[i].c_str());
+#endif
         values = xmlrpc_build_value(env, STR("()"));
         if (env->fault_occurred)
             goto exit_from_get_data;
@@ -254,7 +286,6 @@ xmlrpc_value *get_data(xmlrpc_env *env,
             meta = encode_ctrl_info(env, 0);
             xml_type = XML_ENUM;
             xml_count = 1;
-            LOG_MSG("No data\n");
         }
         else
         {
@@ -281,7 +312,6 @@ xmlrpc_value *get_data(xmlrpc_env *env,
                              reader->getType(), reader->getCount(), data,
                              xml_type, xml_count, values);
             }
-            LOG_MSG("got %d values\n", num_vals);
         }
         // Assemble result = { name, meta, type, count, values }
         result = xmlrpc_build_value(env, STR("{s:s,s:V,s:i,s:i,s:V}"),
@@ -304,36 +334,78 @@ xmlrpc_value *get_data(xmlrpc_env *env,
 }
 
 // { int32  ver, string desc } = archiver.info()
-xmlrpc_value *info(xmlrpc_env *env,
-                   xmlrpc_value *args,
-                   void *user)
+xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
+#ifdef LOGFILE
     LOG_MSG("archiver.info\n");
+#endif
     char txt[500];
-    const char *index = get_index(env);
+    const char *config = get_config_name(env);
+    if (!config)
+    {
+#ifdef LOGFILE
+        LOG_MSG("config: '%s'\n", config);
+#endif
+        return 0;
+    }
     sprintf(txt,
             "Channel Archiver Data Server V%d\n"
-            "Index '%s'\n"
+            "Config '%s'\n"
             "Supports how=0 (raw), 1 (interpol/average)\n",
-            ARCH_VER, (index ? index : "<no index>"));
+            ARCH_VER, config);
     return xmlrpc_build_value(env, STR("{s:i,s:s}"),
-                              STR("ver"), ARCH_VER, STR("desc"), STR(txt));
+                              STR("ver"), ARCH_VER,
+                              STR("desc"), STR(txt));
 }
 
 // {string name, int32 start_sec, int32 start_nano,
 //               int32 end_sec,   int32 end_nano}[]
-// = archiver.get_names(string pattern)
-xmlrpc_value *get_names(xmlrpc_env *env,
-                        xmlrpc_value *args,
-                        void *user)
+// = archiver.archives()
+xmlrpc_value *get_archives(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
-    LOG_MSG("archiver.get_names\n");
+#ifdef LOGFILE
+    LOG_MSG("archiver.archives\n");
+#endif
+    // Get Configuration
+    ServerConfig config;
+    if (!get_config(env, config))
+        return 0;
+    // Create result
+    xmlrpc_value *result = xmlrpc_build_value(env, STR("()"));
+    if (!result)
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
+                                       "Cannot create result");
+        return 0;
+    }
+    stdList<ServerConfig::Entry>::const_iterator i;
+    for (i=config.config.begin(); i!=config.config.end(); ++i)
+    {
+        xmlrpc_value *archive =
+            xmlrpc_build_value(env, STR("{s:i,s:s,s:s}"),
+                               STR("key"),  i->key,
+                               STR("name"), i->name.c_str(),
+                               STR("path"), i->path.c_str());
+        xmlrpc_array_append_item(env, result, archive);
+        xmlrpc_DECREF(archive);
+    }
+    return result;
+}
+
+// {string name, int32 start_sec, int32 start_nano,
+//               int32 end_sec,   int32 end_nano}[]
+// = archiver.names(key, string pattern)
+xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
+{
+#ifdef LOGFILE
+    LOG_MSG("archiver.names\n");
+#endif
     // Get args, maybe setup pattern
     RegularExpression *regex = 0;
+    xmlrpc_int32 key;
     char *pattern;
     size_t pattern_len; 
-    xmlrpc_parse_value(env, args, STR("(s#)"),
-                       &pattern, &pattern_len);
+    xmlrpc_parse_value(env, args, STR("(is#)"), &key, &pattern, &pattern_len);
     if (env->fault_occurred)
         return NULL;
     if (pattern_len > 0)
@@ -349,7 +421,7 @@ xmlrpc_value *get_names(xmlrpc_env *env,
         return 0;
     }
     // Open Index
-    IndexFile *index = open_index(env);
+    IndexFile *index = open_index(env, key);
     if (env->fault_occurred)
     {
         if (regex)
@@ -367,8 +439,8 @@ xmlrpc_value *get_names(xmlrpc_env *env,
     {
         if (regex && !regex->doesMatch(ni.getName()))
             continue; // skip what doesn't match regex
-        tree = index->getTree(ni.getName());
-        if (tree)
+        info.name = ni.getName();
+        if ((tree = index->getTree(info.name)))
         {
             tree->getInterval(info.start, info.end);
             delete tree;
@@ -386,27 +458,30 @@ xmlrpc_value *get_names(xmlrpc_env *env,
     user_arg.env = env;
     user_arg.result = result;
     channels.traverse(ChannelInfo::add_name_to_result, (void *)&user_arg);
-    LOG_MSG("get_names('%s') -> %d names\n",
+#ifdef LOGFILE
+    LOG_MSG("get_names(%d, '%s') -> %d names\n",
+            key,
             (pattern ? pattern : "<no pattern>"),
             xmlrpc_array_size(env, result));
+#endif
     return result;
 }
 
-// very_complex_array = archiver.get_values(names[], start, end, ...)
+// very_complex_array = archiver.values(key, names[], start, end, ...)
 xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
     LOG_MSG("archiver.get_values\n");
     xmlrpc_value *names;
-    xmlrpc_int32 start_sec, start_nano, end_sec, end_nano, count, how;
+    xmlrpc_int32 key, start_sec, start_nano, end_sec, end_nano, count, how;
     // Extract arguments
-    xmlrpc_parse_value(env, args, STR("(Aiiiiii)"),
-                       &names,
+    xmlrpc_parse_value(env, args, STR("(iAiiiiii)"),
+                       &key, &names,
                        &start_sec, &start_nano, &end_sec, &end_nano,
                        &count, &how);    
     if (env->fault_occurred)
         return 0;
     // TODO: Put an upper limit on count to avoid outrageous requests?
-   // Build start/end
+    // Build start/end
     epicsTime start, end;
     pieces2epicsTime(start_sec, start_nano, start);
     pieces2epicsTime(end_sec, end_nano, end);    
@@ -432,11 +507,11 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     switch (how)
     {
         case 0:
-            return get_data(env, name_vector, start, end, count, -1.0);
+            return get_data(env, key, name_vector, start, end, count, -1.0);
         case 1:
             if (count <= 1)
                 count = 1;
-            return get_data(env, name_vector, start, end, count,
+            return get_data(env, key, name_vector, start, end, count,
                             (end-start)/count);
     }
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_ARG_ERROR,
@@ -444,6 +519,7 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     return 0;
 }
 
+#ifdef LOGFILE
 static void LogRoutine(void *arg, const char *text)
 {
     if (logfile)
@@ -454,41 +530,45 @@ static void LogRoutine(void *arg, const char *text)
     else
         printf("log: %s", text);
 }
+#endif
 
 int main(int argc, const char *argv[])
 {
-// TODO: Read XML file w/ archives, descriptions, ...
-// Use expat : It's fast!
+#ifdef LOGFILE
     struct timeval t0, t1;
     gettimeofday(&t0, 0);
-
     logfile = fopen(LOGFILE, "a");
     TheMsgLogger.SetPrintRoutine(LogRoutine, 0);
     LOG_MSG("---- ArchiveServer Started ----\n");
-
     gettimeofday(&t0, 0);
+#endif
     xmlrpc_cgi_init(XMLRPC_CGI_NO_FLAGS);
     xmlrpc_cgi_add_method_w_doc(STR("archiver.info"),
-                                &info, 0,
+                                &get_info, 0,
                                 STR("S:"),
                                 STR("Get info"));
-    xmlrpc_cgi_add_method_w_doc(STR("archiver.get_names"),
+    xmlrpc_cgi_add_method_w_doc(STR("archiver.archives"),
+                                &get_archives, 0,
+                                STR("A:"),
+                                STR("Get archives"));
+    xmlrpc_cgi_add_method_w_doc(STR("archiver.names"),
                                 &get_names, 0,
                                 STR("A:s"),
                                 STR("Get channel names"));
-    xmlrpc_cgi_add_method_w_doc(STR("archiver.get_values"),
+    xmlrpc_cgi_add_method_w_doc(STR("archiver.values"),
                                 &get_values, 0,
                                 STR("A:siiiiii"),
                                 STR("Get values"));
     xmlrpc_cgi_process_call();
     xmlrpc_cgi_cleanup();
+#ifdef LOGFILE
     gettimeofday(&t1, 0);
-    
     double run_secs = (t1.tv_sec + t1.tv_usec/1.0e6)
         - (t0.tv_sec + t0.tv_usec/1.0e6);
     LOG_MSG("ArchiveServer ran %g seconds\n", run_secs);
     if (logfile)
         fclose(logfile);
+#endif
     
     return 0;
 }

@@ -55,7 +55,10 @@ void test_string()
 
     stdString	a;
 
-    a = stdString("Hello ") + "World!";
+    a = stdString("Hello ") + "W";
+    a += "o";
+    a.append("rldxxx", 3);
+    a += stdString("!");
     TEST(strcmp(a.c_str(), "Hello World!")==0);
     TEST(a.length() == 12);
     TEST(a.length() == strlen(a.c_str()));

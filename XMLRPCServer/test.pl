@@ -6,9 +6,9 @@ use Frontier::Client;
 
 # Setup URL
 #$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyServer.cgi';
-$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
+#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyServer.cgi';
 $server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
-$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveServer1.cgi';
+#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveServer1.cgi';
 
 if ($#ARGV == 0)
 {
@@ -25,9 +25,23 @@ print("Info:\n");
 print("==================================================================\n");
 # { int32 ver, string desc } = archdat.info()
 $result = $server->call('archiver.info');
-printf("Archive Data Server V %d\nDescription:\n%s\n",
-       $result->{'ver'},
-       $result->{'desc'});
+printf("Archive Data Server V %d\n", $result->{'ver'});
+printf("Description:\n");
+printf("-------------------------------\n");
+printf("%s", $result->{'desc'});
+printf("-------------------------------\n");
+
+
+print("==================================================================\n");
+print("Archives:\n");
+print("==================================================================\n");
+$results = $server->call('archiver.archives', "");
+foreach $result ( @{$results} )
+{
+    $key = $result->{key};
+    print("Key $key: '$result->{name}' in '$result->{path}'\n");
+}
+
 
 # string name[] = archdat.get_names(string pattern)
 if (0)
@@ -35,7 +49,7 @@ if (0)
 	print("==================================================================\n");
 	print("Request without pattern:\n");
 	print("==================================================================\n");
-	$results = $server->call('archiver.get_names', "");
+	$results = $server->call('archiver.names', $key, "");
 	$count = 0;
 	foreach $result ( @{$results} )
 	{
@@ -51,7 +65,7 @@ if (0)
 print("==================================================================\n");
 print("Request with pattern:\n");
 print("==================================================================\n");
-$results = $server->call('archiver.get_names', "IOC");
+$results = $server->call('archiver.names', $key, "IOC");
 foreach $result ( @{$results} )
 {
 	$name = $result->{name};
@@ -80,7 +94,7 @@ $count = 10;
 $how = 1;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:
-$results = $server->call('archiver.get_values', \@names,
+$results = $server->call('archiver.values', $key, \@names,
 			 $start, $startnano, $end, $endnano, $count, $how);
 show_values($result);
 

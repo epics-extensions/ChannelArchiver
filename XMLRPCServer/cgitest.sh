@@ -12,7 +12,7 @@ export CONTENT_LENGTH=`wc --bytes <$REQUEST`
 export INDEX=/mnt/bogart_home/snsdoc/RF/HPRF/LANLXmtrData/2003/01xx/index
 cat $REQUEST | O.linux-x86/ArchiveServer
 
-cat /tmp/archserver.log
-rm /tmp/archserver.log
+#cat /tmp/archserver.log
+#rm /tmp/archserver.log
 
 

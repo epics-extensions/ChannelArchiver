@@ -9,7 +9,7 @@ Users of Java should probably utilize the Java archive data client
 library provided with the ChannelArchiver. Users of other programming
 environments need to refer to the following.
 
-\subsection{archiver.info}
+\subsection{archiver.info} % --------------------------------------------
 This call returns version information for 
 whoever cares. It will allow future compatibility
 if clients check for the correct version numbers.
@@ -19,7 +19,7 @@ if clients check for the correct version numbers.
 \end{lstlisting}
 
 \begin{description}
-\item[\sffamily ver:]  Version number. Currently we use ver = 1.
+\item[\sffamily ver:]  Version number. The first released software uses '1'.
 \item[\sffamily desc:] Cute description that one can print.
 \end{description}
 
@@ -28,21 +28,59 @@ member and a string "desc" member. Implementations
 like perl will return a hash with members "ver"
 and "desc".
 
-\subsection{archiver.get\_names}
+\subsection{archiver.archives} % --------------------------------------------
+Returns the archives that this data server can access.
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+{ int32 key,
+  string name,
+  string path }[] = archiver.archives()
+\end{lstlisting}
+
+\begin{description}
+\item[\sffamily key:] A numeric key that is used by the following
+                      routines to select the archive.
+\item[\sffamily name:] A description of the archive that one could
+                       e.g.\ use in a drop-down selector in a GUI
+                       application for allowing the user to select an archive.
+\item[\sffamily path:] The path to the index file, valid on the file
+                       system where the data server runs.
+                       It might be meaningful to a few users who want to
+                       know exactly where the data resides, but it is
+                       seldom essential for XML-RPC clients to look at this.
+\end{description}
+
+\noindent The result is an array of structures with a numeric "key"
+member and strings "name" and "path".
+An example result could be:
+\begin{lstlisting}[keywordstyle=\sffamily]
+{ key=1, name="Vacuum", path="/home/data/vac/index" },
+{ key=2, name="RF",     path="/home/data/RF/index" }
+\end{lstlisting}
+
+\noindent So in the following one would then use key=1 to access
+vacuum data etc. One can expect the keys to be small, positive
+numbers, but they are not guaranteed to be consecutive as 1, 2, 3,
+... Since the keys could be something like 10, 20, 30 or 1, 17, 42,
+they are not useful as array indices.
+
+\subsection{archiver.names} % ------------------------------------------
 Returns channel names and start/end times.
-Pattern is a regular expression.
-If left empty, all names are returned.
+The key must be a valid key obtained from archiver.keys.
+Pattern is a regular expression;
+if left empty, all names are returned.
 
 \NOTE The Time Stamps are \emph{not} the raw EPICS time stamps with 1990 epoch,
 but use the time\_t data type based on a 1970 epoch.
 
 \begin{lstlisting}[keywordstyle=\sffamily]
-{string name, int32 start_sec, int32 start_nano,
-              int32 end_sec,   int32 end_nano}[] 
-            = archiver.get_names(string pattern)
+{string name,
+ int32 start_sec, int32 start_nano,
+ int32 end_sec,   int32 end_nano}[] 
+         = archiver.names(int32 key, string pattern)
 \end{lstlisting}
 
-The result is an array of structures, one structure
+\noindent The result is an array of structures, one structure
 per channel that matches the pattern.
 Start/end gives an idea of the time range that can
 be found in the archive for that channel.
@@ -50,19 +88,20 @@ The archive might actually contain entries \emph{after}
 the reported end time because the index might not
 be up too date on the end times.
 
-\subsection{archiver.get\_values}
-This call returns values for a given list of channel names
-and a common time range.
+\subsection{archiver.values} % -----------------------------------------
+This call returns values from the archive identified by the key for a
+given list of channel names and a common time range.
 
 \begin{lstlisting}[keywordstyle=\sffamily]
-result = archiver.get_values(
+result = archiver.values(
+         int key,
          string name[],
          int32 start_sec, int32 start_nano,
          int32 end_sec, int32 end_nano, int32 count,
          int32 how)
 \end{lstlisting}
 
-The parameter ''how'' determines how the raw values of the various
+\noindent The parameter ''how'' determines how the raw values of the various
 channels get arranged to meet the requested time range and count:
 \begin{description}
 \item[\sffamily how = 0:]

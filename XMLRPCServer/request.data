@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <methodCall>
-<methodName>archiver.get_values</methodName>
+<methodName>archiver.values</methodName>
 <params>
+<param><value><i4>2</i4></value></param>
 <param><value> <array><data>
    <value><string>Test_HPRF:IOC1:Load</string></value>
 </data></array></value></param>

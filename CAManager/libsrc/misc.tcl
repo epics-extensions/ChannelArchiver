@@ -29,6 +29,7 @@ namespace eval camMisc {
   array set ::args [cmdline::getoptions ::argv {
     {log.arg "" "create logfile"}
     {log+.arg "" "append to logfile"}
+    {nocmd "" "without start/stop-interface (CAbgManager only)"}
   }]
   if {[regexp "^\[^/\]" $::args(log)]} {set ::args(log) $::pwd/$::args(log)}
   if {[regexp "^\[^/\]" $::args(log+)]} {set ::args(log+) $::pwd/$::args(log+)}
@@ -158,16 +159,27 @@ proc luniq {list} {
   }
   return $res
 }
+
 array set colormap {
   error		red
   command	blue
-  schedule	green
+  schedule	no
   debug1	no
   debug2	no
   normal	normal
 }
 
+array set colorname {
+  error		"Errors/Warnings"
+  command	"Starts/Stops"
+  schedule	"Scheduled jobs"
+  debug1	"Debug 1"
+  debug2	"Debug 2"
+  normal	"Misc."
+}
+
 if {$::debug} {
+  set ::colormap(schedule) green
   set ::colormap(debug1) normal
   set ::colormap(debug2) orange
 }

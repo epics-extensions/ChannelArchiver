@@ -25,6 +25,7 @@ int main(int argc, const char *argv[])
         return -1;
     if (parser.getArguments().size() < 1)
     {
+        std::cerr << "ArchiveExport " VERSION_TXT "\n\n";
         parser.usage();
         return -1;
     }

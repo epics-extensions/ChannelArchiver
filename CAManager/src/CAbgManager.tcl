@@ -28,10 +28,10 @@ set CVS(Version) "Version: 1.1"
 
 proc init {} {
   global INCDIR
-  set ::pwd [pwd]
-  cd [file dirname [info script]]
-  set script [pwd]/[file tail [info script]]
-  regsub /src/[file tail $script] $script "" INCDIR
+#  set ::pwd [pwd]
+#  cd [file dirname [info script]]
+#  set script [pwd]/[file tail [info script]]
+  regsub /src/[file tail [info script]] [info script] "" INCDIR
   append INCDIR /libsrc
   if {![file isdirectory $INCDIR]} {regsub "src$" $INCDIR "/tcl/CAManager" INCDIR}
 

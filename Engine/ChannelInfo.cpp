@@ -298,8 +298,8 @@ void ChannelInfo::caControlHandler (struct event_handler_args arg)
 			else
 			{
 				// Engine will not scan this: add a monitor for this channel
-				if (ca_add_array_event (dbr_type, nelements, me->_chid,
-					caEventHandler, me, 0.0, 0.0, 0.0, (evid *)0) != ECA_NORMAL)
+				if (ca_add_masked_array_event (dbr_type, nelements, me->_chid,
+					caEventHandler, me, 0.0, 0.0, 0.0, (evid *)0, DBE_LOG) != ECA_NORMAL)
 				{
 					LOG_MSG ("CA ca_add_array_event ('" << me->getName () << "') failed\n");
 					return;

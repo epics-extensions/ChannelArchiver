@@ -9,185 +9,10 @@
 // --------------------------------------------------------
 
 #include<alarm.h>
-#include<alarmString.h>
 #include<ArrayTools.h>
 #include<epicsTimeHelper.h>
 #include<stdlib.h>
 #include"ValueI.h"
-
-//////////////////////////////////////////////////////////////////////
-// RawValueI
-//////////////////////////////////////////////////////////////////////
-
-RawValueI::Type * RawValueI::allocate (size_t size)
-{
-    return (RawValueI::Type *) (new char[size]);
-}
-
-// allocate space for num samples of type/count
-RawValueI::Type * RawValueI::allocate (DbrType type, DbrCount count,
-                                       size_t num)
-{
-    return allocate (num * getSize (type, count));
-}
-
-void RawValueI::free (Type *value)
-{
-    delete [] ((char *)value);
-}
-
-size_t RawValueI::getSize (DbrType type, DbrCount count)
-{   // need to make the buffer size be a properly structure aligned number
-    size_t buf_size = dbr_size_n(type, count);
-    if (buf_size % 8)
-        buf_size += 8 - (buf_size % 8);
-
-    return buf_size;
-}
-
-bool RawValueI::hasSameValue(DbrType type, DbrCount count, size_t size,
-                             const Type *lhs, const Type *rhs)
-{
-    size_t offset;
-
-    switch (type)
-    {
-    case DBR_TIME_STRING: offset = offsetof (dbr_time_string, value); break;
-    case DBR_TIME_SHORT:  offset = offsetof (dbr_time_short, value);  break;
-    case DBR_TIME_FLOAT:  offset = offsetof (dbr_time_float, value);  break;
-    case DBR_TIME_ENUM:   offset = offsetof (dbr_time_enum, value);   break;
-    case DBR_TIME_CHAR:   offset = offsetof (dbr_time_char, value);   break;
-    case DBR_TIME_LONG:   offset = offsetof (dbr_time_long, value);   break;
-    case DBR_TIME_DOUBLE: offset = offsetof (dbr_time_double, value); break;
-    default:
-        LOG_MSG("RawValueI::hasSameValue: cannot decode type %d\n", type);
-        return false;
-    }
-
-    return memcmp (((char *)lhs) + offset,
-                   ((char *)rhs) + offset, size - offset) == 0;
-}
-
-void RawValueI::getStatus(const Type *value, stdString &result)
-{
-    char buf[200];
-
-    short severity = short(value->severity & 0xfff);
-    switch (severity)
-    {
-    case NO_ALARM:
-        result = '\0';
-        return;
-    // Archiver specials:
-    case ARCH_EST_REPEAT:
-        sprintf(buf, "Est_Repeat %d", (int)value->status);
-        result = buf;
-        return;
-    case ARCH_REPEAT:
-        sprintf(buf, "Repeat %d", (int)value->status);
-        result = buf;
-        return;
-    case ARCH_DISCONNECT:
-        result = "Disconnected";
-        return;
-    case ARCH_STOPPED:
-        result = "Archive_Off";
-        return;
-    case ARCH_DISABLED:
-        result = "Archive_Disabled";
-        return;
-    case ARCH_CHANGE_PERIOD:
-        result = "Change Sampling Period";
-        return;
-    }
-
-    if (severity < (short)SIZEOF_ARRAY(alarmSeverityString)  &&
-        (short)value->status < (short)SIZEOF_ARRAY(alarmStatusString))
-    {
-        result = alarmSeverityString[severity];
-        result += " ";
-        result += alarmStatusString[value->status];
-    }
-    else
-    {
-        sprintf(buf, "%d %d", severity, value->status);
-        result = buf;
-    }
-}
-
-bool RawValueI::parseStatus (const stdString &text, short &stat, short &sevr)
-{
-    if (text.empty())
-    {
-        stat = sevr = 0;
-        return true;
-    }
-    if (!strncmp (text.c_str(), "Est_Repeat ", 11))
-    {
-        sevr = ARCH_EST_REPEAT;
-        stat = atoi(text.c_str()+11);
-        return true;
-    }
-    if (!strncmp (text.c_str(), "Repeat ", 7))
-    {
-        sevr = ARCH_REPEAT;
-        stat = atoi(text.c_str()+7);
-        return true;
-    }
-    if (!strcmp (text.c_str(), "Disconnected"))
-    {
-        sevr = ARCH_DISCONNECT;
-        stat = 0;
-        return true;
-    }
-    if (!strcmp (text.c_str(), "Archive_Off"))
-    {
-        sevr = ARCH_STOPPED;
-        stat = 0;
-        return true;
-    }
-    if (!strcmp (text.c_str(), "Archive_Disabled"))
-    {
-        sevr = ARCH_DISABLED;
-        stat = 0;
-        return true;
-    }
-    if (!strcmp (text.c_str(), "Change Sampling Period"))
-    {
-        sevr = ARCH_CHANGE_PERIOD;
-        stat = 0;
-        return true;
-    }
-
-    short i, j;
-    for (i=0; i<(short)SIZEOF_ARRAY(alarmSeverityString); ++i)
-    {
-        if (!strncmp (text.c_str(), alarmSeverityString[i],
-                      strlen(alarmSeverityString[i])))
-        {
-            sevr = i;
-            stdString status = text.substr (strlen(alarmSeverityString[i]));
-
-            for (j=0; j<(short)SIZEOF_ARRAY(alarmStatusString); ++j)
-            {
-                if (status.find (alarmStatusString[j]) != stdString::npos)
-                {
-                    stat = j;
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    return false;
-}
-
-void RawValueI::getTime(const Type *value, stdString &time)
-{
-    epicsTime et(value->stamp);
-    epicsTime2string(et, time);
-}
 
 //////////////////////////////////////////////////////////////////////
 // ValueI
@@ -197,12 +22,12 @@ ValueI::ValueI (DbrType type, DbrCount count)
 {
     _type  = type;
     _count = count;
-    _size  = RawValueI::getSize (type, count);
-    _value = RawValueI::allocate (_size);
+    _size  = RawValue::getSize(type, count);
+    _value = RawValue::allocate(type, count, 1);
 }
 
 ValueI::~ValueI ()
-{   RawValueI::free (_value);   }
+{   RawValue::free(_value);   }
 
 void ValueI::setCtrlInfo (const CtrlInfo *info)
 {}
@@ -210,7 +35,7 @@ void ValueI::setCtrlInfo (const CtrlInfo *info)
 bool ValueI::parseStatus (const stdString &text)
 {
     short  stat, sevr;
-    if (RawValueI::parseStatus (text, stat, sevr))
+    if (RawValue::parseStatus (text, stat, sevr))
     {
         setStatus (stat, sevr);
         return true;

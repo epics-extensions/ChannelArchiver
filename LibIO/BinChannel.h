@@ -1,7 +1,7 @@
 #ifndef __BINCHANNEL_H__
 #define __BINCHANNEL_H__
 
-#include "BinTypes.h"
+#include "ArchiveTypes.h"
 #include "ChannelI.h"
 
 class BinChannel : public ChannelI

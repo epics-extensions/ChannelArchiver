@@ -9,7 +9,7 @@
 #if !defined(_DATAFILE_H_)
 #define _DATAFILE_H_
 
-#include "BinTypes.h"
+#include "ArchiveTypes.h"
 #include "BinValue.h"
 
 //////////////////////////////////////////////////////////////////////

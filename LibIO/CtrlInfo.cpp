@@ -1,6 +1,6 @@
 #include "ArchiveException.h"
 #include "CtrlInfo.h"
-#include "BinTypes.h"
+#include "ArchiveTypes.h"
 #include "cvtFast.h"
 
 CtrlInfo::CtrlInfo()

@@ -382,7 +382,7 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
         me->unlock();
         return;
     }
-    me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
+    me->_new_value->copyIn((const RawValue::Data *)arg.dbr);
 
 #   ifdef DEBUG_CI
     printf("caEventHandler(%s), thread 0x%08X:\n",
@@ -854,7 +854,7 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
         return;
     }
 
-    const RawValueI::Type *raw = _buffer.removeRawValue();
+    const RawValue::Data *raw = _buffer.removeRawValue();
     size_t avail = channel->lockBuffer(*_write_value, _period);
     while (raw)
     {

@@ -10,6 +10,7 @@ INC += ArchiveI.h
 INC += ChannelI.h
 INC += ChannelIteratorI.h
 INC += CtrlInfo.h
+INC += RawValue.h
 INC += ValueI.h
 INC += ValueIteratorI.h
 INC += HashTable.h
@@ -27,7 +28,6 @@ INC += DirectoryFile.h
 INC += BinArchive.h
 INC += BinChannel.h
 INC += BinChannelIterator.h
-INC += BinTypes.h
 INC += BinValue.h
 INC += BinValueIterator.h
 
@@ -43,6 +43,7 @@ LIBSRCS += ArchiveI.cpp
 LIBSRCS += ChannelI.cpp
 LIBSRCS += ChannelIteratorI.cpp
 LIBSRCS += CtrlInfo.cpp
+LIBSRCS += RawValue.cpp
 LIBSRCS += ValueI.cpp
 LIBSRCS += ValueIteratorI.cpp
 

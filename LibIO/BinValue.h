@@ -3,26 +3,9 @@
 #if !defined(_BINVALUE_H_)
 #define _BINVALUE_H_
 
-#include "BinTypes.h"
+#include <iostream>
 #include "ValueI.h"
 #include "CtrlInfo.h"
-#include <iostream>
-
-//////////////////////////////////////////////////////////////////////
-//class BinRawValue
-class BinRawValue : public RawValueI 
-{
-public:
-    // size: pre-calculated from type, count
-    static void read  (DbrType type, DbrCount count,
-                       size_t size, Type *value,
-                       FILE *file, FileOffset offset);
-    // write requires a buffer for the memory-to-disk format conversions
-    static void write (DbrType type, DbrCount count,
-                       size_t size, const Type *value,
-                       MemoryBuffer<dbr_time_string> &cvt_buffer,
-                       FILE *file, FileOffset offset);
-};
 
 //////////////////////////////////////////////////////////////////////
 //CLASS BinValue
@@ -60,13 +43,13 @@ protected:
 
 inline void BinValue::read (FILE *file, FileOffset offset)
 {
-    BinRawValue::read (_type, _count, _size, _value, file, offset);
+    RawValue::read (_type, _count, _size, _value, file, offset);
 }
 
 inline void BinValue::write (FILE *file, FileOffset offset) const
 {
-    BinRawValue::write (_type, _count, _size, _value, _write_buffer,
-                        file, offset);
+    RawValue::write (_type, _count, _size, _value, _write_buffer,
+                     file, offset);
 }
 
 //////////////////////////////////////////////////////////////////////

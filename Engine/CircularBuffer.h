@@ -33,9 +33,9 @@ public:
     void resetOverwrites()
     {   _lock.lock(); _overwrites = 0; _lock.unlock();    }
 
-    void addRawValue(const RawValueI::Type *raw_value);
+    void addRawValue(const RawValue::Data *raw_value);
 
-    const RawValueI::Type *removeRawValue();
+    const RawValue::Data *removeRawValue();
 
     size_t getCount();
 
@@ -43,13 +43,13 @@ private:
     CircularBuffer(const CircularBuffer &); // not impl.
 
     void allocate(DbrType type, DbrCount count, size_t num);
-    RawValueI::Type *getElement(RawValueI::Type *buf, size_t i);
-    RawValueI::Type *getNextElement();
+    RawValue::Data *getElement(RawValue::Data *buf, size_t i);
+    RawValue::Data *getNextElement();
 
     epicsMutex      _lock;
     DbrType         _type;
     DbrCount        _count;
-    RawValueI::Type *_buffer;
+    RawValue::Data  *_buffer;
     size_t          _element_size;// == RawValue::getSize (_type, _count)
     size_t          _num;         // number of elements in buffer
     size_t          _head;        // index of current element
@@ -57,11 +57,11 @@ private:
     size_t          _overwrites;
 };
 
-inline RawValueI::Type *CircularBuffer::getElement(RawValueI::Type *buf,
+inline RawValue::Data *CircularBuffer::getElement(RawValue::Data *buf,
                                                    size_t i)
-{   return (RawValueI::Type *) (((char *)buf) + i * _element_size); }
+{   return (RawValue::Data *) (((char *)buf) + i * _element_size); }
 
-inline void CircularBuffer::addRawValue(const RawValueI::Type *raw_value)
+inline void CircularBuffer::addRawValue(const RawValue::Data *raw_value)
 {
     _lock.lock();
     memcpy(getNextElement(), raw_value, _element_size);
@@ -82,9 +82,9 @@ inline size_t CircularBuffer::getCount()
     return count;
 }
 
-inline const RawValueI::Type *CircularBuffer::removeRawValue()
+inline const RawValue::Data *CircularBuffer::removeRawValue()
 {
-    RawValueI::Type *val;
+    RawValue::Data *val;
 
     _lock.lock();
     if (_tail == _head)

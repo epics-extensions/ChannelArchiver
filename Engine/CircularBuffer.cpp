@@ -21,7 +21,7 @@ CircularBuffer::CircularBuffer()
 
 CircularBuffer::~CircularBuffer()
 {
-	RawValueI::free(_buffer);
+	RawValue::free(_buffer);
 }
 
 void CircularBuffer::reset()
@@ -50,7 +50,7 @@ CircularBuffer & CircularBuffer::operator = (const CircularBuffer &rhs)
 	return *this;
 }
 
-RawValueI::Type *CircularBuffer::getNextElement()
+RawValue::Data *CircularBuffer::getNextElement()
 {
 	// compute the place in the circular queue
 	if (++_head >= _num)
@@ -86,19 +86,19 @@ void CircularBuffer::allocate(DbrType type, DbrCount count, double scan_period)
 
 void CircularBuffer::allocate(DbrType type, DbrCount count, size_t num)
 {
-	RawValueI::Type *buffer;
+	RawValue::Data *buffer;
 	if (_type==type && _count==count && _num >= num) // can hold that already
 		return;
 
 	_lock.lock();
-	buffer = RawValueI::allocate(type, count, num);
+	buffer = RawValue::allocate(type, count, num);
 	if (_type!=type && _count!=count && _buffer) // old buffer, diff. type?
 	{
-		RawValueI::free(_buffer);
+		RawValue::free(_buffer);
 		_buffer = 0;
 	}
 
-	_element_size = RawValueI::getSize(type, count);
+	_element_size = RawValue::getSize(type, count);
 	_type = type;
 	_count = count;
 
@@ -123,7 +123,7 @@ void CircularBuffer::allocate(DbrType type, DbrCount count, size_t num)
 			_head += tail_elems + 1;
 		}
 		// else: _head == _tail, empty _buffer
-		RawValueI::free(_buffer);
+		RawValue::free(_buffer);
 	}
 
 	_num = num;

@@ -4,96 +4,8 @@
 #include <math.h> // MSVisC has HUGE_VAL in here?!
 #include <MemoryBuffer.h>
 #include "ArchiveException.h"
-#include "BinTypes.h"
+#include "ArchiveTypes.h"
 #include "BinValue.h"
-
-//////////////////////////////////////////////////////////////////////
-// BinRawValue
-//////////////////////////////////////////////////////////////////////
-
-void BinRawValue::read(DbrType type, DbrCount count, size_t size, Type *value,
-                       FILE *file, FileOffset offset)
-{
-    if (fseek(file, offset, SEEK_SET) != 0 ||
-        (FileOffset) ftell(file) != offset   ||
-        fread(value, size, 1, file) != 1)
-        throwArchiveException(ReadError);
-    
-    SHORTFromDisk(value->status);
-    SHORTFromDisk(value->severity);
-    epicsTimeStampFromDisk(value->stamp);
-
-    // nasty: cannot use inheritance in lightweight RawValue,
-    // so we have to switch on the type here:
-    switch (type)
-    {
-    case DBR_TIME_CHAR:
-    case DBR_TIME_STRING:
-        break;
-
-#define FROM_DISK(DBR, TYP, TIMETYP, MACRO)                             \
-    case DBR:                                                           \
-        {                                                               \
-            TYP *data = & ((TIMETYP *)value)->value;                    \
-            for (size_t i=0; i<count; ++i)  MACRO(data[i]);             \
-        }                                                               \
-        break;
-        FROM_DISK(DBR_TIME_DOUBLE, dbr_double_t, dbr_time_double, DoubleFromDisk)
-        FROM_DISK(DBR_TIME_FLOAT,  dbr_float_t,  dbr_time_float,  FloatFromDisk)
-        FROM_DISK(DBR_TIME_SHORT,  dbr_short_t,  dbr_time_short,  SHORTFromDisk)
-        FROM_DISK(DBR_TIME_ENUM,   dbr_enum_t,   dbr_time_enum,   USHORTFromDisk)
-        FROM_DISK(DBR_TIME_LONG,   dbr_long_t,   dbr_time_long,   LONGFromDisk)
-    default:
-        throwDetailedArchiveException(Invalid, "Unknown DBR_xx");
-#undef FROM_DISK
-    }
-}
-
-void BinRawValue::write(DbrType type, DbrCount count, size_t size, const Type *value,
-                        MemoryBuffer<dbr_time_string> &cvt_buffer,
-                        FILE *file, FileOffset offset)
-{
-    cvt_buffer.reserve(size);
-    dbr_time_string *buffer = cvt_buffer.mem();
-
-    memcpy(buffer, value, size);
-    SHORTToDisk(buffer->status);
-    SHORTToDisk(buffer->severity);
-    epicsTimeStampToDisk(buffer->stamp);
-
-    switch (type)
-    {
-#define TO_DISK(DBR, TYP, TIMETYP, CVT_MACRO)                           \
-    case DBR:                                                           \
-        {                                                               \
-            TYP *data = & ((TIMETYP *)buffer)->value;                   \
-            for (size_t i=0; i<count; ++i)  CVT_MACRO (data[i]);        \
-        }                                                               \
-        break;
-
-    case DBR_TIME_CHAR:
-    case DBR_TIME_STRING:
-        // no conversion necessary
-        break;
-        TO_DISK(DBR_TIME_DOUBLE, dbr_double_t, dbr_time_double, DoubleToDisk)
-        TO_DISK(DBR_TIME_FLOAT,  dbr_float_t,  dbr_time_float,  FloatToDisk)
-        TO_DISK(DBR_TIME_SHORT,  dbr_short_t,  dbr_time_short,  SHORTToDisk)
-        TO_DISK(DBR_TIME_ENUM,   dbr_enum_t,   dbr_time_enum,   USHORTToDisk)
-        TO_DISK(DBR_TIME_LONG,   dbr_long_t,   dbr_time_long,   LONGToDisk)
-    default:
-        throwDetailedArchiveException (Invalid, "Unknown DBR_xx");
-#undef TO_DISK
-    }
-
-    if (fseek (file, offset, SEEK_SET) != 0 ||
-        (FileOffset) ftell(file) != offset  ||
-        fwrite(buffer, size, 1, file) != 1)
-        throwArchiveException (WriteError);
-}
-
-//////////////////////////////////////////////////////////////////////
-// BinValue
-//////////////////////////////////////////////////////////////////////
 
 // Create a value suitable for the given DbrType
 BinValue *BinValue::create(DbrType type, DbrCount count)
@@ -492,5 +404,3 @@ bool BinValueDbrChar::parseValue (const stdString &text)
 
     return true;
 }
-
-

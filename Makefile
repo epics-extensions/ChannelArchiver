@@ -33,6 +33,13 @@ cleanCGITest:
 
 new:	clean all
 
+tag:    
+	(cd ../Tools; \
+	 cvs tag Tools-$(VERSION)-$(RELEASE)-$(PATCH);
+	 cd ../ChannelArchiver;
+	 cvs tag ChannelArchiver-$(VERSION)-$(RELEASE)-$(PATCH))
+        
+
 zip:	cleanCGITest
 	(cd /tmp; \
 	 rm -rf /tmp/Tools;\

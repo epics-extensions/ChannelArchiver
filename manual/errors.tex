@@ -1,0 +1,74 @@
+\chapter{Common Errors and Questions}
+
+The following explains error messages and commonly
+asked questions.
+
+\noindent
+\textbf{Why is there no data in my archive?}\\
+The ArchiveEngine should report warning messages whenever the
+connection to a channel goes down or when there is a problem with the
+data. So after a channel was at least once available, there should be
+more or less meaningful messages. After the initial startup, however,
+there won't be any information until a channel is at least once
+connected. So if a channel never connected, the debugging needs to
+fall back to a basic CA error search:\\
+Is the data source available?
+Can you read the channel with other CA client tools
+(probe, EDM, cau, caget, ...)?
+Can you do that from the computer where you are running
+the ArchiveEngine? Does it work with the environment settings and user
+ID under which you are trying to run the ArchiveEngine?
+
+\noindent
+\textbf{Back in time?}\\
+The archiver relies on the world going forward in time. When
+retrieving samples from an archive, we expect the time stamps to be
+monotonic and non-decreasing. Time stamps going back in time break the
+lookup mechanism. Data files with non-monotonic time stamps are
+useless. Unfortunately, the clocks of IOCs or other computers running
+CA servers can be mis-configured. The ArchiveEngine attempts to catch
+some of these problems, but all it can do is drop the affected
+samples, there is no recipe for correcting the time stamps.
+
+Bottom line: When you receive time-stamp related warnings, it is too
+late. You need to have the clocks of all CA servers properly configured
+(also see page~\pageref{back:in:time}).
+
+\noindent
+\textbf{Found an existing lock file 'archive\_active.lck'}\\
+When the ArchiveEngine is started, it creates a \INDEX{lock file} in
+the current directory. The lock file is an ordinary text file
+that contains the start time when the engine was launched. When
+the engine stops, it removes the file.
+
+The idea here is to prevent more than one archive engine to run
+in the same directory, writing to the same index and data files
+and thus creating garbage data: Whenever the archive engine sees
+a lock file, it refuses to run with the above error message.
+
+Under normal circumstances, one should not find such lock files
+left behind after the engine shuts down cleanly. The presence of
+a lock file indicates two possible problems:
+\begin{enumerate}
+\item[a)] There is in fact already an archive engine running in
+this directory, so you cannot start another one.
+\item[b)] The previous engine crashed, it was stopped without
+opportunity to close the data files and remove the lock file.
+It \emph{might} be OK to simply remove the lock file and try
+again, but since the crash could have damaged the data files, it
+is advisable to back them up and run a test before removing the
+lock file and starting another engine.
+\end{enumerate}
+
+\noindent
+\textbf{'ChannelName': Cannot add event because data type is unknown}\\
+The ArchiveEngine tried to write an \INDEX{event} to the data
+file. Examples include a ``Disconnected'' or ``Archiver Off''
+event. Even though this event does not have a value, it only
+indicates a status change or warning, it nevertheless is written
+into the same data buffer where ordinary values are written.
+A problem arises when we never got a connection to the CA
+server, therefore we do not know the value type of the channel
+and thus we cannot allocate a data buffer in which to write this
+special event-type of value.
+

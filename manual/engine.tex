@@ -14,7 +14,7 @@ The ArchiveEngine uses several threads:
 \item A main thread that reads the initial configuration and then
   enters a main loop for the periodic scan lists and writes to the
   disk.
-\item The ChannelAccess client library is used in its multithreaded
+\item The ChannelAccess client library is used in its multi-threaded
   version. The internals of this are beyond the control of the
   ArchiveEngine, the total number of CA client threads is unknown.
 \item The ArchiveEngine's HTTP (web) server runs in a separate thread,
@@ -52,45 +52,4 @@ The other issue arises when one tries to 'kill' a running
 ArchiveEngine. Though the preferred method is via the engine's web
 interface, one can try to send a signal to the first process, the one
 with the lowest PID.
-
-
-\section{Errors}
-
-\noindent
-\textbf{Found an existing lock file 'archive\_active.lck'}\\
-When the ArchiveEngine is started, it creates a \INDEX{lock file} in
-the current directory. The lock file is an ordinary text file
-that contains the start time when the engine was launched. When
-the engine stops, it removes the file.
-
-The idea here is to prevent more than one archive engine to run
-in the same directory, writing to the same index and data files
-and thus creating garbage data: Whenever the archive engine sees
-a lock file, it refuses to run with the above error message.
-
-Under normal circumstances, one should not find such lock files
-left behind after the engine shuts down cleanly. The presence of
-a lock file indicates two possible problems:
-\begin{enumerate}
-\item[a] There is in fact already an archive engine running in
-this directory, so you cannot start another one.
-\item[b] The previous engine crashed, it was stopped without
-opprotunity to close the data files and remove the lock file.
-It \emph{might} be OK to simply remove the lock file and try
-again, but since the crash could have damaged the data files, it
-is advisable to back them up and run a test before removing the
-lock file and starting another engine.
-\end{enumerate}
-
-\noindent
-\textbf{'ChannelName': Cannot add event because data type is unknown}\\
-The ArchiveEngine tried to write an \INDEX{event} to the data
-file. Examples include a ``Disconnected'' or ``Archiver Off''
-event. Even though this event does not have a value, it only
-indicates a status change or warning, it nevertheless is written
-into the same data buffer where ordinary values are written.
-A problem arises when we never got a connection to the CA
-server, therefore we do not know the value type of the channel
-and thus we cannot allocate a data buffer in which to write this
-special event-type of value.
 

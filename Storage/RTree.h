@@ -9,7 +9,34 @@
 // Index
 #include "FileAllocator.h"
 
-#define RTreeM 3
+// When using the ArchiveDataTool to convert about 500 channels,
+// 230MB of data, 102K directory file into an index, these were the
+// results:
+// Via NFS:
+// M=3
+// real    0m30.871s
+// user    0m0.790s
+// sys     0m2.030s
+//  
+// M=10
+// real    0m23.944s
+// user    0m0.830s
+// sys     0m1.690s
+//
+// Local disk:
+// No profiling, M=10
+// real    0m17.148s
+// user    0m0.700s
+// sys     0m0.990s
+//  
+// No profiling, M=50
+// real    0m3.402s  (!)
+// user    0m1.290s
+// sys     0m0.770s
+//
+// --> NFS is bad, small RTreeM values are bad.
+
+#define RTreeM 50
 
 /// \ingroup Storage
 /// \@{

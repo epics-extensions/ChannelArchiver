@@ -75,6 +75,9 @@ public:
     /// Returns directory (path) of this index.
     const stdString &getDirectory() const
     {    return dirname; }
+
+    void showNameHashStats(FILE *f)
+    { names.showStats(f); }
     
 private:
     FILE *f;

@@ -3,10 +3,6 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
-# Profiling:
-#USR_CXXFLAGS += -pg
-#USR_LDFLAGS  += -pg
-
 USR_CXXFLAGS += -I ../../Tools -I ../../rtree
 
 # Includes to be installed

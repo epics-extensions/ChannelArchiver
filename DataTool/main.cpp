@@ -13,6 +13,19 @@
 
 bool verbose;
 
+void show_hash_info(const stdString &index_name)
+{
+    IndexFile index;
+    if (!index.open(index_name))
+    {
+        fprintf(stderr, "Cannot open index '%s'\n",
+                index_name.c_str());
+        return;
+    }
+    index.showNameHashStats(stdout);
+    index.close();
+}
+
 void list_names(const stdString &index_name)
 {
     IndexFile index;
@@ -281,6 +294,7 @@ int main(int argc, const char *argv[])
     CmdArgString dotindex(parser, "dotindex", "<dot filename>",
                           "Dump contents of RTree index into dot file");
     CmdArgString channel_name (parser, "channel", "<name>", "Channel name");
+    CmdArgFlag hashinfo(parser, "hashinfo", "Show Hash table info");
     if (! parser.parse())
         return -1;
     if (help   ||   parser.getArguments().size() != 1)
@@ -293,6 +307,8 @@ int main(int argc, const char *argv[])
 
     if (list_index)
         list_names(index_name);
+    else if (hashinfo)
+        show_hash_info(index_name);
     else if (dir2index.get().length() > 0)
     {
         convert_dir_index(dir2index, index_name);

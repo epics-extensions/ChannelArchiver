@@ -4,9 +4,6 @@ include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
 USR_CXXFLAGS += -I ../../Index -I ../../rtree
-# Profiling:
-#USR_CXXFLAGS += -pg
-#USR_LDFLAGS  += -pg
 
 ArchiveEngine_SRCS += CircularBuffer.cpp
 ArchiveEngine_SRCS += ArchiveChannel.cpp

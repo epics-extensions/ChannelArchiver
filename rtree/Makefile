@@ -3,11 +3,6 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
-# Profiling:
-#USR_CXXFLAGS += -pg -g
-#USR_LDFLAGS  += -pg
-#INC +=
-
 # Contents of library
 LIB_SRCS += archiver_index.cpp
 LIB_SRCS += archiver_unit.cpp

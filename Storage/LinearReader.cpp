@@ -23,6 +23,7 @@ const RawValue::Data *LinearReader::find(
     const epicsTime *start,
     const epicsTime *end)
 {
+    this->channel_name = channel_name;
     reader_data = reader.find(channel_name, start, end);
     if (reader_data)
     {

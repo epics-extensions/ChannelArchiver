@@ -14,8 +14,8 @@
 #include <math.h>
 #include <iostream>
 
-#define LOG_NSV(stuff)    LOG_MSG(stuff)
-//#define LOG_NSV(stuff)  {}
+//#define LOG_NSV(stuff)    LOG_MSG(stuff)
+#define LOG_NSV(stuff)  {}
 
 // Helper:
 // print chid

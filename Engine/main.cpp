@@ -112,6 +112,10 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
+#ifdef ENGINE_DEBUG
+    LOG_MSG("ChannelArchiver thread 0x%08X entering main loop\n",
+            epicsThreadGetIdSelf());
+#endif
     try
     {
         // Main loop
@@ -147,6 +151,9 @@ int main(int argc, const char *argv[])
     // the MS VC debugger will freak out
     LOG_MSG ("Shutting down Engine\n");
     theEngine->shutdown ();
+
+    epicsThreadSleep(1.0);
+    
     LOG_MSG ("Done\n");
     delete config;
     lock_file.Unlock ();

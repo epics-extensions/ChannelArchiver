@@ -1,7 +1,9 @@
 #ifndef __BINTYPES_H__
 #define __BINTYPES_H__
 
+#include "../ArchiverConfig.h"
 #include "ArchiveTypes.h"
+#include <db_access.h>
 #include <epicsTime.h>
 #include <LowLevelIO.h>
 
@@ -20,6 +22,26 @@ inline void USHORTFromDisk(unsigned short &item)
 inline void USHORTToDisk(unsigned short &item)
 {	item = htons (item);	}
 
+inline void DoubleFromDisk(double &d)
+{
+    dbr_long_t  cvrt_tmp = ntohl(((dbr_long_t *)&d)[0]);
+    ((dbr_long_t *)&d)[0] = ntohl(((dbr_long_t *)&d)[1]);
+    ((dbr_long_t *)&d)[1] = cvrt_tmp;
+}
+
+inline void DoubleToDisk(double &d)
+{
+    dbr_long_t  cvrt_tmp = htonl(((dbr_long_t *)&d)[0]);
+    ((dbr_long_t *)&d)[0] = htonl(((dbr_long_t *)&d)[1]);
+    ((dbr_long_t *)&d)[1] = cvrt_tmp;
+}
+
+inline void FloatFromDisk(float &d)
+{   *((dbr_long_t *)&d) = ntohl(*((dbr_long_t *)&d)); }
+
+inline void FloatToDisk(float &d)
+{   *((dbr_long_t *)&d) = htonl(*((dbr_long_t *)&d)); }
+
 inline void epicsTimeStampFromDisk(epicsTimeStamp &ts)
 {
 	ts.secPastEpoch = ntohl(ts.secPastEpoch);
@@ -33,8 +55,8 @@ inline void epicsTimeStampToDisk(epicsTimeStamp &ts)
 }
 
 #define SHORTFromDisk(s)	USHORTFromDisk((unsigned short &)s)
-#define LONGFromDisk(l)		ULONGFromDisk((unsigned long &)l)
 #define SHORTToDisk(s)		USHORTToDisk((unsigned short &)s)
+#define LONGFromDisk(l)		ULONGFromDisk((unsigned long &)l)
 #define LONGToDisk(l)		ULONGToDisk((unsigned long &)l)
 
 #else
@@ -43,11 +65,15 @@ inline void epicsTimeStampToDisk(epicsTimeStamp &ts)
 #define ULONGToDisk(i)   {}
 #define USHORTFromDisk(i) {}
 #define USHORTToDisk(i)   {}
+#define DoubleFromDisk(i) {}
+#define DoubleToDisk(i)   {}
+#define FloatFromDisk(i)   {}
+#define FloatToDisk(i)   {}
 #define epicsTimeStampFromDisk(i) {}
 #define epicsTimeStampToDisk(i) {}
 #define SHORTFromDisk(i) {}
-#define LONGFromDisk(i) {}
 #define SHORTToDisk(i) {}
+#define LONGFromDisk(i) {}
 #define LONGToDisk(i) {}
 
 #endif // CONVERSION_REQUIRED

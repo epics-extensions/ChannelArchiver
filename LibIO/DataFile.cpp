@@ -18,51 +18,51 @@
 // DataHeader
 //////////////////////////////////////////////////////////////////////
 
-void DataHeader::read (LowLevelIO &file, FileOffset offset)
+void DataHeader::read(LowLevelIO &file, FileOffset offset)
 {
-    if ((FileOffset) file.llseek (offset) != offset  ||
-        !file.llread (this, sizeof (DataHeader)))
-        throwArchiveException (ReadError);
+    if ((FileOffset) file.llseek(offset) != offset  ||
+        !file.llread(this, sizeof(DataHeader)))
+        throwArchiveException(ReadError);
     // convert the data header into host format:
-    FileOffsetFromDisk (dir_offset);
-    FileOffsetFromDisk (next_offset);
-    FileOffsetFromDisk (prev_offset);
-    FileOffsetFromDisk (curr_offset);
-    ULONGFromDisk (num_samples);
-    FileOffsetFromDisk (config_offset);
-    ULONGFromDisk (buf_size);
-    ULONGFromDisk (buf_free);
-    USHORTFromDisk (dbr_type);
-    USHORTFromDisk (nelements);
-    //DoubleFromDisk (period);
-    epicsTimeStampFromDisk (begin_time);
-    epicsTimeStampFromDisk (next_file_time);
-    epicsTimeStampFromDisk (end_time);
+    FileOffsetFromDisk(dir_offset);
+    FileOffsetFromDisk(next_offset);
+    FileOffsetFromDisk(prev_offset);
+    FileOffsetFromDisk(curr_offset);
+    ULONGFromDisk(num_samples);
+    FileOffsetFromDisk(config_offset);
+    ULONGFromDisk(buf_size);
+    ULONGFromDisk(buf_free);
+    USHORTFromDisk(dbr_type);
+    USHORTFromDisk(nelements);
+    DoubleFromDisk(period);
+    epicsTimeStampFromDisk(begin_time);
+    epicsTimeStampFromDisk(next_file_time);
+    epicsTimeStampFromDisk(end_time);
 }
 
-void DataHeader::write (LowLevelIO &file, FileOffset offset) const
+void DataHeader::write(LowLevelIO &file, FileOffset offset) const
 {
     DataHeader copy (*this);
 
     // convert the data header into host format:
-    FileOffsetToDisk (copy.dir_offset);
-    FileOffsetToDisk (copy.next_offset);
-    FileOffsetToDisk (copy.prev_offset);
-    FileOffsetToDisk (copy.curr_offset);
-    ULONGToDisk (copy.num_samples);
-    FileOffsetToDisk (copy.config_offset);
-    ULONGToDisk (copy.buf_size);
-    ULONGToDisk (copy.buf_free);
-    USHORTToDisk (copy.dbr_type);
-    USHORTToDisk (copy.nelements);
-    //DoubleToDisk (copy.period);
-    epicsTimeStampToDisk (copy.begin_time);
-    epicsTimeStampToDisk (copy.next_file_time);
-    epicsTimeStampToDisk (copy.end_time);
+    FileOffsetToDisk(copy.dir_offset);
+    FileOffsetToDisk(copy.next_offset);
+    FileOffsetToDisk(copy.prev_offset);
+    FileOffsetToDisk(copy.curr_offset);
+    ULONGToDisk(copy.num_samples);
+    FileOffsetToDisk(copy.config_offset);
+    ULONGToDisk(copy.buf_size);
+    ULONGToDisk(copy.buf_free);
+    USHORTToDisk(copy.dbr_type);
+    USHORTToDisk(copy.nelements);
+    DoubleToDisk(copy.period);
+    epicsTimeStampToDisk(copy.begin_time);
+    epicsTimeStampToDisk(copy.next_file_time);
+    epicsTimeStampToDisk(copy.end_time);
 
-    if ((FileOffset)file.llseek (offset) != offset  ||
-        !file.llwrite (&copy, sizeof (DataHeader)))
-        throwArchiveException (WriteError);
+    if ((FileOffset)file.llseek(offset) != offset  ||
+        !file.llwrite(&copy, sizeof(DataHeader)))
+        throwArchiveException(WriteError);
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -91,6 +91,8 @@ void Engine::shutdown()
 {
     LOG_MSG("Shutdown:\n");
     LOG_ASSERT(this == theEngine);
+    LOG_MSG("Stopped ChannelAccess:\n");
+    ca_context_destroy();
 
     delete engine_server;
     engine_server = 0;
@@ -129,7 +131,6 @@ void Engine::shutdown()
 
 Engine::~Engine()
 {
-    ca_context_destroy();
     delete _archive;
 
     while (! _channels.empty())

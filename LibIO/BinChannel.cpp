@@ -7,12 +7,12 @@
 #include "ArchiveException.h"
 #include "epicsTimeHelper.h"
 
-BinChannel::BinChannel ()
+BinChannel::BinChannel()
 {
-	init ();
+	init();
 }
 
-BinChannel::~BinChannel ()
+BinChannel::~BinChannel()
 {
     if (_append_buffer)
     {
@@ -30,9 +30,9 @@ BinChannel & BinChannel::operator = (const BinChannel &rhs)
 	return *this;
 }
 
-void BinChannel::init (const char *name)
+void BinChannel::init(const char *name)
 {
-	memset (&_data, 0, getDataSize ());
+	memset(&_data, 0, getDataSize());
 	if (name)
 	{
 		strncpy(_data.name, name, ChannelNameLength);
@@ -44,102 +44,102 @@ void BinChannel::init (const char *name)
 	_append_buffer = 0;
 }
 
-BinArchive *BinChannel::getArchive ()
+BinArchive *BinChannel::getArchive()
 {
 	if (!_channel_iter)
 		return 0;
-	return _channel_iter->getArchive ();
+	return _channel_iter->getArchive();
 }
 
-void BinChannel::read (LowLevelIO &file, FileOffset offset)
+void BinChannel::read(LowLevelIO &file, FileOffset offset)
 {
 	if (_append_buffer)
-		throwDetailedArchiveException (Invalid, "Open append-buffer");
+		throwDetailedArchiveException(Invalid, "Open append-buffer");
 
-	if (file.llseek (offset) != offset  ||
-		!file.llread (&_data, getDataSize ()))
-		throwArchiveException (ReadError);
-	FileOffsetFromDisk (_data.next_entry_offset);
-	FileOffsetFromDisk (_data.last_offset);
-	FileOffsetFromDisk (_data.first_offset);
-	epicsTimeStampFromDisk   (_data.create_time);
-	epicsTimeStampFromDisk   (_data.first_save_time);
-	epicsTimeStampFromDisk   (_data.last_save_time);
+	if (file.llseek(offset) != offset  ||
+		!file.llread(&_data, getDataSize()))
+		throwArchiveException(ReadError);
+	FileOffsetFromDisk(_data.next_entry_offset);
+	FileOffsetFromDisk(_data.last_offset);
+	FileOffsetFromDisk(_data.first_offset);
+	epicsTimeStampFromDisk(_data.create_time);
+	epicsTimeStampFromDisk(_data.first_save_time);
+	epicsTimeStampFromDisk(_data.last_save_time);
 	_offset = offset;
 }
 
-void BinChannel::write (LowLevelIO &file, FileOffset offset) const
+void BinChannel::write(LowLevelIO &file, FileOffset offset) const
 {
 	Data copy = _data;
 
-	FileOffsetToDisk (copy.next_entry_offset);
-	FileOffsetToDisk (copy.last_offset);
-	FileOffsetToDisk (copy.first_offset);
-	epicsTimeStampToDisk (copy.create_time);
-	epicsTimeStampToDisk (copy.first_save_time);
-	epicsTimeStampToDisk (copy.last_save_time);
+	FileOffsetToDisk(copy.next_entry_offset);
+	FileOffsetToDisk(copy.last_offset);
+	FileOffsetToDisk(copy.first_offset);
+	epicsTimeStampToDisk(copy.create_time);
+	epicsTimeStampToDisk(copy.first_save_time);
+	epicsTimeStampToDisk(copy.last_save_time);
 
-	if (file.llseek (offset) != offset  ||
-		!file.llwrite (&copy, getDataSize ()))
-		throwArchiveException (WriteError);
+	if (file.llseek(offset) != offset  ||
+		!file.llwrite(&copy, getDataSize()))
+		throwArchiveException(WriteError);
 	_offset = offset;
 }
 
 // Implementation of ChannelI
-const char *BinChannel::getName ()   const
+const char *BinChannel::getName()   const
 {	return _data.name; }
 
-epicsTime BinChannel::getCreateTime () const
+epicsTime BinChannel::getCreateTime() const
 {	return epicsTime(_data.create_time); }
 
-epicsTime BinChannel::getFirstTime ()  const
+epicsTime BinChannel::getFirstTime()  const
 {	return epicsTime(_data.first_save_time); }
 
-epicsTime BinChannel::getLastTime ()   const
+epicsTime BinChannel::getLastTime()   const
 {	return epicsTime(_data.last_save_time); }
 
-bool BinChannel::getFirstValue (ValueIteratorI *arg)
+bool BinChannel::getFirstValue(ValueIteratorI *arg)
 {
 	BinValueIterator *value = dynamic_cast <BinValueIterator *> (arg);
 
-	if (getArchive () && isValidFilename (getFirstFile()))
+	if (getArchive() && isValidFilename(getFirstFile()))
 	{
 		stdString full_name;
-		getArchive ()->makeFullFileName (getFirstFile(), full_name);
-		return value->attach (this, full_name, getFirstOffset ());
+		getArchive()->makeFullFileName(getFirstFile(), full_name);
+		return value->attach(this, full_name, getFirstOffset());
 	}
 
-	value->clear ();
+	value->clear();
 	return false;
 }
 
-bool BinChannel::getLastValue (ValueIteratorI *arg)
+bool BinChannel::getLastValue(ValueIteratorI *arg)
 {
 	BinValueIterator *value = dynamic_cast <BinValueIterator *> (arg);
 
-	if (getArchive () && isValidFilename (getLastFile()))
+	if (getArchive() && isValidFilename(getLastFile()))
 	{
 		stdString full_name;
-		getArchive ()->makeFullFileName (getLastFile(), full_name);
-		return value->attach (this, full_name, getLastOffset (), true);
+		getArchive()->makeFullFileName(getLastFile(), full_name);
+		return value->attach(this, full_name, getLastOffset(), true);
 	}
 
-	value->clear ();
+	value->clear();
 	return false;
 }
 
-bool BinChannel::getValueAfterTime (const epicsTime &time, ValueIteratorI *arg)
+bool BinChannel::getValueAfterTime(const epicsTime &time, ValueIteratorI *arg)
 {
 	// Before first value?
 	if (time == nullTime  ||  time <= getFirstTime())
-		return getFirstValue (arg);
+		return getFirstValue(arg);
 
 	BinValueIterator *value = dynamic_cast <BinValueIterator *> (arg);
 
 	// After last value?
-	if (!getArchive ()  ||   time > getLastTime())
+	if (!getArchive()  ||   time > getLastTime())
 	{
-		value->clear ();
+		value->clear();
 		return false;
 	}
 
@@ -150,15 +150,16 @@ bool BinChannel::getValueAfterTime (const epicsTime &time, ValueIteratorI *arg)
 	stdString full_name;
 
 	// Find data header that brackens 'time':
-	if (from_start < from_end  &&  isValidFilename (getFirstFile()) )
+	if (from_start < from_end  &&  isValidFilename(getFirstFile()) )
 	{	// start at beginning of archive:
-		getArchive ()->makeFullFileName (getFirstFile (), full_name);
+		getArchive()->makeFullFileName(getFirstFile(), full_name);
 		try
 		{
-			if (value->attach (this, full_name, getFirstOffset ()))
+			if (value->attach(this, full_name, getFirstOffset()))
 			{
 				// Snoop forward in time:
-				while (value->getHeader()->getEndTime() < time  &&  value->nextBuffer ())
+				while (value->getHeader()->getEndTime() < time  &&
+                       value->nextBuffer())
 				{}
 				found_buffer = true;
 			}
@@ -168,17 +169,18 @@ bool BinChannel::getValueAfterTime (const epicsTime &time, ValueIteratorI *arg)
 			LOG_MSG("BinChannel::getValueAfterTime caught: %s\n", e.what());
 		}
 	}
-	// start f. beginning not suggested - or failed for some other reason like broken archive
+	// start f. beginning not suggested -
+    // or failed for some other reason like broken archive
 	if (! found_buffer)
 	{	// start at end of archive to retrieve latest data first:
-		getArchive ()->makeFullFileName (getLastFile (), full_name);
-		if (! value->attach (this, full_name, getLastOffset ()))
+		getArchive()->makeFullFileName(getLastFile(), full_name);
+		if (! value->attach(this, full_name, getLastOffset()))
 			return false;
 		// Snoop back in time:
 		while (value->getHeader()->getBeginTime() > time)
 		{
-			if (! value->prevBuffer ())
-				return value->readValue (0); // first value we can find...
+			if (! value->prevBuffer())
+				return value->readValue(0); // first value we can find...
 		}
 	}
 
@@ -188,14 +190,15 @@ bool BinChannel::getValueAfterTime (const epicsTime &time, ValueIteratorI *arg)
 	// are illdefined....
 	// ->
 	// linear search:
-	value->readValue (0);
+	value->readValue(0);
 	while (value->isValid() && value->getValue()->getTime() < time)
 		value->next();
 
 	return value->isValid();
 }
 
-bool BinChannel::getValueBeforeTime(const epicsTime &time, ValueIteratorI *value)
+bool BinChannel::getValueBeforeTime(const epicsTime &time,
+                                    ValueIteratorI *value)
 {
 	LOG_ASSERT(value);
 	if (time == nullTime)
@@ -214,8 +217,8 @@ bool BinChannel::getValueBeforeTime(const epicsTime &time, ValueIteratorI *value
 
 bool BinChannel::getValueNearTime(const epicsTime &time, ValueIteratorI *value)
 {	// not optimal....
-	if (! getValueBeforeTime (time, value))
-		return getValueAfterTime (time, value);
+	if (! getValueBeforeTime(time, value))
+		return getValueAfterTime(time, value);
 
 	double before = fabs(value->getValue()->getTime() - time);
 	value->next();
@@ -231,28 +234,28 @@ bool BinChannel::getValueNearTime(const epicsTime &time, ValueIteratorI *value)
 	return value->isValid();
 }
 
-size_t BinChannel::lockBuffer (const ValueI &value, double period)
+size_t BinChannel::lockBuffer(const ValueI &value, double period)
 {
 	// add value to last buffer
-	if (!getArchive ()  ||  ! isValidFilename (getLastFile ()))
+	if (!getArchive()  ||  ! isValidFilename(getLastFile()))
 		return 0;
 
 	stdString last_file_name;
-	getArchive ()->makeFullFileName(getLastFile (), last_file_name);
+	getArchive()->makeFullFileName(getLastFile(), last_file_name);
 
 	if (! _append_buffer)
 		_append_buffer = new DataHeaderIterator();
-	DataFile *file = DataFile::reference (last_file_name, true/*for write*/);
-	_append_buffer->attach (file, getLastOffset());
-	file->release (); // now ref'd by "_append_buffer"
+	DataFile *file = DataFile::reference(last_file_name, true/*for write*/);
+	_append_buffer->attach(file, getLastOffset());
+	file->release(); // now ref'd by "_append_buffer"
 
 	if ((*_append_buffer)->getType() == value.getType() &&
 		(*_append_buffer)->getCount() == value.getCount() &&
 		(*_append_buffer)->getNextTime() > value.getTime())
 	{
 		// Calc. number of free entries
-		size_t value_size = value.getRawValueSize ();
-		unsigned long buf_free = (*_append_buffer)->getBufFree ();
+		size_t value_size = value.getRawValueSize();
+		unsigned long buf_free = (*_append_buffer)->getBufFree();
 		if (buf_free > 0)
 			return buf_free / value_size;
 	}
@@ -260,7 +263,8 @@ size_t BinChannel::lockBuffer (const ValueI &value, double period)
 	return 0;
 }
 
-void BinChannel::addBuffer (const ValueI &value_arg, double period, size_t value_count)
+void BinChannel::addBuffer(const ValueI &value_arg, double period,
+                           size_t value_count)
 {
 	// dir_entry: this BinChannel + it's offset in _archive->_dir
 	LOG_ASSERT(getArchive());
@@ -306,7 +310,8 @@ void BinChannel::addBuffer (const ValueI &value_arg, double period, size_t value
 	{
 		stdString last_file_name;
 		getArchive ()->makeFullFileName (getLastFile (), last_file_name);
-		DataFile *file = DataFile::reference (last_file_name, true /* for write */);
+		DataFile *file = DataFile::reference (last_file_name,
+                                              true /* for write */);
 		prev = new DataHeaderIterator ();
 		prev->attach (file, getLastOffset());
 		file->release (); // now ref'd by "prev"
@@ -314,7 +319,8 @@ void BinChannel::addBuffer (const ValueI &value_arg, double period, size_t value
 
 	stdString data_file_path;
 	getArchive ()->makeFullFileName (data_file_name, data_file_path);
-	DataFile *data = DataFile::reference (data_file_path, true /* for write */);
+	DataFile *data = DataFile::reference (data_file_path,
+                                          true /* for write */);
 	if (! _append_buffer)
 		_append_buffer = new DataHeaderIterator();
 

@@ -66,12 +66,12 @@ void BinCtrlInfo::read(LowLevelIO &file, FileOffset offset)
     switch (info->type)
     {
     case Numeric:
-        //FloatFromDisk(info->value.analog.disp_high);
-        //FloatFromDisk(info->value.analog.disp_low);
-        //FloatFromDisk(info->value.analog.low_warn);
-        //FloatFromDisk(info->value.analog.low_alarm);
-        //FloatFromDisk(info->value.analog.high_warn);
-        //FloatFromDisk(info->value.analog.high_alarm);
+        FloatFromDisk(info->value.analog.disp_high);
+        FloatFromDisk(info->value.analog.disp_low);
+        FloatFromDisk(info->value.analog.low_warn);
+        FloatFromDisk(info->value.analog.low_alarm);
+        FloatFromDisk(info->value.analog.high_warn);
+        FloatFromDisk(info->value.analog.high_alarm);
         LONGFromDisk (info->value.analog.prec);
         {
             // Hack: some old archives are written with nonterminated unit strings:
@@ -108,12 +108,12 @@ void BinCtrlInfo::write (LowLevelIO &file, FileOffset offset) const
     switch (copy.type) // convert to disk format
     {
     case Numeric:
-        //FloatToDisk(copy.value.analog.disp_high);
-        //FloatToDisk(copy.value.analog.disp_low);
-        //FloatToDisk(copy.value.analog.low_warn);
-        //FloatToDisk(copy.value.analog.low_alarm);
-        //FloatToDisk(copy.value.analog.high_warn);
-        //FloatToDisk(copy.value.analog.high_alarm);
+        FloatToDisk(copy.value.analog.disp_high);
+        FloatToDisk(copy.value.analog.disp_low);
+        FloatToDisk(copy.value.analog.low_warn);
+        FloatToDisk(copy.value.analog.low_alarm);
+        FloatToDisk(copy.value.analog.high_warn);
+        FloatToDisk(copy.value.analog.high_alarm);
         LONGToDisk (copy.value.analog.prec);
         converted = offsetof (CtrlInfoData, value) + sizeof (NumericInfo);
         break;

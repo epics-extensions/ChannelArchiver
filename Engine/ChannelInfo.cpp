@@ -12,6 +12,7 @@
 #include <epicsTimeHelper.h>
 #include <math.h>
 
+#if 0
 // Helper:
 // print chid
 static void show_chid(const chid &chid)
@@ -44,6 +45,7 @@ static void show_chid(const chid &chid)
         printf("%d (undefined)\n", ca_state(chid));
     }
 }
+#endif
 
 ChannelInfo::ChannelInfo()
 {
@@ -317,6 +319,12 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
         // size or type might have changed...
         me->setValueType(dbr_type, nelements);
 
+#ifdef ENGINE_DEBUG
+        LOG_MSG("caControlHandler(%s) got CtrlInfo for %s [%d]\n",
+                me->getName().c_str(),
+                dbr_type_to_text(dbr_type), nelements);
+#endif
+        
         // Already subscribed or first connection?
         if (me->_mechanism == none   ||
             (me->isMonitored() && me->_mechanism != use_monitor)  )
@@ -359,10 +367,6 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
 {
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
     me->lock();
-#ifdef ENGINE_DEBUG
-    LOG_MSG("caEventHandler(%s), thread 0x%08X\n",
-            me->getName().c_str(), epicsThreadGetIdSelf());
-#endif
     if (!me || !me->_new_value)
     {
         LOG_MSG("'%s': caEventHandler called without ChannelInfo\n",
@@ -371,6 +375,17 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
         return;
     }
     me->_new_value->copyIn(reinterpret_cast<const RawValueI::Type *>(arg.dbr));
+
+#ifdef ENGINE_DEBUG
+    stdString time, val, stat;
+    me->_new_value->getTime(time);
+    me->_new_value->getValue(val); 
+    me->_new_value->getStatus(stat);
+    LOG_MSG("caEventHandler(%s), thread 0x%08X: %s %s %s\n",
+            me->getName().c_str(), epicsThreadGetIdSelf(),
+            time.c_str(), val.c_str(), stat.c_str());
+#endif
+
     me->handleNewValue();
     me->unlock();
 }
@@ -825,6 +840,16 @@ void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
             break;
         }
 
+#ifdef ENGINE_DEBUG
+        stdString time, val, stat;
+        _write_value->getTime(time);
+        _write_value->getValue(val); 
+        _write_value->getStatus(stat);
+        LOG_MSG("write thread 0x%08X: %s %s %s %s\n",
+                epicsThreadGetIdSelf(), channel->getName(),
+                time.c_str(), val.c_str(), stat.c_str());
+#endif
+        
         if (--count <= 0)
             break;
         --avail;

@@ -12,6 +12,17 @@
 #ifndef _ARCHIVER_CONFIG_H__
 #define _ARCHIVER_CONFIG_H__
 
+// Little-Endian Architectures require conversions
+// because the binary archive stores all data
+// in the big-endian (aka network or Motorola) format.
+// CONVERSION_REQUIRED is required on:
+// Intel PCs (WIN32, Linux, OpenBSD, ...)
+// It is usually not required on Sun Solaris machines.
+//
+// Note: The archiver assumes IEEE Floats
+//       It won't work on VAX/VMS systems!
+#define CONVERSION_REQUIRED 
+
 // ----------------------------------------------------------
 // General
 // ----------------------------------------------------------

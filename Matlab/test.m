@@ -1,4 +1,8 @@
 % Test of ArchiveData                                  -*- octave -*-
+%
+% This test makes assumptions about what your
+% data server serves.
+% In this example, key=4 points to ChannelArchiver/DemoData/index.
 
 global is_matlab;
 eval('is_matlab=length(matlabroot)>0;', 'is_matlab=0;')
@@ -11,28 +15,27 @@ ml_arch_info(url);
 h_raw=0;
 h_sheet=1;
 h_average=2;
-h_linear=3;
-h_plot=4;
-
+h_plot=3;
+h_linear=4;
 
 ml_arch_archives(url);
 [keys,names,paths]=ml_arch_archives(url);
 
 names={ 'Test_HPRF:Kly1:Pwr_Fwd_Out', 'Test_HPRF:SSA1:Pwr_Fwd_Out' }
-key=3;
+key=4;
 ml_arch_names(url, key, 'IOC');
 ml_arch_names(url, key, names{1});
 ml_arch_get(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20),...
-            1, 20);
+            h_sheet, 20);
 ml_arch_get(url, key, names{1}, datenum(2003, 1, 18), datenum(2003, 1, 20),...
-            3, 20);
+            h_plot, 20);
 ml_arch_plot(url, key, names{1}, ...
-	     datenum(2003, 1, 18), datenum(2003, 1, 20), 3, 500);
+	     datenum(2003, 1, 18), datenum(2003, 1, 20), h_plot, 500);
 
 % Getting & handling 2 PVs at once:
 t0 = datenum(2003, 1, 18);
 t1 = t0 + 2;
-[out, in]=ArchiveData(url, 'values', key, names, t0, t1, 500, 3);
+[out, in]=ArchiveData(url, 'values', key, names, t0, t1, 500, h_plot);
 tin=in(1,:);
 tout=out(1,:);
 in=in(3,:);
@@ -48,5 +51,41 @@ else
     xlabel(sprintf('Time on %02d/%02d/%04d [24h]', M, D, Y))
     plot(tin-day, in, '-;Klystron Input [10 W];', ...
          tout-day,out, '-;Klystron Output [kW];');
+end
+
+t0 = datenum(2003, 1, 19);
+t1 = t0 + 2;
+[out, in]=ArchiveData(url, 'values', key, names, t0, t1, 1000, h_average);
+tin=in(1,:);
+tout=out(1,:);
+in=in(3,:);
+out=out(3,:);
+if length(tin) ~= length(tout) |  ~(isempty(find(tin-tout)))
+    disp('TIME STAMPS OF THE 2 CHANNELS DO NOT MATCH');
+end
+gain=10*log10((out*1000)./in);
+if is_matlab==1
+    subplot(1,2,1);
+    plot(tin, in*10, 'b-', tin, out, 'r-');
+    legend('Input [10 W]', 'Output [kW]');
+    datetick('x', 1);
+    title('Klystron Input/Output');
+    subplot(1,2,2);
+    plot(out, gain, 'rd');
+    xlabel('Klystron Output [kW]');
+    ylabel('Gain [dB]');
+    title('Klystron Gain');
+else
+    subplot(1,2,1);
+    t0=min(tin(1),tout(1));
+    [Y,M,D,h,m,s] = datevec(t0);
+    day=floor(t0);
+    xlabel(sprintf('Time on %02d/%02d/%04d [24h]', M, D, Y))
+    plot(tin-day, in, '-;Klystron Input [10 W];', ...
+         tout-day,out, '-;Klystron Output [kW];');
+    subplot(1,2,2);
+    xlabel('Klystron Output [kW]');
+    ylabel('Gain [dB]');
+    plot(out, gain, '*;;');
 end
 

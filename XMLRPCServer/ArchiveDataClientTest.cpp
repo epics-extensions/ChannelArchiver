@@ -7,14 +7,14 @@
 //#define URL "http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi"
 #define URL "http://bogart/cgi-bin/xmlrpc/ArchiveDataServer4.cgi"
 
-bool printer(void *arg, const char *name, size_t i,
+bool printer(void *arg, const char *name, size_t n, size_t i,
              const CtrlInfo &info,
              DbrType type, DbrCount count,
              const RawValue::Data *value)
 {
     if (i==0)
     {
-        printf("Channel: '%s'\n", name);
+        printf("Channel # %d: '%s'\n", n, name);
         info.show(stdout);
     }
     RawValue::show(stdout, type, count, value, &info);

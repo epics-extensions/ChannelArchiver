@@ -173,13 +173,13 @@ bool ArchiveDataClient::getValues(int key, stdVector<stdString> &names,
                                   value_callback callback, void *callback_arg)
 {
     xmlrpc_value *name_array, *result, *element;
-    size_t i;
+    size_t n;
     name_array = xmlrpc_build_value(&env, STR("()"));
     if (log_fault())
         return false;
-     for (i=0; i<names.size(); ++i)
+     for (n=0; n<names.size(); ++n)
     {
-        element = xmlrpc_build_value(&env, STR("s"), names[i].c_str());
+        element = xmlrpc_build_value(&env, STR("s"), names[n].c_str());
         if (log_fault())
             return false;
         xmlrpc_array_append_item(&env, name_array, element);
@@ -200,12 +200,12 @@ bool ArchiveDataClient::getValues(int key, stdVector<stdString> &names,
     xmlrpc_DECREF(name_array);
     size_t channel_count = xmlrpc_array_size(&env, result);
     xmlrpc_value *channel_result;
-    for (i=0; i<channel_count; ++i)
+    for (n=0; n<channel_count; ++n)
     {
-        channel_result = xmlrpc_array_get_item(&env, result, i);
+        channel_result = xmlrpc_array_get_item(&env, result, n);
         if (log_fault())
             return false;
-        if (!decode_channel(channel_result, callback, callback_arg))
+        if (!decode_channel(channel_result, n, callback, callback_arg))
             return false;
     }
     xmlrpc_DECREF(result);
@@ -222,6 +222,7 @@ bool ArchiveDataClient::log_fault()
 }
 
 bool ArchiveDataClient::decode_channel(xmlrpc_value *channel,
+                                       size_t n,
                                        value_callback callback,
                                        void *callback_arg)
 {
@@ -239,7 +240,8 @@ bool ArchiveDataClient::decode_channel(xmlrpc_value *channel,
     CtrlInfo ctrlinfo;
     if (!decode_meta(meta, ctrlinfo))
         return false;
-    return decode_data(name, type, count, data, ctrlinfo, callback, callback_arg);
+    return decode_data(name, type, count, data, ctrlinfo,
+                       n, callback, callback_arg);
 }
 
 // Dump 'meta' part of returned value
@@ -311,10 +313,11 @@ bool ArchiveDataClient::decode_data(const char *name,
                                     xmlrpc_int32 type, xmlrpc_int32 count,
                                     xmlrpc_value *data_array,
                                     CtrlInfo &ctrlinfo,
+                                    size_t n,
                                     value_callback callback,
                                     void *callback_arg)
 {
-    size_t i,    num, v, v_num;
+    size_t       i, num, v, v_num;
     xmlrpc_int32 stat, sevr, secs, nano;
     xmlrpc_value *data, *value_array, *value;
     epicsTime    stamp;
@@ -404,7 +407,8 @@ bool ArchiveDataClient::decode_data(const char *name,
                 break;
             }
         }
-        if (!callback(callback_arg, name, i, ctrlinfo, dbr_type, count, raw_value))
+        if (!callback(callback_arg, name, n, i,
+                      ctrlinfo, dbr_type, count, raw_value))
             break;
     }
     RawValue::free(raw_value);

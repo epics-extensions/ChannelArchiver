@@ -15,26 +15,36 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>01/22/2001<br>
+      Patch #2:<br>
+       <ul>
+       <li>Engine now ignores stamps which are 24h in the future,
+           compared to the clock of the machine where the engine
+	   is running
+	   (hardcoded in getIgnoredFutureSecs(), Engine/Engine.h)
+       <li>Removed ASSERTs in Engine/ChannelInfo, replaced by
+           error messages
+       </ul>
     <li>11/20/2000<br>
       Patch #1:<br>
-    <ul>
-    <li>Added "FileSize" switch to ArchiveManager
-    <li>Bug (which needs more attention):
-        The LOG_MSG utility uses a lock. It's possible
-        to deadlock if a LOG_MSG call uses another call
-        which in turn (because of an error) tries to call
-	LOG_MSG.
-	As a quick fix, the calls in CtrlInfoI.cpp are
-	removed because they caused problems with
-	channels that have invalid enum. values.
-	<br>
-	If the engine hangs, try to find out where like this:<br>
-	Find the PID of the engine. On Linux, you'll see 3 PIDs, pick the
-	lowest one. Launch "gdb ArchiveEngine" in Engine/O.Linux
-	or wherever the executable is. Then type "attach (PID)".
-        Now you can switch threads with "thread 1", "thread 2" etc.
-	and use "bt" to see where the thread currently is.
-    </ul>
+      <ul>
+      <li>Added "FileSize" switch to ArchiveManager
+      <li>Bug (which needs more attention):
+          The LOG_MSG utility uses a lock. It's possible
+          to deadlock if a LOG_MSG call uses another call
+	  which in turn (because of an error) tries to call
+      	  LOG_MSG.
+	  As a quick fix, the calls in CtrlInfoI.cpp are
+	  removed because they caused problems with
+	  channels that have invalid enum. values.
+	  <br>
+	  If the engine hangs, try to find out where like this:<br>
+	  Find the PID of the engine. On Linux, you'll see 3 PIDs, pick the
+	  lowest one. Launch "gdb ArchiveEngine" in Engine/O.Linux
+	  or wherever the executable is. Then type "attach (PID)".
+          Now you can switch threads with "thread 1", "thread 2" etc.
+	  and use "bt" to see where the thread currently is.
+      </ul>
     <li>07/28/2000<br>
       <font color="#0000A0">Version 1.5</font>:<br>
       With the helpful work of Nick Pattengale,
@@ -126,17 +136,20 @@
 	    ArchiveEngine can now be restarted e.g. monthly,
             creating easier to manage subarchives
             which can still be viewed as a whole via the MultiArchive.
-        <LI>Central ArchiverConfig.h file for sources under ChannelArchiver directory,
-            allowing compile-time configuration of Engine, Manager, CGIExport, ... in one place.
-        <LI>WinBrowser (and Exporter class) can export linear interpolated spreadsheet data.
+        <LI>Central ArchiverConfig.h file for sources under
+            ChannelArchiver directory,
+            allowing compile-time configuration of Engine, Manager,
+            CGIExport, ... in one place.
+        <LI>WinBrowser (and Exporter class) can export linear
+            interpolated spreadsheet data.
         <LI>Adjustments for hp700 at BESSY
         <LI>TCL examples: better response to window resize.
       </ul>
       </LI>
     <li>03/23/2000<br>
       <font color="#0000A0">Version 1.2</font>:<br>
-      Optional password for stopping the ArchiveEngine over the Web, to be configured via
-      Engine/Config.h.<br>
+      Optional password for stopping the ArchiveEngine over the Web,
+      to be configured via Engine/Config.h.<br>
       TCL example: PlotBrowser.tk</li>
     <li>03/01/2000<br>
       <font color="#0000A0">Version 1.1</font>:<br>
@@ -204,3 +217,11 @@
 </font>
 </body>
 </html>
+
+
+
+
+
+
+
+

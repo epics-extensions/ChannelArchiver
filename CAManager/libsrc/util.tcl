@@ -351,7 +351,7 @@ proc runArchiver {i {forceRun 0}} {
 
   array unset ::sched $i,start
   set now [clock seconds]
-  foreach attr {port descr cfg cfgc start multi} {
+  foreach attr {port descr cfg cfgc start multi timespec} {
     set $attr [camMisc::arcGet $i $attr]
   }
   foreach attr {log archive} {
@@ -416,14 +416,16 @@ proc runArchiver {i {forceRun 0}} {
   set toggle 0
   while {[regexp "%(\[1-9\]\[0-9\]*\)" $archive all mod]} {
     set toggle 1
+    set div 0
     switch $start {
-      minute  {set active [expr [clock format $now -format %s -gmt 1] / 60]}
-      hour    {set active [expr [clock format $now -format %s -gmt 1] / 3600]}
-      day     {set active [expr [clock format $now -format %s -gmt 1] / 86400]}
-      week    {set active [expr [clock format $now -format %s -gmt 1] / (7*86400)]}
-      month   {set active [expr [clock format $now -format %Y -gmt 1] * 12 + [clock format $now -format %m -gmt 1]]}
+      minute  {set div 1; set active [expr [clock format $now -format %s -gmt 1] / 60]}
+      hour    {set div 1; set active [expr [clock format $now -format %s -gmt 1] / 3600]}
+      day     {set div 1; set active [expr [clock format $now -format %s -gmt 1] / 86400]}
+      week    {set div 2; set active [expr [clock format $now -format %s -gmt 1] / (7*86400)]}
+      month   {set div 2; set active [expr [clock format $now -format %Y -gmt 1] * 12 + [clock format $now -format %m -gmt 1]]}
     }
-    set active [expr $active % $mod]
+    if {$div > 0} { set div [lindex $timespec $div] } else { set div 1 }
+    set active [expr ( $active / $div ) % $mod]
     regsub -all " *%$mod" $archive $active archive
   }
 
@@ -439,7 +441,7 @@ proc runArchiver {i {forceRun 0}} {
 #    }
     set files [glob -nocomplain $ROOT/[file dirname $archive]/*]
     if {[llength $files] > 0} {
-      Puts "deleting $files"
+#      Puts "deleting $files"
       eval file delete -force $files
     }
   }
@@ -480,8 +482,8 @@ proc runArchiver {i {forceRun 0}} {
 
   # Start the Archiver
   set cfg "[file tail $cfg]"
-  Puts "start \"$descr\"" command
   cd $ROOT
+  Puts "start \"$descr\" (in $ROOT/[file dirname $archive])" command
   if {$cfgc} {
 #    exec strace -oTRACE ArchiveEngine -p $port -description "$descr" -log $log -nocfg $cfg $archive >&runlog &
     exec ArchiveEngine -p $port -description "$descr" -log $log -nocfg $cfg $archive >&runlog &

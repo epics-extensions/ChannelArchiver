@@ -4,7 +4,7 @@
 %
 %   Returns name for a channel handle (if valid).
 %
-%   See also FIND_CHANNEL, CHANNEL_NEXT, CHANNEL_VALID
+%   See also CHANNEL_FIND, CHANNEL_NEXT, CHANNEL_VALID, CHANNEL_CLOSE
 
 %   MEX-File function.
 

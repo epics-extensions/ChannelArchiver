@@ -3,17 +3,23 @@
 * Info
 This is a Matlab extension (MEX). It's C/C++ code that provides
 a Matlab binding to the ChannelArchiver LibIO.
+
+* Usage
+All the available functions have online help.
+Run Matlab:
+>>cd 's:\cs\epics\extensions\src\ChannelArchiver\casi\Matlab'
+>>helpwin archive
+.. and from there on you can follow the "See Also" links.
+
+Example Scripts:
+test101.m
+
+* Compilation
 The Matlab manual ("External Interfaces" in Matlab 6) contains
 detailed examples on how to configure Matlab and how to compile
 MEX extensions. In here I can only provide an example for doing
 this with the Win32 version of Matlab 6.
 
-* Usage
-Run Matlab:
->>cd 's:\cs\epics\extensions\src\ChannelArchiver\casi\Matlab'
->>helpwin archive
-
-* Compilation
 ** Matlab preparations
 Start Matlab. In there:
 >> mex -setup
@@ -35,7 +41,7 @@ and performed some modifications which are commented in w32.bat.
 Hopefully you can adjust the first few site specifics to get going.
 For Linux or other OS, you are on your own.
 
-* Building
+** Building
 In Matlab:
 >>cd 's:\cs\epics\extensions\src\ChannelArchiver\casi\Matlab'
 >>makew32

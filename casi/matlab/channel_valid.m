@@ -4,7 +4,7 @@
 %
 %   Tests if a channel handle is valid.
 %
-%   See also FIND_CHANNEL, CHANNEL_NEXT, CHANNEL_NAME
+%   See also CHANNEL_FIND, CHANNEL_NEXT, CHANNEL_NAME
 
 %   MEX-File function.
 

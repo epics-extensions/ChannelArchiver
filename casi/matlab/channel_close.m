@@ -4,7 +4,7 @@
 %
 %   Closes a channel handle 'c'.
 %
-%   See also FIND_CHANNEL_BY_NAME, CHANNEL_NAME.
+%   See also CHANNEL_FIND, CHANNEL_NAME.
 
 %   MEX-File function.
 

@@ -4,7 +4,7 @@
 %
 %   Move channel handle to next channel
 %
-%   See also FIND_CHANNEL, CHANNEL_NAME, CHANNEL_VALID
+%   See also CHANNEL_FIND, CHANNEL_NAME, CHANNEL_VALID, CHANNEL_CLOSE
 
 %   MEX-File function.
 

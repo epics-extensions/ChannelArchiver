@@ -7,7 +7,7 @@
 %
 %   Returns an archive handle.
 %
-%   See also FIND_CHANNEL_BY_NAME, ARCHIVE_CLOSE.
+%   See also CHANNEL_FIND, ARCHIVE_CLOSE.
 
 %   MEX-File function.
 

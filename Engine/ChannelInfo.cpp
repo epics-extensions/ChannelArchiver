@@ -62,7 +62,7 @@ size_t ChannelInfo::_missing_CA_values = 0;
 // The ChannelInfo list and the Circ. Buffers in there are
 // locked for multithreading.
 
-ChannelInfo::ChannelInfo ()
+ChannelInfo::ChannelInfo()
 {
     _currently_disabling = false;
     _disabled = 0;
@@ -90,7 +90,7 @@ ChannelInfo::ChannelInfo ()
     _had_null_time = false;
 }
 
-ChannelInfo::~ChannelInfo ()
+ChannelInfo::~ChannelInfo()
 {
     _write_lock.take ();
     delete _write_value;
@@ -101,27 +101,27 @@ ChannelInfo::~ChannelInfo ()
     delete _new_value;
 }
 
-void ChannelInfo::setPeriod (double secs)
+void ChannelInfo::setPeriod(double secs)
 {
     if (secs <= 0.0)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << _name
-                 << ": setPeriod called with " << secs
-                 << ", changed to 30 secs\n");
+        LOG_MSG(osiTime::getCurrent() << ", " << _name
+                << ": setPeriod called with " << secs
+                << ", changed to 30 secs\n");
         secs = 30.0;
     }
 
     _period = secs;
-    checkRingBuffer ();
+    checkRingBuffer();
 }
 
 // Mark channel as belonging to 'group', maybe disabling that group.
 // It's OK to call this method again with the same group.
-void ChannelInfo::addToGroup (GroupInfo *group, bool disabling)
+void ChannelInfo::addToGroup(GroupInfo *group, bool disabling)
 {
     // bit in _disabling indicates if we could disable that group
-    _disabling.grow (group->getID() + 1);
-    _disabling.set (group->getID(), disabling);
+    _disabling.grow(group->getID() + 1);
+    _disabling.set(group->getID(), disabling);
     
     // Is Channel already in group?
     stdList<GroupInfo *>::iterator i;
@@ -129,23 +129,24 @@ void ChannelInfo::addToGroup (GroupInfo *group, bool disabling)
         if (*i == group)
             return;
     
-    _groups.push_back (group);
+    _groups.push_back(group);
     // If channel is added and it's already connected,
     // the whole connection shebang will be skipped
     // -> tell group we're connected right away:
     if (_connected)
-        group->incConnectedChannels ();
+        group->incConnectedChannels();
 }
 
-void ChannelInfo::startCaConnection (bool new_channel)
+void ChannelInfo::startCaConnection(bool new_channel)
 {
     if (new_channel)
     {
         // avoid warning for HPUX:
         if (ca_search_and_connect ((char *)_name.c_str(), &_chid,
-                caLinkConnectionHandler, this)  != ECA_NORMAL)
+                                   caLinkConnectionHandler, this)
+            != ECA_NORMAL)
         {
-            LOG_MSG ("ca_search_and_connect (" << _name << ") failed\n");
+            LOG_MSG("ca_search_and_connect (" << _name << ") failed\n");
         }
     }
     else
@@ -154,16 +155,16 @@ void ChannelInfo::startCaConnection (bool new_channel)
         // as in caLinkConnectionHandler
         if (_new_value && _connected)
         {
-            int status = ca_array_get_callback (_new_value->getType ()
-                                                -DBR_TIME_STRING
-                                                +DBR_CTRL_STRING, 1,
-                                                _chid,
-                                                caControlHandler, this);
+            int status = ca_array_get_callback(_new_value->getType()
+                                               -DBR_TIME_STRING
+                                               +DBR_CTRL_STRING, 1,
+                                               _chid,
+                                               caControlHandler, this);
             if (status != ECA_NORMAL)
             {
-                LOG_MSG ("CA ca_array_get_callback for " << getName ()
-                         << " failed in startCaConnection:"
-                         << ca_message (status) << "\n");
+                LOG_MSG("CA ca_array_get_callback for " << getName()
+                        << " failed in startCaConnection:"
+                        << ca_message(status) << "\n");
                 return;
             }
         }
@@ -173,7 +174,7 @@ void ChannelInfo::startCaConnection (bool new_channel)
 // CA Callback for each channel that connects or disconnects:
 // * ca_search_and_connect calls this when a channel is found
 // * CA also calls this routine when a connection is broken
-void ChannelInfo::caLinkConnectionHandler (struct connection_handler_args arg)
+void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
 {
     stdList<GroupInfo *>::iterator g;
     ChannelInfo *me = (ChannelInfo *) ca_puser(arg.chid);
@@ -181,22 +182,22 @@ void ChannelInfo::caLinkConnectionHandler (struct connection_handler_args arg)
 
     if (ca_state(arg.chid) != cs_conn)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << me->getName ()
-                 << ": CA disconnect\n");
+        LOG_MSG(osiTime::getCurrent() << ", " << me->getName()
+                << ": CA disconnect\n");
         // Flush everything until the disconnect happened
         me->_connected = false;
-        me->_ever_written = false;
+        me->_ever_written = false; // reset, prepare for reconnect
         me->_new_value_set = false;
-        me->_connectTime = osiTime::getCurrent ();
-        me->flushRepeats (me->_connectTime);
+        me->_connect_time = osiTime::getCurrent();
+        me->flushRepeats(me->_connect_time);
         // add a disconnect event
-        me->addEvent (0, ARCH_DISCONNECT, me->_connectTime);
+        me->addEvent(0, ARCH_DISCONNECT, me->_connect_time);
 
         if (was_connected)
         {
             // Update statics in GroupInfo:
             for (g=me->_groups.begin(); g!=me->_groups.end(); ++g)
-                (*g)->decConnectedChannels ();
+                (*g)->decConnectedChannels();
         }
         return;
     }
@@ -220,67 +221,68 @@ void ChannelInfo::caLinkConnectionHandler (struct connection_handler_args arg)
     // we received the control information...
 }
 
-static bool setup_CtrlInfo (DbrType type, CtrlInfoI &info, const void *raw)
+static bool setup_CtrlInfo(DbrType type, CtrlInfoI &info, const void *raw)
 {
     switch (type)
     {
     case DBR_CTRL_DOUBLE:
         {
             struct dbr_ctrl_double *ctrl = (struct dbr_ctrl_double *)raw;
-            info.setNumeric (ctrl->precision, ctrl->units,
-                    ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                    ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                    ctrl->upper_warning_limit, ctrl->upper_alarm_limit);
+            info.setNumeric(ctrl->precision, ctrl->units,
+                            ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
+                            ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
+                            ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
         }
         return true;
     case DBR_CTRL_SHORT:
         {
             struct dbr_ctrl_int *ctrl = (struct dbr_ctrl_int *)raw;
-            info.setNumeric (0, ctrl->units,
-                    ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                    ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                    ctrl->upper_warning_limit, ctrl->upper_alarm_limit);
+            info.setNumeric(0, ctrl->units,
+                            ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
+                            ctrl->lower_alarm_limit,ctrl->lower_warning_limit,
+                            ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
         }
         return true;
     case DBR_CTRL_FLOAT:
         {
             struct dbr_ctrl_float *ctrl = (struct dbr_ctrl_float *)raw;
-            info.setNumeric (ctrl->precision, ctrl->units,
-                    ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                    ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                    ctrl->upper_warning_limit, ctrl->upper_alarm_limit);
+            info.setNumeric(ctrl->precision, ctrl->units,
+                            ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
+                            ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
+                            ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
         }
         return true;
     case DBR_CTRL_CHAR:
         {
             struct dbr_ctrl_char *ctrl = (struct dbr_ctrl_char *)raw;
-            info.setNumeric (0, ctrl->units,
-                    ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                    ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                    ctrl->upper_warning_limit, ctrl->upper_alarm_limit);
+            info.setNumeric(0, ctrl->units,
+                            ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
+                            ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
+                            ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
         }
         return true;
     case DBR_CTRL_LONG:
         {
             struct dbr_ctrl_long *ctrl = (struct dbr_ctrl_long *)raw;
-            info.setNumeric (0, ctrl->units,
-                    ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                    ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                    ctrl->upper_warning_limit, ctrl->upper_alarm_limit);
+            info.setNumeric(0, ctrl->units,
+                            ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
+                            ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
+                            ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
         }
         return true;
     case DBR_CTRL_ENUM:
         {
             size_t i;
             struct dbr_ctrl_enum *ctrl = (struct dbr_ctrl_enum *)raw;
-            info.allocEnumerated (ctrl->no_str, MAX_ENUM_STATES*MAX_ENUM_STRING_SIZE);
+            info.allocEnumerated(ctrl->no_str,
+                                 MAX_ENUM_STATES*MAX_ENUM_STRING_SIZE);
             for (i=0; i<(size_t)ctrl->no_str; ++i)
-                info.setEnumeratedString (i, ctrl->strs[i]);
-            info.calcEnumeratedSize ();
+                info.setEnumeratedString(i, ctrl->strs[i]);
+            info.calcEnumeratedSize();
         }
         return true;
     case DBR_CTRL_STRING:   /* no control information */
-        info.setEnumerated (0, 0);
+        info.setEnumerated(0, 0);
         return true;
     }
     return false;
@@ -314,7 +316,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
                     << me->_name << "\n");
             me->_connected = false;
         }
-        me->_connectTime = osiTime::getCurrent();
+        me->_connect_time = osiTime::getCurrent();
 
         DbrType dbr_type = DbrType(ca_field_type(arg.chid)+DBR_TIME_STRING);
         DbrCount nelements = ca_element_count(arg.chid);
@@ -325,7 +327,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
         if (me->_mechanism == none   ||
             (me->isMonitored() && me->_mechanism != use_monitor)  )
         {
-            if (!me->isMonitored()  &&  theEngine->addToScanList (me))
+            if (!me->isMonitored()  &&  theEngine->addToScanList(me))
                 me->_mechanism = use_get;
             else
             {
@@ -338,9 +340,9 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
                                                    DBE_LOG);
                 if (status != ECA_NORMAL)
                 {
-                    LOG_MSG ("CA ca_add_array_event ('" << me->getName ()
-                             << "') failed:"
-                             << ca_message (status) << "\n");
+                    LOG_MSG("CA ca_add_array_event ('" << me->getName()
+                            << "') failed:"
+                            << ca_message(status) << "\n");
                     return;
                 }
                 me->_mechanism = use_monitor;
@@ -352,7 +354,7 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
     {
         stdList<GroupInfo *>::iterator g;
         for (g=me->_groups.begin(); g!=me->_groups.end(); ++g)
-            (*g)->incConnectedChannels ();
+            (*g)->incConnectedChannels();
     }
 }
 
@@ -371,7 +373,7 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     //LOG_MSG (me->getName () << " : CA monitor      "
     //         << *me->_new_value << endl);
 #   ifdef CA_STATISTICS
-    double dv = me->_new_value->getDouble ();
+    double dv = me->_new_value->getDouble();
     if (me->_next_CA_value < 0)
         me->_next_CA_value = dv;
     else if (me->_next_CA_value != dv)
@@ -384,7 +386,7 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
         me->_next_CA_value = 0;
 #   endif
 
-    me->handleNewValue ();
+    me->handleNewValue();
 }
 
 // Issue CA get for _scanned_value, no ca_pend_io in here!
@@ -392,18 +394,18 @@ void ChannelInfo::issueCaGet ()
 {
     if (!_new_value)
     {
-        LOG_MSG ("... no value description in issueCaGet!\n");
+        LOG_MSG("No value description in issueCaGet '" << _name << "!\n");
         return;
     }
-    if (ca_array_get (_new_value->getType (), _new_value->getCount (),
-                      _chid, _new_value->getRawValue())
+    if (ca_array_get(_new_value->getType(), _new_value->getCount(),
+                     _chid, _new_value->getRawValue())
         != ECA_NORMAL)
-        LOG_MSG ("ca_array_get (" << _name << ") failed\n");
+        LOG_MSG("ca_array_get (" << _name << ") failed\n");
 }
 
 // Define the type of value for this ChannelInfo.
 // Result: has the type changed ?
-bool ChannelInfo::setValueType (DbrType type, DbrCount count)
+bool ChannelInfo::setValueType(DbrType type, DbrCount count)
 {
     bool changed = false;
 
@@ -412,42 +414,42 @@ bool ChannelInfo::setValueType (DbrType type, DbrCount count)
         if (_new_value->getType() == type  &&
             _new_value->getCount() == count)
             return false; // same type
-
+        
         delete _new_value;
         delete _previous_value;
         delete _tmp_value;
-        _write_lock.take ();
+        _write_lock.take();
         delete _write_value;
-        _write_lock.give ();
+        _write_lock.give();
         changed = true;
     }
     _new_value_set = false;
     _pending_value_set = false;
     _previous_value_set = false;
 
-    _new_value = theEngine->newValue (type, count);
-    _new_value->setCtrlInfo (&_ctrl_info);
-    _pending_value = _new_value->clone ();
-    _previous_value = _new_value->clone ();
-    _tmp_value = _new_value->clone ();
-    _write_lock.take ();
-    _write_value = _new_value->clone ();
-    _write_lock.give ();
-    checkRingBuffer ();
+    _new_value = theEngine->newValue(type, count);
+    _new_value->setCtrlInfo(&_ctrl_info);
+    _pending_value = _new_value->clone();
+    _previous_value = _new_value->clone();
+    _tmp_value = _new_value->clone();
+    _write_lock.take();
+    _write_value = _new_value->clone();
+    _write_lock.give();
+    checkRingBuffer();
 
     return changed;
 }
 
 // Check if Ring buffer is big enough, fits _new_value etc.
 // Might be called from setWritePeriod() before _value is available...
-void ChannelInfo::checkRingBuffer ()
+void ChannelInfo::checkRingBuffer()
 {
     if (_new_value)
-        _buffer.allocate (_new_value->getType(), _new_value->getCount(),
-                          _period);
+        _buffer.allocate(_new_value->getType(), _new_value->getCount(),
+                         _period);
 }
 
-void ChannelInfo::addToRingBuffer (const ValueI *value)
+void ChannelInfo::addToRingBuffer(const ValueI *value)
 {
     if (! value)
     {
@@ -455,7 +457,7 @@ void ChannelInfo::addToRingBuffer (const ValueI *value)
                  << ": addToRingBuffer called without value\n");
         return;
     }
-
+    
     if (value->getTime() < _last_archive_stamp)
     {
         LOG_MSG (osiTime::getCurrent() << ", " << _name
@@ -464,157 +466,55 @@ void ChannelInfo::addToRingBuffer (const ValueI *value)
         LOG_MSG ("Value: " << *value << "\n");
     }
 
-    size_t ow = _buffer.getOverWrites();
+    size_t ow = _buffer.getOverwrites();
     _buffer.addRawValue(value->getRawValue());
     _ever_written = true;
-    if (ow <= 0  &&  _buffer.getOverWrites () > 0)
+    if (ow <= 0  &&  _buffer.getOverwrites() > 0)
         LOG_MSG (osiTime::getCurrent() << ", " << _name << ": "
-            << _buffer.getOverWrites() << " overwrites\n");
+                 << _buffer.getOverwrites() << " overwrites\n");
     setLastArchiveStamp(value->getTime());
 }
 
 // Event (value with special status/severity):
 // Add unconditionally to ring buffer,
 // maybe adjust time so that it can be added
-void ChannelInfo::addEvent (dbr_short_t status, dbr_short_t severity,
-                            const osiTime &time)
+void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
+                           const osiTime &time)
 {
-    static osiTime adjust (0.0l);
+    static osiTime adjust(0.0l);
 
     if (!_tmp_value)
     {
-        LOG_MSG (osiTime::getCurrent() << ", " << _name << ", IOC " << ca_host_name(_chid)
-                 << " : Cannot add event because data type is unknown\n");
+        LOG_MSG(osiTime::getCurrent() << ", " << _name << ", IOC "
+                << ca_host_name(_chid)
+                << " : Cannot add event because data type is unknown\n");
         return;
     }
 
     if (_pending_value_set)
     {
-        LOG_NSV (" Event!, unpending:            " << *_pending_value << "\n");
-        flushRepeats (_pending_value->getTime ());
-        addToRingBuffer (_pending_value);
+        LOG_NSV(" Event!, unpending:            " << *_pending_value << "\n");
+        flushRepeats(_pending_value->getTime());
+        addToRingBuffer(_pending_value);
         _pending_value_set = false;
     }
 
-    // Setup "event" Value. Clear, then set only common fields that archiver event uses:
-    memset (_tmp_value->getRawValue (), 0, _tmp_value->getRawValueSize());
-    _tmp_value->setStatus (status, severity);
+    // Setup "event" Value. Clear, then set only common fields
+    // that archiver event uses:
+    memset (_tmp_value->getRawValue(), 0, _tmp_value->getRawValueSize());
+    _tmp_value->setStatus(status, severity);
 
     if (time > _last_archive_stamp)
-        _tmp_value->setTime (time);
+        _tmp_value->setTime(time);
     else
     {   // adjust time because this event has to be added to archive somehow
         _last_archive_stamp += adjust;
-        _tmp_value->setTime (_last_archive_stamp);
+        _tmp_value->setTime(_last_archive_stamp);
     }
     addToRingBuffer (_tmp_value);
-    _previous_value_set = false; // events are not repeat-counted, _previous_value is unset
-}
 
-// To make handleNewValue more readable:
-// We are scanned, _new_value is OK,
-// but: were there repeats? shall we really add it?
-void ChannelInfo::handleNewScannedValue (osiTime &stamp)
-{
-    size_t repeat_count;
-    
-    if (!_previous_value)
-    {
-        LOG_MSG(osiTime::getCurrent() << ", " << _name
-                << ": handleNewScannedValue called without _previous_value\n");
-        return;
-    }
-    LOG_NSV ("handleNewScannedValue: got " << *_new_value);
-    
-    // 1) Scanned: only saved on change, otherwise calculate repeat counts:
-    if (_previous_value_set &&
-        _previous_value->hasSameValue(*_new_value) &&
-        _previous_value->getStat() == _new_value->getStat() &&
-        _previous_value->getSevr() == _new_value->getSevr())
-    {
-        LOG_NSV (" - repeat\n");
-        return;
-    }
-    
-    if (_expected_next_time == nullTime)
-        _expected_next_time = roundTimeUp(stamp, _period);
-    else if (stamp < _expected_next_time)
-    {
-        LOG_NSV (" - made pending\n");
-        _pending_value->copyValue (*_new_value);
-        _pending_value_set = true;
-        return;// Add only if expected_next_time exceeded
-    }
-
-    // 2) Save close to _expected_next_time.
-    // _new_value is more recent than _expected_next_time,
-    // but maybe something's left that was valid at the exact
-    // _expected_next_time:
-    if (_pending_value_set)
-    {
-        LOG_NSV(" - made pending\n");
-        LOG_NSV(" unpending:                " << *_pending_value << "\n");
-        stamp = _pending_value->getTime();
-        repeat_count = flushRepeats(stamp);
-        addToRingBuffer(_pending_value);
-        // remember this value for comparison next time
-        _previous_value->copyValue(*_pending_value);
-        _previous_value_set = true;
-        // _new_value wasn't saved, it's now pending
-        _pending_value->copyValue(*_new_value);
-        // _pending_value_set == true still holds
-        stamp = _pending_value->getTime();
-    }
-    else
-    {
-        repeat_count = flushRepeats(stamp);
-        addToRingBuffer(_new_value);
-        // remember this value for comparison next time
-        _previous_value->copyValue(*_new_value);
-        _previous_value_set = true;
-    }
-
-    if (repeat_count > 0)
-        _expected_next_time += _period * repeat_count;
-    else
-        _expected_next_time += _period;
-    if (_expected_next_time <= stamp)
-        _expected_next_time = roundTimeUp(stamp, _period);
-    LOG_NSV(" next time:                " << _expected_next_time << "\n");
-}
-
-bool ChannelInfo::isDisabling(const GroupInfo *group) const
-{   return _disabling[group->getID()];  }
-
-// To make handleNewValue more readable:
-// _value is set, check if we should disable anything based on it
-inline void ChannelInfo::handleDisabling ()
-{
-    if (_disabling.empty())
-        return;
-
-    bool criteria = _new_value->getDouble() > 0;
-    if (criteria && !_currently_disabling)
-    {
-        _currently_disabling = true;
-        stdList<GroupInfo *>::iterator g;
-        for (g=_groups.begin(); g!=_groups.end(); ++g)
-        {
-            if (isDisabling(*g))
-                (*g)->disable (this);
-        }
-    }
-    else
-    if (!criteria && _currently_disabling)
-    {
-        stdList<GroupInfo *>::iterator g;
-        for (g=_groups.begin(); g!=_groups.end(); ++g)
-        {
-            if (isDisabling(*g))
-                (*g)->enable (this);
-        }
-        _currently_disabling = false;
-    }
+    // events are not repeat-counted, _previous_value is unset
+    _previous_value_set = false;
 }
 
 // Called from caEventHandler or (SinglePeriod-)ScanList,
@@ -624,6 +524,7 @@ void ChannelInfo::handleNewValue()
     osiTime now = osiTime::getCurrent();
     osiTime stamp = _new_value->getTime();
 
+    // Check time stamp: 0/invalid?
     if (! isValidTime(stamp))
     {
         if ((double(now) - double(_had_null_time)) > (60.0*60*24))
@@ -636,7 +537,7 @@ void ChannelInfo::handleNewValue()
         _new_value_set = false;
         return;
     }
-    
+    // Too far in the future?
     if ((stamp > now) &&
         (double(stamp) - double(now) > theEngine->getIgnoredFutureSecs()))
     {
@@ -679,12 +580,122 @@ void ChannelInfo::handleNewValue()
     handleDisabling ();
 }
 
+// To make handleNewValue more readable:
+// Scanned operation, not monitored, _new_value is OK,
+// but: were there repeats? shall we really add it?
+void ChannelInfo::handleNewScannedValue(osiTime &stamp)
+{
+    if (!_previous_value)
+    {
+        LOG_MSG(osiTime::getCurrent() << ", " << _name
+                << ": handleNewScannedValue called without _previous_value\n");
+        return;
+    }
+    LOG_NSV("handleNewScannedValue: " << *_new_value);
+    
+    // New value, but not due to be saved? Update pending value!
+    if (_expected_next_time == nullTime)
+        _expected_next_time = roundTimeUp(stamp, _period);
+    else if (stamp < _expected_next_time)
+    {
+        LOG_NSV(" - pending\n");
+        _pending_value->copyValue(*_new_value);
+        _pending_value_set = true;
+        return;// Add only if expected_next_time exceeded
+    }
+
+    // _new_value, time to take a sample.
+    // Have pending value?
+    size_t repeat_count = 0;
+    if (_pending_value_set)
+    {
+        LOG_NSV(" - pending\n");
+        bool pending_is_repeated = isRepeated(_pending_value);
+        if (pending_is_repeated)
+        {
+            LOG_NSV(" unpending:            " << *_pending_value
+                    << " - repeat\n");
+        }
+        else
+        {
+            LOG_NSV(" unpending:            " << *_pending_value << "\n");
+            stamp = _pending_value->getTime();
+            repeat_count = flushRepeats(stamp);
+            addToRingBuffer(_pending_value);
+            // remember this value for comparison next time
+            _previous_value->copyValue(*_pending_value);
+            _previous_value_set = true;
+        }
+        // _new_value wasn't saved, it's now pending
+        _pending_value->copyValue(*_new_value);
+        if (pending_is_repeated)
+            return;
+    }
+    else
+    {
+        if (isRepeated(_new_value))
+        {
+            LOG_NSV(" - repeat\n");
+            return;
+        }
+        repeat_count = flushRepeats(stamp);
+        addToRingBuffer(_new_value);
+        // remember this value for comparison next time
+        _previous_value->copyValue(*_new_value);
+        _previous_value_set = true;
+    }
+
+    if (repeat_count > 0)
+        _expected_next_time += _period * repeat_count;
+    else
+        _expected_next_time += _period;
+    if (_expected_next_time <= stamp)
+        _expected_next_time = roundTimeUp(stamp, _period);
+    LOG_NSV("\nnext time:             " << _expected_next_time << "<---\n");
+}
+
+bool ChannelInfo::isDisabling(const GroupInfo *group) const
+{
+    return _disabling[group->getID()];
+}
+
+// To make handleNewValue more readable:
+// _value is set, check if we should disable anything based on it
+inline void ChannelInfo::handleDisabling ()
+{
+    if (_disabling.empty())
+        return;
+
+    bool criteria = _new_value->getDouble() > 0;
+    if (criteria && !_currently_disabling)
+    {
+        _currently_disabling = true;
+        stdList<GroupInfo *>::iterator g;
+        for (g=_groups.begin(); g!=_groups.end(); ++g)
+        {
+            if (isDisabling(*g))
+                (*g)->disable(this);
+        }
+    }
+    else
+    if (!criteria && _currently_disabling)
+    {
+        stdList<GroupInfo *>::iterator g;
+        for (g=_groups.begin(); g!=_groups.end(); ++g)
+        {
+            if (isDisabling(*g))
+                (*g)->enable(this);
+        }
+        _currently_disabling = false;
+    }
+}
+
 // For scanned channels,
 // handleNewValue won't put repeated values
 // in the ring buffer unless there's a change.
 // This call will force it to write the
 // repeat count out up to 'now'.
-size_t ChannelInfo::flushRepeats (const osiTime &now)
+size_t ChannelInfo::flushRepeats(const osiTime &now)
 {
     if (_monitored  ||  _previous_value_set==false)
         return 0;
@@ -693,17 +704,17 @@ size_t ChannelInfo::flushRepeats (const osiTime &now)
     if (time >= stamp) 
         return 0;
 
-    size_t repeat_count = size_t ((stamp - time) / _period);
+    size_t repeat_count = size_t((stamp - time) / _period);
     if (repeat_count > 1)
     {   // put a repeat event into the circular buffer
         time += repeat_count * _period;
-        osiTime artificial_stamp = osiTime (time);
+        osiTime artificial_stamp = osiTime(time);
         if (artificial_stamp < now) // no rounding errors?
         {
             // +1 because "_expected_next_time" = last entry + period
-            _previous_value->setStatus (repeat_count+1, ARCH_REPEAT);
-            _previous_value->setTime (artificial_stamp);
-            addToRingBuffer (_previous_value);
+            _previous_value->setStatus(repeat_count+1, ARCH_REPEAT);
+            _previous_value->setTime(artificial_stamp);
+            addToRingBuffer(_previous_value);
         }
     }
     _previous_value_set = false;
@@ -711,7 +722,7 @@ size_t ChannelInfo::flushRepeats (const osiTime &now)
     return repeat_count;
 }
 
-void ChannelInfo::disable (ChannelInfo *cause)
+void ChannelInfo::disable(ChannelInfo *cause)
 {
     if (_disabling.any())   // 'Disabling' channel has to be kept alive
         return;
@@ -723,8 +734,8 @@ void ChannelInfo::disable (ChannelInfo *cause)
         return;
 
     // Flush everything until the disable happened
-    flushRepeats (cause->_new_value->getTime());
-    addEvent (0, ARCH_DISABLED, cause->_new_value->getTime());
+    flushRepeats(cause->_new_value->getTime());
+    addEvent(0, ARCH_DISABLED, cause->_new_value->getTime());
     _expected_next_time = nullTime;
 }
 
@@ -753,46 +764,47 @@ void ChannelInfo::enable(ChannelInfo *cause)
 }
 
 // Dump circular buffer into archive
-void ChannelInfo::write (Archive &archive, ChannelIterator &channel)
+void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
 {
     size_t count = _buffer.getCount();
     if (count <= 0)
         return;
 
-    if (! archive.findChannelByName (_name, channel))
+    if (! archive.findChannelByName(_name, channel))
     {
         LOG_MSG ("ChannelInfo::write: Cannot find " << _name << "\n");
         return;
     }
 
-    const RawValueI::Type *raw = _buffer.removeRawValue ();
-    _write_lock.take ();
-    size_t avail = channel->lockBuffer (*_write_value, _period);
+    const RawValueI::Type *raw = _buffer.removeRawValue();
+    _write_lock.take();
+    size_t avail = channel->lockBuffer(*_write_value, _period);
     while (raw)
     {
-        _write_value->copyIn (raw);
+        _write_value->copyIn(raw);
         if (avail <= 0) // no buffer at all or buffer full
         {
-            channel->addBuffer (*_write_value, _period, _vals_per_buffer);
+            channel->addBuffer(*_write_value, _period, _vals_per_buffer);
 
             avail = _vals_per_buffer;
             if (_vals_per_buffer < MAX_VALS_PER_BUF)
                 _vals_per_buffer *= BUF_GROWTH_RATE;
         }
 
-        if (! channel->addValue (*_write_value))
+        if (! channel->addValue(*_write_value))
         {
-            LOG_MSG ("Fatal: cannot add values in writeArchive (" << _name << ")\n");
+            LOG_MSG("Fatal: cannot add values in writeArchive ("
+                    << _name << ")\n");
             break;
         }
 
         if (--count <= 0)
             break;
         --avail;
-        raw = _buffer.removeRawValue ();
+        raw = _buffer.removeRawValue();
     }
-    _write_lock.give ();
-    _buffer.reset ();
+    _write_lock.give();
+    _buffer.resetOverwrites();
 }
 
 

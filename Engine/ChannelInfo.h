@@ -54,18 +54,20 @@ public:
     void setCtrlInfo(const CtrlInfoI *info);
 
     void setLastArchiveStamp(const osiTime &stamp)
-                                           { _last_archive_stamp = stamp; }
-
-    const CtrlInfoI &getCtrlInfo() const      { return _ctrl_info; }
-    size_t getValsPerBuffer() const           { return _vals_per_buffer; }
+                                               { _last_archive_stamp = stamp; }
+    const osiTime& getLastArchiveStamp() const { return _last_archive_stamp; }
+    const osiTime& getExpectedNextTime() const { return _expected_next_time; }
+    
+    const CtrlInfoI &getCtrlInfo() const       { return _ctrl_info; }
+    size_t getValsPerBuffer() const            { return _vals_per_buffer; }
 
     // Channel Access
     // ------------------------------------------------------------
     // monitored or scanned?
-    bool isMonitored() const                  { return _monitored; }
-    void setMonitored(bool monitored)         { _monitored = monitored; }
-    bool isConnected() const                  { return _connected; }
-    const osiTime &getConnectTime() const     { return _connectTime; }
+    bool isMonitored() const                   { return _monitored; }
+    void setMonitored(bool monitored)          { _monitored = monitored; }
+    bool isConnected() const                   { return _connected; }
+    const osiTime &getConnectTime() const      { return _connect_time; }
     const char *getHost() const;
 
     void startCaConnection(bool new_channel);
@@ -128,9 +130,9 @@ private:
     bool                _currently_disabling;// does it right now?
 
     bool                _connected;    // CA: currently connected?
-    bool                _ever_written;// ever archived since connected?
+    bool                _ever_written; // ever archived since connected?
     chid                _chid;
-    osiTime             _connectTime;  // when did _connected change?
+    osiTime             _connect_time; // when did _connected change?
     Mechanism           _mechanism;    // scanned via get or monitor?
 
     CtrlInfoI           _ctrl_info;    // has to be copy, not * !
@@ -166,6 +168,7 @@ private:
     // Callback for values (monitored)
     static void caEventHandler(struct event_handler_args arg);
 
+    bool isRepeated(const ValueI *value);
     void addToRingBuffer(const ValueI *value);
     void handleNewScannedValue(osiTime &stamp);
     void handleDisabling();
@@ -190,6 +193,13 @@ inline const char *ChannelInfo::getHost() const
     return "<??>";
 }
 
+inline bool ChannelInfo::isRepeated(const ValueI *value)
+{
+    return _previous_value_set &&
+        _previous_value->hasSameValue(*value) &&
+        _previous_value->getStat() == value->getStat() &&
+        _previous_value->getSevr() == value->getSevr();
+}
 
 #endif //__CHANNELINFO_H__
 

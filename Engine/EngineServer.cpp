@@ -237,17 +237,36 @@ static void channelInfoTable (HTMLPage &page)
 
 static void channelInfoLine (HTMLPage &page, const ChannelInfo *channel)
 {
-    std::strstream ca_state, period, bufsize, disabling;
+    stdString status, stamp, ca_state;
 
+    status.reserve(150);
+    if (channel->isDisabled ())
+        status = "disabled";
+    else if (channel->isMonitored ())
+        status = "monitored";
+    else status = "scanned";
+    status += "<BR>last: ";
+    osiTime2string (channel->getLastArchiveStamp(), stamp);
+    status += stamp;
+    status += "<BR>next: ";
+    osiTime2string (channel->getExpectedNextTime(), stamp);
+    status += stamp;
+    
+    ca_state.reserve(150);
     if (channel->isConnected ())
-        ca_state << "connected";
+        ca_state = "connected";
     else
-        ca_state << "<FONT COLOR=#FF0000>NOT CONNECTED</FONT>";
-    ca_state << "<BR>(" << channel->getConnectTime() << ")"
-             << "<BR>" << channel->getHost () << '\0';
+        ca_state = "<FONT COLOR=#FF0000>NOT CONNECTED</FONT>";
+    ca_state += "<BR>(";
+    osiTime2string (channel->getConnectTime(), stamp);
+    ca_state += stamp;
+    ca_state += ")";
+    ca_state += "<BR>";
+    ca_state += channel->getHost ();
 
-    period  << channel->getPeriod ()        << '\0';
-    bufsize << channel->getValsPerBuffer () << '\0';
+    char period[50], bufsize[50];
+    sprintf(period, "%f", (double)channel->getPeriod());
+    sprintf(bufsize, "%d", (int)channel->getValsPerBuffer());
 
     const char *get_mechanism;
     switch (channel->getMechanism ())
@@ -257,6 +276,7 @@ static void channelInfoLine (HTMLPage &page, const ChannelInfo *channel)
     default:                        get_mechanism = "none";
     }
 
+    std::strstream disabling;
     const BitSet &da_bits = channel->getDisabling();
     if (da_bits.empty ())
         disabling << "-";
@@ -287,17 +307,14 @@ static void channelInfoLine (HTMLPage &page, const ChannelInfo *channel)
     channel_link += "</A>";
     page.tableLine (
         channel_link.c_str(),
-        channel->isDisabled () ? "disabled" : (channel->isMonitored () ? "monitored" : "scanned"),
-        ca_state.str(),
-        period.str(),
-        bufsize.str(),
+        status.c_str(),
+        ca_state.c_str(),
+        period,
+        bufsize,
         get_mechanism,
         disabling.str(),
         0);
     disabling.rdbuf()->freeze (false);
-    ca_state.rdbuf()->freeze (false);
-    period.rdbuf()->freeze (false);
-    bufsize.rdbuf()->freeze (false);
 }
 
 static void channelInfo (HTTPClientConnection *connection, const stdString &path)

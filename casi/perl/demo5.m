@@ -1,8 +1,6 @@
-% -*- text-mode -*-
+% -*- text -*-
 
 figure(1);
-clf;
-subplot(1,1,1);
 
 % fred, freddy, jane, janet each have date/value vectors,
 % but taken at different points in time.

@@ -239,7 +239,6 @@ void Engine::shutdown()
     stdList<ChannelInfo *>::iterator channel = lockChannels().begin();
     while (channel!=_channels.end())
     {
-        (*channel)->flushRepeats(now);
         (*channel)->addEvent(0, ARCH_STOPPED, now);
         ++channel;
     }

@@ -189,10 +189,8 @@ void ChannelInfo::caLinkConnectionHandler(struct connection_handler_args arg)
         me->_ever_written = false; // reset, prepare for reconnect
         me->_new_value_set = false;
         me->_connect_time = osiTime::getCurrent();
-        me->flushRepeats(me->_connect_time);
         // add a disconnect event
         me->addEvent(0, ARCH_DISCONNECT, me->_connect_time);
-
         if (was_connected)
         {
             // Update statics in GroupInfo:
@@ -479,7 +477,7 @@ void ChannelInfo::addToRingBuffer(const ValueI *value)
 // Add unconditionally to ring buffer,
 // maybe adjust time so that it can be added
 void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
-                           const osiTime &time)
+                           const osiTime &event_time)
 {
     static osiTime adjust(0.0l);
 
@@ -493,25 +491,32 @@ void ChannelInfo::addEvent(dbr_short_t status, dbr_short_t severity,
 
     if (_pending_value_set)
     {
-        LOG_NSV(" Event!, unpending:            " << *_pending_value << "\n");
-        flushRepeats(_pending_value->getTime());
-        addToRingBuffer(_pending_value);
-        _pending_value_set = false;
+        const osiTime &pend_time = _pending_value->getTime();
+        if (pend_time < event_time)
+        {
+            LOG_NSV(" Event!, unpending:            "
+                    << *_pending_value << "\n");
+            flushRepeats(_pending_value->getTime());
+            addToRingBuffer(_pending_value);
+            _pending_value_set = false;
+        }
     }
+    else
+        flushRepeats(event_time);
 
     // Setup "event" Value. Clear, then set only common fields
     // that archiver event uses:
-    memset (_tmp_value->getRawValue(), 0, _tmp_value->getRawValueSize());
+    memset(_tmp_value->getRawValue(), 0, _tmp_value->getRawValueSize());
     _tmp_value->setStatus(status, severity);
 
-    if (time > _last_archive_stamp)
-        _tmp_value->setTime(time);
+    if (event_time > _last_archive_stamp)
+        _tmp_value->setTime(event_time);
     else
-    {   // adjust time because this event has to be added to archive somehow
+    {   // adjust time, event has to be added to archive somehow!
         _last_archive_stamp += adjust;
         _tmp_value->setTime(_last_archive_stamp);
     }
-    addToRingBuffer (_tmp_value);
+    addToRingBuffer(_tmp_value);
 
     // events are not repeat-counted, _previous_value is unset
     _previous_value_set = false;
@@ -588,7 +593,8 @@ void ChannelInfo::handleNewScannedValue(osiTime &stamp)
     if (!_previous_value)
     {
         LOG_MSG(osiTime::getCurrent() << ", " << _name
-                << ": handleNewScannedValue called without _previous_value\n");
+                << ": handleNewScannedValue called "
+                "without _previous_value\n");
         return;
     }
     LOG_NSV("handleNewScannedValue: " << *_new_value);
@@ -705,7 +711,7 @@ size_t ChannelInfo::flushRepeats(const osiTime &now)
         return 0;
 
     size_t repeat_count = size_t((stamp - time) / _period);
-    if (repeat_count > 1)
+    if (repeat_count >= 0)
     {   // put a repeat event into the circular buffer
         time += repeat_count * _period;
         osiTime artificial_stamp = osiTime(time);
@@ -734,7 +740,6 @@ void ChannelInfo::disable(ChannelInfo *cause)
         return;
 
     // Flush everything until the disable happened
-    flushRepeats(cause->_new_value->getTime());
     addEvent(0, ARCH_DISABLED, cause->_new_value->getTime());
     _expected_next_time = nullTime;
 }

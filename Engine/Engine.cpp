@@ -241,7 +241,9 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
             if (tree)
             {
                 RTree::Datablock block;
-                if (tree->getLatestDatablock(block))
+                RTree::Node node;
+                int idx;
+                if (tree->getLastDatablock(node, idx, block))
                 {   // extract previous knowledge from Archive
                     DataFile *datafile =
                         DataFile::reference(index.getDirectory(),
@@ -274,7 +276,6 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                         DataFile::close_all();
                     }
                 }
-                delete tree;
             }
             index.close();
         }

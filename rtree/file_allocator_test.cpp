@@ -88,6 +88,7 @@ int main()
 
     puts("-- upping file size increment to 50000 --");
     file_allocator::file_size_increment = 50000;
+    file_allocator::minimum_size = 10000;
     TEST(o1=fa.allocate(10000), "allocate 10000");
     printf("Got offset %ld\n", o1);
     fa.dump();

@@ -43,7 +43,7 @@ public:
     {   root = 0; }
 
     ~AVLTree()
-    {   cleanup(root); }
+    {   clear(); }
 
     /// Add (copy) Item into the tree.
     void add(const Item &item)
@@ -81,14 +81,21 @@ public:
     void traverse(void (*visit) (const Item &, void *), void *arg=0)
     {   visit_inorder (visit, root, arg); }
 
+    /// Delete all tree entries.
+    void clear()
+    {
+        cleanup(root);
+        root = 0;
+    }
+    
     /// Generates a graphviz 'dot' file.
 
     /// Requires the Item to support
-    /// const char *toString(const Item &)
+    /// const char *toString(const Item &).
     ///
     void make_dotfile(const char *name);    
 
-    /// Tests if the tree is AVL-balanced
+    /// Tests if the tree is AVL-balanced.
     bool selftest()
     {   return check_balance(root); }
     

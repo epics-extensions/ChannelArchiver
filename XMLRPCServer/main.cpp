@@ -37,9 +37,9 @@ const char *get_index(xmlrpc_env *env)
 }
 
 // Return open index or 0
-archiver_Index *open_index(xmlrpc_env *env)
+IndexFile *open_index(xmlrpc_env *env)
 {
-    archiver_Index *index = new archiver_Index;
+    IndexFile *index = new IndexFile;
     if (!index)
     {
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
@@ -212,7 +212,7 @@ xmlrpc_value *get_data(xmlrpc_env *env,
                        const epicsTime &start, const epicsTime &end,
                        long count, double interpol)
 {
-    archiver_Index *index = 0;
+    IndexFile      *index = 0;
     DataReader     *reader = 0;
     xmlrpc_value   *results = 0;
 
@@ -298,6 +298,7 @@ xmlrpc_value *get_data(xmlrpc_env *env,
     }
   exit_from_get_data:
     delete reader;
+    index->close();
     delete index;
     return results;
 }
@@ -348,44 +349,32 @@ xmlrpc_value *get_names(xmlrpc_env *env,
         return 0;
     }
     // Open Index
-    archiver_Index *index = open_index(env);
+    IndexFile *index = open_index(env);
     if (env->fault_occurred)
     {
         if (regex)
             regex->release();
         return 0;
     }
-    channel_Name_Iterator *cni = index->getChannelNameIterator();
-    if (!cni)
-    {
-        delete index;
-        if (regex)
-            regex->release();
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
-                                       "Cannot get name iterator");
-        return 0;
-    }
     // Put all names in binary tree
+    IndexFile::NameIterator ni;
+    RTree *tree;
     BinaryTree<ChannelInfo> channels;
     ChannelInfo info;
-    interval range;
     bool ok;
-    for (ok = cni->getFirst(&info.name); ok; ok = cni->getNext(&info.name))
+    for (ok = index->getFirstChannel(ni);
+         ok; ok = index->getNextChannel(ni))
     {
-        if (regex && !regex->doesMatch(info.name.c_str()))
+        if (regex && !regex->doesMatch(ni.getName()))
             continue; // skip what doesn't match regex
-        if (index->getEntireIndexedInterval(info.name.c_str(), &range))
-        {
-            info.start = range.getStart();
-            info.end = range.getEnd();
-        }
+        tree = index->getTree(ni.getName());
+        if (tree)
+            tree->getInterval(info.start, info.end);
         else
-        {
             info.start = info.end = nullTime;
-        }
         channels.add(info);
     }
-    delete cni;
+    index->close();
     delete index;
     if (regex)
         regex->release();
@@ -394,7 +383,6 @@ xmlrpc_value *get_names(xmlrpc_env *env,
     user_arg.env = env;
     user_arg.result = result;
     channels.traverse(ChannelInfo::add_name_to_result, (void *)&user_arg);
-
     LOG_MSG("get_names('%s') -> %d names\n",
             (pattern ? pattern : "<no pattern>"),
             xmlrpc_array_size(env, result));

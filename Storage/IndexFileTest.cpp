@@ -57,7 +57,6 @@ bool index_test()
     end = start + 90;
     tree->insertDatablock(start, end, 0x1206, "20031214");
     tree->makeDot("i4.dot", true);
-    delete tree;
     index.close();
     
     if (!index.open("index", false))
@@ -66,7 +65,6 @@ bool index_test()
     if (!tree)
         return false;
     tree->makeDot("fred.dot", true);
-    delete tree;
     index.close();
     
     return true;

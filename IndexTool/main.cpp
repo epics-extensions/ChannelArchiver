@@ -117,8 +117,6 @@ bool create_masterindex(const stdString &config_name,
             add_tree_to_master(index_name,
                                subindex.getDirectory(),
                                channel, subtree, tree);
-            delete tree;
-            delete subtree;
         }
         subindex.close();
     }

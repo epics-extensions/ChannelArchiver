@@ -44,7 +44,7 @@ void get_names_for_pattern(IndexFile &index,
         return;
     }
     // Put all names in binary tree
- 	BinaryTree<stdString> channels;
+    BinaryTree<stdString> channels;
     do
     {
         if (regex && !regex->doesMatch(name_iter.getName()))
@@ -72,7 +72,6 @@ bool list_channels(IndexFile &index, stdVector<stdString> names,
             if (tree)
             {
                 tree->getInterval(start, end);
-                delete tree;
                 printf("%s\t%s\t%s\n", (*name).c_str(),
                        epicsTimeTxt(start, s), epicsTimeTxt(end, e));
             }

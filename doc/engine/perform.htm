@@ -93,12 +93,34 @@
   cannot be used for much else, though: Additional load like launching and using
   PaintShowPro for creating this CPU-load snapshot can cause delays, resulting in messages<br>
   &nbsp;&nbsp;&nbsp; &quot;Warning: WriteThread called while busy&quot;<br>
-  More load can lead to &quot;overwrite&quot; errors = data loss and is to be avoided.</p>
+  More load can lead to &quot;overwrite&quot; errors (= data loss) and is to be avoided.</p>
   <p>This image shows the limit for the less performant Linux machine where bench.cpp
   reported about 7700 writes/second (233 Mhz, RedHat 6.1):</p>
   <p><img src="ioc94_4kpersec.gif" width="478" height="139"
   alt="ioc94_4kpersec.gif (6210 bytes)"></p>
   <p>The setup is similar to the 10000 val/sec example but uses only 4000 values per second.</p>
+  <p>The next two images show a dual-233 Mhz pentium machine with a RAID-5 disk array
+  archiving at different rates:</p>
+  <table>
+    <tr>
+      <td><img src="2x233_5000persec.gif" width="479" height="284"
+      alt="2x233_5000persec.gif (12535 bytes)"> </td>
+      <td><img src="2x233_4000persec.gif" width="477" height="286"
+      alt="2x233_4000persec.gif (12524 bytes)"> </td>
+    </tr>
+    <tr>
+      <td><p align="center">5000 values/sec</td>
+      <td><p align="center">4000 values/sec</td>
+    </tr>
+  </table>
+  <p>At 5000 values/sec, the write thread does not finish in time, so numerous &quot;called
+  while busy&quot; warning result. No overwrites were reported, but this rate can probably
+  not be maintained. In the 4000 val/sec case the write thread is called every 10 seconds
+  and finishes in time, resulting in many brief peaks in CPU load.<br>
+  (Point 1: The average CPU load is constant, but the individual CPUs are loaded randomly.<br>
+  Point 2: The machine &amp; disks might be faster than the previous test machine, and the
+  RAID array provides data safety and good read performance, the write performance though is
+  not better than for the older PC).</p>
   <p>So one could conclude that archiving rates of 10k values/sec are possible on a
   dedicated machine, except for the additional problem of ...</p>
   <h2>Channel Access Flow Control</h2>
@@ -112,8 +134,7 @@
   <p>Ways to detect losses due to flow control are:<ul>
     <li>Instrument the CA server code, e.g. on a test IOC, to display dropped value counts.</li>
     <li>Have an IOC serve 0...10 ramps and compile the engine with CA_STATISTICS defined.<br>
-      (an ArchiveEngine compiled this way can only be used for this specific test!)</font><font
-      FACE="Comic Sans MS,Arial, Helvetica"></li>
+      (an ArchiveEngine compiled this way can only be used for this specific test!)</li>
   </ul>
   <p>When this was done the result showed occasional flow control losses at 10000 values per
   second, so the conclusion is that the current engine can archive &quot;close to 10000

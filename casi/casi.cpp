@@ -772,14 +772,15 @@ void ctrlinfo::setEnumeratedString(int state, const char *str)
 
 void ctrlinfo::setEnumerated()
 {
+   size_t i;
    if (!_ctrli)
       throwDetailedArchiveException(Invalid,
 				    "invalid ControlInfo");
    size_t sumlen = 0;
-   for (size_t i = 0; i < _enumCnt; i++)
+   for (i = 0; i < _enumCnt; i++)
       sumlen += strlen(_enumStr[i]) + 1;
    _ctrli->allocEnumerated(_enumCnt, sumlen);
-   for (size_t i = 0; i < _enumCnt; i++) {
+   for (i = 0; i < _enumCnt; i++) {
       _ctrli->setEnumeratedString(i, _enumStr[i]);
       free(_enumStr[i]);
    }

@@ -41,8 +41,15 @@ $config_name = $opt_c  if (length($opt_c) > 0);
 
 @daemons = parse_config_file($config_name, $opt_d);
 
-my ($daemon, $engine, @html, $line, $channels, $count, $time);
-printf "Engine              Port      Channels  Val. Count Write Duration\n";
+my ($daemon, $engine, @html, $line, $channels, $count, $time, $vps, $period);
+my ($total_channels, $total_count, $total_time, $total_vps);
+printf "ArchiveEngine 'write' Statistics\n\n";
+printf "Engine              Port      Channels  Val.Count Wr.Period Val/sec   Write Duration\n";
+printf "------------------------------------------------------------------------------------\n";
+$total_channels = 0;
+$total_count = 0;
+$total_time = 0;
+$total_vps = 0;
 foreach $daemon ( @daemons )
 {
     foreach $engine ( @{ $daemon->{engines} } )
@@ -52,6 +59,7 @@ foreach $daemon ( @daemons )
 	$channels = "<unknown>";
 	$count = "<unknown>";
 	$time = "<unknown>";
+	$period= "<unknown>";
 	@html = read_URL($localhost, $engine->{port}, "/");
 	foreach $line ( @html )
 	{
@@ -66,11 +74,29 @@ foreach $daemon ( @daemons )
 	    if ($line =~ m"Write Duration.*>([0-9.]+ sec)<")
 	    {
 		$time = $1;
+	    }
+	    if ($line =~ m"Write Period.*>([0-9.]+ sec)<")
+	    {
+		$period = $1;
 		last;
 	    }
 	}
-	printf "%-20s%-10d%-10s%-11s%s\n",
-               $engine->{name}, $engine->{port}, $channels, $count, $time;
+	if ($count > 0  and  $period > 0)
+        {
+	    $vps = $count/$period;
+        }
+        else
+        {
+	    $vps = 0;
+        }
+	printf "%-20s%-10d%-10s%-10s%-10s%8.3f  %s\n",
+               $engine->{name}, $engine->{port}, $channels, $count, $period, $vps, $time;
+	$total_channels += $channels if ($channels > 0);
+	$total_count += $count if ($count > 0);
+	$total_vps += $vps if ($vps > 0);
+	$total_time += $time if ($time > 0);
     }
 }
-
+printf "------------------------------------------------------------------------------------\n";
+printf "Total:                        %-9d %-9d           %8.3f  %.3f sec\n",
+    $total_channels, $total_count, $total_vps, $total_time;

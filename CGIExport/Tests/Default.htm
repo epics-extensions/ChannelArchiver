@@ -2,11 +2,10 @@
 
 <head>
 <title>Channel Archive</title>
+<link REL="STYLESHEET" HREF="style.css" TYPE="text/css">
 </head>
 
-<body BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#0000FF" ALINK="#800080"
-background="blueback.jpg">
-<font COLOR="#000000" FACE="Comic Sans MS, Arial, Helvetica">
+<body background="blueback.jpg">
 
 <blockquote>
   <h1>Channel Archive CGI Interface</h1>
@@ -15,8 +14,9 @@ background="blueback.jpg">
   for a user-supplied archive file:
   <form METHOD="GET" ACTION="cgi/CGIExport.cgi">
         Archive:
-        <input TYPE="TEXT" NAME="DIRECTORY" VALUE="../../Engine/Test/freq_directory" SIZE="40"
-        MAXLENGTH="100">
+        <input TYPE="TEXT" NAME="DIRECTORY"
+	VALUE="../../Engine/Test/freq_directory" SIZE="40"
+	MAXLENGTH="100">
         <input TYPE="submit" NAME="COMMAND" VALUE="START">
   </form>
   This is probably not what you want for "end user access".
@@ -30,8 +30,8 @@ background="blueback.jpg">
 	  Go to Archive</A>
 	</P>
   <P>
-  This is the usual setup. You might have several archive links on the "start" page
-   that launch the CGI tool on different archives.
+  This is the usual setup. You might have several archive links on the
+  "start" page that launch the CGI tool on different archives.
 
   <h2>Take 3</h2>
   This example launches the CGI interface with a predefined archive
@@ -83,6 +83,6 @@ background="blueback.jpg">
   </p>
 </blockquote>
 
-</font>
 </body>
 </html>
+

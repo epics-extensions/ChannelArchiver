@@ -26,6 +26,5 @@ Requests/comments?<br>
 </P>
 </ADDRESS>
 
-</FONT>
 </BLOCKQUOTE>
 </BODY>

@@ -40,7 +40,6 @@ void HTMLPage::start ()
     cout << "<HTML>\n";
     cout << "<HEAD>\n";
     cout << "<TITLE>" << _title << "</TITLE>\n";
-    cout << "</HEAD>\n";
 
     ifstream file;
     file.open (start_file);

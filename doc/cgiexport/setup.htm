@@ -2,102 +2,128 @@
 
 <head>
 <title>CGIExport Setup</title>
+<link REL="STYLESHEET" HREF="../style.css" TYPE="text/css">
 </head>
 
-<body BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#0000FF" ALINK="#800080"
-background="../blueback.jpg">
-<font color="#000000" face="Comic Sans MS, Arial, Helvetica">
+<body background="../blueback.jpg">
 
 <blockquote>
   <h1>Channel Archive CGI Setup</h1>
   <h2>Prerequisites</h2>
   <h3>Web Server</h3>
-  <p>Like any other CGI tool, the CGIExport tool for the Channel Archiver is a plug-in for a
-  web server.</p>
-  <p>This means you have to have a running web server and you need to know how to configure
-  it.</p>
-  <p>In here I can only provide examples on how to configure some web servers (Apache web
-  server, MS Internet Information Server/MS Personal Web Server).<br>
-  If you don't understand the examples or happen to use a different server, please consider
-  consulting the manual for your web server first.</p>
+  Like any other CGI tool, the CGIExport tool for the Channel Archiver
+  is a plug-in for a web server.
+  This means you have to have a running web server and you need to
+  know how to configure it. In here I can only provide examples on
+  how to configure some web servers (Apache web server, MS Internet
+  Information Server/MS Personal Web Server).<br>
+  If you don't understand the examples or happen to use a different
+  server, please consider consulting the manual for your web server
+  first.
+
   <h3>Access to the archive</h3>
-  <p>The CGI Tool has to have access to the data files, either directly or via NFS, SAMBA,
-  ???</p>
+  The CGI Tool has to have access to the data files, either directly
+  or via NFS, SAMBA, ???
+
   <h3>GNU Plot</h3>
-  <p>For the plotting to work, you need GNU Plot. The path to GNU Plot is hard-coded into
-  the CGIExport tool at compile time.</p>
+  For the plotting to work, you need GNU Plot. The path to GNU Plot
+  is hard-coded into the CGIExport tool at compile time.
+
   <h2>Example Setup</h2>
-  <p>The default path names are relative but fixed and have to be similar to the Test
-  directory tree underneath the CGIExport source directory. After you changed the CGIExport
-  configuration in &lt;ChannelArchiver&gt;/ArchiverConfig.h, the following might no longer
-  work for you:<ul>
+  The default path names are relative but fixed and have to be
+  similar to the Test directory tree underneath the CGIExport
+  source directory. After you changed the CGIExport
+  configuration in &lt;ChannelArchiver&gt;/ArchiverConfig.h,
+  the following might no longer work for you:
+  <ul>
     <li>ChannelArchiver/CGIExport/Tests/<br>
-      HTML files for accessing the CGI Tool, must be exported via WWW server.<br>
-      <br>
-      When producing any output, CGIExport looks for files <em>cgi_body_start.txt</em> and <em>cgi_body_end.txt</em>.<br>
-      This Test directory is prepared such that these files contain links to additional web
-      pages about the &quot;Rounding&quot; feature etc.<br>
-      <u>For now that is the &quot;Manual&quot; on how to use the CGI tool.</u></li>
+        HTML files for accessing the CGI Tool, must be exported via
+	WWW server.<br>
+	When producing any output, CGIExport looks for files
+	<em>cgi_body_start.txt</em> and <em>cgi_body_end.txt</em>.<br>
+	This Test directory is prepared such that these files contain
+	links to additional web pages about the &quot;Rounding&quot;
+	feature etc.<br>
+	<u>For now that is the &quot;Manual&quot;
+	on how to use the CGI tool.</u>
     <li>..../Tests/cgi<br>
-      The executable CGI tool must be copied in here as <b>CGIExport.cgi</b>.<br>
-      Note the file extension, it's used in the WWW server configuration later on!<br>
-      The WWW server must allow &quot;execute&quot; access to this directory.<br>
-      (For Win32, the files Com.dll, db.dll and ca.dll from your EPICS/base/bin/WIN32 also have
-      to be copied in here.)</li>
+        The executable CGI tool must be copied in here as
+	<b>CGIExport.cgi</b>.<br>
+	Note the file extension, it's used in the WWW server
+	configuration later on!<br>
+	The WWW server must allow &quot;execute&quot; access to
+	this directory.<br>
+	(For Win32, the files Com.dll, db.dll and ca.dll
+	from your EPICS/base/bin/WIN32 also have to be copied in here.)
     <li>..../Tests/cgi/tmp<br>
-      In here, the CGI tool creates temporary files, so you must create this directory</li>
+        In here, the CGI tool creates temporary files, so you must
+        create this directory
   </ul>
-  <p>Make sure that the WWW server as well as CGI programs launched by it (usually running
-  as &quot;nobody&quot;) have access to those parts of the file system, especially check <em>write
-  access</em> to ...../cgi/tmp !</p>
-  <p>To test the CGI tool, make the Test directory accessible by your WWW server and make
-  sure that the cgi subdirectory is executable (see below for MS and Apache specifics).</p>
-  <p>There are simple Perl scripts cgi/Hi.pl and cgi/env.pl to debug your WWW setup. <br>
+  Make sure that the WWW server as well as CGI programs launched by it
+  (usually running as &quot;nobody&quot;) have access to those parts
+  of the file system, especially check <em>write access</em> to
+  ...../cgi/tmp !<br>
+  To test the CGI tool, make the Test directory accessible by your WWW
+  server and make sure that the cgi subdirectory is executable (see
+  below for MS and Apache specifics).<br>
+  There are simple Perl scripts cgi/Hi.pl and cgi/env.pl to debug your
+  WWW setup. <br>
   You don't need perl to use the CGIExport tool in the end.<br>
-  The scripts are meant to test your web server setup because many CGI extensions are
-  written in Perl and therefore every web administrator should be able to help you with
-  this:</p>
-  <p>If installed and configured correctly, you can access <a
+  The scripts are meant to test your web server setup because many CGI
+  extensions are written in Perl and therefore every web administrator
+  should be able to help you with this:<br>
+  If installed and configured correctly, you can access <a
   href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">&quot;http://&lt;your
-  host&gt;/archive/cgi/Hi.pl&quot;</a> to verify that<ul>
+  host&gt;/archive/cgi/Hi.pl&quot;</a> to verify that
+  <ul>
     <li>Your web server is running at all</li>
-    <li>You managed to configure it correctly in order to execute the perl-CGI scripts</li>
+    <li>You managed to configure it correctly in order to execute the
+        perl-CGI scripts
   </ul>
-  <p>The next step is to test if you can execute the CGIExport tool:</p>
-  <p>Try &quot;<a href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">http://&lt;your
-  host&gt;/archive/cgi/CGIExport.cgi&quot;</a>.<br>
-  You should see some HTML page, no error message.</p>
-  <p>For examples on how to call the CGIExport tool to actually access your archived data,
-  look at the example start page.<br>
-  When your WWW server setup was successful, you should be able to point your web browser to
-  http://localhost/archive/Default.htm and see that initial test page.</p>
+  The next step is to test if you can execute the CGIExport tool:<br>
+  Try &quot;<a href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">
+  http://&lt;your host&gt;/archive/cgi/CGIExport.cgi&quot;</a>.<br>
+  You should see some HTML page, no error message.
+  For examples on how to call the CGIExport tool to actually access
+  your archived data, look at the example start page.<br>
+  When your WWW server setup was successful, you should be able to
+  point your web browser to http://localhost/archive/Default.htm and
+  see that initial test page.
+
   <h2>Troubleshooting</h2>
-  <p>Ideas on what to test:<ul>
-    <li>Web Server: Can you access the web pages, e.g. the &quot;Default.htm&quot; file?</font><font
-      color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
-    <li>Web Server: Can you access the CGI directory, i.e. read it and are the files executed as
-      programs?</font><font color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
-    <li>If the perl scripts respond OK but CGIExport.cgi doesn't: Can you execute it as
-      &quot;nobody&quot;? Are shared libraries missing which happen to be in your path as
-      USER=&lt;you&gt; but not when you are USER=&lt;the web server=nobody&gt;?</font><font
-      color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
-    <li>Can the cgi tool (or the pseudo-user that runs it) access the data files?</font><font
-      color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
-    <li>Can the cgi tool create the temporary files needed for the plots?</font><font
-      color="#000000" face="Comic Sans MS, Arial, Helvetica"></li>
+  Ideas on what to test:
+  <ul>
+    <li>Web Server: Can you access the web pages, e.g. the
+        &quot;Default.htm&quot; file?
+    <li>Web Server: Can you access the CGI directory, i.e. read it and
+        are the files executed as  programs?
+    <li>If the perl scripts respond OK but CGIExport.cgi doesn't: Can
+        you execute it as &quot;nobody&quot;? Are shared libraries
+        missing which happen to be in your path as USER=&lt;you&gt;
+        but not when you are USER=&lt;the web
+        server=nobody&gt;?
+    <li>Can the cgi tool (or the pseudo-user that runs it) access the
+        data files?
+    <li>Can the cgi tool create the temporary files needed for the
+        plots?
     <li>Can ... launch GNU Plot?</li>
   </ul>
+
   <h2>Microsoft Personal Web Server</h2>
   <ol>
-    <li>Export the Test directory as e.g. &quot;/archive&quot;,</li>
-    <li>Export Test/cgi directory as &quot;/archive/cgi&quot; and make it executable</li>
-    <li>Modify registry to allow perl scripts (useful for debugging, not essential for CGI
-      tool): <pre>[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\W3Svc\Parameters\Script Map]
-c:\sys\perl\bin\perl.exe %s %s;</pre>
+    <li>Export the Test directory as e.g. &quot;/archive&quot;,
+    <li>Export Test/cgi directory as &quot;/archive/cgi&quot; and make
+        it executable
+    <li>Modify registry to allow perl scripts (useful for debugging,
+        not essential for CGI tool):
+        <pre>[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\W3Svc\Parameters\Script Map]
+          c:\sys\perl\bin\perl.exe %s %s;
+	</pre>
     </li>
   </ol>
+
   <h2>Apache Web Server</h2>
-  <p>Add to end of /etc/httpd/httpd.conf : </p>
+  Add to end of /etc/httpd/httpd.conf :
   <pre>  #Added for CGIExport Test:
   #
   #Uncomment these (usually found earlier in this file)
@@ -124,16 +150,16 @@ c:\sys\perl\bin\perl.exe %s %s;</pre>
   Options +ExecCGI
   &lt;/Directory&gt; 
 </pre>
-  <p>Start/stop on Linux:<br>
-  /etc/rc.d/apache {start|stop|status|restart|reload}</p>
+
+  Start/stop on Linux:<br>
+  /etc/rc.d/apache {start|stop|status|restart|reload}
   <p>On RedHat6.x:<br>
-  /etc/rc.d/init.d/httpd {start|stop|status|restart|reload}</p>
+  /etc/rc.d/init.d/httpd {start|stop|status|restart|reload}
   <p>Error Log:<br>
-  cat /var/log/httpd.error_log </p>
+  cat /var/log/httpd.error_log
   <hr>
-  <p align="left">Requests/comments?<br>
-  <a href="mailto:kasemir@lanl.gov">E-Mail: Kay-Uwe Kasemir</a></p>
+
 </blockquote>
-</font>
 </body>
 </html>
+

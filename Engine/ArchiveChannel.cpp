@@ -78,33 +78,34 @@ void ArchiveChannel::startCA(Guard &guard)
     guard.check(mutex);
     if (!chid_valid)
     {
-#       ifdef DEBUG_CI
-        printf("ca_create_channel(%s)\n", name.c_str());
-#       endif
-        if (ca_create_channel(name.c_str(),
-                              connection_handler, this,
+        if (ca_create_channel(name.c_str(), connection_handler, this,
                               CA_PRIORITY_ARCHIVE, &ch_id) != ECA_NORMAL)
         {
-            LOG_MSG("'%s': ca_search_and_connect failed\n", name.c_str());
+            LOG_MSG("'%s': ca_create_channel failed\n", name.c_str());
+            return;
         }
         chid_valid = true;
+        theEngine->need_CA_flush = true;
     }
     else
-    {   // Re-get control information for this channel
-        int status = ca_array_get_callback(
-            ca_field_type(ch_id)+DBR_CTRL_STRING,
-            ca_element_count(ch_id),
-            ch_id, control_callback, this);
-        if (status != ECA_NORMAL)
-        {
-            LOG_MSG("'%s': ca_array_get_callback error in "
-                    "caLinkConnectionHandler: %s",
-                    name.c_str(), ca_message(status));
+    {
+        if (connected)
+        {   // Re-get control information for this channel
+            int status = ca_array_get_callback(
+                ca_field_type(ch_id)+DBR_CTRL_STRING,
+                ca_element_count(ch_id),
+                ch_id, control_callback, this);
+            if (status != ECA_NORMAL)
+            {
+                LOG_MSG("'%s': ca_array_get_callback error in "
+                        "startCA: %s",
+                        name.c_str(), ca_message(status));
+                return;
+            }
+            theEngine->need_CA_flush = true;
         }
     }
-    theEngine->need_CA_flush = true;
 }
-
 
 void ArchiveChannel::issueCaGet(Guard &guard)
 {

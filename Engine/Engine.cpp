@@ -297,20 +297,14 @@ void Engine::setWritePeriod(Guard &guard, double period)
     guard.check(mutex);
     write_period = period;
     next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
-
-#ifdef TODO
-    stdList<ChannelInfo *>::iterator channel_info = _channels.begin();
-    while (channel_info != _channels.end())
+    // Re-set ev'ry channel's period so that they might adjust buffers
+    stdList<ArchiveChannel *>::iterator channel;
+    for (channel = channels.begin(); channel != channels.end(); ++channel)
     {
-        (*channel_info)->lock();
-        (*channel_info)->checkRingBuffer();
-        (*channel_info)->unlock();
-        ++channel_info;
+        ArchiveChannel *c = *channel;
+        Guard channel_guard(c->mutex);
+        c->setPeriod(guard, channel_guard, c->getPeriod(channel_guard));
     }
-
-    if (_configuration)
-        _configuration->saveEngine();
-#endif
 }
 
 void Engine::setDescription(Guard &guard, const stdString &description)
@@ -323,14 +317,12 @@ void Engine::setGetThreshold(Guard &guard, double get_threshhold)
 {
     guard.check(mutex);
     this->get_threshhold = get_threshhold;
-    // TODO config_file.save();
 }
 
 void Engine::setBufferReserve(Guard &guard, int reserve)
 {
     guard.check(mutex);
     buffer_reserve = reserve;
-    // TODO config_file.save();
 }
 
 stdString Engine::makeDataFileName()

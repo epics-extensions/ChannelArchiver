@@ -89,9 +89,9 @@ void GNUPlotExporter::exportChannelList(
             return;
         }
 
-        channel->getValueAfterTime(_start, value);
-        if (! value)
-            continue;
+        if (! channel->getValueBeforeTime(_start, value) &&
+            ! channel->getValueAfterTime(_start, value))
+                continue;
 
         if (value->getCount() > 1)
         {
@@ -118,27 +118,28 @@ void GNUPlotExporter::exportChannelList(
             channel_desc += "]";
         }
         else
-        {
             channel_desc = channel->getName();
-        }
         fprintf(f, "# %s\n", channel_desc.c_str());
         
         // Dump values for this channel
         osiTime time;
         bool have_anything = false;
+        bool last_was_data = false;
         while (value)
         {
             time = value->getTime();
-            if (isValidTime(_end)  && time > _end)
-                break;
             if (value->isInfo())
             {
                 // Show as comment, empty line results in "gap"
-                // in GNUplot graph
+                // in GNUplot graph. But only one empty line maximum!
+                // (multiple empties separate channels)
                 fprintf(f, "# ");
                 ::printTime(f, time);
                 value->getStatus(txt);
-                fprintf(f, "\t%s\n\n", txt.c_str());
+                fprintf(f, "\t%s\n", txt.c_str());
+                if (last_was_data)
+                    fprintf(f, "\n");
+                last_was_data = false;
             }
             else
             {
@@ -160,7 +161,11 @@ void GNUPlotExporter::exportChannelList(
                             value->getDouble(),
                             txt.c_str());
                 }
+                last_was_data = true;
             }
+            // One value beyond _end is plotted, then break:
+            if (isValidTime(_end)  &&  time > _end)
+                break;
             ++value;
         }
         if (have_anything)
@@ -212,6 +217,10 @@ void GNUPlotExporter::exportChannelList(
         fprintf(f, "set format x \"%%m/%%d/%%Y\\n%%H:%%M:%%S\"\n");
     fprintf(f, "\n");
 #if 0
+    // No clue what to do. Sometimes the default works nicely,
+    // sometimes it's a mess. But I haven't found the perfect
+    // formula for placing the ticks, either, so I leave it with
+    // the default and blame it all on GNUPlot...
     fprintf(f, "# Set labels/ticks on x-axis for every xxx seconds:\n");
     double secs = (double(_end) - double(_start)) / 5;
     if (secs > 0.0)

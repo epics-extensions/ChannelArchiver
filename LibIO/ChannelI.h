@@ -1,4 +1,4 @@
-// --------------------------------------------------------
+// -------------- -*- c++ -*- -----------------------------
 // $Id$
 //
 // Please refer to NOTICE.txt,
@@ -25,35 +25,38 @@
 class ChannelI
 {
 public:
-	virtual ~ChannelI ();
+	virtual ~ChannelI();
 
 	//* Name of this channel
-	virtual const char *getName () const = 0;
+	virtual const char *getName() const = 0;
 
 	//* Time stamp of first value
-	virtual osiTime getFirstTime ()  const = 0;
+	virtual osiTime getFirstTime()  const = 0;
 
 	//* Time stamp of last value
-	virtual osiTime getLastTime ()   const = 0;
+	virtual osiTime getLastTime()   const = 0;
 
 	//* Move CLASS ValueIterator for current Channel
 	// to first, last, ... value
-	bool getFirstValue (ValueIterator &values);
-	bool getLastValue (ValueIterator &values);
-	virtual bool getFirstValue (ValueIteratorI *values) = 0;
-	virtual bool getLastValue (ValueIteratorI *values) = 0;
+	bool getFirstValue(ValueIterator &values);
+	bool getLastValue(ValueIterator &values);
+	virtual bool getFirstValue(ValueIteratorI *values) = 0;
+	virtual bool getLastValue(ValueIteratorI *values) = 0;
 
 	//* Get value stamped >= time. time==0 results in call to getFirstValue
-	virtual bool getValueAfterTime (const osiTime &time, ValueIteratorI *values) = 0;
-	bool getValueAfterTime (const osiTime &time, ValueIterator &values);
+	virtual bool getValueAfterTime(const osiTime &time,
+                                   ValueIteratorI *values) = 0;
+	bool getValueAfterTime(const osiTime &time, ValueIterator &values);
 
 	//* Get value stamped <= time
-	virtual bool getValueBeforeTime (const osiTime &time, ValueIteratorI *values) = 0;
-	bool getValueBeforeTime (const osiTime &time, ValueIterator &values);
+	virtual bool getValueBeforeTime(const osiTime &time,
+                                    ValueIteratorI *values) = 0;
+	bool getValueBeforeTime(const osiTime &time, ValueIterator &values);
 
 	//* Get value stamped near time (whatever's next: before or after time)
-	virtual bool getValueNearTime (const osiTime &time, ValueIteratorI *values) = 0;
-	bool getValueNearTime (const osiTime &time, ValueIterator &values);
+	virtual bool getValueNearTime(const osiTime &time,
+                                  ValueIteratorI *values) = 0;
+	bool getValueNearTime(const osiTime &time, ValueIterator &values);
 
     // This is not copied into the HTML docs. because
     // I'm not certain about the interface:
@@ -73,31 +76,35 @@ public:
     //
     // Tell me if you use this interface,
     // beware of possible changes!
-	virtual size_t lockBuffer (const ValueI &value, double period);
+	virtual size_t lockBuffer(const ValueI &value, double period);
 
-	virtual void addBuffer (const ValueI &value_arg, double period, size_t value_count);
+	virtual void addBuffer(const ValueI &value_arg, double period,
+                           size_t value_count);
 
 	// Add value to last buffer.
 	// returns false when buffer is full
-	virtual bool addValue (const ValueI &value) = 0;
+	virtual bool addValue(const ValueI &value) = 0;
 
 	// Call after adding all values to that buffer
-	virtual void releaseBuffer ();
+	virtual void releaseBuffer();
 };
 
-inline bool ChannelI::getFirstValue (ValueIterator &values)
-{ return getFirstValue (values.getI()); }
+inline bool ChannelI::getFirstValue(ValueIterator &values)
+{    return getFirstValue(values.getI()); }
 
-inline bool ChannelI::getLastValue (ValueIterator &values)
-{ return getLastValue (values.getI()); }
+inline bool ChannelI::getLastValue(ValueIterator &values)
+{    return getLastValue(values.getI()); }
 	
-inline bool ChannelI::getValueAfterTime (const osiTime &time, ValueIterator &values)
-{ return getValueAfterTime (time, values.getI()); }
+inline bool ChannelI::getValueAfterTime(const osiTime &time,
+                                        ValueIterator &values)
+{   return getValueAfterTime(time, values.getI()); }
 
-inline bool ChannelI::getValueBeforeTime (const osiTime &time, ValueIterator &values)
-{ return getValueBeforeTime (time, values.getI()); }
+inline bool ChannelI::getValueBeforeTime(const osiTime &time,
+                                         ValueIterator &values)
+{   return getValueBeforeTime(time, values.getI()); }
 
-inline bool ChannelI::getValueNearTime (const osiTime &time, ValueIterator &values)
-{ return getValueNearTime (time, values.getI()); }
+inline bool ChannelI::getValueNearTime(const osiTime &time,
+                                       ValueIterator &values)
+{   return getValueNearTime(time, values.getI()); }
 
 #endif //__CHANNELI_H__

@@ -8,12 +8,6 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-
-// TODO:
-// What if we start and never connect,
-// but there is an archive.
-// -> write 'disconnected' ?
-
 // Base
 #include <cadef.h>
 // Tools
@@ -217,6 +211,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     bool new_channel;
     if (!channel)
     {
+        // TODO: Pick correct SampleMechanism
         channel = new ArchiveChannel(channel_name, period,
                                      new SampleMechanismMonitored());
         channels.push_back(channel);
@@ -235,14 +230,11 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
  
 #endif
     }
-
     Guard guard(channel->mutex);
     group->addChannel(guard, channel);
     channel->addToGroup(guard, group, disabling);
     if (new_channel)
     {
-        // TODO: Check the locking of the file access
-        // OK because Engine is locked?
         IndexFile index(RTreeM);
         if (index.open(index_name.c_str(), false))
         {   // Is channel already in Archive?
@@ -282,6 +274,10 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                                         block.data_filename.c_str(),
                                         block.data_offset,
                                         stamp_txt.c_str());
+                                // As long as we don't have a new value,
+                                // log as disconnected
+                                channel->addEvent(guard, 0, ARCH_DISCONNECT,
+                                                  epicsTime::getCurrent());
                             }
                         }
                         datafile->release();

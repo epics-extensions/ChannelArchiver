@@ -13,7 +13,7 @@ ArchiveEngine_SRCS += GroupInfo.cpp
 ArchiveEngine_SRCS += HTMLPage.cpp
 ArchiveEngine_SRCS += LockFile.cpp
 ArchiveEngine_SRCS += HTTPServer.cpp
-ArchiveEngine_SRCS += ConfigFile.cpp
+ArchiveEngine_SRCS += EngineConfig.cpp
 ArchiveEngine_SRCS += EngineServer.cpp
 ArchiveEngine_SRCS += Engine.cpp
 ArchiveEngine_SRCS += main.cpp
@@ -33,5 +33,3 @@ bench_SRCS := bench.cpp
 TESTPROD_HOST := bench
 
 include $(TOP)/configure/RULES
-
-

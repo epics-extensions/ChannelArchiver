@@ -24,6 +24,8 @@ void GroupInfo::addChannel(ArchiveChannel *channel)
 		if (*i == channel)
 			return;
 	members.push_back(channel);
+    if (disable_count > 0) // disable right away?
+        channel->disable(epicsTime::getCurrent());
 }
 
 // called by ArchiveChannel while channel is locked
@@ -34,7 +36,6 @@ void GroupInfo::disable(ArchiveChannel *cause, const epicsTime &when)
 	++disable_count;
 	if (disable_count != 1) // Was already disabled?
 		return;
-
 	stdList<ArchiveChannel *>::iterator i;
 	for (i=members.begin(); i!=members.end(); ++i)
 		(*i)->disable(when);
@@ -59,13 +60,3 @@ void GroupInfo::enable(ArchiveChannel *cause, const epicsTime &when)
 		(*i)->enable(when);
 }
 
-#if 0
-GroupInfo::GroupInfo (const GroupInfo &rhs)
-{
-	_ID = rhs._ID;
-	_num_connected = rhs._num_connected;
-	_name = rhs._name;
-	_members = rhs._members;
-	_disabled = rhs._disabled;
-}
-#endif

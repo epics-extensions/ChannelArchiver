@@ -20,7 +20,7 @@
 #include "CircularBuffer.h"
 #include "SampleMechanism.h"
 
-/// Used by the ArchiveEngine to define a 'Channel'.
+/// \ingroup Engine Used by the ArchiveEngine to define a 'Channel'.
 
 /// An ArchiveChannel holds almost all the information
 /// for an archived channel:
@@ -128,12 +128,12 @@ private:
     RawValue::Data *pending_value;
     // ---
     
-    /// The mechanism: This or another channel of one of the groups
-    /// to which this channel belongs might diable a group.
-    /// The group then comes back and disables all its channels.
-    int disabled_count;
+    // The mechanism: This or another channel of one of the groups
+    // to which this channel belongs might disable a group.
+    // The group then comes back and disables all its channels.
+    int disabled_count; // See isDisabled()
     BitSet groups_to_disable; // Bit is set -> we disable that group
-    bool currently_disabling; // is this channel currently disabling its groups?
+    bool currently_disabling; // Is this channel disabling its groups?
     void handleDisabling(const RawValue::Data *value);
 
     // Bookkeeping and value checking stuff, used between ArchiveChannel
@@ -157,7 +157,7 @@ inline const BitSet &ArchiveChannel::getGroupsToDisable() const
 {   return groups_to_disable; }
 
 inline bool ArchiveChannel::isDisabled() const
-{   return disabled_count > 0; }
+{   return disabled_count >= (int)groups.size(); }
 
 #endif
 

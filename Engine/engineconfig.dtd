@@ -3,12 +3,16 @@
 <!-- Note that we do not allow empty configurations:   -->
 <!-- Each config. must contain at least one group,     -->
 <!-- and each group must cintain at least one channel. -->
-<!ELEMENT engineconfig ((write_period|buffer_reserve)*,group+)>
+<!ELEMENT engineconfig ((write_period|get_threshold|file_size|ignored_future|buffer_reserve)*,group+)>
 <!ELEMENT group (name,channel+)>
-<!ELEMENT channel (name,scan?,monitor?,disable?)>
+<!ELEMENT channel (name,period,(scan|monitor),disable?)>
 <!ELEMENT write_period (#PCDATA)><!-- int "seconds" -->
+<!ELEMENT get_threshold (#PCDATA)><!-- int "seconds" -->
+<!ELEMENT file_size (#PCDATA)><!-- MB -->
+<!ELEMENT ignored_future (#PCDATA)><!-- double "hours" -->
 <!ELEMENT buffer_reserve (#PCDATA)><!-- int "times"   -->
 <!ELEMENT name (#PCDATA)>
-<!ELEMENT scan (#PCDATA)><!-- double "seconds" -->
+<!ELEMENT period (#PCDATA)><!-- double "seconds" -->
+<!ELEMENT scan EMPTY>
 <!ELEMENT monitor EMPTY>
 <!ELEMENT disable EMPTY>

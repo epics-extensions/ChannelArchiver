@@ -22,7 +22,7 @@
 #include "MsgLogger.h"
 // Engine
 #include "Engine.h"
-#include "ConfigFile.h"
+#include "EngineConfig.h"
 #include "LockFile.h"
 #include "EngineServer.h"
 #include "HTMLPage.h"
@@ -58,7 +58,6 @@ static void LoggerPrintRoutine(void *arg, const char *text)
 int main(int argc, const char *argv[])
 {
     initEpicsTimeHelper();
-
     TheMsgLogger.SetPrintRoutine(LoggerPrintRoutine);
 
     CmdArgParser parser (argc, argv);
@@ -104,41 +103,40 @@ int main(int argc, const char *argv[])
     if (! lock_file.Lock (argv[0]))
         return -1;
 
-        Engine::create(index_name);
-        if (! description.get().empty())
-            theEngine->setDescription(description);
-        run = theEngine->config_file.load(config_name);
-        if (run)
-            theEngine->config_file.save();
-
+    Engine::create(index_name);
+    if (! description.get().empty())
+        theEngine->setDescription(description);
+    EngineConfig config(theEngine);
+    run = config.read(config_name);
+    
 #ifdef ENGINE_DEBUG
     LOG_MSG("ChannelArchiver thread 0x%08X entering main loop\n",
             epicsThreadGetIdSelf());
 #endif
         // Main loop
 #ifdef HAVE_SIGACTION
-        struct sigaction action;
-        memset(&action, 0, sizeof(struct sigaction));
-        action.sa_handler = signal_handler;
-        sigemptyset(&action.sa_mask);
-        action.sa_flags = 0;
-        if (sigaction(SIGINT, &action, 0) ||
-            sigaction(SIGTERM, &action, 0))
-            LOG_MSG("Error setting signal handler\n");
+    struct sigaction action;
+    memset(&action, 0, sizeof(struct sigaction));
+    action.sa_handler = signal_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    if (sigaction(SIGINT, &action, 0) ||
+        sigaction(SIGTERM, &action, 0))
+        LOG_MSG("Error setting signal handler\n");
 #else
-        signal(SIGINT, signal_handler);
-        signal(SIGTERM, signal_handler);
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
 #endif
-        LOG_MSG("\n------------------------------------------\n"
-                "Engine Running.\n"
-                "Stop via web browser at http://localhost:%d/stop\n"
-                "------------------------------------------\n",
-                EngineServer::_port);
-        while (run)
-        {
-            theEngine->process();
-        }
-
+    LOG_MSG("\n------------------------------------------\n"
+            "Engine Running.\n"
+            "Stop via web browser at http://localhost:%d/stop\n"
+            "------------------------------------------\n",
+            EngineServer::_port);
+    while (run)
+    {
+        theEngine->process();
+    }
+    
     // If engine is not shut down properly (ca_task_exit !),
     // the MS VC debugger will freak out
     LOG_MSG ("Shutting down Engine\n");

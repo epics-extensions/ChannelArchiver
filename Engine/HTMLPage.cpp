@@ -44,15 +44,19 @@ HTMLPage::HTMLPage(SOCKET socket, const char *title, int refresh)
 	line("</TITLE>");
 	line("</HEAD>");
 	line("");
-	line("<BODY BGCOLOR=#AEC9D2 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>");
-	line("<FONT FACE=\"Arial, Comic Sans MS, Helvetica\">");
+	line("<BODY BGCOLOR=#A7ADC6 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>");
+	line("<FONT FACE=\"Helvetica, Arial\">");
 	line("<BLOCKQUOTE>");
-
+#if 0
 	line("<TABLE BORDER=3>");
 	line("<TR><TD BGCOLOR=#FFFFFF><FONT SIZE=5>");
 	line(title);
 	line("</FONT></TD></TR>");
 	line("</TABLE>");
+#endif
+    line("<H1>");
+    line(title);
+    line("</H1>");
 	line("");
 	line("<P>");
 	line("");

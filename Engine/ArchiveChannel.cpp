@@ -40,16 +40,14 @@ ArchiveChannel::~ArchiveChannel()
 
 void ArchiveChannel::addToGroup(GroupInfo *group, bool disabling)
 {
-    // bit in _disabling indicates if we could disable that group
+    // bit in 'disabling' indicates if we could disable that group
     groups_to_disable.grow(group->getID() + 1);
     groups_to_disable.set(group->getID(), disabling);
-    
     // Is Channel already in group?
     stdList<GroupInfo *>::iterator i;
     for (i=groups.begin(); i!=groups.end(); ++i)
         if (*i == group)
             return;
-    
     groups.push_back(group);
     // If channel is added and it's already connected,
     // the whole connection shebang will be skipped
@@ -81,18 +79,26 @@ void ArchiveChannel::startCA()
     theEngine->need_CA_flush = true;
 }
 
-
 void ArchiveChannel::disable(const epicsTime &when)
 {
     ++disabled_count;
-    if (disabled_count < (int)groups.size())
-        return; // some groups still want our values
-    addEvent(0, ARCH_DISABLED, when);
+    if (disabled_count > (int)groups.size())
+    {
+        LOG_MSG("Channel '%s': Disable count is messed up (%d)\n",
+                name.c_str(), disabled_count);
+    }
+    if (isDisabled())
+        addEvent(0, ARCH_DISABLED, when);
 }
 
 void ArchiveChannel::enable(const epicsTime &when)
 {
     --disabled_count;
+    if (disabled_count < 0)
+    {
+        LOG_MSG("Channel '%s': Disable count is messed up (%d)\n",
+                name.c_str(), disabled_count);
+    }
     // Try to write the last value we got while disabled
     if (connected && pending_value_set)
     {   // Assert we don't go back in time
@@ -109,7 +115,8 @@ void ArchiveChannel::enable(const epicsTime &when)
 }
 
 void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
-                          const CtrlInfo *ctrl_info, const epicsTime *last_stamp)
+                          const CtrlInfo *ctrl_info,
+                          const epicsTime *last_stamp)
 {
     this->dbr_time_type = dbr_time_type;
     this->nelements = nelements;
@@ -199,47 +206,63 @@ bool ArchiveChannel::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
     {
         case DBR_CTRL_DOUBLE:
         {
-            struct dbr_ctrl_double *ctrl = (struct dbr_ctrl_double *)dbr_ctrl_xx;
+            struct dbr_ctrl_double *ctrl =
+                (struct dbr_ctrl_double *)dbr_ctrl_xx;
             ctrl_info.setNumeric(ctrl->precision, ctrl->units,
-                                 ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                                 ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                                 ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
+                                 ctrl->lower_disp_limit,
+                                 ctrl->upper_disp_limit, 
+                                 ctrl->lower_alarm_limit,
+                                 ctrl->lower_warning_limit,
+                                 ctrl->upper_warning_limit,
+                                 ctrl->upper_alarm_limit);
         }
         return true;
         case DBR_CTRL_SHORT:
         {
             struct dbr_ctrl_int *ctrl = (struct dbr_ctrl_int *)dbr_ctrl_xx;
             ctrl_info.setNumeric(0, ctrl->units,
-                                 ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                                 ctrl->lower_alarm_limit,ctrl->lower_warning_limit,
-                                 ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
+                                 ctrl->lower_disp_limit,
+                                 ctrl->upper_disp_limit, 
+                                 ctrl->lower_alarm_limit,
+                                 ctrl->lower_warning_limit,
+                                 ctrl->upper_warning_limit,
+                                 ctrl->upper_alarm_limit);
         }
         return true;
         case DBR_CTRL_FLOAT:
         {
             struct dbr_ctrl_float *ctrl = (struct dbr_ctrl_float *)dbr_ctrl_xx;
             ctrl_info.setNumeric(ctrl->precision, ctrl->units,
-                                 ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                                 ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                                 ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
+                                 ctrl->lower_disp_limit,
+                                 ctrl->upper_disp_limit, 
+                                 ctrl->lower_alarm_limit,
+                                 ctrl->lower_warning_limit,
+                                 ctrl->upper_warning_limit,
+                                 ctrl->upper_alarm_limit);
         }
         return true;
         case DBR_CTRL_CHAR:
         {
             struct dbr_ctrl_char *ctrl = (struct dbr_ctrl_char *)dbr_ctrl_xx;
             ctrl_info.setNumeric(0, ctrl->units,
-                                 ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                                 ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                                 ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
+                                 ctrl->lower_disp_limit,
+                                 ctrl->upper_disp_limit, 
+                                 ctrl->lower_alarm_limit,
+                                 ctrl->lower_warning_limit,
+                                 ctrl->upper_warning_limit,
+                                 ctrl->upper_alarm_limit);
         }
         return true;
         case DBR_CTRL_LONG:
         {
             struct dbr_ctrl_long *ctrl = (struct dbr_ctrl_long *)dbr_ctrl_xx;
             ctrl_info.setNumeric(0, ctrl->units,
-                                 ctrl->lower_disp_limit, ctrl->upper_disp_limit, 
-                                 ctrl->lower_alarm_limit, ctrl->lower_warning_limit,
-                                 ctrl->upper_warning_limit,ctrl->upper_alarm_limit);
+                                 ctrl->lower_disp_limit,
+                                 ctrl->upper_disp_limit, 
+                                 ctrl->lower_alarm_limit,
+                                 ctrl->lower_warning_limit,
+                                 ctrl->upper_warning_limit,
+                                 ctrl->upper_alarm_limit);
         }
         return true;
         case DBR_CTRL_ENUM:
@@ -291,7 +314,6 @@ void ArchiveChannel::handleDisabling(const RawValue::Data *value)
 {
     if (groups_to_disable.empty())
         return;
-
     // We disable if the channel is non-zero
     bool criteria = RawValue::isZero(dbr_time_type, value) == false;
     if (criteria && !currently_disabling)

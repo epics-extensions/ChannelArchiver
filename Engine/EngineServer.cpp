@@ -27,7 +27,7 @@
 #include "MsgLogger.h"
 // Engine
 #include "Engine.h"
-#include "ArchiveException.h"
+#include "EngineConfig.h"
 #include "EngineServer.h"
 #include "HTTPServer.h"
 
@@ -179,17 +179,18 @@ static void config(HTTPClientConnection *connection, const stdString &path)
     page.line("    <input type=\"text\" name=\"GROUP\" size=20>");
     page.line("    <input TYPE=\"submit\" VALUE=\"Add Group\">");
     page.line("    </FORM>");
-    page.line("<LI><FORM METHOD=\"GET\" ACTION=\"/parsegroup\">");
-    page.line("    Parse Group File:");
-    page.line("    <input type=\"text\" name=\"GROUP\" size=20>");
-    page.line("    <input TYPE=\"submit\" VALUE=\"Parse\">");
+    page.line("<LI><FORM METHOD=\"GET\" ACTION=\"/parseconfig\">");
+    page.line("    Config File:");
+    page.line("    <input type=\"text\" name=\"CONFIG\" size=20>");
+    page.line("    <input TYPE=\"submit\" VALUE=\"Read\">");
     page.line("    </FORM>");
     page.line("</UL>");
 
     page.line("<H3>Channels</H3>");
     page.line("<UL>");
     page.line("<LI><A HREF=\"/channels\">List channels</A><br>");
-    page.line("<LI><BR><FORM METHOD=\"GET\" ACTION=\"/addchannel\">");
+    page.line("<LI>Add a new Channel<BR>");
+    page.line("    <FORM METHOD=\"GET\" ACTION=\"/addchannel\">");
     page.line("    <TABLE>");
     page.line("    <TR><TD>Group Name:</TD>");
     page.line("        <TD><input type=\"text\" name=\"GROUP\" size=20></TD></TR>");
@@ -203,7 +204,8 @@ static void config(HTTPClientConnection *connection, const stdString &path)
     page.line("        <TD><input TYPE=\"submit\" VALUE=\"Add Channel\"></TD></TR>");
     page.line("    </TABLE>");
     page.line("    </FORM>");
-    page.line("<LI><BR><FORM METHOD=\"GET\" ACTION=\"/channelgroups\">");
+    page.line("<LI>Find group membership for channel<BR>");
+    page.line("    <FORM METHOD=\"GET\" ACTION=\"/channelgroups\">");
     page.line("    <TABLE>");
     page.line("    <TR><TD>Channel:</TD>");
     page.line("        <TD><input type=\"text\" name=\"CHANNEL\" size=20>");
@@ -383,14 +385,12 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     }
 
     HTMLPage page(connection->getSocket(), "Group Info");
-
     char id[10];
     cvtUlongToString((unsigned long) group->getID(), id);
     page.openTable(2, "Group", 0);
     page.tableLine("Name", group_name.c_str(), 0);
     page.tableLine("ID", id, 0);
     page.closeTable();
-
     if (theEngine->channels.empty())
     {
         theEngine->mutex.unlock();
@@ -398,11 +398,12 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
         return;
     }
     page.line("<P>");
-    page.line("<H2>Channels:</H2>");
-
+    page.line("<H2>Channels</H2>");
     channelInfoTable(page);
+    const stdList<ArchiveChannel *> group_channels = group->getChannels();
     stdList<ArchiveChannel *>::const_iterator channel;
-    for (channel = theEngine->channels.begin(); channel != theEngine->channels.end(); ++channel)
+    for (channel = group_channels.begin();
+         channel != group_channels.end(); ++channel)
     {
         (*channel)->mutex.lock();
         channelInfoLine(page, *channel);
@@ -413,7 +414,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
 }
 
 static void addChannel(HTTPClientConnection *connection,
-                        const stdString &path)
+                       const stdString &path)
 {
     CGIDemangler args;
     args.parse(path.substr(12).c_str());
@@ -485,35 +486,36 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
     theEngine->mutex.unlock();
 }
 
-static void parseGroup(HTTPClientConnection *connection, const stdString &path)
+static void parseConfig(HTTPClientConnection *connection,
+                        const stdString &path)
 {
     CGIDemangler args;
-    args.parse(path.substr(12).c_str());
-    stdString group_name   = args.find("GROUP");
-
-    if (group_name.empty())
+    args.parse(path.substr(13).c_str());
+    stdString config_name   = args.find("CONFIG");
+    if (config_name.empty())
     {
-        connection->error("Group file name must not be empty");
+        connection->error("Config. name must not be empty");
         return;
     }
     HTMLPage page(connection->getSocket(), "Archiver Engine");
-    page.line("<H1>Groups</H1>");
-    page.out("Group <I>");
-    page.out(group_name);
-
+    page.line("<H1>Configuration</H1>");
+    page.out("Configuration <I>");
+    page.out(config_name);
     theEngine->mutex.lock();
     theEngine->attachToCAContext();
-    if (theEngine->config_file.loadGroup(group_name))
+    EngineConfig config(theEngine);
+    if (config.read(config_name))
     {
-        theEngine->config_file.save();
-        page.line("</I> was added to / reloaded into the engine.");
+        // theEngine->config_file.save(); TODO
+        page.line("</I> was loaded.");
     }
     else
-        page.line("</I> could not be added to the engine.<P>");
+        page.line("</I> could not be loaded.<P>");
     theEngine->mutex.unlock();
 }
 
-static void channelGroups(HTTPClientConnection *connection, const stdString &path)
+static void channelGroups(HTTPClientConnection *connection,
+                          const stdString &path)
 {
     CGIDemangler args;
     args.parse(path.substr(15).c_str());
@@ -529,15 +531,15 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
     }
 
     HTMLPage page(connection->getSocket(), "Archiver Engine");
-    page.out("<H1>Group membership for channel ");
+    page.out("<H2>Group membership for channel ");
     page.out(channel_name);
-    page.line("</H1>");
-
+    page.line("</H2>");
     channel->mutex.lock();
-    page.openTable(2, "Group", 0);
+    page.openTable(1, "Group", 1, "ID", 1, "Enabled", 0);
     stdList<GroupInfo *>::const_iterator group;
     stdString link;
     link.reserve(80);
+    char id[10];
     for (group=channel->groups.begin(); group!=channel->groups.end(); ++group)
     {
         link = "<A HREF=\"/group/";
@@ -545,7 +547,10 @@ static void channelGroups(HTTPClientConnection *connection, const stdString &pat
         link += "\">";
         link += (*group)->getName();
         link += "</A>";
-        page.tableLine(link.c_str(), 0);
+        cvtUlongToString((unsigned long) (*group)->getID(), id);
+        page.tableLine(link.c_str(), id,
+                       ((*group)->isEnabled() ?
+                        "Yes" : "<FONT COLOR=#FF0000>No</FONT>"), 0);
     }
     channel->mutex.unlock();
     theEngine->mutex.unlock();
@@ -566,7 +571,7 @@ static PathHandlerList  handlers[] =
     { "/group/", 7, groupInfo },
     { "/addchannel?", 12, addChannel },
     { "/addgroup?", 10, addGroup },
-    { "/parsegroup?", 12, parseGroup },
+    { "/parseconfig?", 12, parseConfig },
     { "/channelgroups?", 15, channelGroups },
     { "/",  0, engineinfo },
     { 0,    0,  },
@@ -583,7 +588,7 @@ EngineServer::EngineServer()
     if (!_server)
     {
         LOG_MSG("Cannot create EngineServer on port %d\n", _port);
-        throwDetailedArchiveException(Fail, "HTTPServer::create failed");
+        return;
     }
 #ifdef HTTPD_DEBUG
     LOG_MSG("EngineServer starting HTTPServer 0x%X\n", _server);

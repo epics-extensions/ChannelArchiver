@@ -216,8 +216,8 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
     }
     else
     {
+        channel->mutex.lock();
 #ifdef TODO
-        channel_info->lock();
         // For existing channels: minimize period, maximize monitor feature
         if (channel_info->isMonitored())
             monitored = true;
@@ -320,38 +320,28 @@ void Engine::setDescription(const stdString &description)
 void Engine::setDefaultPeriod(double period)
 {
     _default_period = period;
-    config_file.save();
+    // TODO config_file.save();
 }
 
 void Engine::setGetThreshold(double get_threshhold)
 {
     _get_threshhold = get_threshhold;
-    config_file.save();
+    // TODO config_file.save();
 }
 
 void Engine::setBufferReserve(int reserve)
 {
     _buffer_reserve = reserve;
-    config_file.save();
+    // TODO config_file.save();
 }
 
 stdString Engine::makeDataFileName()
 {
     int year, month, day, hour, min, sec;
     unsigned long nano;
-    char buffer[80];
-                                                                                    
+    char buffer[80];                                                                 
     epicsTime now = epicsTime::getCurrent();
-    epicsTime file;
-                                                                                    
-    if (getSecsPerFile() == SECS_PER_MONTH)
-    {
-        epicsTime2vals(now, year, month, day, hour, min, sec, nano);
-        vals2epicsTime(year, month, 1, 0, 0, 0, 0, file);
-    }
-    else
-        file = roundTimeDown(now, _secs_per_file);
-    epicsTime2vals(file, year, month, day, hour, min, sec, nano);
+    epicsTime2vals(now, year, month, day, hour, min, sec, nano);
     sprintf(buffer, "%04d%02d%02d-%02d%02d%02d", year, month, day, hour, min, sec);
     return stdString(buffer);
 }

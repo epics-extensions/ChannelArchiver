@@ -14,7 +14,9 @@
 #include "ArchiverConfig.h"
 #include "GroupInfo.h"
 #include "ScanList.h"
-#include "ConfigFile.h"
+
+/// \defgroup Engine
+/// Classes related to the ArchiveEngine
 
 /// Engine is the main class of the ArchiveEngine program,
 /// the one that contains the lists of all the ArchiveChannel
@@ -27,8 +29,6 @@ public:
     /// and from then on accessible via global Engine *theEngine
     static void create(const stdString &index_name);
     void shutdown();
-
-    ConfigFile config_file;
     
 #ifdef USE_PASSWD
     /// Check if user/password are valid
@@ -83,9 +83,6 @@ public:
         SECS_PER_MONTH = 60*60*24*31 // depends on month, ... this is a magic number
     };
 
-    double getSecsPerFile() const;
-    void   setSecsPerFile(double s);
-    
     /// Determine the suggested buffer size for a value
     /// with given scan period based on how often we write
     /// and the buffer reserve
@@ -157,12 +154,6 @@ inline double Engine::getDefaultPeriod()
 
 inline int Engine::getBufferReserve() const
 {   return _buffer_reserve; }
-
-inline double Engine::getSecsPerFile() const
-{   return _secs_per_file; }
-
-inline void Engine::setSecsPerFile(double s)
-{   _secs_per_file = s; }
 
 inline double Engine::getIgnoredFutureSecs() const
 {   return _future_secs; }

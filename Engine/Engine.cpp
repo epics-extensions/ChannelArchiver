@@ -25,6 +25,8 @@ static class CaPoller *ca_poller = 0;
 Engine *theEngine;
 
 // some time values for timeouts
+// Happens to be defined for SGI:
+#undef NSEC_PER_SEC
 const int NSEC_PER_SEC = 1000000000;    /* nano seconds per second */
 // osiTime (sec, nano-sec)
 const osiTime one_second (1,0);

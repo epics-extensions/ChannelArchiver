@@ -109,6 +109,39 @@
     <li>Can ... launch GNU Plot?</li>
   </ul>
 
+  <h2>Microsoft IIS (Windows 2000)</h2>
+  <ol>
+    <li>Install the IIS from the Win2000 disk,
+        it shows up under additional products.
+	When looking at <a href="http://localhost">http://localhost</a>
+	for the first time, you get linked to the documentation.
+    <li>Configure under
+        "ControlPanel"/"Administrative Tools"/"Computer
+        Management":<br>
+	Right-click on "Default Web Site", select New Virtual
+        Directory. Name it "archive", broswse to
+	ChannelArchiver/CGIExport/Test, select only "read" for access
+	permissions.<br>
+	<a href="http://localhost/archive">http://localhost/archive</a>
+	should now lead to an archive test page, the links on there
+	don't work until the next step is completed.
+    <li>Right-click to properties on the "cgi" directory under the
+        "archive" virtual entry created in the previous step.
+	Uncheck the "read" permission, select "Execute Permissions"
+	"scripts and executables", "Application Protection" to "High".
+    <li>If you have Perl: Click "Configuration", "Add", set executable
+        to e.g. "c:\sys\perl\bin\perl.exe %s".
+	This should allow to browse
+	<a href="http://localhost/archive/cgi/env.pl">
+	http://localhost/archive/cgi/env.pl</a>
+	which might help in debugging CGI problems.
+    <li>While ".pl" had to be configured, I could not find a ".cgi"
+        entry but executasbles ending in .cgi seem to be lauched
+	without further configuration when "scripts and executables"
+	were selected for the directory.
+  </ol>
+
+
   <h2>Microsoft Personal Web Server</h2>
   <ol>
     <li>Export the Test directory as e.g. &quot;/archive&quot;,

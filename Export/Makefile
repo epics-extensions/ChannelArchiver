@@ -5,7 +5,7 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 
 USR_CXXFLAGS += -I ../../rtree
 
-SRCS += Export.cpp
+SRCS += main.cpp
 
 PROD_HOST := ArchiveExport
 PROD_LIBS_DEFAULT := rtree Storage Tools ca Com

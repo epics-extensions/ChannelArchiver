@@ -45,7 +45,6 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
     }
     for (i=0; i<num; ++i)
     {
-        printf("%s\n", channel_names[i].c_str());
         reader[i] = new DataReader(index);
         if (!reader[i])
         {
@@ -67,12 +66,12 @@ bool SpreadsheetReader::next()
     {
         if (! read_data[i])
             continue;
-        have_any = true;
         stamp = RawValue::getTime(read_data[i]);
-        if (i==0)
+        if (! have_any)
             time = stamp;
         else if (stamp < time)
             time = stamp;
+        have_any = true;
     }
     if (!have_any)
         return false;

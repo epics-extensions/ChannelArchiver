@@ -29,7 +29,7 @@ bool key_AU_Iterator::getFirst(const interval& search_Interval, key_Object * res
 	index_File = source->getFile();
 	long first_Leaf;
 	if(source->findFirstLeaf(&first_Search_Interval, &first_Leaf) == false) return false;
-    
+    if(first_Leaf < 0) return false;
 	long first_Address = source->index2address(first_Leaf);
     //at this point checkInterval() is not appropriate because it does the check (duh!)
     current_Entry.attach(index_File, first_Address);

@@ -1,0 +1,23 @@
+\section{XML-RPC}
+The following is a description of the calls implemented by the archive
+data server based on the XML-RPC protocol.
+
+\subsection{archiver.info}
+This call returns version information for 
+whoever cares. It will allow future compatibility
+if clients check for the correct version numbers.
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+{ int32 ver, string desc } = archiver.info()
+\end{lstlisting}
+
+\begin{description}
+\item[ver:]  Version number. Currently we use ver = 1.
+\item[desc:] Cute description that one can print.
+\end{description}
+
+The result is a structure with a numeric "ver"
+member and a string "desc" member. Implementations
+like perl will return a hash with members "ver"
+and "desc".
+

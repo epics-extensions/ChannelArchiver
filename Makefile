@@ -5,7 +5,7 @@ include $(TOP)/configure/CONFIG
 
 DIRS += Tools
 DIRS += rtree
-DIRS += StorageLib
+DIRS += Storage
 DIRS += LibIO
 DIRS += DataTool
 DIRS += Engine

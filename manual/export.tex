@@ -1,0 +1,28 @@
+\chapter{ArchiveExport}
+
+ArchiveExport is a command-line tool for local tests, i.e. it does
+\emph{not} connect to the archive data server but requires that
+yuo have direct read access to the index and data files.
+It is mostly meant for testing.
+
+When invoked without valid arguments, it will display a command
+description as shown in listing~\ref{lst:export}.
+
+\begin{lstlisting}[float=htb,caption={ArchiveExport command line
+help},label=lst:export,keywordstyle=\sffamily]
+Archive Export version 2.1.0, EPICS 3.14.4,
+                built Dec  9 2003, 18:48:11
+
+USAGE:
+   ArchiveExport [Options]  <index file> { channel }
+
+Options:
+ -verbose            Verbose mode
+ -list               List all channels
+ -start <time>       Format:
+                     "mm/dd/yyyy[ hh:mm:ss[.nano-secs]]"
+ -end <time>         (exclusive)
+ -text               Include column for status/severity
+ -match <reg. exp.>  Channel name pattern         
+\end{lstlisting}
+

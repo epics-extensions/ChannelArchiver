@@ -16,6 +16,7 @@ INC += OldDataWriter.h
 INC += DataWriter.h
 INC += OldDataReader.h
 INC += DataReader.h
+INC += SpreadsheetReader.h
 
 # Contents of library
 LIB_SRCS += HashTable.cpp

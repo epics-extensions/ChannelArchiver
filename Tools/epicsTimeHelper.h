@@ -18,8 +18,12 @@ bool isValidTime(const epicsTime &t);
 // "mm/dd/yyyy 00:00:00.000000000" into epicsTime
 // Result: true for OK
 bool string2epicsTime(const stdString &txt, epicsTime &time);
+
 // Convert epicsTime into "mm/dd/yyyy 00:00:00.000000000"
-void epicsTime2string(const epicsTime &time, stdString &txt);
+bool epicsTime2string(const epicsTime &time, stdString &txt);
+
+inline const char *epicsTimeTxt(const epicsTime &time, stdString &txt)
+{   return epicsTime2string(time, txt) ? txt.c_str() : "<invalid>"; }
 
 // Assemble/disassemple pieces
 // year : 4-digit year like 2003

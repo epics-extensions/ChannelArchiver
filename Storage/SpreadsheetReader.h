@@ -23,7 +23,7 @@ class SpreadsheetReader
     SpreadsheetReader(archiver_Index &index);
 
     virtual ~SpreadsheetReader();
-
+    
     /// Position the reader on-or-before start time
     /// for all channels.
     /// Returns true if values are valid.
@@ -62,8 +62,8 @@ class SpreadsheetReader
     const CtrlInfo &getCtrlInfo(size_t i) const;
     
     /// Get the next time slice
-    bool next();
-    
+    bool next();  
+  
 protected:
     archiver_Index &index;
 

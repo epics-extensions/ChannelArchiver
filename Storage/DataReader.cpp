@@ -35,8 +35,10 @@ const RawValue::Data *DataReader::find(
     {   // default: all that's in archive
         if (!index.getEntireIndexedInterval(channel_name.c_str(), &range))
         {
+#ifdef DEBUG_DATAREADER
             LOG_MSG("Cannot get interval for '%s' in index\n",
                     channel_name.c_str());
+#endif
             return 0;
         }   
     }
@@ -54,21 +56,22 @@ const RawValue::Data *DataReader::find(
         printf("%s\n", txt.c_str());
     }
 #endif
+    if (!range.isIntervalValid())
+        return 0;
     au_iter = index.getKeyAUIterator(channel_name.c_str());
     if (!au_iter)
     {
+#ifdef DEBUG_DATAREADER
         LOG_MSG ("DataReader: Cannot find '%s' in index\n",
                  channel_name.c_str());
+#endif
         return 0;
     }
     // Get 1st data block
     valid_datablock = au_iter->getFirst(range, &datablock, &valid_interval);
     if (! valid_datablock)
-    {
-        LOG_MSG ("DataReader: No values for '%s' in index\n",
-                 channel_name.c_str());
+        // No values for this time in index
         return 0;
-    }
 #ifdef DEBUG_DATAREADER
     {
         stdString s, e;
@@ -82,8 +85,9 @@ const RawValue::Data *DataReader::find(
     if (!getHeader(index.getDirectory(),
                    datablock.getPath(), datablock.getOffset()))
     {
-        LOG_MSG("DataReader: No data for '%s'\n",
-                channel_name.c_str());
+        LOG_MSG("DataReader %s: Cannot read '%s' @ 0x%X\n",
+                channel_name.c_str(),
+                datablock.getPath(), datablock.getOffset());
         return 0;
     }
     return findSample(valid_interval.getStart());

@@ -31,13 +31,15 @@ int main(int argc, const char *argv[])
     initEpicsTimeHelper();
 
     CmdArgParser parser(argc, argv);
-    parser.setHeader("Archive Mega Index version " VERSION_TXT ", "
+    parser.setHeader("Archive Mega Index version " ARCH_VERSION_TXT ", "
                      EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n"
                      );
     parser.setArgumentsInfo("<archive list file> <output index>");
     CmdArgFlag help  (parser, "help", "Show Help");
     CmdArgFlag verbose (parser, "verbose", "Show more info");
+    CmdArgInt M_val (parser, "M", "<int>", "RTree M value");
+    M_val.set(7);
     if (! parser.parse())
         return -1;
 
@@ -73,7 +75,7 @@ int main(int argc, const char *argv[])
     if(f == 0)
         {
             //at this point the R tree parameters can be set for user's needs
-            master_Index.open(output_name.c_str(), false, 2);
+            master_Index.open(output_name.c_str(), false, M_val.get());
             only_New_Data = false;
         }
     else

@@ -77,12 +77,12 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
 }
 
 // Convert epicsTime into "mm/dd/yyyy 00:00:00.000000000"
-void epicsTime2string (const epicsTime &time, stdString &txt)
+bool epicsTime2string (const epicsTime &time, stdString &txt)
 {
 	if (! isValidTime (time))
 	{
 		txt = "00:00:00";
-		return;
+		return false;
 	}
     char buffer[50];
     struct local_tm_nano_sec tm = (local_tm_nano_sec) time;
@@ -95,6 +95,7 @@ void epicsTime2string (const epicsTime &time, stdString &txt)
             tm.ansi_tm.tm_sec,
             tm.nSec);
     txt = buffer;
+    return true;
 }
 
 void epicsTime2vals(const epicsTime &time,

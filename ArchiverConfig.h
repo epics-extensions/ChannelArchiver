@@ -20,9 +20,9 @@
 
 // This should match Make.ver
 #define VERSION 1
-#define RELEASE 8
+#define RELEASE 9
 
-#define VERSION_TXT "1.8.5"
+#define VERSION_TXT "1.9.0"
 
 // ----------------------------------------------------------
 // ArchiveEngine

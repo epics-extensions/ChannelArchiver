@@ -33,7 +33,7 @@ use Getopt::Std;
 # ----------------------------------------------------------------
 
 # Compare: manual/changes.tex
-my ($version) = "2.1.9";
+my ($version) = "2.2.0";
 
 # Setting this to 1 disables(!) caching and might help with debugging.
 # Default: leave it commented-out.
@@ -131,8 +131,9 @@ my ($full_index_minper) = 24*60;
 my ($http_check_timeout) = 1;
 
 # Timeout used when reading a HTTP client or ArchiveEngine.
-# 10 seconds is reasonable.
-my ($read_timeout) = 10;
+# 10 seconds should be reasonable. Trying 30sec at SNS because
+# the archive server is often very busy.
+my ($read_timeout) = 30;
 
 # Number of entries in the "Messages" log.
 my ($message_queue_length) = 25;

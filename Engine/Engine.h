@@ -151,6 +151,11 @@ public:
     /// Engine Info: Started, where, info about writes
     const epicsTime &getStartTime() const { return start_time; }
     const stdString &getIndexName() const { return index_name;  }
+    double getLastWriteDuration(Guard &engine_guard) const
+    {
+        engine_guard.check(mutex);
+        return last_write_duration;
+    }
     const epicsTime &getNextWriteTime(Guard &engine_guard) const
     {
         engine_guard.check(mutex);
@@ -190,6 +195,7 @@ private:
 
     double          write_period;   // period between writes to archive file
     int             buffer_reserve; // 2-> alloc. buffs for 2x expected data
+    double          last_write_duration; // How long did the last write take [seconds] ?
     epicsTime       next_write_time;// when to write again
     double          future_secs;    // now+_future_secs is considered wrong
 

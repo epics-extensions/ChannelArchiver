@@ -8,9 +8,21 @@ New  "versions"  are  marked  by some additional functionality. The
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 03/31/2005 --- Version 2.2.0:\\
+Added a "Write Duration" status to the main
+page of the Engine HTTPD.
+It is a running average of the time spent
+writing to the disk.
+ExampleSetup includes a new script,
+"engine\_write\_durations.pl",
+which queries all engines for their write duration.
+The intent is to get an idea of how much time
+is spent doing disk I/O, and to get a grasp on
+which engine is doing worst.
+
 \item 03/21/2005 --- Version 2.1.9:\\
 The ArchiveDaemon.pl script now creates a soft-link
-"current_index" in the engine subdirectories,
+"current\_index" in the engine subdirectories,
 pointing to the currently used index.
 The idea is to have a common name for the active index
 in case the multi-index is broken or only updated

@@ -35,8 +35,7 @@
 #endif
 #endif
 
-static void engineinfo(HTTPClientConnection *connection,
-                       const stdString &path)
+static void engineinfo(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Archive Engine");
     stdString s;
@@ -70,7 +69,9 @@ static void engineinfo(HTTPClientConnection *connection,
         getcwd(dir, sizeof line);                 
         page.tableLine("Directory ", line, 0);
 #endif
-        
+        sprintf(line, "%.3f sec", theEngine->getLastWriteDuration(engine_guard));
+        page.tableLine("Write Duration", line, 0);
+
         epicsTime2string(theEngine->getNextWriteTime(engine_guard), s);
         page.tableLine("Next write time", s.c_str(), 0);
         

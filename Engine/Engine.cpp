@@ -397,8 +397,12 @@ bool Engine::process()
         if (write_delay <= 0.0)
         {
             writeArchive(engine_guard);
-            next_write_time = roundTimeUp(epicsTime::getCurrent(),
-                                          write_period);
+            epicsTime end = epicsTime::getCurrent();
+            double duration = end - now;
+            if (duration < 0.0)
+                duration = 0.0;
+            last_write_duration = 0.9*last_write_duration + 0.1*duration;
+            next_write_time = roundTimeUp(end, write_period);
             do_wait = false;
         }
     }

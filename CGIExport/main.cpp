@@ -45,7 +45,8 @@ static void usage(HTMLPage &page)
 	std::cout << "<P>\n";
 	page.header("Recognized form parameters", 3);
 	std::cout << "<UL>\n";
-	std::cout << "<LI>COMMAND:   START | HELP | LIST | INFO | PLOT | GET | DEBUG\n";
+	std::cout << "<LI>COMMAND: "
+        "START | HELP | LIST | INFO | PLOT | GET | DEBUG\n";
 #ifdef NO_CGI_DEBUG
 	std::cout << "<br>(DEBUG is disabled)\n";
 #endif
@@ -165,7 +166,8 @@ static void cmdInfo(HTMLPage &page)
 		{
             if (page._glob)
             {
-                stdString expr = RegularExpression::fromGlobPattern(page._pattern);
+                stdString expr =
+                    RegularExpression::fromGlobPattern(page._pattern);
                 archive.findChannelByPattern(expr, channel);
             }
             else
@@ -217,7 +219,8 @@ static void cmdInfo(HTMLPage &page)
 }
 
 // Turn string of names into vector of names
-static void getNames(const stdString &input_string, stdVector<stdString> &names)
+static void getNames(const stdString &input_string,
+                     stdVector<stdString> &names)
 {
 	const char *input = input_string.c_str();
 	const char *delim = " ,\t;\n\r";
@@ -328,7 +331,7 @@ static bool exportFunc(HTMLPage &page, Format format,
 			   new GNUPlotExporter(archive, tempfilebase, page._reduce?600:0);
 			gnu->makeImage();
 #ifndef WIN32
-            // Pipe based on _pipe call only works fro console apps.
+            // Pipe based on _pipe call only works for console apps.
             // Within the web server it doesn't seem to function.
 			gnu->usePipe();
 #endif

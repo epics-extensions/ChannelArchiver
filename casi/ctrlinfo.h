@@ -49,7 +49,9 @@ public:
    /* return the enumeration string of state */
 
 private:
+#ifndef SWIG
    friend class value;
+#endif
 
    void setValue( const ValueI* );
 

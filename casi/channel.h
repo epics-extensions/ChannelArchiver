@@ -55,7 +55,9 @@ public:
    /* Call after valued were added to update pointers */
     
 private:
+#ifndef SWIG
    friend class archive;
+#endif
 
    void setIter (ArchiveI *archiveI);
    bool testValue (value &value) const; 

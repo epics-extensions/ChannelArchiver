@@ -31,6 +31,9 @@ public:
    const char *type() const;
    /* Get native type of this value as string */
 
+   int ntype() const;
+   /* Get native type of this value */
+
    int count() const;
    /* Get array size of this value (0: invalid, 1: scalar) */
 
@@ -100,8 +103,10 @@ public:
     * (setting requires write-accessible value!) */
 
 private:
+#ifndef SWIG
    friend class channel;
    friend class archive;
+#endif
 
    const ValueI *getVal() const;
 

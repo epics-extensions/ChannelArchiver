@@ -1,12 +1,15 @@
-#!/bin/env python
+#!/usr/bin/env python
 # $Id$
 # Simple example how engine can be stopped via python.
 # - And since python can be called from a script:
 #   Example how to influence the engine from scripts ;-)
-#
 # -kuk-
+#
+# This implementation exists thanks to Noboru from KEK
+
 ##############################
 import urllib, sys, regex
+
 # Configure this:
 #
 # leave user empty if you do not use the user/passwd mechanism
@@ -34,7 +37,7 @@ def stop(machine="localhost",port=4812, user = "",password=""):
 if __name__ == "__main__":
     from sys import argv
     import getopt,re
-
+    
     if len(argv) <= 1:
         stop()
     else:
@@ -47,7 +50,7 @@ if __name__ == "__main__":
             key=re.sub("-+","",key)
             kw[key]=val
         if kw.has_key("help"):
-            print "Usage: %s [-h hostname] [--machin hostname] [--userusername] [--password password]" % argv[0]
+            print "Usage: %s [-h hostname] [--machine machine] [--user username] [--password password]" % argv[0]
             sys.exit()
         if kw.has_key("h") and not kw.has_key("machine"):
             kw["machine"]=kw["h"]

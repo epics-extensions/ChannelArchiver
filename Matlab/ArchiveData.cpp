@@ -265,6 +265,9 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
         if (nargin > 7)
             how = (int)args(7).double_value();
         size_t num = names.size();
+        size_t data_count = count;
+        if (how == HOW_PLOTBIN)
+            data_count *= 4;
 #ifdef DEBUG
         {
             stdString txt;
@@ -278,7 +281,7 @@ DEFUN_DLD(ArchiveData, args, nargout, "ArchiveData: See ArchiveData.m")
             octave_stdout << "How  : " << how << "\n";
         }
 #endif
-        ValueInfo val_info(num, count);
+        ValueInfo val_info(num, data_count);
         if (client.getValues(key, names, start, end, count, how,
                              value_callback, (void *)&val_info))
         {
@@ -540,6 +543,9 @@ void mexFunction(int nresult, mxArray *result[],
         if (nargin > 7)
             how = (int)mxGetScalar(args[7]);   
         num = names.size();
+        size_t data_count = count;
+        if (how == HOW_PLOTBIN)
+            data_count *= 4;
 #ifdef DEBUG
         {
             stdString txt;
@@ -551,7 +557,7 @@ void mexFunction(int nresult, mxArray *result[],
             mexPrintf("How  : %d\n", how);
         }
 #endif
-        ValueInfo val_info(num, count);
+        ValueInfo val_info(num, data_count);
         if (client.getValues(key, names, start, end, count, how,
                              value_callback, (void *)&val_info))
         {

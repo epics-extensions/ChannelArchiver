@@ -14,12 +14,11 @@ ArchiveEngine_SRCS += ScanList.cpp
 ArchiveEngine_SRCS += HTTPServer.cpp
 ArchiveEngine_SRCS += Configuration.cpp
 ArchiveEngine_SRCS += ConfigFile.cpp
-ArchiveEngine_SRCS += Engine.cpp
 ArchiveEngine_SRCS += EngineServer.cpp
+ArchiveEngine_SRCS += Engine.cpp
 SCRIPTS += Tools/stopEngine.py
 SCRIPTS += Tools/stopEngine.tcl
 SCRIPTS += Tools/startEngine
-
 
 PROD := ArchiveEngine
 

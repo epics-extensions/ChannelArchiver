@@ -33,6 +33,9 @@
 // Type of data format to use (only BinArchive is supported):
 #define ENGINE_ARCHIVE_TYPE BinArchive
 
+// Show full path to engine config in HTTPD?
+#define SHOW_DIR
+
 // Use password mechanism
 // (for stopping the engine over the web)
 //#define USE_PASSWD

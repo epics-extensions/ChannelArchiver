@@ -8,8 +8,9 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+#include <float.h>
+#include <epicsTimeHelper.h>
 #include "ScanList.h"
-#include "float.h"
 
 // This does no longer work:
 //#define LOG_SCANLIST
@@ -102,11 +103,8 @@ void ScanList::addChannel(ChannelInfo *channel)
         list = new SinglePeriodScanList(channel->getPeriod());
         _period_lists.push_back(list);
         // next scan time, rounded to period
-        unsigned long secs = (unsigned long) double(epicsTime::getCurrent ());
-        unsigned long rounded_period = (unsigned long) list->_period;
-        secs += rounded_period;
-        secs -= secs % rounded_period;
-        list->_next_scan = secs;
+        list->_next_scan = roundTimeUp(epicsTime::getCurrent(),
+                                       list->_period);
     }
     list->_channels.push_back(channel);
     if (_next_list_scan == nullTime || _next_list_scan > list->_next_scan)

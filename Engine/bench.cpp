@@ -90,7 +90,7 @@ int main ()
     
     channel->releaseBuffer ();
     epicsTime stop = epicsTime::getCurrent ();
-    double secs = double (stop) - double (start);
+    double secs = stop - start;
     
     std::cout << COUNT << " values in " << secs << " seconds: "
               << COUNT/secs << " vals/sec\n";

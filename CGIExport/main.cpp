@@ -227,7 +227,7 @@ bool decodeTimes (CGIInput &cgi, osiTime &start, osiTime &end)
 			<< ':' << cgi.find ("STARTMINUTE")
 			<< ':' << cgi.find ("STARTSECOND") << '\0';
 		start_txt = buf.str();
-		buf.freeze (false);
+		buf.rdbuf()->freeze (false);
 		buf.clear ();
 
 		if (! string2osiTime (start_txt, start))
@@ -244,7 +244,7 @@ bool decodeTimes (CGIInput &cgi, osiTime &start, osiTime &end)
 			<< ':' << cgi.find ("ENDMINUTE")
 			<< ':' << cgi.find ("ENDSECOND") << '\0';
 		end_txt = buf.str();
-		buf.freeze (false);
+		buf.rdbuf()->freeze (false);
 		buf.clear ();
 
 		if (! string2osiTime (end_txt, end))

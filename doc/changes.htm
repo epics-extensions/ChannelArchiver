@@ -13,9 +13,24 @@
   <ul>
     <li>06/??/2000<br>
 		Patch# 6:<br>
-		Engine: used 1month as file default, not 24h<br>
+		Engine: used 1 month as file default, not 24h<br>
 		Engine: more thread safe signal catching<br>
-		LibIO/Bin*: replace stdio by low level IO<br>
+		HTTPServer: Empty client would linger open and
+			    cause Engine to hang.
+			    Those could be cause by keeping the
+			    "Reload" button down in the web browser.
+			    How those connections are closed.
+			    Hammering the HTTPServer does still
+			    consume CPU up to the point were the 
+			    WriteThread cannot run,
+			    so overwrites can occur.
+			    But things should be fine afterwards.
+			    The best solution might be a seperate,
+			    lower-priority thread for the HTTPServer.
+			    This is put off for now.<br>
+		LibIO/Bin*: replace stdio by low level IO
+		            (open/read/write)
+			    to track down thread-related problems.<br>
     <li>06/14/2000<br>
 		Patch# 5:<br>
 		Testing: SWIG for scripting interface,<br>

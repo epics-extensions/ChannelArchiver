@@ -22,269 +22,278 @@ BEGIN_NAMESPACE_CHANARCH
 // Open a MultiArchive for the given master file
 MultiArchive::MultiArchive (const stdString &master_file)
 {
-	if (! parseMasterFile (master_file))
-		throwDetailedArchiveException (OpenError, master_file);
+    if (! parseMasterFile (master_file))
+        throwDetailedArchiveException (OpenError, master_file);
 }
 
 ChannelIteratorI *MultiArchive::newChannelIterator () const
 {
-	return new MultiChannelIterator (this);
+    return new MultiChannelIterator (this);
 }
 
 ValueIteratorI *MultiArchive::newValueIterator () const
 {
-	return new MultiValueIterator ();
+    return new MultiValueIterator ();
 }
 
 ValueI *MultiArchive::newValue (DbrType type, DbrCount count)
 {
-	return 0;
+    return 0;
 }
 
 bool MultiArchive::findFirstChannel (ChannelIteratorI *channel)
 {
-	MultiChannelIterator *multi_channel = dynamic_cast<MultiChannelIterator *>(channel);
-	return getChannel (0, *multi_channel);
+    MultiChannelIterator *multi_channel =
+        dynamic_cast<MultiChannelIterator *>(channel);
+    return getChannel (0, *multi_channel);
 }
 
 bool MultiArchive::findChannelByName (const stdString &name, ChannelIteratorI *channel)
 {
-	MultiChannelIterator *multi_channel = dynamic_cast<MultiChannelIterator *>(channel);
-	for (size_t i=0; i<_channels.size(); ++i)
-	{
-		if (_channels[i]._name == name)
-			return getChannel (i, *multi_channel);
-	}
-	multi_channel->clear ();
-	return false;
+    MultiChannelIterator *multi_channel =
+        dynamic_cast<MultiChannelIterator *>(channel);
+    for (size_t i=0; i<_channels.size(); ++i)
+    {
+        if (_channels[i]._name == name)
+            return getChannel (i, *multi_channel);
+    }
+    multi_channel->clear ();
+    return false;
 }
 
 bool MultiArchive::findChannelByPattern (const stdString &regular_expression,
-	ChannelIteratorI *channel)
+    ChannelIteratorI *channel)
 {
-	MultiChannelIterator *multi_channel = dynamic_cast<MultiChannelIterator *>(channel);
-	return findFirstChannel (channel) && multi_channel->moveToMatchingChannel (regular_expression);
+    MultiChannelIterator *multi_channel =
+        dynamic_cast<MultiChannelIterator *>(channel);
+    return findFirstChannel (channel) &&
+        multi_channel->moveToMatchingChannel (regular_expression);
 }
 
 bool MultiArchive::addChannel (const stdString &name, ChannelIteratorI *channel)
 {
-	throwDetailedArchiveException (Invalid, "Cannot write, MultiArchive is read-only");
-	return false;
+    throwDetailedArchiveException (Invalid,
+                                   "Cannot write, MultiArchive is read-only");
+    return false;
 }
 
 // Open Archive and ChannelIterator for channel described by ChannelIInfo
 // using the archive that has the oldest value
 bool MultiArchive::getChannel (size_t channel_index, MultiChannelIterator &channel_iterator) const
 {
-	if (channel_index >= _channels.size())
-	{
-		// Invalidate iterator
-		channel_iterator.clear ();
-		return false;
-	}
+    if (channel_index >= _channels.size())
+    {
+        // Invalidate iterator
+        channel_iterator.clear ();
+        return false;
+    }
 
-	const ChannelIInfo &info = _channels[channel_index];
-	list<stdString>::const_iterator archs = _archives.begin();
-	for (/**/; archs != _archives.end(); ++archs)
-	{
-		Archive archive (new BinArchive (*archs));
-		ChannelIterator channel (archive);
-		if (archive.findChannelByName (info._name, channel))
-		{
-			// have "better" archive for this channel ?
-			if (isValidTime (info._first_time)  &&
-				channel->getFirstTime() > info._first_time)
-				continue;
+    const ChannelIInfo &info = _channels[channel_index];
+    list<stdString>::const_iterator archs = _archives.begin();
+    for (/**/; archs != _archives.end(); ++archs)
+    {
+        Archive archive (new BinArchive (*archs));
+        ChannelIterator channel (archive);
+        if (archive.findChannelByName (info._name, channel))
+        {
+            // have "better" archive for this channel ?
+            if (isValidTime (info._first_time)  &&
+                channel->getFirstTime() > info._first_time)
+                continue;
 
-			channel_iterator.position (channel_index, archive.getI(), channel.getI());
-			archive.detach(); // Interfaces now ref'd by MultiChannelIterator
-			channel.detach();
-		}                    
-	}
+            channel_iterator.position (channel_index, archive.getI(), channel.getI());
+            archive.detach(); // Interfaces now ref'd by MultiChannelIterator
+            channel.detach();
+        }                    
+    }
 
-	return channel_iterator.isValid ();
+    return channel_iterator.isValid ();
 }
 
 // For given channel, set value_iterator to value at-or-after time.
 // For has_to_be_later = true, the archive must contain more values,
 // i.e. it won't position on the very last value that's stamped at "time"
 bool MultiArchive::getValueAtOrAfterTime (size_t channel_index,
-	MultiChannelIterator &channel_iterator,
-	const osiTime &time, bool has_to_be_later, MultiValueIterator &value_iterator) const
+    MultiChannelIterator &channel_iterator,
+    const osiTime &time, bool has_to_be_later, MultiValueIterator &value_iterator) const
 {
-	if (channel_index >= _channels.size())
-		return false;
+    if (channel_index >= _channels.size())
+        return false;
 
-	const ChannelIInfo &info = _channels[channel_index];
-	list<stdString>::const_iterator archs = _archives.begin();
-	for (/**/; archs != _archives.end(); ++archs)
-	{
-		Archive archive (new BinArchive (*archs));
-		ChannelIterator channel (archive);
-		if (archive.findChannelByName (info._name, channel))
-		{
-			// getValueAfterTime() could succeed for '==', but this is not what we're looking for
-			if (has_to_be_later && channel->getLastTime() <= time)
-				continue;
+    const ChannelIInfo &info = _channels[channel_index];
+    list<stdString>::const_iterator archs = _archives.begin();
+    for (/**/; archs != _archives.end(); ++archs)
+    {
+        Archive archive (new BinArchive (*archs));
+        ChannelIterator channel (archive);
+        if (archive.findChannelByName (info._name, channel))
+        {
+            // getValueAfterTime() could succeed for '==', but this is not what we're looking for
+            if (has_to_be_later && channel->getLastTime() <= time)
+                continue;
 
-			ValueIterator value (archive);
-			// Does this archive have values after "time"?
-			if (! channel->getValueAfterTime (time, value))
-				continue;
+            ValueIterator value (archive);
+            // Does this archive have values after "time"?
+            if (! channel->getValueAfterTime (time, value))
+                continue;
 
-			// position() will delete ref's to previous ArchiveI, ChannelIteratorI, ...
-			// -> remove reference to values first, then channeliterator/archive
-			value_iterator.position (&channel_iterator, value.getI());
-			channel_iterator.position (channel_index, archive.getI(), channel.getI());
+            // position() will delete ref's to previous ArchiveI, ChannelIteratorI, ...
+            // -> remove reference to values first, then channeliterator/archive
+            value_iterator.position (&channel_iterator, value.getI());
+            channel_iterator.position (channel_index, archive.getI(), channel.getI());
 
-			value.detach ();	// Now ref'd by MultiValueIterator
-			archive.detach();	// Now ref'd by MultiChannelIterator
-			channel.detach();	// dito
-			return value_iterator.isValid ();
-		}                    
-	}
+            value.detach ();    // Now ref'd by MultiValueIterator
+            archive.detach();   // Now ref'd by MultiChannelIterator
+            channel.detach();   // dito
+            return value_iterator.isValid ();
+        }                    
+    }
 
-	return false;
+    return false;
 }
 
 bool MultiArchive::getValueAtOrBeforeTime (size_t channel_index,
-	MultiChannelIterator &channel_iterator,
-	const osiTime &time, bool has_to_be_earlier, MultiValueIterator &value_iterator) const
+    MultiChannelIterator &channel_iterator,
+    const osiTime &time, bool has_to_be_earlier, MultiValueIterator &value_iterator) const
 {
-	if (channel_index >= _channels.size())
-		return false;
+    if (channel_index >= _channels.size())
+        return false;
 
-	const ChannelIInfo &info = _channels[channel_index];
-	list<stdString>::const_iterator archs = _archives.begin();
-	for (/**/; archs != _archives.end(); ++archs)
-	{
-		Archive archive (new BinArchive (*archs));
-		ChannelIterator channel (archive);
-		if (archive.findChannelByName (info._name, channel))
-		{
-			// getValueBeforeTime() could succeed for '==', but this is not what we're looking for
-			if (has_to_be_earlier && time <= channel->getFirstTime())
-				continue;
+    const ChannelIInfo &info = _channels[channel_index];
+    list<stdString>::const_iterator archs = _archives.begin();
+    for (/**/; archs != _archives.end(); ++archs)
+    {
+        Archive archive (new BinArchive (*archs));
+        ChannelIterator channel (archive);
+        if (archive.findChannelByName (info._name, channel))
+        {
+            // getValueBeforeTime() could succeed for '==', but this is not what we're looking for
+            if (has_to_be_earlier && time <= channel->getFirstTime())
+                continue;
 
-			ValueIterator value (archive);
-			// Does this archive have values before "time"?
-			if (! channel->getValueBeforeTime (time, value))
-				continue;
+            ValueIterator value (archive);
+            // Does this archive have values before "time"?
+            if (! channel->getValueBeforeTime (time, value))
+                continue;
 
-			// position() will delete ref's to previous ArchiveI, ChannelIteratorI, ...
-			// -> remove reference to values first, then channeliterator/archive
-			value_iterator.position (&channel_iterator, value.getI());
-			channel_iterator.position (channel_index, archive.getI(), channel.getI());
+            // position() will delete ref's to previous ArchiveI, ChannelIteratorI, ...
+            // -> remove reference to values first, then channeliterator/archive
+            value_iterator.position (&channel_iterator, value.getI());
+            channel_iterator.position (channel_index, archive.getI(), channel.getI());
 
-			value.detach ();	// Now ref'd by MultiValueIterator
-			archive.detach();	// Now ref'd by MultiChannelIterator
-			channel.detach();	// dito
-			return value_iterator.isValid ();
-		}                    
-	}
+            value.detach ();    // Now ref'd by MultiValueIterator
+            archive.detach();   // Now ref'd by MultiChannelIterator
+            channel.detach();   // dito
+            return value_iterator.isValid ();
+        }                    
+    }
 
-	return false;
+    return false;
 }
 
 bool MultiArchive::getValueNearTime (size_t channel_index,
-	MultiChannelIterator &channel_iterator,
-	const osiTime &time, MultiValueIterator &value_iterator) const
+    MultiChannelIterator &channel_iterator,
+    const osiTime &time, MultiValueIterator &value_iterator) const
 {
-	if (channel_index >= _channels.size())
-		return false;
+    if (channel_index >= _channels.size())
+        return false;
 
-	// Query all archives in MultiArchive for value nearest "time"
-	double t = double (time);
+    // Query all archives in MultiArchive for value nearest "time"
+    double t = double (time);
     double best_bet = -1.0; // negative == invalid
 
-	const ChannelIInfo &info = _channels[channel_index];
-	list<stdString>::const_iterator archs = _archives.begin();
-	for (/**/; archs != _archives.end(); ++archs)
-	{
-		Archive archive (new BinArchive (*archs));
-		ChannelIterator channel (archive);
-		if (archive.findChannelByName (info._name, channel))
-		{
-			ValueIterator value (archive);
-			if (! channel->getValueNearTime (time, value))
-				continue;
+    const ChannelIInfo &info = _channels[channel_index];
+    list<stdString>::const_iterator archs = _archives.begin();
+    for (/**/; archs != _archives.end(); ++archs)
+    {
+        Archive archive (new BinArchive (*archs));
+        ChannelIterator channel (archive);
+        if (archive.findChannelByName (info._name, channel))
+        {
+            ValueIterator value (archive);
+            if (! channel->getValueNearTime (time, value))
+                continue;
 
-			double distance = fabs(double(value->getTime()) - t);  
-			if (best_bet >= 0  &&  best_bet <= distance)
-				continue; // worse than what we found before
+            double distance = fabs(double(value->getTime()) - t);  
+            if (best_bet >= 0  &&  best_bet <= distance)
+                continue; // worse than what we found before
 
-			best_bet = distance;
-			value_iterator.position (&channel_iterator, value.getI());
-			channel_iterator.position (channel_index, archive.getI(), channel.getI());
+            best_bet = distance;
+            value_iterator.position (&channel_iterator, value.getI());
+            channel_iterator.position (channel_index, archive.getI(), channel.getI());
 
-			value.detach ();	// Now ref'd by MultiValueIterator
-			archive.detach();	// Now ref'd by MultiChannelIterator
-			channel.detach();	// dito
-		}                    
-	}
+            value.detach ();    // Now ref'd by MultiValueIterator
+            archive.detach();   // Now ref'd by MultiChannelIterator
+            channel.detach();   // dito
+        }                    
+    }
 
-	if (best_bet >= 0)
-		return value_iterator.isValid ();
+    if (best_bet >= 0)
+        return value_iterator.isValid ();
 
-	return false;
+    return false;
 }
 
 bool MultiArchive::parseMasterFile (const stdString &master_file)
 {
-	// Carefully check if "master_file" starts with the magic line:
-	ifstream	file;
-	file.open (master_file.c_str());
-	if (! file.is_open ())
-	{
-		LOG_MSG ("Cannot open master file '" << master_file << "'\n");
-		return false;
-	}
-	file.setf (ios::binary);
-	char line[14]; // master_version  : 14 chars
-	file.read (line, 14);
-	int got = file.gcount ();
-	file.close ();
+    // Carefully check if "master_file" starts with the magic line:
+    ifstream    file;
+    file.open (master_file.c_str());
+#ifdef __HP_aCC
+    if (file.fail())
+#else
+    if (! file.is_open ())
+#endif
+    {
+        LOG_MSG ("Cannot open master file '" << master_file << "'\n");
+        return false;
+    }
+    file.setf (ios::binary);
+    char line[14]; // master_version  : 14 chars
+    file.read (line, 14);
+    int got = file.gcount ();
+    file.close ();
 
-	if (got < 14)
-	{
-		LOG_MSG ("Invalid master file '" << master_file << "'\n");
-		return false; // too small to be anything
-	}
-	if (strncmp (line, "master_version", 14) !=0)
-	{
-		// Could be Binary file:
-		_archives.push_back (master_file);
-		investigateChannels ();
-		return true;
-	}
+    if (got < 14)
+    {
+        LOG_MSG ("Invalid master file '" << master_file << "'\n");
+        return false; // too small to be anything
+    }
+    if (strncmp (line, "master_version", 14) !=0)
+    {
+        // Could be Binary file:
+        _archives.push_back (master_file);
+        investigateChannels ();
+        return true;
+    }
 
-	// ------------------------------------------------
-	// OK, looks like a master file.
-	// Now read it again as ASCII:
+    // ------------------------------------------------
+    // OK, looks like a master file.
+    // Now read it again as ASCII:
 
-	ASCIIParser	parser;
+    ASCIIParser parser;
 
-	if (! parser.open (master_file))
-		return false;
+    if (! parser.open (master_file))
+        return false;
 
-	stdString parameter, value;
-	if (parser.nextLine()						&&
-		parser.getParameter (parameter, value)	&&
-		parameter == "master_version"			&&
-		value == "1")
-	{
-		while (parser.nextLine ())
-			_archives.push_back (parser.getLine ());
-	}
-	else
-	{
-		LOG_MSG ("Invalid master file '" << master_file << "', maybe wrong version\n");
-		return false;
-	}
+    stdString parameter, value;
+    if (parser.nextLine()                       &&
+        parser.getParameter (parameter, value)  &&
+        parameter == "master_version"           &&
+        value == "1")
+    {
+        while (parser.nextLine ())
+            _archives.push_back (parser.getLine ());
+    }
+    else
+    {
+        LOG_MSG ("Invalid master file '" << master_file << "', maybe wrong version\n");
+        return false;
+    }
 
-	investigateChannels ();
+    investigateChannels ();
 
-	return true;
+    return true;
 }
 
 // Find ChannelIInfo for given name,
@@ -293,81 +302,81 @@ bool MultiArchive::parseMasterFile (const stdString &master_file)
 // false if new one was added.
 bool MultiArchive::findChannelInfo (const stdString &name, ChannelIInfo **info)
 {
-	// Find element we look for
-	// or following element, >=, where we could insert
-	vector<ChannelIInfo>::iterator i = _channels.begin();
-	for (/**/;  i != _channels.end(); ++i)
-	{
-		if (i->_name == name)	// found
-		{
-			*info = & *i;
-			return true;
-		}
-		if (i->_name > name)	// past, insert here
-			break;
-	}
+    // Find element we look for
+    // or following element, >=, where we could insert
+    vector<ChannelIInfo>::iterator i = _channels.begin();
+    for (/**/;  i != _channels.end(); ++i)
+    {
+        if (i->_name == name)   // found
+        {
+            *info = & *i;
+            return true;
+        }
+        if (i->_name > name)    // past, insert here
+            break;
+    }
 
-	ChannelIInfo	new_info;
-	new_info._name = name;
-	*info = & *_channels.insert (i, new_info);
+    ChannelIInfo    new_info;
+    new_info._name = name;
+    *info = & *_channels.insert (i, new_info);
 
-	return false;
+    return false;
 }
 
 // Fill _channels from _archives
 bool MultiArchive::investigateChannels ()
 {
-	stdString name;
-	ChannelIInfo *info;
+    stdString name;
+    ChannelIInfo *info;
 
-	_channels.clear ();
+    _channels.clear ();
 
-	list<stdString>::iterator archs = _archives.begin();
-	for (/**/; archs != _archives.end(); ++archs)
-	{
-		Archive archive (new BinArchive (*archs));
-		ChannelIterator channel (archive);
-		archive.findFirstChannel (channel);
-		while (channel)
-		{
-			name = channel->getName();
-			if (findChannelInfo (name, &info))	// check bounds for existing channel
-			{
-				if (info->_first_time > channel->getFirstTime ())
-					info->_first_time = channel->getFirstTime ();
-				if (info->_last_time < channel->getLastTime ())
-					info->_last_time = channel->getLastTime ();
-			}
-			else	// new entry:
-			{
-				info->_first_time = channel->getFirstTime ();
-				info->_last_time = channel->getLastTime ();
-			}
-			++ channel;
-		}         
-	}
+    list<stdString>::iterator archs = _archives.begin();
+    for (/**/; archs != _archives.end(); ++archs)
+    {
+        Archive archive (new BinArchive (*archs));
+        ChannelIterator channel (archive);
+        archive.findFirstChannel (channel);
+        while (channel)
+        {
+            name = channel->getName();
+            if (findChannelInfo (name, &info))  // check bounds for existing channel
+            {
+                if (info->_first_time > channel->getFirstTime ())
+                    info->_first_time = channel->getFirstTime ();
+                if (info->_last_time < channel->getLastTime ())
+                    info->_last_time = channel->getLastTime ();
+            }
+            else    // new entry:
+            {
+                info->_first_time = channel->getFirstTime ();
+                info->_last_time = channel->getLastTime ();
+            }
+            ++ channel;
+        }         
+    }
 
-	return true;
+    return true;
 }
 
 void MultiArchive::log () const
 {
-	LOG_MSG ("MultiArchive:\n");
-	list<stdString>::const_iterator archs = _archives.begin();
-	
-	while (archs != _archives.end())
-	{
-		LOG_MSG ("Archive file: " << *archs << "\n");
-		++archs;
-	}
+    LOG_MSG ("MultiArchive:\n");
+    list<stdString>::const_iterator archs = _archives.begin();
+    
+    while (archs != _archives.end())
+    {
+        LOG_MSG ("Archive file: " << *archs << "\n");
+        ++archs;
+    }
 
-	LOG_MSG ("Channels:\n");
-	vector<ChannelIInfo>::const_iterator chans = _channels.begin();
-	while (chans != _channels.end())
-	{
-		LOG_MSG (chans->_name << "\n");
-		++chans;
-	}
+    LOG_MSG ("Channels:\n");
+    vector<ChannelIInfo>::const_iterator chans = _channels.begin();
+    while (chans != _channels.end())
+    {
+        LOG_MSG (chans->_name << "\n");
+        ++chans;
+    }
 }
 
 END_NAMESPACE_CHANARCH

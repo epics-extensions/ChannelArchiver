@@ -27,41 +27,40 @@ class DirectoryFile;
 class DirectoryFileIterator
 {
 public:
-	// DirectoryFileIterator has to be bound to DirectoryFile:
-	DirectoryFileIterator ();
-	DirectoryFileIterator (DirectoryFile *dir);
-	DirectoryFileIterator & operator = (const DirectoryFileIterator &rhs);
+    // DirectoryFileIterator has to be bound to DirectoryFile:
+    DirectoryFileIterator ();
+    DirectoryFileIterator (DirectoryFile *dir);
+    DirectoryFileIterator (const DirectoryFileIterator &dir);
+    DirectoryFileIterator & operator = (const DirectoryFileIterator &rhs);
 
-	bool isValid () const	
-	{	return _entry.getOffset () != INVALID_OFFSET; }
+    bool isValid () const   
+    {   return _entry.getOffset () != INVALID_OFFSET; }
 
-	BinChannel *getChannel ()
-	{	return &_entry; }
-	const BinChannel *getChannel () const
-	{	return &_entry; }
+    BinChannel *getChannel ()
+    {   return &_entry; }
+    const BinChannel *getChannel () const
+    {   return &_entry; }
 
-	// Move to next DirectoryEntry
-	bool next ();
+    // Move to next DirectoryEntry
+    bool next ();
 
-	bool isEqual (const DirectoryFileIterator& rhs) const
-	{	return (_entry.getOffset () == rhs._entry.getOffset () && _dir == rhs._dir); }
+    bool isEqual (const DirectoryFileIterator& rhs) const
+    {   return (_entry.getOffset () == rhs._entry.getOffset () && _dir == rhs._dir); }
 
-	void save ();
+    void save ();
 
 private:
-	friend class DirectoryFile;
-	void clear ();
+    friend class DirectoryFile;
+    void clear ();
 
-	DirectoryFileIterator (DirectoryFileIterator &dir);
+    bool findValidEntry (HashTable::HashValue start);
 
-	bool findValidEntry (HashTable::HashValue start);
+    bool operator == (const DirectoryFileIterator& rhs) const; // not impl.
+    bool operator != (const DirectoryFileIterator& rhs) const; // not impl.
 
-	bool operator == (const DirectoryFileIterator& rhs) const; // not impl.
-	bool operator != (const DirectoryFileIterator& rhs) const; // not impl.
-
-	DirectoryFile			*_dir;
-	BinChannel				_entry;
-	HashTable::HashValue	_hash;	// ... for _entry
+    DirectoryFile           *_dir;
+    BinChannel              _entry;
+    HashTable::HashValue    _hash;  // ... for _entry
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -88,36 +87,36 @@ public:
     // Entry will be empty, i.e. point to no data file.
     DirectoryFileIterator add (const stdString &name);
 
-    const stdString &getDirname ()    {   return _dirname;	}
+    const stdString &getDirname ()    {   return _dirname;  }
 
-	bool isReadonly ()                {   return _file.isReadonly(); }
+    bool isReadonly ()                {   return _file.isReadonly(); }
 
 private:
-	friend class DirectoryFileIterator;
-	enum
-	{
-		FirstEntryOffset = HashTable::HashTableSize * sizeof(FileOffset)
-	};
+    friend class DirectoryFileIterator;
+    enum
+    {
+        FirstEntryOffset = HashTable::HashTableSize * sizeof(FileOffset)
+    };
 
-	// Prohibit assignment: two DirectoryFiles cannot access the same file
-	// (However, more than one iterator are OK)
-	DirectoryFile (const DirectoryFile &);
-	DirectoryFile &operator =(const DirectoryFile &);
+    // Prohibit assignment: two DirectoryFiles cannot access the same file
+    // (However, more than one iterator are OK)
+    DirectoryFile (const DirectoryFile &);
+    DirectoryFile &operator =(const DirectoryFile &);
 
-	// Read (first) FileOffset for given HashValue
+    // Read (first) FileOffset for given HashValue
     FileOffset readHTEntry (HashTable::HashValue entry) const;
 
-	// Write (first) FileOffset for given HashValue
+    // Write (first) FileOffset for given HashValue
     void writeHTEntry (HashTable::HashValue entry, FileOffset offset);
 
-	// Search HT for the first non-empty entry:
+    // Search HT for the first non-empty entry:
     FileOffset lookForValidEntry (HashTable::HashValue start) const;
 
     stdString    _filename;
     stdString    _dirname;
     LowLevelIO   _file;
 
-	// Offset of next unused entry for add:
+    // Offset of next unused entry for add:
     FileOffset   _next_free_entry;
 };
 

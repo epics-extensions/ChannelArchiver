@@ -21,12 +21,13 @@
 #include "EngineServer.h"
 #include <Filename.h>
 
-#ifndef __HP_aCC
+// No clue what's needed here....
+//#ifndef __HP_aCC
 // wrongly defined for hp700 dce,
 // but __HP_aCC needs it again?
-#undef open
-#undef close
-#endif
+//#undef open
+//#undef close
+//#endif
 
 USING_NAMESPACE_CHANARCH
 USE_STD_NAMESPACE

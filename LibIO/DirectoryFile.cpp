@@ -188,7 +188,7 @@ DirectoryFileIterator::DirectoryFileIterator (DirectoryFile *dir)
     _dir = dir;
 }
 
-DirectoryFileIterator::DirectoryFileIterator (DirectoryFileIterator &dir)
+DirectoryFileIterator::DirectoryFileIterator (const DirectoryFileIterator &dir)
 {
     clear ();
     *this = dir;

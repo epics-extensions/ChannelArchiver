@@ -5,6 +5,7 @@
 
 #include "archiver_unit.h"
 #include "array_list.h"
+#include "au_list_iterator.h"
 #include "file_allocator.h"
 #include "r_entry.h"
 #include "r_tree_free_space_manager.h"
@@ -71,10 +72,17 @@ public:
 	bool getTreeInterval(interval * i) const;
 
 	/**
-	*	The three next methods DO NOT touch the AUs in the AU list; only the entries in the R tree
+	*	The next methods DO NOT change the AUs in the AU list; only the entries in the R tree
+    *   i.e. changes of the AU list (insert/update of an AU) MUST be handled before
+    *   return false if errors occured; otherwise true
 	*/
 	bool addAU(long au_Address);
-	bool removeAU(long au_Address);
+
+    /**
+    *  The only way if other than the latest leaf has been updated
+    *  return false if errors occured; true otherwise
+    */
+    bool rebuild(au_List_Iterator& ali);
 	
 	/**
 	*	@return false if the latest leaf's only key is not the AU with the specified address, or
@@ -96,6 +104,8 @@ public:
 
 private:
 
+    //most 'long' parameters are redundant, but for the performance purposes necessary
+    bool replaceKey(const archiver_Unit& new_AU, const archiver_Unit& current_Key, long current_Leaf, long new_Address, long current_Key_Address, long previous_Key_Address);
 
 	bool findLastLeaf(const interval * i, long * result) const;	//returns the index of the leaf
 	
@@ -106,14 +116,12 @@ private:
 	bool getLastEntryInNode(long current_Index, long * result) const;	//returns the index of the last entry in a node
 
 	long addNewEntry(long previous_Index, long next_Index, long child_Index, long au_Address, const interval * i); 
-	//returns the index of the new entry (caution: the parent index must yet be determined!)
-	bool deleteEntry(long current_Index);
-	
+		
 	// Allows updating the end time & number of samples.
 	// Really only works with the last buffer returned by getActiveAUs
 	// Otherwise, routine will
 	// be the same as deleteAU() && addAU()
-	//au_Address should be -1 before caqlling the function
+	//au_Address should be -1 before calling the function
 	//if the update was successful true is returned and au_Address
 	//will be set to -1; if the function returned true, but the au_Address
 	//was set to an actual value- the old unit must be deleted first and then 

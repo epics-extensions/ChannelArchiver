@@ -151,14 +151,14 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 		search_Interval.setStart(this_Tree_Interval.getEnd());
 	}
 	
-	aup_Iterator * ai = other.getAUPIterator(channel_Name);
-	if(ai == 0) return false;
+	au_List_Iterator * ali = other.getAUListIterator(channel_Name);
+	if(ali == 0) return false;
 	long au_Address;
 	archiver_Unit au;
     ///////////////////
     gettimeofday(&before, 0);
     //
-	bool result = ai->getFirstAUAddress(search_Interval, &au_Address);
+	bool result = ali->getFirstAUAddress(search_Interval, &au_Address);
     ///////////////////////
     gettimeofday(&after, 0);
     length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);  
@@ -170,7 +170,7 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 	{
 		if(au_Address < 0) 
 		{
-			delete ai;
+			delete ali;
 			return true;
 		}
         ///////////////////
@@ -179,7 +179,7 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 		au.attach(other.getFile(), au_Address);
 		if(au.readAU() == false) 
 		{
-			delete ai;
+			delete ali;
 			return false;
 		}
         stdString path_Str = stdString(au.getKey().getPath());
@@ -195,7 +195,7 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 		//we know its unique
 		if(addAU(channel_Name, au) == false) 
 		{
-			delete ai;
+			delete ali;
 			return false;
 		}
          ///////////////////////
@@ -207,7 +207,7 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
         ///////////////////
         gettimeofday(&before, 0);
         //        
-      	result = ai->getNextAUAddress(&au_Address);
+      	result = ali->getNextAUAddress(&au_Address);
         ///////////////////////
         gettimeofday(&after, 0);
         length_Of_Time = (after.tv_sec - before.tv_sec)*1000000 + (after.tv_usec - before.tv_usec);  
@@ -215,7 +215,7 @@ bool archiver_Index::addDataFromAnotherIndex(const char * channel_Name, archiver
 		printf("It takes %ld microseconds to find a next AU\n", length_Of_Time);
         //
 	}
-	delete ai;
+	delete ali;
 	return false;
 }
 	
@@ -236,7 +236,8 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 	l.init(au_List_Pointer);
 	long au_Address;
 	bool result = l.addAU(&au, &au_Address);
-    //what if we want to update
+
+    //both cases possible: AU needs an update, or need to be just inserted
     if(au_Address > 0)
 	{	
 		if(	r.getRootPointer() != root_Pointer &&
@@ -247,39 +248,38 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 		}
 		else
 		{
-			//the AU is already stored in the tree
-			if(au.getPriority() < 0)
-			{
-				if(au.getInterval().isNull() == false)
-				{
-					//if only an end time update is desired
-					if(r.updateLatestLeaf(au_Address, au.getInterval().getEnd())) return true;
-				}
-				else return true;
-			}
+			//means: the AU is already stored in the tree
+			if(au.getPriority() < 0 && !au.getInterval().isNull())
+            {
+                //try a direct update 
+				if(r.updateLatestLeaf(au_Address, au.getInterval().getEnd())) return true;
+                //if update not successful, go on
+            }
 			else
 			{
-				short new_Priority = au.getPriority();
-				interval new_Interval;
-				new_Interval.setStart(au.getInterval().getStart());
-				new_Interval.setEnd(au.getInterval().getEnd());
-				au.attach(f, au_Address);
+                //check if the end time of the stored AU is before of the passed one 
+				short new_Priority = au.getPriority(); //works even if it wasn't set!
+				interval new_Interval = au.getInterval();
+                
+                au.attach(f, au_Address);
 				if(au.readPriority() == false) return false;
-				long temp = 0;
+
+                long temp = 0;
 				if(new_Interval.isNull() == false)
 				{
 					if(au.readInterval() == false) return false;
 					temp = compareTimeStamps(new_Interval.getEnd(), au.getInterval().getEnd());
 				}
-				//if a new priority and/or different end time is set
+
+                //if a new priority and/or different end time is set
 				if	(	au.getPriority() != new_Priority || temp != 0)
 				{
+                    //update the AU
 					if(temp < 0)
 					{
 						printf("An existing AU has a later end time than the one that was tried to be added\n");
 						return false;
 					}
-					if(r.removeAU(au_Address) == false) return false;
 					if(new_Priority > -1)	
 					{
 						au.setPriority(new_Priority);
@@ -291,14 +291,17 @@ bool archiver_Index::addAU(const char * channel_Name, archiver_Unit & au)
 						au.setInterval(new_Interval);
 						if(au.writeInterval() == false) return false;
 					}
-					return r.addAU(au_Address);
+
+                    //rebuild the tree
+                    au_List_Iterator ali = au_List_Iterator(f, au_List_Pointer);
+					return r.rebuild(ali);
 				}
 				//no update needed
 				else return true;
 			}
 		}
 	}
-	//if l.addAU() produyced errors
+	//if l.addAU() produced errors
 	return false;
 }
 
@@ -371,23 +374,18 @@ channel_Name_Iterator * archiver_Index::getChannelNameIterator() const
 	return new channel_Name_Iterator(&t);
 }
 
-aup_Iterator * archiver_Index::getAUPIterator(const char * channel_Name)
+au_List_Iterator * archiver_Index::getAUListIterator(const char * channel_Name)
 {
 	if(isInstanceValid() == false) return 0;
 	if(channel_Name == 0) return false;
-	long root_Pointer;
-	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer);
-	if(cntu_Address < 0) 
+	long root_Pointer, au_List_Pointer;
+	long cntu_Address = t.findCNTU(channel_Name, &root_Pointer, &au_List_Pointer);
+	if(cntu_Address < 0 || root_Pointer < 0 || au_List_Pointer < 0)
 	{
 		return 0;
 	}
-	if(root_Pointer < 0)
-	{
-		return 0;
-	}
-	if(	r.getRootPointer() != root_Pointer	&&
-	r.attach(&fa, root_Pointer) == false) return 0;
-	return new aup_Iterator(&r);
+	
+	return new au_List_Iterator(f, au_List_Pointer);
 }
 
 bool archiver_Index::readAU(long au_Address, archiver_Unit * result)

@@ -70,6 +70,22 @@ bool r_Tree_Free_Space_Manager::attach(FILE * f, const r_Tree_Root& root)
 	return true;
 }
 
+bool r_Tree_Free_Space_Manager::resetFreeSpace()
+{
+    long ADDRESS = start - RTFSM_HEADER_SIZE + RTFSM_REG_OFFSET;
+    fseek(f, ADDRESS, SEEK_SET);
+	if(writeLong(f, 0) == false)
+    {
+		printf("Couldn't initialize the RTFSM REGISTER at the address %ld\n", ADDRESS);
+		return false;
+    }
+    if(free_Indices.getNumberOfElements() != 0) 
+	{
+		free_Indices.reset();
+	}    
+    return true;
+}
+
 void r_Tree_Free_Space_Manager::detach()
 {
 	f = 0;

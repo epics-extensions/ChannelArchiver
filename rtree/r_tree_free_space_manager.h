@@ -28,6 +28,12 @@ public:
 	*	@return False, if i/o errors occured; true otherwise		
 	*/
 	bool attach(FILE * f, const r_Tree_Root& root);
+    
+    /**
+    *   Used by r_Tree:rebuild()
+    *   return false, if errors occured; true otherwise
+    */
+    bool resetFreeSpace();
 
 	/**
 	*	Reset all object parameters

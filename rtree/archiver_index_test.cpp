@@ -49,7 +49,7 @@ int run()
 	au = archiver_Unit(key_Object("10.dat", 1), interval(12, 0, 13, 1), 0);
 	my_Index.addAU("James_Bond", au);
 	my_Index.dump("tree.txt", "a");
-	
+
 	//update a unit that is NOT the latest
 	//iv = interval(10, 0, 15, 1);
 	au = archiver_Unit(key_Object("10.dat", 0), interval(10, 0, 15, 1), 1);
@@ -63,6 +63,7 @@ int run()
 
 	//dot File
 	my_Index.createDotFile("James_Bond", "dot.txt");
+    
 
 	//add between two intervals
 	au = archiver_Unit(key_Object("10.dat", 3), interval(6, 0, 9, 0), 1);
@@ -232,18 +233,19 @@ int run()
     au = archiver_Unit(key_Object("file path B", 7), interval(2, 0, 20, 0), 0);
     if(!my_Index.addAU("channelX", au)) return 0;
     my_Index.createDotFile("channelX", "index2_dot.txt");
-    aup_Iterator * ai = my_Index.getAUPIterator("channelX");
+    au_List_Iterator * ali = my_Index.getAUListIterator("channelX");
    
-    if(ai != 0)
+    if(ali != 0)
     {
         long au_Address;
-        bool result = ai->getFirstAUAddress(interval(COMPLETE_TIME_RANGE), &au_Address);
+        bool result = ali->getFirstAUAddress(interval(COMPLETE_TIME_RANGE), &au_Address);
         while(result && (au_Address > 0) && my_Index.readAU(au_Address, &au))
         {
             printf("%s @ %ld\n", au.getKey().getPath(), au.getKey().getOffset());
-            result = ai->getNextAUAddress(&au_Address);
+            result = ali->getNextAUAddress(&au_Address);
         }
     }
+    delete ali;
 	my_Index.close();
 	return 0;
 }

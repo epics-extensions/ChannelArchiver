@@ -4,7 +4,7 @@
 #include <stdString.h>
 #include "r_tree.h"
 #include "au_list.h"
-#include "aup_iterator.h"
+#include "au_list_iterator.h"
 #include "channel_name_iterator.h"
 #include "cntu_table.h"
 #include "rtree_constants.h"
@@ -142,7 +142,7 @@ public:
 	channel_Name_Iterator * getChannelNameIterator() const;
     
 	//Iterate through ALL AUs in the corresponding R tree
-	aup_Iterator * getAUPIterator(const char * channel_Name);
+	au_List_Iterator * getAUListIterator(const char * channel_Name);
     /**
     *   The AUP iterator returns the addresses of the AUs;
     *   <i>this</i> method reads an AU from the index file

@@ -58,14 +58,19 @@ class Browser:
 
     def makeGUI (self, archiveName):
         root = self.root # shortcut
+        root.option_readfile ('optionDB')
         menu = Pmw.MenuBar (root)
         menu.addmenu ('File', 'File Functions')
         menu.addmenu ('Channel', 'Channel Functions')
         menu.addmenu ('Help', 'Channel Functions')
-        menu.addmenuitem ('File', 'command', 'Open archive', label='Open', command=self.menuOpen)
-        menu.addmenuitem ('File', 'command', 'Exit program', label='Quit', command=root.quit)
-        menu.addmenuitem ('Channel', 'command', 'Show Channel', label='Show', command=self.menuShowChannel)
-        menu.addmenuitem ('Help', 'command', '???', label='About', command=self.menuAbout)
+        menu.addmenuitem ('File', 'command', 'Open archive',
+                          label='Open', command=self.menuOpen)
+        menu.addmenuitem ('File', 'command', 'Exit program',
+                          label='Quit', command=root.quit)
+        menu.addmenuitem ('Channel', 'command', 'Show Channel',
+                          label='Show', command=self.menuShowChannel)
+        menu.addmenuitem ('Help', 'command', '???',
+                          label='About', command=self.menuAbout)
       
         self.archiveName=Pmw.EntryField (root, labelpos=W,
                                          label_text="Archive:",

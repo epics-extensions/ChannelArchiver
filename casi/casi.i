@@ -1,6 +1,5 @@
-%title "CASI - ChannelArchiver Scripting Interface", before
+%title "CASI - ChannelArchiver Scripting Interface"
 %style html_body="<BODY bgcolor=\"#B0B0FF\"><BLOCKQUOTE><FONT face=\"Comic Sans MS\">:</FONT></BLOCKQUOTE></BODY>"
-
 
 %module casi
 
@@ -25,6 +24,7 @@ USING_NAMESPACE_CHANARCH
 /* Following includes are used by SWIG for generation of wrapper */
 
 const char *casi_version = "1.0";
+
 
 /* The archive class is the starting point:
 
@@ -51,6 +51,13 @@ const char *casi_version = "1.0";
 %section "Value Information"
 
 %include "value.h"
+
+/* Helpers specific to the BinArchive
+ */
+%section "Misc."
+
+const int HOURS_PER_MONTH = 24*31; /* depends on month, ... this is
+                                      a magic number */
 
 %section "Questions, comments?"
 %text %{

@@ -39,6 +39,21 @@ public:
 	/* Get value in archive that is closest to given time stamp */
 	bool getValueNearTime (const char *time, value &value); 
 
+    /* Write support:
+     * Lock current buffer, return number of free entries
+     * for values of given type
+     */
+     int lockBuffer (const value &value);
+
+     /* Call this if current buffer is full */
+     void addBuffer (const value &value, int value_count);
+
+     /* Add new value, call lock/addBuffer before */
+     bool addValue (const value &value);
+
+     /* Call after valued were added to update pointers */
+     void releaseBuffer ();
+    
 private:
 	friend class archive;
 

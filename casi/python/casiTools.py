@@ -1,6 +1,7 @@
 # $Id$
 
-import regsub, time
+import regsub, time, casi
+
  
 #// Please note the two fundamentally different time formats
 #// which are used in the following description:
@@ -79,9 +80,9 @@ if __name__=="__main__":
 	print "Now as stamp:  ", stamp
 	print "Values:        ", stamp2values(stamp)
 	print "Back to secs:  ", stamp2secs (stamp)
-
-
-
+	archive=casi.archive()
+	archive.write ('/tmp/dir', 2)
+	print "Next file for ", archive.name(), ":", archive.nextFileTime(stamp) 
 
 
 

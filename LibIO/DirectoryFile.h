@@ -71,27 +71,26 @@ private:
 class DirectoryFile
 {
 public:
-	// Attach DirectoryFile to disk file.
-	// Existing file is opened, otherwise new one is created for for_write==true.
-	DirectoryFile (const stdString &filename, bool for_write=false);
+    // Attach DirectoryFile to disk file.
+    // Existing file is opened, otherwise new one is created
+    // for for_write==true.
+    DirectoryFile (const stdString &filename, bool for_write=false);
 
-	// Close file.
-	~DirectoryFile ();
+    // Close file.
+    ~DirectoryFile ();
 
-	DirectoryFileIterator findFirst ();
+    DirectoryFileIterator findFirst ();
 
-	// Try to locate entry with given name.
-	DirectoryFileIterator find (const stdString &name);
+    // Try to locate entry with given name.
+    DirectoryFileIterator find (const stdString &name);
 
-	// Add new DirecotryEntry with given name.
-	// Entry will be empty, i.e. point to no data file.
-	DirectoryFileIterator add (const stdString &name);
+    // Add new DirecotryEntry with given name.
+    // Entry will be empty, i.e. point to no data file.
+    DirectoryFileIterator add (const stdString &name);
 
-	const stdString &getDirname ()
-	{	return _dirname;	}
+    const stdString &getDirname ()    {   return _dirname;	}
 
-	bool isReadOnly ()
-	{	return _readonly; }
+	bool isReadonly ()                {   return _file.isReadonly(); }
 
 private:
 	friend class DirectoryFileIterator;
@@ -106,21 +105,20 @@ private:
 	DirectoryFile &operator =(const DirectoryFile &);
 
 	// Read (first) FileOffset for given HashValue
-	FileOffset readHTEntry (HashTable::HashValue entry) const;
+    FileOffset readHTEntry (HashTable::HashValue entry) const;
 
 	// Write (first) FileOffset for given HashValue
-	void writeHTEntry (HashTable::HashValue entry, FileOffset offset);
+    void writeHTEntry (HashTable::HashValue entry, FileOffset offset);
 
 	// Search HT for the first non-empty entry:
-	FileOffset lookForValidEntry (HashTable::HashValue start) const;
+    FileOffset lookForValidEntry (HashTable::HashValue start) const;
 
-	bool			_readonly;
-	stdString		_filename;
-	stdString		_dirname;
-	mutable FILE	*_fd;
+    stdString    _filename;
+    stdString    _dirname;
+    LowLevelIO   _file;
 
 	// Offset of next unused entry for add:
-	FileOffset		_next_free_entry;
+    FileOffset   _next_free_entry;
 };
 
 END_NAMESPACE_CHANARCH

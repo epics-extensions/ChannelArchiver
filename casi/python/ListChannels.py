@@ -30,10 +30,10 @@ class ChannelDialog:
 		root = self._dlg.interior()
 
 		self._pattern = Pmw.EntryField (root, labelpos=W,
-                                         label_text="Pattern:",
-                                         entry_width=40,
-                                         value = pattern,
-                                         command=self._listChannels)
+						label_text="Pattern:",
+						entry_width=40,
+						value = pattern,
+						command=self._listChannels)
 		
 		self._list = Pmw.ScrolledListBox (root,
 						  listbox_selectmode=EXTENDED,

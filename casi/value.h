@@ -49,7 +49,11 @@ public:
 	bool next (); 
 
 	/* Position on prev value. Result: succesful? */
-	bool prev (); 
+	bool prev ();
+
+    /* Count values of matching type/control information
+     * up to given time stamp */
+    int determineChunk (const char *until);
 
 private:
 	friend class channel;

@@ -2,6 +2,7 @@
 #define __BINTYPES_H__
 
 #include "ArchiveTypes.h"
+#include <LowLevelIO.h>
 
 // Types used by the Channel Archiver
 // and conversion routines to transform
@@ -74,7 +75,6 @@ inline void FloatFromDisk (float &d)
 #define LONGToDisk(l)		ULONGToDisk((unsigned long &)l)
 
 // used internally for offsets inside files:
-typedef unsigned long FileOffset;
 const FileOffset INVALID_OFFSET = 0xffffffff;
 #define FileOffsetFromDisk ULONGFromDisk
 #define FileOffsetToDisk ULONGToDisk

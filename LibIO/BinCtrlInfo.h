@@ -9,8 +9,8 @@ BEGIN_NAMESPACE_CHANARCH
 class BinCtrlInfo : public CtrlInfoI
 {
 public:
-	void read (FILE *fd, FileOffset offset);
-	void write (FILE *fd, FileOffset offset) const;
+	void read (LowLevelIO &file, FileOffset offset);
+	void write (LowLevelIO &file, FileOffset offset) const;
 };
 
 END_NAMESPACE_CHANARCH

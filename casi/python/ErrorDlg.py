@@ -9,9 +9,6 @@ class ErrorDlg:
                            buttons=('Oh, well...',), title="Error",
                            message_text=message).activate()
         
-
-
-
 if __name__ == "__main__":
     import Tkinter
     root = Tkinter.Tk()

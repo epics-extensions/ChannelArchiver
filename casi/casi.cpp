@@ -1,9 +1,11 @@
 
 #ifdef SWIG
-%module example
+%module casi
 #endif
 
 #include <BinArchive.h>
+#include <BinChannelIterator.h>
+#include <MultiArchive.h>
 #include <ArchiveException.h>
 USE_STD_NAMESPACE
 USING_NAMESPACE_CHANARCH
@@ -18,15 +20,15 @@ USING_NAMESPACE_CHANARCH
 //
 static const char *osi2txt (const osiTime &osi)
 {
-	static char txt[80];
-	int year, month, day, hour, min, sec;
-	unsigned long nano;
+     static char txt[80];
+     int year, month, day, hour, min, sec;
+     unsigned long nano;
 
-	osiTime2vals (osi, year, month, day, hour, min, sec, nano);
+     osiTime2vals (osi, year, month, day, hour, min, sec, nano);
 
-	sprintf (txt, "%4d/%02d/%02d %02d:%02d:%02d.%09d",
-		year, month, day, hour, min, sec, nano);
-	return txt;
+     sprintf (txt, "%4d/%02d/%02d %02d:%02d:%02d.%09d",
+	      year, month, day, hour, min, sec, nano);
+     return txt;
 }
 
 // Convert from time text in "YYYY/MM/DD hh:mm:ss" format
@@ -34,8 +36,8 @@ static const char *osi2txt (const osiTime &osi)
 //
 static bool text2osi (const char *text, osiTime &osi)
 {
-	int	year, month, day, hour, minute;
-	double second;
+	int     year, month, day, hour, minute;
+	double  second;
 
 	if (sscanf (text, "%04d/%02d/%02d %02d:%02d:%lf",
 		&year, &month, &day,
@@ -75,11 +77,11 @@ bool archive::open (const char *name)
 
 	try
 	{
-		_archiveI = new BinArchive (_name);
+		_archiveI = new MultiArchive (_name);
 	}
 	catch (ArchiveException &e)
 	{
-		_name = "<error>";
+		_name = "<error: cannot open>";
 		return false;
 	}
 
@@ -88,6 +90,9 @@ bool archive::open (const char *name)
 
 bool archive::findChannelByName (const char *name, channel &c)
 {
+    if (! _archiveI)
+        return false;
+    
 	if (c._iter == 0)
 		c.setIter (_archiveI);
 
@@ -96,6 +101,9 @@ bool archive::findChannelByName (const char *name, channel &c)
 
 bool archive::findChannelByPattern (const char *pattern, channel &c)
 {
+    if (! _archiveI)
+        return false;
+    
 	if (c._iter == 0)
 		c.setIter (_archiveI);
 
@@ -104,10 +112,88 @@ bool archive::findChannelByPattern (const char *pattern, channel &c)
 
 bool archive::findFirstChannel (channel &c)
 {
+    if (! _archiveI)
+        return false;
+    
 	if (c._iter == 0)
 		c.setIter (_archiveI);
 
 	return _archiveI->findFirstChannel (c._iter);
+}
+
+const char *archive::name ()
+{
+    BinArchive *bin = dynamic_cast<BinArchive *>(_archiveI);
+    MultiArchive *multi = dynamic_cast<MultiArchive *>(_archiveI);
+
+    stdString info;
+    info = _name;
+    if (bin)
+        info += " (BinArchive)";
+    if (multi)
+        info += " (MultiArchive)";
+    
+    return info.c_str();
+}
+
+bool archive::write (const char *name, double hours_per_file)
+{
+	if (_archiveI)
+		delete _archiveI;
+    
+	try
+	{
+        _name = name;
+        BinArchive *arch = new BinArchive (name, true /* for write */);
+        arch->setSecsPerFile ((unsigned long) (hours_per_file * 60 * 60));
+        _archiveI = arch;
+    }
+	catch (ArchiveException &e)
+	{
+		_name = "<error: cannot create/append>";
+		return false;
+	}
+
+	return true;
+}
+
+bool archive::addChannel (const char *name, channel &c)
+{
+    if (! _archiveI)
+        return false;
+
+    if (c._iter == 0)
+		c.setIter (_archiveI);
+    else // check for BinArchive compliance
+    {
+        if (dynamic_cast<BinChannelIterator *>(c._iter) == 0)
+        {
+            // would be nice to throw error here
+            return false;
+        }
+    }
+        
+	return _archiveI->addChannel (name, c._iter);
+}
+
+const char *archive::nextFileTime (const char *current_time)
+{
+    if (! _archiveI)
+        return "<invalid archive>";
+
+    BinArchive *archive = dynamic_cast<BinArchive *>(_archiveI);
+
+    if (! archive)
+        return "<no BinArchive";
+
+    osiTime time;
+    if (! text2osi (current_time, time))
+        return "<invalid time>";
+
+    osiTime next;
+    archive->calcNextFileTime (time, next);
+
+    return osi2txt (next);
 }
 
 // ----------------------------------------------------------------
@@ -231,6 +317,41 @@ bool channel::getValueNearTime (const char *time, value &v)
 	}
 
 	return _iter->getChannel()->getValueNearTime (osi, v._iter);
+}
+
+int channel::lockBuffer (const value &value)
+{
+    if (! valid()  ||  value._iter == 0)
+        return 0;
+    
+	return _iter->getChannel()->lockBuffer (*value._iter->getValue(),
+                                            value._iter->getPeriod());
+}
+
+void channel::addBuffer (const value &value, int value_count)
+{
+    if (! valid ()  ||  value._iter == 0)
+        return;
+
+    _iter->getChannel()->addBuffer (*value._iter->getValue(),
+                                    value._iter->getPeriod(),
+                                    value_count);
+}
+
+bool channel::addValue (const value &value)
+{
+    if (! valid ()  ||  value._iter == 0)
+        return false;
+
+    return _iter->getChannel()->addValue (*value._iter->getValue());
+}
+
+void channel::releaseBuffer ()
+{
+    if (! valid())
+        return;
+    
+    _iter->getChannel()->releaseBuffer ();
 }
 
 void channel::setIter (ArchiveI *archiveI)
@@ -357,10 +478,25 @@ bool value::prev ()
 	return false;
 }
 
+int value::determineChunk (const char *until)
+{
+    if (!_iter)
+        return 0;
+
+    osiTime time;
+    if (! text2osi (until, time))
+        return 0;
+        
+    return _iter->determineChunk (time);
+}
+
 void value::setIter (ValueIteratorI *iter)
 {
 	if (_iter)
 		delete _iter;
 	_iter = iter;
 }
+
+
+
 

@@ -28,8 +28,23 @@ public:
 	/* Find channel by pattern (regular expression) */
 	bool findChannelByPattern (const char *pattern, channel &channel);
 
+    const char *name ();
+    
+    /* Support for write access:
+	 * Create new archive or open existing one for appending
+     */
+	bool write (const char *name, double hours_per_file);
+
+    bool addChannel (const char *name, channel &channel);
+    
+    /* Helper if you want to determine the suggested time
+     * for a new file
+     */
+    const char *nextFileTime (const char *current_time);
+    
 private:
 	stdString _name;
 	ArchiveI *_archiveI;
 };
+
 

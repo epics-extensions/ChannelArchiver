@@ -15,7 +15,11 @@ BinChannel::BinChannel ()
 
 BinChannel::~BinChannel ()
 {
-	delete _append_buffer;
+    if (_append_buffer)
+    {
+        delete _append_buffer;
+        _append_buffer = 0;
+    }
 }
 
 BinChannel & BinChannel::operator = (const BinChannel &rhs)
@@ -48,13 +52,13 @@ BinArchive *BinChannel::getArchive ()
 	return _channel_iter->getArchive ();
 }
 
-void BinChannel::read (FILE *fd, FileOffset offset)
+void BinChannel::read (LowLevelIO &file, FileOffset offset)
 {
 	if (_append_buffer)
 		throwDetailedArchiveException (Invalid, "Open append-buffer");
 
-	if (fseek (fd, offset, SEEK_SET) != 0  ||
-		fread (&_data, getDataSize (), 1, fd) != 1)
+	if (file.llseek (offset) != offset  ||
+		!file.llread (&_data, getDataSize ()))
 		throwArchiveException (ReadError);
 
 	FileOffsetFromDisk (_data.next_entry_offset);
@@ -66,7 +70,7 @@ void BinChannel::read (FILE *fd, FileOffset offset)
 	_offset = offset;
 }
 
-void BinChannel::write (FILE *fd, FileOffset offset) const
+void BinChannel::write (LowLevelIO &file, FileOffset offset) const
 {
 	Data copy = _data;
 
@@ -77,8 +81,8 @@ void BinChannel::write (FILE *fd, FileOffset offset) const
 	TS_STAMPToDisk (copy.first_save_time);
 	TS_STAMPToDisk (copy.last_save_time);
 
-	if (fseek (fd, offset, SEEK_SET) != 0  ||
-		fwrite (&copy, getDataSize (), 1, fd) != 1)
+	if (file.llseek (offset) != offset  ||
+		!file.llwrite (&copy, getDataSize ()))
 		throwArchiveException (WriteError);
 	_offset = offset;
 }
@@ -241,7 +245,7 @@ size_t BinChannel::lockBuffer (const ValueI &value, double period)
 
 	if (! _append_buffer)
 		_append_buffer = new DataHeaderIterator();
-	DataFile *file = DataFile::reference (last_file_name);
+	DataFile *file = DataFile::reference (last_file_name, true/*for write*/);
 	_append_buffer->attach (file, getLastOffset());
 	file->release (); // now ref'd by "_append_buffer"
 
@@ -303,7 +307,7 @@ void BinChannel::addBuffer (const ValueI &value_arg, double period, size_t value
 	{
 		stdString last_file_name;
 		getArchive ()->makeFullFileName (getLastFile (), last_file_name);
-		DataFile *file = DataFile::reference (last_file_name);
+		DataFile *file = DataFile::reference (last_file_name, true /* for write */);
 		prev = new DataHeaderIterator ();
 		prev->attach (file, getLastOffset());
 		file->release (); // now ref'd by "prev"
@@ -311,7 +315,7 @@ void BinChannel::addBuffer (const ValueI &value_arg, double period, size_t value
 
 	stdString data_file_path;
 	getArchive ()->makeFullFileName (data_file_name, data_file_path);
-	DataFile *data = DataFile::reference (data_file_path);
+	DataFile *data = DataFile::reference (data_file_path, true /* for write */);
 	if (! _append_buffer)
 		_append_buffer = new DataHeaderIterator();
 

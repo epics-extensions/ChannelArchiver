@@ -1,4 +1,6 @@
-# This file is for gnumake, for building on Unix (tried RedHat 6.1)
+# $Id$
+# This file is for gnumake, for building on Unix
+# (tried RedHat 6.1, solaris)
 
 MODULE = casi
 
@@ -9,11 +11,10 @@ SWIG = swig -c++ -dhtml
 # Note: these are relative to e.g. the tcl/$(HOST_ARCH) directory!
 BASE=../../../../../../base
 EXT=../../../../..
-INCLUDES = -I../.. -I$(EXT)/include -I$(BASE)/include
+INCLUDES  = -I../.. -I$(EXT)/include -I$(BASE)/include
+INCLUDES += -I$(BASE)/include/os/$(HOST_ARCH) -I$(BASE)/src/ca
 LIBS = -L $(EXT)/lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARCH) -lca -ldb -lCom
 
-# RedHat 6.1
-#LIBS += -ldl -lpthread
 # Solaris @ LANL
 #LIBS += -ldl  -lsocket -lnsl -lm
 
@@ -22,7 +23,10 @@ CC = g++
 
 # C compiler flags
 # -GX: support exceptions
+# RedHat 6.1
 CFLAGS = -fPIC -D_X86_ $(INCLUDES)
+# Solaris @ LANL
+#CFLAGS = $(INCLUDES)
 
 # Tcl settings (also needed for static-python)
 TCL = 8.0

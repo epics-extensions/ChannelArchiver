@@ -94,7 +94,7 @@ void HTTPServer::run()
             SOCKET peer = accept(socket, (struct sockaddr *)&peername, &len);
             if (peer != INVALID_SOCKET)
             {
-#if             defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 5
+#if             defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
                 stdString local_info, peer_info;
                 GetSocketInfo(peer, local_info, peer_info);
                 LOG_MSG("HTTPServer thread 0x%08X accepted %s/%s\n",
@@ -121,7 +121,7 @@ void HTTPServer::cleanup()
     HTTPClientConnection *  client;
     stdList<HTTPClientConnection *>::iterator ci;
 
-#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 5
+#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     LOG_MSG("-----------------------------------------------------\n");
     LOG_MSG("HTTPServer thread 0x%08X clients: %d total\n",
             epicsThreadGetIdSelf(), total_clients);
@@ -201,17 +201,10 @@ HTTPClientConnection::HTTPClientConnection(HTTPServer *server,
 {
     dest = 0;
     birthtime = epicsTime::getCurrent();
-#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
-    LOG_MSG("new HTTPClientConnection #%d on socket %d\n", num, socket);
-#   endif
 }
 
 HTTPClientConnection::~HTTPClientConnection()
 {
-#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
-    LOG_MSG("HTTPClientConnection::~HTTPClientConnection #%d "
-            "(used socket %d)\n", num, socket);
-#endif
     if (! done)
     {
         LOG_MSG("HTTPClientConnection: Shutdown of #%d", num);
@@ -253,9 +246,6 @@ void HTTPClientConnection::run()
     shutdown(socket, 2);
     epicsSocketDestroy(socket);
     done = true;
-#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
-    LOG_MSG("HTTPClientConnection::run #%d closed socket %d\n", num, socket);
-#   endif
 }
 
 // Result: done, i.e. connection can be closed?

@@ -15,6 +15,7 @@ bool Lockfile::Lock (const stdString &prog_name)
 	if (f)
 	{
 		char line[80];
+        line[0] = '\0';
         fgets(line, sizeof (line), f);
         LOG_MSG("Found an existing lock file '%s':\n%s\n",
                 _filename.c_str(), line);

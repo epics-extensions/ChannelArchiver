@@ -16,6 +16,14 @@
 #include <NetTools.h>
 #include "HTMLPage.h"
 
+// undef: Nothing
+//     1: Start/Stop
+//     2: Show Client IPs
+//     3: Connect & cleanup
+//     4: Requests
+//     5: whatever
+#define HTTPD_DEBUG 2
+
 /// \addtogroup Engine
 /// @{
 

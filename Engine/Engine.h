@@ -16,6 +16,8 @@
 #include "GroupInfo.h"
 #include "ScanList.h"
 
+#undef ENGINE_DEBUG
+
 /// \defgroup Engine
 /// Classes related to the ArchiveEngine
 

@@ -34,9 +34,6 @@
 // ArchiveEngine
 // ----------------------------------------------------------
 
-// >5: all
-#define ENGINE_DEBUG 4
-#define HTTPD_DEBUG  0
 // HTTP clients older than this timeout
 // are killed
 #define HTTPD_CLIENT_TIMEOUT 30

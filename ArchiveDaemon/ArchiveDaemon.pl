@@ -35,7 +35,7 @@ use Getopt::Std;
 # $OUTPUT_AUTOFLUSH=1;
 
 # Config file read by ArchiveDaemon
-my ($config_file) = "ArchiveDaemon.xml";
+my ($config_file) = "";
 
 # Log file, created in current directory
 my ($logfile) = "ArchiveDaemon.log";
@@ -97,9 +97,11 @@ my ($daemonization) = 1;
 # 'desc' => Engine's Description
 # 'port' => TCP port of Engine's HTTPD
 # 'config' => Configuration file
-# 'daily' => "hh:mm" of daily restart
+# 'daily' => undef or "hh:mm" of daily restart
+# 'hourly' => undef or (double) hours between restarts
 # -- adjusted at runtime
 # 'started' => 0 or start time text from running engine.
+# 'lockfile' => is there a file 'archive_active.lck' ?
 my (@config);
 
 # Array of index file names (for IndexTool)
@@ -153,6 +155,10 @@ sub read_config($)
 	{
 	    $config[$#config]{daily} = $engine->{daily}[0];
 	}
+	if (defined($engine->{hourly}))
+	{
+	    $config[$#config]{hourly} = $engine->{hourly}[0];
+	}
 	$config[$#config]{started} = 0;
     }
 }
@@ -166,12 +172,15 @@ sub read_config($)
 sub read_indexconfig($)
 {
     my ($file) = @ARG;
-    my $parser = XML::Simple->new();
-    my $doc = $parser->XMLin($file, ForceArray=>1);
-    my ($index, @indices);
-    foreach $index ( @{$doc->{archive}} )
+    my (@indices);
+    if (-f $file)
     {
-	push @indices, $index->{index}[0];
+	my $parser = XML::Simple->new();
+	my $doc = $parser->XMLin($file, ForceArray=>1);
+	foreach my $index ( @{$doc->{archive}} )
+	{
+	    push @indices, $index->{index}[0];
+	}
     }
     return @indices;
 }
@@ -246,8 +255,9 @@ sub html_stop($)
     print $client "</FONT>\n";
     print $client "<P><HR WIDTH=50% ALIGN=LEFT>\n";
     print $client "<A HREF=\"/\">-Engines-</A>\n";
-    print $client "<A HREF=\"/status\">-Status-</A><br>\n";
-    print $client scalar localtime;
+    print $client "<A HREF=\"/status\">-Status-</A>\n";
+    print $client "<A HREF=\"/info\">-Info-</A>  \n";
+    print $client time_as_text(time);
     print $client "\n";
     print $client "</BODY>\n";
     print $client "</HTML>\n";
@@ -298,6 +308,10 @@ sub handle_HTTP_main($)
 	{
 	    print $client "<TD ALIGN=CENTER>Daily at $engine->{daily}</TD>";
 	}
+	elsif ($engine->{hourly})
+	{
+	    print $client "<TD ALIGN=CENTER>Every $engine->{hourly} h</TD>";
+	}
 	else
 	{
 	    print $client "<TD ALIGN=CENTER>-</TD>";
@@ -308,8 +322,16 @@ sub handle_HTTP_main($)
 	}
 	else
 	{
-	    print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
-		"Not Running</FONT></TD>";
+	    if ($engine->{lockfile})
+	    {
+		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
+		    "MISSING BUT LOCKED</FONT></TD>";
+	    }
+	    else
+	    {
+		print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" . 
+		    "Not Running</FONT></TD>";
+	    }
 	}
        
 	print $client "</TR>\n";
@@ -346,10 +368,16 @@ sub handle_HTTP_info($)
     my ($client) = @ARG;
     html_start($client, 1);
     print $client "<H1>Archive Daemon</H1>\n";
-    print $client "Config File: $config_file<p>\n";
-    print $client "Daemon start time: $start_time_text<p>\n";
-    print $client "Last Check: ", time_as_text($last_check), "<p>\n";
-    print $client "Index Update: ", time_as_text($last_index_update), "<p>\n";
+    print $client "<TABLE BORDER=0 CELLPADDING=5>\n";
+
+    print $client "<TR><TD><B>Config File:</B></TD><TD>$config_file</TD></TR>\n";
+    print $client "<TR><TD><B>Daemon start time:</B></TD><TD> $start_time_text</TD></TR>\n";
+    print $client "<TR><TD><B>Check Period:</B></TD><TD> $engine_check_period secs</TD></TR>\n";
+    print $client "<TR><TD><B>Last Check:</B></TD><TD> ", time_as_text($last_check), "</TD></TR>\n";
+    print $client "<TR><TD><B>Index Period:</B></TD><TD> $index_update_period secs</TD></TR>\n";
+    print $client
+	"<TR><TD><B>Index Update:</B></TD><TD> ", time_as_text($last_index_update), "</TD></TR>\n";
+    print $client "</TABLE>\n";
     html_stop($client);
 }
 
@@ -456,11 +484,16 @@ sub check_HTTPD($)
 sub make_indexname($$)
 {
     my ($now, $engine) = @ARG;
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+	= localtime($now);
     if (defined($engine->{daily}))
     {
-	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
-	    = localtime($now);
 	return sprintf("%04d/%02d_%02d/index", 1900+$year, 1+$mon, $mday);
+    }
+    elsif (defined($engine->{hourly}))
+    {
+	return sprintf("%04d/%02d_%02d_%02dh/index",
+		       1900+$year, 1+$mon, $mday, $hour);
     }
     else
     {
@@ -607,6 +640,17 @@ sub check_restart($$)
 	    stop_engine($host, $engine->{port});
 	}
     }
+    elsif (defined($engine->{hourly}))
+    {
+	my ($rounding) = int($engine->{hourly} * 60*60);
+	$restart_secs = (int($engine_secs/$rounding)+1) * $rounding;
+	#print "Now    : ", time_as_text($now), "\n";
+	#print "Restart: ", time_as_text($restart_secs), "\n";
+	if ($now > $restart_secs and $engine_secs < $restart_secs)
+	{
+	    stop_engine($host, $engine->{port});
+	}
+    }
 }
 
 # For all engines marked in the config as running, check when to restart
@@ -628,6 +672,8 @@ sub check_engines($)
     my ($engine, $desc, $started);
     foreach $engine ( @config )
     {
+	my ($dir) = dirname($engine->{config});
+	$engine->{lockfile} = (-f "$dir/archive_active.lck");
 	($desc, $started) = check_engine($host, $engine->{port});
 	if (length($started) > 0)
 	{
@@ -666,10 +712,10 @@ sub usage()
     print("\n");
     print("Options:\n");
     print("\t-p <port>: TCP port number for HTTPD\n");
-    print("\t-f file  : use file instead of $config_file\n");
+    print("\t-f file  : config. file\n");
     print("\n");
     print("This tool automatically starts, monitors and restarts\n");
-    print("ArchiveEngines based on $config_file.\n");
+    print("ArchiveEngines based on a config. file.\n");
     exit(-1);
 }
 if (!getopts('hp:f:')  ||  $#ARGV != -1  ||  $opt_h)
@@ -679,6 +725,11 @@ if (!getopts('hp:f:')  ||  $#ARGV != -1  ||  $opt_h)
 # Allow command line options to override various defaults
 $http_port = $opt_p if ($opt_p);
 $config_file = $opt_f if ($opt_f);
+if (length($config_file) <= 0)
+{
+    print("Need config file (option -f):\n");
+    usage();
+}
 add_message("Started");
 read_config($config_file);
 if (length($master_index_config) > 0)

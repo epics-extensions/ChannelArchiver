@@ -1,0 +1,56 @@
+# This file is for gnumake, for building on Unix (tried RedHat 6.1)
+
+MODULE = casi
+HOST_ARCH=Linux
+
+# SWIG Installation
+SWIG = swig -c++ -dhtml
+
+# Includes/links for EPICS extensions, base
+# Note: these are relative to e.g. the tcl/$(HOST_ARCH) directory!
+BASE=../../../../../../base
+INCLUDES = -I../.. -I../../../../../include -I$(BASE)/include
+LIBS = -L ../../../../../lib/$(HOST_ARCH) -lChanArchIO -lTools -L $(BASE)/lib/$(HOST_ARCH) -lca -ldb -lCom
+
+# compiler, linker
+CC = g++
+
+# C compiler flags
+# -GX: support exceptions
+CFLAGS = -fPIC -D_X86_ $(INCLUDES)
+
+# Python settings
+PYTHON   = python1.5
+PY_INC   = -I/usr/include/$(PYTHON)
+PY_LIB   = /usr/lib/$(PYTHON)/config/lib$(PYTHON).a
+PY_FLAGS = 
+
+# Tcl settings
+TCL = 8.0
+TCL_INC = -I/usr/include
+TCL_LIB = -L/usr/lib -ltcl$(TCL)
+
+all::	dirs python tcl
+
+dirs::
+	-mkdir tcl/O.$(HOST_ARCH)
+	-mkdir python/O.$(HOST_ARCH)
+
+python::
+	(cd python/O.$(HOST_ARCH);$(SWIG) -python -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i)
+	(cd python/O.$(HOST_ARCH);$(CC) -c $(CFLAGS) $(PY_FLAGS) $(PY_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp)
+	(cd python/O.$(HOST_ARCH);$(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(PY_LIB) $(LIBS)  -o casic.so)
+
+tcl::
+	(cd tcl/O.$(HOST_ARCH);$(SWIG) -tcl8 -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i)
+	(cd tcl/O.$(HOST_ARCH);$(CC) -c $(CFLAGS) $(TCL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp)
+	(cd tcl/O.$(HOST_ARCH);$(CC) -shared $(MODULE).o $(MODULE)_wrap.o $(TCL_LIB) $(LIBS)  -o casi.so)
+
+static::
+
+
+clean::
+	rm -f O.$(HOST_ARCH)/*
+
+
+

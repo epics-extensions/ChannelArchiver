@@ -32,7 +32,7 @@ HTTPServer::~HTTPServer()
     _go = false;
     if (! _thread.exitWait(5.0))
         LOG_MSG("HTTPServer: server thread does not exit\n");
-    socket_close(_socket);
+    epicsSocketDestroy(_socket);
 #ifdef HTTPD_DEBUG
     LOG_MSG("HTTPServer::~HTTPServer\n");
 #endif
@@ -40,7 +40,7 @@ HTTPServer::~HTTPServer()
 
 HTTPServer *HTTPServer::create(short port)
 {
-    SOCKET s = socket (AF_INET, SOCK_STREAM, 0);
+    SOCKET s = epicsSocketCreate(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in  local;
 
     local.sin_family = AF_INET;
@@ -220,12 +220,8 @@ HTTPClientConnection::~HTTPClientConnection()
     if (! _done)
     {
         LOG_MSG("HTTPClientConnection: Shutdown of #%d",_num);
-#ifdef SHUT_RDWR
         shutdown(_socket, SHUT_RDWR);
-#else
-        shutdown(_socket, SD_BOTH); // SD_BOTH == SHUT_RDWR (osiSock)
-#endif
-        socket_close(_socket);
+        epicsSocketDestroy(_socket);
     }
 }
 
@@ -256,7 +252,7 @@ void HTTPClientConnection::run()
     while (!handleInput())
     {
     }
-    socket_close(_socket);
+    epicsSocketDestroy(_socket);
     _done = true;
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
     LOG_MSG("HTTPClientConnection::run #%d closed socket %d\n", _num, _socket);

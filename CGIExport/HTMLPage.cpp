@@ -12,6 +12,7 @@
 #pragma warning (disable: 4786)
 #endif
 
+#include <stdio.h>
 #include "HTMLPage.h"
 
 static const char *start_file = "cgi_body_start.txt";

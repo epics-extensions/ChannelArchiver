@@ -8,6 +8,7 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+#include <stdio.h>
 #include <stdarg.h>
 #include <ToolsConfig.h>
 #include <epicsTimeHelper.h>

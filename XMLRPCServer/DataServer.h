@@ -2,17 +2,18 @@
 
 // DataServer.h
 
+// XML-RPC
+#include <xmlrpc.h>
+// EPICS Base
+#include <epicsTime.h>
+
+/// \defgroup DataServer
+/// Code related to the network data server
+
 
 // The version of this server
 // (We use 0 as long as we didn't really release anything)
 #define ARCH_VER 0
-
-// If defined, the server writes log messages into
-// this file. That helps with debugging because
-// otherwise your XML-RPC clients are likely
-// to only show "error" and you have no clue
-// what's happening.
-#define LOGFILE "/tmp/archserver.log"
 
 // XML-RPC does not define fault codes.
 // The xml-rpc-c library uses -500, -501, ... (up to -510)
@@ -34,3 +35,9 @@
 // for what should be "const char *".
 // This macro helps avoid those "deprected conversion" warnings of g++
 #define STR(s) ((char *)((const char *)s))
+
+void epicsTime2pieces(const epicsTime &t,
+                      xmlrpc_int32 &secs, xmlrpc_int32 &nano);
+
+// Inverse to epicsTime2pieces
+void pieces2epicsTime(xmlrpc_int32 secs, xmlrpc_int32 nano, epicsTime &t);

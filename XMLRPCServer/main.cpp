@@ -20,8 +20,15 @@
 #include "DataServer.h"
 #include "ServerConfig.h"
 
+// If defined, the server writes log messages into
+// this file. That helps with debugging because
+// otherwise your XML-RPC clients are likely
+// to only show "error" and you have no clue
+// what's happening.
+#define LOGFILE "/tmp/archserver.log"
+
 #ifdef LOGFILE
-static FILE *logfile;
+static FILE *logfile = 0;
 #endif
 
 // Return name of configuration file from environment or 0
@@ -80,27 +87,6 @@ IndexFile *open_index(xmlrpc_env *env, int key)
                                    "Cannot open index '%s'",
                                    index_name.c_str());
     return 0;
-}
-
-// epicsTime -> time_t-type of seconds & nanoseconds
-void epicsTime2pieces(const epicsTime &t,
-                      xmlrpc_int32 &secs, xmlrpc_int32 &nano)
-{   // TODO: This is lame, calling epicsTime's conversions twice
-    epicsTimeStamp stamp = t;
-    time_t time;
-    epicsTimeToTime_t(&time, &stamp);
-    secs = time;
-    nano = stamp.nsec;
-}
-
-// Inverse to epicsTime2pieces
-void pieces2epicsTime(xmlrpc_int32 secs, xmlrpc_int32 nano, epicsTime &t)
-{   // As lame as other nearby code
-    epicsTimeStamp stamp;
-    time_t time = secs;
-    epicsTimeFromTime_t(&stamp, time);
-    stamp.nsec = nano;
-    t = stamp;
 }
 
 // Used by get_names to put info for channel into sorted tree & dump it
@@ -230,7 +216,8 @@ void encode_value(xmlrpc_env *env,
                                          txt.c_str(), txt.length());
             xmlrpc_array_append_item(env, val_array, element);
             xmlrpc_DECREF(element);
-        }            
+        }
+        break;
         case XML_INT:
         case XML_ENUM:
         {
@@ -245,6 +232,7 @@ void encode_value(xmlrpc_env *env,
                 xmlrpc_DECREF(element);
             }
         }
+        break;
         case XML_DOUBLE:
         {
             double d;
@@ -375,6 +363,9 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
         // Add to result array
         xmlrpc_array_append_item(env, results, result);
         xmlrpc_DECREF(result);
+#ifdef LOGFILE
+        LOG_MSG("%d values\n", num_vals);
+#endif
     }
   exit_get_channel_data:
     index->close();
@@ -690,7 +681,9 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
 // very_complex_array = archiver.values(key, names[], start, end, ...)
 xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
+#ifdef LOGFILE
     LOG_MSG("archiver.get_values\n");
+#endif
     xmlrpc_value *names;
     xmlrpc_int32 key, start_sec, start_nano, end_sec, end_nano, count, how;
     xmlrpc_int32 actual_count;
@@ -701,7 +694,9 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
                        &count, &how);    
     if (env->fault_occurred)
         return 0;
+#ifdef LOGFILE
     LOG_MSG("how=%d, count=%d\n", (int) how, (int) count);
+#endif
     // Put an upper limit on count to avoid outrageous requests:
     if (count > 10000)
         actual_count = 10000;
@@ -779,7 +774,6 @@ int main(int argc, const char *argv[])
     logfile = fopen(LOGFILE, "a");
     TheMsgLogger.SetPrintRoutine(LogRoutine, 0);
     LOG_MSG("---- ArchiveServer Started ----\n");
-    gettimeofday(&t0, 0);
 #endif
     xmlrpc_cgi_init(XMLRPC_CGI_NO_FLAGS);
     xmlrpc_cgi_add_method_w_doc(STR("archiver.info"),

@@ -31,8 +31,8 @@ public:
     /// Override default output routine.
     void SetPrintRoutine(PrintRoutine print, void *arg = 0)
     {
-        print = print;
-        print_arg = arg;
+        this->print = print;
+        this->print_arg = arg;
     }
 
     /// Restore default output routine

@@ -124,13 +124,11 @@ sub show_values($)
 {
     my ($results) = @ARG;
     my (%meta, $result, $time, $stat, $value);
-
     foreach $result ( @{$results} )
     {
 	print("Result for channel '$result->{name}':\n");
 	show_meta("", $result->{meta});
-	print("Type: $result->{type}, element count $result->{count}.\n");
-	
+	print("Type: $result->{type}, element count $result->{count}.\n");	
 	foreach $value ( @{$result->{values}} )
 	{
 	    $time = time2string($value->{secs}, $value->{nano});
@@ -277,7 +275,7 @@ else
     my ($start, $startnano) = string2time($opt_s);
     my ($end, $endnano)   = string2time($opt_e);
     $opt_c = 10 unless ($opt_c > 0);
-    $opt_h = 1 unless ($opt_h > 0);
+    $opt_h = 1 unless (defined($opt_h));
     # note: have to pass ref. to the 'names' array,
     # otherwise perl will turn it into a sequence of names:
     $results = $server->call('archiver.values', $opt_k, \@ARGV,

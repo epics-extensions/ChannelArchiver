@@ -228,7 +228,7 @@ proc httpd::sendOutput {fd} {
     puts $fd "<p>is running since [time $_starttime] (currently [llength $::socks] open sockets)</p>"
   }
   puts $fd "<table border=0 cellpadding=5>"
-  puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>Configured ArchiveEngines for config <font color=yellow><em>[file tail $camMisc::cfg_file]</em></font> of user <font color=yellow><em>$tcl_platform(user)</em></font> on host <font color=yellow><em>$::_host</em></font></font></th></tr>"
+  puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>Configured ArchiveEngines for config<br><font color=yellow><em>$camMisc::cfg_file</em></font><br>of user <font color=yellow><em>$tcl_platform(user)</em></font> on host <font color=yellow><em>$::_host</em></font></font></th></tr>"
   puts $fd "<tr><th bgcolor=white>ArchiveEngine</th><th bgcolor=white>Port</th><th bgcolor=white>running?</th><th bgcolor=white>run/rerun</th>"
   if {!$::args(nocmd)} {puts $fd "<th bgcolor=white>command</th>"}
   puts $fd "</tr>"
@@ -338,7 +338,7 @@ proc httpd::sendOutput {fd} {
   puts $fd "<tr><td colspan=5 align=center>"
   set msg ""
   foreach c [lsort [array names ::colormap]] {
-    if {$::colormap($c) != "no"} {
+    if {[string toupper $::colormap($c)] != "NO"} {
       if {$::colormap($c) == "normal"} {
 	lappend msg "$::colorname($c)"
       } else {

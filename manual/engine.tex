@@ -1,0 +1,54 @@
+\chapter{ArchiveEngine}
+
+\section{Configuration}
+
+\section{Starting and Stopping}
+
+\section{Web Interface}
+
+\section{Performance}
+
+\section{Threads}
+The ArchiveEngine uses several threads:
+\begin{itemize}
+\item A main thread that reads the initial configuration and then
+  enters a main loop for the periodic scan lists and writes to the
+  disk.
+\item The ChannelAccess client library is used in its multithreaded
+  version. The internals of this are beyond the control of the
+  ArchiveEngine, the total number of CA client threads is unknown.
+\item The ArchiveEngine's HTTP (web) server runs in a separate thread,
+  with each HTTP client connection again being handled by its own
+  thread. The total number of threads therefore depends on the number
+  of current web clients.
+\end{itemize}
+As a result, the total number of threads changes at runtime. Though
+these internals should not be of interest to end users, this can be
+confusing especially on older releases of Linux where each thread
+shows up as a process in the process list.
+On Linux version 2.2.17-8 for example we get process table entries as
+shown in Tab.~\ref{lst:aeprocs} for a single ArchiveEngine, connected
+to four channels served by excas, no current web client. The only hint
+we get that this is in fact one and the same ArchiveEngine lies in the
+consecutive process IDs.
+
+\begin{lstlisting}[float=htb,
+caption={Output of Linux 'ps' process list command, see text.},
+label=lst:aeprocs]
+  PID TTY          TIME CMD
+29721 pts/5    00:00:00 ArchiveEngine
+29722 pts/5    00:00:00 ArchiveEngine
+29723 pts/5    00:00:00 ArchiveEngine
+29724 pts/5    00:00:00 ArchiveEngine
+29725 pts/5    00:00:00 ArchiveEngine
+29726 pts/5    00:00:00 ArchiveEngine
+29727 pts/5    00:00:00 ArchiveEngine
+29728 pts/5    00:00:00 ArchiveEngine   
+\end{lstlisting}
+
+The first conclusion is that one should not be surprised to see
+multiple ArchiveEngine entries in the process table.
+The other issue arises when one tries to 'kill' a running
+ArchiveEngine. Though the preferred method is via the engine's web
+interface, one can try to send a signal to the first process, the one
+with the lowest PID.

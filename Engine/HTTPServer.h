@@ -1,5 +1,12 @@
-// InternetServer.h: interface for the InternetServer class.
-//////////////////////////////////////////////////////////////////////
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
 
 #if !defined(HTTP_SERVER_H_)
 #define HTTP_SERVER_H_
@@ -25,20 +32,21 @@ using std::vector;
 class HTTPServer : public fdReg
 {
 public:
-	//* Only user-callable method in HTTPServer:<BR>
-	// Create a HTTPServer.
-	static HTTPServer *create (short port=4812);
-	virtual ~HTTPServer();
+    //* Only user-callable method in HTTPServer:<BR>
+    // Create a HTTPServer.
+    static HTTPServer *create (short port=4812);
+    virtual ~HTTPServer();
 
 private:
-	HTTPServer (SOCKET socket);
-	void callBack ();
+    HTTPServer (SOCKET socket);
+    void callBack ();
 
-	SOCKET	_socket;
+    SOCKET  _socket;
 };
 
 class HTTPClientConnection;
-typedef void (*PathHandler) (HTTPClientConnection *connection, const stdString &full_path);
+typedef void (*PathHandler) (HTTPClientConnection *connection,
+                             const stdString &full_path);
 
 // Used by HTTPClientConnection
 // to dispatch client requests
@@ -46,10 +54,10 @@ typedef void (*PathHandler) (HTTPClientConnection *connection, const stdString &
 // Terminator: entry with path = 0
 typedef struct
 {
-	const char	*path;		// Path for this handler
-	size_t		path_len;	// _Relevant_ portion of path to check (if > 0)
-	PathHandler	handler;	// Handler to call
-}	PathHandlerList;
+    const char  *path;      // Path for this handler
+    size_t      path_len;   // _Relevant_ portion of path to check (if > 0)
+    PathHandler handler;    // Handler to call
+}   PathHandlerList;
 
 //CLASS HTTPClientConnection
 // HTTPClientConnection handles input and dispatches
@@ -58,47 +66,47 @@ typedef struct
 class HTTPClientConnection : public fdReg
 {
 public:
-	HTTPClientConnection (SOCKET socket);
-	virtual ~HTTPClientConnection ();
+    HTTPClientConnection (SOCKET socket);
+    virtual ~HTTPClientConnection ();
 
-	SOCKET getSocket ()
-	{ return _socket; }
+    SOCKET getSocket ()
+    {   return _socket; }
 
-	static void setPathHandlers (PathHandlerList *handler)
-	{	_handler = handler;	}
+    static void setPathHandlers (PathHandlerList *handler)
+    {   _handler = handler; }
 
-	// List of all open client connections
-	static const list<HTTPClientConnection *> &getClients ()
-	{	return _clients;	}
+    // List of all open client connections
+    static const list<HTTPClientConnection *> &getClients ()
+    {   return _clients;    }
 
-	// Total number of clients since started (for debugging)
-	static size_t getTotalClientCount ()
-	{	return _total;	}
+    // Total number of clients since started (for debugging)
+    static size_t getTotalClientCount ()
+    {   return _total;  }
 
-	// Predefined PathHandlers:
-	void error (const stdString &message);
-	void pathError (const stdString &path);
+    // Predefined PathHandlers:
+    void error (const stdString &message);
+    void pathError (const stdString &path);
 
 private:
-	SOCKET				_socket;
-	vector<stdString>	_input_line;
-	char				_line[200];
-	char				*_dest;
+    SOCKET              _socket;
+    vector<stdString>   _input_line;
+    char                _line[200];
+    char                *_dest;
 
-	static PathHandlerList	*_handler;
-	static size_t _total;
-	static list<HTTPClientConnection *> _clients;
+    static PathHandlerList  *_handler;
+    static size_t _total;
+    static list<HTTPClientConnection *> _clients;
 
-	// Called by fdManager on input:
-	void callBack ();
+    // Called by fdManager on input:
+    void callBack ();
 
-	// Result: done, i.e. connection can be closed?
-	bool handleInput ();
+    // Result: done, i.e. connection can be closed?
+    bool handleInput ();
 
-	// return: full request that I can handle?
-	bool analyzeInput ();
+    // return: full request that I can handle?
+    bool analyzeInput ();
 
-	void dumpInput (HTMLPage &page);
+    void dumpInput (HTMLPage &page);
 };
 
 #endif // !defined(HTTP_SERVER_H_)

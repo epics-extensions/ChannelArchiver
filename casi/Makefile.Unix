@@ -10,7 +10,7 @@ SWIG = swig -c++ -dhtml
 
 # Includes/links for EPICS extensions, base
 # Note: these are relative to e.g. the tcl/$(HOST_ARCH) directory!
-BASE=../../../../../../base
+BASE=/cs/epics/R3.13.3/base
 EXT=../../../../..
 INCLUDES  = -I../.. -I$(EXT)/include -I$(BASE)/include
 INCLUDES += -I$(BASE)/include/os/$(HOST_ARCH) -I$(BASE)/src/ca
@@ -30,13 +30,14 @@ CFLAGS = -g -fPIC -D_X86_ $(INCLUDES)
 #CFLAGS = $(INCLUDES)
 
 # Tcl settings (also needed for static-python)
-TCL = 8.0
+#RedHat6.2, TCL8.0
+#TCL = 8.0
+#TCL_INC = -I/usr/include
+#TCL_LIB = -L/usr/lib -ltcl$(TCL)
+#RedHat7.0, TCL8.3
+TCL = 8.3
 TCL_INC = -I/usr/include
 TCL_LIB = -L/usr/lib -ltcl$(TCL)
-# Alternate
-#TCL = 8.2
-#TCL_INC = -I/usr/local/include
-#TCL_LIB = -L/usr/local/lib -ltcl$(TCL)
 # Solaris @ LANL
 #TCL = 8.2
 #TCL_INC = -I$(HOME)/include
@@ -55,9 +56,11 @@ PY_FLAGS =
 #PY_LIB   = -L$(HOME)/lib/$(PYTHON)/config -l$(PYTHON)
 #PY_FLAGS = 
 
-# Perl(5) settings
-PERL_INC=-I/usr/lib/perl5/5.00503/i386-linux/CORE
-PERL_LIB=
+# Perl(5) settings from RedHat6.2
+#PERL_INC=-I/usr/lib/perl5/5.00503/i386-linux/CORE
+#PERL_LIB=
+# RedHat7
+PERL_INC=-I/usr/lib/perl5/5.6.0/i386-linux/CORE
 
 all::	tcl python perl
 

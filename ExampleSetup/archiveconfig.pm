@@ -38,7 +38,7 @@ package archiveconfig;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(parse_config_file dump_config update_status);
+@EXPORT = qw(parse_config_file dump_config read_URL update_status);
 
 use English;
 use strict;

@@ -106,7 +106,8 @@ inline ChannelIterator::~ChannelIterator ()
 
 inline void ChannelIterator::attach (ChannelIteratorI *iter)
 {
-	delete _ptr;
+	if (_ptr)
+		delete _ptr;
 	_ptr = iter;
 }
 

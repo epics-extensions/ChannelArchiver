@@ -42,8 +42,9 @@ bool MultiValueIterator::next ()
 		_is_valid = true;
 		return true;
 	}
+	_is_valid =  _channel_iterator->getNextValue (*this);
 
-	return _channel_iterator->getNextValue (*this);
+	return _is_valid;
 }
 
 bool MultiValueIterator::prev ()
@@ -53,8 +54,9 @@ bool MultiValueIterator::prev ()
 		_is_valid = true;
 		return true;
 	}
+	_is_valid = _channel_iterator->getPrevValue (*this);
 
-	return _channel_iterator->getPrevValue (*this);
+	return _is_valid;
 }     
 
 size_t MultiValueIterator::determineChunk (const osiTime &until)
@@ -70,7 +72,6 @@ double MultiValueIterator::getPeriod () const
 // To be called by MultiArchive classes only:
 void MultiValueIterator::clear ()
 {
-	LOG_MSG ("MultiValueIterator::clear (): _base_value_iterator " << _base_value_iterator << "\n");
 	_is_valid = false;
 	if (_base_value_iterator)
 	{
@@ -81,7 +82,6 @@ void MultiValueIterator::clear ()
 
 void MultiValueIterator::position (MultiChannelIterator *channel, ValueIteratorI *value)
 {
-	LOG_MSG ("MultiValueIterator::position (): ValueIteratorI " << value << "\n");
 	clear ();
 	_channel_iterator = channel;
 	_base_value_iterator = value;

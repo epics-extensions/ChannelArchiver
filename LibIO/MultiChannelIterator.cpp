@@ -15,13 +15,13 @@
 BEGIN_NAMESPACE_CHANARCH
 
 MultiChannelIterator::MultiChannelIterator (const MultiArchive *archive)
-	: _channel (this)
 {
 	_is_valid = false;
 	_multi_archive = archive;
 	_channel_index = 0;
 	_base_archive = 0;
 	_base_channel_iterator = 0;
+	_channel.setMultiChannelIterator (this);
 }
 
 MultiChannelIterator::~MultiChannelIterator ()
@@ -70,28 +70,29 @@ void MultiChannelIterator::position (size_t index, ArchiveI *archive, ChannelIte
 	_is_valid = _base_channel_iterator->isValid ();
 }
 
-// For current channel, position MultiValueIterator on value on or after given time
-bool MultiChannelIterator::getValueAfterTime (const osiTime &time, MultiValueIterator &value_iterator)
-{
-	return _multi_archive->getValueAfterTime (_channel_index, *this, time, value_iterator);
-}
-
 bool MultiChannelIterator::getNextValue (MultiValueIterator &value_iterator)
 {
     if (_is_valid && _base_channel_iterator && _base_channel_iterator->isValid())
 	{
+		// last time stamp current archive has for this channel:
 		osiTime next_time = _base_channel_iterator->getChannel()->getLastTime ();
-		return _multi_archive->getValueAfterTime (_channel_index, *this, next_time, value_iterator);
+		return _multi_archive->getValueAtOrAfterTime (_channel_index, *this,
+			next_time, true /* has to be later */, value_iterator);
 	}
 
-	value_iterator.clear ();
 	return false;  
 }
 
 bool MultiChannelIterator::getPrevValue (MultiValueIterator &value_iterator)
 {
-	// TODO: implement
-	value_iterator.clear ();
+    if (_is_valid && _base_channel_iterator && _base_channel_iterator->isValid())
+	{
+		// first time stamp current archive has for this channel:
+		osiTime next_time = _base_channel_iterator->getChannel()->getFirstTime ();
+		return _multi_archive->getValueAtOrBeforeTime (_channel_index, *this,
+			next_time, true /* has to be earlier */, value_iterator);
+	}
+
 	return false;
 }
 

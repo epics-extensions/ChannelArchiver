@@ -62,7 +62,7 @@ bool MultiArchive::findChannelByPattern (const stdString &regular_expression,
 	ChannelIteratorI *channel)
 {
 	// TODO: Use RegularExpression on _channels
-	return false;
+	return findFirstChannel (channel);
 }
 
 bool MultiArchive::addChannel (const stdString &name, ChannelIteratorI *channel)
@@ -73,12 +73,12 @@ bool MultiArchive::addChannel (const stdString &name, ChannelIteratorI *channel)
 
 // Open Archive and ChannelIterator for channel described by ChannelInfo
 // using the archive that has the oldest value
-bool MultiArchive::getChannel (size_t channel_index, MultiChannelIterator &iterator) const
+bool MultiArchive::getChannel (size_t channel_index, MultiChannelIterator &channel_iterator) const
 {
 	if (channel_index >= _channels.size())
 	{
 		// Invalidate iterator
-		iterator.clear ();
+		channel_iterator.clear ();
 		return false;
 	}
 
@@ -95,24 +95,24 @@ bool MultiArchive::getChannel (size_t channel_index, MultiChannelIterator &itera
 				channel->getFirstTime() > info._first_time)
 				continue;
 
-			iterator.position (channel_index, archive.getI(), channel.getI());
+			channel_iterator.position (channel_index, archive.getI(), channel.getI());
 			archive.detach(); // Interfaces now ref'd by MultiChannelIterator
 			channel.detach();
 		}                    
 	}
 
-	return iterator.isValid ();
+	return channel_iterator.isValid ();
 }
 
-bool MultiArchive::getValueAfterTime (size_t channel_index, MultiChannelIterator &channel_iterator,
-	const osiTime &time, MultiValueIterator &value_iterator) const
+// For given channel, set value_iterator to value at-or-after time.
+// For has_to_be_later = true, the archive must contain more values,
+// i.e. it won't position on the very last value that's stamped at "time"
+bool MultiArchive::getValueAtOrAfterTime (size_t channel_index,
+	MultiChannelIterator &channel_iterator,
+	const osiTime &time, bool has_to_be_later, MultiValueIterator &value_iterator) const
 {
 	if (channel_index >= _channels.size())
-	{
-		// Invalidate iterator
-		value_iterator.clear ();
 		return false;
-	}
 
 	const ChannelInfo &info = _channels[channel_index];
 	list<stdString>::const_iterator archs = _archives.begin();
@@ -122,13 +122,19 @@ bool MultiArchive::getValueAfterTime (size_t channel_index, MultiChannelIterator
 		ChannelIterator channel (archive);
 		if (archive.findChannelByName (info._name, channel))
 		{
+			// getValueAfterTime() could succeed for '==', but this is not what we're looking for
+			if (has_to_be_later && channel->getLastTime() <= time)
+				continue;
+
 			ValueIterator value (archive);
 			// Does this archive have values after "time"?
 			if (! channel->getValueAfterTime (time, value))
 				continue;
 
-			channel_iterator.position (channel_index, archive.getI(), channel.getI());
+			// position() will delete ref's to previous ArchiveI, ChannelIteratorI, ...
+			// -> remove reference to values first, then channeliterator/archive
 			value_iterator.position (&channel_iterator, value.getI());
+			channel_iterator.position (channel_index, archive.getI(), channel.getI());
 
 			value.detach ();	// Now ref'd by MultiValueIterator
 			archive.detach();	// Now ref'd by MultiChannelIterator
@@ -136,6 +142,46 @@ bool MultiArchive::getValueAfterTime (size_t channel_index, MultiChannelIterator
 			return value_iterator.isValid ();
 		}                    
 	}
+
+	return false;
+}
+
+bool MultiArchive::getValueAtOrBeforeTime (size_t channel_index,
+	MultiChannelIterator &channel_iterator,
+	const osiTime &time, bool has_to_be_earlier, MultiValueIterator &value_iterator) const
+{
+	if (channel_index >= _channels.size())
+		return false;
+
+	const ChannelInfo &info = _channels[channel_index];
+	list<stdString>::const_iterator archs = _archives.begin();
+	for (/**/; archs != _archives.end(); ++archs)
+	{
+		Archive archive (new BinArchive (*archs));
+		ChannelIterator channel (archive);
+		if (archive.findChannelByName (info._name, channel))
+		{
+			// getValueBeforeTime() could succeed for '==', but this is not what we're looking for
+			if (has_to_be_earlier && time <= channel->getFirstTime())
+				continue;
+
+			ValueIterator value (archive);
+			// Does this archive have values before "time"?
+			if (! channel->getValueBeforeTime (time, value))
+				continue;
+
+			// position() will delete ref's to previous ArchiveI, ChannelIteratorI, ...
+			// -> remove reference to values first, then channeliterator/archive
+			value_iterator.position (&channel_iterator, value.getI());
+			channel_iterator.position (channel_index, archive.getI(), channel.getI());
+
+			value.detach ();	// Now ref'd by MultiValueIterator
+			archive.detach();	// Now ref'd by MultiChannelIterator
+			channel.detach();	// dito
+			return value_iterator.isValid ();
+		}                    
+	}
+
 	return false;
 }
 
@@ -167,8 +213,6 @@ bool MultiArchive::parseMasterFile (const stdString &master_file)
 	}
 
 	investigateChannels ();
-
-	log ();
 
 	return true;
 }

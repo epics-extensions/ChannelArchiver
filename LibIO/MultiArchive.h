@@ -34,7 +34,7 @@ class MultiValueIterator;
 //	   <PRE>master_version=1</PRE>
 // <LI>All remaining lines list one archive name per line
 // </UL>
-// <H3>Example<H3>
+// <H2>Example</H2>
 // <PRE>
 //	# ChannelArchiver master file
 //	master_version=1
@@ -49,6 +49,12 @@ class MultiValueIterator;
 // This type of archive is read-only!
 // <P>
 // For now, each individual archive is in the binary data format (CLASS BinArchive).
+// Later, it might be necessary to specify the type together with the name
+// for each archive. The master_version will then be incremented.
+// <BR>
+// If the "master" file is invalid, it is considered an ordinary BinArchive directory file,
+// i.e. Tools based on the MultiArchive should work just like BinArchive-based Tools
+// when operating on a single archive.
 //
 // <H2>Details</H2>
 // No sophisticated merging technique is used.
@@ -94,8 +100,18 @@ public:
 	bool getChannel (size_t channel_index, MultiChannelIterator &iterator) const; 
 	const ChannelInfo & getChannelInfo (size_t channel_index) const; 
 
-	bool getValueAfterTime (size_t channel_index, MultiChannelIterator &channel_iterator,
-				const osiTime &time, MultiValueIterator &value_iterator) const;
+	// For given channel, set value_iterator to value at-or-after time.
+	// For has_to_be_later = true, the archive must contain more values,
+	// i.e. it won't position on the very last value that's stamped at "time"
+	//
+	// For result=false, value_iterator could not be set.
+	// It will not be clear()ed, though, to allow stepping back!
+	bool getValueAtOrAfterTime (size_t channel_index, MultiChannelIterator &channel_iterator,
+		const osiTime &time, bool has_to_be_later,
+		MultiValueIterator &value_iterator) const;
+	bool getValueAtOrBeforeTime (size_t channel_index, MultiChannelIterator &channel_iterator,
+		const osiTime &time, bool has_to_be_earlier,
+		MultiValueIterator &value_iterator) const;
 
 private:
 	bool parseMasterFile (const stdString &master_file);

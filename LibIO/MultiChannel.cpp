@@ -15,9 +15,9 @@
 
 BEGIN_NAMESPACE_CHANARCH
 
-MultiChannel::MultiChannel (MultiChannelIterator *owner)
+MultiChannel::MultiChannel ()
 {
-	_channel_iterator = owner;
+	_channel_iterator = 0;
 }
 
 const char *MultiChannel::getName () const
@@ -53,7 +53,16 @@ bool MultiChannel::getLastValue (ValueIteratorI *values)
 bool MultiChannel::getValueAfterTime (const osiTime &time, ValueIteratorI *values)
 {
 	MultiValueIterator *multi_values = dynamic_cast<MultiValueIterator *> (values);
-	return _channel_iterator->getValueAfterTime (time, *multi_values);
+	const MultiArchive *multi_archive = _channel_iterator->getArchive ();
+
+	if (multi_archive->getValueAtOrAfterTime (_channel_iterator->getChannelIndex(),
+			*_channel_iterator, time, false/* needn't be later */, *multi_values))
+	{
+		return true;
+	}
+
+	multi_values->clear ();
+	return false;
 }
 
 bool MultiChannel::getValueBeforeTime (const osiTime &time, ValueIteratorI *values)

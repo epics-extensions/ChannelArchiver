@@ -62,8 +62,10 @@ public:
 
 	//* Get value stamped <= time
 	virtual bool getValueBeforeTime (const osiTime &time, ValueIteratorI *values) = 0;
-	virtual bool getValueNearTime (const osiTime &time, ValueIteratorI *values) = 0;
 	bool getValueBeforeTime (const osiTime &time, ValueIterator &values);
+
+	//* Get value stamped near time (whatever's next: before or after time)
+	virtual bool getValueNearTime (const osiTime &time, ValueIteratorI *values) = 0;
 	bool getValueNearTime (const osiTime &time, ValueIterator &values);
 
 	virtual size_t lockBuffer (const ValueI &value, double period);

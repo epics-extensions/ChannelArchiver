@@ -37,10 +37,11 @@ public:
 	void position (size_t index, ArchiveI *archive, ChannelIteratorI *channel_iterator);
 
 	// To be called by MultiChannel:
+	const MultiArchive *getArchive ();
 	const ChannelInfo &getChannelInfo () const;
+	size_t getChannelIndex () const;
 
 	// To be called by MultiValueIterator:
-	bool getValueAfterTime (const osiTime &time, MultiValueIterator &value_iterator);
 	bool getNextValue (MultiValueIterator &value_iterator);
 	bool getPrevValue (MultiValueIterator &value_iterator);
 
@@ -53,8 +54,14 @@ private:
 	MultiChannel _channel;				// The current Channel (use only if _is_valid)
 };
 
+inline const MultiArchive *MultiChannelIterator::getArchive ()
+{	return _multi_archive;	}
+
 inline const ChannelInfo &MultiChannelIterator::getChannelInfo () const
 {	return _multi_archive->getChannelInfo (_channel_index);	}
+
+inline size_t MultiChannelIterator::getChannelIndex () const
+{	return _channel_index;	}
 
 END_NAMESPACE_CHANARCH
 

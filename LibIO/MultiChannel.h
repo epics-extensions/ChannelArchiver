@@ -24,7 +24,7 @@ class MultiChannelIterator;
 class MultiChannel : public ChannelI
 {
 public:
-	MultiChannel (MultiChannelIterator *owner);
+	MultiChannel ();
 
 	virtual const char *getName () const;
 	virtual osiTime getFirstTime ()  const;
@@ -42,11 +42,16 @@ public:
 	virtual bool addValue (const ValueI &value);
 	virtual void releaseBuffer ();
 
+	void setMultiChannelIterator (MultiChannelIterator *channel_iterator);
+
 private:
 	// Implementation:
 	// MultiChannel is part of the MCIterator who handles the archive access
 	MultiChannelIterator *_channel_iterator; // ptr back to who owns "this"
 };
+
+inline void MultiChannel::setMultiChannelIterator (MultiChannelIterator *channel_iterator)
+{	_channel_iterator = channel_iterator;	}
 
 END_NAMESPACE_CHANARCH
 

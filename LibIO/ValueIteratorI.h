@@ -102,8 +102,8 @@ public:
 	double getPeriod () const;
 
 	// Direct access to iterface
-	ValueIteratorI *getI ()				{	return _ptr; }
-	const ValueIteratorI *getI () const	{	return _ptr; }
+	ValueIteratorI *getI ();
+	const ValueIteratorI *getI () const;
 
 private:
 	ValueIterator (const ValueIterator &rhs); // not impl.
@@ -119,7 +119,13 @@ inline ValueIterator::ValueIterator ()
 {	_ptr = 0; }
 
 inline ValueIterator::~ValueIterator ()
-{	delete _ptr; }
+{
+	if (_ptr)
+	{
+		delete _ptr;
+		_ptr = 0;
+	}
+}
 
 inline void ValueIterator::attach (ValueIteratorI *iter)
 {
@@ -129,13 +135,7 @@ inline void ValueIterator::attach (ValueIteratorI *iter)
 }
 
 inline void ValueIterator::detach ()
-{
-	if (_ptr)
-	{
-		delete _ptr;
-		_ptr = 0;
-	}
-}
+{	_ptr = 0;	}
 
 inline ValueIterator::operator bool () const
 {	return _ptr && _ptr->isValid (); }
@@ -157,6 +157,12 @@ inline size_t ValueIterator::determineChunk (const osiTime &until)
 
 inline double ValueIterator::getPeriod () const
 {	return _ptr->getPeriod (); }
+
+inline ValueIteratorI *ValueIterator::getI ()
+{	return _ptr; }
+
+inline const ValueIteratorI *ValueIterator::getI () const
+{	return _ptr; }
 
 END_NAMESPACE_CHANARCH
 

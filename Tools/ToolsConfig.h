@@ -20,13 +20,6 @@
 /// The Tools classes started out with the idea to
 /// be useful beyond the archiver.
 
-// Set CPP_EDITION to the C++ edition that you have:
-// 3 <=> according to Stroustrup's C++ book release 3.
-// MS Visual Studio 6.0 is 3 (so far the only one?)
-// RedHat 6.0-7.0 (comes with egcs-2.91.66 ... 2.96) is 2
-// GNU egcs-2.91.66 as tried on solaris is 2
-#define CPP_EDITION 3
-
 // Namespaces:
 // After great problems with doing so initially,
 // these sources try to avoid namespaces.

@@ -21,11 +21,15 @@ const char *ArchiveException::what() const
 	{
         char buffer[2048];
 		if (_detail.empty())
-            sprintf(buffer, "%s (%d): %s\n",
-                    getSourceFile(), getSourceLine(), error_text[_code]);
+            sprintf(buffer, "%s (%u): %s\n",
+                    getSourceFile(),
+                    (unsigned int)getSourceLine(),
+                    error_text[_code]);
         else
-            sprintf(buffer, "%s (%d): %s\n(%s)",
-                    getSourceFile(), getSourceLine(), error_text[_code],
+            sprintf(buffer, "%s (%u): %s\n(%s)",
+                    getSourceFile(),
+                    (unsigned int)getSourceLine(),
+                    error_text[_code],
                     _detail.c_str());
         _error_info = buffer;
 	}

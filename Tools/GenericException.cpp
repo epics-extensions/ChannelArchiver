@@ -12,8 +12,8 @@ const char *GenericException::what() const
 	if (_error_info.empty())
 	{
         char buffer[1024];
-        sprintf(buffer, "%s (%d): GenericException",
-                _sourcefile, _line);
+        sprintf(buffer, "%s (%u): GenericException",
+                _sourcefile, (unsigned int)_line);
 		_error_info = buffer;
 	}
 	return _error_info.c_str();

@@ -35,8 +35,9 @@ MemoryPool::~MemoryPool()
 	}
 
     printf("MemoryPool stats:\n");
-	printf("* %d hits, %d misses\n", _hits, _misses);
-	printf("* %d chunks left allocated\n", _allocated);
+	printf("* %u hits, %u misses\n",
+           (unsigned int)_hits, (unsigned int)_misses);
+	printf("* %u chunks left allocated\n", (unsigned int)_allocated);
 }
 
 void *MemoryPool::alloc (size_t bytes)

@@ -6,7 +6,7 @@
 // for legal information.
 //
 // Kay-Uwe Kasemir, kasemir@lanl.gov
-// --------------------------------------------------------xs
+// --------------------------------------------------------
 
 // Tree Item:
 // Holds the full Item as well as left/right pointers

@@ -1,8 +1,8 @@
 #pragma warning (disable: 4786)
 
 #include "stdafx.h"
-#include "TimeAxis.h"
 #include "osiTimeHelper.h"
+#include "TimeAxis.h"
 
 USING_NAMESPACE_TOOLS
 

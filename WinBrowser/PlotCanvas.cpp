@@ -1,6 +1,7 @@
 // PlotCanvas.cpp : implementation file
 
 #include "stdafx.h"
+#include "osiTimeHelper.h"
 #include "PlotCanvas.h"
 
 #ifdef _DEBUG

@@ -25,6 +25,22 @@
   <p>As far as I understand for now this is no error in the Archive Engine. </p>
   <hr WIDTH="40%" ALIGN="LEFT">
 
+  <h2>Priorities, Scheduling</h2>
+  The Engine code uses a simple system-independend threading wrapper
+  class to make it compile on Win32, Linux, solaris, ...
+  On systems other than Win32, Posix threads are used.
+  Maybe some day the OS-independent thread wrapper from a new EPICS
+  base release can be used instead.
+  <p>
+  To make it most portable, no thread priorities are adjusted
+  and no scheduling mechanisms are required,
+  because even the most basic "Posix" calls turned out to 
+  be different on HPUX.
+  <p>
+  If it should become obvious that <a href="perform.htm">performance</a>
+  dramatically improves by utilizing these options,
+  more implementation effort will have to be put into this.
+
   <h1>Signals</h1>
   The engine tries to catch the Ctrl-C and Unix 'kill' signals.<br>
   On Win32, this seems to work correctly.<br>

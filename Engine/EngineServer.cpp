@@ -46,7 +46,7 @@ static void engineinfo(HTTPClientConnection *connection,
     page.tableLine("Version", ARCH_VERSION_TXT ", built " __DATE__, 0);
     if (theEngine)
     {
-        Guard guard(theEngine->mutex);
+        Guard engine_guard(theEngine->mutex);
         page.tableLine("Description", theEngine->getDescription().c_str(), 0);
         
         epicsTime2string(theEngine->getStartTime(), s);
@@ -54,8 +54,8 @@ static void engineinfo(HTTPClientConnection *connection,
         
         page.tableLine("Archive Index", theEngine->getIndexName().c_str(), 0);
 
-        size_t num_channels = theEngine->getChannels(guard).size();
-        size_t num_connected = theEngine->getNumConnected(guard);
+        size_t num_channels = theEngine->getChannels(engine_guard).size();
+        size_t num_connected = theEngine->getNumConnected(engine_guard);
         cvtUlongToString(num_channels, line);
         page.tableLine("Channels", line, 0);
 
@@ -70,7 +70,7 @@ static void engineinfo(HTTPClientConnection *connection,
         page.tableLine("Directory ", line, 0);
 #endif
         
-        epicsTime2string(theEngine->getNextWriteTime(guard), s);
+        epicsTime2string(theEngine->getNextWriteTime(engine_guard), s);
         page.tableLine("Next write time", s.c_str(), 0);
         
         page.tableLine("Currently writing",
@@ -214,8 +214,8 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
     link.reserve(80);
     if (!theEngine)
         return;
-    Guard guard(theEngine->mutex);
-    stdList<ArchiveChannel *> &channels = theEngine->getChannels(guard);
+    Guard engine_guard(theEngine->mutex);
+    stdList<ArchiveChannel *> &channels = theEngine->getChannels(engine_guard);
     for (channel = channels.begin(); channel != channels.end(); ++channel)
     {
         link = "<A HREF=\"channel/";
@@ -271,7 +271,6 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
                 disabling += num;
             }
     }
-    
     page.tableLine(
         channel_link.c_str(),
         (channel->isConnected(guard) ? 
@@ -291,8 +290,9 @@ static void channelInfo(HTTPClientConnection *connection,
     stdString channel_name = path.substr(9);
     if (!theEngine)
         return;
-    Guard guard(theEngine->mutex);
-    ArchiveChannel *channel = theEngine->findChannel(guard, channel_name);
+    Guard engine_guard(theEngine->mutex);
+    ArchiveChannel *channel
+        = theEngine->findChannel(engine_guard, channel_name);
     if (! channel)
     {
         connection->error("No such channel: " + channel_name);
@@ -311,8 +311,8 @@ void groups(HTTPClientConnection *connection, const stdString &path)
     HTMLPage page(connection->getSocket(), "Groups");
     if (!theEngine)
         return;
-    Guard guard(theEngine->mutex);
-    stdList<GroupInfo *> &groups = theEngine->getGroups(guard);
+    Guard engine_guard(theEngine->mutex);
+    stdList<GroupInfo *> &groups = theEngine->getGroups(engine_guard);
     if (groups.empty())
     {
         page.line("<I>no groups</I>");
@@ -365,8 +365,8 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     CGIDemangler::unescape(group_name);
     if (!theEngine)
         return;
-    Guard guard(theEngine->mutex);
-    const GroupInfo *group = theEngine->findGroup(guard, group_name);
+    Guard engine_guard(theEngine->mutex);
+    const GroupInfo *group = theEngine->findGroup(engine_guard, group_name);
     if (! group)
     {
         connection->error("No such group: " + group_name);
@@ -379,7 +379,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
     page.tableLine("Name", group_name.c_str(), 0);
     page.tableLine("ID", id, 0);
     page.closeTable();
-    if (theEngine->getChannels(guard).empty())
+    if (theEngine->getChannels(engine_guard).empty())
     {
         page.line("no channels");
         return;
@@ -409,8 +409,8 @@ static void addChannel(HTTPClientConnection *connection,
     }
     if (!theEngine)
         return;
-    Guard guard(theEngine->mutex);
-    GroupInfo *group = theEngine->findGroup(guard, group_name);
+    Guard engine_guard(theEngine->mutex);
+    GroupInfo *group = theEngine->findGroup(engine_guard, group_name);
     if (!group)
     {
         stdString msg = "Cannot find group " + group_name;
@@ -429,13 +429,13 @@ static void addChannel(HTTPClientConnection *connection,
     HTMLPage page(connection->getSocket(), "Add Channel");
     page.out("Channel <I>");
     page.out(channel_name);
-    theEngine->attachToCAContext(guard);
-    if (theEngine->addChannel(guard, group, channel_name, period,
+    theEngine->attachToCAContext(engine_guard);
+    if (theEngine->addChannel(engine_guard, group, channel_name, period,
                                disabling, monitored))
     {
         page.line("</I> was added");
         EngineConfig config;
-        config.write(guard, theEngine);
+        config.write(engine_guard, theEngine);
     }
     else
         page.line("</I> could not be added");
@@ -460,12 +460,12 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
     page.line("<H1>Groups</H1>");
     page.out("Group <I>");
     page.out(group_name);
-    Guard guard(theEngine->mutex);
-    if (theEngine->addGroup(guard, group_name))
+    Guard engine_guard(theEngine->mutex);
+    if (theEngine->addGroup(engine_guard, group_name))
     {
         page.line("</I> was added to the engine.");
         EngineConfig config;
-        config.write(guard, theEngine);
+        config.write(engine_guard, theEngine);
     }
     else
         page.line("</I> could not be added to the engine.");
@@ -488,14 +488,14 @@ static void parseConfig(HTTPClientConnection *connection,
     page.line("<H1>Configuration</H1>");
     page.out("Configuration <I>");
     page.out(config_name);
-    Guard guard(theEngine->mutex);
-    theEngine->attachToCAContext(guard);
+    Guard engine_guard(theEngine->mutex);
+    theEngine->attachToCAContext(engine_guard);
     EngineConfig config;
-    if (config.read(guard, theEngine, config_name))
+    if (config.read(engine_guard, theEngine, config_name))
     {
         page.line("</I> was loaded.");
         EngineConfig config;
-        config.write(guard, theEngine);
+        config.write(engine_guard, theEngine);
     }
     else
         page.line("</I> could not be loaded.<P>");

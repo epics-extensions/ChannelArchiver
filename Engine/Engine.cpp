@@ -86,9 +86,9 @@ void Engine::create(const stdString &index_name)
     engine_server = new EngineServer();
 }
 
-bool Engine::attachToCAContext(Guard &guard)
+bool Engine::attachToCAContext(Guard &engine_guard)
 {
-    guard.check(mutex);
+    engine_guard.check(mutex);
     if (ca_attach_context(ca_context) != ECA_NORMAL)
     {
         LOG_MSG("ca_attach_context failed for thread 0x%08X (%s)\n",
@@ -106,38 +106,41 @@ void Engine::shutdown()
     engine_server = 0;
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now = epicsTime::getCurrent();
-    mutex.lock(); // - lock
-    IndexFile index(RTreeM);
-    if (index.open(index_name.c_str(), false))
     {
-        stdList<ArchiveChannel *>::iterator ch;
-        for (ch = channels.begin(); ch != channels.end(); ++ch)
+        Guard engine_guard(mutex);
+        IndexFile index(RTreeM);
+        if (index.open(index_name.c_str(), false))
         {
-            Guard guard((*ch)->mutex);
-            (*ch)->addEvent(guard, 0, ARCH_STOPPED, now);
-            (*ch)->write(guard, index);
+            stdList<ArchiveChannel *>::iterator ch;
+            for (ch = channels.begin(); ch != channels.end(); ++ch)
+            {
+                Guard guard((*ch)->mutex);
+                (*ch)->addEvent(guard, 0, ARCH_STOPPED, now);
+                (*ch)->write(guard, index);
+            }
+            DataFile::close_all();
+            index.close();
         }
-        DataFile::close_all();
-        index.close();
+        else
+            LOG_MSG("Engine::shutdown cannot open index %s\n",
+                    index_name.c_str());
+        LOG_MSG("Removing memory for channels and groups\n");
+        while (! channels.empty())
+        {
+            ArchiveChannel *c = channels.back();
+            c->destroy(engine_guard);
+            channels.pop_back();
+        }
+        while (! groups.empty())
+        {
+            delete groups.back();
+            groups.pop_back();
+        }
+        LOG_MSG("Stopping ChannelAccess:\n");
+        ca_context_destroy();
+        theEngine = 0;
     }
-    else
-        LOG_MSG("Engine::shutdown cannot open index %s\n",
-                index_name.c_str());
-    LOG_MSG("Removing memory for channels and groups\n");
-    while (! channels.empty())
-    {
-        delete channels.back();
-        channels.pop_back();
-    }
-    while (! groups.empty())
-    {
-        delete groups.back();
-        groups.pop_back();
-    }
-    LOG_MSG("Stopping ChannelAccess:\n");
-    ca_context_destroy();
-    theEngine = 0;
-    mutex.unlock(); // - unlock
+    // engine unlocked
     delete this;
     LOG_MSG("Engine shut down.\n");
 }
@@ -149,9 +152,9 @@ bool Engine::checkUser(const stdString &user, const stdString &pass)
 }
 #endif   
 
-GroupInfo *Engine::findGroup(Guard &guard, const stdString &name)
+GroupInfo *Engine::findGroup(Guard &engine_guard, const stdString &name)
 {
-    guard.check(mutex);
+    engine_guard.check(mutex);
     stdList<GroupInfo *>::iterator group = groups.begin();
     while (group != groups.end())
     {
@@ -162,15 +165,15 @@ GroupInfo *Engine::findGroup(Guard &guard, const stdString &name)
     return 0;
 }
 
-GroupInfo *Engine::addGroup(Guard &guard, const stdString &name)
+GroupInfo *Engine::addGroup(Guard &engine_guard, const stdString &name)
 {
-    guard.check(mutex);
+    engine_guard.check(mutex);
     if (name.empty())
     {
         LOG_MSG("Engine::addGroup: No name given\n");
         return 0;
     }
-    GroupInfo *group = findGroup(guard, name);
+    GroupInfo *group = findGroup(engine_guard, name);
     if (!group)
     {
         group = new GroupInfo(name);
@@ -179,9 +182,9 @@ GroupInfo *Engine::addGroup(Guard &guard, const stdString &name)
     return group;
 }
 
-ArchiveChannel *Engine::findChannel(Guard &guard, const stdString &name)
+ArchiveChannel *Engine::findChannel(Guard &engine_guard, const stdString &name)
 {
-    guard.check(mutex);
+    engine_guard.check(mutex);
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
     {
@@ -221,7 +224,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     }
     if (channel->getPeriod(guard) > period)
         channel->setPeriod(engine_guard, guard, period);
-    channel->setMechanism(guard, mechanism);
+    channel->setMechanism(engine_guard, guard, mechanism);
     group->addChannel(guard, channel);
     channel->addToGroup(guard, group, disabling);
     if (new_channel)
@@ -285,9 +288,9 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     return channel;
 }
 
-void Engine::setWritePeriod(Guard &guard, double period)
+void Engine::setWritePeriod(Guard &engine_guard, double period)
 {
-    guard.check(mutex);
+    engine_guard.check(mutex);
     write_period = period;
     next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
     // Re-set ev'ry channel's period so that they might adjust buffers
@@ -296,25 +299,25 @@ void Engine::setWritePeriod(Guard &guard, double period)
     {
         ArchiveChannel *c = *channel;
         Guard channel_guard(c->mutex);
-        c->setPeriod(guard, channel_guard, c->getPeriod(channel_guard));
+        c->setPeriod(engine_guard, channel_guard, c->getPeriod(channel_guard));
     }
 }
 
-void Engine::setDescription(Guard &guard, const stdString &description)
+void Engine::setDescription(Guard &engine_guard, const stdString &description)
 {
-    guard.check(mutex);
+    engine_guard.check(mutex);
     this->description = description;
 }
 
-void Engine::setGetThreshold(Guard &guard, double get_threshhold)
+void Engine::setGetThreshold(Guard &engine_guard, double get_threshhold)
 {
-    guard.check(mutex);
+    engine_guard.check(mutex);
     this->get_threshhold = get_threshhold;
 }
 
-void Engine::setBufferReserve(Guard &guard, int reserve)
+void Engine::setBufferReserve(Guard &engine_guard, int reserve)
 {
-    guard.check(mutex);
+    engine_guard.check(mutex);
     buffer_reserve = reserve;
 }
 

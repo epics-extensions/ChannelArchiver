@@ -33,10 +33,17 @@ class ArchiveChannel
 public:
     /// Create an ArchiveChannel
     ArchiveChannel(const stdString &name, double period);
-    ~ArchiveChannel();
+
+    /// Hidden destructor, use destroy instead.
+
+    /// Will lock the channel, but cannot accept guard
+    /// for that since we're deleting the channel and its
+    /// mutex in here.
+    void destroy(Guard &engine_guard);
 
     /// Define the samlpe mechanism.
-    void setMechanism(Guard &guard, SampleMechanism *mechanism);
+    void setMechanism(Guard &engine_guard, Guard &guard,
+                      SampleMechanism *mechanism);
     
     /// mutex between CA, HTTPD, Engine.
     /// None of the ArchiveChannel methods take the lock,
@@ -113,6 +120,10 @@ public:
 private:
     friend class SampleMechanismMonitored;
     friend class SampleMechanismGet;
+
+    // Use destroy instead.
+    ~ArchiveChannel() {}
+
     stdString   name;
     double      period; // Sample period, max period, ..(see SampleMechanism)
     SampleMechanism *mechanism;

@@ -17,13 +17,6 @@ public:
     {    return sizeof(long); }
 };
 
-class epicsMutex
-{
-public:
-    void lock() {}
-    void unlock()    {}
-};
-
 #include "CircularBuffer.h"
 
 int main()

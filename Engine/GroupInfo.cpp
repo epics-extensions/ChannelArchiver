@@ -36,11 +36,11 @@ void GroupInfo::disable(ArchiveChannel *cause, const epicsTime &when)
     ++disable_count;
     if (disable_count != 1) // Was already disabled?
         return;
-    stdList<ArchiveChannel *>::iterator i;
-    for (i=members.begin(); i!=members.end(); ++i)
+    stdList<ArchiveChannel *>::iterator c;
+    for (c=members.begin(); c!=members.end(); ++c)
     {
-        Guard guard((*i)->mutex);
-        (*i)->disable(guard, when);
+        Guard guard((*c)->mutex);
+        (*c)->disable(guard, when);
     }
 }
 
@@ -57,12 +57,11 @@ void GroupInfo::enable(ArchiveChannel *cause, const epicsTime &when)
     --disable_count;
     if (disable_count > 0) // Still disabled?
         return;
-
-    stdList<ArchiveChannel *>::iterator i;
-    for (i=members.begin(); i!=members.end(); ++i)
+    stdList<ArchiveChannel *>::iterator c;
+    for (c=members.begin(); c!=members.end(); ++c)
     {
-        Guard guard((*i)->mutex);
-        (*i)->enable(guard, when);
+        Guard guard((*c)->mutex);
+        (*c)->enable(guard, when);
     }
 }
 

@@ -39,7 +39,6 @@ void SinglePeriodScanList::remove(ArchiveChannel *channel)
     }
 }
 
-// returns false on timeout
 void SinglePeriodScanList::scan()
 {
     stdList<ArchiveChannel *>::iterator channel;

@@ -28,8 +28,14 @@
 //     5: whatever
 #define HTTPD_DEBUG 2
 
-// These timeouts influnce how quickly the
-// server can be shut down
+// Maximum number of clients that we accept.
+// This includes connections that are "done"
+// and need to be cleaned up
+// (which happens every HTTPD_TIMEOUT seconds)
+#define MAX_NUM_CLIENTS 10
+
+// These timeouts influence how quickly the server reacts,
+// including how fast the whole engine can be shut down.
 
 // Timeout for server to check for new client
 #define HTTPD_TIMEOUT 1

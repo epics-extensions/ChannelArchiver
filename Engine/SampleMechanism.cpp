@@ -12,9 +12,10 @@ SampleMechanism::SampleMechanism(class ArchiveChannel *channel)
         : channel(channel), wasWrittenAfterConnect(false)
 {}
 
-SampleMechanism::~SampleMechanism()
+void SampleMechanism::destroy(Guard &engine_guard, Guard &guard)
 {
     channel = 0;
+    delete this;
 }
 
 // ---------------------------------------------------------------------------
@@ -25,7 +26,7 @@ SampleMechanismMonitored::SampleMechanismMonitored(ArchiveChannel *channel)
     have_subscribed = false;
 }
 
-SampleMechanismMonitored::~SampleMechanismMonitored()
+void SampleMechanismMonitored::destroy(Guard &engine_guard, Guard &guard)
 {
     if (have_subscribed)
     {
@@ -34,6 +35,7 @@ SampleMechanismMonitored::~SampleMechanismMonitored()
 #       endif
         ca_clear_subscription(ev_id);
     }
+    SampleMechanism::destroy(engine_guard, guard);
 }
 
 stdString SampleMechanismMonitored::getDescription(Guard &guard) const
@@ -46,7 +48,8 @@ stdString SampleMechanismMonitored::getDescription(Guard &guard) const
 bool SampleMechanismMonitored::isScanning() const
 {   return false; }
 
-void SampleMechanismMonitored::handleConnectionChange(Guard &guard)
+void SampleMechanismMonitored::handleConnectionChange(Guard &engine_guard,
+                                                      Guard &guard)
 {
     if (channel->isConnected(guard))
     {
@@ -126,11 +129,10 @@ SampleMechanismGet::SampleMechanismGet(class ArchiveChannel *channel)
           previous_value(0), repeat_count(0)
 {}
 
-SampleMechanismGet::~SampleMechanismGet()
+void SampleMechanismGet::destroy(Guard &engine_guard, Guard &guard)
 {
     if (is_on_scanlist)
     {
-        Guard engine_guard(theEngine->mutex);
         ScanList &scanlist = theEngine->getScanlist(engine_guard);
         scanlist.removeChannel(channel);
     }
@@ -140,6 +142,7 @@ SampleMechanismGet::~SampleMechanismGet()
         RawValue::free(previous_value);
         previous_value = 0;
     }
+    SampleMechanism::destroy(engine_guard, guard);
 }
 
 stdString SampleMechanismGet::getDescription(Guard &guard) const
@@ -152,14 +155,14 @@ stdString SampleMechanismGet::getDescription(Guard &guard) const
 bool SampleMechanismGet::isScanning() const
 {   return true; }
 
-void SampleMechanismGet::handleConnectionChange(Guard &guard)
+void SampleMechanismGet::handleConnectionChange(Guard &engine_guard,
+                                                Guard &guard)
 {
     if (channel->isConnected(guard))
     {
         //LOG_MSG("%s: fully connected\n", channel->getName().c_str());
         if (!is_on_scanlist)
         {
-            Guard engine_guard(theEngine->mutex);
             ScanList &scanlist = theEngine->getScanlist(engine_guard);
             scanlist.addChannel(guard, channel);
             is_on_scanlist = true;

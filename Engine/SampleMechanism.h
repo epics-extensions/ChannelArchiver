@@ -32,17 +32,19 @@ class ArchiveChannel;
 /// handle incoming values, repeat counts, ...
 class SampleMechanism
 {
+    friend class nobody_really_but_we_want_to_avoid_compiler_warnings;
 public:
-    friend class ArchiveChannel;
-    /// Destructor.
-
+    /// Constructor.
     SampleMechanism(class ArchiveChannel *channel);
 
     /// The ArchiveChannel might redefine its SampleMechanism,
     /// so a SampleMechanism must assert that it can be deleted
     /// (and replaced with a new one) at any time.
-    virtual ~SampleMechanism();
-
+    /// We use destroy instead of a destructor so that we can
+    /// pass the Guard classes.
+    /// Needs to call the super class's destroy!
+    virtual void destroy(Guard &engine_guard, Guard &guard);
+    
     /// Printable description.
     virtual stdString getDescription(Guard &guard) const = 0;
 
@@ -50,7 +52,7 @@ public:
     virtual bool isScanning() const = 0;
     
     /// Invoked for connection changes.
-    virtual void handleConnectionChange(Guard &guard) = 0;
+    virtual void handleConnectionChange(Guard &engine_guard, Guard &guard) = 0;
 
     /// Invoked for new value.
 
@@ -86,10 +88,10 @@ class SampleMechanismMonitored : public SampleMechanism
 {
 public:
     SampleMechanismMonitored(class ArchiveChannel *channel);
-    ~SampleMechanismMonitored();
+    virtual void destroy(Guard &engine_guard, Guard &guard);
     stdString getDescription(Guard &guard) const;
     bool isScanning() const;
-    void handleConnectionChange(Guard &guard);
+    void handleConnectionChange(Guard &engine_guard, Guard &guard);
     void handleValue(Guard &guard, const epicsTime &now,
                      const epicsTime &stamp, const RawValue::Data *value);
 private:
@@ -116,10 +118,10 @@ public:
     /// the appearance of the ArchiveEngine being dead.
     static size_t max_repeat_count;
     SampleMechanismGet(class ArchiveChannel *channel);
-    ~SampleMechanismGet();
+    virtual void destroy(Guard &engine_guard, Guard &guard);
     stdString getDescription(Guard &guard) const;
     bool isScanning() const;
-    void handleConnectionChange(Guard &guard);
+    void handleConnectionChange(Guard &engine_guard, Guard &guard);
     void handleValue(Guard &guard, const epicsTime &now,
                      const epicsTime &stamp, const RawValue::Data *value);
 private:

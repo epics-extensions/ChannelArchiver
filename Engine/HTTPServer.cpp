@@ -140,13 +140,23 @@ void HTTPServer::run()
                         epicsThreadGetIdSelf(),
                         local_info.c_str(), peer_info.c_str());
 #endif
-                ++total_clients;
-                HTTPClientConnection *client =
-                    new HTTPClientConnection(this, peer, total_clients);
                 client_list_mutex.lock();
-                clients.push_back(client);
-                client_list_mutex.unlock();
-                client->start();
+                if (clients.size() < MAX_NUM_CLIENTS)
+                {
+                    ++total_clients;
+                    HTTPClientConnection *client =
+                        new HTTPClientConnection(this, peer, total_clients);
+                    clients.push_back(client);
+                    client_list_mutex.unlock();
+                    client->start();
+                }
+                else
+                {
+                    client_list_mutex.unlock();
+                    epicsSocketDestroy(peer);
+                    LOG_MSG("HTTPServer reached %d concurrent clients\n",
+                            MAX_NUM_CLIENTS);
+                }
             }
         }
     }

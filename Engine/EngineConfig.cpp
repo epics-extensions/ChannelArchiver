@@ -108,7 +108,7 @@ bool EngineConfig::read(Guard &engine_guard, class Engine *engine,
     return true;
 }
 
-static bool add_channel(FUX::Element *group,
+static bool add_channel(Guard &engine_guard, FUX::Element *group,
                         const GroupInfo *gi, ArchiveChannel *c)
 {
     char buf[100];
@@ -117,7 +117,6 @@ static bool add_channel(FUX::Element *group,
     FUX::Element *e = new FUX::Element(channel, "name");
     e->value = c->getName();
     channel->add(e);
-
     Guard guard(c->mutex);
     e = new FUX::Element(channel, "period");
     sprintf(buf, "%g", c->getPeriod(guard));
@@ -133,7 +132,8 @@ static bool add_channel(FUX::Element *group,
     return true;
 }
 
-static bool add_group(FUX::Element *doc, const GroupInfo *gi)
+static bool add_group(Guard &engine_guard,
+                      FUX::Element *doc, const GroupInfo *gi)
 {
     FUX::Element *group = new FUX::Element(doc, "group");
     doc->add(group);
@@ -143,7 +143,7 @@ static bool add_group(FUX::Element *doc, const GroupInfo *gi)
     const stdList<class ArchiveChannel *> &channels = gi->getChannels();
     stdList<class ArchiveChannel *>::const_iterator ci;
     for (ci = channels.begin(); ci != channels.end(); ++ci)
-        if (!add_channel(group, gi, *ci))
+        if (!add_channel(engine_guard, group, gi, *ci))
             return false;
     return true;
 }
@@ -189,7 +189,7 @@ bool EngineConfig::write(Guard &engine_guard, class Engine *engine)
     const stdList<GroupInfo *> &groups = engine->getGroups(engine_guard);
     stdList<GroupInfo *>::const_iterator gi;
     for (gi = groups.begin(); gi != groups.end(); ++gi)
-        if (! add_group(doc, *gi))
+        if (! add_group(engine_guard, doc, *gi))
             return false;
     
     FILE *f = fopen("onlineconfig.xml", "wt");

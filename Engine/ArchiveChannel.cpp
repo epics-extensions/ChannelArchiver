@@ -22,25 +22,30 @@ ArchiveChannel::ArchiveChannel(const stdString &name, double period)
     currently_disabling = false;
 }
 
-ArchiveChannel::~ArchiveChannel()
+void ArchiveChannel::destroy(Guard &engine_guard)
 {
-    if (mechanism)
-        delete mechanism;
-    mechanism = 0;
-    if (pending_value)
     {
-        RawValue::free(pending_value);
-        pending_value = 0;
+        Guard guard(mutex);
+        if (mechanism)
+            mechanism->destroy(engine_guard, guard);
+        mechanism = 0;
+        if (pending_value)
+        {
+            RawValue::free(pending_value);
+            pending_value = 0;
+        }
+        if (chid_valid)
+        {
+            //LOG_MSG("CA clear channel '%s'\n", name.c_str());
+            ca_clear_channel(ch_id);
+            chid_valid = false;
+        }
     }
-    if (chid_valid)
-    {
-        //LOG_MSG("CA clear channel '%s'\n", name.c_str());
-        ca_clear_channel(ch_id);
-        chid_valid = false;
-    }
+    delete this;
 }
 
-void ArchiveChannel::setMechanism(Guard &guard, SampleMechanism *mechanism)
+void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
+                                  SampleMechanism *mechanism)
 {
     guard.check(mutex);
     bool was_connected = connected;
@@ -49,15 +54,15 @@ void ArchiveChannel::setMechanism(Guard &guard, SampleMechanism *mechanism)
         if (was_connected)
         {
             connected = false;
-            this->mechanism->handleConnectionChange(guard);
+            this->mechanism->handleConnectionChange(engine_guard, guard);
         }
-        delete this->mechanism;
+        this->mechanism->destroy(engine_guard, guard);
     }
     this->mechanism = mechanism;
     if (was_connected)
     {
         connected = true;
-        mechanism->handleConnectionChange(guard);
+        mechanism->handleConnectionChange(engine_guard, guard);
     }
 }
 
@@ -240,6 +245,7 @@ void ArchiveChannel::write(Guard &guard, IndexFile &index)
 void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
+    Guard engine_guard(theEngine->mutex);
     Guard guard(me->mutex);
     if (ca_state(arg.chid) == cs_conn)
     {
@@ -269,11 +275,8 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
         me->pending_value_set = false;
         if (was_connected  &&  me->mechanism)
         {
-            {
-                Guard engine_guard(theEngine->mutex);
-                theEngine->decNumConnected(engine_guard);
-            }
-            me->mechanism->handleConnectionChange(guard);
+            theEngine->decNumConnected(engine_guard);
+            me->mechanism->handleConnectionChange(engine_guard, guard);
             // Tell groups that we are disconnected
             stdList<GroupInfo *>::iterator g;
             for (g=me->groups.begin(); g!=me->groups.end(); ++g)
@@ -370,23 +373,20 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
     bool was_connected = me->connected;
+    Guard engine_guard(theEngine->mutex);
     Guard guard(me->mutex);
     if (arg.status == ECA_NORMAL &&
         me->setup_ctrl_info(arg.type, arg.dbr))
     {
         //LOG_MSG("%s: received control info\n", me->name.c_str());
         me->connection_time = epicsTime::getCurrent();
-        Guard engine_guard(theEngine->mutex);
         me->init(engine_guard, guard, ca_field_type(arg.chid)+DBR_TIME_STRING,
                  ca_element_count(arg.chid));
         me->connected = true;
         if (was_connected == false   &&   me->mechanism)
         {
-            {
-                Guard engine_guard(theEngine->mutex);
-                theEngine->incNumConnected(engine_guard);
-            }
-            me->mechanism->handleConnectionChange(guard);
+            theEngine->incNumConnected(engine_guard);
+            me->mechanism->handleConnectionChange(engine_guard, guard);
             // Tell groups that we are connected
             stdList<GroupInfo *>::iterator g;
             for (g=me->groups.begin(); g!=me->groups.end(); ++g)
@@ -429,7 +429,7 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
 // called by SampleMechanism
 void ArchiveChannel::handleDisabling(Guard &guard, const RawValue::Data *value)
 {
-    //guard.check(mutex);
+    guard.check(mutex);
     if (groups_to_disable.empty())
         return;
     // We disable if the channel is above zero

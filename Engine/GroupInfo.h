@@ -14,7 +14,7 @@
 #include <stdlib.h>
 // Base
 #include <epicsTime.h>
-// Tools
+/// Tools
 #include <ToolsConfig.h>
 #include <Guard.h>
 

@@ -162,9 +162,13 @@ void GNUPlotExporter::exportChannelList(
     // Generate script
     if (_use_pipe)
     {
-        f = popen(GNUPLOT_PROGRAM, "w");
+#ifdef WIN32
+        f = _popen(GNUPLOT_PIPE, "w");
+#else
+        f = popen(GNUPLOT_PIPE, "w");
+#endif
         if (!f)
-            throwDetailedArchiveException(OpenError, GNUPLOT_PROGRAM);
+            throwDetailedArchiveException(OpenError, GNUPLOT_PIPE);
     }
     else
     {
@@ -246,7 +250,14 @@ void GNUPlotExporter::exportChannelList(
         fprintf(f, "\n");
     }
     if (_use_pipe)
+    {
+#ifdef WIN32
+        fflush(f);
+        _pclose(f);
+#else
         pclose(f);
+#endif
+    }
     else
         fclose(f);
 }

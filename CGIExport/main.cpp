@@ -13,6 +13,7 @@
 #endif
 
 #include"../ArchiverConfig.h"
+#include"Exporter.h"
 #include"GNUPlotExporter.h"
 #include"MatlabExporter.h"
 #include<ArgParser.h>
@@ -32,7 +33,8 @@
 #include<unistd.h>
 #endif
 
-stdString GNUPlot = GNUPLOT_PROGRAM;
+static stdString script_dir, script;
+
 
 // Called on error (after setting title) or as part of cmdHelp
 static void usage(HTMLPage &page)
@@ -314,7 +316,11 @@ static bool exportFunc(HTMLPage &page, Format format,
 		{
 			GNUPlotExporter *gnu = new GNUPlotExporter(archive, tempfilebase);
 			gnu->makeImage();
+#ifndef WIN32
+            // Pipe based on _pipe call only works fro console apps.
+            // Within the web server it doesn't seem to function.
 			gnu->usePipe();
+#endif
 			exporter = gnu;
 		}
 		else
@@ -399,17 +405,18 @@ static void getTimeTxt(char *result)
 	unsigned long nano;
 	osiTime2vals(osiTime::getCurrent(),
                  year, month, day, hour, min, sec, nano);
-	sprintf (result, "%02d%02d%02d%02d%02d", month, day, hour, min, sec);
+	sprintf(result, "%02d%02d%02d%02d%02d", month, day, hour, min, sec);
 }
 
-static bool cmdPlot(HTMLPage &page, const stdString &script_dir)
+static void getFilenames(stdString &data,
+                         stdString &dataURL,
+                         stdString &imageURL)
 {
-
     // Construct path for temp. files (data & GNUPlot command file)
     const char *client = getenv("REMOTE_HOST");
     if (client == 0) client = getenv("REMOTE_ADDR");
     if (client == 0) client = "unknown";
-    
+
     // GNUPlot operates on the "real", physical directory,
     // but the GIF it creates will be accessed through the Web server's
     // virtual directory
@@ -426,32 +433,37 @@ static bool cmdPlot(HTMLPage &page, const stdString &script_dir)
     strcat(physical, timetext);
     strcat(physical, "_");
     strcat(physical, client);
-
-    stdString GNUPlotData;
-    GNUPlotData.reserve(200);
-#ifdef USE_RELATIVE_URL
-    GNUPlotData = script_dir;
-#endif
-    GNUPlotData += URL_PATH;
-    GNUPlotData += timetext;
-    GNUPlotData += "_";
-    GNUPlotData += client;
+    data = physical;
     
-    stdString GNUPlotImage;
-    GNUPlotImage.reserve(GNUPlotData.length() + 5);
-    GNUPlotImage = GNUPlotData;
-    GNUPlotImage += GNUPlotExporter::imageExtension();
+    dataURL.reserve(200);
+#ifdef USE_RELATIVE_URL
+    dataURL = script_dir;
+#endif
+    dataURL += URL_PATH;
+    dataURL += timetext;
+    dataURL += "_";
+    dataURL += client;
+    
+    imageURL.reserve(dataURL.length() + 5);
+    imageURL = dataURL;
+    imageURL += GNUPlotExporter::imageExtension();
+}
+
+static bool cmdPlot(HTMLPage &page)
+{
+    stdString data, dataURL, imageURL;
+    getFilenames(data, dataURL, imageURL);
     
     page.start();
     page.header("Channel Plot", 2);
-    if (! exportFunc(page, fmt_GNUPlot, physical))
+    if (! exportFunc(page, fmt_GNUPlot, data.c_str()))
     {
         page.header("Error: Possible reasons",3);
         std::cout << "<ul>\n";
         std::cout << "<li>No data<br>\n";
         std::cout << "    There seems to be no data for that channel\n";
         std::cout << "    and time range.\n";
-        std::cout << "    Check the <A HREF=\"" << GNUPlotData << "\">";
+        std::cout << "    Check the <A HREF=\"" << dataURL << "\">";
         std::cout << "    data that was supposed to be plotted.</A>\n";
         std::cout << "<li>Internal GNUPlot error<br>\n";
         std::cout << "    If you can't get <i>any</i> plot today\n";
@@ -461,9 +473,28 @@ static bool cmdPlot(HTMLPage &page, const stdString &script_dir)
         page.interFace();
         return 0;
     }
+#ifdef WIN32
+    else
+    {
+        stdString GNUPlotCommand;
+        GNUPlotCommand = data;
+        GNUPlotCommand += ".plt";
+        int result = _spawnl(_P_WAIT, GNUPLOT_PROGRAM, GNUPLOT_PROGRAM,
+                             GNUPlotCommand.c_str(), 0);
+        if (result != 0)
+        {
+            page.header("Error: GNUPlot",3);
+            std::cout << "The execution of GNUPlot plot failed:<P>\n";
+            std::cout << "<PRE>'" << GNUPLOT_PROGRAM
+                      << " " << GNUPlotCommand << "'</PRE><P>\n";
+            std::cout << "Result: " << result << "<P>\n";
+            return 0;
+        }
+    }
+#endif
     
-    std::cout << "<A HREF=\"" << GNUPlotData << "\">";
-    std::cout << "<IMG SRC=\"" + GNUPlotImage + "\"</A></A><P>\n";
+    std::cout << "<A HREF=\"" << dataURL << "\">";
+    std::cout << "<IMG SRC=\"" + imageURL + "\"</A></A><P>\n";
     std::cout << "<HR>\n";
     page.interFace();
     
@@ -471,39 +502,55 @@ static bool cmdPlot(HTMLPage &page, const stdString &script_dir)
 }
 
 // Command == DEBUG
-void cmdDebug(HTMLPage &page, const CGIInput &cgi, const char *envp[],
-           const stdString &script_dir, const stdString &script)
+void cmdDebug(HTMLPage &page, const CGIInput &cgi, const char *envp[])
 {
     page._title = "DEBUG Information";
     page.start();
     page.header("DEBUG Information",1);
     
-    std::cout << "<I>CGIExport Version " VERSION_TXT ", built " __DATE__ "</I>\n";
+    std::cout << "<I>CGIExport Version " VERSION_TXT
+        ", built " __DATE__ "</I>\n";
     
     page.header("Variables parsed from CGI input",2);
     const stdMap<stdString, stdString> &var_map = cgi.getVars ();
     stdMap<stdString, stdString>::const_iterator vars = var_map.begin();
     while (vars != var_map.end())
     {
-        std::cout << "'" << vars->first << "' = '" << vars->second << "'<BR>\n";
+        std::cout << "'" << vars->first << "' = '"
+                  << vars->second << "'<BR>\n";
         ++vars;
     }
     
     char dir[100];
     getcwd(dir, sizeof dir);
     page.header("Script Info", 2);
-    
+
+    page.header("Current directory:", 3);
+    std::cout << "<PRE>" << dir << "</PRE><P>\n";
+
     page.header("Script:", 3);
     std::cout << "<PRE>" << script << "</PRE><P>\n";
     
     page.header("Script path:", 3);
     std::cout << "<PRE>" << script_dir << "</PRE><P>\n";
     
-    page.header("Current directory:", 3);
-    std::cout << "<PRE>" << dir << "</PRE><P>\n";
+    page.header("GNUPlot Program:", 3);
+    std::cout << "<PRE>" << GNUPLOT_PROGRAM << "</PRE><P>\n";
+
+    page.header("GNUPlot Pipe:", 3);
+    std::cout << "<PRE>" << GNUPLOT_PIPE << "</PRE><P>\n";
+
+    stdString data, dataURL, imageURL;
+    getFilenames(data, dataURL, imageURL);
+
+    page.header("Data:", 3);
+    std::cout << "<PRE>" << data << "</PRE><P>\n";
+
+    page.header("Data URL:", 3);
+    std::cout << "<PRE>" << dataURL << "</PRE><P>\n";
     
-    page.header("GNUPlot:", 3);
-    std::cout << "<PRE>" << GNUPlot << "</PRE><P>\n";
+    page.header("Image URL:", 3);
+    std::cout << "<PRE>" << imageURL << "</PRE><P>\n";
     
 #ifndef WIN32
     page.header("Personality:", 3);
@@ -531,7 +578,6 @@ int main(int argc, const char *argv[], const char *envp[])
 	HTMLPage	page;
 	page._title = "EPICS Channel Archive";
 	page._cgi_path = getenv ("SCRIPT_NAME");
-	stdString script_dir, script;
 	Filename::getDirname (page._cgi_path, script_dir);
 	Filename::getBasename(page._cgi_path, script);
 
@@ -617,7 +663,7 @@ int main(int argc, const char *argv[], const char *envp[])
 #ifndef NO_CGI_DEBUG
 	if (page._command == "DEBUG")
 	{
-        cmdDebug(page, cgi, envp, script_dir, script);
+        cmdDebug(page, cgi, envp);
 		return 0;
 	}
 #endif
@@ -651,7 +697,7 @@ int main(int argc, const char *argv[], const char *envp[])
             format = fmt_GNUPlot;
             
         if (format == fmt_GNUPlot)
-            cmdPlot(page, script_dir);
+            cmdPlot(page);
         else
             exportFunc(page, format);
 
@@ -660,7 +706,7 @@ int main(int argc, const char *argv[], const char *envp[])
 
 	if (page._command == "PLOT")
 	{
-        cmdPlot(page, script_dir);
+        cmdPlot(page);
         return 0;
 	}
 

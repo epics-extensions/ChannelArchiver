@@ -14,15 +14,15 @@
   The "patches" are then used to debug those new things.
   
   <ul>
-    <li>05/21/2001<br>
-      Patch #7:<br>
+    <li>06/??/2001<br>
+      <font color="#0000A0">Version 1.8</font>:<br>
        <ul>
        <li>MultiArchive:<br>
            <ul>
 	   <li>Didn't really handle multiple archives until now.
 	       Hopefully not too many bugs left.
            <li>No longer investigates all subarchives
-	       unless necessary (for the INFO and LIST command).
+	       unless necessary.<br>
 	       For find-channel and get-value-after-timestamp
 	       this can be skipped -> <font color=red>much faster!</font>
 	       When a list of channels and/or times is requested,
@@ -30,19 +30,21 @@
 	   </ul>
        <li>GNUPlotExporter:<br>
            <ul>
-	   <li>Use two Y-axes if exporting two channels
+	   <li>Use two Y-axes if exporting excactly two channels
 	   <li>Can call GNUPlot via pipe, skipping the command-file
 	       generation
            <li>Use 'steps' instead of 'linespoints'
 	   </ul>
-       <li>CGIExport<br>
+       <li>CGIExport:<br>
            <ul>
 	   <li>Benefits from new GNUPlotExporter
+	       (cannot use pipe on Win32).
 	   <li>Image is now a HREF link to GNUPlot data.
 	       That's different from the spreadsheet format,
 	       but might still be useful.
 	   </ul>
-       <li>Engine: don't write buffers to disk
+       <li>Engine:<br>
+           don't write buffers to disk
            at shutdown because this can take too long.
            After receiving a signal (e.g. on computer shutdown),
            the engine will now stop ASAP.

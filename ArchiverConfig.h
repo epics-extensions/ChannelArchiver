@@ -20,9 +20,9 @@
 
 // This should match Make.ver
 #define VERSION 1
-#define RELEASE 7
+#define RELEASE 8
 
-#define VERSION_TXT "1.7.7"
+#define VERSION_TXT "1.8.0"
 
 // ----------------------------------------------------------
 // ArchiveEngine
@@ -80,17 +80,27 @@
 // Where is GNU-Plot?
 // Linux, default for Unix:
 #define GNUPLOT_PROGRAM "/usr/bin/gnuplot"
+#define GNUPLOT_PIPE    "/usr/bin/gnuplot"
 
 // Default for Win32
+// Note: you need the pgnuplot.exe, the one that
+// can be run from a pipe.
+// With some GNUPlot binaries this is included,
+// otherwise you have to get pgnuplot.c and compile
+// it yourself. See the GNUPlot web sites for more on this
 #ifdef WIN32
 #undef GNUPLOT_PROGRAM
-#define GNUPLOT_PROGRAM "c:\\Progra~1\\Gnuplot3.7\\wgnuplot.exe"
+#undef GNUPLOT_PIPE
+#define GNUPLOT_PROGRAM "c:\\Progra~1\\Gnuplot3.7\\wgnupl32.exe"
+#define GNUPLOT_PIPE    "c:\\Progra~1\\Gnuplot3.7\\pgnuplot.exe"
 #endif
 
 // LEDA @ LANL
 #ifdef solaris
 #undef GNUPLOT_PROGRAM
+#undef GNUPLOT_PIPE
 #define GNUPLOT_PROGRAM "/opt/apache/htdocs/archive/cgi/gnuplot"
+#define GNUPLOT_PIPE    "/opt/apache/htdocs/archive/cgi/gnuplot"
 #endif
 
 // The CGI tool adds cgi_body_start.txt and ..end.txt
@@ -118,7 +128,7 @@
 // then GNUPlot creates an image file.
 
 // 1) Where are those files physically on the disk?
-//    Is the path relative to where the web files?
+//    Is the path relative to where the web files are?
 #define USE_RELATIVE_PHYSICAL_PATH
 #ifdef WIN32
 #define PHYSICAL_PATH "\\cgi\\tmp\\"

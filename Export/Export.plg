@@ -6,50 +6,13 @@
 --------------------Configuration: Export - Win32 Debug--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "C:\DOCUME~1\Kay\LOCALS~1\Temp\RSP4F4.tmp" with contents
+Creating temporary file "C:\DOCUME~1\Kay\LOCALS~1\Temp\RSPA9C.tmp" with contents
 [
 /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "..\LibIO" /I "..\..\Tools" /I "..\..\..\..\R3.13.3\base\include" /I "..\..\..\..\R3.13.3\base\include\os\WIN32" /I "..\..\..\..\R3.13.3\base\src\ca" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /D "EPICS_DLL" /Fp"Debug/Export.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\ArchiveException.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\ArchiveI.cpp"
-"S:\cs\epics\extensions\src\Tools\ArgParser.cpp"
-"S:\cs\epics\extensions\src\Tools\ASCIIParser.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\BinArchive.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\BinChannel.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\BinChannelIterator.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\BinCtrlInfo.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\BinValue.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\BinValueIterator.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\ChannelI.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\ChannelIteratorI.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\CtrlInfoI.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\DataFile.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\DirectoryFile.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\ExpandingValueIteratorI.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\Export\Export.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\Exporter.cpp"
-"S:\cs\epics\extensions\src\Tools\Filename.cpp"
-"S:\cs\epics\extensions\src\Tools\GenericException.cpp"
-"S:\cs\epics\extensions\src\Tools\gnu_regex.c"
 "S:\cs\epics\extensions\src\ChannelArchiver\LibIO\GNUPlotExporter.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\HashTable.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\LinInterpolValueIteratorI.cpp"
-"S:\cs\epics\extensions\src\Tools\LowLevelIO.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\MatlabExporter.cpp"
-"S:\cs\epics\extensions\src\Tools\MsgLogger.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\MultiArchive.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\MultiChannel.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\MultiChannelIterator.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\MultiValueIterator.cpp"
-"S:\cs\epics\extensions\src\Tools\osiTimeHelper.cpp"
-"S:\cs\epics\extensions\src\Tools\RegularExpression.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\SpreadSheetExporter.cpp"
-"S:\cs\epics\extensions\src\Tools\stdString.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\ValueI.cpp"
-"S:\cs\epics\extensions\src\ChannelArchiver\LibIO\ValueIteratorI.cpp"
-"S:\cs\epics\extensions\src\Tools\WIN32Thread.cpp"
 ]
-Creating command line "cl.exe @C:\DOCUME~1\Kay\LOCALS~1\Temp\RSP4F4.tmp" 
-Creating temporary file "C:\DOCUME~1\Kay\LOCALS~1\Temp\RSP4F5.tmp" with contents
+Creating command line "cl.exe @C:\DOCUME~1\Kay\LOCALS~1\Temp\RSPA9C.tmp" 
+Creating temporary file "C:\DOCUME~1\Kay\LOCALS~1\Temp\RSPA9D.tmp" with contents
 [
 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ca.lib Com.lib db.lib ws2_32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/ArchiveExport.pdb" /debug /machine:I386 /out:"Debug/ArchiveExport.exe" /pdbtype:sept /libpath:"..\..\..\..\R3.13.3\base\lib\WIN32" 
 .\Debug\ArchiveException.obj
@@ -91,54 +54,16 @@ kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32
 .\Debug\ValueIteratorI.obj
 .\Debug\WIN32Thread.obj
 ]
-Creating command line "link.exe @C:\DOCUME~1\Kay\LOCALS~1\Temp\RSP4F5.tmp"
+Creating command line "link.exe @C:\DOCUME~1\Kay\LOCALS~1\Temp\RSPA9D.tmp"
 <h3>Output Window</h3>
 Compiling...
-ArchiveException.cpp
-ArchiveI.cpp
-ArgParser.cpp
-ASCIIParser.cpp
-BinArchive.cpp
-BinChannel.cpp
-BinChannelIterator.cpp
-BinCtrlInfo.cpp
-BinValue.cpp
-BinValueIterator.cpp
-ChannelI.cpp
-ChannelIteratorI.cpp
-CtrlInfoI.cpp
-DataFile.cpp
-DirectoryFile.cpp
-ExpandingValueIteratorI.cpp
-Export.cpp
-Exporter.cpp
-Filename.cpp
-GenericException.cpp
-gnu_regex.c
 GNUPlotExporter.cpp
-HashTable.cpp
-LinInterpolValueIteratorI.cpp
-LowLevelIO.cpp
-MatlabExporter.cpp
-MsgLogger.cpp
-MultiArchive.cpp
-MultiChannel.cpp
-MultiChannelIterator.cpp
-s:\cs\epics\extensions\src\channelarchiver\libio\multichanneliterator.cpp(16) : warning C4355: 'this' : used in base member initializer list
-MultiValueIterator.cpp
-osiTimeHelper.cpp
-RegularExpression.cpp
-SpreadSheetExporter.cpp
-stdString.cpp
-ValueI.cpp
-ValueIteratorI.cpp
-WIN32Thread.cpp
 Linking...
 
 
 
 <h3>Results</h3>
-ArchiveExport.exe - 0 error(s), 1 warning(s)
+ArchiveExport.exe - 0 error(s), 0 warning(s)
 </pre>
 </body>
 </html>

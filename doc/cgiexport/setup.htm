@@ -25,8 +25,8 @@
 
   <h3>Access to the archive: Users, permissions, paths</h3>
   The CGI Tool has to have access to the data files, either directly
-  or via NFS, SAMBA, ???.<br>
-  Note that the web server runs any CGI program as a low priviliged
+  or via NFS, SAMBA, whatever.<br>
+  Note that the web server runs any CGI program as a low-priviliged
   user (e.g. 'nobody' on Unix).
   To verify archive access, switch user to this user and try to
   access the data via e.g. the command-line ArchiveExport tool.
@@ -35,10 +35,13 @@
   A special problem: The 'nobody' user might not have PATH,
   LD_LIBRARY_PATH etc. configured, so it helps to build the CGIExport
   tool without using shared libraries to simplify matters.
+  Or copy the shared libraries into the directory where the CGIExport
+  executable resides (this is what I do for the Win32 DLLs).
 
   <h3>GNU Plot</h3>
   For the plotting to work, you need GNU Plot. The path to GNU Plot
-  is hard-coded into the CGIExport tool at compile time.
+  is hard-coded into the CGIExport tool at compile time,
+  see the top-level ArchiverConfig.h.
 
   <h2>Example Setup</h2>
   The default path names are relative but fixed and have to be
@@ -53,8 +56,8 @@
 	When producing any output, CGIExport looks for files
 	<em>cgi_body_start.txt</em> and <em>cgi_body_end.txt</em>.<br>
 	This Test directory is prepared such that these files contain
-	links to additional web pages about the &quot;Rounding&quot;
-	feature etc.<br>
+	links to additional web pages, explaining the use of the
+        CGIExport tool to users.<br>
 	<u>For now that is the &quot;Manual&quot;
 	on how to use the CGI tool.</u>
     <li>..../Tests/cgi<br>
@@ -68,7 +71,7 @@
 	from your EPICS/base/bin/WIN32 also have to be copied in here.)
     <li>..../Tests/cgi/tmp<br>
         In here, the CGI tool creates temporary files, so you must
-        create this directory
+        create this directory.
   </ul>
   Make sure that the WWW server as well as CGI programs launched by it
   (usually running as &quot;nobody&quot;) have access to those parts
@@ -85,7 +88,8 @@
   should be able to help you with this:<br>
   If installed and configured correctly, you can access
   <a href="http://%3cyour%20host%3e/archive/cgi/Hi.pl">&quot;http://&lt;your
-  host&gt;/archive/cgi/Hi.pl&quot;</a>
+  host&gt;/archive/cgi/Hi.pl&quot;</a>, e.g.
+  <a href="http://localhost/archive/cgi/Hi.pl">&quot;http://localhost/archive/cgi/Hi.pl&quot;</a>
   to verify that
   <ul>
     <li>Your web server is running at all</li>
@@ -104,11 +108,13 @@
   host&gt;/archive/cgi/CGIExport.cgi?COMMAND=HELP&quot;</a><br>
   the CGIExport Tool will display the commands and parameters that
   it understands.<br>
-  The example web page ChannelArchiver/CGIExport/Tests/Default.htm
+  The example web page <i>ChannelArchiver/CGIExport/Tests/Default.htm</i>
   shows some links that call the tool with a specific archive
   directory, channel list, commands etc.<br>
   When your WWW server setup was successful as explained in there,
-  you should be able to point your web browser to http://localhost/archive/Default.htm and
+  you should be able to point your web browser to
+  <a href="http://localhost/archive/Default.htm">
+  http://localhost/archive/Default.htm</A> and
   see that initial test page.
 
   <h2>Troubleshooting</h2>
@@ -132,15 +138,18 @@
 
   <h2>Microsoft IIS (Windows 2000)</h2>
   <ol>
-    <li>Install the IIS from the Win2000 disk,
-        it shows up under additional products.
+    <li>Install the IIS from the Win2000 disk.
+        It shows up under additional products.
+	I picked the Common Files, the Documentation, the WWW server
+	and Personal Web Manager. You don't need SMTP, FTP,
+	FrontPage extensions etc.
 	When looking at <a href="http://localhost">http://localhost</a>
 	for the first time, you get linked to the documentation.
     <li>Configure under
         "ControlPanel"/"Administrative Tools"/"Computer
         Management":<br>
 	Right-click on "Default Web Site", select New Virtual
-        Directory. Name it "archive", broswse to
+        Directory. Name it "archive", browse to
 	ChannelArchiver/CGIExport/Test, select only "read" for access
 	permissions.<br>
 	<a href="http://localhost/archive">http://localhost/archive</a>
@@ -151,13 +160,13 @@
 	Uncheck the "read" permission, select "Execute Permissions"
 	"scripts and executables", "Application Protection" to "High".
     <li>If you have Perl: Click "Configuration", "Add", set executable
-        to e.g. "c:\sys\perl\bin\perl.exe %s".
+        to e.g. "c:\sys\perl\bin\perl.exe %s" for the extension ".pl".
 	This should allow to browse
 	<a href="http://localhost/archive/cgi/env.pl">
 	http://localhost/archive/cgi/env.pl</a>
 	which might help in debugging CGI problems.
     <li>While ".pl" had to be configured, I could not find a ".cgi"
-        entry but executasbles ending in .cgi seem to be lauched
+        entry but executables ending in .cgi seem to be lauched
 	without further configuration when "scripts and executables"
 	were selected for the directory.
   </ol>

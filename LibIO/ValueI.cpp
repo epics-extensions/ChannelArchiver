@@ -68,9 +68,9 @@ bool RawValueI::hasSameValue (DbrType type, DbrCount count, size_t size,
                    ((char *)rhs) + offset, size - offset) == 0;
 }
 
-void RawValueI::getStatus (const Type *value, stdString &result)
+void RawValueI::getStatus(const Type *value, stdString &result)
 {
-    std::strstream buf;
+    char buf[200];
 
     short severity = short(value->severity & 0xfff);
     switch (severity)
@@ -80,14 +80,12 @@ void RawValueI::getStatus (const Type *value, stdString &result)
         return;
     // Archiver specials:
     case ARCH_EST_REPEAT:
-        buf << "Est_Repeat " << (unsigned short)value->status << '\0';
-        result = buf.str();
-        buf.rdbuf()->freeze (false);
+        sprintf(buf, "Est_Repeat %d", (int)value->status);
+        result = buf;
         return;
     case ARCH_REPEAT:
-        buf << "Repeat " << (unsigned short)value->status << '\0';
-        result = buf.str();
-        buf.rdbuf()->freeze (false);
+        sprintf(buf, "Repeat %d", (int)value->status);
+        result = buf;
         return;
     case ARCH_DISCONNECT:
         result = "Disconnected";
@@ -112,10 +110,9 @@ void RawValueI::getStatus (const Type *value, stdString &result)
     }
     else
     {
-        buf << severity << ' ' << value->status << '\0';
-        result = buf.str();
+        sprintf(buf, "%d %d", severity, value->status);
+        result = buf;
     }
-    buf.rdbuf()->freeze (false);
 }
 
 bool RawValueI::parseStatus (const stdString &text, short &stat, short &sevr)

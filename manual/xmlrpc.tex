@@ -68,6 +68,13 @@ channels get arranged to meet the requested time range and count:
 \item[\sffamily how = 0:]
   Get raw data from archive, starting w/ start,
   up to either 'end' time or max. 'count' samples.
+\item[\sffamily how = 1:]
+  Get interpolated data from archive, starting w/ start,
+  up to either 'end' time or max. 'count' samples.
+  The data is interpolated with time slots that are multiples
+  of (end-start)/count.
+  For details, refer to section \ref{sec:timestampcorr} and following,
+  beginning on page \pageref{sec:timestampcorr}.
 \end{description}
 
 \noindent The result is an array of structures, one structure per

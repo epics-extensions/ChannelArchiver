@@ -25,7 +25,7 @@ void WriteThread::run()
     LOG_MSG("WriteThread started\n");
     while (_go)
     {
-        _wait.lock();
+        _signal.wait();
         if (_go)
         {
             _writing = true;
@@ -41,5 +41,6 @@ void WriteThread::run()
             _writing = false;
         }
     }
+    LOG_MSG("WriteThread exiting\n");
 }
 

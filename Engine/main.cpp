@@ -13,31 +13,23 @@
 #endif
 
 #include <signal.h>
+#include <Filename.h>
+#include <epicsTimeHelper.h>
+#include <ArgParser.h>
 #include "Engine.h"
 #include "ConfigFile.h"
-#include "ArgParser.h"
 #include "LockFile.h"
 #include "EngineServer.h"
 #include "HTMLPage.h"
-#include <Filename.h>
-#include <epicsTimeHelper.h>
-
-// No clue what's needed here....
-//#ifndef __HP_aCC
-// wrongly defined for hp700 dce,
-// but __HP_aCC needs it again?
-//#undef open
-//#undef close
-//#endif
 
 // For communication sigint_handler -> main loop
 bool run = true;
 
 // signals are process-, not thread-bound.
-static void signal_handler (int sig)
+static void signal_handler(int sig)
 {
 #ifndef HAVE_SIGACTION
-    signal (sig, SIG_IGN);
+    signal(sig, SIG_IGN);
 #endif
     run = false;
     LOG_MSG("Exiting on signal %d, please be patient!\n", sig);
@@ -45,7 +37,7 @@ static void signal_handler (int sig)
 
 FILE *logfile = 0;
 
-static void LoggerPrintRoutine (void *arg, const char *text)
+static void LoggerPrintRoutine(void *arg, const char *text)
 {
     fputs(text, stdout);
     if (logfile)
@@ -55,14 +47,13 @@ static void LoggerPrintRoutine (void *arg, const char *text)
     }
 }
 
-int main (int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
-    TheMsgLogger.SetPrintRoutine (LoggerPrintRoutine);
-
     initEpicsTimeHelper();
+    TheMsgLogger.SetPrintRoutine(LoggerPrintRoutine);
 
     CmdArgParser parser (argc, argv);
-    parser.setArgumentsInfo ("<config-file> [<directory-file>]");
+    parser.setArgumentsInfo  ("<config-file> <index-file>");
     CmdArgInt port           (parser, "port", "<port>",
                               "WWW server's TCP port (default 4812)");
     CmdArgString description (parser, "description", "<text>",
@@ -71,11 +62,10 @@ int main (int argc, const char *argv[])
     CmdArgFlag   nocfg       (parser, "nocfg", "disable online configuration");
     parser.setHeader ("Version " VERSION_TXT
                       ", built " __DATE__ ", " __TIME__ "\n\n");
-    parser.setFooter ("\n\tDefault directory-file: 'freq_directory'\n\n");
     port.set (EngineServer::_port); // default
 
     if (!parser.parse() ||
-        parser.getArguments ().size() < 1)
+        parser.getArguments ().size() != 2)
     {
         parser.usage ();
         return -1;
@@ -94,16 +84,13 @@ int main (int argc, const char *argv[])
     EngineServer::_nocfg = (bool)nocfg;
     HTMLPage::_nocfg = (bool)nocfg;
     
-    // Arg. 1 might be the directory_name to use:
-    const stdString &config_file = parser.getArgument (0);
-    stdString directory_name;
-    if (parser.getArguments ().size() < 2)
-        directory_name = "freq_directory";
-    else
-        directory_name = parser.getArgument (1);
+    // Arg. 1 might be the index_name to use:
+    const stdString &config_name = parser.getArgument (0);
+    stdString index_name = parser.getArgument (1);
 
     LOG_MSG("Starting Engine with configuration file %s\n",
-            config_file.c_str());
+            config_name.c_str());
+    LOG_MSG("Writing to index %s\n", index_name.c_str());
 
     Lockfile lock_file("archive_active.lck");
     if (! lock_file.Lock (argv[0]))
@@ -112,12 +99,12 @@ int main (int argc, const char *argv[])
     ConfigFile *config = new ConfigFile;
     try
     {
-        Engine::create (directory_name);
+        Engine::create(index_name);
         if (! description.get().empty())
-            theEngine->setDescription (description);
-        run = config->load (config_file);
+            theEngine->setDescription(description);
+        run = config->load(config_name);
         if (run)
-            config->save ();
+            config->save();
     }
     catch (GenericException &e)
     {
@@ -128,19 +115,19 @@ int main (int argc, const char *argv[])
     try
     {
         // Main loop
-        theEngine->setConfiguration (config);
+        theEngine->setConfiguration(config);
 #ifdef HAVE_SIGACTION
         struct sigaction action;
-        memset (&action, 0, sizeof (struct sigaction));
+        memset(&action, 0, sizeof(struct sigaction));
         action.sa_handler = signal_handler;
         sigemptyset(&action.sa_mask);
         action.sa_flags = 0;
-        if (sigaction (SIGINT, &action, 0) ||
-            sigaction (SIGTERM, &action, 0))
+        if (sigaction(SIGINT, &action, 0) ||
+            sigaction(SIGTERM, &action, 0))
             LOG_MSG("Error setting signal handler\n");
 #else
-        signal (SIGINT, signal_handler);
-        signal (SIGTERM, signal_handler);
+        signal(SIGINT, signal_handler);
+        signal(SIGTERM, signal_handler);
 #endif
 
         LOG_MSG("\n------------------------------------------\n"
@@ -148,7 +135,7 @@ int main (int argc, const char *argv[])
                 "Stop via web browser at http://localhost:%d/stop\n"
                 "------------------------------------------\n",
                 EngineServer::_port);
-        while (run  &&  theEngine->process ())
+        while (run  &&  theEngine->process())
         {}
     }
     catch (GenericException &e)

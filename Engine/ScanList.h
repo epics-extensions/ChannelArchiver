@@ -41,12 +41,12 @@ public:
     void scan(const epicsTime &deadline);
 
     // When should scan() be called ?
-    bool isDue(const epicsTime &now) const
-    {   return !!(now > _next_list_scan); } // !! to avoid int->bool warning
+    const epicsTime &getDueTime() const
+    {   return  _next_list_scan; }
 
 private:
     stdList<SinglePeriodScanList *> _period_lists;
-    epicsTime                         _next_list_scan;
+    epicsTime                       _next_list_scan;
 };
 
 #endif //__SCANLIST_H__

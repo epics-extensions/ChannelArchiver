@@ -15,23 +15,28 @@ public:
     WriteThread()
         : _thread(*this, "WriteThread",
                   epicsThreadGetStackSize(epicsThreadStackBig),
-                  epicsThreadPriorityMedium)
+                  epicsThreadPriorityMedium),
+          _signal(epicsEventEmpty) // initially taken
     {
         _go = true;
         _writing = false;
-        _wait.lock(); // initially taken
+    }
+
+    void start()
+    {
         _thread.start();
     }
+
+    bool isRunning() const
+    {   return _go; }
 
     // request this thread to exit ASAP
     void stop()
     {
         _go = false;
-        _wait.unlock();
+        _signal.signal();
+        _thread.exitWait();
     }
-
-    bool isRunning() const
-    {   return _go; }
 
     void write()
     {
@@ -41,14 +46,14 @@ public:
             LOG_MSG("Warning: WriteThread called while busy\n");
             return;
         }
-        _wait.unlock();
+        _signal.signal();
     }
 
     virtual void run();
 
 private:
     epicsThread  _thread;
-    epicsMutex   _wait;
+    epicsEvent   _signal;
     mutable bool _go;
     mutable bool _writing;
 };

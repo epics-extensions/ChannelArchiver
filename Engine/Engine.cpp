@@ -8,140 +8,31 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-#include "ToolsConfig.h"
-#include "NetTools.h"
+#include <ToolsConfig.h>
+#include <cadef.h>
+#include <fdManager.h>
+#include <epicsTimeHelper.h>
 #include "ArchiveException.h"
 #include "Engine.h"
 #include "EngineServer.h"
 #include "WriteThread.h"
-#include <cadef.h>
-#include <fdManager.h>
-#include <epicsTimer.h>
 
 static EngineServer *engine_server = 0;
 static WriteThread  write_thread;
 Engine *theEngine;
 
-// some time values for timeouts
-// Happens to be defined for SGI:
-#undef NSEC_PER_SEC
-const int NSEC_PER_SEC = 1000000000;    /* nano seconds per second */
-// epicsTime (sec, nano-sec)
-const epicsTime one_second(1,0);
-const epicsTime tenth_second(0,NSEC_PER_SEC/10);
-const epicsTime twentyth_second(0,NSEC_PER_SEC/20);
-const epicsTime fiftyth_second(0,NSEC_PER_SEC/50);
-
-// --------------------------------------------------------------------------
-// Channel Access poll timer etc.
-// --------------------------------------------------------------------------
-
-// CaPoller: started at init, runs again.
-// Outgoing channel access events need to be scheduled through a
-// periodic excursion to channel access -
-// this allows channel access to broadcast channel searches and service puts
-class CaPoller : public epicsTimer
-{
-public:
-    CaPoller(const epicsTime &delay) : epicsTimer(delay)  {}
-
-    void expire()
-    {   ca_poll();  };
-
-    osiBool again() const
-    {   return osiTrue; }
-
-    const epicsTime delay() const
-    {   return twentyth_second; }
-};
-
-// Every task has one fd for the broadcast of channel names
-// plus one file descriptor per IOC that it connects to.
-// Fd activity will cause the fileDescriptorManager to wake up
-// to allow these fd changes to be serviced.
-class CAfdReg : public fdReg
-{
-public:
-    CAfdReg(const SOCKET fdIn) : fdReg(fdIn, fdrRead) {}
-private:
-    void callBack()
-    {   ca_poll();  }
-};
-
 static void caException(struct exception_handler_args args)
 {
-    static const char   *severity[] =
-    {
-        "Warning",
-        "Success",
-        "Error",
-        "Info",
-        "Fatal",
-        "Fatal",
-        "Fatal",
-        "Fatal"
-    };
-
-    if (CA_EXTRACT_SEVERITY(args.stat) >= 0  &&
-        CA_EXTRACT_SEVERITY(args.stat) < 8)
-    {
-        LOG_MSG("CA Exception received: stat %s, op %ld\n",
-                severity[CA_EXTRACT_SEVERITY(args.stat)], args.op);
-    }
-    else
-        LOG_MSG("CA Exception received: stat %d, op %ld\n",
-                args.stat, args.op);
+    const char *pName;
+    
     if (args.chid)
-        LOG_MSG("Channel '%s'\n", ca_name(args.chid));
-    if (args.pFile)
-        LOG_MSG("File %s (%d)\n", args.pFile, args.lineNo);
-}
-
-// fd_register is called by the CA client lib.
-// for each fd opened/closed
-static void fd_register(void *pfdctx, int fd, int opened)
-{
-    if (opened)
-    {
-        LOG_MSG("CA registers fd %d\n", fd);
-
-        // Attempt to make this socket's input buffer as large as possible
-        // to have some headroom while the engine is busy writing.
-        // This doesn't work because CA's "flow control" kicks in anyway
-        // since it's based on "is ca_poll called in vain"
-        // instead of "is input buffer getting full above high-water mark".
-        //
-        // Then there is the system dependency on the type of "len"
-        // -> use on known systems only for experimentation
-        socklen_t len;
-        // Win32-default: 8k
-        int bufsize = 0x400000; // 4MB
-        while (bufsize > 100)
-        {
-            len = sizeof(int);
-            if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
-                           (char *)&bufsize, len) == 0)
-                break;
-            bufsize /= 2;
-        }
-        
-        if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF,
-                       (char *)&bufsize, &len) == 0)
-            LOG_MSG("Adjusted socket buffer to %d\n", bufsize);
-        // Just creating a CAfdReg will register it in fdManager:
-        CAfdReg *handler = new CAfdReg(fd);
-        handler = 0; // to avoid warnings about "not used"
-    }
+        pName = ca_name(args.chid);
     else
-    {
-        fdReg *reg = fileDescriptorManager.lookUpFD(fd, fdrRead);
-        if (reg)
-            delete reg;
-        else
-        {
-            LOG_MSG("fd_register: cannot remove fd %d\n", fd);
-        }
-    }
+        pName = "?";
+
+    LOG_MSG("CA Exception %s - with request chan=%s op=%d type=%s count=%d:\n%s", 
+            args.ctx, pName, args.op, dbr_type_to_text(args.type), args.count,
+            ca_message(args.stat));
 }
 
 // --------------------------------------------------------------------------
@@ -161,10 +52,11 @@ Engine::Engine(const stdString &directory_file_name)
     _description = "EPICS Channel Archiver Engine";
     the_one_and_only = false;
 
+    _get_threshhold = 20.0;
     _write_period = 30;
     _default_period = 1.0;
     _buffer_reserve = 3;
-    _get_threshhold = 20.0;
+    _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
     _secs_per_file = BinArchive::SECS_PER_DAY;
     _future_secs = 6*60*60;
     _configuration = 0; // init. so that setSecsPerFile works
@@ -172,24 +64,17 @@ Engine::Engine(const stdString &directory_file_name)
         new ENGINE_ARCHIVE_TYPE(directory_file_name, true /* for write */));
     setSecsPerFile(_secs_per_file);
 
-    if (ca_task_initialize() != ECA_NORMAL)
-        throwDetailedArchiveException(Fail, "ca_task_initialize");
-
+    // Initialize CA library for multi-treaded use
+    if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL)
+        throwDetailedArchiveException(Fail, "ca_context_create");
+    
     // Add exception handler to avoid aborts from CA
     if (ca_add_exception_event(caException, 0) != ECA_NORMAL)
         throwDetailedArchiveException(Fail, "ca_add_exception_event");
 
-    // Link CA client library to fileDescriptorManager
-    if (ca_add_fd_registration(fd_register, 0) != ECA_NORMAL)
-        throwDetailedArchiveException(Fail, "ca_add_fd_registration");
-
     engine_server = new EngineServer();
 
-    // Incoming CA activity will cause the fileDescriptorManager to wake up,
-    // outgoing CA events need to be scheduled through a periodic excursion
-    // to channel access. The CaPoller timer takes care of that:
-    ca_poller = new CaPoller(twentyth_second);
-    write_thread.create();
+    write_thread.start();
 
 #ifdef USE_PASSWD
     _user = DEFAULT_USER;
@@ -207,20 +92,11 @@ void Engine::shutdown()
     LOG_MSG("Shutdown:\n");
     LOG_ASSERT(this == theEngine);
 
-    if (ca_poller)
-    {
-        delete ca_poller;
-        ca_poller = 0;
-    }
     delete engine_server;
     engine_server = 0;
 
     LOG_MSG("Waiting for WriteThread to exit...\n");
-    int code;
     write_thread.stop();
-    write_thread.join(code);
-    if (code)
-        LOG_MSG("WriteThread exit code: %d\n", code);
 
     LOG_MSG("Adding 'Archive_Off' events...\n");
     epicsTime now;
@@ -281,35 +157,40 @@ bool Engine::process()
 {
     epicsTime now = epicsTime::getCurrent();
 
-    // FiledescriptorManager: also keeps the epicsTimer ticking.
-    // - keeps epicsTimer ticking
-    // - on registered file descriptors, channel access events
-    //   result in faster reaction
-    // We wait this little so that the ca_get channels are < 50 msec
-    // away from the time stamp required for the get
-    fileDescriptorManager.process(fiftyth_second);
-
-    // fetch data with ca_gets that are too slow to monitor
-    if (_scan_list.isDue(now))
+    // scan, write or wait?
+    double scan_delay  = _scan_list.getDueTime() - now;
+    double write_delay = _next_write_time        - now;
+    bool   do_wait = true;
+    if (scan_delay <= 0.0)
+    {
         _scan_list.scan(now);
-
-    ca_poll();
-    if ((double(now) - double(_last_written)) >= _write_period)
+        do_wait = false;
+    }
+    if (write_delay <= 0.0)
     {
         write_thread.write();
-        // _last_written is modified after the archiving is done.
+        // _next_write_time is modified after the archiving is done.
         // If there is slowness in the file writing - we will check
         // it less frequently - thus overwriting the archive circular
         // buffer - thus causing events to be discarded at the monitor
         // receive callback
-        _last_written = epicsTime::getCurrent();
+        _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
         if (! write_thread.isRunning())
         {
             LOG_MSG("WriteThread stopped. Engine quits, too.\n");
             return false;
         }
+        do_wait = false;
     }
 
+    if (do_wait)
+    {
+        if (write_delay < scan_delay)
+            epicsThreadSleep(write_delay);
+        else
+            epicsThreadSleep(scan_delay);
+    }
+    
     return true;
 }
 
@@ -432,6 +313,7 @@ ChannelInfo *Engine::addChannel(GroupInfo *group,
 void Engine::setWritePeriod(double period)
 {
     _write_period = period;
+    _next_write_time = roundTimeUp(epicsTime::getCurrent(), _write_period);
 
     lockChannels();
     stdList<ChannelInfo *>::iterator channel_info = _channels.begin();

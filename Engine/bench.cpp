@@ -47,7 +47,7 @@ const size_t COUNT=100000;
 
 int main ()
 {
-    BinArchive *archive = new BinArchive ("dir", true /* for write */);
+    BinArchive *archive = new BinArchive ("index", true /* for write */);
     ChannelIteratorI *channels = archive->newChannelIterator ();
     ValueI *value = archive->newValue (DBR_TIME_DOUBLE, 1);
     ChannelI *channel;

@@ -5,7 +5,7 @@
 // included as part of this distribution,
 // for legal information.
 //
-// Kay-Uwe Kasemir, kasemir@lanl.gov
+// kasemir@lanl.gov
 // --------------------------------------------------------
 
 #include <float.h>
@@ -149,3 +149,4 @@ void ScanList::scan(const epicsTime &deadline)
     }
 }
 
+// EOF ScanList.cpp

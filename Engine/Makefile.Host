@@ -1,4 +1,4 @@
-#	Makefile.Host
+#	Makefile.Host -*- makefile -*-
 
 include ../../Make.cfg
 include ../../Make.ver
@@ -16,11 +16,19 @@ ArchiveEngine_SRCS += Configuration.cpp
 ArchiveEngine_SRCS += ConfigFile.cpp
 ArchiveEngine_SRCS += EngineServer.cpp
 ArchiveEngine_SRCS += Engine.cpp
-SCRIPTS += Tools/stopEngine.py
-SCRIPTS += Tools/stopEngine.tcl
-SCRIPTS += Tools/startEngine
+
+# Those are examples, not useful for production
+#SCRIPTS += Tools/stopEngine.py
+#SCRIPTS += Tools/stopEngine.tcl
+#SCRIPTS += Tools/startEngine
 
 PROD := ArchiveEngine
+PROD_LIBS_DEFAULT := ChanArchIO Tools ca Com
+PROD_LIBS_WIN32 := ChanArchIOObj ToolsObj ca Com
+ChanArchIO_DIR = $(INSTALL_LIB)
+ChanArchIOObj_DIR = $(INSTALL_LIB)
+Tools_DIR = $(INSTALL_LIB)
+ToolsObj_DIR = $(INSTALL_LIB)
 
 # Only for benchmarking the write routines:
 bench_SRCS := bench.cpp

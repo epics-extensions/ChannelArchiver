@@ -80,7 +80,7 @@ public:
     // Engine Info: Started, where, info about write thread
     const epicsTime &getStartTime() const { return _start_time; }
     const stdString &getDirectory() const { return _directory;  }
-    const epicsTime &getWriteTime() const { return _last_written; }
+    const epicsTime &getNextWriteTime() const { return _next_write_time; }
     bool isWriting() const                { return _is_writing; }
     
     // Add channel to ScanList.
@@ -115,7 +115,7 @@ private:
     double          _write_period;   // period between writes to archive file
     double          _default_period; // default if not specified by Channel
     int             _buffer_reserve; // 2-> alloc. buffs for 2x expected data
-    epicsTime       _last_written;   // time this took place
+    epicsTime       _next_write_time;// when to write again
     unsigned long   _secs_per_file;  // roughly: data file period
     double          _future_secs;    // now+_future_secs is considered wrong
 

@@ -52,5 +52,5 @@ wm title . "Channel Archive Manager"
 wm geom . [wm geom .]
 set ::status "Channel Archive Manager - $CVS(Version) - $CVS(Date)"
 after 1 checkForBgManager
-after 10000 camGUI::checkJob
+after 10000 checkJob
 after 3000 {set ::status ""}

@@ -401,7 +401,7 @@ bool Engine::process()
             double duration = end - now;
             if (duration < 0.0)
                 duration = 0.0;
-            last_write_duration = 0.9*last_write_duration + 0.1*duration;
+            last_write_duration = 0.95*last_write_duration + 0.05*duration;
             next_write_time = roundTimeUp(end, write_period);
             do_wait = false;
         }

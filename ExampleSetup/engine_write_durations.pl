@@ -42,24 +42,30 @@ $config_name = $opt_c  if (length($opt_c) > 0);
 
 @daemons = parse_config_file($config_name, $opt_d);
 
-my ($daemon, $engine, @html, $line, $time);
+my ($daemon, $engine, @html, $line, $channels, $time);
+printf "Engine              Port      Channels  Write Duration\n";
 foreach $daemon ( @daemons )
 {
     foreach $engine ( @{ $daemon->{engines} } )
     {
 	printf("    Engine '%s', %s:%d, description '%s'\n",
 	       $engine->{name}, $localhost, $engine->{port}, $engine->{desc}) if ($opt_d);
+	$channels = "<unknown>";
 	$time = "<unknown>";
 	@html = read_URL($localhost, $engine->{port}, "/");
 	foreach $line ( @html )
 	{
+	    if ($line =~ m"Channels.*>([0-9.]+)<")
+	    {
+		$channels = $1;
+	    }
 	    if ($line =~ m"Write Duration.*>([0-9.]+ sec)<")
 	    {
 		$time = $1;
 		last;
 	    }
 	}
-	print "$engine->{name}\t$time\n";
+	printf "%-20s%-10d%-10s%s\n", $engine->{name}, $engine->{port}, $channels, $time;
     }
 }
 

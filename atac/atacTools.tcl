@@ -1,4 +1,12 @@
+# --------------------------------------------------------
 # $Id$
+#
+# Please refer to NOTICE.txt,
+# included as part of this distribution,
+# for legal information.
+#
+# Kay-Uwe Kasemir, kasemir@lanl.gov
+# --------------------------------------------------------
 
 package provide atacTools 1.0
 
@@ -332,26 +340,31 @@ proc nextSpeadsheetContext { contextVar timeStampVar valuesVar statiVar } {
 	# Find oldest timestamp amongst channels
 	set timeStamp "9999/99/99 99:99:99"
 	foreach valueId $valueIds {
-		if { ! [ value valid $valueId ] } {
-			return false
+		if { [ value valid $valueId ] } {
+			set t [ value time $valueId ]
+			if { $t < $timeStamp } { set timeStamp $t }
 		}
-		set t [ value time $valueId ]
-		if { $t < $timeStamp } { set timeStamp $t }
+	}
+	# Any valid value at all?
+	if { [ string equal $timeStamp "9999/99/99 99:99:99" ] } {
+		return false
 	}
 
 	set values {}
 	set stati  {}
 	foreach valueId $valueIds value $oldValues status $oldStati {
 		# have a new value for that timeStamp?
-		if { [ value time $valueId ] <= $timeStamp } {
-			if { [ value isInfo $valueId ] } {
-				set value {}
-			} else {
-				set value [ value get $valueId    ]
+		if { [ value valid $valueId ] } {
+			if { [ value time $valueId ] <= $timeStamp } {
+				if { [ value isInfo $valueId ] } {
+					set value {}
+				} else {
+					set value [ value get $valueId    ]
+				}
+				set status [ value status $valueId ]
+				# Get next value
+				value next $valueId
 			}
-			set status [ value status $valueId ]
-			# Get next value
-			value next $valueId
 		}
 		lappend values $value
 		lappend stati  $status

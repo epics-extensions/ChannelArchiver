@@ -1,9 +1,31 @@
+# --------------------------------------------------------
+# $Id$
+#
+# Please refer to NOTICE.txt,
+# included as part of this distribution,
+# for legal information.
+#
+# Kay-Uwe Kasemir, kasemir@lanl.gov
+# --------------------------------------------------------
+
 source atacTools.tcl
 
 proc usage {} {
 	global argv0
 	puts "USAGE: $argv0 archive channelName \[ startTime \[ endTime \] \]"
 	puts "       start/endTime as \"YYYY/MM/DD hh:mm:ss\" in 24h format"
+	puts ""
+	puts "- Dump values for given channel between start- and end time"
+	puts ""
+	puts "Example"
+	puts "-------"
+	puts "tcl dump.tcl ../Engine/Test/freq_directory fred \"2000/03/23 10:16:09\" \"2000/03/23 10:18:54\""
+	puts "2000/03/23 10:16:09.800541744 0.4891"
+	puts "2000/03/23 10:16:11.803278963 0.5086"
+	puts "2000/03/23 10:16:13.806193020 0.4196"
+	puts "2000/03/23 10:16:14.806193020 Archive_Off"
+	puts "2000/03/23 10:18:35.469894785 0.3443"
+	puts "2000/03/23 10:18:52.424309954 0.4355"
 
 	exit 1
 }

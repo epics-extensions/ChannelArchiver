@@ -15,16 +15,16 @@ import urllib, sys, regex
 # leave user empty if you do not use the user/passwd mechanism
 #       user="engine",
 
-def stop(machine="localhost",port=4812, user = "",password=""):
+def stop(machine="localhost",port="4812", user="",password=""):
     if user:
-        url="http://%s:%d/stop?USER=%s&PASS=%s" \
+        url="http://%s:%s/stop?USER=%s&PASS=%s" \
              % (machine, port, user, password)
     else:
-        url="http://%s:%d/stop" % (machine, port)
+        url="http://%s:%s/stop" % (machine, port)
     try:
         url=urllib.urlopen (url)
     except IOError, message:
-        print "Cannot connect to %s, error:%s"%(machine, message)
+        print "Cannot connect to %s, port %s: error %s"%(machine, port, message)
         sys.exit (-1)
         
     page=url.read()
@@ -50,7 +50,7 @@ if __name__ == "__main__":
             key=re.sub("-+","",key)
             kw[key]=val
         if kw.has_key("help"):
-            print "Usage: %s [-h hostname] [--machine machine] [--user username] [--password password]" % argv[0]
+            print "Usage: %s [-h hostname] [--machine machine] [--port port] [--user username] [--password password]" % argv[0]
             sys.exit()
         if kw.has_key("h") and not kw.has_key("machine"):
             kw["machine"]=kw["h"]

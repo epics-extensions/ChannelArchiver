@@ -14,7 +14,7 @@
 
 #include "ArchiveI.h"
 
-#define DEBUG_MULTIARCHIVE
+// #define DEBUG_MULTIARCHIVE
 
 class MultiChannelIterator;
 class MultiValueIterator;

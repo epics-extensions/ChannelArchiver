@@ -14,12 +14,28 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>05/21/2001<br>
+      Patch #7:<br>
+       <ul>
+       <li>Engine: don't write buffers to disk
+           at shutdown because this can take too long.
+           After receiving a signal (e.g. on computer shutdown),
+           the engine will now stop ASAP.
+           The archive contains data up to the previous
+           write period.
+       <li>MultiArchive: Don't investigate all subarchives
+           unless necessary.
+           For find-channel and get-value-after-timestamp
+           this can be skipped -> faster startup.
+           When a list of channels and/or times is requested,
+           the sub archives are still queried.
+       </ul>
     <li>04/30/2001<br>
       Patch #6:<br>
        <ul>
        <li>MatlabExporter: channel names which are invalid
            as Matlab variable names (because they include ':')
-	   are patched with underscores.
+           are patched with underscores.
        </ul>
     <li>04/17/2001<br>
       Patch #5:<br>
@@ -43,19 +59,19 @@
        <ul>
        <li>Removed the "rounding" option from the Exporter
            as well as CGIExport etc.
-	   because noone (including me) really understood this.
-	   For Matlab, raw data export is best because you can
-	   do interpolation in there,
-	   for the rest filling (staircase) and linear
-	   is what you get.
+           because noone (including me) really understood this.
+           For Matlab, raw data export is best because you can
+           do interpolation in there,
+           for the rest filling (staircase) and linear
+           is what you get.
        <li>Fixed the exporter's 'fill' option to remove
            the N/A at the start and end:
-	   When beginning at 1pm and there is no value at 1pm
-	   but a valid one from 12:55, that value will
-	   be filled/repeated into the 1pm time slot.<br>
-	   At the end, channels which are not disconnected
-	   but also have no new value are repeated to show
-	   that the last entry is still valid.
+           When beginning at 1pm and there is no value at 1pm
+           but a valid one from 12:55, that value will
+           be filled/repeated into the 1pm time slot.<br>
+           At the end, channels which are not disconnected
+           but also have no new value are repeated to show
+           that the last entry is still valid.
        </ul>
     <li>04/10/2001<br>
       Patch #2:<br>
@@ -63,26 +79,26 @@
        <li>Cleaned up the HTML TABLE for CGIExport
        <li>shell/file "globs" are now case-independent
            and the CGIExport tool supports them
-	   since most users don't understand regular expressions.
+           since most users don't understand regular expressions.
        </ul>
     <li>04/05/2001<br>
       Patch #1:<br>
        <ul>
        <li>Matlab support for CGIExport,
-  	   redid the CGI interface to make it better looking
-  	   (by definition) and allow space for the Matlab button.
+           redid the CGI interface to make it better looking
+           (by definition) and allow space for the Matlab button.
            Also new: An Excel download was added, similar to the
-	   Spreadsheet download but launching Excel on Win32.
+           Spreadsheet download but launching Excel on Win32.
        </ul>
     <li>03/02/2001<br>
       <font color="#0000A0">Version 1.7</font>:<br>
        <ul>
        <li>Moved into the SNS CVS repository:
            <pre>
-	   Example checkout:
-	   cvs -d :ext:kasemir@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot \
-   	      get -d ChannelArchiver epics/supTop/extensions/1.1/src/ChannelArchiver        
-	   </pre>
+           Example checkout:
+           cvs -d :ext:kasemir@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot \
+              get -d ChannelArchiver epics/supTop/extensions/1.1/src/ChannelArchiver        
+           </pre>
        <li>New MatlabExporter class in LibIO
        <li>ArchiveExport and Winbrowser have Matlab option
        </ul>
@@ -104,20 +120,20 @@
        <li>Completely removed atac, the tcl-only scripting.
        <li>Engine adds "Archive_Off" on shutdown instead of
            trying to hack this in on restart. Though different
-	   from the original prototype, this makes more sense to me.
+           from the original prototype, this makes more sense to me.
        <li>New config parameter <I>!ignored_future &lt;hours&gt</I>
        <li>On restart, the current value is archived, if necessary
            the time stamp is adjusted.
-	   Previously, the "current" time stamp of operator input
-	   channels was likely to be older than the "Archive_Off"
-	   mark. As a consequence, it wasn't archived.
-	   This is correct in one way but also confusing for the
-	   retrieval because you see an old value, then archive off
-	   and then nothing.
-	   The new behaviour matches what's happening on
+           Previously, the "current" time stamp of operator input
+           channels was likely to be older than the "Archive_Off"
+           mark. As a consequence, it wasn't archived.
+           This is correct in one way but also confusing for the
+           retrieval because you see an old value, then archive off
+           and then nothing.
+           The new behaviour matches what's happening on
            disable/enable:
-	   After a re-enable, the current value is written
-	   with a time stamp that matches the "enabling" event.
+           After a re-enable, the current value is written
+           with a time stamp that matches the "enabling" event.
        <li>Added MatLab examples to the casi/perl directory.
        </ul>
     <li>01/29/2001<br>
@@ -126,22 +142,22 @@
        <li>Removed atac, the old tcl-only scripting interface.
        <li>Removed namespaces. Though a good idea, Microsoft C++
            is for now the only compiler that implements them and
-	   actually uses namespaces in the supplied library.
-	   I should burn the books that told me to use namespaces.
+           actually uses namespaces in the supplied library.
+           I should burn the books that told me to use namespaces.
        <li>Engine now ignores stamps which are "in the future",
            compared to the clock of the machine where the engine
-	   is running.
-	   This avoids problems since once a channel has logged
-	   a (bogus) value from the "future",
-	   you cannot go back-in-time, so you cannot add
-	   correct values.
-	   For now the definition of "future" is hardcoded in
-	   getIgnoredFutureSecs(), Engine/Engine.h.
+           is running.
+           This avoids problems since once a channel has logged
+           a (bogus) value from the "future",
+           you cannot go back-in-time, so you cannot add
+           correct values.
+           For now the definition of "future" is hardcoded in
+           getIgnoredFutureSecs(), Engine/Engine.h.
        <li>Removed ASSERTs in Engine/ChannelInfo, replaced by
            error messages.
        <li>Replaced some usage of std::strbuf with sprintf
            because strbuf's operators caused unexplainable lockup.
-	   Should remove all strbuf calls.
+           Should remove all strbuf calls.
        <li>The scripting interface CASI now works with perl
            on Linux and Win32.
        </ul>
@@ -152,18 +168,18 @@
       <li>Bug (which needs more attention):
           The LOG_MSG utility uses a lock. It's possible
           to deadlock if a LOG_MSG call uses another call
-	  which in turn (because of an error) tries to call
-      	  LOG_MSG.
-	  As a quick fix, the calls in CtrlInfoI.cpp are
-	  removed because they caused problems with
-	  channels that have invalid enum. values.
-	  <br>
-	  If the engine hangs, try to find out where like this:<br>
-	  Find the PID of the engine. On Linux, you'll see 3 PIDs, pick the
-	  lowest one. Launch "gdb ArchiveEngine" in Engine/O.Linux
-	  or wherever the executable is. Then type "attach (PID)".
+          which in turn (because of an error) tries to call
+          LOG_MSG.
+          As a quick fix, the calls in CtrlInfoI.cpp are
+          removed because they caused problems with
+          channels that have invalid enum. values.
+          <br>
+          If the engine hangs, try to find out where like this:<br>
+          Find the PID of the engine. On Linux, you'll see 3 PIDs, pick the
+          lowest one. Launch "gdb ArchiveEngine" in Engine/O.Linux
+          or wherever the executable is. Then type "attach (PID)".
           Now you can switch threads with "thread 1", "thread 2" etc.
-	  and use "bt" to see where the thread currently is.
+          and use "bt" to see where the thread currently is.
       </ul>
     <li>07/28/2000<br>
       <font color="#0000A0">Version 1.5</font>:<br>
@@ -174,21 +190,21 @@
       <li>simple write support (copy really) has been added
       <li>CArDMiner, a python GUI tool for archive management
           has been added (Nick Pattengale).<br>
-	  Later additions might make CArDMiner live up to its name
-	  and turn it into a real "data mining" tool.
-	  For now it can be used as a replacement for the command-line
-	  ArchiveManager tool:<br>
-	  extract subarchives, repair/remove invalid entries.<br>
-	  While certainly slower than a compiled program,
-	  it is much easier to extend,
-	  which is useful since "broken" archives
-	  are usually broken in a way not anticipated,
-	  hence not considered in a compiled program.
-	  CArDMiner allows to apply "snippets" of python code
-	  to the channels/values being copied,
-	  which are much quicker to write/modify than
-	  a complete code/recompile/install cycle for
-	  the ArchiveManager would be.<br>
+          Later additions might make CArDMiner live up to its name
+          and turn it into a real "data mining" tool.
+          For now it can be used as a replacement for the command-line
+          ArchiveManager tool:<br>
+          extract subarchives, repair/remove invalid entries.<br>
+          While certainly slower than a compiled program,
+          it is much easier to extend,
+          which is useful since "broken" archives
+          are usually broken in a way not anticipated,
+          hence not considered in a compiled program.
+          CArDMiner allows to apply "snippets" of python code
+          to the channels/values being copied,
+          which are much quicker to write/modify than
+          a complete code/recompile/install cycle for
+          the ArchiveManager would be.<br>
       </ul>
 
     <li>07/24/2000<br>
@@ -215,11 +231,11 @@
       </ul>
     <li>06/26/2000<br>
         Patch# 6:<br>
-	Engine: used 1 month as file default, not 24h<br>
+        Engine: used 1 month as file default, not 24h<br>
         Engine: more thread safe signal catching<br>
         HTTPServer: Empty client would linger open and
-	            cause Engine to hang.
-		    Those could be cause by keeping the
+                    cause Engine to hang.
+                    Those could be cause by keeping the
                     "Reload" button down in the web browser.
                     How those connections are closed.
                     Hammering the HTTPServer does still
@@ -253,7 +269,7 @@
       <ul>
         <LI>"MultiArchive" can read more than one archive,
             easing the previous housekeeping problems:
-	    ArchiveEngine can now be restarted e.g. monthly,
+            ArchiveEngine can now be restarted e.g. monthly,
             creating easier to manage subarchives
             which can still be viewed as a whole via the MultiArchive.
         <LI>Central ArchiverConfig.h file for sources under
@@ -337,11 +353,5 @@
 </font>
 </body>
 </html>
-
-
-
-
-
-
 
 

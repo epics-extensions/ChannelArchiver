@@ -57,9 +57,12 @@ bool MultiChannel::getValueAfterTime(const osiTime &time,
 {
 	MultiValueIterator *multi_values =
         dynamic_cast<MultiValueIterator *>(values);
+    osiTime t = time;
 
+    if (!isValidTime(t))
+        t = getFirstTime();
 	if (_channel_iterator->_multi_archive->getValueAtOrAfterTime(
-        *_channel_iterator, time, true /* == is ok */,
+        *_channel_iterator, t, true /* == is ok */,
         *multi_values))
         return true;
     multi_values->clear();
@@ -71,9 +74,12 @@ bool MultiChannel::getValueBeforeTime(const osiTime &time,
 {
 	MultiValueIterator *multi_values =
         dynamic_cast<MultiValueIterator *>(values);
+    osiTime t = time;
 
+    if (!isValidTime(t))
+        t = getFirstTime();
 	if (_channel_iterator->_multi_archive->getValueAtOrBeforeTime(
-        *_channel_iterator, time, true /* == is OK */,
+        *_channel_iterator, t, true /* == is OK */,
         *multi_values))
         return true;
     multi_values->clear();
@@ -85,9 +91,12 @@ bool MultiChannel::getValueNearTime(const osiTime &time,
 {
 	MultiValueIterator *multi_values =
         dynamic_cast<MultiValueIterator *>(values);
+    osiTime t = time;
     
+    if (!isValidTime(t))
+        t = getFirstTime();
 	if (_channel_iterator->_multi_archive->getValueNearTime
-        (*_channel_iterator, time, *multi_values))
+        (*_channel_iterator, t, *multi_values))
         return true;
     multi_values->clear();
     return false;

@@ -1,27 +1,44 @@
-package DataServer;
+#!/usr/bin/perl
+#
+# Perl script for testing the Archiver's XML-RPC data server.
+#
+# kasemir@lanl.gov
 
 use English;
 use Time::Local;
 use Frontier::Client;
 use Data::Dumper;
-require Exporter;
+use strict;
+use vars qw($opt_v $opt_u $opt_i $opt_a $opt_k $opt_l $opt_m $opt_h $opt_s $opt_e $opt_c);
+use Getopt::Std;
 
-@ISA    = qw(Exporter);
-@EXPORT = qw(time2string
-	     string2time
-             show_values
-	     show_values_as_sheet);
+my ($server, $result, $results, $key);
 
-BEGIN
+sub usage()
 {
+    print("USAGE: ArchiveDataClient.pl [options] { channel names }\n");
+    print("\n");
+    print("Options:\n");
+    print("  -v         : Be verbose\n");
+    print("  -u URL     : Set the URL of the DataServer\n");
+    print("  -i         : Show server info\n");
+    print("  -a         : List archives (name, key, path)\n");
+    print("  -k key     : Specify archive key.\n");
+    print("  -l         : List channels\n");
+    print("  -m pattern : ... that match a patten\n");
+    print("  -h how     : 'how' number; retrieval method\n");
+    print("  -s time    : Start time MM/DD/YYYY HH:MM:SS.NNNNNNNNN\n");
+    print("  -e time    : End time MM/DD/YYYY HH:MM:SS.NNNNNNNNN\n");
+    print("  -c count   : Count\n");
+    print("\n");
+    exit(-1);
 }
 
 # Convert seconds & nanoseconds into string
 sub time2string($$)
 {
     my ($secs, $nano) = @ARG;
-
-    ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
 	localtime($secs);
     return sprintf("%02d/%02d/%04d %02d:%02d:%02d.%09ld",
 		   $mon+1, $mday, $year + 1900, $hour, $min, $sec, $nano);
@@ -32,7 +49,9 @@ sub string2time($)
 {
     my ($text) = @ARG;
     my ($secs, $nano);
-    ($mon, $mday, $year, $hour, $min, $sec, $nano) = split '[/ :.]', $text;
+    my ($mon, $mday, $year, $hour, $min, $sec);
+    $hour = $min = $sec = $nano = 0;
+    ($mon, $mday, $year, $hour, $min, $sec) = split '[/ :.]', $text;
     $secs=timelocal($sec, $min, $hour, $mday, $mon-1, $year-1900);
     return ( $secs, $nano );
 }
@@ -90,7 +109,7 @@ sub show_meta($$)
 sub show_values($)
 {
     my ($results) = @ARG;
-    my (%meta, $result, $time, $stat);
+    my (%meta, $result, $time, $stat, $value);
 
     foreach $result ( @{$results} )
     {
@@ -112,7 +131,7 @@ sub show_values($)
 sub show_values_as_sheet($)
 {
     my ($results) = @ARG;
-    my (%meta, $result, $stat, $channels, $vals, $c, $i);
+    my (%meta, $result, $stat, $channels, $vals, $v, $c, $i);
     $channels = $#{$results} + 1;
     return if ($channels <= 0);
     $vals = $#{$results->[0]->{values}} + 1;
@@ -158,4 +177,83 @@ sub show_values_as_sheet($)
 	}
     }
 }
+
+# ----------------------------------------------------------------------
+# The main routine
+# ----------------------------------------------------------------------
+
+if (!getopts('vu:iak:lm:h:s:e:c:') or
+    ($#ARGV < 0 and not ($opt_i or $opt_a or $opt_l or $opt_m)))
+{
+    usage();
+}
+
+if (($opt_l or $opt_m) and length($opt_k) <= 0)
+{
+    print("You need to specify an archive key (-k option)\n");
+    exit(-1);
+}
+
+$opt_u = 'http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi'
+    unless (length($opt_u) > 0);
+
+print("Connecting to Archive Data Server URL '$opt_u'\n") if ($opt_v);
+$server = Frontier::Client->new(url => $opt_u);
+
+if ($opt_i)
+{
+    $result = $server->call('archiver.info');
+    printf("Archive Data Server V %d\n", $result->{'ver'});
+    printf("Description:\n");
+    printf("%s", $result->{'desc'});
+}
+elsif ($opt_a)
+{
+    print("Archives:\n");
+    $results = $server->call('archiver.archives', "");
+    foreach $result ( @{$results} )
+    {
+	$key = $result->{key};
+	print("Key $key: '$result->{name}' in '$result->{path}'\n");
+    }
+}
+elsif ($opt_l or $opt_m)
+{
+    print("Channels:\n");
+    $results = $server->call('archiver.names', $opt_k, $opt_m);
+    foreach $result ( @{$results} )
+    {
+	my ($name) = $result->{name};
+	my ($start) = time2string($result->{start_sec}, $result->{start_nano});
+	my ($end)   = time2string($result->{end_sec},   $result->{end_nano});
+	print("Channel $name, $start - $end\n");
+    }
+}
+else
+{
+    if (length($opt_s) < 10  or
+	length($opt_e) < 10)
+    {
+	print("You need to specify a start and end time, options -s and -e\n");
+	exit(-1);
+    }
+    my ($start, $startnano) = string2time($opt_s);
+    my ($end, $endnano)   = string2time($opt_e);
+    $opt_c = 10 unless ($opt_c > 0);
+    $opt_h = 1 unless ($opt_h > 0);
+    # note: have to pass ref. to the 'names' array,
+    # otherwise perl will turn it into a sequence of names:
+    $results = $server->call('archiver.values', $opt_k, \@ARGV,
+			     $start, $startnano, $end, $endnano,
+			     $opt_c, $opt_h);
+    if ($opt_h == 1)
+    {
+	show_values_as_sheet($results);
+    }
+    else
+    {
+	show_values($results);
+    }
+}
+
 

@@ -3,6 +3,8 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
+SCRIPTS_HOST += ArchiveDataClient.pl
+
 USR_CXXFLAGS += -I ../../Storage
 
 # Compare to output of `xmlrpc-c-config cgi-server --cflags`

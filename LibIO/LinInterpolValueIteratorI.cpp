@@ -12,7 +12,7 @@
 #include "ArchiveException.h"
 
 BEGIN_NAMESPACE_CHANARCH
-USE_NAMESPACE_STD
+USE_STD_NAMESPACE
 
 LinInterpolValueIteratorI::LinInterpolValueIteratorI (ValueIteratorI *base, double deltaT)
 {

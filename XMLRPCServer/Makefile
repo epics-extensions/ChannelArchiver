@@ -39,9 +39,13 @@ xmlrpc_xmlparse_DIR = $(XMLRPCBASE)/lib
 xmlrpc_xmltok_DIR   = $(XMLRPCBASE)/lib
 xmlrpc_client_DIR   = $(XMLRPCBASE)/lib
 
-# From xmlrpc-c-config libwww-client --libs
-ArchiveDataClientTest_LDFLAGS=-L/usr/lib -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib
-bench_LDFLAGS=-L/usr/lib -lxmlrpc_client -lwwwxml -lxmltok -lxmlparse -lwwwzip -lwwwinit -lwwwapp -lwwwhtml -lwwwtelnet -lwwwnews -lwwwhttp -lwwwmime -lwwwgopher -lwwwftp -lwwwfile -lwwwdir -lwwwcache -lwwwstream -lwwwmux -lwwwtrans -lwwwcore -lwwwutils -lmd5 -ldl -lz -lxmlrpc -lxmlrpc_xmlparse -lxmlrpc_xmltok -Wl,--rpath -Wl,/usr/lib
+# TODO:
+# xmlrpc-c-config libwww-client --libs
+# tells us what flags to use for linking,
+# and the result differs slightly between installations.
+# This one works on Linux, but won't under Windoze.
+ArchiveDataClientTest_LDFLAGS=`xmlrpc-c-config libwww-client --libs`
+bench_LDFLAGS=$(ArchiveDataClientTest_LDFLAGS)
 
 include $(TOP)/configure/RULES
 

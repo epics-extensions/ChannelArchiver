@@ -41,19 +41,22 @@ The Makefiles in ChannelArchiver/XMLRPCServer assume this to be
 installed in the default location, that is under /usr/local.
 
 With RedHat~6.2, xmlrpc-c compiled out of the box.
-Under RedHat~9.0, it ran into a compile-time error that could be fixed
-by un-commenting ``using namespace std;'' in the header file which
-reported the error.
+Under RedHat~9.0 and Mandrake~10, it ran into a compile-time error
+that could be fixed by un-commenting ``using namespace std;'' in the
+header file which reported the error.
 Under Mandrake~10, there were additional errors that can be fixed
-by replacing includes for ``strstream.h'' with ``strstream'' in the affected files.
+by replacing includes for ``strstream.h'' with ``strstream'' in the
+affected files.
+Both RedHat AS and Mandrake 10 needed additional packages, see below.
 
 \NOTE The default serialization code in xmlrpc-c-0.9.9 will serialize
 sufficiently small numbers as zero, which means that e.g.\ many of
 your archived vacuum pressure readings of $1.5 10^{-8}$ end up as $0$
 when accessed via XML-RPC (see also section \ref{sec:xml:tiny}).
 The ``ThirdParty'' subdirectory contains the sources for xmlrpc-c-0.9.9
-together with a patch file that corrects the ``using namespace std;'' and
-the serialization issue. Under RedHat 9, the complete installation would
+together with a patch files that corrects the ``using namespace std;'' and
+the serialization issue as well as the ``strstream'' problem.
+Under RedHat 9 respectively Mandrake 10, the complete installation would
 then look as follows:
 
 \begin{lstlisting}[keywordstyle=\sffamily]
@@ -61,15 +64,39 @@ cd ChannelArchiver/ThirdParty
 tar vzoxf xmlrpc-c-0.9.9.tar.gz
 cd xmlrpc-c-0.9.9
 ./configure
+# Patch for serialization and name spaces
 patch -p1 <../patch_xmlrpc-c-0.9.9
+# Mandrake 10 patch for strstream
+# SKIP THIS PATCH ON REDHAT 9!
+patch -p1 <../patch_xmlrpc-c-0.9.9_strstream
 make
 su
 make install
 \end{lstlisting}
 
-\noindent Since the patch also affects Makefiles which are created as a result
-of ``configure'', you might prefer to read the patch file and apply
-the changes manually when you're not on RedHat 9.
+\noindent Since the first patch also affects Makefiles which are
+created as a result of ``configure'', you might prefer to read that
+patch file and apply the changes manually when you're not on RedHat 9
+or Mandrake 10.
+
+The XML-RPC library depends on other packages. \emph{The ``configure''
+step will report errors in case those are missing.} For RedHat, those
+packages are usually included in the distribution but might not have
+been installed by default, so look for the RPMs on your RedHat CDs.
+The following are also provided in the ThirdParty subdirectory:
+
+\subsubsection{w3c-libwww}
+Needed to compile the XML-RPC library, doesn't seem to come with
+Mandrake~10.
+\begin{lstlisting}[keywordstyle=\sffamily]
+cd ChannelArchiver/ThirdParty
+tar vzoxf w3c-libwww-5.4.0.tgz
+cd w3c-libwww-5.4.0
+./configure
+make
+su
+make install
+\end{lstlisting}
 
 \subsection{Xerces XML Library}
 The \INDEX{Xerces} library is used to parse the XML configuration files of the

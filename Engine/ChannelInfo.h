@@ -1,3 +1,13 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __CHANNELINFO_H__
 #define __CHANNELINFO_H__
 
@@ -118,7 +128,7 @@ private:
 	unsigned short		_vals_per_buffer;	// see enum: INIT_VALS_PER_BUF ...
 	double				_period;			// (monitor: expected) period in secs
 	chid				_chid;
-	CtrlInfoI			_ctrl_info;
+	CtrlInfoI			_ctrl_info;			// has to be copy, not * !
 
 	bool				_new_value_set;
 	ValueI				*_new_value;		// New value buffer for ca_get/monitor

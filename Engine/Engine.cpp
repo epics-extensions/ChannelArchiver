@@ -1,4 +1,12 @@
-// Engine.cpp
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
 
 #include "ArchiveException.h"
 #include "Engine.h"
@@ -372,6 +380,8 @@ ChannelInfo *Engine::addChannel (GroupInfo *group, const stdString &channel_name
 				ValueIterator last_value (archive);
 				if (arch_channel->getLastValue (last_value))
 				{
+					// ChannelInfo copies CtrlInfo, so it's still
+					// valid after archive is closed!
 					channel_info->setCtrlInfo (last_value->getCtrlInfo ());
 					channel_info->setValueType (last_value->getType(), last_value->getCount());
 					// Add an archive stopped status to the file,

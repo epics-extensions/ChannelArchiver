@@ -1,4 +1,12 @@
-// ChannelInfo.cpp
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
 
 #include "Engine.h"
 #include "fdManager.h"
@@ -102,6 +110,11 @@ void ChannelInfo::addToGroup (GroupInfo *group, bool disabling)
 			return;
 	
 	_groups.push_back (group);
+	// If channel is added and it's already connected,
+	// the whole connection shebang will be skipped
+	// -> tell group we're connected right away:
+	if (_connected)
+		group->incConnectedChannels ();
 }
 
 void ChannelInfo::startCaConnection (bool new_channel)

@@ -199,7 +199,7 @@ bool HTTPClientConnection::handleInput()
 {
     // gather input into lines:
     char stuff[100];
-    int end = recv(_socket, stuff, (sizeof stuff)-1, MSG_NOSIGNAL);
+    int end = recv(_socket, stuff, (sizeof stuff)-1, 0);
     char *src;
 
     if (end < 0) // client changed his mind?

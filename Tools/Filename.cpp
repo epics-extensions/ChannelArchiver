@@ -1,7 +1,8 @@
 // Filename: Routines for handling file names,
 // should support Unix and Win32
-// -kuk- 1999
+// kasemirk@ornl.gov
 
+#include <unistd.h>
 #include "Filename.h"
 
 static const char *current_dir = ".";
@@ -93,3 +94,13 @@ void Filename::getBasename(const stdString &filename, stdString &basename)
     basename = filename;
 }
                             
+bool Filename::getLinkedFilename(const stdString &filename, stdString &link)
+{
+    char buf[500];
+    int len = readlink(filename.c_str(), buf, sizeof(buf));
+    if (len <= 0)
+        return false;
+    link.assign(buf, len);
+    return true;
+}
+

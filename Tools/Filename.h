@@ -41,6 +41,9 @@ public:
 
     /// Get basename from full filename
 	static void getBasename(const stdString &filename, stdString &basename);
+
+    /// If filename is a link, get target of link. Else return false
+    static bool getLinkedFilename(const stdString &filename, stdString &link);
 };
 
 #endif //__FILENAMETOOL_H__

@@ -8,6 +8,22 @@ New  "versions"  are  marked  by some additional functionality. The
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 03/21/2005 --- Version 2.1.9:\\
+The ArchiveDaemon.pl script now creates a soft-link
+"current_index" in the engine subdirectories,
+pointing to the currently used index.
+The idea is to have a common name for the active index
+in case the multi-index is broken or only updated
+slowly.
+
+The next issue was that the relation of an index
+to its data files must not change.
+If an index is in the same directory as its data files,
+OK, but this soft link was actually in a different location,
+so in order to still find the data files, the retrieval
+now follows sym-links to index files on level deep
+(not following arbitrary chains of soft links).
+
 \item 02/01/2005 --- Version 2.1.8:\\
 At the SNS, one ArchiveEngine running a configuration with
 'disabling' channels tended to hang up just after a channel

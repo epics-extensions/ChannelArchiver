@@ -19,7 +19,11 @@ IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
 
 bool IndexFile::open(const stdString &filename, bool readonly)
 {
-    Filename::getDirname(filename, dirname);
+    stdString linked_filename;
+    if (Filename::getLinkedFilename(filename, linked_filename))
+        Filename::getDirname(linked_filename, dirname);
+    else
+        Filename::getDirname(filename, dirname);
     bool new_file = false;
     if (readonly)
         f = fopen(filename.c_str(), "rb");

@@ -23,17 +23,7 @@
 //       It won't work on VAX/VMS systems!
 #define CONVERSION_REQUIRED 
 
-// ----------------------------------------------------------
-// General
-// ----------------------------------------------------------
-
 // Some even more generic things are configured in ToolsConfig.h!
-
-// This should match Make.ver
-#define VERSION 2
-#define RELEASE 0
-
-#define VERSION_TXT "2.0.1"
 
 // ----------------------------------------------------------
 // ArchiveEngine

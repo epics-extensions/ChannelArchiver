@@ -15,6 +15,8 @@
 #include "epicsTimeHelper.h"
 #include "ArchiveException.h"
 #include "MsgLogger.h"
+// rtree
+#include "archiver_index.h"
 // Storage
 #include "DirectoryFile.h"
 #include "DataFile.h"
@@ -112,23 +114,23 @@ void Engine::shutdown()
     epicsTime now;
     now = epicsTime::getCurrent();
     mutex.lock();
-    DirectoryFile *index = new DirectoryFile(index_name, true);
-    try
+    archiver_Index index;
+    if (index.open(index_name.c_str(), false))
     {
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
             (*ch)->mutex.lock();
             (*ch)->addEvent(0, ARCH_STOPPED, now);
-            (*ch)->write(*index);
+            (*ch)->write(index);
             (*ch)->mutex.unlock();
         }
         DataFile::close_all();
-	delete index;
     }
-    catch (ArchiveException &e)
+    else
     {
-        LOG_MSG("Engine::shutdown caught %s\n", e.what());
+        LOG_MSG("Engine::shutdown cannot open index %s\n",
+                index_name.c_str());
     }
     mutex.unlock();
 
@@ -232,20 +234,19 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
     if (new_channel)
     {
         // TODO: Check the locking of the file access
-        try
-        {
-            DirectoryFile index(index_name, true);     
-            // Is channel already in Archive?
-            DirectoryFileIterator dfi = index.find(channel_name);            
-            if (dfi.isValid())
+        archiver_Index index;
+        if (index.open(index_name.c_str(), false))
+        {   // Is channel already in Archive?
+            archiver_Unit au;
+            if (index.getLatestAU(channel_name.c_str(), &au))
             {   // extract previous knowledge from Archive
                 DataFile *datafile =
-                    DataFile::reference(index.getDirname(),
-                                        dfi.entry.data.last_file, false);
+                    DataFile::reference(index.getDirectory(),
+                                        au.getKey().getPath(), false);
                 if (datafile)
                 {
                     DataHeader *header =
-                        datafile->getHeader(dfi.entry.data.last_offset);
+                        datafile->getHeader(au.getKey().getOffset());
                     if (header)
                     {
                         epicsTime last_stamp(header->data.end_time);
@@ -261,8 +262,8 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                                 "Data file '%s' @ 0x%lX\n"
                                 "Last Stamp: %s\n",
                                 channel_name.c_str(),
-                                dfi.entry.data.last_file,
-                                dfi.entry.data.last_offset,
+                                au.getKey().getPath(),
+                                au.getKey().getOffset(),
                                 stamp_txt.c_str());
                         delete header;
                     }
@@ -270,12 +271,6 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                     DataFile::close_all();
                 }
             }
-            else
-                index.add(channel_name);
-        }
-        catch (ArchiveException &e)
-        {
-            LOG_MSG("Engine::addChannel: caught\n%s\n", e.what());
         }
     }
 #ifdef TODO
@@ -355,8 +350,8 @@ stdString Engine::makeDataFileName()
 void Engine::writeArchive()
 {
     is_writing = true;
-    DirectoryFile index(index_name, true);
-    try
+    archiver_Index index;
+    if (index.open(index_name.c_str(), false))
     {
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
@@ -366,9 +361,10 @@ void Engine::writeArchive()
             (*ch)->mutex.unlock();
         }
     }
-    catch (ArchiveException &e)
+    else
     {
-        LOG_MSG("Engine::writeArchive caught %s\n", e.what());
+        LOG_MSG("Engine::writeArchive cannot open index %s\n",
+                index_name.c_str());
     }
     DataFile::close_all();
     is_writing = false;

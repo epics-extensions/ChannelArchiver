@@ -51,7 +51,7 @@ static void engineinfo(HTTPClientConnection *connection,
     char line[100];
 
     page.openTable(2, "Archive Engine Info", 0);
-    page.tableLine("Version", VERSION_TXT ", built " __DATE__, 0);
+    page.tableLine("Version", ARCH_VERSION_TXT ", built " __DATE__, 0);
     if (theEngine)
     {
         theEngine->mutex.lock();

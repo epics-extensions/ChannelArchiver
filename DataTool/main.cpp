@@ -259,7 +259,7 @@ int main(int argc, const char *argv[])
     initEpicsTimeHelper();
 
     CmdArgParser parser(argc, argv);
-    parser.setHeader("Archive Data Tool version " VERSION_TXT ", "
+    parser.setHeader("Archive Data Tool version " ARCH_VERSION_TXT ", "
                      EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n"
                      );

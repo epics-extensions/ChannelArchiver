@@ -7,6 +7,8 @@
 #include "DataFile.h"
 #include "DataReader.h"
 
+#undef DEBUG_DATAREADER
+
 DataReader::DataReader(archiver_Index &index)
         : index(index), au_iter(0), valid_datablock(false), data(0), header(0)
 {
@@ -43,7 +45,7 @@ const RawValue::Data *DataReader::find(
         range.setStart(*start);
     if (end)
         range.setEnd(*end);
-    // --
+#ifdef DEBUG_DATAREADER
     {
         stdString txt;
         epicsTime2string(range.getStart(), txt);
@@ -51,7 +53,7 @@ const RawValue::Data *DataReader::find(
         epicsTime2string(range.getEnd(), txt);
         printf("%s\n", txt.c_str());
     }
-    // --
+#endif
     au_iter = index.getKeyAUIterator(channel_name.c_str());
     if (!au_iter)
     {
@@ -67,13 +69,15 @@ const RawValue::Data *DataReader::find(
                  channel_name.c_str());
         return 0;
     }
-    // --
-    stdString s, e;
-    epicsTime2string(valid_interval.getStart(), s);
-    epicsTime2string(valid_interval.getEnd(), e);
-    printf("First Block: %s @ 0x%lX: %s - %s\n",
-           datablock.getPath(), datablock.getOffset(), s.c_str(), e.c_str());
-    // --
+#ifdef DEBUG_DATAREADER
+    {
+        stdString s, e;
+        epicsTime2string(valid_interval.getStart(), s);
+        epicsTime2string(valid_interval.getEnd(), e);
+        printf("First Block: %s @ 0x%lX: %s - %s\n",
+               datablock.getPath(), datablock.getOffset(), s.c_str(),
+               e.c_str());
+#endif
     // Get the buffer for that data block
     if (!getHeader(index.getDirectory(),
                    datablock.getPath(), datablock.getOffset()))
@@ -192,11 +196,11 @@ const RawValue::Data *DataReader::findSample(const epicsTime &start)
     size_t low = 0, high = header->data.num_samples - 1;
     FileOffset offset, offset0 =
         header->offset + sizeof(DataHeader::DataHeaderData);
-    // --
+#ifdef DEBUG_DATAREADER
     stdString stamp_txt;
     epicsTime2string(start, stamp_txt);
     printf("Goal: %s\n", stamp_txt.c_str());
-    // --
+#endif
     while (true)
     {
         // Pick middle value, rounded up
@@ -209,10 +213,10 @@ const RawValue::Data *DataReader::findSample(const epicsTime &start)
                              header->datafile, offset))
             return 0;
         stamp = RawValue::getTime(data);
-        // --
+#ifdef DEBUG_DATAREADER
         epicsTime2string(stamp, stamp_txt);
         printf("Index %d: %s\n", val_idx, stamp_txt.c_str());
-        // --
+#endif
         if (high-low <= 1)
         {   // The intervall can't shrink further,
             // idx = (low+high)/2 == high.
@@ -248,14 +252,14 @@ const RawValue::Data *DataReader::next()
         valid_datablock = au_iter->getNext(&datablock, &valid_interval);
         if (!valid_datablock)
             return 0;
-        // --
+#ifdef DEBUG_DATAREADER
         stdString s, e;
         epicsTime2string(valid_interval.getStart(), s);
         epicsTime2string(valid_interval.getEnd(), e);
         printf("Next  Block: %s @ 0x%lX: %s - %s\n",
                datablock.getPath(), datablock.getOffset(),
                s.c_str(), e.c_str());
-        // --
+#endif
         if (!getHeader(index.getDirectory(),
                        datablock.getPath(), datablock.getOffset()))
         {

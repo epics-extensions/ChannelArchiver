@@ -125,7 +125,7 @@ void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
         last_stamp_in_archive = *last_stamp;
 }
 
-void ArchiveChannel::write(DirectoryFile &index)
+void ArchiveChannel::write(archiver_Index &index)
 {
     size_t num_samples = buffer.getCount();
     if (num_samples <= 0)

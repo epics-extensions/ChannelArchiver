@@ -354,15 +354,15 @@ void compare (const stdString &archive_name, const stdString &target_name)
 }
 
 // Test ExpandingValueIteratorI
-void expand (const stdString &archive_name,
-             const stdString &channel_name,
-             const osiTime &start,
-             const osiTime &end)
+void expand(const stdString &archive_name,
+            const stdString &channel_name,
+            const osiTime &start,
+            const osiTime &end)
 {
-    Archive         archive (new ARCHIVE_TYPE (archive_name));
+    Archive         archive(new ARCHIVE_TYPE (archive_name));
     ChannelIterator channel(archive);
 
-    if (! archive.findChannelByName (channel_name, channel))
+    if (! archive.findChannelByName(channel_name, channel))
     {
         std::cerr << "Cannot find channel '" << channel_name << "':\n";
         return;
@@ -371,9 +371,9 @@ void expand (const stdString &archive_name,
     std::cout << "Channel '" << channel->getName() << "\n";
 
     ValueIterator   raw_values(archive);
-    channel->getValueAfterTime (start, raw_values);
-    ExpandingValueIteratorI *expand = new ExpandingValueIteratorI (raw_values);
-    ValueIterator value (expand);
+    channel->getValueAfterTime(start, raw_values);
+    ExpandingValueIteratorI *expand = new ExpandingValueIteratorI(raw_values);
+    ValueIterator value(expand);
     while (value && (end == nullTime  ||  value->getTime() < end))
     {
         std::cout << *value;
@@ -383,6 +383,8 @@ void expand (const stdString &archive_name,
         ++value;
     }
 
+#if 0
+	// Reverse is not supported
     std::cout << "reverse:\n";
     --value; // move from 'after end' to 'last value'
     while (value && (start == nullTime  || value->getTime() > start))
@@ -393,12 +395,13 @@ void expand (const stdString &archive_name,
         std::cout << "\n";
         --value;
     }
+#endif
 }
 
 // Interpolation Test
-void interpolate (const stdString &directory, const stdString &channel_name,
-                  const osiTime &start, const osiTime &end,
-                  double interpol)
+void interpolate(const stdString &directory, const stdString &channel_name,
+                 const osiTime &start, const osiTime &end,
+                 double interpol)
 {
 #if 0
     Archive a (directory);
@@ -426,12 +429,12 @@ void interpolate (const stdString &directory, const stdString &channel_name,
 // This is low-level.
 // The API shown in here should not be used by
 // general Archive clients
-void headers (const stdString &directory, const stdString &channel_name)
+void headers(const stdString &directory, const stdString &channel_name)
 {
-    Archive archive (new BinArchive (directory));
-    ChannelIterator channel (archive);
+    Archive archive (new BinArchive(directory));
+    ChannelIterator channel(archive);
     
-    if (! archive.findChannelByName (channel_name, channel))
+    if (! archive.findChannelByName(channel_name, channel))
     {
         std::cerr << "Cannot find channel '" << channel_name << "':\n";
         return;
@@ -536,15 +539,15 @@ void experiment (const stdString &archive_name)
 }
 #endif
 
-static void PrintRoutine (void *arg, const stdString &text)
+static void PrintRoutine(void *arg, const stdString &text)
 {
     std::cout << text;
 }
 
-int main (int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
-    TheMsgLogger.SetPrintRoutine (PrintRoutine);
-    initOsiHelpers ();
+    TheMsgLogger.SetPrintRoutine(PrintRoutine);
+    initOsiHelpers();
 
     CmdArgParser parser (argc, argv);
     parser.setHeader ("Archive Manager version " VERSION_TXT ", built " __DATE__ "\n\n");

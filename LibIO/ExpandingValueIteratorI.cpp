@@ -1,31 +1,47 @@
 #include "ExpandingValueIteratorI.h"
 #include "ArchiveException.h"
 
-static inline bool isRepeat (const ValueI *value)
-{ return value->getSevr() == ARCH_EST_REPEAT  ||
-		 value->getSevr() == ARCH_REPEAT;
+static inline bool isRepeat(const ValueI *value)
+{
+    return value->getSevr() == ARCH_EST_REPEAT  ||
+           value->getSevr() == ARCH_REPEAT;
 }
 
 // This iterator will move the _base iterator
 // until that one hits a repeat count.
 // In that case a _repeat_value will be cloned
 // and it's time stamp is patched.
-ExpandingValueIteratorI::ExpandingValueIteratorI (ValueIterator &base)
+ExpandingValueIteratorI::ExpandingValueIteratorI(ValueIterator &base)
 {
+    _info = 0;
 	_repeat_value = 0;
-	attach (base.getI());
+	attach(base.getI());
 }
 
-ExpandingValueIteratorI::ExpandingValueIteratorI (ValueIteratorI *base)
+ExpandingValueIteratorI::ExpandingValueIteratorI(ValueIteratorI *base)
 {
+    _info = 0;
 	_repeat_value = 0;
-	attach (base);
+	attach(base);
 }
 
-void ExpandingValueIteratorI::attach (ValueIteratorI *base)
+ExpandingValueIteratorI::~ExpandingValueIteratorI()
 {
-	delete _repeat_value;
-	_repeat_value = 0;
+	attach(0);
+}
+
+void ExpandingValueIteratorI::attach(ValueIteratorI *base)
+{
+    if (_repeat_value)
+    {
+        delete _repeat_value;
+        _repeat_value = 0;
+    }
+    if (_info)
+    {
+        delete _info;
+        _info = 0;
+    }
 	_base = base;
 	if (_base && _base->isValid())
 	{
@@ -34,38 +50,38 @@ void ExpandingValueIteratorI::attach (ValueIteratorI *base)
 		// Don't know how to adjust the time stamp here,
 		// so keep it and simply remove the repeat tag:
 		const ValueI *value = _base->getValue();
-		if (value && isRepeat (value))
+		if (value && isRepeat(value))
 		{
-			_repeat_value = value->clone ();
-			_repeat_value->setStatus (0, 0);
+			_repeat_value = value->clone();
+			_repeat_value->setStatus(0, 0);
+            _until = _repeat_value->getTime();
+            if (value->getCtrlInfo())
+            {
+                _info = new CtrlInfoI(*value->getCtrlInfo());
+                if (_info)
+                    _repeat_value->setCtrlInfo(_info);
+            }
 		}
 	}
 }
 
-ExpandingValueIteratorI::~ExpandingValueIteratorI ()
+bool ExpandingValueIteratorI::isValid() const
+{	return _base && _base->isValid(); }
+
+const ValueI * ExpandingValueIteratorI::getValue() const
+{	return _repeat_value ? _repeat_value : _base->getValue();	}
+
+double ExpandingValueIteratorI::getPeriod() const
+{	return _base->getPeriod();	}
+
+bool ExpandingValueIteratorI::next()
 {
-	attach (0);
-}
-
-bool ExpandingValueIteratorI::isValid () const
-{	return _base && _base->isValid (); }
-
-const ValueI * ExpandingValueIteratorI::getValue () const
-{	return _repeat_value ? _repeat_value : _base->getValue ();	}
-
-double ExpandingValueIteratorI::getPeriod () const
-{	return _base->getPeriod ();	}
-
-bool ExpandingValueIteratorI::next ()
-{
-	bool had_useful_value = false;
-
 	if (_repeat_value)
 	{
 		// expanding repeat count:
-		osiTime time (_repeat_value->getTime());
+		osiTime time = _repeat_value->getTime();
 		time += _base->getPeriod ();
-		if (time > _base->getValue()->getTime()) // end of repetitions
+		if (time > _until) // end of repetitions
 		{
 			delete _repeat_value;
 			_repeat_value = 0;
@@ -77,92 +93,86 @@ bool ExpandingValueIteratorI::next ()
 		}
 	}
 
-	const ValueI *value = _base->getValue();
-	if (value)
-	{
-		// Will not expand repetitions after disconnect etc.:
-		switch (value->getSevr())
-		{
+    if (!isValid())
+        return false;
+
+    // Check if current value could be repeated.
+	ValueI *last;
+    switch (_base->getValue()->getSevr())
+    {
 		case ARCH_DISCONNECT:
 		case ARCH_STOPPED:
 		case ARCH_DISABLED:
+            // Will not expand repetitions after disconnect etc.:
+            last = 0;
 			break;
-		default:
-			had_useful_value = true;
-		}
-	}
+		default: // keep last value & ctrl. info:
+            last = _base->getValue()->clone();
+            if (last->getCtrlInfo())
+            {
+                if (_info)
+                    *_info = *last->getCtrlInfo();
+                else
+                    _info = new CtrlInfoI(*last->getCtrlInfo());
+                last->setCtrlInfo(_info);
+            }
+    }
+    
 	// Get next ordinary Value
 	if (!_base->next ())
+    {
+        if (last)
+            delete last;
 		return false;
+    }
 
-	value = _base->getValue();
-	if (isRepeat (value))
+	const ValueI *value = _base->getValue();
+	if (isRepeat(value))
 	{	// Do we know how to build the repeated Values?
-		if (had_useful_value  &&  getPeriod () > 0.0)
+		if (last  &&  getPeriod() > 0.0)
 		{
-			_repeat_value = value->clone();
+			_repeat_value = last;
+            _until = value->getTime();
 			// calculate first repetition
-			osiTime time (_repeat_value->getTime());
-			time -= _repeat_value->getStat() * getPeriod ();
-			_repeat_value->setTime (time);
-			_repeat_value->setStatus (0, 0);
+			osiTime time = roundTimeUp(last->getTime(), getPeriod());
+            if (time > _until)
+                _repeat_value->setTime(_until);
+            else
+                _repeat_value->setTime(time);
+            return true;
 		}
 		else // Skip repeats that cannot be expanded
+        {
+            if (last)
+                delete last;
 			return next (); 
+        }
 	}
 
+    if (last)
+        delete last;
 	return true;
 }
 
-bool ExpandingValueIteratorI::prev ()
+bool ExpandingValueIteratorI::prev()
 {
-	if (_repeat_value)
-	{	// expanding repeat count:
-		osiTime time (_repeat_value->getTime());
-		time -= getPeriod ();
-
-		// _repeat_value->getTime() is the last time stamp,
-		// check when repetition started:
-		osiTime start (_base->getValue()->getTime());
-		start -= _base->getValue()->getStat() * getPeriod ();
-		if (time >= start) // end of repetitions
-		{	// return previous repeated value
-			_repeat_value->setTime (time);
-			return true;
-		}
-		delete _repeat_value;
-		_repeat_value = 0;
-	}
-
-	// Get prev. ordinary Value
-	if (! _base->prev ())
-		return false;
-
-	const ValueI *value = _base->getValue ();
-	if (isRepeat (value))
-	{
-		// Does this value follow a DISCONNECT or
-		// another non-expandable event?
-		_base->prev ();
-		if (_base->getValue()->isInfo ())
-			return true; // return _base's info value
-		_base->next (); // undo peek back
-
-		// Do we know how to build the repeated Values?
-		if (getPeriod () == 0.0)
-			return prev (); 
-		_repeat_value = _base->getValue()->clone();
-		_repeat_value->setStatus (0, 0);
-	}
-
-	return true;
+    // prev() doesn't support expansion,
+    // return base's prev()
+    if (_repeat_value)
+    {
+        delete _repeat_value;
+        _repeat_value = 0;
+    }
+    
+	return _base->prev();
 }
 
-size_t ExpandingValueIteratorI::determineChunk (const osiTime &until)
+size_t ExpandingValueIteratorI::determineChunk(const osiTime &until)
 {
-	LOG_MSG ("Warning: ExpandingValueIteratorI::determineChunk called, will give base's return\n");
+	LOG_MSG("Warning: ExpandingValueIteratorI::determineChunk called, "
+            "will give base's return\n");
 	if (! _base)
 		return 0;
-	return _base->determineChunk (until);
+	return _base->determineChunk(until);
 }
 

@@ -17,7 +17,7 @@ use English;
 use strict;
 use Socket;
 use Sys::Hostname;
-use Time::Local;
+use Time::Local qw(timelocal timelocal_nocheck);
 use File::Basename;
 use File::CheckTree;
 use File::Path;
@@ -152,7 +152,8 @@ my ($daemonization) = 1;
 # 'desc'       => Engine's Description
 # 'port'       => TCP port of Engine's HTTPD
 # 'config'     => Configuration file
-# 'daily'      => undef or "hh:mm" of daily restart
+# 'daily'      => undef or "hh:mm" for daily restart
+# 'day'        => undef or number of weekday for weekly restart
 # 'hourly'     => undef or (double) hours between restarts
 # -- adjusted at runtime
 # 'next_start' => next date/time when engine should start
@@ -263,15 +264,15 @@ sub read_config($)
 	    $config[$#config]{day} = $weekdays{$daytxt};
 	    $config[$#config]{daily} = $daily;
 	}
-	if (defined($engine->{daily}))
+	elsif (defined($engine->{daily}))
 	{
 	    $config[$#config]{daily} = $engine->{daily}[0];
 	}
-	if (defined($engine->{hourly}))
+	elsif (defined($engine->{hourly}))
 	{
 	    $config[$#config]{hourly} = $engine->{hourly}[0];
 	}
-	if (defined($engine->{timed}))
+	elsif (defined($engine->{timed}))
 	{
 	    $config[$#config]{timed} = $engine->{timed}[0];
 	}
@@ -312,6 +313,7 @@ sub update_schedule($)
 	    print "  Not running\n";
 	    $engine_start_secs = 0;
 	}
+	# Determine next_start, next_stop
 	if (defined($engine->{daily}))
 	{   
 	    if ($engine_start_secs <= 0)
@@ -320,24 +322,27 @@ sub update_schedule($)
 		$engine->{next_stop}  = 0;
 	    }
 	    else
-	    {   
-                # Running: Determine stop time
+	    {   # Running: Determine stop time
 		($hour, $minute) = split ':', $engine->{daily};
 		$engine->{next_start} = 0;
 		if (defined($engine->{day}))
-		{
-		    # Today's daynum: $n_wday
-		    # Target:         $engine->{day}
+		{   # Target: $engine->{day}; Today's daynum: $n_wday
+		    my ($days_to_go) = $engine->{day}-$n_wday;
+		    $days_to_go += 7 if ($days_to_go < 0);
+		    $engine->{next_stop} =
+			timelocal_nocheck(0, $minute,$hour,
+					  $n_mday+$days_to_go,$n_mon, $n_year);
+		    # Already happened today, so we'll try again next week?
+		    $engine->{next_stop} += 24*60*60*7
+			if ($engine_start_secs > $engine->{next_stop});
 		}
 		else
 		{
 		    $engine->{next_stop} = timelocal(0,$minute,$hour,
 						     $n_mday,$n_mon,$n_year);
-		}
-		# Today or already into the next day?
-		if ($engine_start_secs > $engine->{next_stop})
-		{
-		    $engine->{next_stop} += 24*60*60;
+		    # Today or already into the next day?
+		    $engine->{next_stop} += 24*60*60
+			if ($engine_start_secs > $engine->{next_stop});
 		}
 	    }
 	}
@@ -598,7 +603,7 @@ sub handle_HTTP_main($)
 	print $client "<TD ALIGN=CENTER>";
 	if ($engine->{daily})
 	{
-	    if ($engine->{day})
+	    if (defined($engine->{day}))
 	    {
 		print $client "Every $weekdays[$engine->{day}] " .
 		    "at $engine->{daily}.";
@@ -817,19 +822,16 @@ sub make_indexname($$)
     my ($now, $engine) = @ARG;
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
 	= localtime($now);
-    if (defined($engine->{daily}))
-    {
-	return sprintf("%04d/%02d_%02d/index", 1900+$year, 1+$mon, $mday);
-    }
-    elsif (defined($engine->{hourly}))
+    if (defined($engine->{hourly}))
     {
 	return sprintf("%04d/%02d_%02d_%02dh/index",
 		       1900+$year, 1+$mon, $mday, $hour);
     }
-    else
+    if (defined($engine->{daily})  or  defined($engine->{timed}))
     {
-	return "index";
+	return sprintf("%04d/%02d_%02d/index", 1900+$year, 1+$mon, $mday);
     }
+    return "index";
 }
 
 sub run_indextool($)
@@ -1085,7 +1087,7 @@ if (length($index_config) > 0  and -f $index_config)
     read_indexconfig($index_config);
 }  
 $master_index_dtd = $opt_i if (length($opt_i) > 0);
-$index_update_minper = $opt_u if ($opt_u > 0);
+$index_update_minper = $opt_u if (defined($opt_u) and $opt_u > 0);
 add_message("Started");
 print("Read $config_file. Check status via\n");
 print("          http://$localhost:$http_port\n");

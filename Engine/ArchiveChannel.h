@@ -27,7 +27,6 @@ class ArchiveChannel
 public:
     friend class SampleMechanism;
     friend class SampleMechanismMonitored;
-    friend class GroupInfo;
     
     ArchiveChannel(const stdString &name,
                    double period, SampleMechanism *mechanism);
@@ -66,6 +65,12 @@ public:
 
     /// Is this channel disabled?
     bool isDisabled() const;
+
+    /// Disable this channel
+    void disable(const epicsTime &when);
+
+    /// Enable this channel
+    void enable(const epicsTime &when);
     
 private:
     stdString       name;
@@ -80,23 +85,31 @@ private:
     static void control_callback(struct event_handler_args arg);
 
     // All from here down to '---' are only valid if connected==true
-    bool          connected;
-    epicsTime     connection_time;
-    short         dbr_time_type;
-    unsigned long nelements;
-    CtrlInfo      ctrl_info;
+    bool            connected;
+    epicsTime       connection_time;
+    short           dbr_time_type;
+    unsigned long   nelements;  // == 0 -> data type is not known
+    CtrlInfo        ctrl_info;
     // Value buffer in memory, later written to disk.
     // Should hold values arriving up to 'period' plus some
     CircularBuffer  buffer;
+    // In case we are e.g. disabled, we park incoming values
+    // here so that we can write the last one right after
+    // being re-enabled
+    bool            pending_value_set;
+    RawValue::Data *pending_value;
     // ---
     
     /// The mechanism: This or another channel of one of the groups
     /// to which this channel belongs might diable a group.
     /// The group then comes back and disables all its channels.
-    bool disabled;
+    int disabled_count;
     BitSet groups_to_disable; // Bit is set -> we disable that group
     bool currently_disabling; // is this channel currently disabling its groups?
     void handleDisabling(const RawValue::Data *value);
+
+    /// Add an event to the buffer (special status/severity)
+    void addEvent(dbr_short_t status, dbr_short_t severity, const epicsTime &time);
     
     // Bookkeeping and value checking stuff, used between ArchiveChannel
     // and SampleMechanism
@@ -119,7 +132,7 @@ inline const BitSet &ArchiveChannel::getGroupsToDisable() const
 {   return groups_to_disable; }
 
 inline bool ArchiveChannel::isDisabled() const
-{   return disabled; }
+{   return disabled_count > 0; }
 
 #endif
 

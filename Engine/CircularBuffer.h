@@ -1,3 +1,4 @@
+// -*- c++ -*-
 #ifndef __CIRCULARBUFFER_H__
 #define __CIRCULARBUFFER_H__
 
@@ -47,8 +48,16 @@ public:
     void resetOverwrites()
     {   overwrites = 0; }
 
+    /// Advance pointer to the next element and return it.
+
+    /// This allows you to fiddle with that element yourself,
+    /// otherwise see addRawValue.
+    ///
+    RawValue::Data *getNextElement();
+    
     /// Copy a raw value into the buffer
-    void addRawValue(const RawValue::Data *raw_value);
+    void addRawValue(const RawValue::Data *raw_value)
+    {   memcpy(getNextElement(), raw_value, element_size); }
 
     /// Get a pointer to value number i without removing it
 
@@ -69,7 +78,6 @@ private:
     CircularBuffer & operator = (const CircularBuffer &); // not impl.
 
     RawValue::Data *getElement(size_t i);
-    RawValue::Data *getNextElement();
 
     DbrType         type;        // dbr_time_xx
     DbrCount        count;       // array size of type

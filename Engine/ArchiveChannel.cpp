@@ -11,7 +11,10 @@ ArchiveChannel::ArchiveChannel(const stdString &name,
     mechanism->channel = this;
     chid_valid = false;
     connected = false;
-    disabled = false;
+    nelements = 0;
+    pending_value_set = false;
+    pending_value = 0;
+    disabled_count = 0;
     currently_disabling = false;
 }
 
@@ -19,6 +22,8 @@ ArchiveChannel::~ArchiveChannel()
 {
     if (mechanism)
         delete mechanism;
+    if (pending_value)
+        RawValue::free(pending_value);
     if (chid_valid)
     {
         LOG_MSG("'%s': clearing channel\n", name.c_str());
@@ -71,6 +76,28 @@ void ArchiveChannel::startCA()
 }
 
 
+void ArchiveChannel::disable(const epicsTime &when)
+{
+    ++disabled_count;
+    if (disabled_count < (int)groups.size())
+        return; // some groups still want our values
+    addEvent(0, ARCH_DISABLED, when);
+}
+
+void ArchiveChannel::enable(const epicsTime &when)
+{
+    --disabled_count;
+    // Try to write the last value we got while disabled
+    if (connected && pending_value_set)
+    {
+        LOG_MSG("'%s': re-enabled, writing the most recent value\n",
+                name.c_str());
+        RawValue::setTime(pending_value, when);
+        buffer.addRawValue(pending_value);
+        pending_value_set = false;
+    }
+}
+    
 // CA callback for connects and disconnects
 void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 {
@@ -100,6 +127,7 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
     {
         me->connected = false;
         me->connection_time = epicsTime::getCurrent();
+        me->pending_value_set = false;
         me->mechanism->handleConnectionChange();
     }    
     me->mutex.unlock();
@@ -187,14 +215,19 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
         me->nelements = ca_element_count(arg.chid);
         me->buffer.allocate(me->dbr_time_type, me->nelements,
                             theEngine->suggestedBufferSize(me->period));
+        if (me->pending_value)
+            RawValue::free(me->pending_value);
+        me->pending_value = RawValue::allocate(me->dbr_time_type, me->nelements, 1);
+        me->pending_value_set = false;
         me->connected = true;
         me->mechanism->handleConnectionChange();
     }
     else
     {
         LOG_MSG("%s: ERROR, control info request failed\n", me->name.c_str());
-        me->connected = false;
         me->connection_time = epicsTime::getCurrent();
+        me->connected = false;
+        me->pending_value_set = false;
         me->mechanism->handleConnectionChange();
     }
     me->mutex.unlock();
@@ -215,7 +248,7 @@ void ArchiveChannel::handleDisabling(const RawValue::Data *value)
         for (g=groups.begin(); g!=groups.end(); ++g)
         {
             if (groups_to_disable.test((*g)->getID()))
-                (*g)->disable(this);
+                (*g)->disable(this, RawValue::getTime(value));
         }
     }
     else if (!criteria && currently_disabling)
@@ -224,8 +257,37 @@ void ArchiveChannel::handleDisabling(const RawValue::Data *value)
         for (g=groups.begin(); g!=groups.end(); ++g)
         {
             if (groups_to_disable.test((*g)->getID()))
-                (*g)->enable(this);
+                (*g)->enable(this, RawValue::getTime(value));
         }
         currently_disabling = false;
     }
+}
+
+// Event (value with special status/severity):
+// Add unconditionally to ring buffer,
+// maybe adjust time so that it can be added
+void ArchiveChannel::addEvent(dbr_short_t status, dbr_short_t severity,
+                              const epicsTime &event_time)
+{
+    if (nelements <= 0)
+    {
+        LOG_MSG("'%s': Cannot add event because data type is unknown\n",
+                name.c_str());
+        return;
+    }
+    RawValue::Data *value = buffer.getNextElement();
+    memset(value, 0, RawValue::getSize(dbr_time_type, nelements));
+    RawValue::setStatus(value, status, severity);
+    RawValue::setTime(value, event_time);
+
+#ifdef TODO
+    // maybe this is nonsense?
+    static double adjust = 0.0l;
+
+    if (value->getTime() <= _last_archive_stamp)
+    {   // adjust time, event has to be added to archive somehow!
+        _last_archive_stamp += adjust;
+        value->setTime(_last_archive_stamp);
+    }
+#endif
 }

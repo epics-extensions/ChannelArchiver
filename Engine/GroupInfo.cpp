@@ -24,7 +24,7 @@ void GroupInfo::addChannel(ArchiveChannel *channel)
 }
 
 // called by ArchiveChannel while channel is locked
-void GroupInfo::disable(ArchiveChannel *cause)
+void GroupInfo::disable(ArchiveChannel *cause, const epicsTime &when)
 {
 	LOG_MSG("'%s' disables group '%s'\n",
             cause->getName().c_str(), name.c_str());
@@ -34,11 +34,11 @@ void GroupInfo::disable(ArchiveChannel *cause)
 
 	stdList<ArchiveChannel *>::iterator i;
 	for (i=members.begin(); i!=members.end(); ++i)
-		(*i)->disabled = true;
+		(*i)->disable(when);
 }
 
 // called by ArchiveChannel while channel is locked
-void GroupInfo::enable(ArchiveChannel *cause)
+void GroupInfo::enable(ArchiveChannel *cause, const epicsTime &when)
 {
 	LOG_MSG("'%s' enables group '%s'\n",
             cause->getName().c_str(), name.c_str());
@@ -53,7 +53,7 @@ void GroupInfo::enable(ArchiveChannel *cause)
 
 	stdList<ArchiveChannel *>::iterator i;
 	for (i=members.begin(); i!=members.end(); ++i)
-		(*i)->disabled = false;
+		(*i)->enable(when);
 }
 
 #if 0

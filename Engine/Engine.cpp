@@ -325,7 +325,7 @@ void Engine::setSecsPerFile(double secs_per_file)
 
 void Engine::writeArchive()
 {
-#ifdef TODO
+#ifdef
     _is_writing = true;
     ChannelIterator channel(*_archive);
     try

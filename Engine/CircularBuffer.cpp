@@ -140,11 +140,6 @@ void CircularBuffer::reset()
 	overwrites = 0;
 }
 
-void CircularBuffer::addRawValue(const RawValue::Data *raw_value)
-{
-    memcpy(getNextElement(), raw_value, element_size);
-}
-
 const RawValue::Data *CircularBuffer::getRawValue(size_t i)
 {
     if (i<0 || i >= getCount())

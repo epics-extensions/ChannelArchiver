@@ -11,6 +11,7 @@
 #define __GROUPINFO_H__
 
 #include <stdlib.h>
+#include <epicsTime.h>
 #include <ToolsConfig.h>
 
 /// Each channel, identified by an ArchiveChannel,
@@ -47,8 +48,8 @@ public:
     const stdList<class ArchiveChannel *>&getChannels () const
     { return members; }
 
-    void disable(class ArchiveChannel *cause);
-    void enable(class ArchiveChannel *cause);
+    void disable(class ArchiveChannel *cause, const epicsTime &when);
+    void enable(class ArchiveChannel *cause, const epicsTime &when);
     bool isEnabled() const
     { return disable_count <= 0; }
 

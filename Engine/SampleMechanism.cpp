@@ -70,6 +70,7 @@ void SampleMechanismMonitored::handleConnectionChange()
             }
             theEngine->need_CA_flush = true;
         }
+        // CA should automatically send an initial monitor.
         // Tell groups that we are connected
         for (g=channel->groups.begin(); g!=channel->groups.end(); ++g)
             ++ (*g)->num_connected;
@@ -77,8 +78,8 @@ void SampleMechanismMonitored::handleConnectionChange()
     else
     {
         LOG_MSG("%s: disconnected\n", channel->name.c_str());
-        // TODO: Add a 'disconnected' value.
-
+        // Add a 'disconnected' value.
+        channel->addEvent(0, ARCH_DISCONNECT, channel->connection_time);
         // Tell groups that we are disconnected
         for (g=channel->groups.begin(); g!=channel->groups.end(); ++g)
             -- (*g)->num_connected;
@@ -93,14 +94,20 @@ void SampleMechanismMonitored::value_callback(struct event_handler_args args)
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
     channel->mutex.lock();
     
-    if (channel->disabled == false)
+    if (channel->isDisabled())
+    {   // park the value so that we can write it ASAP after begin enabled
+        RawValue::copy(channel->dbr_time_type, channel->nelements,
+                       channel->pending_value, value);
+        channel->pending_value_set = true;
+    }
+    else
     {
         LOG_MSG("SampleMechanismMonitored::value_callback %s\n",
                 channel->name.c_str());
         RawValue::show(stdout, channel->dbr_time_type,
                        channel->nelements, value, &channel->ctrl_info);
         
-        // Add every monitor to the ring buffer only check for back-in-time
+        // Add every monitor to the ring buffer, only check for back-in-time
         epicsTime stamp = RawValue::getTime(value);
         if (me->isGoodTimestamp(stamp, now))
         {

@@ -7,8 +7,8 @@ use Frontier::Client;
 # Setup URL
 #$server_url = 'http://localhost/cgi-bin/xmlrpc/ArchiveServer.cgi';
 #$server_url = 'http://localhost/cgi-bin/xmlrpc/DummyDataServer.cgi';
-$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyDataServer2.cgi';
-#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveDataServer1.cgi';
+#$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/DummyDataServer2.cgi';
+$server_url = 'http://bogart.ta53.lanl.gov/cgi-bin/xmlrpc/ArchiveDataServer2.cgi';
 
 if ($#ARGV == 0)
 {
@@ -98,10 +98,11 @@ print("==================================================================\n");
 #@names = ( "fred", "freddy", "Jimmy", "James" );
 @names = ( "fred" );
 #@names = ( "Test_HPRF:IOC1:Load", "Test_HPRF:IOC1:FDAv" );
+@names = ( "Test_HPRF:Xmtr2:Stdby3_Flt" );
 
-($start, $startnano) = string2time("01/01/2000 00:00:00.000000000");
-($end, $endnano)   = string2time("01/26/2004 17:15:00.000000000");
-$count = 25;
+($start, $startnano) = string2time("01/01/2003 02:04:48.000000000");
+($end, $endnano)   = string2time("01/21/2003 02:06:12.000000000");
+$count = 1000;
 $how = 0;
 # note: have to pass ref. to the 'names' array,
 # otherwise perl will turn it into a sequence of names:
@@ -156,7 +157,7 @@ sub show_values($)
 	foreach $value ( @{$result->{values}} )
 	{
 	    $time = time2string($value->{secs}, $value->{nano});
-	    print("$time ($value->{secs} s) $value->{stat}/$value->{sevr} @{$value->{value}}\n");
+	    print("$time $value->{stat}/$value->{sevr} @{$value->{value}}\n");
 	}
     }
 }

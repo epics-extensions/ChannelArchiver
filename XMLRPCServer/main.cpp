@@ -197,6 +197,29 @@ void encode_value(xmlrpc_env *env,
     int i;
     switch (xml_type)
     {
+        case XML_STRING:
+        {
+            stdString txt;
+            RawValue::getValueString(txt, dbr_type, dbr_count, data, 0);
+            element = xmlrpc_build_value(env, STR("s#"),
+                                         txt.c_str(), txt.length());
+            xmlrpc_array_append_item(env, val_array, element);
+            xmlrpc_DECREF(element);
+        }            
+        case XML_INT:
+        case XML_ENUM:
+        {
+            long l;
+            for (i=0;
+                 i < xml_count &&
+                     RawValue::getLong(dbr_type, dbr_count, data, l, i);
+                 ++i)
+            {
+                element = xmlrpc_build_value(env, STR("i"), (xmlrpc_int32)l);
+                xmlrpc_array_append_item(env, val_array, element);
+                xmlrpc_DECREF(element);
+            }
+        }
         case XML_DOUBLE:
         {
             double d;

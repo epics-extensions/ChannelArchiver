@@ -214,8 +214,11 @@ void RawValue::getTime(const Data *value, stdString &time)
 bool RawValue::getDouble(DbrType type, DbrCount count,
                          const Data *value, double &d, int i)
 {
-    if (isInfo(value)) // done    
-        return false;
+    if (isInfo(value)) // done
+    {
+        d = 0.0;
+        return true;
+    }
     if (i >= count)
         return false;
     switch (type)
@@ -230,13 +233,13 @@ bool RawValue::getDouble(DbrType type, DbrCount count,
         {
             const dbr_long_t *v = &((const dbr_time_long *)value)->value;
             d = v[i];
-           return true;
+            return true;
         }
         case DBR_TIME_FLOAT:
         {
             const dbr_float_t *v = &((const dbr_time_float *)value)->value;
             d = v[i];
-           return true;
+            return true;
         }
         case DBR_TIME_DOUBLE:
         {
@@ -246,6 +249,53 @@ bool RawValue::getDouble(DbrType type, DbrCount count,
         }
     }
     d = 0.0;
+    return false;
+}
+
+bool RawValue::getLong(DbrType type, DbrCount count,
+                       const Data *value, long &l, int i)
+{
+    if (isInfo(value)) // done
+    {
+        l = 0;
+        return true;
+    }
+    if (i >= count)
+        return false;
+    switch (type)
+    {
+        case DBR_TIME_ENUM:
+        {
+            const dbr_enum_t *v = &((const dbr_time_enum *)value)->value;
+            l = v[i];
+            return true;
+        }
+        case DBR_TIME_SHORT:
+        {
+            const dbr_short_t *v = &((const dbr_time_short *)value)->value;
+            l = v[i];
+            return true;
+        }
+        case DBR_TIME_LONG:
+        {
+            const dbr_long_t *v = &((const dbr_time_long *)value)->value;
+            l = v[i];
+            return true;
+        }
+        case DBR_TIME_FLOAT:
+        {
+            const dbr_float_t *v = &((const dbr_time_float *)value)->value;
+            l = (long)v[i];
+            return true;
+        }
+        case DBR_TIME_DOUBLE:
+        {
+            const double *v = & ((const dbr_time_double *)value)->value;
+            l = (long)v[i];
+            return true;
+        }
+    }
+    l = 0;
     return false;
 }
 

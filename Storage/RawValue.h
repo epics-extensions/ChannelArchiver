@@ -109,6 +109,14 @@ public:
     static bool getDouble(DbrType type, DbrCount count,
                           const Data *value, double &d, int i=0);
 
+    /// Get data as a long or return false
+
+    /// Works for scalar enum, short, int, long, float, double
+    ///
+    ///
+    static bool getLong(DbrType type, DbrCount count,
+                        const Data *value, long &l, int i=0);
+
     /// Set data from a double or return false
 
     /// Works for scalar short, int, long, float, double

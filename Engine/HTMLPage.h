@@ -11,7 +11,14 @@
 #ifndef __HTMLPAGE_H__
 #define __HTMLPAGE_H__
 #include "ArchiveTypes.h"
-#include "osiSock.h"
+#ifdef solaris
+// Hack around clash of struct map in inet headers with std::map
+#define map xxxMapxxx
+#endif
+#include <osiSock.h>
+#ifdef solaris
+#undef map
+#endif
 
 class HTMLPage
 {

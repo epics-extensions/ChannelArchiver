@@ -29,7 +29,7 @@ public:
 	virtual const char *getName () const;
 	virtual osiTime getFirstTime ()  const;
 	virtual osiTime getLastTime ()   const;
-	virtual void getChannelInfo (ChannelInfo &info) const;
+	virtual void getChannelInfo (ChannelIInfo &info) const;
 
 	virtual bool getFirstValue (ValueIteratorI *values);
 	virtual bool getLastValue (ValueIteratorI *values);

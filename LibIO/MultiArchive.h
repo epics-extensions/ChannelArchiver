@@ -98,7 +98,7 @@ public:
 	// To be used by MultiArchive intrinsics only:
 	// -------------------------------------------
 	bool getChannel (size_t channel_index, MultiChannelIterator &iterator) const; 
-	const ChannelInfo & getChannelInfo (size_t channel_index) const; 
+	const ChannelIInfo & getChannelInfo (size_t channel_index) const; 
 
 	// For given channel, set value_iterator to value at-or-after time.
 	// For has_to_be_later = true, the archive must contain more values,
@@ -121,13 +121,13 @@ private:
 
 	// Fill _channels from _archives
 	bool investigateChannels ();
-	bool findChannelInfo (const stdString &name, ChannelInfo **info);
+	bool findChannelInfo (const stdString &name, ChannelIInfo **info);
 
 	list<stdString>	_archives; // names of archives
-	vector<ChannelInfo>	_channels; // info of channels, summarized over all archives
+	vector<ChannelIInfo>	_channels; // info of channels, summarized over all archives
 };
 
-inline const ChannelInfo &MultiArchive::getChannelInfo (size_t channel_index) const
+inline const ChannelIInfo &MultiArchive::getChannelInfo (size_t channel_index) const
 {	return _channels[channel_index];	}
 
 END_NAMESPACE_CHANARCH

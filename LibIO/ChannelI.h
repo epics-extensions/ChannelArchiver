@@ -15,7 +15,7 @@
 
 BEGIN_NAMESPACE_CHANARCH
 
-class ChannelInfo
+class ChannelIInfo
 {
 public:
 	stdString	_name;			// name of the channel
@@ -46,8 +46,8 @@ public:
 	//* Time stamp of last value
 	virtual osiTime getLastTime ()   const = 0;
 
-	//* Get the above information at once by filling a ChannelInfo structure
-	virtual void getChannelInfo (ChannelInfo &info) const;
+	//* Get the above information at once by filling a ChannelIInfo structure
+	virtual void getChannelInfo (ChannelIInfo &info) const;
 
 	//* Move CLASS ValueIterator for current Channel
 	// to first, last, ... value

@@ -40,7 +40,7 @@ public:
 
 	// To be called by MultiChannel:
 	const MultiArchive *getArchive ();
-	const ChannelInfo &getChannelInfo () const;
+	const ChannelIInfo &getChannelInfo () const;
 	size_t getChannelIndex () const;
 
 	// To be called by MultiValueIterator:
@@ -60,7 +60,7 @@ private:
 inline const MultiArchive *MultiChannelIterator::getArchive ()
 {	return _multi_archive;	}
 
-inline const ChannelInfo &MultiChannelIterator::getChannelInfo () const
+inline const ChannelIInfo &MultiChannelIterator::getChannelInfo () const
 {	return _multi_archive->getChannelInfo (_channel_index);	}
 
 inline size_t MultiChannelIterator::getChannelIndex () const

@@ -35,7 +35,7 @@ osiTime MultiChannel::getLastTime () const
 	return _channel_iterator->getChannelInfo()._last_time;
 }
 
-void MultiChannel::getChannelInfo (ChannelInfo &info) const
+void MultiChannel::getChannelInfo (ChannelIInfo &info) const
 {
 	info = _channel_iterator->getChannelInfo();
 }

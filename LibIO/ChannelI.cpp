@@ -15,7 +15,7 @@ BEGIN_NAMESPACE_CHANARCH
 ChannelI::~ChannelI ()
 {}
 
-void ChannelI::getChannelInfo (ChannelInfo &info) const
+void ChannelI::getChannelInfo (ChannelIInfo &info) const
 {
 	info._name       = getName ();
 	info._first_time = getFirstTime ();

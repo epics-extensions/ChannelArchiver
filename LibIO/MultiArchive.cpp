@@ -71,7 +71,7 @@ bool MultiArchive::addChannel (const stdString &name, ChannelIteratorI *channel)
 	return false;
 }
 
-// Open Archive and ChannelIterator for channel described by ChannelInfo
+// Open Archive and ChannelIterator for channel described by ChannelIInfo
 // using the archive that has the oldest value
 bool MultiArchive::getChannel (size_t channel_index, MultiChannelIterator &channel_iterator) const
 {
@@ -82,7 +82,7 @@ bool MultiArchive::getChannel (size_t channel_index, MultiChannelIterator &chann
 		return false;
 	}
 
-	const ChannelInfo &info = _channels[channel_index];
+	const ChannelIInfo &info = _channels[channel_index];
 	list<stdString>::const_iterator archs = _archives.begin();
 	for (/**/; archs != _archives.end(); ++archs)
 	{
@@ -114,7 +114,7 @@ bool MultiArchive::getValueAtOrAfterTime (size_t channel_index,
 	if (channel_index >= _channels.size())
 		return false;
 
-	const ChannelInfo &info = _channels[channel_index];
+	const ChannelIInfo &info = _channels[channel_index];
 	list<stdString>::const_iterator archs = _archives.begin();
 	for (/**/; archs != _archives.end(); ++archs)
 	{
@@ -153,7 +153,7 @@ bool MultiArchive::getValueAtOrBeforeTime (size_t channel_index,
 	if (channel_index >= _channels.size())
 		return false;
 
-	const ChannelInfo &info = _channels[channel_index];
+	const ChannelIInfo &info = _channels[channel_index];
 	list<stdString>::const_iterator archs = _archives.begin();
 	for (/**/; archs != _archives.end(); ++archs)
 	{
@@ -196,7 +196,7 @@ bool MultiArchive::getValueNearTime (size_t channel_index,
 	double t = double (time);
     double best_bet = -1.0; // negative == invalid
 
-	const ChannelInfo &info = _channels[channel_index];
+	const ChannelIInfo &info = _channels[channel_index];
 	list<stdString>::const_iterator archs = _archives.begin();
 	for (/**/; archs != _archives.end(); ++archs)
 	{
@@ -260,15 +260,15 @@ bool MultiArchive::parseMasterFile (const stdString &master_file)
 	return true;
 }
 
-// Find ChannelInfo for given name,
+// Find ChannelIInfo for given name,
 // make info point to it.
 // Result: true if existing one was found,
 // false if new one was added.
-bool MultiArchive::findChannelInfo (const stdString &name, ChannelInfo **info)
+bool MultiArchive::findChannelInfo (const stdString &name, ChannelIInfo **info)
 {
 	// Find element we look for
 	// or following element, >=, where we could insert
-	vector<ChannelInfo>::iterator i = _channels.begin();
+	vector<ChannelIInfo>::iterator i = _channels.begin();
 	for (/**/;  i != _channels.end(); ++i)
 	{
 		if (i->_name == name)	// found
@@ -280,7 +280,7 @@ bool MultiArchive::findChannelInfo (const stdString &name, ChannelInfo **info)
 			break;
 	}
 
-	ChannelInfo	new_info;
+	ChannelIInfo	new_info;
 	new_info._name = name;
 	*info = & *_channels.insert (i, new_info);
 
@@ -291,7 +291,7 @@ bool MultiArchive::findChannelInfo (const stdString &name, ChannelInfo **info)
 bool MultiArchive::investigateChannels ()
 {
 	stdString name;
-	ChannelInfo *info;
+	ChannelIInfo *info;
 
 	_channels.clear ();
 
@@ -335,7 +335,7 @@ void MultiArchive::log ()
 	}
 
 	LOG_MSG ("Channels:\n");
-	vector<ChannelInfo>::const_iterator chans = _channels.begin();
+	vector<ChannelIInfo>::const_iterator chans = _channels.begin();
 	while (chans != _channels.end())
 	{
 		LOG_MSG (chans->_name << "\n");

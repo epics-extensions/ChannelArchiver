@@ -14,6 +14,45 @@
 
 bool verbose;
 
+void list_names(const stdString &index_name)
+{
+    archiver_Index index;
+    if (!index.open(index_name.c_str()))
+    {
+        fprintf(stderr, "Cannot open index '%s'\n",
+                index_name.c_str());
+        return;
+    }
+    channel_Name_Iterator *names = index.getChannelNameIterator();
+    if (!names)
+    {
+        fprintf(stderr, "Cannot get name iterator for index '%s'\n",
+                index_name.c_str());
+        return;
+    }
+    bool ok;
+    interval iv;
+    stdString name, start, end;
+    for (ok = names->getFirst(&name); ok; ok = names->getNext(&name))
+    {
+        if (!index.getEntireIndexedInterval(name.c_str(), &iv))
+        {
+            fprintf(stderr, "Cannot get interval for channel '%s'\n",
+                    name.c_str());
+        }
+        else
+        {
+            printf("Channel '%s': %s - %s\n",
+                   name.c_str(),
+                   epicsTimeTxt(iv.getStart(), start),
+                   epicsTimeTxt(iv.getEnd(), end));
+            
+        }
+    }
+    delete names;
+}
+
+
 void convert_dir_index(const stdString &dir_name, const stdString &index_name)
 {
     DirectoryFile dir;
@@ -80,7 +119,6 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
     }
     DataFile::close_all();
 }
-
 
 static DataHeader *get_dataheader(const stdString &file, FileOffset offset)
 {
@@ -197,7 +235,7 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
     delete names;
 }
 
-void dump_index(const stdString &index_name)
+void dump_index(const stdString &index_name, const stdString channel_name)
 {
     archiver_Index index;
     if (!index.open(index_name.c_str()))
@@ -206,16 +244,26 @@ void dump_index(const stdString &index_name)
                 index_name.c_str());
         return;
     }
-    channel_Name_Iterator *names = index.getChannelNameIterator();
-    if (!names)
+    channel_Name_Iterator *names;
+    if (channel_name.empty())
     {
-        fprintf(stderr, "Cannot get name iterator for index '%s'\n",
-                index_name.c_str());
-        return;
+        names = index.getChannelNameIterator();
+        if (!names)
+        {
+            fprintf(stderr, "Cannot get name iterator for index '%s'\n",
+                    index_name.c_str());
+            return;
+        }
     }
+    else
+        names = 0;
     stdString name;
     key_AU_Iterator *aus;
-    bool ok = names->getFirst(&name);
+    bool ok = true;
+    if (channel_name.empty())
+        ok = names->getFirst(&name);
+    else
+        name = channel_name;
     key_Object key;
     interval iv, key_iv;
     stdString start, end;
@@ -249,9 +297,13 @@ void dump_index(const stdString &index_name)
                 delete aus;
             }
         }
-        ok = names->getNext(&name);
+        if (channel_name.empty())
+            ok = names->getNext(&name);
+        else
+            ok = false;
     }
-    delete names;
+    if (names)
+        delete names;
 }
 
 int main(int argc, const char *argv[])
@@ -265,13 +317,15 @@ int main(int argc, const char *argv[])
                      );
     CmdArgFlag help (parser, "help", "Show help");
     CmdArgFlag verbose_flag (parser, "verbose", "Show more info");
+    CmdArgString list_index(parser, "list", "<index>", "List name info");
     CmdArgString dir2index (parser, "dir2index", "<dir. file>",
                              "Convert old directory file to RTree index");
-    CmdArgString index2dir (parser, "index2dir", "<index file>",
+    CmdArgString index2dir (parser, "index2dir", "<index>",
                              "Convert RTree index to old directory file");
-    CmdArgString dumpindex (parser, "dumpindex", "<index file>",
+    CmdArgString dumpindex (parser, "dumpindex", "<index>",
                              "Dump contents of RTree index");
     CmdArgString output (parser, "output", "<file name>", "Output file");
+    CmdArgString channel_name (parser, "channel", "<name>", "Channel name");
     if (! parser.parse())
         return -1;
     if (help   ||   parser.getArguments().size() > 0)
@@ -281,7 +335,9 @@ int main(int argc, const char *argv[])
     }
     verbose = verbose_flag;
 
-    if (dir2index.get().length() > 0)
+    if (list_index.get().length() > 0)
+        list_names(list_index);
+    else if (dir2index.get().length() > 0)
     {
         if (output.get().length() == 0)
         {
@@ -303,7 +359,7 @@ int main(int argc, const char *argv[])
     }
     else if (dumpindex.get().length() > 0)
     {
-        dump_index(dumpindex.get());
+        dump_index(dumpindex, channel_name);
     }
     else
     {

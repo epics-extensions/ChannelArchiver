@@ -35,9 +35,19 @@ ValueIteratorI *MultiArchive::newValueIterator() const
 ValueI *MultiArchive::newValue(DbrType type, DbrCount count)
 {   return 0; }
 
+static bool does_file_exist(const stdString &filename)
+{
+    FILE *f = fopen(filename.c_str(), "rb");
+    if (!f)
+        return false;
+    fclose(f);
+    return true;
+}
+
 bool MultiArchive::parseMasterFile(const stdString &master_file,
                                    const osiTime &from, const osiTime &to)
 {
+    stdString sub_archive;
 #ifdef DEBUG_MULTIARCHIVE
     LOG_MSG("MultiArchive::parseMasterFile\n");
 #endif
@@ -58,9 +68,14 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
     file.llclose();
     if (strncmp(line, "master_version", 14) !=0)
     {
+        // Not a multi-archive file.
         // Could be Binary file:
-        _archives.push_back(master_file);
-        return true;
+        if (does_file_exist(master_file))
+        {
+            _archives.push_back(master_file);
+            return true;
+        }
+        return false;
     }
     // OK, looks like a master file.
     // Now read it again as ASCII:
@@ -91,23 +106,25 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
             // version 1 has one archive to search per line
             while (parser.nextLine())
             {
-                if (!isValidTime(from) && !isValidTime(to))
+                sub_archive = parser.getLine();
+                if (!does_file_exist(sub_archive))
+                    continue;
+               if (!isValidTime(from) && !isValidTime(to))
                 {
                     // No timestamps
                     // -> we have to use every Archive in the Multi-Archive
 #ifdef DEBUG_MULTIARCHIVE
-                    LOG_MSG("sub-archive: %s\n", parser.getLine().c_str());
+                    LOG_MSG("sub-archive: %s\n", sub_archive.c_str());
 #endif
-                    _archives.push_back(parser.getLine());
+                    _archives.push_back(sub_archive);
                 }
                 else
                 {
                     // avoiding to search archives that can't contain queried
                     // values at all should save some time...
-                    Archive archive(new BinArchive(parser.getLine()));
+                    Archive archive(new BinArchive(sub_archive));
                     ChannelIterator channel(archive);
                     osiTime start, end, time;
-
                     for (archive.findFirstChannel(channel); channel; ++channel)
                     {
                         time = channel->getFirstTime();
@@ -121,9 +138,9 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
                     if ( (!isValidTime(from) || ( from < end ) ) &&
                          (!isValidTime(to)   || ( to >= start ) ) ) {
 #ifdef DEBUG_MULTIARCHIVE
-                        LOG_MSG("sub-archive: %s\n", parser.getLine().c_str());
+                        LOG_MSG("sub-archive: %s\n", sub_archive.c_str());
 #endif
-                        _archives.push_back(parser.getLine());
+                        _archives.push_back(sub_archive);
                     }
                 }
             }
@@ -145,11 +162,15 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
                     continue;
                 }
                 if ( (!isValidTime(from) || ( from < t ) ) &&
-                     (!isValidTime(to)   || ( to >= f ) ) ) {
+                     (!isValidTime(to)   || ( to >= f ) ) )
+                {
+                    sub_archive = parser.getLine().substr(40);
+                    if (!does_file_exist(sub_archive))
+                        continue;
 #ifdef DEBUG_MULTIARCHIVE
-                    LOG_MSG("sub-archive: %s\n", parser.getLine().c_str());
+                    LOG_MSG("sub-archive: %s\n", sub_archive.c_str());
 #endif
-                    _archives.push_back(parser.getLine().substr(40));
+                    _archives.push_back(sub_archive);
                 }
             }
         }
@@ -172,8 +193,7 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
 void MultiArchive::log() const
 {
     LOG_MSG("MultiArchive:\n");
-    stdList<stdString>::const_iterator archs = _archives.begin();
-    
+    stdList<stdString>::const_iterator archs = _archives.begin();    
     while (archs != _archives.end())
     {
         LOG_MSG("Archive file: %s\n", archs->c_str());

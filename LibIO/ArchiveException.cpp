@@ -4,7 +4,6 @@
 #include "ArchiveException.h"
 #include <strstream>
 
-
 static const char *error_text[] =
 {
 /* NoError */		"NoError: This should never occur...",
@@ -17,7 +16,7 @@ static const char *error_text[] =
 /* Unsupported */	"Not Supported",
 };
 
-USING_NAMESPACE_STD
+USE_STD_NAMESPACE
 BEGIN_NAMESPACE_CHANARCH
 
 const char *ArchiveException::what() const

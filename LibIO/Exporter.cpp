@@ -14,9 +14,10 @@
 #include "LinInterpolValueIteratorI.h"
 #include "ArchiveException.h"
 #include <fstream>
+#include <iostream>
 
-USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
+USE_STD_NAMESPACE
 
 inline double fabs (double x)
 { return x>=0 ? x : -x; }

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "ValueI.h"
 
-USING_NAMESPACE_STD
+USE_STD_NAMESPACE
 BEGIN_NAMESPACE_CHANARCH
 
 //////////////////////////////////////////////////////////////////////

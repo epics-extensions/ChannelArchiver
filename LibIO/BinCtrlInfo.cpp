@@ -1,7 +1,7 @@
 #include "ArchiveException.h"
 #include "BinCtrlInfo.h"
 
-USING_NAMESPACE_STD
+USE_STD_NAMESPACE
 BEGIN_NAMESPACE_CHANARCH
 
 // Read CtrlInfo for Binary format

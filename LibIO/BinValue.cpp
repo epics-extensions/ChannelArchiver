@@ -5,7 +5,6 @@
 #include "ArchiveException.h"
 #include "BinValue.h"
 
-USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
 
 //////////////////////////////////////////////////////////////////////

@@ -9,8 +9,8 @@
 #include "Filename.h"
 #include <fstream>
 
-USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
+USE_STD_NAMESPACE
 
 GNUPlotExporter::GNUPlotExporter (Archive &archive, const stdString &filename)
 : SpreadSheetExporter (archive.getI(), filename)

@@ -18,8 +18,9 @@
 #include "ArchiveI.h"
 
 BEGIN_NAMESPACE_CHANARCH
-
+#ifdef USE_NAMESPACE_STD
 using std::list;
+#endif
 
 class GroupInfo; // forward
 

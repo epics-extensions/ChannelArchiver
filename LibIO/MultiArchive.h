@@ -15,8 +15,11 @@
 #include <list>
 #include <vector>
 
-USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
+#ifdef USE_NAMESPACE_STD
+using std::list;
+using std::vector;
+#endif
 
 class MultiChannelIterator;
 class MultiValueIterator;

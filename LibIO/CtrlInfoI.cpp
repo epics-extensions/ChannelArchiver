@@ -1,7 +1,7 @@
 #include "ArchiveException.h"
 #include "CtrlInfoI.h"
 
-USING_NAMESPACE_STD
+USE_STD_NAMESPACE
 BEGIN_NAMESPACE_CHANARCH
 
 CtrlInfoI::CtrlInfoI ()

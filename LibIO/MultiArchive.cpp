@@ -16,8 +16,8 @@
 #include <ASCIIParser.h>
 #include <BinaryTree.h>
 
+USE_STD_NAMESPACE
 BEGIN_NAMESPACE_CHANARCH
-
 
 // Open a MultiArchive for the given master file
 MultiArchive::MultiArchive (const stdString &master_file)

@@ -11,8 +11,8 @@
 #include "LinInterpolValueIteratorI.h"
 #include "ArchiveException.h"
 
-USING_NAMESPACE_STD
 BEGIN_NAMESPACE_CHANARCH
+USE_NAMESPACE_STD
 
 LinInterpolValueIteratorI::LinInterpolValueIteratorI (ValueIteratorI *base, double deltaT)
 {

@@ -4,7 +4,10 @@
 #include <iostream>
 #include <vector>
 
-USING_NAMESPACE_STD
+#ifdef USE_NAMESPACE_STD
+using std::ostream;
+using std::vector;
+#endif
 BEGIN_NAMESPACE_CHANARCH
 
 //CLASS Exporter

@@ -17,9 +17,10 @@
     <li>02/??/2001<br>
       Patch #1:<br>
        <ul>
+       <li>Completely removed atac, the tcl-only scripting.
        <li>Engine adds "Archive_Off" on shutdown instead of
-           trying to hack this in on restart. This is different
-	   from original prototype but makes more sense to me.
+           trying to hack this in on restart. Though different
+	   from the original prototype, this makes more sense to me.
        <li>New config parameter <I>!ignored_future &lt;hours&gt</I>
        <li>On restart, the current value is archived, if necessary
            the time stamp is adjusted.

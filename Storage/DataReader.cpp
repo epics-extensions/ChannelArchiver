@@ -90,7 +90,10 @@ const RawValue::Data *DataReader::find(
                 datablock.getPath(), datablock.getOffset());
         return 0;
     }
-    return findSample(valid_interval.getStart());
+    const RawValue::Data *found = findSample(valid_interval.getStart());
+    type_changed = false;
+    ctrl_info_changed = false;
+    return found;
 }
 
 // Either sets header to new dirname/basename/offset or returns false

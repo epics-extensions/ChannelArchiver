@@ -74,13 +74,22 @@ protected:
     DataReader **reader;
 
     // Current data for each reader.
+    // This often already points at the 'next' value.
     const RawValue::Data **read_data;
     
     // The current time slice
     epicsTime time;
+
+    // Copies of the current control infos
+    CtrlInfo **info;
+
+    // Type/count for following value
+    DbrType *type;
+    DbrCount *count;
     
-    // The current values.
-    const RawValue::Data **value;
+    // The current values, i.e. copy of the reader's value
+    // for the current time slice, or 0.
+    RawValue::Data **value;
 };
 
 inline const epicsTime &SpreadsheetReader::getTime() const

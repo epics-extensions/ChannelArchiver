@@ -10,14 +10,26 @@ SpreadsheetReader::SpreadsheetReader(archiver_Index &index)
     num = 0;
     reader = 0;
     read_data = 0;
+    info = 0;
+    type = 0;
+    count = 0;
     value = 0;
 }
 
 SpreadsheetReader::~SpreadsheetReader()
 {
     size_t i;
-    if (value)
-        free(value);
+    free(value);
+    free(count);
+    free(type); 
+    if (info)
+    {
+        for (i=0; i<num; ++i)
+            if (info[i])
+                delete info[i];
+        free(info);
+    }
+    free(read_data);
     if (reader)
     {
         for (i=0; i<num; ++i)
@@ -25,8 +37,6 @@ SpreadsheetReader::~SpreadsheetReader()
                 delete reader[i];
         free(reader);
     }
-    if (read_data)
-        free(read_data);
     DataFile::close_all();
 }
 
@@ -37,8 +47,11 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
     num = channel_names.size();
     reader = (DataReader **)calloc(num, sizeof(DataReader *));
     read_data = (const RawValue::Data **)calloc(num, sizeof(RawValue::Data *));
-    value = (const RawValue::Data **)calloc(num, sizeof(RawValue::Data *));
-    if (!(reader && read_data && value))
+    info = (CtrlInfo **)calloc(num, sizeof(CtrlInfo *));
+    type =  (DbrType *)calloc(num, sizeof(DbrType));
+    count =  (DbrCount *)calloc(num, sizeof(DbrCount));
+    value = (RawValue::Data **)calloc(num, sizeof(RawValue::Data *));
+    if (!(reader && read_data && info && type && count && value))
     {
         LOG_MSG("SpreadsheetReader::find cannot allocate mem\n");
         return false;
@@ -48,10 +61,19 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
         reader[i] = new DataReader(index);
         if (!reader[i])
         {
-            LOG_MSG("SpreadsheetReader::find cannot get reader\n");
+            LOG_MSG("SpreadsheetReader::find cannot allocate reader %d\n", i);
             return false;
         }
         read_data[i] = reader[i]->find(channel_names[i], start, 0);
+        if (read_data[i])
+        {
+            info[i] = new CtrlInfo(reader[i]->ctrl_info);
+            if (!info[i])
+            {
+                LOG_MSG("SpreadsheetReader::find cannot allocate info %d\n", i);
+                return false;
+            }
+        }
     }
     return next();
 }
@@ -82,13 +104,33 @@ bool SpreadsheetReader::next()
         {
             if (RawValue::getTime(read_data[i]) <= time)
             {
-                value[i] = read_data[i];
+                if (reader[i]->ctrl_info_changed)
+                    *info[i] = reader[i]->ctrl_info;
+                if (value[i]==0 ||
+                    type[i] != reader[i]->dbr_type ||
+                    count[i] != reader[i]->dbr_count)
+                {
+                    RawValue::free(value[i]);
+                    type[i] = reader[i]->dbr_type;
+                    count[i] = reader[i]->dbr_count;
+                    value[i] = RawValue::allocate(type[i],
+                                                  count[i], 1);
+                    if (!value[i])
+                    {
+                        LOG_MSG("SpreadsheetReader cannot allocate value\n");
+                        return false;
+                    }
+                }
+                RawValue::copy(type[i], count[i], value[i], read_data[i]);
                 read_data[i] = reader[i]->next(); // advance reader
             }
             // else leave value[i] as is, which initially means: 0
         }
-        else
+        else if (value[i])
+        {
+            RawValue::free(value[i]);
             value[i] = 0;
-    }
+        }
+    }    
     return have_any;
 }

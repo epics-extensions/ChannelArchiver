@@ -390,6 +390,7 @@ ChannelInfo *Engine::addChannel(GroupInfo *group, const stdString &channel_name,
             monitored = true;
         if (channel_info->getPeriod() < period)
             period = channel_info->getPeriod();
+        channel_info->resetBuffers();
         new_channel = false;
     }
     group->addChannel(channel_info);

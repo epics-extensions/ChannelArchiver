@@ -94,6 +94,10 @@ public:
     bool isDisabling(const GroupInfo *group) const;
     bool isDisabled() const            { return _disabled >= _groups.size(); }
 
+    // In response to online config. changes,
+    // reset buffers
+    void resetBuffers();
+    
     void write(class Archive &archive, ChannelIterator &channel);
     void shutdown(class Archive &archive, ChannelIterator &channel,
                   const osiTime &now);

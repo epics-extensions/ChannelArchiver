@@ -747,6 +747,15 @@ void ChannelInfo::enable(ChannelInfo *cause)
     }
 }
 
+void ChannelInfo::resetBuffers()
+{
+    _buffer.reset();
+    _new_value_set = false;
+    _pending_value_set = false;
+    _previous_value_set = false;
+    _had_null_time = false;
+}
+
 // Dump circular buffer into archive
 void ChannelInfo::write(Archive &archive, ChannelIterator &channel)
 {

@@ -14,6 +14,18 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>07/??/2001<br>
+      Patch #4:<br>
+      Working on scripting support for Matlab, see casi/matlab/Readme.txt.
+      While you could create Matlab command files with most
+      of the retrieval tools, those command/data files are quite
+      big if you look at a lot of data.
+      With scripting support you have direct access to the ChannelArchiver
+      data from within Matlab. You can e.g. loop over data for a whole
+      year and assemble rolling statistics without having the whole
+      year worth of data in memory - which would be too much.
+      Instead, you look at one value at a time and then go on to the
+      next value.
     <li>07/24/2001<br>
       Patch #3:<br>
        <ul>

@@ -7,9 +7,11 @@
 #include <BinChannelIterator.h>
 #include <MultiArchive.h>
 #include <ArchiveException.h>
+#include <ValueI.h>
 #include "archive.h"
 #include "channel.h"
 #include "value.h"
+#include "ctrlinfo.h"
 
 // ----------------------------------------------------------------
 // o s i T i m e
@@ -172,6 +174,15 @@ bool archive::addChannel(const char *name, channel &c)
     return _archiveI->addChannel(name, c._iter);
 }
 
+void archive::newValue (int type, int count, value &val)
+{
+   if (! _archiveI)
+      throwDetailedArchiveException(Invalid, "no Archive");
+   if (val._valI) delete val._valI;
+   val._valI = _archiveI->newValue(type, count);
+}
+
+
 const char *archive::nextFileTime(const char *current_time)
 {
     BinArchive *archive = dynamic_cast<BinArchive *>(_archiveI);
@@ -192,9 +203,13 @@ const char *archive::nextFileTime(const char *current_time)
 // ----------------------------------------------------------------
 //  c h a n n e l
 
+const size_t channel::init_buf_size = 16;
+const size_t channel::max_buf_size = 1024;
+const size_t channel::buf_size_fact = 4;
+
 channel::channel()
+   : _iter(0), buf_size(init_buf_size)
 {
-    _iter = 0;
 //  cout << "TRACE: channel()\n";
 }
 
@@ -204,12 +219,12 @@ channel::~channel()
 //  cout << "TRACE: ~channel()\n";
 }
 
-bool channel::valid()
+bool channel::valid() const
 {
     return _archiveI && _iter && _iter->isValid();
 }
 
-const char *channel::name()
+const char *channel::name() const
 {
     if (valid())
         return _iter->getChannel()->getName();
@@ -225,7 +240,7 @@ bool channel::next()
     return false;
 }
 
-const char *channel::getFirstTime()
+const char *channel::getFirstTime() const
 {
     if (!valid())
         throwDetailedArchiveException(Invalid,
@@ -234,7 +249,7 @@ const char *channel::getFirstTime()
     return osi2txt(_iter->getChannel()->getFirstTime());
 }
 
-const char *channel::getLastTime()
+const char *channel::getLastTime() const
 {
     if (!valid())
         throwDetailedArchiveException(Invalid,
@@ -245,7 +260,7 @@ const char *channel::getLastTime()
 }
 
 // internal helper routine
-bool channel::testValue(value &v)
+bool channel::testValue(value &v) const
 {
     if (!valid())
     {
@@ -258,7 +273,7 @@ bool channel::testValue(value &v)
     return true;
 }
 
-bool channel::getFirstValue(value &v)
+bool channel::getFirstValue(value &v) const
 {
     if (! testValue(v))
         throwDetailedArchiveException(Invalid,
@@ -267,7 +282,7 @@ bool channel::getFirstValue(value &v)
     return _iter->getChannel()->getFirstValue(v._iter);
 }
 
-bool channel::getLastValue(value &v)
+bool channel::getLastValue(value &v) const
 {
     if (! testValue(v))
         throwDetailedArchiveException(Invalid,
@@ -276,7 +291,7 @@ bool channel::getLastValue(value &v)
     return _iter->getChannel()->getLastValue(v._iter);
 }
 
-bool channel::getValueAfterTime(const char *time, value &v)
+bool channel::getValueAfterTime(const char *time, value &v) const
 {
     if (! testValue(v))
         throwDetailedArchiveException(Invalid,
@@ -293,7 +308,7 @@ bool channel::getValueAfterTime(const char *time, value &v)
     return _iter->getChannel()->getValueAfterTime(osi, v._iter);
 }
 
-bool channel::getValueBeforeTime(const char *time, value &v)
+bool channel::getValueBeforeTime(const char *time, value &v) const
 {
     if (! testValue(v))
         throwDetailedArchiveException(Invalid,
@@ -309,7 +324,7 @@ bool channel::getValueBeforeTime(const char *time, value &v)
     return _iter->getChannel()->getValueBeforeTime(osi, v._iter);
 }
 
-bool channel::getValueNearTime(const char *time, value &v)
+bool channel::getValueNearTime(const char *time, value &v) const
 {
     if (! testValue(v))
         throwDetailedArchiveException(Invalid,
@@ -327,34 +342,44 @@ bool channel::getValueNearTime(const char *time, value &v)
 
 int channel::lockBuffer(const value &value)
 {
-    if (! valid()  ||  value._iter == 0)
+   if (! valid()  ||  !value.valid() )
         return 0;
-    
-    return _iter->getChannel()->lockBuffer(*value._iter->getValue(),
-                                            value._iter->getPeriod());
+   
+   return _iter->getChannel()->lockBuffer(*value.getVal(), 1);
 }
 
 void channel::addBuffer(const value &value, int value_count)
 {
-    if (! valid ()  ||  value._iter == 0)
-        throwDetailedArchiveException(Invalid,
-                                       "invalid Value");
-    if (dynamic_cast<BinChannelIterator *>(_iter) == 0)
-        throwDetailedArchiveException(Invalid,
-                                       "no BinArchive");
-
-    _iter->getChannel()->addBuffer(*value._iter->getValue(),
-                                    value._iter->getPeriod(),
-                                    value_count);
+   if (! valid ()  || !value.valid() )
+      throwDetailedArchiveException(Invalid,
+				    "invalid Value");
+   if (dynamic_cast<BinChannelIterator *>(_iter) == 0)
+      throwDetailedArchiveException(Invalid,
+				    "no BinArchive");
+   
+   _iter->getChannel()->addBuffer(*value.getVal(), 0, value_count);
 }
+
+// bool channel::addValue(const value &value)
+// {
+//     if (! valid()  ||  !value.valid())
+//         throwDetailedArchiveException(Invalid,
+//                                        "invalid Value");
+//     return _iter->getChannel()->addValue(*value.getVal());
+// }
 
 bool channel::addValue(const value &value)
 {
-    if (! valid()  ||  value._iter == 0)
+    if (! valid()  ||  !value.valid())
         throwDetailedArchiveException(Invalid,
-                                       "invalid Value");
-
-    return _iter->getChannel()->addValue(*value._iter->getValue());
+				      "invalid Value");
+    if (_iter->getChannel()->lockBuffer(*value.getVal(), 0) == 0) {
+       _iter->getChannel()->addBuffer(*value.getVal(), 0, buf_size);
+       if (buf_size < max_buf_size)
+	  buf_size *= buf_size_fact;
+    }
+    
+    return _iter->getChannel()->addValue(*value.getVal());
 }
 
 void channel::releaseBuffer()
@@ -381,8 +406,8 @@ void channel::setIter(ArchiveI *archiveI)
 //  v a l u e
 
 value::value()
+   : _iter(0), _valI(0)
 {
-    _iter = 0;
 //  cout << "TRACE: value()\n";
 }
 
@@ -392,27 +417,31 @@ value::~value()
 //  cout << "TRACE: ~value()\n";
 }
 
-bool value::valid()
+bool value::valid() const
 {
-    return _iter && _iter->isValid();
+    return _valI || (_iter && _iter->isValid());
 }
 
-bool value::isInfo()
+const ValueI *value::getVal() const {
+   return _valI?_valI:_iter->getValue();
+}
+
+bool value::isInfo() const
 {
     if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
-    return _iter->getValue()->isInfo();
+    return getVal()->isInfo();
 }
 
-const char *value::type()
+const char *value::type() const
 {
     static char txt[20];
     
     if (! valid())
         return "<invalid>";
 
-    DbrType type = _iter->getValue()->getType();
+    DbrType type = getVal()->getType();
     if (type < dbr_text_dim)
         return dbr_text[type];
     
@@ -420,28 +449,39 @@ const char *value::type()
     return txt;
 }
 
-int value::count()
+int value::count() const
 {
     if (! valid())
         throwDetailedArchiveException(Invalid,
                                       "invalid Value");
-    return _iter->getValue()->getCount();
+    return getVal()->getCount();
 }
 
-double value::get()
-{
-    return getidx(0);
-}
-
-double value::getidx(int index)
+double value::getidx(int index) const
 {
     if (! valid())
         throwDetailedArchiveException(Invalid,
                                       "invalid Value");
-    return _iter->getValue()->getDouble(index);
+    return getVal()->getDouble(index);
 }
 
-const char *value::text()
+void value::setidx(double v, int index)
+{
+   if (!_valI)
+      throwDetailedArchiveException(Invalid,
+				    "can't set read only value!");
+   _valI->setDouble(v, index);
+}
+
+void value::parse( const char *str )
+{
+   if (!_valI)
+      throwDetailedArchiveException(Invalid,
+				    "can't set read only value!");
+   _valI->parseValue( str );
+}
+
+const char *value::text() const
 {
     static size_t l = 0; // Text has to be kept after return
     static char *text = 0;
@@ -449,7 +489,7 @@ const char *value::text()
     stdString value;
     if (valid())
     {
-        _iter->getValue()->getValue(value);
+        getVal()->getValue(value);
         if (l < value.length())
         {
             if (text)
@@ -464,34 +504,77 @@ const char *value::text()
     return "<invalid>";
 }
 
-const char *value::time()
+const char *value::time() const
 {
     if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
-    return osi2txt (_iter->getValue()->getTime());
+    return osi2txt (getVal()->getTime());
 }
 
-double value::getDoubleTime()
+double value::getDoubleTime() const
 {
     osiTime cur_time;
     if (! valid())
         throwDetailedArchiveException (Invalid,
                                        "invalid Value");
-    cur_time = _iter->getValue()->getTime();
+    cur_time = getVal()->getTime();
     return ((double)cur_time);
 
 }
 
-const char *value::status()
+bool value::isRepeat() const
+{
+   if (!valid())
+        throwDetailedArchiveException(Invalid,
+                                      "invalid Value");
+   return (( sevr() == ARCH_REPEAT ) || ( sevr() == ARCH_EST_REPEAT));
+}
+
+
+const char *value::status() const
 {
     static stdString text; // keep after 'return'
     if (!valid())
         throwDetailedArchiveException(Invalid,
                                       "invalid Value");
-    _iter->getValue()->getStatus(text);
+    getVal()->getStatus(text);
     return text.c_str();
 }
+
+int value::stat() const
+{
+    if (!valid())
+        throwDetailedArchiveException(Invalid,
+                                      "invalid Value");
+    return getVal()->getStat();
+}
+
+int value::sevr() const
+{
+    if (!valid())
+        throwDetailedArchiveException(Invalid,
+                                      "invalid Value");
+    return getVal()->getSevr();
+}
+
+
+void value::setStat(int stat, int sevr)
+{
+   if (!_valI)
+        throwDetailedArchiveException(Invalid,
+                                      "invalid Value");
+   _valI->setStatus(stat, sevr);
+}
+
+void value::setStatus( const char* stat)
+{
+   if (!_valI)
+        throwDetailedArchiveException(Invalid,
+                                      "invalid Value");
+   _valI->parseStatus(stat);
+}
+
 
 bool value::next()
 {
@@ -526,3 +609,194 @@ void value::setIter(ValueIteratorI *iter)
     _iter = iter;
 }
 
+void value::getCtrlInfo(ctrlinfo &ci) const
+{
+   ci.setValue(getVal());
+}
+
+void value::setCtrlInfo(ctrlinfo &ci)
+{
+   if (!_valI || !ci._ctrli)
+        throwDetailedArchiveException(Invalid,
+                                      "invalid Value");
+   _valI->setCtrlInfo(ci._ctrli);
+}
+
+void value::setTime (const char *ts)
+{
+   if (!_valI)
+      throwDetailedArchiveException(Invalid, "invalid Value");
+
+   osiTime osi;
+   if (!text2osi(ts, osi))
+      throwDetailedArchiveException(Invalid, "invalid Time");
+   _valI->setTime(osi);
+}
+
+void value::clone(value& src)
+{
+   _valI = src.getVal()->clone();
+}
+
+
+// ----------------------------------------------------------------
+//  c o n t r o l - i n f o
+ctrlinfo::ctrlinfo()
+   : _ctrli(0), _enumCnt(0), _enumStr(0)
+{  
+   _ctrli = new CtrlInfoI();
+}
+
+ctrlinfo::~ctrlinfo()
+{
+   if (_ctrli) delete _ctrli;
+}
+
+long ctrlinfo::getPrecision() const 
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getPrecision();
+}
+
+const char *ctrlinfo::getUnits() const
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getUnits();
+}
+
+float ctrlinfo::getDisplayHigh() const
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getDisplayHigh();
+}
+
+float ctrlinfo::getDisplayLow() const
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getDisplayLow();
+}
+
+float ctrlinfo::getHighAlarm() const
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getHighAlarm();
+}
+
+float ctrlinfo::getHighWarning() const
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getHighWarning();
+}
+
+float ctrlinfo::getLowWarning() const
+{
+   if (!_ctrli) 
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getLowWarning();
+}
+
+float ctrlinfo::getLowAlarm() const
+{
+   if (!_ctrli) 
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getLowAlarm();
+}
+
+void ctrlinfo::setValue(const ValueI* v)
+{
+   if (!v) 
+      throwDetailedArchiveException(Invalid,
+				    "invalid Value");
+   if (_ctrli) delete _ctrli;
+   _ctrli = new CtrlInfoI(*(v->getCtrlInfo()));
+}
+
+Type ctrlinfo::getType() const
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return (Type)_ctrli->getType();
+}
+
+void ctrlinfo::setNumeric(long prec, const char *units,
+		float disp_low, float disp_high,
+		float low_alarm, float low_warn, 
+		float high_warn, float high_alarm)
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   _ctrli->setNumeric(prec, units, disp_low, disp_high, 
+		      low_alarm, low_warn, high_warn, high_alarm);
+}
+
+void ctrlinfo::setEnumeratedString(int state, const char *str)
+{
+   if (state != _enumCnt)
+      throwDetailedArchiveException(Invalid,
+				    "EnumeratedString out of sequence");
+   if (state)
+      _enumStr = (char**)realloc(_enumStr, state * sizeof(char*));
+   else
+      _enumStr = (char**)malloc(state * sizeof(char*));
+   if (!_enumStr)
+      throwDetailedArchiveException(Invalid,
+				    "can't allocate string");
+   _enumStr[state] = strdup(str);
+   _enumCnt++;
+}
+
+
+void ctrlinfo::setEnumerated()
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   size_t sumlen = 0;
+   for (size_t i = 0; i < _enumCnt; i++)
+      sumlen += strlen(_enumStr[i]) + 1;
+   _ctrli->allocEnumerated(_enumCnt, sumlen);
+   for (size_t i = 0; i < _enumCnt; i++) {
+      _ctrli->setEnumeratedString(i, _enumStr[i]);
+      free(_enumStr[i]);
+   }
+   free(_enumStr);
+   _enumCnt = 0;
+}
+
+int ctrlinfo::getNumStates() const
+{
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   return _ctrli->getNumStates();
+}
+
+const char* ctrlinfo::getState(int state) const
+{
+   static char *stateStr = 0;
+   
+   if (!_ctrli)
+      throwDetailedArchiveException(Invalid,
+				    "invalid ControlInfo");
+   stdString str;
+   _ctrli->getState(state, str);
+   if (stateStr) free(stateStr);
+   stateStr = strdup(str.c_str());
+   return stateStr;
+}

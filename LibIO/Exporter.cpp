@@ -77,7 +77,7 @@ Exporter::Exporter (ArchiveI *archive, const stdString &filename)
 	_time_col_val_format = false;
 	_is_array = false;
 	_datacount = 0;
-	_max_channel_count = 10;
+	_max_channel_count = 100;
 }
 
 void Exporter::exportMatchingChannels (const stdString &channel_name_pattern)

@@ -97,12 +97,17 @@ void Exporter::exportMatchingChannels (const stdString &channel_name_pattern)
     exportChannelList (channel_names);
 }
 
-void Exporter::printTime (std::ostream *out, const osiTime &time)
+void Exporter::printTime(std::ostream *out, const osiTime &time)
 {
     int year, month, day, hour, min, sec;
     unsigned long nano;
     osiTime2vals (time, year, month, day, hour, min, sec, nano);
 
+    char buf[80];
+    sprintf(buf, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
+            month, day, year, hour, min, sec, nano);
+    *out << buf;
+#if 0
     *out << std::setw(2) << std::setfill('0') << month << '/'
          << std::setw(2) << std::setfill('0') << day   << '/'
          << std::setw(2) << std::setfill('0') << year  << ' '
@@ -110,6 +115,7 @@ void Exporter::printTime (std::ostream *out, const osiTime &time)
          << std::setw(2) << std::setfill('0') << min   << ':'
          << std::setw(2) << std::setfill('0') << sec   << '.'
          << std::setw(9) << std::setfill('0') << nano;
+#endif
 }
 
 void Exporter::printValue (std::ostream *out, const osiTime &time, const ValueI *v)
@@ -159,50 +165,50 @@ void Exporter::printValue (std::ostream *out, const osiTime &time, const ValueI 
     }
 }
 
-void Exporter::exportChannelList (const stdVector<stdString> &channel_names)
+void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
 {
     size_t i, ai, num = channel_names.size();
-    stdVector<ChannelIteratorI *> channels (num);
-    stdVector<ValueIteratorI *> base (num);
-    stdVector<ValueIteratorI *> values (num);
-    stdVector<ValueI *> prev_values (num);
+    stdVector<ChannelIteratorI *> channels(num);
+    stdVector<ValueIteratorI *>   base(num);
+    stdVector<ValueIteratorI *>   values(num);
+    stdVector<ValueI *>           prev_values(num);
     const ValueI *v;
+    char info[300];
 
     _datacount = 0;
     if (channel_names.size() > _max_channel_count)
     {
-        std::strstream info;
-        info << "You tried to export " << channel_names.size() << " channels.\n"
-            "For performance reason you are limited to export "
-            << _max_channel_count << " channels at once" << '\0';
-        throwDetailedArchiveException (Invalid, info.str());
-        info.rdbuf()->freeze (false); // well, never reached ...
+        sprintf(info,
+                "You tried to export %d channels.\n"
+                "For performance reason you are limited to export %d channels at once",
+                channel_names.size(), _max_channel_count);
+        throwDetailedArchiveException(Invalid, info);
         return;
     }
 
     // Open Channel & ValueIterator
     for (i=0; i<num; ++i)
     {
-        channels[i] = _archive->newChannelIterator ();
-        if (! _archive->findChannelByName (channel_names[i], channels[i]))
+        channels[i] = _archive->newChannelIterator();
+        if (! _archive->findChannelByName(channel_names[i], channels[i]))
         {
-            std::strstream info;
-            info << "Cannot find channel '" << channel_names[i] << "' in archive" << '\0';
-            throwDetailedArchiveException (ReadError, info.str());
-            info.rdbuf()->freeze (false); // not reached ...
+            sprintf(info, "Cannot find channel '%s' in archive",
+                    channel_names[i].c_str());
+            throwDetailedArchiveException (ReadError, info);
             return;
         }
-        base[i] = _archive->newValueIterator ();
-        channels[i]->getChannel()->getValueAfterTime (_start, base[i]);
+        base[i] = _archive->newValueIterator();
+        channels[i]->getChannel()->getValueAfterTime(_start, base[i]);
 
         if (_linear_interpol_secs > 0.0)
         {
-            LinInterpolValueIteratorI *interpol = new LinInterpolValueIteratorI (base[i], _linear_interpol_secs);
-            interpol->setMaxDeltaT (_linear_interpol_secs * _gap_factor);
+            LinInterpolValueIteratorI *interpol =
+                new LinInterpolValueIteratorI(base[i], _linear_interpol_secs);
+            interpol->setMaxDeltaT(_linear_interpol_secs * _gap_factor);
             values[i] = interpol;
         }
         else
-            values[i] = new ExpandingValueIteratorI (base[i]);
+            values[i] = new ExpandingValueIteratorI(base[i]);
 
         prev_values[i] = 0;
 
@@ -211,12 +217,11 @@ void Exporter::exportChannelList (const stdVector<stdString> &channel_names)
             _is_array = true;
             if (num > 1)
             {
-                std::strstream info;
-                info << "Array channels like '" << channel_names[i]
-                    << "' can only be exported on their own, not together with another channel"
-                    << '\0';
-                throwDetailedArchiveException (Invalid, info.str());
-                info.rdbuf()->freeze (false);
+                sprintf(info,
+                        "Array channels like '%s' can only be exported on their own, "
+                        "not together with another channel",
+                        channel_names[i].c_str());
+                throwDetailedArchiveException(Invalid, info);
                 return;
             }
         }
@@ -232,17 +237,17 @@ void Exporter::exportChannelList (const stdVector<stdString> &channel_names)
 #else
         if (! file.is_open ())
 #endif
-            throwDetailedArchiveException (WriteError, _filename);
+            throwDetailedArchiveException(WriteError, _filename);
         out = &file;
     }
 
-    prolog (*out);
+    prolog(*out);
 
     // Headline: "Time" and channel names
     *out << "Time";
     for (i=0; i<num; ++i)
     {
-        *out << '\t' << channels[i]->getChannel()->getName ();
+        *out << '\t' << channels[i]->getChannel()->getName();
         if (! values[i]->isValid())
             continue;
         if (values[i]->getValue()->getCtrlInfo()->getType() == CtrlInfoI::Numeric)
@@ -278,7 +283,7 @@ void Exporter::exportChannelList (const stdVector<stdString> &channel_names)
 #endif
         ++_datacount;
         // One line: time and all values for that time
-        printTime (out, time);
+        printTime(out, time);
         for (i=0; i<num; ++i)
         {
             if (! values[i]->isValid())
@@ -294,7 +299,7 @@ void Exporter::exportChannelList (const stdVector<stdString> &channel_names)
                 same_time = v->getTime() == time;
             if (same_time)
             {
-                printValue (out, time, v);
+                printValue(out, time, v);
                 if (_fill) // keep copy of this value?
                 {
                     if (v->isInfo () && prev_values[i])
@@ -302,12 +307,12 @@ void Exporter::exportChannelList (const stdVector<stdString> &channel_names)
                         delete prev_values[i];
                         prev_values[i] = 0;
                     }
-                    else if (prev_values[i] && prev_values[i]->hasSameType (*v))
-                        prev_values[i]->copyValue (*v);
+                    else if (prev_values[i] && prev_values[i]->hasSameType(*v))
+                        prev_values[i]->copyValue(*v);
                     else
                     {
                         delete prev_values[i];
-                        prev_values[i] = v->clone ();
+                        prev_values[i] = v->clone();
                     }
                 }
                 values[i]->next();
@@ -315,7 +320,7 @@ void Exporter::exportChannelList (const stdVector<stdString> &channel_names)
             else
             {
                 if (prev_values[i])
-                    printValue (out, time, prev_values[i]);
+                    printValue(out, time, prev_values[i]);
                 else
                     *out << "\t" << _undefined_value;
             }
@@ -323,15 +328,15 @@ void Exporter::exportChannelList (const stdVector<stdString> &channel_names)
         *out << "\n";
         // Find time stamp for next line
         if (_round_secs == 0)
-            time = findOldestValue  (values);
+            time = findOldestValue(values);
         else
-            time = findRoundedTime (values, _round_secs);
+            time = findRoundedTime(values, _round_secs);
     }
 
-    post_scriptum (channel_names);
+    post_scriptum(channel_names);
 
     if (out == &file)
-        file.close ();
+        file.close();
 
     for (i=0; i<num; ++i)
     {

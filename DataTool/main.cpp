@@ -255,7 +255,7 @@ void convert_dir_index(int RTreeM,
     DirectoryFile dir;
     if (!dir.open(dir_name))
         return;
-	
+    
     DirectoryFileIterator channels = dir.findFirst();
     IndexFile index(RTreeM);
     if (verbose)
@@ -364,7 +364,8 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
         // Check by reading first+last buffer & getting times
         bool times_ok = false;
         DataHeader *header;
-        header = get_dataheader(index.getDirectory(), start_file, start_offset);
+        header = get_dataheader(index.getDirectory(),
+                                start_file, start_offset);
         if (header)
         {
             start_time = header->data.begin_time;
@@ -380,17 +381,19 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
         if (times_ok)
         {
             stdString start, end;
-            epicsTime2string(start_time, start);
-            epicsTime2string(end_time, end);
             if (verbose)
                 printf("%s - %s\n",
-                       start.c_str(), end.c_str());
+                       epicsTimeTxt(start_time, start),
+                       epicsTimeTxt(end_time, end));
             DirectoryFileIterator dfi;
             dfi = dir.find(names.getName());
             if (!dfi.isValid())
                 dfi = dir.add(names.getName());
             dfi.entry.setFirst(start_file, start_offset);
             dfi.entry.setLast(end_file, end_offset);
+            dfi.entry.data.create_time = start_time;
+            dfi.entry.data.first_save_time = start_time;
+            dfi.entry.data.last_save_time = end_time;
             dfi.save();
         }
     }
@@ -625,14 +628,14 @@ int main(int argc, const char *argv[])
     // Start/end time
     epicsTime *start = 0, *end = 0;
     stdString txt;
-	if (start_time.get().length() > 0)
+    if (start_time.get().length() > 0)
     {
         start = new epicsTime;
         string2epicsTime(start_time.get(), *start);
         if (verbose)
             printf("Using start time %s\n", epicsTimeTxt(*start, txt));
     }
-	if (end_time.get().length() > 0)
+    if (end_time.get().length() > 0)
     {
         end = new epicsTime();
         string2epicsTime(end_time.get(), *end);

@@ -8,6 +8,9 @@
 #include "ArchiveChannel.h"
 #include "Engine.h"
 
+#undef DEBUG_CHANNEL
+
+
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
 {
     this->name = name;
@@ -122,9 +125,11 @@ void ArchiveChannel::startCA(Guard &guard)
     {
         if (connected)
         {   // Re-get control information for this channel
+            // Should use ca_element_count, but R3.13 CA
+            // doesn't handle that for arrays & DBR_CTRL_...
             int status = ca_array_get_callback(
                 ca_field_type(ch_id)+DBR_CTRL_STRING,
-                ca_element_count(ch_id),
+                1 /* ca_element_count(ch_id) */,
                 ch_id, control_callback, this);
             if (status != ECA_NORMAL)
             {
@@ -252,7 +257,9 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
     Guard guard(me->mutex);
     if (ca_state(arg.chid) == cs_conn)
     {
-        //LOG_MSG("%s: cs_conn, getting control info\n", me->name.c_str());
+#ifdef  DEBUG_CHANNEL
+        LOG_MSG("%s: cs_conn, getting control info\n", me->name.c_str());
+#endif
         // Get control information for this channel
         // TODO: This is only requested on connect
         // - similar to the previous engine or DM.
@@ -260,7 +267,7 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
         // a channel without rebooting an IOC?
         int status = ca_array_get_callback(
             ca_field_type(me->ch_id)+DBR_CTRL_STRING,
-            ca_element_count(me->ch_id),
+            1 /* ca_element_count(me->ch_id) */,
             me->ch_id, control_callback, me);
         if (status != ECA_NORMAL)
         {
@@ -369,6 +376,8 @@ bool ArchiveChannel::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
             ctrl_info.setEnumerated(0, 0);
             return true;
     }
+    LOG_MSG("%s: setup_ctrl_info cannot handle type %d\n",
+            name.c_str(), type);
     return false;
 }
 
@@ -378,8 +387,13 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
     bool was_connected = me->connected;
     Guard engine_guard(theEngine->mutex);
     Guard guard(me->mutex);
-    if (arg.status == ECA_NORMAL &&
-        me->setup_ctrl_info(arg.type, arg.dbr))
+    if (arg.status != ECA_NORMAL)
+    {
+        LOG_MSG("%s: Control_callback failed: %s\n",
+                me->name.c_str(),  ca_message(arg.status));
+        return;
+    }
+    if (me->setup_ctrl_info(arg.type, arg.dbr))
     {
         //LOG_MSG("%s: received control info\n", me->name.c_str());
         me->connection_time = epicsTime::getCurrent();
@@ -395,11 +409,6 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
             for (g=me->groups.begin(); g!=me->groups.end(); ++g)
                 ++ (*g)->num_connected;
         }
-    }
-    else
-    {
-        LOG_MSG("%s: ERROR, control_callback info request failed\n",
-                me->name.c_str());
     }
 }
 

@@ -1,2 +1,26 @@
 \section{Data Tool}
-The ArchiveDataTool allows investigation of data files as well as conversion from old directory-file based archives into ones that utilize an index file.
+The ArchiveDataTool allows investigation of data files as well as
+conversion from old directory-file based archives into ones that
+utilize an index file.
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily] 
+USAGE: ArchiveDataTool [Options] <index-file>
+ 
+Options:
+  -help                     Show help
+  -verbose <level>          Show more info
+  -list                     List channel name info
+  -dir2index <dir. file>    Convert old directory file
+                            to index
+  -index2dir <dir. file>    Convert index to old
+                            directory file
+  -M <1-100>                RTree M value
+  -blocks                   List data blocks of a channel
+  -Blocks                   List all data blocks
+  -dotindex <dot filename>  Dump contents of RTree index
+                            into dot file
+  -channel <name>           Channel name
+  -hashinfo                 Show Hash table info
+  -seek <time>              Perform seek test
+  -test                     Perform some consistency tests
+\end{lstlisting}

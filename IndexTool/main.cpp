@@ -10,9 +10,11 @@
 #include "ArchiverConfig.h"
 #include "ArgParser.h"
 #include "epicsTimeHelper.h"
-#include "ASCIIParser.h"
+#include "FUX.h"
 // Index
 #include <IndexFile.h>
+
+// TODO: XML archive list?
 
 int verbose;
 
@@ -65,20 +67,33 @@ bool add_tree_to_master(const stdString &index_name,
     return true;
 }
 
+bool parse_config(const stdString &config_name,
+                  stdList<stdString> &subarchives)
+{
+    FUX fux;
+    FUX::Element *e, *doc = fux.parse(config_name.c_str());
+    if (!(doc && doc->name == "indexconfig"))
+    {
+        fprintf(stderr, "Cannot parse '%s'\n", config_name.c_str());
+        return false;
+    }
+    stdList<FUX::Element *>::const_iterator els;
+    for (els=doc->children.begin(); els!=doc->children.end(); ++els)
+        if ((e = (*els)->find("index")))
+            subarchives.push_back(e->value);
+    return true;
+}
+
 bool create_masterindex(int RTreeM,
                         const stdString &config_name,
                         const stdString &index_name)
 {
-    ASCIIParser config_parser;
+    stdList<stdString> subarchives;
+    if (!parse_config(config_name, subarchives))
+        return false;
     IndexFile::NameIterator names;
     IndexFile index(RTreeM), subindex(RTreeM);
     bool ok;
-    if (!config_parser.open(config_name))
-    {
-        fprintf(stderr, "Cannot open config file '%s'\n",
-                config_name.c_str());
-        return false;
-    }
     if (!index.open(index_name, false))
     {
         fprintf(stderr, "Cannot create master index file '%s'\n",
@@ -87,9 +102,10 @@ bool create_masterindex(int RTreeM,
     }
     if (verbose)
         printf("Created master index '%s'.\n", index_name.c_str());
-    while (config_parser.nextLine())
+    stdList<stdString>::const_iterator subs;
+    for (subs = subarchives.begin(); subs != subarchives.end(); ++subs)
     {
-        const stdString &sub_name = config_parser.getLine();
+        const stdString &sub_name = *subs;
         if (!subindex.open(sub_name))
         {
             fprintf(stderr, "Cannot open sub-index '%s'\n", sub_name.c_str());
@@ -135,9 +151,8 @@ bool create_masterindex(int RTreeM,
 int main(int argc, const char *argv[])
 {
     initEpicsTimeHelper();
-
     CmdArgParser parser(argc, argv);
-    parser.setHeader("Archive Mega Index version " ARCH_VERSION_TXT ", "
+    parser.setHeader("ArchiveIndexTool version " ARCH_VERSION_TXT ", "
                      EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n"
                      );

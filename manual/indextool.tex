@@ -1,3 +1,27 @@
 \section{Index Tool}
-The ArchiveIndexTool is used to create Master Indices by combining multiple indices
-into a new one.
+The ArchiveIndexTool is used to create Master Indices by combining
+multiple indices into a new one.
+
+When invoked without valid arguments, it will display a command
+description similar to this:
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+USAGE: ArchiveIndexTool [Options] <archive list file> \
+                                         <output index>
+ 
+Options:
+  -help             Show Help
+  -M <3-100>        RTree M value
+  -verbose <level>  Show more info
+\end{lstlisting}
+
+\noindent The archive list file lists all the sub archives,
+that is the paths to each sub-archive's index file. It needs to be an
+XML file conforming to the DTD in listing \ref{lst:indexconfigdtd}.
+Listing \ref{lst:indexconfigex} provides an example.
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for
+    the Archive Index Tool Configuration},label=lst:indexconfigdtd]{../IndexTool/indexconfig.dtd}
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example
+    Archive Index Tool Configuration},label=lst:indexconfigex]{../IndexTool/indexconfig.xml}

@@ -8,6 +8,12 @@ url='http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi';
 
 ml_arch_info(url);
 [ver, desc, hows]=ml_arch_info(url);
+h_raw=0;
+h_sheet=1;
+h_average=2;
+h_linear=3;
+h_plot=4;
+
 
 ml_arch_archives(url);
 [keys,names,paths]=ml_arch_archives(url);

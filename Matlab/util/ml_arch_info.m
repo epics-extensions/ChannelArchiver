@@ -10,9 +10,9 @@ if nargout < 1
     disp(desc)
     for i=1:size(hows,1)
         if is_matlab==1
-            disp(sprintf('How=%d: %s', i, hows{i}));
+            disp(sprintf('How=%d: %s', i-1, hows{i}));
         else
-            disp(sprintf('How=%d: %s', i, hows(i,:)));
+            disp(sprintf('How=%d: %s', i-1, hows(i,:)));
         end
     end
 end

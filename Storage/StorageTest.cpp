@@ -30,6 +30,7 @@ void old_list_channels(const stdString &index_name)
 
 void list_channels(const stdString &index_name)
 {
+#if 0
     archiver_Index index;
     if (!index.open(index_name.c_str()))
     {
@@ -51,6 +52,7 @@ void list_channels(const stdString &index_name)
         ok = cni->getNext(&name);
     }
     delete cni;
+#endif
 }
 
 void header_dump(const stdString &index_name)
@@ -133,8 +135,8 @@ void add(const stdString &index_name, const stdString &channel_name, int count)
 {
     DataWriter *writer;
 
-    archiver_Index *index = new archiver_Index();
-    if (!index && index->open(index_name.c_str(), false))
+    IndexFile index;
+    if (!index.open(index_name, false))
     {
         fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
         return;
@@ -148,7 +150,7 @@ void add(const stdString &index_name, const stdString &channel_name, int count)
     DbrCount dbr_count = 1;
     size_t num_samples = 100;
 
-    writer = new DataWriter(*index,
+    writer = new DataWriter(index,
                             channel_name, ctrl_info,
                             dbr_type, dbr_count, 2.0, num_samples);
     dbr_time_double *data =  RawValue::allocate(dbr_type, dbr_count, 1);
@@ -162,10 +164,9 @@ void add(const stdString &index_name, const stdString &channel_name, int count)
         --count;
     } 
     RawValue::free(data);
-    
     delete writer;
+    index.close();
     DataFile::close_all();
-    delete index;
 }
 
 void old_value_dump(const stdString &index_name,
@@ -203,7 +204,7 @@ void value_dump(const stdString &index_name,
                 const stdString &channel_name,
                 epicsTime *start, epicsTime *end)
 {
-    archiver_Index index;
+    IndexFile index;
     if (!index.open(index_name.c_str()))
     {
         fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
@@ -228,11 +229,12 @@ void value_dump(const stdString &index_name,
         data = reader->next();
     }
     delete reader;
+    index.close();
 }
 
 void spreadsheet_test(const stdString &index_name)
 {
-    archiver_Index index;
+    IndexFile index;
     if (!index.open(index_name.c_str()))
     {
         fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
@@ -283,7 +285,7 @@ void spreadsheet_test(const stdString &index_name)
 
 void run_test(const stdString &index_name)
 {
-    archiver_Index index;
+    IndexFile index;
     if (!index.open(index_name.c_str()))
     {
         fprintf(stderr, "Cannot open index %s\n", index_name.c_str());

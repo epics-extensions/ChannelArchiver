@@ -13,16 +13,16 @@ DataReader::~DataReader()
 {}
 
 
-RawDataReader::RawDataReader(archiver_Index &index)
-        : index(index), au_iter(0), valid_datablock(false),
+RawDataReader::RawDataReader(IndexFile &index)
+        : index(index), tree(0), rec_idx(0), valid_datablock(false),
           type_changed(false), ctrl_info_changed(false),
           data(0), header(0)
 {}
 
 RawDataReader::~RawDataReader()
 {
-    if (au_iter)
-        delete au_iter;
+    if (tree)
+        delete tree;
     if (data)
         RawValue::free(data);
     if (header)
@@ -35,67 +35,36 @@ const RawValue::Data *RawDataReader::find(
     const epicsTime *start, const epicsTime *end)
 {
     this->channel_name = channel_name;
-    interval range;
-    if (start==0  ||  end==0)
-    {   // default: all that's in archive
-        if (!index.getEntireIndexedInterval(channel_name.c_str(), &range))
-        {
-#ifdef DEBUG_DATAREADER
-            LOG_MSG("Cannot get interval for '%s' in index\n",
-                    channel_name.c_str());
-#endif
-            return 0;
-        }   
-    }
-    // adjust time range to requested start & end
-    if (start)
-        range.setStart(*start);
-    if (end)
-        range.setEnd(*end);
-#ifdef DEBUG_DATAREADER
-    {
-        stdString txt;
-        epicsTime2string(range.getStart(), txt);
-        printf("RawDataReader::find: %s ...", txt.c_str());
-        epicsTime2string(range.getEnd(), txt);
-        printf("%s\n", txt.c_str());
-    }
-#endif
-    if (!range.isIntervalValid())
-        return 0;
-    au_iter = index.getKeyAUIterator(channel_name.c_str());
-    if (!au_iter)
-    {
-#ifdef DEBUG_DATAREADER
-        LOG_MSG ("RawDataReader: Cannot find '%s' in index\n",
-                 channel_name.c_str());
-#endif
-        return 0;
-    }
+    // Get tree
+    if (!(tree = index.getTree(channel_name)))
+        return false;
     // Get 1st data block
-    valid_datablock = au_iter->getFirst(range, &datablock, &valid_interval);
-    if (! valid_datablock)
-        // No values for this time in index
+    if (start)
+        valid_datablock = tree->searchDatablock(*start, node, rec_idx, datablock);
+    else
+        valid_datablock = tree->getFirstDatablock(node, rec_idx, datablock);
+    if (! valid_datablock)  // No values for this time in index
         return 0;
 #ifdef DEBUG_DATAREADER
     {
         stdString s, e;
-        epicsTime2string(valid_interval.getStart(), s);
-        epicsTime2string(valid_interval.getEnd(), e);
+        epicsTime2string(node.record[rec_idx].start, s);
+        epicsTime2string(node.record[rec_idx].end, e);
         printf("First Block: %s @ 0x%lX: %s - %s\n",
-               datablock.getPath(), datablock.getOffset(), s.c_str(),
-               e.c_str());
+               datablock.data_filename.c_str(),
+               datablock.data_offset,
+               s.c_str(), e.c_str());
 #endif
     // Get the buffer for that data block
     if (!getHeader(index.getDirectory(),
-                   datablock.getPath(), datablock.getOffset()))
+                   datablock.data_filename, datablock.data_offset))
     {
         LOG_MSG("RawDataReader %s: Cannot read '%s' @ 0x%X\n",
                 channel_name.c_str(),
-                datablock.getPath(), datablock.getOffset());
+                datablock.data_filename.c_str(), datablock.data_offset);
         return 0;
     }
-    const RawValue::Data *found = findSample(valid_interval.getStart());
+    const RawValue::Data *found = findSample(node.record[rec_idx].start);
     return found;
 }
 
@@ -105,27 +74,27 @@ const RawValue::Data *RawDataReader::next()
     if (!(header && valid_datablock))
         return 0;
     if (val_idx >= header->data.num_samples            ||
-        RawValue::getTime(data) > valid_interval.getEnd())
+        RawValue::getTime(data) > node.record[rec_idx].end)
     {   // Need to get another block
-        valid_datablock = au_iter->getNext(&datablock, &valid_interval);
+        valid_datablock = tree->nextDatablock(node, rec_idx, datablock);
         if (!valid_datablock)
             return 0;
 #ifdef DEBUG_DATAREADER
         stdString s, e;
-        epicsTime2string(valid_interval.getStart(), s);
-        epicsTime2string(valid_interval.getEnd(), e);
+        epicsTime2string(node.record[rec_idx].start, s);
+        epicsTime2string(node.record[rec_idx].end, e);
         printf("Next  Block: %s @ 0x%lX: %s - %s\n",
-               datablock.getPath(), datablock.getOffset(),
+               datablock.data_filename.c_str(), datablock.data_offset,
                s.c_str(), e.c_str());
 #endif
         if (!getHeader(index.getDirectory(),
-                       datablock.getPath(), datablock.getOffset()))
+                       datablock.data_filename, datablock.data_offset))
         {
             delete header;
             header = 0;
             return 0;
         }
-        return findSample(valid_interval.getStart());
+        return findSample(node.record[rec_idx].start);
     }
     // Read next sample in current block       
     FileOffset offset =

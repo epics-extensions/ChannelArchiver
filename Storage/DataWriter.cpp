@@ -2,6 +2,7 @@
 // Tools
 #include "MsgLogger.h"
 #include "Filename.h"
+#include "epicsTimeHelper.h"
 // Storage
 #include "DataFile.h"
 #include "DataWriter.h"
@@ -28,15 +29,14 @@ static stdString makeDataFileName()
     //return stdString(buffer);
 }
 
-DataWriter::DataWriter(archiver_Index &index,
+DataWriter::DataWriter(IndexFile &index,
                        const stdString &channel_name,
                        const CtrlInfo &ctrl_info,
                        DbrType dbr_type,
                        DbrCount dbr_count,
                        double period,
                        size_t num_samples)
-        : index(index), channel_name(channel_name),
-          priority(0),
+        : index(index), tree(0), channel_name(channel_name),
           ctrl_info(ctrl_info), dbr_type(dbr_type),
           dbr_count(dbr_count), period(period), header(0), available(0)
 {
@@ -47,8 +47,68 @@ DataWriter::DataWriter(archiver_Index &index,
     raw_value_size = RawValue::getSize(dbr_type, dbr_count);
 
     // Find or add appropriate data buffer
-    archiver_Unit au;
-    if (!index.getLatestAU(channel_name.c_str(), &au))
+    tree = index.getTree(channel_name);
+    if (!tree)
+        tree = index.addChannel(channel_name);
+    if (!tree)
+    {
+        LOG_MSG("DataWriter(%s) cannot get Tree\n",
+                channel_name.c_str());
+        return;
+    }
+    RTree::Datablock block;
+    if (tree->getLatestDatablock(block))        
+    {   // - There is a data file and buffer
+        datafile = DataFile::reference(index.getDirectory(),
+                                       block.data_filename, true);
+        if (!datafile)
+        {
+            LOG_MSG("DataWriter(%s) cannot open data file %s\n",
+                    channel_name.c_str(), block.data_filename.c_str());
+            return;
+        } 
+        header = datafile->getHeader(block.data_offset);
+        datafile->release(); // now ref'ed by header
+        if (!header)
+        {
+            LOG_MSG("DataWriter(%s): cannot get header %s @ 0x%lX\n",
+                    channel_name.c_str(),
+                    block.data_filename.c_str(), block.data_offset);
+            return;
+        }
+        // See if anything has changed
+        CtrlInfo prev_ctrl_info;
+        if (!prev_ctrl_info.read(header->datafile,
+                                 header->data.ctrl_info_offset))
+        {
+            LOG_MSG("DataWriter(%s): header in %s @ 0x%lX"
+                    " has bad CtrlInfo\n",
+                    channel_name.c_str(),
+                    header->datafile->getBasename().c_str(),
+                    header->offset);
+            delete header;
+            header = 0;
+            return;            
+        }
+        if (prev_ctrl_info != ctrl_info)
+        {   // Add new header because info has changed
+            if (!addNewHeader(true))
+                return;
+        }
+        else if (header->data.dbr_type != dbr_type  ||
+                 header->data.dbr_count != dbr_count)
+        {   // Add new header because type has changed
+            if (!addNewHeader(false))
+                return;
+        }
+        else
+        {   // All fine, just check if we're already in bigger league
+            size_t capacity = header->capacity();
+            if (capacity > num_samples)
+                calc_next_buffer_size(capacity);
+        }
+    }   
+    else
     {   // - There is no datafile, no buffer
         // Create data file
         stdString data_file_name = makeDataFileName();
@@ -84,79 +144,30 @@ DataWriter::DataWriter(archiver_Index &index,
         calc_next_buffer_size(next_buffer_size);
         // Will add to index when we release the buffer
     }
-    else
-    {   // - There is a data file and buffer
-        stdString data_file_name = au.getKey().getPath();
-        FileOffset offset = au.getKey().getOffset();
-        datafile = DataFile::reference(index.getDirectory(),
-                                       data_file_name, true);
-        if (!datafile)
-        {
-            LOG_MSG("DataWriter(%s) cannot open data file %s\n",
-                    channel_name.c_str(), data_file_name.c_str());
-            return;
-        } 
-        header = datafile->getHeader(offset);
-        datafile->release(); // now ref'ed by header
-        if (!header)
-        {
-            LOG_MSG("DataWriter(%s): cannot get header %s @ 0x%lX\n",
-                    channel_name.c_str(),
-                    data_file_name.c_str(), offset);
-            return;
-        }
-        // See if anything has changed
-        CtrlInfo prev_ctrl_info;
-        if (!prev_ctrl_info.read(header->datafile,
-                                 header->data.ctrl_info_offset))
-        {
-            LOG_MSG("DataWriter(%s): header in %s @ 0x%lX"
-                    " has bad CtrlInfo\n",
-                    channel_name.c_str(),
-                    header->datafile->getBasename().c_str(),
-                    header->offset);
-            delete header;
-            header = 0;
-            return;            
-        }
-        if (prev_ctrl_info != ctrl_info)
-        {   // Add new header because info has changed
-            if (!addNewHeader(true))
-                return;
-        }
-        else if (header->data.dbr_type != dbr_type  ||
-                 header->data.dbr_count != dbr_count)
-        {   // Add new header because type has changed
-            if (!addNewHeader(false))
-                return;
-        }
-        else
-        {   // All fine, just check if we're already in bigger league
-            size_t capacity = header->capacity();
-            if (capacity > num_samples)
-                calc_next_buffer_size(capacity);
-        }
-    }   
     available = header->available();
 }
     
 DataWriter::~DataWriter()
 {
     // Update index
-    if (header && index.isInstanceValid())
+    if (header)
     {   
         header->data.dir_offset = 0; // no longer used
         header->write();
-        archiver_Unit au(
-            key_Object(header->datafile->getBasename().c_str(), header->offset),
-            interval(header->data.begin_time, header->data.end_time),
-            priority);
-        if (!index.addAU(channel_name.c_str(), au))
+        if (tree)
         {
-            LOG_MSG("Cannot add %s @ 0x%lX to index\n",
-                    header->datafile->getBasename().c_str(), header->offset);
-        }   
+            if (!tree->updateLatestDatablock(
+                    header->data.begin_time, header->data.end_time,
+                    header->offset, header->datafile->getBasename()))
+            {
+                LOG_MSG("Cannot add %s @ 0x%lX to index\n",
+                        header->datafile->getBasename().c_str(), header->offset);
+            }
+            delete tree;
+            tree = 0;
+        }
         delete header;
+        header = 0;
     }
 }
 
@@ -187,7 +198,7 @@ bool DataWriter::add(const RawValue::Data *data)
     if (header->data.num_samples == 1) // first entry?
         header->data.begin_time = time;
     header->data.end_time = time;
-    // Note: we didn't write the header nor the dfi,
+    // Note: we didn't write the header nor update the index,
     // that'll happen when we close the DataWriter!
     return true;
 }
@@ -223,9 +234,9 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
     {
         if (!header->datafile->addCtrlInfo(ctrl_info, ctrl_info_offset))
         {
-            LOG_MSG ("DataWriter(%s): Cannot add CtrlInfo to file '%s'\n",
-                     channel_name.c_str(),
-                     header->datafile->getBasename().c_str());
+            LOG_MSG("DataWriter(%s): Cannot add CtrlInfo to file '%s'\n",
+                    channel_name.c_str(),
+                    header->datafile->getBasename().c_str());
             return false;
         }        
     }
@@ -246,17 +257,15 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
     new_header->set_prev(header->datafile->getBasename(),
                          header->offset);        
     // Update index entry for the old header
-    if (index.isInstanceValid())
-    {   
-        archiver_Unit au(
-            key_Object(header->datafile->getBasename().c_str(), header->offset),
-            interval(header->data.begin_time, header->data.end_time),
-            priority);
-        if (!index.addAU(channel_name.c_str(), au))
+    if (tree)
+    {
+        if (!tree->updateLatestDatablock(
+                header->data.begin_time, header->data.end_time,
+                header->offset, header->datafile->getBasename()))
         {
             LOG_MSG("Cannot add %s @ 0x%lX to index\n",
                     header->datafile->getBasename().c_str(), header->offset);
-        }   
+        }
     }        
     // Switch to new header
     delete header;

@@ -8,8 +8,8 @@
 // Storage
 #include "CtrlInfo.h"
 #include "RawValue.h"
-// rtree
-#include "archiver_index.h"
+// Index
+#include "IndexFile.h"
 
 /// \ingroup Storage
 /// @{
@@ -75,7 +75,7 @@ public:
 class RawDataReader : public DataReader
 {
 public:
-    RawDataReader(archiver_Index &index);
+    RawDataReader(IndexFile &index);
     virtual ~RawDataReader();
     virtual const RawValue::Data *find(const stdString &channel_name,
                                        const epicsTime *start,
@@ -87,11 +87,12 @@ public:
     virtual bool changedType();
     virtual bool changedInfo();
 private:
-    archiver_Index &index;
-    key_AU_Iterator *au_iter; // iterator for index & channel_name
-    bool valid_datablock; // is au_iter on valid datablock? 
-    key_Object datablock; // the current datablock
-    interval   valid_interval;    // the valid interval in there
+    IndexFile &index;
+    RTree     *tree;
+    RTree::Node node;// used to iterate
+    int rec_idx; 
+    bool valid_datablock; // are node/idx on valid datablock? 
+    RTree::Datablock datablock; // the current datablock
 
     DbrType dbr_type;
     DbrCount dbr_count;

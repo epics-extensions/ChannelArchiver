@@ -5,7 +5,7 @@
 
 #undef DEBUG_LINREAD
 
-LinearReader::LinearReader(archiver_Index &index, double delta)
+LinearReader::LinearReader(IndexFile &index, double delta)
         : reader(index), delta(delta)
 {
     type = 0;

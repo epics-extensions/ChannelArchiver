@@ -4,8 +4,8 @@
 #include "ToolsConfig.h"
 // Storage
 #include "DataReader.h"
-// rtree
-#include "archiver_index.h"
+// Index
+#include "IndexFile.h"
 
 /// \ingroup Storage
 /// @{
@@ -26,7 +26,7 @@ class SpreadsheetReader
     /// For delta > 0, use the LinearReader which
     /// attempt linear interpolation or averaging
     /// onto multiples of delta seconds.
-    SpreadsheetReader(archiver_Index &index, double delta);
+    SpreadsheetReader(IndexFile &index, double delta);
 
     virtual ~SpreadsheetReader();
     
@@ -71,7 +71,7 @@ class SpreadsheetReader
     bool next();  
   
 protected:
-    archiver_Index &index;
+    IndexFile &index;
 
     double delta;
     

@@ -44,7 +44,7 @@ class LinearReader : public DataReader
 {
 public:
     /// Create a reader for an index.
-    LinearReader(archiver_Index &index, double delta);
+    LinearReader(IndexFile &index, double delta);
     ~LinearReader();
     const RawValue::Data *find(const stdString &channel_name,
                                const epicsTime *start,
@@ -71,5 +71,7 @@ private:
     bool ctrl_info_changed;
     RawValue::Data *data;
 };
+
+/// @}
 
 #endif

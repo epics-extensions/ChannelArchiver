@@ -5,7 +5,7 @@
 #include "LinearReader.h"
 #include "SpreadsheetReader.h"
 
-SpreadsheetReader::SpreadsheetReader(archiver_Index &index,
+SpreadsheetReader::SpreadsheetReader(IndexFile &index,
                                      double delta)
         : index(index), delta(delta)
 {

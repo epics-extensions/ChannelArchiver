@@ -43,7 +43,8 @@ public:
 
     /// Define the samlpe mechanism.
     void setMechanism(Guard &engine_guard, Guard &guard,
-                      SampleMechanism *mechanism);
+                      SampleMechanism *mechanism,
+                      const epicsTime &now);
     
     /// mutex between CA, HTTPD, Engine.
     /// None of the ArchiveChannel methods take the lock,

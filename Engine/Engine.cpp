@@ -117,7 +117,7 @@ void Engine::shutdown()
             {
                 ArchiveChannel *c = *ch;
                 Guard guard(c->mutex);
-                c->setMechanism(engine_guard, guard, 0);
+                c->setMechanism(engine_guard, guard, 0, now);
                 c->addEvent(guard, 0, ARCH_STOPPED, now);
                 c->write(guard, index);
             }
@@ -134,7 +134,7 @@ void Engine::shutdown()
             channels.pop_back();
             {
                 Guard guard(c->mutex);
-                c->setMechanism(engine_guard, guard, 0);
+                c->setMechanism(engine_guard, guard, 0, now);
                 c->stopCA(engine_guard, guard);
             }
             delete c;
@@ -233,7 +233,8 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
         mechanism = new SampleMechanismMonitoredGet(channel);
     if (channel->getPeriod(guard) > period)
         channel->setPeriod(engine_guard, guard, period);
-    channel->setMechanism(engine_guard, guard, mechanism);
+    epicsTime now  = epicsTime::getCurrent();
+    channel->setMechanism(engine_guard, guard, mechanism, now);
     group->addChannel(engine_guard, guard, channel);
     channel->addToGroup(guard, group, disabling);
     IndexFile index(RTreeM);

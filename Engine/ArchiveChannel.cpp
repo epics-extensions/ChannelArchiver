@@ -40,7 +40,8 @@ ArchiveChannel::~ArchiveChannel()
 }
 
 void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
-                                  SampleMechanism *new_mechanism)
+                                  SampleMechanism *new_mechanism,
+                                  const epicsTime &now)
 {
     guard.check(mutex);
     // We treat it like a disconnect/connect,
@@ -52,6 +53,7 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
         if (was_connected)
         {
             connected = false;
+            this->connection_time = now;
             this->mechanism->handleConnectionChange(engine_guard, guard);
         }
         this->mechanism->destroy(engine_guard, guard);
@@ -60,6 +62,7 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
     if (was_connected && new_mechanism)
     {
         connected = true;
+        this->connection_time = now;
         this->mechanism->handleConnectionChange(engine_guard, guard);
     }
 }

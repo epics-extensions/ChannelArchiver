@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<methodCall>
+<methodName>archiver.get_values</methodName>
+<params>
+<param><value> <array><data>
+   <value><string>Test_HPRF:IOC1:Load</string></value>
+</data></array></value></param>
+<param><value><i4>1041411885</i4></value></param>
+<param><value><i4>579346999</i4></value></param>
+<param><value><i4>1044079085</i4></value></param>
+<param><value><i4>0</i4></value></param>
+<param><value><i4>10</i4></value></param>
+<param><value><i4>0</i4></value></param>
+</params>
+</methodCall>

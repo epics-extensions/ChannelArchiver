@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<methodCall>
+<methodName>archiver.get_names</methodName>
+<params>
+<param><value><string>IOC</string></value></param>
+</params>
+</methodCall>

@@ -157,11 +157,12 @@ int main(int argc, const char *argv[])
 
     epicsThreadSleep(1.0);
     
-    LOG_MSG ("Done\n");
+    LOG_MSG ("Removing lockfile.\n");
     delete config;
     lock_file.Unlock ();
     if (logfile)
         fclose(logfile);
+    LOG_MSG ("Done.\n");
 
     return 0;
 }

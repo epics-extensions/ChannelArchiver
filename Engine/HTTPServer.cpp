@@ -18,7 +18,6 @@
 
 // HTTPServer ----------------------------------------------
 
-
 HTTPServer::HTTPServer(SOCKET socket)
         : _thread(*this, "HTTPD",
                   epicsThreadGetStackSize(epicsThreadStackBig),
@@ -99,7 +98,7 @@ void HTTPServer::run()
             SOCKET peer = accept(_socket, (struct sockaddr *)&peername, &len);
             if (peer != INVALID_SOCKET)
             {
-#if 0
+#if             defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 5
                 stdString local_info, peer_info;
                 GetSocketInfo(peer, local_info, peer_info);
                 LOG_MSG("HTTPServer thread 0x%08X accepted %s/%s\n",
@@ -126,7 +125,7 @@ void HTTPServer::cleanup()
     HTTPClientConnection *  client;
     stdList<HTTPClientConnection *>::iterator clients;
 
-#   ifdef HTTPD_DEBUG
+#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 5
     LOG_MSG("-----------------------------------------------------\n");
     LOG_MSG("HTTPServer thread 0x%08X clients: %d total\n",
             epicsThreadGetIdSelf(), _total_clients);
@@ -375,14 +374,15 @@ bool HTTPClientConnection::analyzeInput()
                 ||
                 path == h->path)
             {
-#               ifdef HTTPD_DEBUG
+#               if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
+                
                 stdString peer;
                 GetSocketPeer(_socket, peer);
                 LOG_MSG("HTTP get '%s' from %s\n",
                         path.c_str(), peer.c_str());
 #               endif
                 h->handler(this, path);
-#               ifdef HTTPD_DEBUG
+#               if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
                 LOG_MSG("HTTP invoked handler for '%s'\n", path.c_str());
 #               endif
                 return true;

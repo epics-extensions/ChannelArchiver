@@ -12,8 +12,7 @@
 #include <epicsTimeHelper.h>
 #include "ScanList.h"
 
-// This does no longer work:
-//#define LOG_SCANLIST
+#undef DEBUG_SCANLIST
 
 SinglePeriodScanList::SinglePeriodScanList(double period)
 {
@@ -75,11 +74,16 @@ void ScanList::addChannel(ChannelInfo *channel)
         _next_list_scan = list->_next_scan;
     _is_due_at_all = true;
 
-#   ifdef LOG_SCANLIST
-    LOG_MSG("Channel '" << channel->getName()
-            << "' makes list " << list->_period
-            << " due " << list->_next_scan << "\n");
-    LOG_MSG("->ScanList due " << _next_list_scan << "\n");
+#   ifdef DEBUG_SCANLIST
+    char buf[30];
+    
+    list->_next_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
+    LOG_MSG("Channel '%s' makes list %g due %s\n",
+            channel->getName().c_str(),
+            list->_period,
+            buf);
+    _next_list_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
+    LOG_MSG("->Whole ScanList due %s\n", buf);
 #   endif
 }
 
@@ -88,28 +92,41 @@ void ScanList::scan(const epicsTime &deadline)
 {
     stdList<SinglePeriodScanList *>::iterator li;
     unsigned long rounded_period;
+#   ifdef DEBUG_SCANLIST
+    char buf[30];
+#   endif
 
-    // find expired list
+#ifdef DEBUG_SCANLIST
+    LOG_MSG("ScanList::scan\n");
+#endif
+    // Reset: Next time any list is due
+    _next_list_scan = nullTime;
     for (li = _period_lists.begin(); li != _period_lists.end(); ++li)
     {
         if (deadline >= (*li)->_next_scan)
         {
+            // Determine next scan time,
+            // make sure it's in the future.
             rounded_period = (unsigned long) (*li)->_period;
-            // determine next scan time,
-            // make sure it's in the future:
             while (deadline > (*li)->_next_scan)
                 (*li)->_next_scan += rounded_period;
+            // Scan list list
             (*li)->scan();
-            
-            if (_next_list_scan == nullTime ||
-                _next_list_scan > (*li)->_next_scan)
-                _next_list_scan = (*li)->_next_scan;
-#           ifdef LOG_SCANLIST
-            LOG_MSG("Scanned List " << li->_period << ", next due "
-                    << li->_next_scan << "\n");
-#           endif
+#ifdef DEBUG_SCANLIST
+            (*li)->_next_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
+            LOG_MSG("Scanned List %g, next due %s\n",
+                    (*li)->_period, buf);
+#endif
         }
+        // Update earliest scan time
+        if (_next_list_scan == nullTime ||
+            _next_list_scan > (*li)->_next_scan)
+            _next_list_scan = (*li)->_next_scan;
     }
+#ifdef DEBUG_SCANLIST
+    _next_list_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
+    LOG_MSG("->Whole ScanList due %s\n", buf);
+#endif
 }
 
 // EOF ScanList.cpp

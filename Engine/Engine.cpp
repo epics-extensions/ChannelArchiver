@@ -136,7 +136,7 @@ void Engine::shutdown()
     _archive_lock.unlock();
     _engine_lock.unlock();
 
-    LOG_MSG("Done.\n");
+    LOG_MSG("Engine shut down.\n");
     theEngine = 0;
     delete this;
 }

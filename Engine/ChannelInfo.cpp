@@ -12,7 +12,7 @@
 #include <epicsTimeHelper.h>
 #include <math.h>
 
-#define DEBUG_CI
+#undef DEBUG_CI
 
 #if 0
 // Helper:
@@ -326,7 +326,8 @@ void ChannelInfo::caControlHandler(struct event_handler_args arg)
 #       ifdef DEBUG_CI
         printf("caControlHandler(%s) got CtrlInfo for %s [%d]\n",
                me->getName().c_str(),
-               dbr_type_to_text(dbr_type), nelements);
+               ((dbr_type < dbr_text_dim) ? 
+                dbr_text[dbr_type] : dbr_text_invalid  ), nelements);
 #       endif
         
         // Already subscribed or first connection?
@@ -387,6 +388,7 @@ void ChannelInfo::caEventHandler(struct event_handler_args arg)
     printf("caEventHandler(%s), thread 0x%08X:\n",
             me->getName().c_str(), (unsigned int)epicsThreadGetIdSelf());
     me->_new_value->show(stdout);
+    printf("\n");
 #   endif
 
     me->handleNewValue();

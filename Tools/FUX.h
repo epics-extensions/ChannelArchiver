@@ -25,11 +25,12 @@
 /// In any case, FUX implements XML read
 /// and write support.
 /// The 'read' part is based on XML libraries,
-/// there there's a choice between
+/// there's a choice of using
 /// - Xerces C++, see http://xml.apache.org/index.html
 /// - Expat, see http://www.libexpat.org.
 /// Since Xerces handles validation and Expat doesn't,
 /// the former should be preferred.
+/// You pick which one you want to use in the FUX.h header file.
 class FUX
 {
 public:

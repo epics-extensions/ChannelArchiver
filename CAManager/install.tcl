@@ -70,7 +70,7 @@ package require Tclx
 
 Puts "Searching Tcl/TK interpreters:\n" action
 set wish [info nameofexecutable]
-foreach pat "tclsh\[0-9\]*$ext tclsh*$ext tcl\[0-9\]*$ext tcl*$ext" {
+foreach pat "tcl$ext tclsh$ext tcl\[0-9\]*$ext tclsh\[0-9\]*$ext" {
   set l [lmatch -regexp [glob -nocomplain [file dirname $wish]/*] [file dirname $wish]/$pat]
   if {[llength $l] > 0} {
     set dt 0

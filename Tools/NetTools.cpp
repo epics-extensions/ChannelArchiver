@@ -54,7 +54,7 @@ void GetSocketPeer(SOCKET sock, stdString &peer)
 void GetSocketInfo(SOCKET sock, stdString &local, stdString &peer)
 {
 	GetSocketLocal(sock, local);
-	GetSocketPeer(sock, local);
+	GetSocketPeer(sock, peer);
 }
 
 #ifdef WIN32

@@ -533,14 +533,14 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
     element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
                                  "num", (xmlrpc_int32)ARCH_EST_REPEAT,
                                  "sevr", "Est_Repeat",
-                                 "has_value", (xmlrpc_bool) 0,
+                                 "has_value", (xmlrpc_bool) 1,
                                  "txt_stat", (xmlrpc_bool) 0);
     xmlrpc_array_append_item(env, severity, element);
     xmlrpc_DECREF(element);
     element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
                                  "num", (xmlrpc_int32)ARCH_REPEAT,
                                  "sevr", "Repeat",
-                                 "has_value", (xmlrpc_bool) 0,
+                                 "has_value", (xmlrpc_bool) 1,
                                  "txt_stat", (xmlrpc_bool) 0);
     xmlrpc_array_append_item(env, severity, element);
     xmlrpc_DECREF(element);

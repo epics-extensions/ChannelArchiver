@@ -369,7 +369,10 @@ xmlrpc_value *get_names(xmlrpc_env *env,
             continue; // skip what doesn't match regex
         tree = index->getTree(ni.getName());
         if (tree)
+        {
             tree->getInterval(info.start, info.end);
+            delete tree;
+        }
         else
             info.start = info.end = nullTime;
         channels.add(info);

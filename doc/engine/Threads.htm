@@ -24,6 +24,16 @@
   <p>This seems to be a feature of Linux: Threads show up a processes.</p>
   <p>As far as I understand for now this is no error in the Archive Engine. </p>
   <hr WIDTH="40%" ALIGN="LEFT">
+
+  <h1>Signals</h1>
+  The engine tries to catch the Ctrl-C and Unix 'kill' signals.<br>
+  On Win32, this seems to work correctly.<br>
+  On Unix there have been problems originally.
+  Now that the write thread blocks the signals,
+  archive writing should be unaffected
+  and the engine quits as soon as possible.<br>
+  The preferred method for stopping the engine, though,
+  should still be the web interface.
 </blockquote>
 </font>
 </body>

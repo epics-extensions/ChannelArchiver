@@ -48,6 +48,7 @@
     </ul>
     <li>others...</li>
   </ul>
+
   <h2>Start/stop</h2>
   <p>The engine is started like this:</p>
   <pre><em>ArchiveEngine [options] &lt;config-file&gt;</em></pre>
@@ -61,12 +62,15 @@
     <p>http://&lt;host where engine is running&gt;:&lt;port&gt;</p>
   </blockquote>
   <p>e.g. <a href="http://localhost:4812">http://localhost:4812</a></p>
+
   <p>To stop the engine, use the special URL .../stop, e.g. <a
   href="http://localhost:4812/stop">http://localhost:4812/stop</a>.<br>
   With password protection enabled (has to be compiled in, see Engine/Config.h for
   configuration), you will be prompted for a user-name and password. In Engine/Tools there
   is an example tcl script that stops the engine with a user name and password in case you
   want to stop the engine from within a script and not interactively.</p>
+  (see <a href="Threads.htm">threads</a> about Ctrl-C)
+
   <h2>Persistent configuration</h2>
   <p>When the configuration is changes via the Web interface (channels added etc.), the
   original configuration files are <em>not </em>changed.<br>

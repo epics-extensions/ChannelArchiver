@@ -167,41 +167,54 @@ bool dump_spreadsheet(IndexFile &index,
     {
         if (end && sheet.getTime() >= *end)
             break;
+        if (gnuplot)
+        {   // GNUPlot wants empty lines for non-values
+            bool all_have_data = true;
+            for (i=0; i<sheet.getNum(); ++i)    
+            {
+                value = sheet.getValue(i);
+                if (!value || RawValue::isInfo(value))
+                {
+                    all_have_data = false;
+                    break;
+                }
+            }
+            if (!all_have_data)
+            {
+                 fprintf(f, "\n");
+                 ok = sheet.next();
+                 continue;
+            }   
+        }
         epicsTime2string(sheet.getTime(), time);
+        fprintf(f, "%s", time.c_str());
         for (i=0; i<sheet.getNum(); ++i)
         {
             value = sheet.getValue(i);
-            // GNUPlot wants empty lines for non-values,
-            // rest will get a time stamp, #N/A and status
-            if (!gnuplot  ||  (value && !RawValue::isInfo(value)))
+            if (value)
             {
-                if (i==0)
-                    fprintf(f, "%s", time.c_str());
-                if (value)
-                {
-                    RawValue::getStatus(value, stat);
-                    if (RawValue::isInfo(value))
-                    {
-                        fprintf(f, "\t#N/A");
-                        if (status_text)
-                            fprintf(f, "\t%s", stat.c_str());
-                    }
-                    else
-                    {
-                        RawValue::getValueString(
-                            val, sheet.getType(i), sheet.getCount(i),
-                            value, &sheet.getCtrlInfo(i));
-                        fprintf(f, "\t%s", val.c_str());
-                        if (status_text)
-                            fprintf(f, "\t%s", stat.c_str());
-                    }
-                }
-                else
+                RawValue::getStatus(value, stat);
+                if (RawValue::isInfo(value))
                 {
                     fprintf(f, "\t#N/A");
                     if (status_text)
-                        fprintf(f, "\t");
+                        fprintf(f, "\t%s", stat.c_str());
                 }
+                else
+                {
+                    RawValue::getValueString(
+                        val, sheet.getType(i), sheet.getCount(i),
+                        value, &sheet.getCtrlInfo(i));
+                    fprintf(f, "\t%s", val.c_str());
+                    if (status_text)
+                        fprintf(f, "\t%s", stat.c_str());
+                    }
+            }
+            else
+            {
+                fprintf(f, "\t#N/A");
+                if (status_text)
+                        fprintf(f, "\t");
             }
         }
         fprintf(f, "\n");

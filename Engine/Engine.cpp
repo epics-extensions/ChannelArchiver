@@ -113,7 +113,7 @@ void Engine::shutdown()
     epicsTime now;
     now = epicsTime::getCurrent();
     mutex.lock();
-    archiver_Index index;
+    IndexFile index;
     if (index.open(index_name.c_str(), false))
     {
         stdList<ArchiveChannel *>::iterator ch;
@@ -125,6 +125,7 @@ void Engine::shutdown()
             (*ch)->mutex.unlock();
         }
         DataFile::close_all();
+        index.close();
     }
     else
     {
@@ -233,43 +234,49 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
     if (new_channel)
     {
         // TODO: Check the locking of the file access
-        archiver_Index index;
+        IndexFile index;
         if (index.open(index_name.c_str(), false))
         {   // Is channel already in Archive?
-            archiver_Unit au;
-            if (index.getLatestAU(channel_name.c_str(), &au))
-            {   // extract previous knowledge from Archive
-                DataFile *datafile =
-                    DataFile::reference(index.getDirectory(),
-                                        au.getKey().getPath(), false);
-                if (datafile)
-                {
-                    DataHeader *header =
-                        datafile->getHeader(au.getKey().getOffset());
-                    if (header)
+            RTree *tree = index.getTree(channel_name);
+            if (tree)
+            {
+                RTree::Datablock block;
+                if (tree->getLatestDatablock(block))
+                {   // extract previous knowledge from Archive
+                    DataFile *datafile =
+                        DataFile::reference(index.getDirectory(),
+                                            block.data_filename, false);
+                    if (datafile)
                     {
-                        epicsTime last_stamp(header->data.end_time);
-                        CtrlInfo ctrlinfo;
-                        ctrlinfo.read(datafile, header->data.ctrl_info_offset);
-                        channel->init(header->data.dbr_type,
-                                      header->data.dbr_count,
-                                      &ctrlinfo,
-                                      &last_stamp);
-                        stdString stamp_txt;
-                        epicsTime2string(last_stamp, stamp_txt);
-                        LOG_MSG("'%s' could be initialized from storage.\n"
-                                "Data file '%s' @ 0x%lX\n"
-                                "Last Stamp: %s\n",
-                                channel_name.c_str(),
-                                au.getKey().getPath(),
-                                au.getKey().getOffset(),
-                                stamp_txt.c_str());
-                        delete header;
+                        DataHeader *header =
+                            datafile->getHeader(block.data_offset);
+                        if (header)
+                        {
+                            epicsTime last_stamp(header->data.end_time);
+                            CtrlInfo ctrlinfo;
+                            ctrlinfo.read(datafile, header->data.ctrl_info_offset);
+                            channel->init(header->data.dbr_type,
+                                          header->data.dbr_count,
+                                          &ctrlinfo,
+                                          &last_stamp);
+                            stdString stamp_txt;
+                            epicsTime2string(last_stamp, stamp_txt);
+                            LOG_MSG("'%s' could be initialized from storage.\n"
+                                    "Data file '%s' @ 0x%lX\n"
+                                    "Last Stamp: %s\n",
+                                    channel_name.c_str(),
+                                    block.data_filename.c_str(),
+                                    block.data_offset,
+                                    stamp_txt.c_str());
+                            delete header;
+                        }
+                        datafile->release();
+                        DataFile::close_all();
                     }
-                    datafile->release();
-                    DataFile::close_all();
                 }
+                delete tree;
             }
+            index.close();
         }
     }
 #ifdef TODO
@@ -349,7 +356,7 @@ stdString Engine::makeDataFileName()
 void Engine::writeArchive()
 {
     is_writing = true;
-    archiver_Index index;
+    IndexFile index;
     if (index.open(index_name.c_str(), false))
     {
         stdList<ArchiveChannel *>::iterator ch;
@@ -359,6 +366,7 @@ void Engine::writeArchive()
             (*ch)->write(index);
             (*ch)->mutex.unlock();
         }
+        index.close();
     }
     else
     {

@@ -20,7 +20,8 @@ static void add_name2vector(const stdString &name, void *arg)
         printf("%s\n", name.c_str());
     names->push_back(name);
 }
-void get_names_for_pattern(archiver_Index &index,
+
+void get_names_for_pattern(IndexFile &index,
                            stdVector<stdString> &names,
                            const stdString &pattern)
 {
@@ -33,23 +34,21 @@ void get_names_for_pattern(archiver_Index &index,
         fprintf(stderr, "Cannot allocate regular expression\n");
         return;
     }     
-    channel_Name_Iterator *cni = index.getChannelNameIterator();
-    if (!cni)
+    IndexFile::NameIterator name_iter;
+    if (!index.getFirstChannel(name_iter))
     {
         fprintf(stderr, "Cannot get channel name iterator\n");
         return;
     }
     // Put all names in binary tree
  	BinaryTree<stdString> channels;
-    stdString name;
-    bool ok;
-    for (ok = cni->getFirst(&name); ok; ok = cni->getNext(&name))
+    do
     {
-        if (!regex->doesMatch(name.c_str()))
+        if (!regex->doesMatch(name_iter.getName()))
             continue; // skip what doesn't match regex
-        channels.add(name);
+        channels.add(name_iter.getName());
     }
-    delete cni;
+    while (index.getNextChannel(name_iter));
     regex->release();
     // Sorted dump of names
     channels.traverse(add_name2vector, (void *)&names);
@@ -81,14 +80,14 @@ static void name_printer(const ChannelInfo &info, void *arg)
         printf("%s\n", info.name.c_str());
 }
 
-bool list_channels(archiver_Index &index, const stdString &pattern,
+bool list_channels(IndexFile &index, const stdString &pattern,
                    bool show_info)
 {
     RegularExpression *regex = 0;
     if (pattern.length() > 0)
         regex = RegularExpression::reference(pattern.c_str());
-    channel_Name_Iterator *cni = index.getChannelNameIterator();
-    if (!cni)
+    IndexFile::NameIterator name_iter;
+    if (!index.getFirstChannel(name_iter))
     {
         fprintf(stderr, "Cannot get channel name iterator\n");
         return false;
@@ -96,23 +95,23 @@ bool list_channels(archiver_Index &index, const stdString &pattern,
     // Put all names in binary tree
  	BinaryTree<ChannelInfo> channels;
     ChannelInfo info;
-    bool ok;
-    for (ok = cni->getFirst(&info.name); ok; ok = cni->getNext(&info.name))
+    do
     {
-        if (regex && !regex->doesMatch(info.name.c_str()))
+        if (regex && !regex->doesMatch(name_iter.getName()))
             continue; // skip what doesn't match regex
+        info.name = name_iter.getName();
         if (show_info)
         {
-            interval range;
-            if (index.getEntireIndexedInterval(info.name.c_str(), &range))
+            RTree *tree = index.getTree(info.name);
+            if (tree)
             {
-                info.start = range.getStart();
-                info.end = range.getEnd();
+                tree->getInterval(info.start, info.end);
+                delete tree;
             }
         }
         channels.add(info);
     }
-    delete cni;
+    while (index.getNextChannel(name_iter));
     if (regex)
         regex->release();
     // Sorted dump of names
@@ -120,7 +119,7 @@ bool list_channels(archiver_Index &index, const stdString &pattern,
     return true;
 }
 
-bool dump_spreadsheet(archiver_Index &index,
+bool dump_spreadsheet(IndexFile &index,
                       stdVector<stdString> names,
                       epicsTime *start, epicsTime *end,
                       double interpolate,
@@ -248,6 +247,7 @@ bool dump_spreadsheet(archiver_Index &index,
 
 int main(int argc, const char *argv[])
 {
+    int result = 0;
     initEpicsTimeHelper();
     CmdArgParser parser(argc, argv);
     parser.setHeader("Archive Export version " ARCH_VERSION_TXT ", "
@@ -331,7 +331,7 @@ int main(int argc, const char *argv[])
         return -1;    
     }
     // Open index
-    archiver_Index index;
+    IndexFile index;
     if (!index.open(index_name.c_str()))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
@@ -339,21 +339,19 @@ int main(int argc, const char *argv[])
         return -1;
     }
     if (verbose)
-        printf("Opened index '%s'\n", index_name.c_str());
-    
+        printf("Opened index '%s'\n", index_name.c_str());    
     if (names.size() == 0 && pattern.get().length() > 0)
         get_names_for_pattern(index, names, pattern);
     if (do_info)
-        return list_channels(index, pattern, true);
+        result = list_channels(index, pattern, true);
     if (do_list)
-        return list_channels(index, pattern, false);
-    if (names.size() == 0)
-        return 0;
-    if (!dump_spreadsheet(index, names, start, end,
-                          interpol, status_text,
-                          output, GNUPlot, image))
-        return -1;
+        result = list_channels(index, pattern, false);
+    if (names.size() > 0)
+        result = dump_spreadsheet(index, names, start, end,
+                                  interpol, status_text,
+                                  output, GNUPlot, image) ? 0 : -1;
+    index.close();
  
-    return 0;
+    return result;
 }
 

@@ -2,8 +2,10 @@
 #if !defined(_TRACER_H_)
 #define _TRACER_H_
 
-#include<GenericException.h>
-#include<epicsMutex.h>
+// System
+#include <stdlib.h>
+// Base
+#include <epicsMutex.h>
 
 /// \ingroup Tools
 /// The MsgLogger is a trace or logging helper.
@@ -61,10 +63,10 @@ void LOG_MSG(const char *format, ...);
     if (! (e))                                                      \
     {                                                               \
         if (log_cmlog)                                              \
-	        cmlog_assert( #e, __FILE__, __LINE__ );                 \
+	        cmlog_assert( #e, __FILE__, __LINE__ );             \
         LOG_MSG("\nASSERT '%s' FAILED:\n%s (%d)\n\n",               \
                 #e, __FILE__, __LINE__);                            \
-        throw GenericException (__FILE__,__LINE__);                 \
+        exit(42);                                                   \
     }
 #else
 # define LOG_ASSERT(e)                                              \
@@ -72,7 +74,7 @@ void LOG_MSG(const char *format, ...);
     {                                                               \
         LOG_MSG("\nASSERT '%s' FAILED:\n%s (%d)\n\n",               \
                 #e, __FILE__, __LINE__);                            \
-        throw GenericException (__FILE__,__LINE__);                 \
+        exit(42);                                                   \
     }
 #endif
 

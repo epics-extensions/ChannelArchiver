@@ -8,6 +8,9 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+#ifndef __AVL_TREE_H
+#define __AVL_TREE_H
+
 // Tree Item:
 // Holds the full Item as well as left/right pointers
 template<class Item> class AVLItem
@@ -18,7 +21,7 @@ public:
     {}
 
     Item    item;
-	AVLItem	*left, *right;
+    AVLItem *left, *right;
     short   balance;
 };
 
@@ -27,47 +30,56 @@ public:
 /// AVL-type balanced tree
 
 /// Sorted binary tree for Items that support
-/// the "less than" and "equal" operator.
-///
+/// the following comparison member function:
+/// - int sort_compare(const item &a, const item &b);
+///   sort_compare should return "b-a":
+///   - <0 if a > b
+///   -  0 if a== b
+///   - >0 if a < b                         
 template<class Item> class AVLTree
 {
 public:
-	AVLTree()
-	{	root = 0; }
+    AVLTree()
+    {   root = 0; }
 
-	~AVLTree()
-	{	cleanup(root); }
+    ~AVLTree()
+    {   cleanup(root); }
 
-	/// Add (copy) Item into the tree.
-	void add(const Item &item)
-	{
-		AVLItem<Item> *n = new AVLItem<Item>(item);
-		insert(n, &root);
-	}
+    /// Add (copy) Item into the tree.
+    void add(const Item &item)
+    {
+        AVLItem<Item> *n = new AVLItem<Item>(item);
+        insert(n, &root);
+    }
 
-	/// Try to find item in tree.
+    /// Try to find item in tree.
     
-	/// Result: true if found.
+    /// Result: true if found, in which case
+    ///         the item argument is set to the one found.
     ///
-    ///
-	bool find(const Item &item)
-	{
-		AVLItem<Item> *n = root;
-		while (n)
-		{
-			if (item == n->item)
-				return true;
-			if (item < n->item)
-				n = n->left;
-			else
-				n = n->right;
-		}
-		return false;
-	}
+    bool find(Item &item)
+    {
+        AVLItem<Item> *n = root;
+        int comp;
+        while (n)
+        {
+            comp = sort_compare(item, n->item);
+            if (comp == 0)
+            {
+                item = n->item;
+                return true;
+            }
+            else if (comp >0)
+                n = n->left;
+            else
+                n = n->right;
+        }
+        return false;
+    }
 
-	/// Sorted (inorder) traverse, calling visitor routine on each item.
-	void traverse(void (*visit) (const Item &, void *), void *arg=0)
-	{	visit_inorder (visit, root, arg); }
+    /// Sorted (inorder) traverse, calling visitor routine on each item.
+    void traverse(void (*visit) (const Item &, void *), void *arg=0)
+    {   visit_inorder (visit, root, arg); }
 
     /// Generates a graphviz 'dot' file.
 
@@ -81,7 +93,7 @@ public:
     {   return check_balance(root); }
     
 private:
-	AVLItem<Item>	*root;
+    AVLItem<Item>   *root;
 
     void rotate_right(AVLItem<Item> **node)
     {
@@ -124,16 +136,22 @@ private:
     }    
 
     // Result: Did we grow the tree from *node on down?
-	bool insert(AVLItem<Item> *new_item, AVLItem<Item> **node)
-	{
-		if (*node == 0)
+    bool insert(AVLItem<Item> *new_item, AVLItem<Item> **node)
+    {
+        if (*node == 0)
         {
-			*node = new_item;
+            *node = new_item;
             return true;
         }
-		else if (new_item->item  <  (*node)->item)
+        int comp = sort_compare(new_item->item, (*node)->item);
+        if (comp == 0)
         {
-			if (insert(new_item, & ((*node)->left)))
+            (*node)->item = new_item->item;
+            return false;
+        }
+        if (comp > 0)
+        {
+            if (insert(new_item, & ((*node)->left)))
             {
                 --(*node)->balance;
                 if ((*node)->balance < -1)
@@ -144,9 +162,9 @@ private:
                 return (*node)->balance < 0;
             }
         }
-		else
+        else if (comp < 0)
         {
-			if (insert(new_item, & ((*node)->right)))
+            if (insert(new_item, & ((*node)->right)))
             {
                 ++(*node)->balance;
                 if ((*node)->balance > 1)
@@ -158,18 +176,18 @@ private:
             }
         }
         return false;
-	}
+    }
 
-	void visit_inorder(void (*visit) (const Item &, void *),
+    void visit_inorder(void (*visit) (const Item &, void *),
                        AVLItem<Item> *node, void *arg)
-	{
-		if (node)
-		{
-			visit_inorder(visit, node->left, arg);
-			visit(node->item, arg);
-			visit_inorder(visit, node->right, arg);
-		}
-	}
+    {
+        if (node)
+        {
+            visit_inorder(visit, node->left, arg);
+            visit(node->item, arg);
+            visit_inorder(visit, node->right, arg);
+        }
+    }
 
     void print_dot_node(FILE *f, AVLItem<Item> *node, int &i)
     {
@@ -189,15 +207,15 @@ private:
         }
     }    
 
-	void cleanup(AVLItem<Item> *node)
-	{
-		if (node)
-		{
-			cleanup(node->left);
-			cleanup(node->right);
-			delete node;
-		}
-	}
+    void cleanup(AVLItem<Item> *node)
+    {
+        if (node)
+        {
+            cleanup(node->left);
+            cleanup(node->right);
+            delete node;
+        }
+    }
 
     int height(AVLItem<Item> *node)
     {
@@ -243,3 +261,6 @@ void AVLTree<Item>::make_dotfile(const char *name)
     print_dot_node(f, root, i);
     fprintf(f, "}\n");
 }
+
+#endif
+

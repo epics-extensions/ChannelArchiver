@@ -90,6 +90,9 @@ void test_string()
 #ifdef TEST_AVL
 #include "AVLTree.h"
 
+int sort_compare(const int &a, const int &b)
+{   return b-a; }
+
 int avl_last_number;
 
 void avl_order_test(const int &i, void *)
@@ -152,16 +155,6 @@ void test_log()
 
     LOG_MSG("Hi\n");
     LOG_MSG("Test went %c%c%s", 'O', 'K', "\n");
-    LOG_MSG("Next you should see a failed assertion:\n");
-    try
-    {
-        LOG_ASSERT("Did this get logged with time & file location?\n"==0);
-    }
-    catch (GenericException &e)
-    {
-        TEST("LOG_ASSERT did throw GenericException as planned\n");
-        LOG_MSG("LOG_ASSERT did throw GenericException as planned\n");
-    }
     fclose(log_fd);
     TheMsgLogger.SetDefaultPrintRoutine();
     TEST("Check 'msg_log_test.txt' for result of MsgLogger test");

@@ -366,7 +366,7 @@ xmlrpc_value *get_names(xmlrpc_env *env,
         return 0;
     }
     // Put all names in binary tree
- 	BinaryTree<ChannelInfo> channels;
+    BinaryTree<ChannelInfo> channels;
     ChannelInfo info;
     interval range;
     bool ok;
@@ -414,6 +414,7 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
                        &count, &how);    
     if (env->fault_occurred)
         return 0;
+    // TODO: Put an upper limit on count to avoid outrageous requests?
    // Build start/end
     epicsTime start, end;
     pieces2epicsTime(start_sec, start_nano, start);
@@ -465,6 +466,8 @@ static void LogRoutine(void *arg, const char *text)
 
 int main(int argc, const char *argv[])
 {
+// TODO: Read XML file w/ archives, descriptions, ...
+// Use expat : It's fast!
     struct timeval t0, t1;
     gettimeofday(&t0, 0);
 

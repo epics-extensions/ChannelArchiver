@@ -5,43 +5,46 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 
 # Includes to install from this subproject
 INC += ToolsConfig.h 
-INC += stdString.h 
-INC += string2cp.h
+INC += ArchiveException.h
+INC += ArchiverConfig.h
 INC += ArgParser.h
-INC += ASCIIParser.h
 INC += ArrayTools.h
+INC += ASCIIParser.h
+INC += AVLTree.h
+INC += BinaryTree.h
+INC += BinIO.h
 INC += Bitset.h
 INC += CGIDemangler.h
+INC += Conversions.h
+INC += epicsTimeHelper.h       
 INC += Filename.h
 INC += GenericException.h
 INC += Histogram.h
+INC += InsertionSort.h
 INC += MemoryPool.h 
 INC += MemoryBuffer.h 
 INC += MsgLogger.h
-INC += RegularExpression.h 
 INC += NetTools.h       
-INC += BinaryTree.h
-INC += AVLTree.h
-INC += epicsTimeHelper.h       
+INC += RegularExpression.h 
+INC += stdString.h 
+INC += string2cp.h
 INC += VectorHelper.h       
-INC += ArchiveException.h
-INC += ArchiverConfig.h
-INC += Conversions.h
 
 # Contents of library
-LIB_SRCS += stdString.cpp
-LIB_SRCS += Filename.cpp
+LIB_SRCS += ArchiveException.cpp
 LIB_SRCS += ArgParser.cpp
 LIB_SRCS += ASCIIParser.cpp
+LIB_SRCS += BinIO.cpp
 LIB_SRCS += Bitset.cpp
 LIB_SRCS += CGIDemangler.cpp
-LIB_SRCS += GenericException.cpp
-LIB_SRCS += RegularExpression.cpp
-LIB_SRCS += NetTools.cpp
-LIB_SRCS += MemoryPool.cpp
 LIB_SRCS += epicsTimeHelper.cpp
+LIB_SRCS += Filename.cpp
+LIB_SRCS += GenericException.cpp
+LIB_SRCS += MemoryPool.cpp
 LIB_SRCS += MsgLogger.cpp
-LIB_SRCS += ArchiveException.cpp
+LIB_SRCS += NetTools.cpp
+LIB_SRCS += RegularExpression.cpp
+LIB_SRCS += stdString.cpp
 #	on WIN32 only...
 LIB_SRCS_WIN32 := gnu_regex.c
 

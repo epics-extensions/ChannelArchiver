@@ -7,12 +7,16 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 #USR_CXXFLAGS += -pg
 #USR_LDFLAGS  += -pg
 
+USR_CXXFLAGS += -I ../../rtree
+
 # Includes to be installed
 INC += StorageTypes.h
 # Old
 INC += HashTable.h
 INC += DirectoryFile.h
 INC += OldDataWriter.h
+# in between
+INC += TreeDataWriter.h
 # Current
 INC += CtrlInfo.h
 INC += RawValue.h
@@ -32,6 +36,8 @@ LIB_SRCS += HashTable.cpp
 LIB_SRCS += DirectoryFile.cpp
 LIB_SRCS += OldDataWriter.cpp
 LIB_SRCS += OldDataReader.cpp
+# in between
+LIB_SRCS += TreeDataWriter.cpp
 # Current
 LIB_SRCS += CtrlInfo.cpp
 LIB_SRCS += RawValue.cpp
@@ -49,10 +55,12 @@ LIB_SRCS += SpreadsheetReader.cpp
 LIBRARY_HOST := Storage
 
 # Build "ToolsTest" but don't install it
-PROD_LIBS_DEFAULT :=  Storage Tools ca Com
-PROD_LIBS_WIN32 :=  StorageObj ToolsObj ca Com
+PROD_LIBS_DEFAULT :=  Storage rtree Tools ca Com
+PROD_LIBS_WIN32 :=  StorageObj rtreeObj ToolsObj ca Com
 Storage_DIR = $(INSTALL_LIB)
 StorageObj_DIR = $(INSTALL_LIB)
+rtree_DIR = $(INSTALL_LIB)
+rtreeObj_DIR = $(INSTALL_LIB)
 Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 TESTPROD_HOST += FileAllocatorTest NameHashTest RTreeTest FileAllocatorTool StorageTest

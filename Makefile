@@ -4,11 +4,11 @@ TOP=../..
 include $(TOP)/configure/CONFIG
 
 DIRS += Tools
+DIRS += LibIO
 DIRS += rtree
 DIRS += Storage
-DIRS += LibIO
-DIRS += DataTool
 DIRS += Engine
+DIRS += DataTool
 DIRS += XMLRPCServer
 
 DIRS += Manager

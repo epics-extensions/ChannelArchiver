@@ -9,64 +9,59 @@
 // Storage
 #include "DirectoryFile.h"
 #include "DataFile.h"
-// rtree
-#include "archiver_index.h"
+#include "IndexFile.h"
 
 bool verbose;
-bool test;
 
 void list_names(const stdString &index_name)
 {
-    archiver_Index index;
-    if (!index.open(index_name.c_str()))
+    IndexFile index;
+    if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
                 index_name.c_str());
         return;
     }
-    channel_Name_Iterator *names = index.getChannelNameIterator();
-    if (!names)
+    IndexFile::NameIterator names;
+    if (!index.getFirstChannel(names))
     {
         fprintf(stderr, "Cannot get name iterator for index '%s'\n",
                 index_name.c_str());
         return;
     }
-    bool ok;
-    interval iv;
-    stdString name, start, end;
-    for (ok = names->getFirst(&name); ok; ok = names->getNext(&name))
+    epicsTime stime, etime;
+    stdString start, end;
+    RTree *tree;
+    do
     {
-        if (!index.getEntireIndexedInterval(name.c_str(), &iv))
+        if (!(tree = index.getTree(names.getName())))
         {
-            fprintf(stderr, "Cannot get interval for channel '%s'\n",
-                    name.c_str());
+            fprintf(stderr, "Cannot get tree for channel '%s'\n",
+                    names.getName().c_str());
+            continue;
         }
-        else
-        {
-            printf("Channel '%s': %s - %s\n",
-                   name.c_str(),
-                   epicsTimeTxt(iv.getStart(), start),
-                   epicsTimeTxt(iv.getEnd(), end));
-            
-        }
+        tree->getInterval(stime, etime);
+        printf("Channel '%s': %s - %s\n",
+               names.getName().c_str(),
+               epicsTimeTxt(stime, start),
+               epicsTimeTxt(etime, end));
+        delete tree;
     }
-    delete names;
+    while (index.getNextChannel(names));
+    index.close();
 }
-
 
 void convert_dir_index(const stdString &dir_name, const stdString &index_name)
 {
     DirectoryFile dir;
     if (!dir.open(dir_name))
-	return;
+        return;
 	
     DirectoryFileIterator channels = dir.findFirst();
-    archiver_Index index;
-    
+    IndexFile index;
     if (verbose)
         printf("Opened directory file '%s'\n", dir_name.c_str());
-
-    if (!index.open(index_name.c_str(), false))
+    if (!index.open(index_name, false))
     {
         fprintf(stderr, "Cannot create index '%s'\n",
                 index_name.c_str());
@@ -74,7 +69,6 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
     }
     if (verbose)
         printf("Created index '%s'\n", index_name.c_str());
-
     for (/**/;  channels.isValid();  channels.next())
     {
         if (verbose)
@@ -85,6 +79,13 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
                 printf("No values\n");
             continue;
         }
+        RTree *tree = index.addChannel(channels.entry.data.name);
+        if (!tree)
+        {
+            fprintf(stderr, "Cannot add channel '%s' to index '%s'\n",
+                    channels.entry.data.name, index_name.c_str());
+            continue;
+        }   
         DataFile *datafile =
             DataFile::reference(dir.getDirname(),
                                 channels.entry.data.first_file, false);
@@ -104,24 +105,21 @@ void convert_dir_index(const stdString &dir_name, const stdString &index_name)
                        start.c_str(),
                        end.c_str());
             }
-            if (test == false)
+            if (!tree->insertDatablock(
+                    header->data.begin_time, header->data.end_time,
+                    header->offset,  header->datafile->getBasename()))
             {
-                archiver_Unit au = archiver_Unit(
-                    key_Object(header->datafile->getBasename().c_str(),
-                               header->offset),
-                    interval(header->data.begin_time,
-                             header->data.end_time), 1);
-                if (!index.addAU(channels.entry.data.name, au))
-                {
-                    fprintf(stderr, "addAU failed\n");
-                    break;
-                }
+                fprintf(stderr, "insertDatablock failed for channel '%s'\n",
+                        channels.entry.data.name);
+                break;
             }
             header->read_next();
         }
         delete header;
+        delete tree;
     }
     DataFile::close_all();
+    index.close();
 }
 
 static DataHeader *get_dataheader(const stdString &file, FileOffset offset)
@@ -137,6 +135,7 @@ static DataHeader *get_dataheader(const stdString &file, FileOffset offset)
 
 void convert_index_dir(const stdString &index_name, const stdString &dir_name)
 {
+#ifdef TODO
     archiver_Index index;
     if (!index.open(index_name.c_str()))
     {
@@ -237,10 +236,12 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
         ok = names->getNext(&name);
     }
     delete names;
+#endif
 }
 
 void dump_index(const stdString &index_name, const stdString channel_name)
 {
+#ifdef TODO
     archiver_Index index;
     if (!index.open(index_name.c_str()))
     {
@@ -308,6 +309,7 @@ void dump_index(const stdString &index_name, const stdString channel_name)
     }
     if (names)
         delete names;
+#endif
 }
 
 int main(int argc, const char *argv[])
@@ -321,7 +323,6 @@ int main(int argc, const char *argv[])
                      );
     CmdArgFlag help (parser, "help", "Show help");
     CmdArgFlag verbose_flag (parser, "verbose", "Show more info");
-    CmdArgFlag test_flag (parser, "test", "Internal test flag");
     CmdArgString list_index(parser, "list", "<index>", "List name info");
     CmdArgString dir2index (parser, "dir2index", "<dir. file>",
                              "Convert old directory file to RTree index");
@@ -339,8 +340,7 @@ int main(int argc, const char *argv[])
         return -1;
     }
     verbose = verbose_flag;
-    test = test_flag;
-    
+
     if (list_index.get().length() > 0)
         list_names(list_index);
     else if (dir2index.get().length() > 0)

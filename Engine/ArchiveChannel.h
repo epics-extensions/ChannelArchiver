@@ -11,9 +11,12 @@
 #ifndef __ARCHIVECHANNEL_H__
 #define __ARCHIVECHANNEL_H__
 
+// Base
 #include <cadef.h>
-#include "CtrlInfo.h"
+// Tools
 #include "Bitset.h"
+// Storage
+#include "CtrlInfo.h"
 #include "CircularBuffer.h"
 #include "SampleMechanism.h"
 
@@ -80,24 +83,26 @@ public:
     /// Initialize value type etc.
 
     /// It's used by the engine for channels that are already in the
-    /// archive, so we know ASAP what we'd otherwis only learn from the CA connection.
+    /// archive, so we know ASAP what we'd otherwis only learn from the
+    /// CA connection.
     /// Pass 0 to ctrl_info or last_stamp if they're unknown.
     void init(DbrType dbr_time_type, DbrCount nelements,
               const CtrlInfo *ctrl_info = 0, const epicsTime *last_stamp = 0);
     
     /// Write current ring buffer content to archive.
-    void write(class archiver_Index &index);
+    void write(class IndexFile &index);
 
     /// Add an event to the buffer (special status/severity)
 
     /// The time might be adjusted to be >= the last stamp
     /// in the archive.
     ///
-    void addEvent(dbr_short_t status, dbr_short_t severity, const epicsTime &time);
+    void addEvent(dbr_short_t status, dbr_short_t severity,
+                  const epicsTime &time);
         
 private:
-    stdString       name;
-    double          period; // Sample period, max period, ... up to SampleMechanism
+    stdString   name;
+    double      period; // Sample period, max period, ..(see SampleMechanism)
     SampleMechanism *mechanism;
 
     // CA Info and callbacks

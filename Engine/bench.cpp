@@ -217,6 +217,7 @@ int main (int argc, const char *argv[])
     parser.setHeader("Archive Benchmark\n");
     parser.setArgumentsInfo("<index>");
     CmdArgFlag old(parser, "old", "Use old directory file");
+    CmdArgFlag rtree(parser, "rtree", "Use rtree code");
     CmdArgInt samples(parser, "samples", "<count>",
                       "Number of samples to write");
     CmdArgString channel_name(parser, "channel", "<name>",
@@ -251,8 +252,10 @@ int main (int argc, const char *argv[])
     {
         count = samples.get();
         start = epicsTime::getCurrent ();
-        if (old)
+        if (rtree)
             tree_write_samples(index_name, channel_name.get(), count);
+        else if (old)
+            old_write_samples(index_name, channel_name.get(), count);
         else
             write_samples(index_name, channel_name.get(), count);
         stop = epicsTime::getCurrent ();

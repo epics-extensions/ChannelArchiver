@@ -244,8 +244,6 @@ void do_export(const stdString &archive_name,
         fflush(stdout);
         chunk_count = val_count = 0;
 
-        try
-        {
             if (! old_channel->getValueAfterTime(start, values))
             {
                 printf("\t0 chunks\t0 values\n");
@@ -347,11 +345,6 @@ void do_export(const stdString &archive_name,
                     chunk = values.determineChunk(end);
             }
             new_channel->releaseBuffer();
-        }
-        catch (GenericException &e)
-        {
-            printf("\nError:\n%s\n", e.what());
-        }
         printf("\t%d chunks\t%d values\n", chunk_count, val_count);
     }
 }
@@ -548,8 +541,6 @@ void test(const stdString &directory, const epicsTime &start, const epicsTime &e
         channel->getValueAfterTime(start, value);
         chan_errors = 0;
         epicsTime last;
-        try
-        {
             while (run && value &&
                    (!isValidTime(end) || value->getTime() < end))
             {
@@ -568,12 +559,6 @@ void test(const stdString &directory, const epicsTime &start, const epicsTime &e
                 last = value->getTime();
                 ++value;
             }
-        }
-        catch (GenericException &e)
-        {
-            printf("\n%s\n", e.what());
-            ++chan_errors;
-        }
         
         if (chan_errors)
         {
@@ -694,8 +679,6 @@ int main(int argc, const char *argv[])
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
 
-    try
-    {
         if (do_show_info)
         {
             if (channel_name.get().length() > 0)
@@ -758,12 +741,6 @@ int main(int argc, const char *argv[])
             list_channels(archive_name, channel_pattern);
         else
             list_values(archive_name, channel_name, start, end, repeat_floor.get());
-    }
-    catch (GenericException &e)
-    {
-        fprintf(stderr, "Error:\n%s\n", e.what());
-        return -1;
-    }
     printf("\n");
 
     return 0;

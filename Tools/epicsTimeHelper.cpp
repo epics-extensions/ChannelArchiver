@@ -15,16 +15,16 @@ static epicsTime nullStamp;      // epicsTime with epicsTimeStamp 0, 0
 // Needs to be called for initialization
 void initEpicsTimeHelper()
 {
-	epicsTimeStamp	stamp;
-	stamp.secPastEpoch = 0;
-	stamp.nsec = 0;
-	nullStamp = stamp;
+    epicsTimeStamp  stamp;
+    stamp.secPastEpoch = 0;
+    stamp.nsec = 0;
+    nullStamp = stamp;
 }
 
 // Check if time is non-zero, whatever that could be
 bool isValidTime(const epicsTime &t)
 {
-	return t != nullTime  &&  t != nullStamp;
+    return t != nullTime  &&  t != nullStamp;
 }
 
 // Convert string "mm/dd/yyyy" or "mm/dd/yyyy 00:00:00" or
@@ -36,9 +36,14 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
     size_t tlen = txt.length();
     //  0123456789
     // "mm/dd/yyyy" ?
-	if (tlen < 10  ||  txt[2] != '/' || txt[5] != '/')
-		return false;
-
+    if (tlen < 10  ||  txt[2] != '/' || txt[5] != '/')
+    {   // Special case for testing
+        epicsTimeStamp stamp;
+        stamp.secPastEpoch = atoi(txt.c_str());
+        stamp.nsec = 0;
+        time = stamp;
+        return stamp.secPastEpoch <= 1000;
+    }
     struct local_tm_nano_sec tm;
     memset(&tm, 0, sizeof(struct local_tm_nano_sec));
     tm.ansi_tm.tm_isdst = -1; /* don't know if daylight saving or not */
@@ -46,7 +51,6 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
     tm.ansi_tm.tm_mday = (txt[3]-'0')*10 + (txt[4]-'0');
     tm.ansi_tm.tm_year = (txt[6]-'0')*1000 + (txt[7]-'0')*100 +
                          (txt[8]-'0')*10 + (txt[9]-'0') - 1900;
-
     //  0123456789012345678
     // "mm/dd/yyyy 00:00:00"
     if (tlen >= 19)
@@ -71,20 +75,26 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
             (txt[27]-'0')*10 +
             (txt[28]-'0');   
     
-	time = tm;
-
-	return true;
+    time = tm;
+    return true;
 }
 
 // Convert epicsTime into "mm/dd/yyyy 00:00:00.000000000"
 bool epicsTime2string (const epicsTime &time, stdString &txt)
 {
-	if (! isValidTime (time))
-	{
-		txt = "00:00:00";
-		return false;
-	}
     char buffer[50];
+    epicsTimeStamp stamp = time;
+    if (stamp.nsec == 0 && stamp.secPastEpoch <= 1000)
+    {
+        sprintf(buffer, "%d", stamp.secPastEpoch);
+        txt = buffer;
+        return true;
+    }
+    if (! isValidTime(time))
+    {
+        txt = "00:00:00";
+        return false;
+    }
     struct local_tm_nano_sec tm = (local_tm_nano_sec) time;
     sprintf(buffer, "%02d/%02d/%04d %02d:%02d:%02d.%09ld",
             tm.ansi_tm.tm_mon + 1,
@@ -114,10 +124,10 @@ void epicsTime2vals(const epicsTime &time,
         nano  = tm.nSec;
     }
     else
-	{
-	   year = month = day = hour = min = sec = 0;
-	   nano = 0;
-	}
+    {
+       year = month = day = hour = min = sec = 0;
+       nano = 0;
+    }
 }
 
 void vals2epicsTime(int year, int month, int day,
@@ -140,8 +150,8 @@ void vals2epicsTime(int year, int month, int day,
 #define NSEC 1000000000L
 epicsTime roundTimeDown(const epicsTime &time, double secs)
 {
-	if (secs <= 0)
-		return time;
+    if (secs <= 0)
+        return time;
 
     struct local_tm_nano_sec tm = (local_tm_nano_sec) time;
     unsigned long round;
@@ -201,8 +211,8 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
 // Round up
 epicsTime roundTimeUp(const epicsTime &time, double secs)
 {
-	if (secs <= 0)
-		return time;
+    if (secs <= 0)
+        return time;
 
     struct local_tm_nano_sec tm = (local_tm_nano_sec) time;
     unsigned long round;
@@ -282,11 +292,11 @@ epicsTime roundTime (const epicsTime &time, double secs)
     // The above implementation is expensive.
     // Can something like this made to work
     // after converting the time to a double and back?
-	if (secs == 0)
-		return time;
-	double val = time;
-	double rounded = floor (val / secs + 0.5) * secs;
-	return epicsTime (rounded);
+    if (secs == 0)
+        return time;
+    double val = time;
+    double rounded = floor (val / secs + 0.5) * secs;
+    return epicsTime (rounded);
 #endif
 }
 

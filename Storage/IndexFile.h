@@ -40,7 +40,8 @@ public:
     /// Add a channel to the index.
 
     /// A channel has to be added before data blocks get defined
-    /// for the channel.
+    /// for the channel. When channel is already in index, existing
+    /// tree gets returned.
     /// Caller needs to delete the tree pointer.
     class RTree *addChannel(const stdString &name);
 

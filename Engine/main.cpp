@@ -1,6 +1,12 @@
+// --------------------------------------------------------
 // $Id$
 //
-// main.cpp
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
 
 #ifdef WIN32
 #pragma warning (disable: 4786)
@@ -57,57 +63,51 @@ int main (int argc, const char *argv[])
 
 	initOsiHelpers ();
 
-	// Handle arguments
-	stdString prog_name;
-	Filename::getBasename (argv[0], prog_name);
+	CmdArgParser parser (argc, argv);
+	CmdArgInt port (parser, "port", "<port>", "WWW server's TCP port");
+	CmdArgString description (parser, "description", "<text>", "description for HTTP display");
+	CmdArgString log (parser, "log", "<filename>", "write logfile");
+	port.set (EngineServer::_port); // default
 
-	ArgParser args;
-	if (!args.parse (argc, argv, "", "pdl")  ||
-		args.getArguments ().size() < 1)
+	if (!parser.parse() ||
+		parser.getArguments ().size() < 1)
 	{
-		cerr << "Usage: " << prog_name << " [flags] <configuration> { <directory file> }\n";
-		cerr << "\tFlags:\n";
-		cerr << "\t\t-p <port>     : WWW server (P)ort\n";
-		cerr << "\t\t-d <text>     : set engine's (D)escription (for HTTP display)\n";
-		cerr << "\t\t-l <filename> : write (L)ogfile\n";
-		cerr << "\n";
+		parser.usage ();
 		return -1;
 	}
 	
-	if (args.getParameter (2).length() > 0)
+	if (log.get().length() > 0)
 	{
 		logfile = new ofstream;
-		logfile->open (args.getParameter (2).c_str (), ios::out | ios::trunc);
+		logfile->open (log.get().c_str (), ios::out | ios::trunc);
 		if (! logfile->is_open())
 		{
-			cerr << "Cannot open logfile '" << args.getParameter (2) << "'\n";
+			cerr << "Cannot open logfile '" << log.get() << "'\n";
 			delete logfile;
 			logfile = 0;
 		}
 	}
 
-	short port = atoi (args.getParameter (0).c_str());
-	if (port > 0)
-		EngineServer::_port = port;
+	EngineServer::_port = (int)port;
 	
 	// Arg. 1 might be the directory_name to use:
-	const stdString &config_file = args.getArgument (0);
+	const stdString &config_file = parser.getArgument (0);
 	stdString directory_name;
-	if (args.getArguments ().size() < 2)
+	if (parser.getArguments ().size() < 2)
 		directory_name = "freq_directory";
 	else
-		directory_name = args.getArgument (1);
+		directory_name = parser.getArgument (1);
 
 	Lockfile lock_file("archive_active.lck");
-	if (! lock_file.Lock (prog_name))
+	if (! lock_file.Lock (argv[0]))
 		return -1;
 
 	ConfigFile *config = new ConfigFile;
 	try
 	{
 		Engine::create (directory_name);
-		if (! args.getParameter (1).empty())
-			theEngine->setDescription (args.getParameter (1));
+		if (! description.get().empty())
+			theEngine->setDescription (description);
 		run = config->load (config_file);
 		if (run)
 			config->save ();

@@ -1,26 +1,21 @@
 \section{Data Files}
-
-What is inside the data files? Most users should not care at all, or
-have you ever asked Oracle what's inside their files (good luck!).  If
-you were a programmer interested in low-level access to the data
-files, you would already have read the source code, at least the
-header files.  What follows in this chapter is an incomplete
-description, one that is just good enough to allow some conclusions
-which might help you when you need to copy or move data files.
-If you care in detail, read the source.
-
-Still reading? OK, here we go: The archiver stores data for many
-channels in the same data file. There aren't separate data files per
-channel because that would produce too many files and slow the archiver down.
-The names of the data files look like time stamps. They are somewhat
-related to the time stamps of the samples in there: The name reflects
-when the data file was created. We then continue to add samples until
-the engine decides to create a new data file. This means that a data
-file with a name similar to yesterday's date can still be filled
-today.
+The data files store the actual data, that is the time stamps, values
+and the meta information like display limits, alarm limits and
+engineering units. 
+The archiver stores data for many channels in the same data
+file. There aren't separate data files per channel because that would
+produce too many files and slow the archiver down.  The names of the
+data files look like time stamps. They are somewhat related to the
+time stamps of the samples in there: The name reflects when the data
+file was created. We then continue to add samples until the engine
+decides to create a new data file. This means that a data file with a
+name similar to yesterday's date can still be filled today.
 
 \noindent{\bfseries Conclusion 1:} Ignore the names of the data files,
-they don't tell you anything of use about the time range of samples inside.
+they don't tell you anything of use about the time range of samples
+inside.
+
+\subsection{Implementation Details}
 
 \begin{table}[htbp]
   \begin{center}

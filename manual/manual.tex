@@ -84,8 +84,18 @@
 \includegraphics[width=3cm]{logo101}
 }
 \date{R3.14.4 Version, Nov. 2003}
-\author{kasemir@lanl.gov}
 \maketitle
+\newpage
+
+\pagestyle{empty}
+\section*{History}
+Bob Dalesio: Design of original index file, data file layouy,
+             initial prototype.\\
+Kay-Uwe Kasemir: Current ArchiveEngine.\\ 
+Sergei Chevtsov: R*Tree-based index.\\
+Craig McChesney: Java Retrieval Lib.\\
+Peregrine McGehee: Java Client.
+\newpage
 
 \pagenumbering{roman}
 \tableofcontents
@@ -103,6 +113,7 @@
 \chapter{Internals}
 \input{xmlrpc}
 \clearpage
+\input{rtree}
 \input{binary}
 
 \input{install}

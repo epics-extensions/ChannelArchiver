@@ -248,22 +248,22 @@ void CBrowserDlg::EnableItems (BOOL bEnable)
 	wnd = GetDlgItem(IDC_DOWN);			if (wnd) wnd->EnableWindow (bEnable);
 }
 
-inline void osiTime2CTime (const osiTime &osi, CTime &date, CTime &time)
+inline void epicsTime2CTime (const epicsTime &osi, CTime &date, CTime &time)
 {
 	int nYear, nMonth, nDay, nHour, nMin, nSec;
 	unsigned long nano;
-	osiTime2vals (osi, nYear, nMonth, nDay, nHour, nMin, nSec, nano);
+	epicsTime2vals (osi, nYear, nMonth, nDay, nHour, nMin, nSec, nano);
 	if (nYear == 0  ||  nMonth == 0  ||  nDay == 0)
 		return;
 	date = CTime (nYear, nMonth, nDay, nHour, nMin, nSec);
 	time = CTime (nYear, nMonth, nDay, nHour, nMin, nSec);
 }
 
-void CBrowserDlg::setStart (const osiTime &start)
-{	osiTime2CTime (start, m_start_date, m_start_time);	}
+void CBrowserDlg::setStart (const epicsTime &start)
+{	epicsTime2CTime (start, m_start_date, m_start_time);	}
 
-void CBrowserDlg::setEnd (const osiTime &end)
-{	osiTime2CTime (end, m_end_date, m_end_time);	}
+void CBrowserDlg::setEnd (const epicsTime &end)
+{	epicsTime2CTime (end, m_end_date, m_end_time);	}
 
 bool CBrowserDlg::ListChannelNames(const stdString &pattern)
 {
@@ -277,7 +277,7 @@ bool CBrowserDlg::ListChannelNames(const stdString &pattern)
 
 		m_channel_status.SetWindowText ("Reading channels, please wait");
 
-		osiTime start, end, nullTime;
+		epicsTime start, end, nullTime;
 		m_channel_list.ResetContent ();
 
 		Archive archive (new WINBROWSER_ARCHIVE_TYPE((LPCTSTR) m_dir_name));
@@ -300,7 +300,7 @@ bool CBrowserDlg::ListChannelNames(const stdString &pattern)
 		{
 			m_channel_list.AddString (channel->getName ());
 			wait.Restore ();
-			osiTime time = channel->getFirstTime ();
+			epicsTime time = channel->getFirstTime ();
 			if (time != nullTime && (time < start  ||  start == nullTime))
 				start = time;
 			time = channel->getLastTime ();
@@ -363,15 +363,16 @@ void CBrowserDlg::OnOk()
 
 LRESULT CBrowserDlg::OnUpdateTimes (WPARAM wParam, LPARAM lParam)
 {
-	setStart (osiTime (m_plot._plot->getX0()));
-	setEnd (osiTime (m_plot._plot->getX1()));
+	setStart(double2epicsTime(m_plot._plot->getX0()));
+	setEnd(double2epicsTime(m_plot._plot->getX1()));
+
 	UpdateData(FALSE);
 	return 0;
 }
 
 // For channel - which has to be valid! - put values from [start..end[
 // into curve while updating limits
-void CBrowserDlg::ReadCurve (Archive &archive, ChannelIterator &channel, const osiTime &start, const osiTime &end,
+void CBrowserDlg::ReadCurve (Archive &archive, ChannelIterator &channel, const epicsTime &start, const epicsTime &end,
 	Curve &curve, Limits &tlim, Limits &ylim)
 {
 	double ot=numeric_limits<double>::min(), t, y;
@@ -386,7 +387,7 @@ void CBrowserDlg::ReadCurve (Archive &archive, ChannelIterator &channel, const o
 	channel->getValueAfterTime (start, value);
 	while (value && DoEvents() && (end==nullTime || value->getTime() < end))
 	{
-		t = (double) value->getTime ();
+		t = epicsTime2double(value->getTime ());
 		// don't go back in time (fix for error in old archives)
 		if (t < ot)
 		{
@@ -433,24 +434,24 @@ void CBrowserDlg::UpdateCurves(bool redraw)
 	{
 		Archive archive(new WINBROWSER_ARCHIVE_TYPE ((LPCTSTR) m_dir_name));
 		ChannelIterator channel (archive);
-		osiTime start, end;
+		epicsTime start, end;
 		for (size_t i=0; i<curves.size(); ++i)
 		{
 			if (! archive.findChannelByName ((LPCTSTR) curves[i].label, channel))
 				continue;
 
 			// Try to prepend new data
-			start = plot->getX0();
+			start = double2epicsTime(plot->getX0());
 			if (curves[i].data.size() > 0)
-				end = curves[i].data.front()._x;
+				end = double2epicsTime(curves[i].data.front()._x);
 			else
-				end = plot->getX1();
+				end = double2epicsTime(plot->getX1());
 			if (start < end)
 			{
 				{
 					stdString start_t, end_t;
-					osiTime2string(start, start_t);
-					osiTime2string(end, end_t);
+					epicsTime2string(start, start_t);
+					epicsTime2string(end, end_t);
 					TRACE ("%s: Prepend %s ..%s ... ", curves[i].label,
 						start_t.c_str(), end_t.c_str());
 				}
@@ -465,17 +466,17 @@ void CBrowserDlg::UpdateCurves(bool redraw)
 
 			// Try to append new data
 			if (curves[i].data.size() > 0)
-				start = curves[i].data.back()._x + 0.000001; // don't read last value twice
+				start = double2epicsTime(curves[i].data.back()._x + 0.000001); // don't read last value twice
 			else
-				start = plot->getX1();
-			end = plot->getX1();
+				start = double2epicsTime(plot->getX1());
+			end = double2epicsTime(plot->getX1());
 			if (start >= end)
 				continue;
 
 			{
 				stdString start_t, end_t;
-				osiTime2string(start, start_t);
-				osiTime2string(end, end_t);
+				epicsTime2string(start, start_t);
+				epicsTime2string(end, end_t);
 				TRACE ("%s: Append %s .. %s ... ", curves[i].label,
 					start_t.c_str(), end_t.c_str());
 			}
@@ -606,13 +607,13 @@ void CBrowserDlg::OnAdjustLimits()
 	if (! plot)
 		return;
 
-	osiTime start, end;
+	epicsTime start, end;
 	UpdateData ();
-	vals2osiTime (m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),
+	vals2epicsTime (m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),
 		   m_start_time.GetHour(), m_start_time.GetMinute(), m_start_time.GetSecond(), 0, start);
-	vals2osiTime (m_end_date.GetYear(), m_end_date.GetMonth(), m_end_date.GetDay(),
+	vals2epicsTime (m_end_date.GetYear(), m_end_date.GetMonth(), m_end_date.GetDay(),
 		   m_end_time.GetHour(), m_end_time.GetMinute(), m_end_time.GetSecond(), 0, end);
-	plot->setXRange (double(start), double(end));
+	plot->setXRange (epicsTime2double(start), epicsTime2double(end));
 	UpdateCurves (true);
 }
 
@@ -643,7 +644,7 @@ void CBrowserDlg::OnShow()
 	int *indices = new int[num];
 	int got = m_channel_list.GetSelItems (num, indices); VERIFY(num == got);
 	Limits tlim, ylim;
-	osiTime first_time, last_time;
+	epicsTime first_time, last_time;
 
 	try
 	{
@@ -654,10 +655,10 @@ void CBrowserDlg::OnShow()
 			m_channel_list.GetText (indices[i], channelname);	
 			if (! archive.findChannelByName ((LPCTSTR) channelname, channel))
 				continue;
-			osiTime start, end;
-			vals2osiTime (m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),
+			epicsTime start, end;
+			vals2epicsTime (m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),
 				   m_start_time.GetHour(), m_start_time.GetMinute(), m_start_time.GetSecond(), 0, start);
-			vals2osiTime (m_end_date.GetYear(), m_end_date.GetMonth(), m_end_date.GetDay(),
+			vals2epicsTime (m_end_date.GetYear(), m_end_date.GetMonth(), m_end_date.GetDay(),
 				   m_end_time.GetHour(), m_end_time.GetMinute(), m_end_time.GetSecond(), 0, end);
 			ReadCurve (archive, channel, start, end, curve, tlim, ylim);
 
@@ -675,8 +676,8 @@ void CBrowserDlg::OnShow()
 		if (! have_curve)
 		{
 			stdString ft, lt;
-			osiTime2string (first_time, ft);
-			osiTime2string (last_time, lt);
+			epicsTime2string (first_time, ft);
+			epicsTime2string (last_time, lt);
 			MsgBoxF ("No values found in given time range.\nFor these channels, the archive seems to have values\nfrom\n%s to\n%s.",
 				ft.c_str(), lt.c_str());
 		}
@@ -770,11 +771,11 @@ void CBrowserDlg::OnExport()
 			break;
 		}
 
-		osiTime	time;
-		vals2osiTime(m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),
+		epicsTime	time;
+		vals2epicsTime(m_start_date.GetYear(), m_start_date.GetMonth(), m_start_date.GetDay(),
 				   m_start_time.GetHour(), m_start_time.GetMinute(), m_start_time.GetSecond(), 0, time);
 		export->setStart(time);
-		vals2osiTime(m_end_date.GetYear(), m_end_date.GetMonth(), m_end_date.GetDay(),
+		vals2epicsTime(m_end_date.GetYear(), m_end_date.GetMonth(), m_end_date.GetDay(),
 				   m_end_time.GetHour(), m_end_time.GetMinute(), m_end_time.GetSecond(), 0, time);
 		export->setEnd(time);
 

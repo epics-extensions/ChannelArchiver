@@ -1,8 +1,22 @@
 #pragma warning (disable: 4786)
 
 #include "stdafx.h"
-#include "osiTimeHelper.h"
+#include "epicsTimeHelper.h"
 #include "TimeAxis.h"
+
+double epicsTime2double(const epicsTime &t)
+{
+	epicsTimeStamp s = t;
+	return s.secPastEpoch + 1.0e-9*s.nsec;
+}
+
+epicsTime double2epicsTime(double d)
+{
+	epicsTimeStamp s;
+	s.secPastEpoch = d;
+	s.nsec = (d - s.secPastEpoch) * 1e9;
+	return epicsTime(s);
+}
 
 void TimeAxis::createDefaultAxis ()
 {
@@ -66,19 +80,19 @@ void TimeAxis::paint (CDC *dc, const CRect &area)
 			dc->MoveTo (screen_x, screen_y);
 			dc->LineTo (screen_x, screen_y + tick_len);
 
-			osiTime2vals (osiTime (tick), year, month, day, hour, min, sec, nano);
-			tag.Format ("%02d:%02d:%02d.%02d", hour, min, sec, (int)(nano/100000000L));
-			metrics = dc->GetTextExtent (tag);
-			dc->TextOut (screen_x - metrics.cx/2, screen_y + tag_skip, tag);
+			epicsTime2vals(double2epicsTime(tick), year, month, day, hour, min, sec, nano);
+			tag.Format("%02d:%02d:%02d.%02d", hour, min, sec, (int)(nano/100000000L));
+			metrics = dc->GetTextExtent(tag);
+			dc->TextOut(screen_x - metrics.cx/2, screen_y + tag_skip, tag);
 
-			tag.Format ("%02d/%02d/%04d", month, day, year);
-			metrics = dc->GetTextExtent (tag);
-			dc->TextOut (screen_x - metrics.cx/2, screen_y + tag_skip + metrics.cy, tag);
+			tag.Format("%02d/%02d/%04d", month, day, year);
+			metrics = dc->GetTextExtent(tag);
+			dc->TextOut(screen_x - metrics.cx/2, screen_y + tag_skip + metrics.cy, tag);
 		}
 		else
 		{	//	half tick
-			dc->MoveTo (screen_x, screen_y);
-			dc->LineTo (screen_x, screen_y + tick_len/2);
+			dc->MoveTo(screen_x, screen_y);
+			dc->LineTo(screen_x, screen_y + tick_len/2);
 		}
 	}
 }

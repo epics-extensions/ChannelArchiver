@@ -68,7 +68,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../Export" /I "../LibIO" /I "../../Tools" /I "../../../../R3.13.3/base/include" /I "../../../../R3.13.3/base/include/os/Win32" /I "../../../../R3.13.3/base/src/ca" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /D "_AFXDLL" /D "EPICS_DLL" /D __STDC__=0 /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../../../include" /I "../../../../../base/R3.14.1_RH9/include" /I "../../../../../base/R3.14.1_RH9/include/os/WIN32" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D CPP_EDITION=3 /D "OLD_osiTime" /D "_AFXDLL" /D "EPICS_DLL" /D __STDC__=0 /FD /GZ /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 ca.lib Com.lib ws2_32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept /libpath:"../../../../R3.13.3/base/lib/Win32"
+# ADD LINK32 ChanArchIOObj.lib ToolsObj.lib ca.lib Com.lib ws2_32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept /libpath:"../../../lib/win32-x86" /libpath:"../../../../../base/R3.14.1_RH9/lib/win32-x86"
 
 !ENDIF 
 
@@ -96,43 +96,7 @@ SOURCE=.\ActionEdit.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\LibIO\ArchiveException.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\ArchiveI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Tools\ASCIIParser.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\Axis.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\BinArchive.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\BinChannel.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\BinChannelIterator.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\BinCtrlInfo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\BinValue.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\BinValueIterator.cpp
 # End Source File
 # Begin Source File
 
@@ -140,99 +104,11 @@ SOURCE=.\BrowserDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\LibIO\BucketingValueIteratorI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\ChannelI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\ChannelIteratorI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\CtrlInfoI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\DataFile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\DirectoryFile.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\DlgExport.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\LibIO\ExpandingValueIteratorI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\Exporter.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Tools\Filename.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Tools\GenericException.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Tools\gnu_regex.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\GNUPlotExporter.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\HashTable.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\LinInterpolValueIteratorI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Tools\LowLevelIO.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\MatlabExporter.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\MsgBoxF.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Tools\MsgLogger.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\MultiArchive.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\MultiChannel.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\MultiChannelIterator.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\MultiValueIterator.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Tools\osiTimeHelper.cpp
 # End Source File
 # Begin Source File
 
@@ -244,36 +120,12 @@ SOURCE=.\PlotCanvas.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\Tools\RegularExpression.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\SpreadSheetExporter.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\StdAfx.cpp
 # ADD CPP /Yc"stdafx.h"
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\Tools\stdString.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\TimeAxis.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\ValueI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\LibIO\ValueIteratorI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Tools\WIN32Thread.cpp
 # End Source File
 # Begin Source File
 

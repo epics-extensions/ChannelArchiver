@@ -53,8 +53,8 @@ protected:
 	CToolTipCtrl m_tooltip;
 	HICON m_hIcon;
 
-	void setStart (const osiTime &start);
-	void setEnd (const osiTime &end);
+	void setStart (const epicsTime &start);
+	void setEnd (const epicsTime &end);
 
 	void goUpDown (double dir);
 	void OnBackForw (double dir);
@@ -62,7 +62,7 @@ protected:
 	void zoomInOutY (double dir);
 
 	size_t getChannelList (vector<stdString> &channels);
-	void ReadCurve (Archive &archive, ChannelIterator &channel, const osiTime &start, const osiTime &end, Curve &curve,
+	void ReadCurve (Archive &archive, ChannelIterator &channel, const epicsTime &start, const epicsTime &end, Curve &curve,
 		Limits &tlim, Limits &ylim);
 	void UpdateCurves (bool redraw);
 

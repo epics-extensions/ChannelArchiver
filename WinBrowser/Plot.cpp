@@ -1,7 +1,7 @@
 #pragma warning (disable: 4786)
 
 #include "stdafx.h"
-#include "osiTimeHelper.h"
+#include "epicsTimeHelper.h"
 #include "Plot.h"
 
 #ifdef _DEBUG

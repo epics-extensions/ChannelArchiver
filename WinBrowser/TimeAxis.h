@@ -1,11 +1,19 @@
 #include "Axis.h"
-#include "osiTime.h"
+#include "epicsTime.h"
 
 //
 //
 // TimeAxis
 //
+// The limits of this axis, a set of double numbers,
+// are interpretes as an epicsTimeStamp:
+// secPastEpoch, + 1.0e-9*nsec
 //
+//
+
+double epicsTime2double(const epicsTime &t);
+epicsTime double2epicsTime(double d);
+
 class TimeAxis : public Axis
 {
 public:
@@ -15,10 +23,15 @@ public:
 		createDefaultAxis ();
 	}
 
-	void setDataRange (const osiTime &start, const osiTime &end)
+	/*
+	void setDataRange (const epicsTime &start, const epicsTime &end)
 	{
-		Axis::setDataRange (double (start), double (end));
+		epicsTimeStamp s = start, e = end;
+
+		Axis::setDataRange((double)s.secPastEpoch + s.nsec/1.0e9,
+						(double)e.secPastEpoch + e.nsec/1.0e9);
 	}
+	*/
 
 	void createDefaultAxis ();
 

@@ -4,12 +4,13 @@
 
 // Enable/disable certain tests in case one doesn't work out
 // on your architecture
-#define TEST_STRING
-#define TEST_TIME
-#define TEST_LOG
-#define TEST_THREADS
-#define TEST_TIMER
-#define TEST_CA
+//#define TEST_STRING
+//#define TEST_TIME
+//#define TEST_LOG
+//#define TEST_THREADS
+//#define TEST_TIMER
+//#define TEST_CA
+#define TEST_BITSET
 // Nothing should need to be touched from here down
 
 #ifndef TEST_LOG
@@ -653,6 +654,40 @@ void test_ca()
 #endif
 
 
+#ifdef TEST_BITSET
+
+#include "Bitset.h"
+
+void test_bitset()
+{
+    printf("\nBitset  Tests\n");
+    printf("------------------------------------------\n");
+    BitSet s;
+    TEST(strcmp(s.to_string().c_str(), "") == 0);
+    s.grow(10);
+    TEST(strcmp(s.to_string().c_str(), "0") == 0);
+    s.set(1);
+    s.set(2, true);
+    s.set(0);
+    TEST(strcmp(s.to_string().c_str(), "111") == 0);
+    s.grow(40);
+    TEST(strcmp(s.to_string().c_str(), "111") == 0);
+    TEST(s.count() == 3);
+    TEST(s.any() == true);
+    s.clear(0);
+    s.set(2, false);
+    s.clear(1);
+    TEST(s.count() == 0);
+    TEST(s.any() == false);
+    s.set(30);
+    TEST(strcmp(s.to_string().c_str(), "1000000000000000000000000000000") == 0);
+    TEST(s.test(30) == true);
+    TEST(s.test(3) == false);
+    TEST(s.capacity() == 64);
+}
+
+#endif
+
 // -----------------------------------------------------------------
 // -----------------------------------------------------------------
 // -----------------------------------------------------------------
@@ -661,6 +696,14 @@ void test_ca()
 
 int main ()
 {
+#ifdef TEST_BITSET
+    test_bitset();
+#endif
+
+#ifdef TEST_STRING
+    test_string();
+#endif
+#ifdef TEST_TIME
     struct local_tm_nano_sec tm;
     tm.ansi_tm.tm_year = 2003 - 1900;
     tm.ansi_tm.tm_mon  = 4 - 1;
@@ -710,16 +753,7 @@ int main ()
            tm.ansi_tm.tm_min,
            tm.ansi_tm.tm_sec,
            tm.nSec,
-           dst);
-
-
-
-    
-
-#ifdef TEST_STRING
-    test_string();
-#endif
-#ifdef TEST_TIME
+           dst);    
     test_time();
 #endif
 #ifdef TEST_LOG

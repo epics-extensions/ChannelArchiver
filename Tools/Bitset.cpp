@@ -1,72 +1,137 @@
-#include <Bitset.h>
 
-BitSet::BitSet ()
+#include "Bitset.h"
+
+BitSet::BitSet()
 {
-	_bits = 0;
-	_size = 0;
-	_num = 0;
+    bits = 0;
+    size = 0;
+    num = 0;
 }
 
-BitSet::~BitSet ()
+BitSet::~BitSet()
 {
-	delete [] _bits;
+    delete [] bits;
 }
 
-BitSet & BitSet::operator = (const BitSet &rhs)
+void BitSet::grow(size_t minimum)
 {
-	_num = rhs._num;
-	_size = rhs._size;
-	if (_num > 0)
-	{
-		_bits = new W32[_num];
-		memcpy (_bits, rhs._bits, _num*4);
-	}
-	else
-		_bits = 0;
-	return *this;
+    if (size >= minimum)
+        return;
+    if (! minimum)
+        return;
+    num = (minimum-1) / 32 + 1;
+    W32 *new_bits = new W32[num];
+    memset(new_bits, 0, num*4);
+
+    if (bits)
+    {
+        memcpy(new_bits, bits, size / 8);
+        delete [] bits;
+    }
+    bits = new_bits;
+    size = num * 32;
 }
 
-void BitSet::grow (size_t minimum)
+void BitSet::set(size_t bit)
 {
-	if (_size >= minimum)
-		return;
+    if (bit >= size)
+        return;
+    W32 *b = bits + (bit / 32);
+    bit %= 32;
+    *b |= (1 << bit);
+}
 
-	if (! minimum)
-		return;
-	_num = (minimum-1) / 32 + 1;
-	W32 *bits = new W32[_num];
-	memset (bits, 0, _num*4);
+void BitSet::clear(size_t bit)
+{
+    if(bit >= size)
+        return;
+    W32 *b = bits + (bit / 32);
+    bit %= 32;
+    *b &= ~(1 << bit);
+}
 
-	if (_bits)
-	{
-		memcpy (bits, _bits, _size / 8);
-		delete [] _bits;
-	}
-	_bits = bits;
-	_size = _num * 32;
+void BitSet::set(size_t bit, bool value)
+{
+    if (value)
+        set(bit);
+    else
+        clear(bit);
+}
+
+bool BitSet::test(size_t bit) const
+{
+    if (bit >= size)
+        return false;
+    W32 *b = bits + (bit / 32);
+    bit %= 32;
+    return !!(*b & (1 << bit));
+}
+
+bool BitSet::empty() const
+{   return ! any(); }
+
+bool BitSet::any() const
+{
+    W32 *b;
+    size_t i;
+    for (b=bits, i=num; i>0; --i)
+    {
+        if (*b)
+            return true;
+        ++b;
+    }
+    return false;
+}
+
+size_t BitSet::count() const
+{
+    size_t c = 0, i;
+    W32 t, *b=bits;
+    for (i=num; i>0; --i)
+    {
+        for (t=*b; t; t >>= 4) // hack taken from STL
+            c += "\0\1\1\2\1\2\2\3\1\2\2\3\2\3\3\4" [t & 0xF];
+        ++b;
+    }
+    return c;
 }
 
 // Excludes leading '0's...
-stdString BitSet::to_string () const
+stdString BitSet::to_string() const
 {
-	bool leading = false;
-	size_t i=size();
-	stdString s;
-	s.reserve (i);
-	while (i > 0)
-	{
-		--i;
-		if (operator[](i))
-		{
-			s += '1';
-			leading = true;
-		}
-		else
-			if (leading || i==0)
-				s += '0';
-	}
+    bool leading = false;
+    size_t i=size;
+    stdString s;
+    s.reserve (i);
+    while (i > 0)
+    {
+        --i;
+        if (operator[](i))
+        {
+            s += '1';
+            leading = true;
+        }
+        else
+            if (leading || i==0)
+                s += '0';
+    }
 
-	return s;
+    return s;
 }
 
+#if 0
+BitSet & BitSet::operator = (const BitSet &rhs)
+{
+    num = rhs.num;
+    size = rhs.size;
+    if (num > 0)
+    {
+        bits = new W32[num];
+        memcpy (bits, rhs.bits, num*4);
+    }
+    else
+        bits = 0;
+    return *this;
+}
+#endif
 

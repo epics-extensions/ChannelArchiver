@@ -32,6 +32,10 @@ CFLAGS = -fPIC -D_X86_ $(INCLUDES)
 TCL = 8.0
 TCL_INC = -I/usr/include
 TCL_LIB = -L/usr/lib -ltcl$(TCL)
+# Alternate
+#TCL = 8.2
+#TCL_INC = -I/usr/local/include
+#TCL_LIB = -L/usr/local/lib -ltcl$(TCL)
 # Solaris @ LANL
 #TCL = 8.2
 #TCL_INC = -I$(HOME)/include

@@ -11,6 +11,12 @@
 # Certainly not done, but I'm working on it.
 # If you have ideas or - even better - code snippets,
 # let me know.
+#
+# If nothing else this is a benchmark:
+# 800MHz Win. NT  :  2550 values/sec
+# 500MHz Linux box:  1430 values/sec
+# 266MHz Linux box:   785 values/sec
+# L8 "beowolf"    :   416 values/sec
 
 from Tkinter import *
 import tkFileDialog, Pmw

@@ -1,56 +1,105 @@
 <html>
 
 <head>
-<title></title>
+<title>CASI</title>
 </head>
 
-<body>
+<body BGCOLOR="#B0B0FF" BACKGROUND="../doc/blueback.jpg">
 
 <blockquote>
-  <h1>CASI - Channel Archive Scripting Interface</h1>
-  <h2>SWIG-wrapper for LibIO</h2>
+  <h1><I>CASI</I> - Channel Archive Scripting Interface</h1>
+
+  This is a SWIG-based scripting interface to the
+  ChannelArchiver I/O library.<br>
+  It replaces the TCL-only "ATAC" extension.<br>
+    
+  <h2>SWIG?</h2>
+
+  The SWIG tool generates the glue code to get from a C/C++ library
+  to a scripting language like perl, tcl, python, ...<br>
+  So far supported with example scripts: tcl and python,
+  both with tk and BLT.
+  
   <h2>Compilation</h2>
-  <p>This extension is not built as part of the standard make system because it involves too
-  many other extensions that are not uniformly configurable as part of the EPICS make
-  system. </p>
-  <p>Instead, there is a MS &quot;nmake&quot; <a href="Makefile">Makefile</a> for Visual C++
-  and a <a href="Makefile.Unix">Makefile.Unix</a> for Unix. <ul>
-    <li>First, build the other portions of the ChannelArchiver:<br>
-      Tools, LibIO, Engine, ...</li>
-    <li>Verify that swig is installed, if necessary get it: <a href="http://www.swig.org">www.swig.org</a>
-    </li>
-    <li>Make sure that you have the tools that you intend to build this extension for: tcl/tk,
-      python, ... and know where their include and libraries are.<br>
-      (Hint: For RedHat Linux, this means you not only have to have python installed but also
-      the &quot;developer&quot; RPM for python) </li>
-    <li>Adjust the Makefile that use use to point to the correct path names for EPICS base,
-      swig, tcl, python, ... </li>
-    <li>Call gnumake or nmake on your makefile, maybe specifying only &quot;tcl&quot; or
-      &quot;python&quot; to skip building what you don't need. </li>
-  </ul>
-  <p>SWIG was used to avoid platform dependencies. This also means that you have to check
-  the swig manual first in case of errors. Link errors for building the shared modules are
-  the most likely problem, but except for the swig manual and your system docs you're on
-  your own with that... </p>
-  <h2>Usage with Python</h2>
-  <p>You'll need python, of course. I tried Python 1.5 as it comes with Redhat 6.1. It's
-  also available for Win32 from <a href="http://www.python.org">http://www.python.org</a>.<br>
-  In addition, you need:<ul>
-    <li>Tk and BLT. Tk might be part of the python that you get initially, BLT is usually not.
-      Find it at <a href="http://www.scriptics.com">http://www.scriptics.com</a> or <a
-      href="http://www.tcltk.com/blt">http://www.tcltk.com/blt</a>.<br>
-      Note that you need a version of tk that works with your version of python. The latest tk
-      might be too new.<br>
-      Similar: You need to build BLT for the version of tk that python uses.</li>
-  </ul>
+
+  This extension is not built as part of the standard make system
+  because it involves too many other tools that are not yet uniformly
+  configurable as part of the EPICS make system.
+  <p>
+  Instead, there is a <a href="Makefile.WIN32">Makefile.WIN32</a> fo
+  MS Visual C++'s &quot;nmake&quot; and a
+  <a href="Makefile.Unix">Makefile.Unix</a> for Unix' gnumake.<br>
+  Suggested procedure:
   <ul>
-    <li>Pmw, the python meta widget library, also from <a href="http://www.python.org">www.python.org</a></li>
+  <li>First, build the other portions of the ChannelArchiver:<br>
+      Tools, LibIO, Engine, ...
+  </li>
+  <li>Verify that swig is installed, if necessary get it:
+      <a href="http://www.swig.org">www.swig.org</a>
+  </li>
+  <li>Make sure that you have the tools that you intend to build this
+      extension for:
+      tcl/tk, python, ... and know where their includes and libraries are.<br>
+      (Hint: For RedHat Linux, this means you not only have to have
+      python installed but also the &quot;developer&quot; RPM for python)
+  </li>
+  <li>Adjust Makefile.xxx to point to the correct path names for EPICS base,
+      swig, tcl, python, ...
+  </li>
+  <li>Call gnumake/nmake on your makefile, maybe specifying only the targets
+      &quot;tcl&quot; or &quot;python&quot; to skip building what you
+      don't need.
+  </li>
   </ul>
-  <p>Set PYTHONPATH to include the casi directory (where casi.py and casic.dll/so/??? have
+  <p>
+  SWIG was used to avoid platform dependencies. This also means that
+  you have to check the swig manual first in case of errors. Link
+  errors for building the shared modules are the most likely problem,
+  but except for the swig manual and your system docs you're on
+  your own with that...
+
+  <h2>Usage with Python</h2>
+  <p>
+  You'll need python, of course.
+  I tried Python 1.5 as it comes with Redhat 6.1.
+  It's also available for Win32 from
+  <a href="http://www.python.org">http://www.python.org</a>.
+  <p>
+  In addition, you need:
+  <ul>
+  <li>Tk and BLT. Tk might be part of the python that you get
+      initially, BLT is usually not.
+      Find it at
+      <a href="http://www.scriptics.com">http://www.scriptics.com</a>
+      or <a href="http://www.tcltk.com/blt">http://www.tcltk.com/blt</a>.<br>
+      Note that you need a version of tk that works with your version
+      of python.
+      The latest tk might be too new.<br>
+      Similar: You need to build BLT for the version of tk that python uses.
+  </li>
+  <li>Pmw, the python meta widget library, also from
+      <a href="http://www.python.org">www.python.org</a>
+  </li>
+  </ul>
+  <p>
+  Set PYTHONPATH to include the casi directory
+  (where casi.py and casic.dll/so/??? have
   been created in the compilation step), e.g.<br>
   export PYTHONPATH=/home/kasemir/Epics/extensions/src/ChannelArchiver/casi/python/O.Linux<br>
-  That directory also holds a html document about the SWIG-generated syntax for the archive
-  access classes.</p>
+  That directory also holds a html document about the SWIG-generated
+  syntax for the archive access classes.
 </blockquote>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -31,7 +31,9 @@ const RawValue::Data *PlotReader::find(const stdString &channel_name,
                                        const epicsTime *start)
 {
     this->channel_name = channel_name;
-    if (!(reader_data = reader.find(channel_name, start)))
+    reader_data = reader.find(channel_name, start);
+    channel_found = reader.channel_found;
+    if (!reader_data)
         return 0;
     if (delta <= 0.0)
         return reader_data;

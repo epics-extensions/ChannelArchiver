@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # make_archive_web.pl
 #
-# Create web page with archive info
+# This file creates a web page with archive info
 # (daemons, engines, ...)
 # from tab-delimited configuration file.
 

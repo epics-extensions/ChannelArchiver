@@ -497,6 +497,21 @@ master_version=1
       <p>
 	By default <em>CAManager</em> automatically checks for a running <em>CAbgManager</em>.
       </p>
+      <font color=red><B>NOTE:</B>
+      The CAManager will prompt you if no CAbgManager is running
+      and try to start one for you.
+      This is currently not fully succesful on RedHat Linux.
+      Most important, the CAbgManager might hang when its
+      terminal goes away or X-Windows is restarted.
+      <p>
+      Fix: Always launch the CAbgManager manually and redirect
+      all its outputs so that it is no longer attached to a terminal.
+      Note that you have to provide the full path to your CAManager
+      configuration.
+      <p>
+      Example: <code>CAbgManager `pwd`/CAManager.cfg 1>bg.log 2>&1 &
+</code>
+      </font>
 
       <hr noshade size=1>
       <a name="blocked"><h2>Blocked Archivers</h2></a>

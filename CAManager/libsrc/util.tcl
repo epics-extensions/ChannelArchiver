@@ -108,15 +108,20 @@ proc cfbgmTimeout {fd h} {
   catch {close $fd}
 }
 
-proc checkForBgManager {} {
+proc checkForBgManager { {force 0} } {
   global tcl_platform
   if {$::checkBgMan == 0} return
   set hosts {}
   foreach arc [camMisc::arcIdx] {
-    lappend hosts [camMisc::arcGet $arc host]
+    set h [camMisc::arcGet $arc host]
+    if {$force || !([info exists ::continuewithout($h)] && $::continuewithout($h))} {
+      lappend hosts $h
+    }
   }
   set ::open 0
   foreach h [lrmdups $hosts] {
+    set ::continuewithout($h) 1
+    set ret($h) 0
     if [catch {set sock [socket $h $::_port]}] {
       continue
     }
@@ -152,13 +157,19 @@ proc checkForBgManager {} {
 	    set tclext ""
 	  }
 	  exec CAbgManager$tclext $::argv &
+	} else {
+	  set ret($h) 1
 	}
       }
       config {
 	camGUI::MessageBox warning "Warning" "CAbgManager: invalid response!" \
 	    "$msg" "Please reconfigure!" Ok .
       }
+      default {
+      }
     }
+    array unset ::reply $h
+    set ::continuewithout($h) $ret($h)
   }
 }
 
@@ -365,12 +376,14 @@ proc runArchiver {i {forceRun 0} {verbose 1}} {
 
   array unset ::sched $i,start
   set now [clock seconds]
-  foreach attr {descr port cfg cfgc start multi timespec} {
+  foreach attr {descr port cfg cvs cfgc rmlock start multi timespec} {
     set $attr [camMisc::arcGet $i $attr]
   }
   foreach attr {log archive} {
     set $attr [clock format $now -format [camMisc::arcGet $i $attr]]
   }
+  if {"$cfgc" == ""} {set cfgc 0}
+  if {"$cvs" == ""} {set cvs 0}
 
   set logtxt [list "Started by [file tail [file rootname [info script]]] ($::CVS(Version)) @ [clock format $now]\n"]
   lappend logtxt " Description:\t\"$descr\""
@@ -433,12 +446,17 @@ proc runArchiver {i {forceRun 0} {verbose 1}} {
   if {![info exists ::tryAgain($i)]} {set ::tryAgain($i) 1}
   if {[file exists [file join $ROOT archive_active.lck]]} {
     incr ::tryAgain($i)
-    if {($::tryAgain($i) > 10)} {
+    if {($::tryAgain($i) > 3)} {
       EPuts $i 5 "Lockfile for \"$descr\" exists - Archiver already/still running! (or terminated abnormally?)"
-      semGive
-      return 0
+      if {$rmlock} {
+	Puts "removing lockfile for \"$descr\""
+	file delete -force [file join $ROOT archive_active.lck]
+      } else {
+	semGive
+	return 0
+      }
     } else {
-      if {!$::nocheck($i)} {
+      if {![info exists ::nocheck($i)] || !$::nocheck($i)} {
 	Puts "Lockfile for \"$descr\" exists - $::tryAgain($i). try in $::bgCheckInt seconds"
       }
       semGive
@@ -463,6 +481,14 @@ proc runArchiver {i {forceRun 0} {verbose 1}} {
     if {$div > 0} { set div [lindex $timespec $div] } else { set div 1 }
     set active [expr ( $active / $div ) % $mod]
     regsub -all " *%$mod" $archive $active archive
+  }
+  while {[regexp "%\{(\[^\}\]*)\}" $archive all func]} {
+    if {[catch $func result]} {
+      Puts "can't exec \"$func\"!"
+      semGive
+      return 0
+    }
+    regsub -all "%\{$func\}" $archive $result archive
   }
 
   # if it's a toggle-archive, delete the one to overwrite
@@ -529,7 +555,7 @@ proc runArchiver {i {forceRun 0} {verbose 1}} {
   if {!$forceRun} {scheduleStop $i}
 
   # Check the changed cfg-files into cvs.
-  if {!$cfgc} {
+  if {!$cfgc && $cvs} {
     if {[file isdir $ROOT/CVS]} {
       set ee [split [read_file $ROOT/CVS/Entries]]
       foreach f $cfgfiles {

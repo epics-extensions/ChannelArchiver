@@ -14,11 +14,22 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>04/30/2001<br>
+      Patch #6:<br>
+       <ul>
+       <li>MatlabExporter: channel names which are invalid
+           as Matlab variable names (because they include ':')
+	   are patched with underscores.
+       </ul>
     <li>04/17/2001<br>
       Patch #5:<br>
-      The "Exporter" had a bug which made the "fill"
-      option fail with some small archives (didn't
-      find proper first value, displayed nothing as a result).
+       <ul>
+       <li>The "Exporter" had a bug which made the "fill"
+           option fail with some small archives (didn't
+           find proper first value, displayed nothing as a result).
+       <li>Added getDoubleTime() as suggested by Bob Hall (SLAC)
+           to casi.
+       </ul>
     <li>04/16/2001<br>
       Patch #4:<br>
       The "ExpandingValueIterator" had a bug which made

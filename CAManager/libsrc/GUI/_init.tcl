@@ -14,12 +14,6 @@ if {1} {
   option add *days {Mo Tu We Th Fr Sa Su} widgetDefault
 }
 
-set ::tl_cnt 0
-set ::_port 4610
-set ::dontCheckAtAll 0
-set ::checkBgMan 1
-set ::checkInt 10
-
 set ::selected(archive) {}
 set ::selected(misc) {}
 set ::selected(regex) {}

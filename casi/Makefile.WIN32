@@ -1,0 +1,74 @@
+# This file is for NMAKE, for building on Win32 with MS Visual C++ (tried 6.0, SP 3)
+#
+# This file assumes that the vcvars32 script has been run first,
+# i.e. PATH, INCLUDE, LIB are set for the compiler/linker
+
+
+MODULE    = casi
+
+# SWIG Installation
+SWIG      = c:\sys\swig1.1\swig -c++
+
+# Includes/links for EPICS extensions, base
+# Note: these are relative to e.g. the tcl/O.WIN32 directory!
+BASE=../../../../../../base
+INCLUDES = -I../.. -I../../../../../include -I$(BASE)/include
+LIBS = ../../../../../lib/WIN32/ChanArchIOObj.lib ../../../../../lib/WIN32/ToolsObj.lib $(BASE)/lib/WIN32/ca.lib  $(BASE)/lib/WIN32/db.lib $(BASE)/lib/WIN32/Com.lib ws2_32.lib
+
+# compiler, linker
+CC = cl -nologo -MD
+
+# C compiler flags
+# -GX: support exceptions
+CFLAGS = -GX -D_X86_ $(INCLUDES)
+
+# Tcl settings
+TCL = c:\progra~1\tcl
+TCL_INC = -I$(TCL)\include
+TCL_LIB = $(TCL)\lib\tcl80.lib
+
+# Python settings
+PYTHON       = c:\Progra~1\python
+PY_INC  = -I$(PYTHON)\include
+PY_LIB        = $(PYTHON)\libs\python15.lib
+PY_FLAGS      = /D __WIN32__
+
+
+all::	dirs tcl python
+
+dirs::
+	-@mkdir tcl\O.WIN32
+	-@mkdir python\O.WIN32
+
+tcl::
+	cd tcl/O.WIN32
+	$(SWIG) -tcl8 -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i
+	$(CC) -c $(CFLAGS) $(TCL_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp
+	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(TCL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
+	cd ../..
+
+python::
+	cd python/O.WIN32
+	$(SWIG) -python -shadow -I../.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../../$(MODULE).i
+	$(CC) -c $(CFLAGS) $(PY_FLAGS) $(PY_INC) ../../$(MODULE).cpp $(MODULE)_wrap.cpp
+	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(PY_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casic.dll
+	cd ../..
+
+# Perl settings - not working...
+PERL_INC   = -Id:\sys\Perl\lib\CORE
+PERL_LIB   = d:\perl315\Release\perl300.lib
+PERL_FLAGS = /DWIN32 /DMSWIN32 /DPERL_OBJECT 
+
+perl::
+	cd perl
+	$(SWIG) -c++ -perl5 -I.. -o $(MODULE)_wrap.cpp -d $(MODULE) ../$(MODULE).i
+	$(CC) -c $(CFLAGS) $(PERL_FLAGS) $(PERL_INC) ../$(MODULE).cpp $(MODULE)_wrap.cpp
+	$(CC) -LD $(MODULE).obj $(MODULE)_wrap.obj $(PERL_LIB) $(LIBS) -link -entry:_DllMainCRTStartup@12 -out:casi.dll
+	cd ..
+
+clean::
+	del tcl\O.WIN32\*
+	del python\O.WIN32\*
+
+
+

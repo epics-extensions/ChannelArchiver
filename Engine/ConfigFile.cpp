@@ -21,7 +21,7 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
         double num = atof(value);
         if (num <= 0)
         {
-            LOG_MSG ("Config file '" << _file_name << "'(" << _line_no
+            LOG_MSG ("Config file '" << _file_name << "'(line " << _line_no
                      << "): invalid period " << value << "\n");
             return;
         }
@@ -32,7 +32,7 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
         int num = atoi(value);
         if (num <= 0)
         {
-            LOG_MSG ("Config file '" << _file_name << "'(" << _line_no
+            LOG_MSG ("Config file '" << _file_name << "'(line " << _line_no
                      << "): invalid buffer_reserve " << value << "\n");
             return;
         }
@@ -47,8 +47,8 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
         double num = atof(value);
         if (num < 0)
         {
-            LOG_MSG ("Config file '" << _file_name << "'(" << _line_no
-                     << "): invalid hour specification " << value << "\n");
+            LOG_MSG("Config file '" << _file_name << "'(line " << _line_no
+                    << "): invalid hour specification " << value << "\n");
             return;
         }
         theEngine->setIgnoredFutureSecs(num*60*60);
@@ -61,8 +61,13 @@ void ConfigFile::setParameter(const stdString &parameter, char *value)
         loadGroup(value);
     }
     else
-        LOG_MSG ("Config file '" << _file_name << "'(" << _line_no
+        LOG_MSG ("Config file '" << _file_name << "'(line " << _line_no
                  << "): parameter '" << parameter << "' is ignored\n");
+}
+
+static inline bool good_character(char ch)
+{
+    return isalpha(ch) || isdigit(ch) || strchr("_", ch);
 }
 
 bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
@@ -99,7 +104,16 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
         if (*ch != '!')
         {   // get channel
             while (*ch  &&  !isspace(*ch))
+            {
+                if (! good_character(*ch))
+                {
+                    LOG_MSG("Config file '" << _file_name
+                            << "'(line " << _line_no
+                            << "): Suspicious channel name\n");
+                    return false;
+                }
                 channel += *(ch++);
+            }
             if (channel.length() == 0)
                 return false;
 
@@ -145,7 +159,7 @@ bool ConfigFile::getChannel(std::ifstream &in, stdString &channel,
         // skip space
         while (*ch && isspace(*ch)) ++ch;
         if (! *ch) return true;
-        setParameter (parameter, ch);
+        setParameter(parameter, ch);
         parameter = '\0';
     }
 
@@ -243,7 +257,7 @@ bool ConfigFile::saveGroup(const class GroupInfo *group)
                 file << "!group " << (*g)->getName() << "\n";
     }
 
-    const stdList <ChannelInfo *> & channels = group->getChannels ();
+    const stdList <ChannelInfo *> & channels = group->getChannels();
     stdList <ChannelInfo *>::const_iterator channel;
     for (channel=channels.begin(); channel!=channels.end(); ++channel)
     {

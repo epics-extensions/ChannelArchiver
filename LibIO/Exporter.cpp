@@ -35,13 +35,14 @@ static osiTime findOldestValue	(const vector<ValueIteratorI *> &values)
 	return first;
 }
 
-// Find all values that are stampes 'round' secs
+// Find all values that are stamped 'round' secs
 // after 'start' and return the average of those
 // time stamps.
-static osiTime findRoundedTime	(const vector<ValueIteratorI *> &values,
-								 const osiTime &start, double round)
+static osiTime findRoundedTime	(const vector<ValueIteratorI *> &values, double round)
 {
-	double double_start = double (start), double_time, middle = 0;
+	const osiTime start = findOldestValue (values);
+	double double_start = double (start);
+	double double_time, middle = 0.0;
 	size_t i, num_in_range = 0;
 
 	for (i=0; i<values.size(); ++i)
@@ -57,7 +58,7 @@ static osiTime findRoundedTime	(const vector<ValueIteratorI *> &values,
 		}
 	}
 
-	return num_in_range > 0 ? osiTime (middle / num_in_range) : start;
+	return num_in_range > 1 ? osiTime (middle / num_in_range) : start;
 }
 
 Exporter::Exporter (ArchiveI *archive, const stdString &filename)
@@ -240,13 +241,27 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 	// Find first time stamp
 	osiTime time;
 	if (_round_secs > 0)
-		time = findRoundedTime (values, time, _round_secs);
+		time = findRoundedTime (values, _round_secs);
 	else
 		time = findOldestValue	(values);
-	
+
 	bool same_time;
 	while (time != nullTime && (_end==nullTime  ||  time <= _end))
 	{
+#if 0
+		// Debug	
+		for (i=0; i<num; ++i)
+		{
+			if (values[i]->isValid())
+				*out << i << ": " << *values[i]->getValue() << "\n";
+			else
+				*out << i << ": " << _undefined_value << "\n";
+		}
+		*out << "->" << time << "\n";
+#endif
+
+		
+		
 		++_datacount;
 		// One line: time and all values for that time
 		printTime (out, time);
@@ -293,10 +308,10 @@ void Exporter::exportChannelList (const vector<stdString> &channel_names)
 		}
 		*out << "\n";
 		// Find time stamp for next line
-		if (_round_secs > 0)
-			time = findRoundedTime (values, time, _round_secs);
-		else
+		if (_round_secs == 0)
 			time = findOldestValue	(values);
+		else
+			time = findRoundedTime (values, _round_secs);
 	}
 
 	post_scriptum (channel_names);

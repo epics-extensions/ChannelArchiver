@@ -56,9 +56,9 @@ public:
 class CtrlInfoI
 {
 public:
-	CtrlInfoI ();
-	CtrlInfoI (const CtrlInfoI &rhs);
-	CtrlInfoI & operator = (const CtrlInfoI &rhs);
+	CtrlInfoI();
+	CtrlInfoI(const CtrlInfoI &rhs);
+	CtrlInfoI& operator = (const CtrlInfoI &rhs);
 	virtual ~CtrlInfoI ();
 
 	bool operator == (const CtrlInfoI &rhs) const;
@@ -72,92 +72,92 @@ public:
 		Numeric = 1,
 		Enumerated = 2
 	}	Type;
-	Type getType () const;
+	Type getType() const;
 
 	//* Read Control Information:
 	// Numeric precision, units,
 	// high/low limits for display etc.:
-	long getPrecision () const;
-	const char *getUnits () const;
-	float getDisplayHigh () const;
-	float getDisplayLow () const;
-	float getHighAlarm () const;
-	float getHighWarning () const;
-	float getLowWarning () const;
-	float getLowAlarm () const;
+	long getPrecision() const;
+	const char *getUnits() const;
+	float getDisplayHigh() const;
+	float getDisplayLow() const;
+	float getHighAlarm() const;
+	float getHighWarning() const;
+	float getLowWarning() const;
+	float getLowAlarm() const;
 
 	//* Initialize a Numeric CtrlInfo
 	// (sets Type to Numeric and then sets fields)
-	void setNumeric (long prec, const stdString &units,
+	void setNumeric(long prec, const stdString &units,
 					float disp_low, float disp_high,
 					float low_alarm, float low_warn, float high_warn, float high_alarm);
 
 	//* Initialize an Enumerated CtrlInfo
-	void setEnumerated (size_t num_states, char *strings[]);
+	void setEnumerated(size_t num_states, char *strings[]);
 
 	// Alternative to setEnumerated:
 	// Call with total string length, including all the '\0's !
-	void allocEnumerated (size_t num_states, size_t string_len);
+	void allocEnumerated(size_t num_states, size_t string_len);
 
 	// Must be called after allocEnumerated()
 	// AND must be called in sequence,
 	// i.e. setEnumeratedString (0, ..
 	//      setEnumeratedString (1, ..
-	void setEnumeratedString (size_t state, const char *string);
+	void setEnumeratedString(size_t state, const char *string);
 
 	// After allocEnumerated() and a sequence of setEnumeratedString ()
 	// calls, this method recalcs the total size
 	// and checks if the buffer is sufficient (Debug version only)
-	void calcEnumeratedSize ();
+	void calcEnumeratedSize();
 
 	//* Format a double value according to precision<BR>
 	// Throws Invalid if CtrlInfo is not for Numeric
-	void formatDouble (double value, stdString &result) const;
+	void formatDouble(double value, stdString &result) const;
 
 	//* Enumerated: state string
-	size_t getNumStates () const;
-	void getState (size_t state, stdString &result) const;
+	size_t getNumStates() const;
+	void getState(size_t state, stdString &result) const;
 
 	// Like strtod, strtol: try to parse,
 	// position 'next' on character following the recognized state text
-	bool parseState (const char *text, const char **next, size_t &state) const;
+	bool parseState(const char *text, const char **next, size_t &state) const;
 
-    void show (std::ostream &o) const;
+    void show(std::ostream &o) const;
 
 protected:
-	const char *getState (size_t state, size_t &len) const;
+	const char *getState(size_t state, size_t &len) const;
 
 	MemoryBuffer<CtrlInfoData>	_infobuf;
 };
 
-inline CtrlInfoI::Type CtrlInfoI::getType () const
+inline CtrlInfoI::Type CtrlInfoI::getType() const
 {	return (CtrlInfoI::Type) (_infobuf.mem()->type);}
 
-inline long CtrlInfoI::getPrecision () const
+inline long CtrlInfoI::getPrecision() const
 {	return _infobuf.mem()->value.analog.prec;	}
 
-inline const char *CtrlInfoI::getUnits () const
+inline const char *CtrlInfoI::getUnits() const
 {	return _infobuf.mem()->value.analog.units;	}
 
-inline float CtrlInfoI::getDisplayHigh () const
+inline float CtrlInfoI::getDisplayHigh() const
 {	return _infobuf.mem()->value.analog.disp_high; }
 
-inline float CtrlInfoI::getDisplayLow () const
+inline float CtrlInfoI::getDisplayLow() const
 {	return _infobuf.mem()->value.analog.disp_low; }
 
-inline float CtrlInfoI::getHighAlarm () const
+inline float CtrlInfoI::getHighAlarm() const
 {	return _infobuf.mem()->value.analog.high_alarm; }
 
-inline float CtrlInfoI::getHighWarning () const
+inline float CtrlInfoI::getHighWarning() const
 {	return _infobuf.mem()->value.analog.high_warn; }
 
-inline float CtrlInfoI::getLowWarning () const
+inline float CtrlInfoI::getLowWarning() const
 {	return _infobuf.mem()->value.analog.low_warn; }
 
-inline float CtrlInfoI::getLowAlarm () const
+inline float CtrlInfoI::getLowAlarm() const
 {	return _infobuf.mem()->value.analog.low_alarm; }
 
-inline size_t CtrlInfoI::getNumStates () const
+inline size_t CtrlInfoI::getNumStates() const
 {	if (getType() == Enumerated)
 		return _infobuf.mem()->value.index.num_states;
 	return 0;

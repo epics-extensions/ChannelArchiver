@@ -31,7 +31,9 @@ public:
     // will return CLASS BinValueDbrDouble,
     // CLASS BinValueDbrEnum, ...
     static BinValue *create (DbrType type, DbrCount count);
-    
+
+	virtual ~BinValue();
+
     ValueI *clone () const;
 
     void setCtrlInfo (const CtrlInfoI *info);
@@ -51,11 +53,6 @@ protected:
     const CtrlInfoI *_ctrl_info;// precision, units, limits, ...
     mutable MemoryBuffer<dbr_time_string> _write_buffer;
 };
-
-inline void BinValue::setCtrlInfo (const CtrlInfoI *info)
-{
-    _ctrl_info = info;
-}
 
 inline void BinValue::read (LowLevelIO &file, FileOffset offset)
 {

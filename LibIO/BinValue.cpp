@@ -114,24 +114,36 @@ BinValue *BinValue::create (DbrType type, DbrCount count)
     return 0;
 }
 
-BinValue::BinValue (DbrType type, DbrCount count)
-        : ValueI (type, count)
+BinValue::BinValue(DbrType type, DbrCount count)
+        : ValueI(type, count)
 {
     _ctrl_info = 0;
 }
 
-const CtrlInfoI *BinValue::getCtrlInfo () const
-{   return _ctrl_info; }
-
-ValueI *BinValue::clone () const
+BinValue::~BinValue()
 {
-    BinValue *value = create (_type, _count);
+    _ctrl_info = 0;
+}
+
+const CtrlInfoI *BinValue::getCtrlInfo() const
+{
+	return _ctrl_info; 
+}
+
+void BinValue::setCtrlInfo(const CtrlInfoI *info)
+{
+    _ctrl_info = info;
+}
+
+ValueI *BinValue::clone() const
+{
+    BinValue *value = create(_type, _count);
     value->copyIn (getRawValue());
     value->_ctrl_info = _ctrl_info;
     return value;
 }
 
-void BinValue::show (std::ostream &o) const
+void BinValue::show(std::ostream &o) const
 {
     stdString time_text, stat_text;
 

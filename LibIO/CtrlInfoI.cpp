@@ -2,7 +2,7 @@
 #include "CtrlInfoI.h"
 #include "cvtFast.h"
 
-CtrlInfoI::CtrlInfoI ()
+CtrlInfoI::CtrlInfoI()
 {
     size_t additional_buffer = 10;
 
@@ -12,7 +12,7 @@ CtrlInfoI::CtrlInfoI ()
     info->size = sizeof (DbrCount) + sizeof(DbrType);
 }
 
-CtrlInfoI::CtrlInfoI (const CtrlInfoI &rhs)
+CtrlInfoI::CtrlInfoI(const CtrlInfoI &rhs)
 {
     const CtrlInfoData *rhs_info = rhs._infobuf.mem();
     _infobuf.reserve (rhs_info->size);
@@ -23,13 +23,13 @@ CtrlInfoI::CtrlInfoI (const CtrlInfoI &rhs)
 CtrlInfoI & CtrlInfoI::operator = (const CtrlInfoI &rhs)
 {
     const CtrlInfoData *rhs_info = rhs._infobuf.mem();
-    _infobuf.reserve (rhs_info->size);
+    _infobuf.reserve(rhs_info->size);
     CtrlInfoData *info = _infobuf.mem();
-    memcpy (info, rhs_info, rhs_info->size);
+    memcpy(info, rhs_info, rhs_info->size);
     return *this;
 }
 
-CtrlInfoI::~CtrlInfoI ()
+CtrlInfoI::~CtrlInfoI()
 {}
 
 bool CtrlInfoI::operator == (const CtrlInfoI &rhs) const
@@ -41,14 +41,14 @@ bool CtrlInfoI::operator == (const CtrlInfoI &rhs) const
     return memcmp (info, rhs_info, rhs_info->size) == 0;
 }
 
-void CtrlInfoI::setNumeric (
+void CtrlInfoI::setNumeric(
     long prec, const stdString &units,
     float disp_low, float disp_high,
     float low_alarm, float low_warn, float high_warn, float high_alarm)
 {
     size_t len = units.length();
-    size_t size = sizeof (CtrlInfoData) + len;
-    _infobuf.reserve (size);
+    size_t size = sizeof(CtrlInfoData) + len;
+    _infobuf.reserve(size);
     CtrlInfoData *info = _infobuf.mem();
 
     info->type = Numeric;
@@ -63,7 +63,7 @@ void CtrlInfoI::setNumeric (
     string2cp (info->value.analog.units, units, len+1);
 }
 
-void CtrlInfoI::setEnumerated (size_t num_states, char *strings[])
+void CtrlInfoI::setEnumerated(size_t num_states, char *strings[])
 {
     size_t i, len = 0;
     for (i=0; i<num_states; i++) // calling strlen twice for each string...
@@ -71,14 +71,14 @@ void CtrlInfoI::setEnumerated (size_t num_states, char *strings[])
 
     allocEnumerated (num_states, len);
     for (i=0; i<num_states; i++)
-        setEnumeratedString (i, strings[i]);
+        setEnumeratedString(i, strings[i]);
 }
 
-void CtrlInfoI::allocEnumerated (size_t num_states, size_t string_len)
+void CtrlInfoI::allocEnumerated(size_t num_states, size_t string_len)
 {
     // actually this is too big...
-    size_t size = sizeof (CtrlInfoData) + string_len;
-    _infobuf.reserve (size);
+    size_t size = sizeof(CtrlInfoData) + string_len;
+    _infobuf.reserve(size);
     CtrlInfoData *info = _infobuf.mem();
 
     info->type = Enumerated;
@@ -92,7 +92,7 @@ void CtrlInfoI::allocEnumerated (size_t num_states, size_t string_len)
 // AND must be called in sequence,
 // i.e. setEnumeratedString (0, ..
 //      setEnumeratedString (1, ..
-void CtrlInfoI::setEnumeratedString (size_t state, const char *string)
+void CtrlInfoI::setEnumeratedString(size_t state, const char *string)
 {
     CtrlInfoData *info = _infobuf.mem();
     if (info->type != Enumerated  ||
@@ -102,8 +102,8 @@ void CtrlInfoI::setEnumeratedString (size_t state, const char *string)
     char *enum_string = info->value.index.state_strings;
     size_t i;
     for (i=0; i<state; i++) // find this state string...
-        enum_string += strlen (enum_string) + 1;
-    strcpy (enum_string, string);
+        enum_string += strlen(enum_string) + 1;
+    strcpy(enum_string, string);
 }
 
 // After allocEnumerated() and a sequence of setEnumeratedString ()
@@ -111,36 +111,35 @@ void CtrlInfoI::setEnumeratedString (size_t state, const char *string)
 // and checks if the buffer is sufficient (Debug version only)
 void CtrlInfoI::calcEnumeratedSize ()
 {
-    size_t i, len, total=sizeof (CtrlInfoData);
+    size_t i, len, total=sizeof(CtrlInfoData);
     CtrlInfoData *info = _infobuf.mem();
     char *enum_string = info->value.index.state_strings;
     for (i=0; i<(size_t)info->value.index.num_states; i++)
     {
-        len = strlen (enum_string) + 1;
+        len = strlen(enum_string) + 1;
         enum_string += len;
         total += len;
     }
 
     info->size = total;
-    LOG_ASSERT (total <= _infobuf.getBufferSize ());
+    LOG_ASSERT(total <= _infobuf.getBufferSize());
 }
 
 // Convert a double value into text, formatted according to CtrlInfo
 // Throws Invalid if CtrlInfo is not for Numeric
-void CtrlInfoI::formatDouble (double value, stdString &result) const
+void CtrlInfoI::formatDouble(double value, stdString &result) const
 {
     if (getType() != Numeric)
-        throwDetailedArchiveException(
-            Invalid, "CtrlInfo::formatDouble: Type not Numeric");
-
+        throwDetailedArchiveException(Invalid,
+                                      "CtrlInfo::formatDouble: Type not Numeric");
     char buf[200];
-    if (cvtDoubleToString(value, buf, getPrecision ()) >= 200)
+    if (cvtDoubleToString(value, buf, getPrecision()) >= 200)
         result = "<too long>";
     else
         result = buf;
 }
 
-const char *CtrlInfoI::getState (size_t state, size_t &len) const
+const char *CtrlInfoI::getState(size_t state, size_t &len) const
 {
     if (getType() != Enumerated)
         return 0;
@@ -151,7 +150,7 @@ const char *CtrlInfoI::getState (size_t state, size_t &len) const
 
     do
     {
-        len = strlen (enum_string);
+        len = strlen(enum_string);
         if (i == state)
             return enum_string;
         enum_string += len + 1;
@@ -163,13 +162,13 @@ const char *CtrlInfoI::getState (size_t state, size_t &len) const
     return 0;
 }
 
-void CtrlInfoI::getState (size_t state, stdString &result) const
+void CtrlInfoI::getState(size_t state, stdString &result) const
 {
     size_t len;
-    const char *text = getState (state, len);
+    const char *text = getState(state, len);
     if (text)
     {
-        result.assign (text, len);
+        result.assign(text, len);
         return;
     }
 
@@ -179,20 +178,20 @@ void CtrlInfoI::getState (size_t state, stdString &result) const
     tmp.rdbuf()->freeze (false);
 }
 
-bool CtrlInfoI::parseState (const char *text, const char **next, size_t &state) const
+bool CtrlInfoI::parseState(const char *text, const char **next, size_t &state) const
 {
     const char *state_text;
     size_t  i, len;
 
-    for (i=0; i<getNumStates (); ++i)
+    for (i=0; i<getNumStates(); ++i)
     {
-        state_text = getState (i, len);
+        state_text = getState(i, len);
         if (! state_text)
         {
-            LOG_MSG ("CtrlInfoI::parseState: missing state " << i);
+            LOG_MSG("CtrlInfoI::parseState: missing state " << i);
             return false;
         }
-        if (!strncmp (text, state_text, len))
+        if (!strncmp(text, state_text, len))
         {
             state = i;
             if (next)
@@ -203,27 +202,27 @@ bool CtrlInfoI::parseState (const char *text, const char **next, size_t &state) 
     return false;
 }
 
-void CtrlInfoI::show (std::ostream &o) const
+void CtrlInfoI::show(std::ostream &o) const
 {
     if (getType() == Numeric)
     {
         o << "CtrlInfo: Numeric\n";
-        o << "Display: " << getDisplayLow () << " ... "
+        o << "Display: " << getDisplayLow() << " ... "
                 << getDisplayHigh () << "\n";
-        o << "Alarm:   " << getLowAlarm () << " ... "
+        o << "Alarm:   " << getLowAlarm() << " ... "
                 << getHighAlarm () << "\n";
-        o << "Warning: " << getLowWarning () << " ... "
+        o << "Warning: " << getLowWarning() << " ... "
                 << getHighWarning () << "\n";
-        o << "Prec:    " << getPrecision () << " '" << getUnits () << "'\n";
+        o << "Prec:    " << getPrecision() << " '" << getUnits() << "'\n";
     }
     else if (getType() == Enumerated)
     {
         o << "CtrlInfo: Enumerated\n";
         o << "States:\n";
         size_t i, len;
-        for (i=0; i<getNumStates (); ++i)
+        for (i=0; i<getNumStates(); ++i)
         {
-            o << "\tstate='" << getState (i, len) << "'\n";
+            o << "\tstate='" << getState(i, len) << "'\n";
         }
     }
     else

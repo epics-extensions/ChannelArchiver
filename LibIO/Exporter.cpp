@@ -113,11 +113,7 @@ void Exporter::printValue(std::ostream *out,
     }
     else
     {
-        const CtrlInfoI *info;
-        
-        info = v->getCtrlInfo();
-        if (info == 0)
-            abort();
+        const CtrlInfoI *info = v->getCtrlInfo();
         
         // Format according to precision.
         // Unfortuately that is usually configured wrongly
@@ -162,6 +158,7 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
     ValueIteratorI   **base = 0;
     ValueIteratorI   **values = 0;
     ValueI           **prev_values = 0;
+    CtrlInfoI        **infos = 0;
     const ValueI *v;
     char info[300];
 
@@ -181,6 +178,7 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
     base = new ValueIteratorI *[num];
     values = new ValueIteratorI *[num];
     prev_values = new ValueI *[num];
+    infos = new CtrlInfoI *[num];
     // Open Channel & ValueIterator
     for (i=0; i<num; ++i)
     {
@@ -194,6 +192,7 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
         }
         base[i] = _archive->newValueIterator();
         prev_values[i] = 0;
+        infos[i] = new CtrlInfoI();
         values[i] = 0;
 
         if (_fill)
@@ -226,7 +225,6 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
                         "not together with another channel",
                         channel_names[i].c_str());
                 throwDetailedArchiveException(Invalid, info);
-                goto cleanup;
             }
         }
     }
@@ -243,7 +241,6 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
 #endif
         {
             throwDetailedArchiveException(WriteError, _filename);
-            goto cleanup;
         }
         out = &file;
     }
@@ -302,12 +299,19 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
                         delete prev_values[i];
                         prev_values[i] = 0;
                     }
+                    /* would be faster but leads to crashes:
+                     * Have to figure out when to copy the CtrlInfo and when
+                     * the pointer can be kept. Pointer changes when we switch
+                     * data files or even cross archive boundaries
                     else if (prev_values[i] && prev_values[i]->hasSameType(*v))
                         prev_values[i]->copyValue(*v);
+                        */
                     else
                     {
                         delete prev_values[i];
                         prev_values[i] = v->clone();
+                        *infos[i] = *v->getCtrlInfo();
+                        prev_values[i]->setCtrlInfo(infos[i]);
                     }
                 }
                 values[i]->next();
@@ -329,14 +333,15 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
     if (out == &file)
         file.close();
 
-  cleanup:
     for (i=0; i<num; ++i)
     {
+        delete infos[i];
         delete prev_values[i];
         delete values[i];
         delete base[i];
         delete channels[i];
     }
+    delete [] infos;
     delete [] prev_values;
     delete [] values;
     delete [] base;

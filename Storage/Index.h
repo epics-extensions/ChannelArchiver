@@ -49,6 +49,7 @@ public:
         {    return entry.name; }
     private:
         friend class IndexFile;
+        friend class ListIndex;
         unsigned long hashvalue;
         NameHash::Entry entry;
     };

@@ -225,7 +225,7 @@ void CtrlInfo::getState(size_t state, stdString &result) const
     }
 
     char buffer[80];
-    sprintf(buffer, "<Undef: %d>", state);
+    sprintf(buffer, "<Undef: %u>", (unsigned int)state);
     result = buffer;
 }
 

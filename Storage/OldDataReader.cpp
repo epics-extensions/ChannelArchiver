@@ -137,7 +137,7 @@ const RawValue::Data *OldDataReader::find(
             ///
             stdString stamp_txt;
             epicsTime2string(stamp, stamp_txt);
-            printf("Index %d: %s\n", val_idx, stamp_txt.c_str());
+            printf("Index %u: %s\n", (unsigned int)val_idx, stamp_txt.c_str());
             ///
             if (high-low <= 1)
             {   // The intervall can't shrink further,

@@ -219,8 +219,10 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
         mechanism = new SampleMechanismMonitored(channel);
     else
     {
-        // TODO: Pick correct mechanism
-        mechanism = new SampleMechanismGet(channel);
+        if (period >= get_threshhold)
+            mechanism = new SampleMechanismGet(channel);
+        else
+            mechanism = new SampleMechanismMonitoredGet(channel);
     }
     if (channel->getPeriod(guard) > period)
         channel->setPeriod(engine_guard, guard, period);

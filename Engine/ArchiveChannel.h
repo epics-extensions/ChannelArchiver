@@ -120,6 +120,7 @@ public:
 private:
     friend class SampleMechanismMonitored;
     friend class SampleMechanismGet;
+    friend class SampleMechanismMonitoredGet;
 
     // Use destroy instead.
     ~ArchiveChannel() {}

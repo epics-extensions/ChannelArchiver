@@ -13,6 +13,8 @@
 #
 # kasemir@lanl.gov
 
+# TODO: daemon often tries to stop twice. Is that an issue?
+
 use English;
 use strict;
 use Socket;

@@ -164,6 +164,9 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
     }
     if (isDisabled(guard))
         addEvent(guard, 0, ARCH_DISABLED, when);
+    // Next incoming value will go into pending_value,
+    // for now clear it:
+    pending_value_set = false;
 }
 
 void ArchiveChannel::enable(Guard &guard, const epicsTime &when)

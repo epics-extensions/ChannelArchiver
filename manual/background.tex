@@ -131,11 +131,11 @@ to store a value every 5 seconds, it is usually more effective to
 establish a monitor, so we automatically receive updates about every
 second, and simply ignore 4 of the 5 values.
 
-When configuring a channel for the ArchiveEngine, the user only
-selects either ``Monitor'' or provides a sampling rate.
-The ArchiveEngine will automatically determine which mechanism to use
-for sampled operation, periodic reads or monitors
-(see get\_threshold configuration parameter for details).
+When configuring a channel, the user only selects either ``Monitor''
+or ``Scan'' with a sampling rate.  The ArchiveEngine will
+automatically determine which mechanism to use for sampled operation,
+periodic reads or monitors (see the \emph{get\_threshold} configuration
+parameter, section \ref{sec:getthreshold}, for details).
 
 \NOTE The values dumped into the data storage will not offer much
 indication of the sampling method. In the end, we only see values with
@@ -147,12 +147,12 @@ channel that changed at 10~Hz but was only sampled every 20 seconds.
 \section{Time Stamps}
 \begin{figure}[htb]
 \begin{center}
-\InsertImage{width=0.8\textwidth}{times}
+\InsertImage{width=1.0\textwidth}{times}
 \end{center}
 \caption{\label{fig:times}Time Stamps and Sampling}
 \end{figure}
 
-Each ChannelAccess Server provides time-stamped data. An IOC for
+\noindent Each ChannelAccess Server provides time-stamped data. An IOC for
 example stamps each value when the corresponding record is
 processed.  These time-stamps offer nano-second granularity. Most
 applications will not require the full accuracy, but some
@@ -161,17 +161,22 @@ might in fact put the full time stamp resolution to good use.
 
 The ChannelArchiver as a generic tool does not know about the origin
 of the time stamps, but it tries to conserve them.
-Fig.~\ref{fig:times} shows the same channel, archived by different methods.
+Fig.~\ref{fig:times} shows the same channel, archived with different methods.
 When using the ``Monitor'' method for archiving, we capture all the
 changes of the channel, resulting in the data points marked by black
 diamonds.
-When we use scanned operation, e.g.\ every 1~second, the following
-happens: About every second, the ArchiveEngine stores the current
+When we use scanned operation, e.g.\ every 30~seconds, the following
+happens: About every 30 seconds, the ArchiveEngine stores the current
 value of the channel \emph{with its original time stamp!}.
-So while the ArchiveEngine might take a sample at 10, 11, 12,
-... seconds, it stores the time stamps that happen to come with the
-values, and in this case those happened to be
-9.9679712 seconds, 10.9894400 seconds, 11.7605488 seconds and so on.
+So while the ArchiveEngine might take a sample at
+\begin{center}
+14:53:30, 14:54:00, 14:54:30, 14:55:00, ...,
+\end{center}
+it stores the time stamps that come with the values, and in the
+example from Fig.~\ref{fig:times} those happened to be
+\begin{center}
+14:53:29.091,  14:53:59.092, 14:54:29.094,  14:54:59.095, ...
+\end{center}
 
 \section{Sensible Sampling}
 The data source configuration and sampling need to be coordinated.  In

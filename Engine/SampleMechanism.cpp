@@ -346,13 +346,17 @@ void SampleMechanismMonitoredGet::handleValue(
     Guard &guard, const epicsTime &now,
     const epicsTime &stamp, const RawValue::Data *value)
 {
-    // Pretend to SampleMechanismGet that this is the result of a CA get.
-    // For that we have to throttle the incoming CA monitors
-    // down to the scan rate of this channel.
     // Incoming monitors trigger processing of this mechanism,
     // next_sample_time determines when we store another sample.
+    // Pretend for SampleMechanismGet that the value
+    // results from a CA get, so that SampleMechanismGet handles
+    // the repeat counts etc.
+    // For that we have to throttle the incoming CA monitors
+    // down to the scan rate of this channel.
     // The stored sample is then the *previous* one, the last one
     // we received *before* crossing next_sample_time.
+    // Therefore we park values in pending_value until we cross
+    // next_sample_time.
     LOG_MSG("SampleMechanismMonitoredGet:\n");
     RawValue::show(stdout, channel->dbr_time_type, channel->nelements, value);
     if (!channel->pending_value)
@@ -361,15 +365,16 @@ void SampleMechanismMonitoredGet::handleValue(
         return;
     }
     // TODO: Use now or stamp for next_sample_time comparison?
+    const epicsTime &trigger = stamp;
     // now: matches what we do in SampleMechanismGet
     // stamp: originates from better clock (in theory)
-    if (channel->pending_value_set  &&  stamp > next_sample_time)
+    if (channel->pending_value_set  &&  trigger > next_sample_time)
     {
         LOG_MSG("SampleMechanismMonitoredGet: passed next_sample_time\n");
         epicsTime pend_stamp = RawValue::getTime(channel->pending_value);
         SampleMechanismGet::handleValue(guard, now, pend_stamp,
                                         channel->pending_value);
-        next_sample_time = roundTimeUp(pend_stamp, channel->period);
+        next_sample_time = roundTimeUp(trigger, channel->period);
 
         stdString txt;
         LOG_MSG("next_sample_time=%s\n", epicsTimeTxt(next_sample_time, txt));

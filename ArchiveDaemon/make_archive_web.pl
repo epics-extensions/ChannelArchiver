@@ -204,10 +204,8 @@ sub write_html($)
  <body BGCOLOR=#A7ADC6 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>
 
  <H1 align=center>$TITLE</H1>
- <p>&nbsp;</p>
- <p>&nbsp;</p>
 
-<table border="1" cellpadding="1" cellspacing="1" style'"border-collapse: collapse" bordercolor="#111111" width="100%"'>
+<table border="1" cellpadding="1" cellspacing="1" style'"border-collapse: collapse" bordercolor="#111111" bgcolor="#CCCCFF" width="100%"'>
 
   <tr>
      <td width="15%" align="center"><b>DAEMON</b></td>

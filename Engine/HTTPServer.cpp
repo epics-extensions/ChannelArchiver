@@ -172,11 +172,14 @@ int HTTPServer::cleanup()
     stdList<HTTPClientConnection *>::iterator ci = clients.begin();
     while (ci != clients.end())
     {
-        HTTPClientConnection *  client = *ci;
+        HTTPClientConnection *client = *ci;
         if (client->isDone())
         {
+            // valgrind complains about access to undefined mem.
+            // What?? Format string? num?
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
-            LOG_MSG("HTTPClientConnection #%d is done.\n", client->getNum());
+            //int num = client->getNum();
+            //LOG_MSG("HTTPClientConnection %d is done.\n", num);
 #           endif
             ci = clients.erase(ci);
             delete client;
@@ -184,7 +187,8 @@ int HTTPServer::cleanup()
         else
         {
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
-            LOG_MSG("HTTPClientConnection #%d is active\n", client->getNum());
+            //int num = client->getNum();
+            //LOG_MSG("HTTPClientConnection %d is active\n", num);
 #           endif
             ++num_clients;
             ++ci;
@@ -192,7 +196,7 @@ int HTTPServer::cleanup()
     }
     client_list_mutex.unlock();
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
-    LOG_MSG("#%d clients left.\n", num_clients);
+    LOG_MSG("%d clients left.\n", num_clients);
 #   endif
     return num_clients;
 }
@@ -238,12 +242,12 @@ HTTPClientConnection::~HTTPClientConnection()
 {
     if (! done)
     {
-        LOG_MSG("HTTPClientConnection: Forced Shutdown of #%d", num);
+        LOG_MSG("HTTPClientConnection: Forced Shutdown of %d", num);
         epicsSocketDestroy(socket);
     }
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     else
-        LOG_MSG("HTTPClientConnection: Graceful end of #%d\n", num);
+        LOG_MSG("HTTPClientConnection: Graceful end of %d\n", num);
 #   endif
 }
 
@@ -252,7 +256,7 @@ void HTTPClientConnection::run()
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     stdString local_info, peer_info;
     GetSocketInfo(socket, local_info, peer_info);
-    LOG_MSG("HTTPClientConnection #%d thread 0x%08X, handles %s/%s\n",
+    LOG_MSG("HTTPClientConnection %d thread 0x%08X, handles %s/%s\n",
             num, epicsThreadGetIdSelf(),
             local_info.c_str(), peer_info.c_str());
 #   endif
@@ -275,12 +279,12 @@ void HTTPClientConnection::run()
     {
         if (server->isShuttingDown())
         {
-            LOG_MSG("HTTPClientConnection #%d stopped; server's ending\n",num);
+            LOG_MSG("HTTPClientConnection %d stopped; server's ending\n",num);
             break;
         }
         if ((epicsTime::getCurrent() - birthtime) > HTTPD_CLIENT_TIMEOUT)
         {
-            LOG_MSG("HTTPClientConnection #%d timing out\n", num);
+            LOG_MSG("HTTPClientConnection %d timing out\n", num);
             break;
         }
     }

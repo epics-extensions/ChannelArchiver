@@ -24,7 +24,7 @@ int main()
     CircularBuffer buffer;
     long i;
 
-    buffer.allocate(0, 0, 5);
+    buffer.allocate(0, 0, 8);
     puts("--- Empty");
     printf("Capacity: %d\n", buffer.getCapacity());
     printf("Count   : %d\n", buffer.getCount());

@@ -225,8 +225,7 @@ void ArchiveChannel::write(Guard &guard, IndexFile &index)
     const RawValue::Data *value;
     while (num_samples-- > 0)
     {
-        value = buffer.removeRawValue();
-        if (!value)
+        if (!(value = buffer.removeRawValue()))
         {
             LOG_MSG("'%s': Circular buffer empty while writing\n",
                     name.c_str());
@@ -406,19 +405,17 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
 void ArchiveChannel::value_callback(struct event_handler_args args)
 {
     ArchiveChannel *me = (ArchiveChannel *) args.usr;
-    if (args.status != ECA_NORMAL)
+    const RawValue::Data *value = (const RawValue::Data *)args.dbr;
+    if (args.status != ECA_NORMAL  ||  value == 0)
     {
-        const char *pName;        
-        if (args.chid)
-            pName = ca_name(args.chid);
-        else
-            pName = "?";
-        LOG_MSG("ArchiveChannel::value_callback(%s): CA error %s\n", 
-                pName, ca_message(args.status));
+        LOG_MSG("ArchiveChannel::value_callback(%s): No value, CA error %s\n", 
+                me->name.c_str(), ca_message(args.status));
         return;
     }   
     epicsTime now = epicsTime::getCurrent();
-    const RawValue::Data *value = (const RawValue::Data *)args.dbr;
+    epicsTime stamp = RawValue::getTime(value);
+    if (!me->isGoodTimestamp(stamp, now))
+        return;
     Guard guard(me->mutex);
     if (me->isDisabled(guard))
     {
@@ -431,9 +428,6 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
     }
     else
     {
-        epicsTime stamp = RawValue::getTime(value);
-        if (!me->isGoodTimestamp(stamp, now))
-            return;
         if (me->mechanism)
             me->mechanism->handleValue(guard, now, stamp, value);
     }

@@ -135,7 +135,7 @@ protected:
     RawValue::Data *previous_value; // the previous value
     size_t repeat_count; // repeat count for the previous value
     // Write the previous value because we're disconnected or got a new value
-    void flushPreviousValue(const epicsTime &stamp);
+    void flushPreviousValue(Guard &guard, const epicsTime &stamp);
 };
 
 /// A SampleMechanism that samples based on CA monitors.

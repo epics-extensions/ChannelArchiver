@@ -53,7 +53,9 @@ void SampleMechanismMonitored::handleConnectionChange(Guard &engine_guard,
 {
     if (channel->isConnected(guard))
     {
-        // LOG_MSG("%s: fully connected\n", channel->getName().c_str());
+#       ifdef DEBUG_SAMPLING
+        LOG_MSG("%s: fully connected\n", channel->getName().c_str());
+#       endif
         if (!have_subscribed)
         {
             int status = ca_create_subscription(
@@ -73,7 +75,9 @@ void SampleMechanismMonitored::handleConnectionChange(Guard &engine_guard,
     }
     else
     {
-        //LOG_MSG("%s: disconnected\n", channel->getName().c_str());
+#       ifdef DEBUG_SAMPLING
+        LOG_MSG("%s: disconnected\n", channel->getName().c_str());
+#       endif
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
         wasWrittenAfterConnect = false;
@@ -89,9 +93,9 @@ void SampleMechanismMonitored::handleValue(Guard &guard,
 #   ifdef DEBUG_SAMPLING
     LOG_MSG("SampleMechanismMonitored::handleValue %s\n",
             channel->getName().c_str());
-#   endif
     //RawValue::show(stdout, channel->dbr_time_type,
     //               channel->nelements, value, &channel->ctrl_info);   
+#   endif
     // Add every monitor to the ring buffer
     if (channel->isBackInTime(stamp))
     {
@@ -100,16 +104,16 @@ void SampleMechanismMonitored::handleValue(Guard &guard,
         // This is the first value after a connect: tweak
         if (!channel->pending_value)
             return;
-        RawValue::copy(channel->dbr_time_type, channel->nelements,
-                       channel->pending_value, value);
         if (channel->isBackInTime(now))
         {
-#   ifdef DEBUG_SAMPLING
+#           ifdef DEBUG_SAMPLING
             LOG_MSG("SampleMechanismMonitored::handleValue %s: "
                     "unresolved back in time\n", channel->getName().c_str());
-#   endif
+#           endif
             return;
         }
+        RawValue::copy(channel->dbr_time_type, channel->nelements,
+                       channel->pending_value, value);
         RawValue::setTime(channel->pending_value, now);
         channel->buffer.addRawValue(channel->pending_value);
     }
@@ -160,7 +164,9 @@ void SampleMechanismGet::handleConnectionChange(Guard &engine_guard,
 {
     if (channel->isConnected(guard))
     {
-        //LOG_MSG("%s: fully connected\n", channel->getName().c_str());
+#       ifdef DEBUG_SAMPLING
+        LOG_MSG("%s: fully connected\n", channel->getName().c_str());
+#       endif
         if (!is_on_scanlist)
         {
             ScanList &scanlist = theEngine->getScanlist(engine_guard);
@@ -175,8 +181,10 @@ void SampleMechanismGet::handleConnectionChange(Guard &engine_guard,
     }
     else
     {
-        //LOG_MSG("%s: disconnected\n", channel->getName().c_str());
-        flushPreviousValue(channel->connection_time);
+#       ifdef DEBUG_SAMPLING
+        LOG_MSG("%s: disconnected\n", channel->getName().c_str());
+#       endif
+        flushPreviousValue(guard, channel->connection_time);
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
         wasWrittenAfterConnect = false;
@@ -188,9 +196,9 @@ void SampleMechanismGet::handleValue(Guard &guard,
                                      const epicsTime &stamp,
                                      const RawValue::Data *value)
 {
+    guard.check(channel->mutex);
 #   ifdef DEBUG_SAMPLING
-    LOG_MSG("SampleMechanismGet::handleValue %s\n",
-            channel->getName().c_str());
+    LOG_MSG("SampleMechanismGet::handleValue %s\n",channel->getName().c_str());
 #   endif
     if (!wasWrittenAfterConnect)
     {
@@ -200,11 +208,11 @@ void SampleMechanismGet::handleValue(Guard &guard,
         {
             if (channel->isBackInTime(now))
             {
-#   ifdef DEBUG_SAMPLING
+#               ifdef DEBUG_SAMPLING
                 LOG_MSG("SampleMechanismGet::handleValue %s: "
                         "unresolved back in time\n",
                         channel->getName().c_str());
-#   endif                
+#               endif                
                 return;
             }
             RawValue::setTime(previous_value, now);
@@ -217,23 +225,21 @@ void SampleMechanismGet::handleValue(Guard &guard,
     }
     if (previous_value_set)
     {
-        if (RawValue::hasSameValue(channel->dbr_time_type,
-                                   channel->nelements,
-                                   channel->dbr_size,
-                                   previous_value, value))
+        if (RawValue::hasSameValue(channel->dbr_time_type, channel->nelements,
+                                   channel->dbr_size, previous_value, value))
         {
 #           ifdef DEBUG_SAMPLING
             LOG_MSG("SampleMechanismGet: repeat value\n");
 #           endif
             if (++repeat_count >= max_repeat_count)
             {   // Forced flush, keep the repeat value
-                flushPreviousValue(now);
+                flushPreviousValue(guard, now);
                 previous_value_set = true;
             }
             return;
         }
         // New value: Flush repeats, add current value.
-        flushPreviousValue(stamp);
+        flushPreviousValue(guard, stamp);
     }
     // Note that while we're repeating the same value
     // over and over, the incoming data is back-in-time.
@@ -255,8 +261,10 @@ void SampleMechanismGet::handleValue(Guard &guard,
     }
 }
 
-void SampleMechanismGet::flushPreviousValue(const epicsTime &stamp)
+void SampleMechanismGet::flushPreviousValue(Guard &guard,
+                                            const epicsTime &stamp)
 {
+    guard.check(channel->mutex);
     if (previous_value_set == false || repeat_count <= 0)
         return;
 #   ifdef DEBUG_SAMPLING
@@ -308,7 +316,9 @@ void SampleMechanismMonitoredGet::handleConnectionChange(Guard &engine_guard,
 {
     if (channel->isConnected(guard))
     {
+#       ifdef DEBUG_SAMPLING
         LOG_MSG("%s: fully connected\n", channel->getName().c_str());
+#       endif
         if (!have_subscribed)
         {
             int status = ca_create_subscription(
@@ -323,7 +333,9 @@ void SampleMechanismMonitoredGet::handleConnectionChange(Guard &engine_guard,
             }
             theEngine->need_CA_flush = true;
             have_subscribed = true;
+#           ifdef DEBUG_SAMPLING
             LOG_MSG("%s: subscribed to CA\n", channel->getName().c_str());
+#           endif
        }
         // CA should automatically send an initial monitor.
         if (previous_value)
@@ -334,8 +346,10 @@ void SampleMechanismMonitoredGet::handleConnectionChange(Guard &engine_guard,
     }
     else
     {
+#       ifdef DEBUG_SAMPLING
         LOG_MSG("%s: disconnected\n", channel->getName().c_str());
-        flushPreviousValue(channel->connection_time);
+#       endif
+        flushPreviousValue(guard, channel->connection_time);
         // Add a 'disconnected' value.
         channel->addEvent(guard, 0, ARCH_DISCONNECT, channel->connection_time);
         wasWrittenAfterConnect = false;
@@ -346,6 +360,7 @@ void SampleMechanismMonitoredGet::handleValue(
     Guard &guard, const epicsTime &now,
     const epicsTime &stamp, const RawValue::Data *value)
 {
+    guard.check(channel->mutex);
     // Incoming monitors trigger processing of this mechanism,
     // next_sample_time determines when we store another sample.
     // Pretend for SampleMechanismGet that the value
@@ -357,33 +372,35 @@ void SampleMechanismMonitoredGet::handleValue(
     // we received *before* crossing next_sample_time.
     // Therefore we park values in pending_value until we cross
     // next_sample_time.
+#   ifdef DEBUG_SAMPLING
     LOG_MSG("SampleMechanismMonitoredGet:\n");
     RawValue::show(stdout, channel->dbr_time_type, channel->nelements, value);
+#   endif
     if (!channel->pending_value)
     {
         LOG_MSG("SampleMechanismMonitoredGet: no pend buffer\n");
         return;
     }
-
-    // TODO:
-    // One of the important features here is that data that is coming from something 
-    // like a BPM being read at 60 Hz and says to archive it at 10 Hz - that all BPMs 
-    // should come from the same time slice. Does this work?
-
-    // TODO: Use now or stamp for next_sample_time comparison?
-    const epicsTime &trigger = stamp;
-    // now: matches what we do in SampleMechanismGet
-    // stamp: originates from better clock (in theory)
-    if (channel->pending_value_set  &&  trigger > next_sample_time)
+    // Data from e.g. a BPM being read at 60 Hz, archived at 10 Hz,
+    // should result in data for all BPMs from the same time slice.
+    // While one cannot pick the time slice
+    // - it's determined by roundTimeUp(stamp, channel->period) -
+    // the engine will store values from the same time slice,
+    // as long as the time stamps of the BPM values match
+    // across BPM channels.
+    if (channel->pending_value_set  &&  stamp > next_sample_time)
     {
+#       ifdef DEBUG_SAMPLING
         LOG_MSG("SampleMechanismMonitoredGet: passed next_sample_time\n");
+#       endif
         epicsTime pend_stamp = RawValue::getTime(channel->pending_value);
         SampleMechanismGet::handleValue(guard, now, pend_stamp,
                                         channel->pending_value);
-        next_sample_time = roundTimeUp(trigger, channel->period);
-
+        next_sample_time = roundTimeUp(stamp, channel->period);
+#       ifdef DEBUG_SAMPLING
         stdString txt;
         LOG_MSG("next_sample_time=%s\n", epicsTimeTxt(next_sample_time, txt));
+#       endif
     }
     RawValue::copy(channel->dbr_time_type, channel->nelements,
                    channel->pending_value, value);

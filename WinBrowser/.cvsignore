@@ -1,3 +1,7 @@
 O.*
 Debug
 Release
+*.ncb
+*.opt
+*.plg
+*.aps

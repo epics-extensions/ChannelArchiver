@@ -90,7 +90,12 @@ protected:
     size_t _max_channel_count;
     size_t _data_count;
 
+    // Helpers for derived classes:
+    // Print time in some human readable format
     void printTime(std::ostream *out, const osiTime &time);
+    // Print value, handling status values (_show_status)
+    // as well as arrays.
+    // Uses CtrlInfoI->getPrecision() if > 0.
     void printValue(std::ostream *out, const osiTime &time, const ValueI *v);
 
 private:

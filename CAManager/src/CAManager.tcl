@@ -38,9 +38,13 @@ proc init {} {
   lappend ::auto_path [file dirname [info nameofexecutable]]
   namespace inscope :: package require Tclx
 
-  foreach dir {util gui misc comm} {
-    set script $INCDIR/$dir.tcl
+  foreach f {util gui misc comm} {
+    set script $INCDIR/$f.tcl
     namespace inscope :: source $script
+  }
+  foreach f [glob $INCDIR/plugins/*.tcl] {
+    set script $f
+    namespace inscope :: source $f
   }
 }
 

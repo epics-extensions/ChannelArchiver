@@ -37,9 +37,13 @@ proc init {} {
 
   namespace inscope :: package require Tclx
   
-  foreach dir {util misc comm httpd} {
+  foreach dir {util misc comm httpd plugins} {
     set script $INCDIR/$dir.tcl
     namespace inscope :: source $script
+  }
+  foreach f [glob $INCDIR/plugins/*.tcl] {
+    set script $f
+    namespace inscope :: source $f
   }
   cd $::pwd
 
@@ -52,6 +56,7 @@ proc init {} {
   catch {signal trap SIGQUIT {puts stderr "Terminating(QUIT)..."; after 1 {Exit -3}}}
   catch {signal default SIGTSTP}
   catch {signal default SIGCONT}
+  catch {signal default SIGCHLD}
 
   catch {wm withdraw .}
   Puts "Channel Archiver bgManager startup"

@@ -246,7 +246,7 @@
       A new data file is created after the given hours.
       Almost: a new data file is created if a new buffer needs to be
       created and the file size in hours has been exceeded. So in
-      reality, an existing data file can be added to for quite a while
+      reality, an existing data file keep growing for quite a while
       after the "file_size" time has expired.
       And note that you must not remove, rename or otherwise
       manipulate any of the data files!
@@ -256,7 +256,13 @@
       There is little reason for users to change this parameter. In
       priciple, you might get slightly better performance by
       increasing it, so that you create fewer but bigger data files.
-      (default: 24 hours).
+      (default: 24 hours).<br>
+      <font color=red>Note:</font><br>
+      The internal calculations are based on seconds and imperfect.
+      Values <= 24 (hours) work. The special value 744 (=31*24, though
+      some month have 28, 29 or 30 days) is used to represent a month
+      and works.
+      Any other value might yield strange results.
   <li><em>!buffer_reserve</em><br>
       To buffer the samples between writes to the disk, the engine keeps
       a memory buffer for each channel.<br>

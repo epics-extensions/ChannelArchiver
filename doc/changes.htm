@@ -15,6 +15,13 @@
   The "patches" are then used to debug those new things.
   
   <ul>
+    <li>10/08/2002<br>
+      LibIO for BinArchive: Added a 'flush' call to the directory
+      file because previously the directory file was incomplete for
+      the time between startup from scratch and the first connection
+      and data file write.<br>
+      Retrievals during that time did not result in "no data" (which
+      is OK) but returned error messages (not OK).
     <li>09/23/2002<br>
       GNUPlotExporter, CGIExport: Added log scale support.<br>
       Nothing fancy, simply asking Gnuplot to generate the

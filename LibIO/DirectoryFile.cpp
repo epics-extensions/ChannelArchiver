@@ -138,6 +138,7 @@ DirectoryFileIterator DirectoryFile::add(const stdString &name)
     channel->init(cname);
     channel->setNextEntryOffset(INVALID_OFFSET);
     channel->write(_file, _next_free_entry);
+    _file.llflush();
     _next_free_entry += channel->getDataSize();
     
     return i;

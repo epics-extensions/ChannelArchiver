@@ -2,7 +2,6 @@
 %style html_body="<BODY bgcolor=\"#B0B0FF\"><BLOCKQUOTE><FONT face=\"Comic Sans MS\">:</FONT></BLOCKQUOTE></BODY>"
 
 
-
 %module casi
 
 %text %{
@@ -24,6 +23,8 @@ USING_NAMESPACE_CHANARCH
 %}
 
 /* Following includes are used by SWIG for generation of wrapper */
+
+const char *casi_version = "1.0";
 
 /* The archive class is the starting point:
 
@@ -55,5 +56,10 @@ USING_NAMESPACE_CHANARCH
 %text %{
 Let me know: Kay-Uwe Kasemir, kasemir@lanl.gov
 %}
+
+
+
+
+
 
 

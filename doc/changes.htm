@@ -15,13 +15,20 @@
   The "patches" are then used to debug those new things.
   
   <ul>
-    <li>07/25/2002<br>
-      CGIExport changes:
-      Replaced "Excel" option that was meant to automatically
+    <li>07/26/2002<br>
+      CGIExport, ArchiveExport changes:<br>
+      Replaced <i>Excel</i> option that was meant to automatically
       open Excel but never really worked with another Matlab
-      format that ORNL people deemed more suitable for bigger
+      format that seems more suitable for bigger
       files.<br>
-      The original spreadsheet option is still available.
+      The new "Matlab Spreadsheet" option generates a spreadsheet
+      with "NaN" for missing values and "%" for comments,
+      including hints on how to use the Matlab <code>textread</code>
+      routine for reading it.
+      <br>
+      The original spreadsheet option is still available,
+      so is the previous Matlab option that creates a Matlab
+      command file.
     <li>07/11/2002<br>
       Made Engine/ConfigFile.cpp more robust, now checking
       if channel names are readable

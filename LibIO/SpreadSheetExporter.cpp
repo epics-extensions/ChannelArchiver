@@ -204,7 +204,8 @@ void SpreadSheetExporter::exportChannelList(
 	{
 		*out << _comment << "This table holds the raw data as found in the archive.\n";
 		*out << _comment << "Since Channels are not always scanned at exactly the same time,\n";
-		*out << _comment << "many '#N/A' may appear when looking at more than one channel like this.\n";
+		*out << _comment << "many '" << _undefined_value
+             << "' may appear when looking at more than one channel like this.\n";
 	}
 
     // Headline: "Time" and channel names

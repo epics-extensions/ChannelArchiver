@@ -29,8 +29,10 @@ int main(int argc, const char *argv[])
                              "Gnuplot", "generate GNUPlot output for Image");
     CmdArgFlag   pipe       (parser,
                              "pipe", "run GNUPlot via pipe");
+    CmdArgFlag   MLSheet    (parser,
+                             "MLSheet", "generate spreadsheet for Matlab");
     CmdArgFlag   Matlab     (parser,
-                             "Matlab", "generate Matlap output");
+                             "Matlab", "generate Matlap command-file output");
     CmdArgFlag   status_text(parser,
                              "text", "include status information");
     CmdArgString output     (parser,
@@ -90,7 +92,12 @@ int main(int argc, const char *argv[])
             exporter = matlab;
         }
         else
-            exporter = new SpreadSheetExporter(archive, output);
+        {
+            SpreadSheetExporter *sse = new SpreadSheetExporter(archive, output);
+            if (MLSheet)
+                sse->useMatlabFormat();
+            exporter = sse;
+        }
 
         exporter->setVerbose(verbose);
 

@@ -34,14 +34,15 @@ USE_STD_NAMESPACE
 // For communication sigint_handler -> main loop
 bool run = true;
 
-// signals are process-, not thread-bound,
-// but this handler is meant to react only
-// in the main thread.
+// signals are process-, not thread-bound.
 static void signal_handler (int sig)
 {
+#ifndef HAVE_SIGACTION
 	signal (sig, SIG_IGN);
+#endif
 	run = false;
-	LOG_MSG ("Exiting on signal " << sig << ", please be patient!\n");
+
+	cerr << "Exiting on signal " << sig << ", please be patient!\n";
 }
 
 static ofstream	*logfile = 0;
@@ -136,8 +137,19 @@ int main (int argc, const char *argv[])
 	{
 		// Main loop
 		theEngine->setConfiguration (config);
+#ifdef HAVE_SIGACTION
+		struct sigaction action;
+		memset (&action, 0, sizeof (struct sigaction));
+		action.sa_handler = signal_handler;
+		__sigemptyset(&action.sa_mask);
+		action.sa_flags = 0;
+		if (sigaction (SIGINT, &action, 0) ||
+		    sigaction (SIGTERM, &action, 0))
+			cerr << "Error setting signal handler\n";
+#else
 		signal (SIGINT, signal_handler);
 		signal (SIGTERM, signal_handler);
+#endif
 
 		cerr << "\n------------------------------------------\n";
 		cerr << "Engine Running.\n";

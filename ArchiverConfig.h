@@ -39,6 +39,15 @@
 #define DEFAULT_USER    "engine"
 #define DEFAULT_PASS    "password"   
 
+// Define if sigaction call is available in signal.h
+//
+// On Win32, signal() is good enough.
+// On Unix, this does not work in a multithreaded program,
+// so sigaction() should be used
+#ifndef WIN32
+#define HAVE_SIGACTION
+#endif
+
 // ----------------------------------------------------------
 // ArchiveManager
 // ----------------------------------------------------------

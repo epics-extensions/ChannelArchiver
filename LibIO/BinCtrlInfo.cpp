@@ -10,12 +10,13 @@
 // For other types, the current info is maintained
 // so that the reader can decide to ignore the problem.
 // In other cases, the type is set to Invalid
-void BinCtrlInfo::read(LowLevelIO &file, FileOffset offset)
+void BinCtrlInfo::read(FILE *file, FileOffset offset)
 {
     // read size field only
     unsigned short size;
-    if (file.llseek(offset) != offset ||
-        !file.llread(&size, sizeof size))
+    if (fseek(file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(file) != offset ||
+        fread(&size, sizeof size, 1, file) != 1)
     {
         _infobuf.mem()->type = Invalid;
         throwDetailedArchiveException(
@@ -53,11 +54,12 @@ void BinCtrlInfo::read(LowLevelIO &file, FileOffset offset)
         return;
     }
     // read remainder of CtrlInfo:
-    if (! file.llread (reinterpret_cast<char *>((void *)info) + sizeof size,
-                       info->size - sizeof size))
+    if (fread (((char *)info) + sizeof size,
+               info->size - sizeof size, 1, file) != 1)
     {
         info->type = Invalid;
-        throwDetailedArchiveException (ReadError, "Cannot read remainder of CtrlInfo");
+        throwDetailedArchiveException (ReadError,
+                                       "Cannot read remainder of CtrlInfo");
         return;
     }
 
@@ -98,7 +100,7 @@ void BinCtrlInfo::read(LowLevelIO &file, FileOffset offset)
 }
 
 // Write CtrlInfo to file.
-void BinCtrlInfo::write (LowLevelIO &file, FileOffset offset) const
+void BinCtrlInfo::write(FILE *file, FileOffset offset) const
 {   // Attention:
     // copy holds only the fixed CtrlInfo portion,  not enum strings etc.!
     const CtrlInfoData *info = _infobuf.mem();
@@ -127,15 +129,16 @@ void BinCtrlInfo::write (LowLevelIO &file, FileOffset offset) const
     SHORTToDisk (copy.size);
     SHORTToDisk (copy.type);
 
-    if (file.llseek (offset) != offset ||
-        !file.llwrite (&copy, converted))
+    if (fseek(file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(file) != offset ||
+        fwrite(&copy, converted, 1, file) != 1)
         throwArchiveException (WriteError);
 
     // only the common, minimal CtrlInfoData portion was converted,
     // the remaining strings are written from 'this'
     if (info->size > converted &&
-        !file.llwrite (reinterpret_cast<const char *>(info) + converted,
-                       info->size - converted))
+        fwrite(((char *)info) + converted,
+               info->size - converted, 1, file) != 1)
         throwArchiveException (WriteError);
 }
 

@@ -108,7 +108,7 @@ public:
 
     const stdString &getDirname()    {   return _dirname;  }
 
-    bool isReadonly()                {   return _file.isReadonly(); }
+    bool isForWrite()                {   return _file_for_write; }
 
 private:
     friend class DirectoryFileIterator;
@@ -133,10 +133,13 @@ private:
 
     stdString    _filename;
     stdString    _dirname;
-    LowLevelIO   _file;
-
+    FILE *       _file;
+    bool         _file_for_write;
+    
     // Offset of next unused entry for add:
     FileOffset   _next_free_entry;
 };
 
 #endif // !defined(_DIRECTORYFILE_H_)
+
+

@@ -5,7 +5,6 @@
 #include "ArchiveTypes.h"
 #include <db_access.h>
 #include <epicsTime.h>
-#include <LowLevelIO.h>
 
 #ifdef CONVERSION_REQUIRED
 #include<osiSock.h>

@@ -36,7 +36,7 @@ inline void string2cp(char *dest, const stdString &src, size_t maxlen)
 #endif
 
 typedef char Byte;
-
+typedef unsigned long FileOffset;
 typedef unsigned short DbrType;
 typedef unsigned short DbrCount;
 

@@ -51,13 +51,14 @@ BinArchive *BinChannel::getArchive()
 	return _channel_iter->getArchive();
 }
 
-void BinChannel::read(LowLevelIO &file, FileOffset offset)
+void BinChannel::read(FILE *file, FileOffset offset)
 {
 	if (_append_buffer)
 		throwDetailedArchiveException(Invalid, "Open append-buffer");
 
-	if (file.llseek(offset) != offset  ||
-		!file.llread(&_data, getDataSize()))
+	if (fseek(file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(file) != offset  ||
+		fread(&_data, getDataSize(), 1, file) != 1)
 		throwArchiveException(ReadError);
 	FileOffsetFromDisk(_data.next_entry_offset);
 	FileOffsetFromDisk(_data.last_offset);
@@ -68,7 +69,7 @@ void BinChannel::read(LowLevelIO &file, FileOffset offset)
 	_offset = offset;
 }
 
-void BinChannel::write(LowLevelIO &file, FileOffset offset) const
+void BinChannel::write(FILE *file, FileOffset offset) const
 {
 	Data copy = _data;
 
@@ -79,8 +80,9 @@ void BinChannel::write(LowLevelIO &file, FileOffset offset) const
 	epicsTimeStampToDisk(copy.first_save_time);
 	epicsTimeStampToDisk(copy.last_save_time);
 
-	if (file.llseek(offset) != offset  ||
-		!file.llwrite(&copy, getDataSize()))
+	if (fseek(file, offset, SEEK_SET) != 0  ||
+        (FileOffset) ftell(file) != offset  ||
+		fwrite(&copy, getDataSize(), 1, file) != 1)
 		throwArchiveException(WriteError);
 	_offset = offset;
 }

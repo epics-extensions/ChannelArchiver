@@ -37,8 +37,8 @@ public:
 
     void init(const char *name=0);
     void setChannelIterator(class BinChannelIterator *i) { _channel_iter = i; }
-    void read(LowLevelIO &fd, FileOffset offset);
-    void write(LowLevelIO &fd, FileOffset offset) const;
+    void read(FILE *fd, FileOffset offset);
+    void write(FILE *fd, FileOffset offset) const;
 
     static size_t getDataSize()            { return sizeof(Data); }
     FileOffset getNextEntryOffset() const  { return _data.next_entry_offset; }

@@ -9,10 +9,6 @@
 #if !defined(_DATAFILE_H_)
 #define _DATAFILE_H_
 
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
-
 #include "BinTypes.h"
 #include "BinValue.h"
 
@@ -25,8 +21,8 @@ class DataHeader
 public:
     void clear();
 
-    void read(LowLevelIO &file, FileOffset offset);
-    void write(LowLevelIO &file, FileOffset offset) const;
+    void read(FILE *file, FileOffset offset);
+    void write(FILE *file, FileOffset offset) const;
 
     enum // Scott Meyers' "enum hack":
     {   FilenameLength = 40     };
@@ -147,7 +143,8 @@ private:
     size_t  _ref_count;
 
     // The current data file:
-    LowLevelIO _file;
+    FILE * _file;
+    bool   _file_for_write;
     stdString _filename;
     stdString _dirname;
     stdString _basename;
@@ -215,7 +212,7 @@ public:
     // Re-read the current DataHeader
     void sync();
 
-    LowLevelIO &getDataFileFile() const
+    FILE * getDataFileFile() const
     {   LOG_ASSERT(_datafile);     return _datafile->_file;  }
     
     // Save the current DataHeader

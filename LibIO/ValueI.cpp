@@ -21,7 +21,7 @@
 
 RawValueI::Type * RawValueI::allocate (size_t size)
 {
-    return reinterpret_cast<RawValueI::Type *> (new char[size]);
+    return (RawValueI::Type *) (new char[size]);
 }
 
 // allocate space for num samples of type/count
@@ -33,7 +33,7 @@ RawValueI::Type * RawValueI::allocate (DbrType type, DbrCount count,
 
 void RawValueI::free (Type *value)
 {
-    delete [] reinterpret_cast<char *>(value);
+    delete [] ((char *)value);
 }
 
 size_t RawValueI::getSize (DbrType type, DbrCount count)

@@ -13,7 +13,6 @@
 #include "MultiValueIterator.h"
 #include "BinArchive.h"
 #include "ArchiveException.h"
-#include "LowLevelIO.h"
 #include <ASCIIParser.h>
 #include <BinaryTree.h>
 
@@ -42,20 +41,20 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
     LOG_MSG("MultiArchive::parseMasterFile\n");
 #endif
     // Carefully check if "master_file" starts with the magic line:
-    LowLevelIO file;
-    if (! file.llopen (master_file.c_str()))
+    FILE *file = fopen(master_file.c_str(), "r");
+    if (!file)
     {
         LOG_MSG("Cannot open master file '%s'\n",
                 master_file.c_str());
         return false;
     }
     char line[14]; // master_version  : 14 chars
-    if (! file.llread(line, 14))
+    if (fread(line, 14, 1, file) != 1)
     {
         LOG_MSG("Invalid master file '%s'\n", master_file.c_str());
         return false; // too small to be anything
     }
-    file.llclose();
+    fclose(file);
     if (strncmp(line, "master_version", 14) !=0)
     {
         // Could be Binary file:

@@ -29,7 +29,7 @@ public:
 
 // Info::size includes the "size" and "type" field.
 // The original archiver read/wrote "Info" that way,
-// but didn't properly inilialize it:
+// but didn't properly initialize it:
 // size excluded size/type and was then rounded up by 8 bytes... ?!
 class CtrlInfoData
 {

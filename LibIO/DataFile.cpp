@@ -18,10 +18,11 @@
 // DataHeader
 //////////////////////////////////////////////////////////////////////
 
-void DataHeader::read(LowLevelIO &file, FileOffset offset)
+void DataHeader::read(FILE *file, FileOffset offset)
 {
-    if ((FileOffset) file.llseek(offset) != offset  ||
-        !file.llread(this, sizeof(DataHeader)))
+    if (fseek(file, offset, SEEK_SET) != 0   ||
+        (FileOffset)ftell(file) != offset  ||
+        fread(this, sizeof(DataHeader), 1, file) != 1)
         throwArchiveException(ReadError);
     // convert the data header into host format:
     FileOffsetFromDisk(dir_offset);
@@ -40,7 +41,7 @@ void DataHeader::read(LowLevelIO &file, FileOffset offset)
     epicsTimeStampFromDisk(end_time);
 }
 
-void DataHeader::write(LowLevelIO &file, FileOffset offset) const
+void DataHeader::write(FILE *file, FileOffset offset) const
 {
     DataHeader copy (*this);
 
@@ -60,8 +61,9 @@ void DataHeader::write(LowLevelIO &file, FileOffset offset) const
     epicsTimeStampToDisk(copy.next_file_time);
     epicsTimeStampToDisk(copy.end_time);
 
-    if ((FileOffset)file.llseek(offset) != offset  ||
-        !file.llwrite(&copy, sizeof(DataHeader)))
+    if (fseek(file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(file) != offset  ||
+        fwrite(&copy, sizeof(DataHeader), 1, file) != 1)
         throwArchiveException(WriteError);
 }
 
@@ -113,51 +115,47 @@ void DataFile::release ()
 
 DataFile::DataFile (const stdString &filename, bool for_write)
 {
-    if (! _file.llopen (filename.c_str(),for_write))
-    {
-        if (for_write)
-            throwDetailedArchiveException (CreateError, filename);
-        else
-            throwDetailedArchiveException (OpenError, filename);
-    }
+    _file_for_write = for_write;
+    _filename = filename;
+    _file = 0;
+    reopen();
 
     _ref_count = 1;
-    _filename = filename;
     Filename::getDirname  (_filename, _dirname);
     Filename::getBasename (_filename, _basename);
-#ifdef LOG_DATAFILE
-    if (_file.isReadonly ())
-        LOG_MSG ("(readonly) ");
-    LOG_MSG ("DataFile " << _filename << "\n");
-#endif
 }
 
 DataFile::~DataFile ()
 {
-    if (_file.isOpen())
-    {
-#ifdef LOG_DATAFILE
-        if (_file.isReadonly ())
-            LOG_MSG ("(readonly) ");
-        LOG_MSG ("~DataFile " << _filename << "\n");
-#endif
-        _file.llclose ();
-    }
+    if (_file)
+        fclose(_file);
 }
 
 // For synchr. with a file that's actively written
 // by another prog. is might help to reopen:
 void DataFile::reopen ()
 {
-    bool for_write = !_file.isReadonly ();
-    _file.llclose ();
-    if (! _file.llopen (_filename.c_str(), for_write))
-        throwDetailedArchiveException (ReadError, _filename);
+    if (_file)
+        fclose(_file);
+    _file = fopen(_filename.c_str(), "r+b");
+    if (_file==0  && _file_for_write)
+        _file = fopen(_filename.c_str(), "w+b");
+    if (_file == 0)
+    {
+        if (_file_for_write)
+            throwDetailedArchiveException (CreateError, _filename);
+        else
+            throwDetailedArchiveException (OpenError, _filename);
+    }
+#ifdef LOG_DATAFILE
+    LOG_MSG ("DataFile " << _filename << "\n");
+#endif
 }
 
 // Add a new value to a buffer.
 // Returns false when buffer cannot hold any more values.
-bool DataFile::addNewValue (DataHeaderIterator &header, const BinValue &value, bool update_header)
+bool DataFile::addNewValue (DataHeaderIterator &header, const BinValue &value,
+                            bool update_header)
 {
     // Is buffer full?
     size_t value_size = value.getRawValueSize ();
@@ -224,36 +222,41 @@ DataHeaderIterator DataFile::addHeader (
 
     if (need_ctrl_info)
     {
-        new_header.setConfigOffset (_file.llseek_end (0));
-        ctrl_info.write (_file, new_header.getConfigOffset ());
+        if (fseek(_file, 0, SEEK_END) != 0)
+            throwArchiveException(WriteError);
+        new_header.setConfigOffset(ftell(_file));
+        ctrl_info.write(_file, new_header.getConfigOffset ());
     }
     else
-        new_header.setConfigOffset ((*prev_header)->getConfigOffset ());
+        new_header.setConfigOffset((*prev_header)->getConfigOffset ());
 
     // create new data header in this file
-    new_header.setNextFile ("");
-    new_header.setNext (0);
-    FileOffset header_offset = _file.llseek_end (0);
-    new_header.write (_file, header_offset);
+    new_header.setNextFile("");
+    new_header.setNext(0);
+    if (fseek(_file, 0, SEEK_END) != 0)
+        throwArchiveException(WriteError);
+    FileOffset header_offset = ftell(_file);
+    new_header.write(_file, header_offset);
 
     // allocate data buffer by writing some marker at the end:
     long marker = 0x0effaced;
-    FileOffset pos = header_offset + new_header.getBufSize () - sizeof marker;
+    FileOffset pos = header_offset + new_header.getBufSize() - sizeof marker;
     
-    if ((FileOffset)_file.llseek (pos) != pos ||
-        !_file.llwrite (&marker, sizeof marker))
-        throwArchiveException (WriteError);
-
+    if (fseek(_file, pos, SEEK_SET) != 0 ||
+        (FileOffset) ftell(_file) != pos ||
+        fwrite(&marker, sizeof marker, 1, _file) != 1)
+        throwArchiveException(WriteError);
+    
     // Now that the new header is complete, make prev. point to new one:
     if (prev_header)
     {
-        (*prev_header)->setNextFile (_basename);
-        (*prev_header)->setNext (header_offset);
-        prev_header->save ();
+        (*prev_header)->setNextFile(_basename);
+        (*prev_header)->setNext(header_offset);
+        prev_header->save();
     }
 
     DataHeaderIterator header;
-    header.attach (this, header_offset, &new_header);
+    header.attach(this, header_offset, &new_header);
     return header;
 }
 
@@ -261,28 +264,28 @@ DataHeaderIterator DataFile::addHeader (
 // DataHeaderIterator
 //////////////////////////////////////////////////////////////////////
 
-void DataHeaderIterator::init ()
+void DataHeaderIterator::init()
 {
     _datafile = 0;
     _header_offset = INVALID_OFFSET;
     _header.num_samples = 0;
 }
 
-void DataHeaderIterator::clear ()
+void DataHeaderIterator::clear()
 {
     if (_datafile)
-        _datafile->release ();
-    init ();
+        _datafile->release();
+    init();
 }
 
-DataHeaderIterator::DataHeaderIterator ()
+DataHeaderIterator::DataHeaderIterator()
 {
-    init ();
+    init();
 }
 
-DataHeaderIterator::DataHeaderIterator (const DataHeaderIterator &rhs)
+DataHeaderIterator::DataHeaderIterator(const DataHeaderIterator &rhs)
 {
-    init ();
+    init();
     *this = rhs;
 }
 
@@ -293,25 +296,26 @@ DataHeaderIterator & DataHeaderIterator::operator = (const DataHeaderIterator &r
         if (rhs._datafile)
         {
             DataFile *tmp = _datafile;
-            _datafile = rhs._datafile->reference ();
+            _datafile = rhs._datafile->reference();
             if (tmp)
-                tmp->release ();
+                tmp->release();
             _header_offset = rhs._header_offset;
             if (_header_offset != INVALID_OFFSET)
                 _header = rhs._header;
         }
         else
-            clear ();   
+            clear();   
     }
     return *this;
 }
 
-DataHeaderIterator::~DataHeaderIterator ()
+DataHeaderIterator::~DataHeaderIterator()
 {
-    clear ();
+    clear();
 }
 
-void DataHeaderIterator::attach (DataFile *file, FileOffset offset, DataHeader *header)
+void DataHeaderIterator::attach(DataFile *file, FileOffset offset,
+                                DataHeader *header)
 {   
     if (file)
     {
@@ -366,10 +370,10 @@ DataHeaderIterator & DataHeaderIterator::operator ++ ()
         if (_datafile->getBasename () != _header.getNextFile ())
         {
             // switch to next data file
-            bool for_write = ! getDataFileFile().isReadonly();
             stdString next_file;
             Filename::build (_datafile->getDirname (), _header.getNextFile (),
                 next_file);
+            bool for_write = _datafile->_file_for_write;
             _datafile->release ();
             _datafile = DataFile::reference (next_file, for_write);
         }
@@ -393,7 +397,7 @@ DataHeaderIterator & DataHeaderIterator::operator -- ()
     {
         if (_datafile->getFilename () != _header.getPrevFile ())
         {   // switch to prev data file
-            bool for_write = ! getDataFileFile().isReadonly();
+            bool for_write = _datafile->_file_for_write;
             stdString prev_file;
             Filename::build (_datafile->getDirname (), _header.getPrevFile (),
                 prev_file);

@@ -10,8 +10,8 @@ proc camGUI::aEdit {w} {
 
   toplevel $tl
   label $tl.xxx
-  wm title $tl "ArchiveEngine properties"
-  set lf [TitleFrame $tl.f -text "ArchiveEngine properties" -side left -font [$tl.xxx cget -font]]
+  wm title $tl "Archiver properties"
+  set lf [TitleFrame $tl.f -text "Archiver properties" -side left -font [$tl.xxx cget -font]]
   set f [$lf getframe]
   frame $f.h -bd 0
 
@@ -20,17 +20,21 @@ proc camGUI::aEdit {w} {
     lappend hl [camMisc::arcGet $k host]
   }
   combobox $f.h.hf "Host:" left var($row,host) $hl -side top -fill x -padx 4
+  $f.h.hf.e configure -helptext "A hostname where this\nArchiver is supposed to run."
 
   set ::ports [getPorts $row]
   set var($row,oport) $var($row,port)
-  spinbox $f.h.port Port: left var($row,port) {1 65535 1} {} -side right -fill x
+  spinbox $f.h.port "Port:" left var($row,port) {1 65535 1} {} -side right -fill x
+  $f.h.port.e configure -width 5 -helptext "A portnumber for the\narchiver's web-interface\nKeep in mind, that there mustn't\nbe any collisions!"
   entrybox $f.de Description: top var($row,descr)
+  $f.de.e configure -helptext "A description for the Archiver.\nThe Archiver's web-interface will have this description as well."
   frame $f.c -bd 0
   entrybox $f.c.cfg "Configuration-file: (absolute pathname)" top var($row,cfg) -expand t
+  $f.c.cfg.e configure -helptext "The full pathname of the\nmain configuration file\nfor this Archiver."
   button  $f.c.fs -text "..." -padx 0 -pady 0 -width 2 -bd 1 -command "
       set fn \[getCfgFile $tl $row\]
       if {\"\$fn\" != \"\"} {set var($row,cfg) \$fn}"
-  checkbutton $f.olcfgc -text "disable configuration changes via ArchiveEngine web interface" \
+  checkbutton $f.olcfgc -text "disable configuration changes via Archiver's web interface" \
       -variable var($row,cfgc)
 
   set af {"" freq_directory dir directory catalog %Y/%V/directory %Y/%m/%d/directory}
@@ -39,6 +43,7 @@ proc camGUI::aEdit {w} {
   }
   combobox $f.af "Archive-file: (rel. to path of Configuration file)" top \
       var($row,archive) $af -side top -fill x
+  $f.af.e configure -helptext "The filename of the archive file.\nShould not be an absolute pathname (starting with /).\nNever put more than one archive in a single directory!\nDirectories will be created.\nSubject to %-expansion (see documentation)."
 
   set ll {log log/%Y/%m/%d/%H%M%S}
   foreach k [camMisc::arcIdx] {
@@ -46,14 +51,15 @@ proc camGUI::aEdit {w} {
   }
   combobox $f.lf "Log-file: (rel. to path of Configuration file)" top \
       var($row,log) $ll -side top -fill x
+  $f.lf.e configure -helptext "The filename of the Archiver's log file.\nShould not be an absolute pathname (starting with /).\nDirectories will be created.\nSubject to %-expansion (see documentation)."
 
   combobox $f.run Run/Rerun: left var($row,start) \
       {NO hourly daily weekly monthly timerange always}
-  proc showpage {args} "$f.nb raise \$::var($row,start)"
-  trace variable var($row,start) w camGUI::showpage
+  $f.run.e configure -helptext "A schedule of how this Archiver should be started/restarted.\nDirectories are changed/created on each restart."
+  proc showpage($row) {args} "$f.nb raise \$::var($row,start)"
+  trace variable var($row,start) w camGUI::showpage($row)
   $f.run.e configure -editable 0 \
       -insertontime 0 -selectborderwidth 0 
-#      -selectbackground white -selectforeground black
   PagesManager $f.nb
 
   set page [$f.nb add NO]
@@ -209,7 +215,7 @@ proc camGUI::aEdit {w} {
     }
     break
   }
-  trace vdelete var($row,start) w camGUI::showpage
+  trace vdelete var($row,start) w camGUI::showpage($row)
   destroy $tl
   if {$var($row,close) == 0} {setButtons $w; return 0}
   

@@ -66,7 +66,13 @@ int main(int argc, const char *argv[])
 
     try
     {
-        ArchiveI *archive = new EXPORT_ARCHIVE_TYPE(parser.getArgument (0));
+        osiTime startTime, endTime;
+        // start and/or end time provided ?
+	if (! start_time.get().empty()) string2osiTime(start_time, startTime);
+	if (! end_time.get().empty()) string2osiTime(end_time, endTime);
+
+        ArchiveI *archive = new EXPORT_ARCHIVE_TYPE(parser.getArgument (0),
+						    startTime, endTime);
         Exporter *exporter;
         
         if (GNUPlot)
@@ -95,19 +101,8 @@ int main(int argc, const char *argv[])
         if (double(interpol) > 0)
             exporter->setLinearInterpolation(interpol, 100);
 
-        osiTime time;
-        // start time provided ?
-        if (! start_time.get().empty())
-        {
-            string2osiTime(start_time, time);
-            exporter->setStart(time);
-        }
-        // end time provided ?
-        if (! end_time.get().empty())
-        {
-            string2osiTime(end_time, time);
-            exporter->setEnd(time);
-        }
+	if (isValidTime(startTime)) exporter->setStart(startTime);
+	if (isValidTime(endTime)) exporter->setEnd(endTime);
 
         // List of channels given?
         if (parser.getArguments().size() > 1)

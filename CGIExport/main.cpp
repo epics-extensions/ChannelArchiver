@@ -101,7 +101,7 @@ static void cmdList(HTMLPage &page)
 	page.start();
 	try
 	{
-	   Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory));
+	   Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory, page._start, page._end));
 	   ChannelIterator channel(archive);
 	   
 	   if (page._glob)
@@ -159,7 +159,7 @@ static void cmdInfo(HTMLPage &page)
 	Info			 info;
 	try
 	{
-		Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory));
+		Archive archive(new CGIEXPORT_ARCHIVE_TYPE(page._directory, page._start, page._end));
 		ChannelIterator channel(archive);
 
 		if (page._names.empty())
@@ -322,7 +322,7 @@ static bool exportFunc(HTMLPage &page, Format format,
 
 	try
 	{
-		ArchiveI *archive = new CGIEXPORT_ARCHIVE_TYPE(page._directory);
+		ArchiveI *archive = new CGIEXPORT_ARCHIVE_TYPE(page._directory, page._start, page._end);
 		Exporter *exporter;
 
 		if (format == fmt_GNUPlot)

@@ -65,7 +65,7 @@ proc duetime {i {run X} {timespec X}} {
     }
   }
 
-  if {$delta != 0} {
+  if {($run != "timerange") && ($delta != 0)} {
     while {$starttime > $now} { incr starttime -$delta }
     while {[expr $starttime + $delta] <= $now} {incr starttime $delta}
   }
@@ -78,22 +78,22 @@ if {$::debug} {
     {minute "0 1"}
     {minute "12 12"}
     {minute "12 15"}
-    {hour "00:27 1"}
-    {hour "06:00 8"}
-    {day "14:30 1"}
-    {day "02:00 2"}
-    {day "23:59 3"}
-    {week "Sunday 12:00 1"}
-    {week "Monday 12:00 2"}
-    {week "Tuesday 12:00 3"}
-    {week "Wednesday 12:00 4"}
-    {week "Thursday 12:00 5"}
-    {week "Friday 12:00 6"}
-    {week "Saturday 12:00 7"}
-    {month "1 12:00"}
-    {month "10 12:00"}
-    {month "20 12:00"}
-    {month "28 12:00"}
+    {hour "00:27:00 1"}
+    {hour "06:00:00 8"}
+    {day "14:30:00 1"}
+    {day "02:00:00 2"}
+    {day "23:59:59 3"}
+    {week "Sunday 12:00:00 1"}
+    {week "Monday 12:00:00 2"}
+    {week "Tuesday 12:00:00 3"}
+    {week "Wednesday 12:00:00 4"}
+    {week "Thursday 12:00:00 5"}
+    {week "Friday 12:00:00 6"}
+    {week "Saturday 12:00:00 7"}
+    {month "1 12:00:00"}
+    {month "10 12:00:00"}
+    {month "20 12:00:00"}
+    {month "28 12:00:00"}
   }
   foreach sample $xamples {
     lassign $sample run timespec

@@ -10,7 +10,7 @@ proc updateMultiArchives {} {
   }
 }
 
-proc getTimes {arc} {
+proc getTimes {arc i} {
   if {![catch {
     for_file line "|ArchiveManager -info \"$arc\"" {
       regexp "First.*sample.*: (\[^\\.\]*)" $line all starttime
@@ -43,7 +43,7 @@ proc updateMultiArchive {arch} {
       if {[file dirname [camMisc::arcGet $i archive]] == "."} {
 	set ts ""
 	if {$::master_version == 2} {
-	  lassign [getTimes $archive] starttime stoptime
+	  lassign [getTimes $archive $i] starttime stoptime
 	  if {"$starttime" != "0"} {
 	    set ts "$starttime $stoptime "
 	  } else {

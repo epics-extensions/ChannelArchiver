@@ -10,4 +10,5 @@ proc $funame {args} {
     puts stderr $l
     Puts "$l" error
   }
+  if {$::debug} exit
 }

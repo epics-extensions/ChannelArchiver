@@ -20,7 +20,13 @@
 class SpreadsheetReader
 {
   public:
-    SpreadsheetReader(archiver_Index &index);
+    /// Create the SpreadsheetReader
+
+    /// For delta == 0, use the ordinary DataReader.
+    /// For delta > 0, use the LinearReader which
+    /// attempt linear interpolation or averaging
+    /// onto multiples of delta seconds.
+    SpreadsheetReader(archiver_Index &index, double delta);
 
     virtual ~SpreadsheetReader();
     
@@ -67,6 +73,8 @@ class SpreadsheetReader
 protected:
     archiver_Index &index;
 
+    double delta;
+    
     // Number of array entries for the following stuff that's non-scalar
     size_t num;
 

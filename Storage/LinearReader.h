@@ -13,12 +13,33 @@
 /// The LinearReader is an implementaion of a DataReader
 /// that interpolates, returning data that is aligned onto
 /// multiples of 'delta' seconds on the time axis.
-/// Let's call these multiples of delta "time slots". 
+/// Let's call the time range from from of these multiples
+/// of delta to the next one "time slots".
 ///
-/// Different methods are used to accomplish this:
-/// - Staircase interpolation, i.e. the last value before
+/// Different methods are used:
+/// Linear interpolation (hence the name),
+/// Averaging or Staircase interpolation.
+/// - If there was only one scalar value of type double,
+///   long, int or short, in the current time slot,
+///   linear interpolation is used to determine
+///   the approximate value at the end of the time slot.
+/// - Averaging is used if several values fall into the
+///   current time slot and the data type allows averaging,
+///   i.e. it's a scalar double, long, int or short.
+/// - Staircase interpolation is used for arrays or
+///   scalars of type string, char or enumerated,
+///   that is for everything that doesn't allow linear
+///   interpolation nor averaging.
+///   While one could handle certain arrays, we don't
+///   because for one that's expensive and in addition
+///   EPICS arrays often contain more than just waveform
+///   elements: They're used to transfer structures.
+///   "Staircase" means that the last value before
 ///   a time slot is extrapolated onto the time slot.
-
+///   That's usually valid because we either sampled
+///   a slow changing channel, so the previous value
+///   is still good enough; or we archived on change
+///   and no change means the previous data is still valid.
 class LinearReader : public DataReader
 {
 public:

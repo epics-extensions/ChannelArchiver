@@ -101,6 +101,22 @@ public:
     /// Set time stamp
     static void setTime(Data *value, const epicsTime &stamp);
 
+    /// Get data as a double or return false
+
+    /// Works for scalar short, int, long, float, double
+    ///
+    ///
+    static bool getDouble(DbrType type, DbrCount count,
+                          const Data *value, double &d);
+
+    /// Set data from a double or return false
+
+    /// Works for scalar short, int, long, float, double
+    ///
+    ///
+    static bool setDouble(DbrType type, DbrCount count,
+                          Data *value, double d);
+    
     /// Convert value to txt, using CtrlInfo if available.
 
     /// This gives only the value. Use getTime() and getStatus()

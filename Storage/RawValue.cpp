@@ -212,6 +212,72 @@ void RawValue::getTime(const Data *value, stdString &time)
     epicsTime2string(et, time);
 }
 
+bool RawValue::getDouble(DbrType type, DbrCount count,
+                         const Data *value, double &d)
+{
+    if (isInfo(value)) // done    
+        return false;
+    if (count != 1)
+        return false;
+    switch (type)
+    {
+        case DBR_TIME_SHORT:
+        {
+            d = ((dbr_time_short *)value)->value;
+            return true;
+        }
+        case DBR_TIME_LONG:
+        {
+            d = ((dbr_time_long *)value)->value;
+            return true;
+        }
+        case DBR_TIME_FLOAT:
+        {
+            d = ((dbr_time_float *)value)->value;
+            return true;
+        }
+        case DBR_TIME_DOUBLE:
+        {
+            d = ((dbr_time_double *)value)->value;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RawValue::setDouble(DbrType type, DbrCount count,
+                         Data *value, double d)
+{
+    if (isInfo(value)) // done    
+        return false;
+    if (count != 1)
+        return false;
+    switch (type)
+    {
+        case DBR_TIME_SHORT:
+        {
+            ((dbr_time_short *)value)->value = (dbr_short_t)d;
+            return true;
+        }
+        case DBR_TIME_LONG:
+        {
+            ((dbr_time_long *)value)->value = (dbr_long_t)d;
+            return true;
+        }
+        case DBR_TIME_FLOAT:
+        {
+            ((dbr_time_float *)value)->value = (dbr_float_t)d;
+            return true;
+        }
+        case DBR_TIME_DOUBLE:
+        {
+            ((dbr_time_double *)value)->value = d;
+            return true;
+        }
+    }
+    return false;
+}
+
 void RawValue::getValueString(stdString &txt,
                               DbrType type, DbrCount count, const Data *value,
                               const class CtrlInfo *info)

@@ -65,7 +65,7 @@ int main (int argc, const char *argv[])
 		if (double(round) > 0)
 			exporter->setTimeRounding (round);
 		if (double(interpol) > 0)
-			exporter->setLinearInterpolation (interpol);
+			exporter->setLinearInterpolation (interpol, 100);
 
 		osiTime time;
 		// start time provided ?

@@ -3,7 +3,7 @@
 
 #include "ArchiveTypes.h"
 #include "MemoryBuffer.h"
-#include <iostream>
+#include <stdio.h>
 
 // ! Binary layout of CtrlInfo must be maintained !
 class NumericInfo

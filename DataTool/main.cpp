@@ -103,6 +103,9 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
                 index_name.c_str());
         return;
     }
+
+    DirectoryFile dir(dir_name, true);
+    
     char name[CHANNEL_NAME_LENGTH];
     key_AU_Iterator *aus;
     bool ok = names->getFirst(name);
@@ -166,6 +169,13 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
                     if (verbose)
                         printf("%s - %s\n",
                                start.c_str(), end.c_str());
+                    DirectoryFileIterator dfi;
+                    dfi = dir.find(name);
+                    if (!dfi.isValid())
+                        dfi = dir.add(name);
+                    dfi.entry.setFirst(start_file, start_offset);
+                    dfi.entry.setLast(end_file, end_offset);
+                    dfi.save();
                 }
             }
             else

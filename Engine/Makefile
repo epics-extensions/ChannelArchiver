@@ -32,4 +32,8 @@ ToolsObj_DIR = $(INSTALL_LIB)
 bench_SRCS := bench.cpp
 TESTPROD_HOST := bench
 
+# Install script to convert old request files.
+SCRIPTS += ConvertEngineConfig.pl
+
+
 include $(TOP)/configure/RULES

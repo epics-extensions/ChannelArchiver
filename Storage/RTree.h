@@ -36,7 +36,8 @@
 //
 // --> NFS is bad, small RTreeM values are bad.
 
-#define RTreeM 3
+// #define RTreeM 3
+#define RTreeM 50
 
 /// \ingroup Storage
 /// \@{

@@ -13,6 +13,8 @@
 
 bool verbose;
 
+// TODO: copy program that combines sub-archives
+
 void show_hash_info(const stdString &index_name)
 {
     IndexFile index;
@@ -305,6 +307,52 @@ void dot_index(const stdString &index_name, const stdString channel_name,
     index.close();
 }
 
+bool seek_time(const stdString &index_name,
+               const stdString &channel_name,
+               const stdString &start_txt)
+{
+    epicsTime start;
+    if (!string2epicsTime(start_txt, start))
+    {
+        fprintf(stderr, "Cannot convert '%s' to time stamp\n",
+                start_txt.c_str());
+        return false;
+    }
+    IndexFile index;
+    if (!index.open(index_name))
+    {
+        fprintf(stderr, "Cannot open index '%s'\n",
+                index_name.c_str());
+        return false;
+    }
+    RTree *tree = index.getTree(channel_name);
+    if (tree)
+    {
+        RTree::Datablock block;
+        RTree::Node node;
+        int idx;
+        if (tree->searchDatablock(start, node, idx, block))
+        {
+            stdString s, e;
+            printf("Found block %s - %s\n",
+                   epicsTimeTxt(node.record[idx].start, s),
+                   epicsTimeTxt(node.record[idx].end, e));
+        }
+        else
+        {
+            printf("Nothing found\n");
+        }
+        delete tree;
+    }
+    else
+    {
+        fprintf(stderr, "Cannot find channel '%s'\n",
+                channel_name.c_str());
+    }
+    index.close();
+    return true;
+}
+
 bool check (const stdString &index_name)
 {
     IndexFile index;
@@ -341,7 +389,8 @@ int main(int argc, const char *argv[])
                           "Dump contents of RTree index into dot file");
     CmdArgString channel_name (parser, "channel", "<name>", "Channel name");
     CmdArgFlag hashinfo(parser, "hashinfo", "Show Hash table info");
-    CmdArgFlag test(parser, "test", "Perform some consitency tests");
+    CmdArgString seek_test(parser, "seek", "<time>", "Perform seek test");
+    CmdArgFlag test(parser, "test", "Perform some consistency tests");
     if (! parser.parse())
         return -1;
     if (help   ||   parser.getArguments().size() != 1)
@@ -349,7 +398,9 @@ int main(int argc, const char *argv[])
         parser.usage();
         return -1;
     }
-    if ((dump_blocks || dotindex.get().length() > 0)
+    if ((dump_blocks ||
+         dotindex.get().length() > 0  ||
+         seek_test.get().length() > 0)
         && channel_name.get().length() <= 0)
     {
         fprintf(stderr, "Options 'blocks' and 'dotindex' require 'channel'.\n");
@@ -381,6 +432,11 @@ int main(int argc, const char *argv[])
     else if (dotindex.get().length() > 0)
     {
         dot_index(index_name, channel_name, dotindex);
+        return 0;
+    }
+    else if (seek_test.get().length() > 0)
+    {
+        seek_time(index_name, channel_name, seek_test);
         return 0;
     }
     else if (test)

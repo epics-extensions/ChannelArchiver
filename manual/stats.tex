@@ -3,34 +3,76 @@ It is impossible to provide universal performance numbers for the
 components of the ChannelArchiver toolset. Tests of a realistic setup
 are always influenced by network delays: IOCs communicate with ArchiveEngines,
 data client tools query data from the network data server.
-The CPU speed is less important than hard disk performance:
-Access to data on NFS-mounted disks is by orders of magnitude
-slower than access to data on local disks.
+And while the archiver tools of course share the CPU with all the
+other applications that happen to run on the same CPU,
+the CPU speed is less important. Most crucial is probably the hard
+disk performance. Access to data on NFS-mounted disks is by orders of
+magnitude slower than access to data on local disks.
 
-The following are some arbitrary performance values obtained on a computer
-with an 1~GHz CPU and ordinary IDE disk.
-% That's blitz.ta53.lanl.gov
-\subsection{Write Speed}
+The following are performance values obtained on a computer
+with an 1~GHz CPU, an ordinary IDE disk, that was mostly idle
+while the archiver tools ran. % That's blitz.ta53.lanl.gov
+The corresponding values on a machine with an 800~MHz CPU, concurrently
+used by other people, but faster hard disks (Mylex
+DAC960PTL1 PCI RAID Controller with 5 Quantum Atlas 10K drives) were
+slightly better.
+
+We also provide some comparison to the previous architecture that used
+the same data file format but instead of the RTree-based index there
+were ``Directory Files''. Instead of being able to combine several sub-archives
+into one index, one utilized an ASCII ``Master File'' that simply listed the
+sub-archives.
+
+\subsection{Write Performance}
 As a baseline for raw data writing speed, the 'bench' program that can
 be found in the ChannelArchiver/Engine directory consistently writes
-at least 80000 values per second on that computer.
+at least 80000 values per second on the test computer.
 
-\subsection{Index}
+\subsection{Index Performance}
+\begin{itemize}
 % LANL Xmtr Data 2002:
-Converting old directory files into index files,
-1.2~MB dir files into 12~MB index files: 2~minutes, 20~secs.
-
-Creating a master index for 12 sub-archives,
-about 1.4GB of data files: 45~seconds for a master
-index of 24~MB.
-Re-run of the ArchiveMegaindex tool where there was
-little to do because the sub-archives didn't overlap: 4~secs.
-
+\item 12 sub-archives, 1.2~MB of old directory files, 1.4~GB Data
+      files:\\
+      Converting directory files into index files:
+      2~minutes, 20~secs, resulting in 12~MB for the new index files.\\
+      Creating a master index: 45~seconds for a master index of 24~MB.\\
+      Re-run of the ArchiveMegaindex tool: 4~seconds.
+      This shows that the ArchiveIndexTool detects when data blocks
+      are already in the master index and does not add them again.
 % LANL Xmtr Data 2003:
-Same tests for a bigger collection of 92 sub-archives,
-converting 12MB dir files into 60MB index files: About 12 minutes.
+\item 92 sub-archives, 12~MB directory files, 2.3GB of data files:\\
+      Converting into 60~MB of index files: About 12 minutes.\\
+      Creating a master index: about 30~minutes, the resulting
+      index uses about 1.1~GB.\\
+      Re-run: 40~minutes. Again the master index does not change at
+      all because the ArchiveIndexTool recognizes that the data blocks
+      from the sub-archives have already been added. But finding the
+      last data block of the about 500 channels from the 92
+      sub-archives in the 1.1~GB master index file cannot be cached by
+      the operating system as it could in the previous case with a
+      24~MB master index.
+\end{itemize}
 
-Creating a master index for the 92 sub-archives,
-about 2.3GB of data files: about 30~minutes, the resulting
-index uses about 1.1~GB.
-Re-run (nothing to do): ? secs.
+\noindent With the 92-subarchive index, the following was tested:
+\begin{itemize}
+\item Time to list all channel names: $<$1~second.\\
+      This took about 7 seconds with the old ``multi archive'' file
+      that required opening the individual sub-archives.
+\item Time to find channels that match a pattern and show their
+      start/end times: 0.2~seconds (4 channels out of 500 matched).\\
+      This took about 6~seconds with the previous ``multi archive''.
+\item Seek test, i.e.\ find a data block for a given start time:
+      Index file requires $<$0.5~seconds, old index uses 1.5~seconds.
+\end{itemize}
+
+\subsection{Retrieval Performance}
+Tests of the retrieval performance often include not only the
+code for getting at the data but also for presenting it. In the
+case of the command-line ArchiveExport program this means the process
+of converting time stamps and values into ASCII text and printing them.
+The output was redirected to /dev/null to avoid additional penalties.
+
+\begin{itemize}
+\item Dump all the 143000 values for a channel: 4~seconds,
+      translating into 35700 values per second.
+\end{itemize}

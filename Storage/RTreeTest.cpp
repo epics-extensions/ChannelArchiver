@@ -13,6 +13,16 @@ typedef struct
     long offset;
 }  TestData;
 
+static TestData man_data1[] =
+{
+    { "1", "2", "FileA",  0x10 },
+    { "2", "3", "FileA",  0x20 },
+    { "3", "4", "FileA",  0x30 },
+    { "4", "5", "FileA",  0x40 },
+    { "5", "6", "FileA",  0x50 },
+    { "6", "7", "FileA",  0x60 },
+};
+
 static TestData fill_data[] =
 {
     { "10", "11", "10-11",  1 },
@@ -128,6 +138,9 @@ bool dump_blocks()
 int main()
 {
     initEpicsTimeHelper();
+    if (!fill_test(man_data1, sizeof(man_data1)/sizeof(TestData),
+                   "man_data1.dot"))
+        return -1;
     if (!fill_test(fill_data, sizeof(fill_data)/sizeof(TestData),
                    "test/test_data1.dot"))
         return -1;

@@ -1,4 +1,12 @@
-// HTMLPage
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
 
 #ifdef WIN32
 #pragma warning (disable: 4786)
@@ -18,16 +26,20 @@ static const char *end_file = "cgi_body_end.txt";
 HTMLPage::HTMLPage ()
 {
 	_started = false;
+	_fill = true;
+	_status = false;
+	_round = 0;
+	_interpol = 0;
 }
 
-void HTMLPage::start (const stdString &title)
+void HTMLPage::start ()
 {
 	cout << "Content-type: text/html\n";
 	cout << "Pragma: no-cache\n";
 	cout << "\n";
 	cout << "<HTML>\n";
 	cout << "<HEAD>\n";
-	cout << "<TITLE>" << title << "</TITLE>\n";
+	cout << "<TITLE>" << _title << "</TITLE>\n";
 	cout << "</HEAD>\n";
 
 	ifstream file;
@@ -71,32 +83,32 @@ static void makeSelect (const char *name, int start, int end, int select)
 }
 
 // Print the interface stuff
-void HTMLPage::interFace (const stdString &cgi, const stdString &directory, const stdString &pattern,
-	const vector<stdString> &names, double round, bool fill, bool status,
-	osiTime &start, osiTime &end)
+void HTMLPage::interFace () const
 {
 	size_t i;
 	int year, month, day, hour, min, sec;
 	unsigned long nano;
 
-	cout << "<FORM METHOD=\"GET\" ACTION=\"" << cgi << "\">\n";
-	cout << "<INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\"" << directory << "\">\n";
+	cout << "<FORM METHOD=\"GET\" ACTION=\"" << _cgi_path << "\">\n";
+	cout << "<INPUT TYPE=\"HIDDEN\" NAME=\"DIRECTORY\" VALUE=\"" << _directory << "\">\n";
 	cout << "<TABLE cellpadding=1>\n";
-	cout << "<TR><TD>Pattern:</TD><TD><INPUT TYPE=\"TEXT\" NAME=\"PATTERN\" VALUE=\"" << pattern << "\" SIZE=40 MAXLENGTH=100></TD></TR>\n";
+	cout << "<TR><TD>Pattern:</TD><TD><INPUT TYPE=\"TEXT\" NAME=\"PATTERN\" VALUE=\"" <<
+			_pattern << "\" SIZE=40 MAXLENGTH=100> (regular expression)</TD></TR>\n";
 	cout << "<TR><TD>Names:</TD><TD><TEXTAREA NAME=NAMES ROWS=5 COLS=40>";
-	for (i=0; i<names.size(); ++i)
-		cout << names[i] << "\n";
+	for (i=0; i<_names.size(); ++i)
+		cout << _names[i] << "\n";
 	cout << "</TEXTAREA></TD></TR>\n";
-	cout << "<TR><TD>Round:</TD><TD><INPUT TYPE=TEXT NAME=ROUND VALUE=\"" << round << "\" SIZE=5 MAXLENGTH=10> secs,   ";
+	cout << "<TR><TD>Interpolate:</TD><TD><INPUT TYPE=TEXT NAME=INTERPOL VALUE=\"" << _interpol << "\" SIZE=5 MAXLENGTH=10> secs,   ";
+	cout << "Round:</TD><TD><INPUT TYPE=TEXT NAME=ROUND VALUE=\"" << _round << "\" SIZE=5 MAXLENGTH=10> secs,   ";
 	cout << "Fill:<INPUT TYPE=CHECKBOX NAME=FILL";
-	if (fill)
+	if (_fill)
 		cout << " CHECKED";
 	cout << ">  Status:<INPUT TYPE=CHECKBOX NAME=STATUS";
-	if (status)
+	if (_status)
 		cout << " CHECKED";
 	cout << "></TD></TR>\n";
 
-	osiTime2vals (start, year, month, day, hour, min, sec, nano);
+	osiTime2vals (_start, year, month, day, hour, min, sec, nano);
 	cout << "<TR><TD>Start:</TD><TD>Day (m/d/y)\n";
 	makeSelect ("STARTMONTH",    1,   12, month);
 	makeSelect ("STARTDAY"  ,    1,   31, day);
@@ -107,7 +119,7 @@ void HTMLPage::interFace (const stdString &cgi, const stdString &directory, cons
 	makeSelect ("STARTSECOND" ,  0,   59, sec);
 	cout << "</TD></TR>\n";
 
-	osiTime2vals (end, year, month, day, hour, min, sec, nano);
+	osiTime2vals (_end, year, month, day, hour, min, sec, nano);
 	cout << "<TR><TD>End:</TD><TD>Day (m/d/y)\n";
 	makeSelect ("ENDMONTH",    1,   12, month);
 	makeSelect ("ENDDAY"  ,    1,   31, day);
@@ -162,7 +174,7 @@ HTMLPage::~HTMLPage ()
 	}
 }
 
-void HTMLPage::header (const stdString &text, int level)
+void HTMLPage::header (const stdString &text, int level) const
 {
 	cout << "<H" << level << ">" << text << "</H" << level << ">\n";
 

@@ -136,8 +136,8 @@ public:
 	bool parseState(const char *text, const char **next, size_t &state) const;
 
     /// Read/write a CtrlInfo from/to a binary data file
-    void read(FILE *file, FileOffset offset);
-	void write(FILE *file, FileOffset offset) const;
+    void read(class DataFile *datafile, FileOffset offset);
+	void write(class DataFile *datafile, FileOffset offset) const;
 
     void show(FILE *f) const;
 

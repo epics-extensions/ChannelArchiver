@@ -21,10 +21,10 @@
 class Filename
 {
 public:
-    static bool isValidFilename(const stdString &name)
-    {	return ! name.empty();	}
-
-    static bool isValidFilename(const char *name)
+    static bool isValid(const stdString &name)
+    {	return ! name.empty();	}    
+    
+    static bool isValid(const char *name)
     {	return name[0] != '\0';	}
 
     //* Build filename from dir. and basename

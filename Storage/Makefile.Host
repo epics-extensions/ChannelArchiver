@@ -9,6 +9,7 @@ INC += CtrlInfo.h
 INC += RawValue.h
 INC += DirectoryFile.h
 INC += DataFile.h
+INC += DataWriter.h
 
 # Contents of library
 LIBSRCS += HashTable.cpp
@@ -16,6 +17,7 @@ LIBSRCS += CtrlInfo.cpp
 LIBSRCS += RawValue.cpp
 LIBSRCS += DirectoryFile.cpp
 LIBSRCS += DataFile.cpp
+LIBSRCS += DataWriter.cpp
 
 # Library to build
 LIBRARY := Storage

@@ -1,11 +1,10 @@
 
 #include "DirectoryFile.h"
 #include "DataFile.h"
+#include "DataWriter.h"
 
-int main(int argc, const char *argv[])
+void header_dump(const stdString &index_name)
 {
-    stdString index_name = argv[1];
-
     DirectoryFile index(index_name);
     DirectoryFileIterator channels = index.findFirst();
 
@@ -16,21 +15,64 @@ int main(int argc, const char *argv[])
         DataFile *datafile =
             DataFile::reference(index.getDirname(),
                                 channels.entry.data.first_file, false);
-        DataHeaderIterator *header =
+        DataHeader *header =
             datafile->getHeader(channels.entry.data.first_offset);
+        datafile->release();
         while (header && header->isValid())
         {
             printf("Header '%s' @ 0x%lX\n",
                    datafile->getBasename().c_str(),
-                   header->getOffset());
-            header->getNext();
+                   header->offset);
+            header->read_next();
         }
         delete header;
-        datafile->release();
                 
         channels.next();
     }
     DataFile::close_all();
+}
+
+void add(const stdString &index_name)
+{
+    DataWriter *writer;
+
+    DirectoryFile index(index_name, true);
+    stdString channel_name = "fred";
+    CtrlInfo ctrl_info;
+    ctrl_info.setNumeric(3, "Volt",
+                         -10.0, 10.0,
+                          -9.0,  9.0,
+                          -8.0,  8.0);
+    DbrType dbr_type = DBR_TIME_DOUBLE;
+    DbrCount dbr_count = 1;
+    size_t num_samples = 100;
+
+    writer = new DataWriter(index,
+                            channel_name, ctrl_info,
+                            dbr_type, dbr_count, num_samples);
+
+    dbr_time_double *data =  RawValue::allocate(dbr_type, dbr_count, 1);
+
+    RawValue::setTime(data, epicsTime::getCurrent());
+    data->value = 3.14;
+    data->status = 0;
+    data->severity = 0;
+    writer->add(data);
+
+    RawValue::free(data);
+    
+    delete writer;
+    DataFile::close_all();
+}
+
+int main(int argc, const char *argv[])
+{
+    stdString index_name = argv[1];
+
+    //header_dump(index_name);
+
+    add(index_name);
+
 
     return 0;
 }

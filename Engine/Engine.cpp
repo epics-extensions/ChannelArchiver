@@ -244,27 +244,27 @@ ArchiveChannel *Engine::addChannel(GroupInfo *group,
                                         dfi.entry.data.last_file, false);
                 if (datafile)
                 {
-                    DataHeaderIterator *dhi =
+                    DataHeader *header =
                         datafile->getHeader(dfi.entry.data.last_offset);
-                    if (dhi)
+                    if (header)
                     {
-                        epicsTime last_stamp(dhi->header.end_time);
+                        epicsTime last_stamp(header->data.end_time);
                         CtrlInfo ctrlinfo;
-                        ctrlinfo.read(datafile->file, dhi->header.ctrl_info_offset);
-                        channel->init(dhi->header.dbr_type,
-                                      dhi->header.nelements,
+                        ctrlinfo.read(datafile, header->data.ctrl_info_offset);
+                        channel->init(header->data.dbr_type,
+                                      header->data.nelements,
                                       &ctrlinfo,
                                       &last_stamp);
-                        stdString stamp;
-                        epicsTime2string(last_stamp, stamp);
+                        stdString stamp_txt;
+                        epicsTime2string(last_stamp, stamp_txt);
                         LOG_MSG("'%s' could be initialized from storage.\n"
                                 "Data file '%s' @ 0x%lX\n"
                                 "Last Stamp: %s\n",
                                 channel_name.c_str(),
                                 dfi.entry.data.last_file,
                                 dfi.entry.data.last_offset,
-                                stamp.c_str());
-                        delete dhi;
+                                stamp_txt.c_str());
+                        delete header;
                     }
                     datafile->release();
                     DataFile::close_all();

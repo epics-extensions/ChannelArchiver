@@ -129,7 +129,7 @@ void ArchiveChannel::init(DbrType dbr_time_type, DbrCount nelements,
 void ArchiveChannel::write(DirectoryFile &index)
 {
     DataFile *datafile;
-    DataHeaderIterator *dhi;
+    DataHeader *header;
     size_t avail, count = buffer.getCount();
     if (count <= 0)
         return;
@@ -144,23 +144,34 @@ void ArchiveChannel::write(DirectoryFile &index)
         }
         if (!Filename::isValidFilename(dfi.entry.data.last_file))
         {   // Channel has never been written
-            datafile = DataFile::reference(index.getDirname(),
-                                           theEngine->makeDataFileName(), true);
-            dhi = new DataHeaderIterator();
-            dhi->attach(datafile);
-            avail = 0;
+            //datafile = DataFile::reference(index.getDirname(),
+            //                               theEngine->makeDataFileName(), true);
+            //dhi = new DataHeaderIterator();
+            //dhi->attach(datafile);
+            //avail = 0;
+            LOG_MSG("%s NEVER WRITTEN. NOT YET\n", name.c_str());
+            return;
         }
         else
         {
             datafile = DataFile::reference(index.getDirname(),
                                            dfi.entry.data.last_file, true);
-            dhi = datafile->getHeader(dfi.entry.data.last_offset);
-            if (!dhi->isValid())
+            if (!datafile)
             {
-                LOG_MSG("ArchiveChannel::write %s: broken header\n", name.c_str());
+                LOG_MSG("ArchiveChannel::write(%s) cannot open data file %s\n",
+                        name.c_str(), dfi.entry.data.last_file);
+                return;
+            } 
+            header = datafile->getHeader(dfi.entry.data.last_offset);
+            if (!header)
+            {
+                LOG_MSG("ArchiveChannel::write(%s): cannot get header %s @ 0x%lX\n",
+                        name.c_str(),
+                        dfi.entry.data.last_file,
+                        dfi.entry.data.last_offset);
                 return;
             }
-            avail = dhi->header.available();
+            avail = header->available();
         }
         const RawValue::Data *raw;
         while ((raw=buffer.removeRawValue()) != 0)
@@ -177,7 +188,7 @@ void ArchiveChannel::write(DirectoryFile &index)
                 break;
             --avail;
         }
-        delete dhi;
+        delete header;
         datafile->release();
         buffer.resetOverwrites();
     }

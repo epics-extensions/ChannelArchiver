@@ -8,16 +8,21 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+// System
 #include <stdlib.h>
+// Base
 #include <alarm.h>
 #include <alarmString.h>
-#include <ArrayTools.h>
-#include <epicsTimeHelper.h>
-#include <MsgLogger.h>
-#include "RawValue.h"
-#include "CtrlInfo.h"
+// Tools
+#include "ArrayTools.h"
+#include "epicsTimeHelper.h"
+#include "MsgLogger.h"
 #include "ArchiveException.h"
 #include "Conversions.h"
+// Storage
+#include "RawValue.h"
+#include "CtrlInfo.h"
+#include "DataFile.h"
 
 RawValue::Data * RawValue::allocate(DbrType type, DbrCount count, size_t num)
 {
@@ -312,11 +317,11 @@ void RawValue::show(FILE *file,
 }   
 
 void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
-                    FILE *file, FileOffset offset)
+                    DataFile *datafile, FileOffset offset)
 {
-    if (fseek(file, offset, SEEK_SET) != 0 ||
-        (FileOffset) ftell(file) != offset   ||
-        fread(value, size, 1, file) != 1)
+    if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(datafile->file) != offset   ||
+        fread(value, size, 1, datafile->file) != 1)
         throwArchiveException(ReadError);
     
     SHORTFromDisk(value->status);
@@ -351,7 +356,7 @@ void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
 
 void RawValue::write(DbrType type, DbrCount count, size_t size, const Data *value,
                      MemoryBuffer<dbr_time_string> &cvt_buffer,
-                     FILE *file, FileOffset offset)
+                     DataFile *datafile, FileOffset offset)
 {
     cvt_buffer.reserve(size);
     dbr_time_string *buffer = cvt_buffer.mem();
@@ -385,9 +390,9 @@ void RawValue::write(DbrType type, DbrCount count, size_t size, const Data *valu
 #undef TO_DISK
     }
 
-    if (fseek (file, offset, SEEK_SET) != 0 ||
-        (FileOffset) ftell(file) != offset  ||
-        fwrite(buffer, size, 1, file) != 1)
+    if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(datafile->file) != offset  ||
+        fwrite(buffer, size, 1, datafile->file) != 1)
         throwArchiveException (WriteError);
 }
 

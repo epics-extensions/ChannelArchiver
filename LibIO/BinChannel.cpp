@@ -108,7 +108,7 @@ bool BinChannel::getFirstValue(ValueIteratorI *arg)
 	BinValueIterator *value = dynamic_cast <BinValueIterator *> (arg);
 
 	if (getArchive() &&
-        Filename::isValidFilename(getFirstFile()))
+        Filename::isValid(getFirstFile()))
 	{
 		stdString full_name;
 		getArchive()->makeFullFileName(getFirstFile(), full_name);
@@ -124,7 +124,7 @@ bool BinChannel::getLastValue(ValueIteratorI *arg)
 	BinValueIterator *value = dynamic_cast <BinValueIterator *> (arg);
 
 	if (getArchive() &&
-        Filename::isValidFilename(getLastFile()))
+        Filename::isValid(getLastFile()))
 	{
 		stdString full_name;
 		getArchive()->makeFullFileName(getLastFile(), full_name);
@@ -158,7 +158,7 @@ bool BinChannel::getValueAfterTime(const epicsTime &time, ValueIteratorI *arg)
 
 	// Find data header that brackens 'time':
 	if (from_start < from_end  &&
-        Filename::isValidFilename(getFirstFile()) )
+        Filename::isValid(getFirstFile()) )
 	{	// start at beginning of archive:
 		getArchive()->makeFullFileName(getFirstFile(), full_name);
 		try
@@ -246,7 +246,7 @@ size_t BinChannel::lockBuffer(const ValueI &value, double period)
 {
 	// add value to last buffer
 	if (!getArchive()  ||
-        ! Filename::isValidFilename(getLastFile()))
+        ! Filename::isValid(getLastFile()))
 		return 0;
 
 	stdString last_file_name;
@@ -315,7 +315,7 @@ void BinChannel::addBuffer(const ValueI &value_arg, double period,
 	// Add to DataFile
     // add value to last buffer
 	DataHeaderIterator *prev = 0;
-	if (Filename::isValidFilename (getLastFile ()))
+	if (Filename::isValid(getLastFile ()))
 	{
 		stdString last_file_name;
 		getArchive ()->makeFullFileName (getLastFile (), last_file_name);
@@ -339,7 +339,7 @@ void BinChannel::addBuffer(const ValueI &value_arg, double period,
 	delete prev;
 
 	// update DirectoryFile (note again that dir_entry holds this BinChannel)
-	if (! Filename::isValidFilename (getFirstFile ()))
+	if (! Filename::isValid(getFirstFile ()))
 	{
 		setFirstFile (_append_buffer->getBasename ());
 		setFirstOffset (_append_buffer->getOffset ());

@@ -102,16 +102,16 @@ public:
     
     /// Read a value from binary file.
     /// size: pre-calculated from type, count
-    static void read  (DbrType type, DbrCount count,
-                       size_t size, Data *value,
-                       FILE *file, FileOffset offset);
+    static void read(DbrType type, DbrCount count,
+                     size_t size, Data *value,
+                     class DataFile *datafile, FileOffset offset);
     
     /// Write a value to binary file
     /// Requires a buffer for the memory-to-disk format conversions
-    static void write (DbrType type, DbrCount count,
-                       size_t size, const Data *value,
+    static void write(DbrType type, DbrCount count,
+                      size_t size, const Data *value,
                        MemoryBuffer<dbr_time_string> &cvt_buffer,
-                       FILE *file, FileOffset offset);
+                       class DataFile *datafile, FileOffset offset);
 };
 
 inline void RawValue::copy(DbrType type, DbrCount count,

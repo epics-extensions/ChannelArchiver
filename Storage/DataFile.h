@@ -7,74 +7,28 @@
 #include "Filename.h"
 #include "RawValue.h"
 
-/// Each data block in the binary data files starts with
-/// a DataHeader.
-///
-class DataHeader
-{
-public:
-    enum // Scott Meyers' "enum hack":
-    {   FilenameLength = 40     };
-
-    // NOTE: For now, the layout of the following must not
-    // change because it defines the on-disk layout (except for byte order)!
-    FileOffset      dir_offset;     // offset of the directory entry
-    FileOffset      next_offset;    // abs. offs. of data header in next buffer
-    FileOffset      prev_offset;    // abs. offs. of data header in prev buffer
-    FileOffset      curr_offset;    // rel. offs. from data header to curr data
-    unsigned long   num_samples;    // number of samples written in this buffer
-    FileOffset      ctrl_info_offset;  // abs. offset to CtrlInfo
-    unsigned long   buf_size;       // disk space alloc. for this channel including sizeof(DataHeader)
-    unsigned long   buf_free;       // remaining space f. channel in this file
-    DbrType         dbr_type;       // ca type of data
-    DbrCount        nelements;      // array dimension of this data type
-    char            pad[4];         // to align double period...
-    double          period;         // period at which the channel is archived (secs)
-    epicsTimeStamp  begin_time;     // first time stamp of data in this file
-    epicsTimeStamp  next_file_time; // first time stamp of data in the next file
-    epicsTimeStamp  end_time;       // last time this file was updated
-    char            prev_file[FilenameLength];
-    char            next_file[FilenameLength];
-
-    /// Fill the data with zeroes.
-    void clear();
-
-    /// Returns number of unused samples in buffer
-    size_t available();
-    
-    /// Read (and convert) from file/offset
-    bool read(FILE *file, FileOffset offset);
-
-    /// Convert and write to file/offset
-    bool write(FILE *file, FileOffset offset) const;
-};
-
 /// The DataFile class handles access to the binary data files.
-/// One important feature is the reference counting.
+/// One important feature is reference counting.
 /// When the ArchiveEngine adds samples, it is very likely
 /// to add samples for several channels to the same collection
 /// of data files.
 /// The DataFile class suppors this:
 /// - When referencing a data file for the first time, the file gets opened.
 /// - When releasing it, the data file stays open.
-/// - Then, when the data file is referenced again, it's already open.
+/// - During a write cycle, it is likely that at least some of the channels
+///   reference the same files, and voila: The file is already open.
 /// - Finally, close_all() should be called to close all the data files.
 class DataFile
 {
 public:
-    // Max. number of samples per header.
-    // Though a header could hold more than this,
-    // it's considered an error by e.g. the (old) archive engine:
-    enum { MAX_SAMPLES_PER_HEADER = 4000 };
-
     /// Reference a data file
     
-    /// More than one client might use the same DataFile,
-    /// so there's no public constructor but a counted
-    /// reference mechanism instead.
-    /// Get DataFile for given file:
+    /// \param dirname: Path/directory up to the filename
+    /// \param basename: filename inside dirname
+    /// \param for_write: open for writing or read-only?
+    /// \sa release
     static DataFile *reference(const stdString &dirname,
-                               const stdString &filename, bool for_write);
+                               const stdString &basename, bool for_write);
 
     /// Add reference to current DataFile
     DataFile *reference();
@@ -97,26 +51,26 @@ public:
     /// Returns false if at least one data file is still
     /// referenced and thus we couldn't close it.
     static bool close_all();
-
-    class DataHeaderIterator *getHeader(FileOffset offset);
-
-    /// The current data file:
-    FILE * file;
     
-    const stdString &getFilename() {   return _filename; }
-    const stdString &getDirname () {   return _dirname;  }
-    const stdString &getBasename() {   return _basename; }
-  
+    const stdString &getFilename() {   return filename; }
+    const stdString &getDirname () {   return dirname;  }
+    const stdString &getBasename() {   return basename; }
+
+    /// Read header at given offset
+
+    /// \return Alloc'ed DataHeader or 0 in case of error.
+    /// 
+    class DataHeader *getHeader(FileOffset offset);
+
+    /// Add a new DataHeader to the file.
+
+    /// \return Alloc'ed header or 0.
+    /// Header needs to be configured and saved.
+    class DataHeader *addHeader();
 private:
-    friend class DataHeaderIterator;
-
-    size_t  _ref_count;
-
-    bool   _file_for_write;
-    stdString _filename;
-    stdString _dirname;
-    stdString _basename;
-
+    friend class DataHeader;
+    friend class CtrlInfo;
+    friend class RawValue;
     // Attach DataFile to disk file of given name.
     // Existing file is opened, otherwise new one is created.
     DataFile(const stdString &dirname,
@@ -130,63 +84,82 @@ private:
     // (these are not implemented, use reference() !)
     DataFile(const DataFile &other);
     DataFile &operator = (const DataFile &other);
+
+    // The current data file
+    FILE * file;
+    size_t ref_count;
+    bool   for_write;
+    stdString filename;
+    stdString dirname;
+    stdString basename;
 };
 
-/// The DataHeaderIterator iterates over the Headers in DataFiles,
-/// switching from one file to the next etc.
+/// Each data block in the binary data files starts with
+/// a DataHeader.
 ///
-class DataHeaderIterator
+class DataHeader
 {
 public:
-    DataHeaderIterator();
-    DataHeaderIterator(const DataHeaderIterator &rhs);
-    DataHeaderIterator & operator = (const DataHeaderIterator &rhs);
-    ~DataHeaderIterator();
+    /// Create header for given data file.
 
-    void attach(DataFile *file, FileOffset offset=INVALID_OFFSET,
-                DataHeader *header=0);
+    /// DataHeader references and releases the DataFile.
+    /// Note that operations like readNext might switch
+    /// to another DataFile!
+    DataHeader(DataFile *datafile);
+
+    /// Destructor releases the current DataFile.
+    ~DataHeader();
+    
+    enum // Scott Meyers' "enum hack":
+    {   FilenameLength = 40     };
+
+    // NOTE: For now, the layout of the following must not
+    // change because it defines the on-disk layout (except for byte order)!
+
+    /// The header data
+    struct DataHeaderData
+    {
+        FileOffset      dir_offset;     ///< offset of the directory entry
+        FileOffset      next_offset;    ///< abs. offs. of data header in next buffer
+        FileOffset      prev_offset;    ///< abs. offs. of data header in prev buffer
+        FileOffset      curr_offset;    ///< rel. offs. from data header to free entry
+        unsigned long   num_samples;    ///< number of samples written in this buffer
+        FileOffset      ctrl_info_offset;  ///< abs. offset to CtrlInfo
+        unsigned long   buf_size;       ///< disk space alloc. for this channel including sizeof(DataHeader)
+        unsigned long   buf_free;       ///< remaining space f. channel in this file
+        DbrType         dbr_type;       ///< ca type of data
+        DbrCount        nelements;      ///< array dimension of this data type
+        char            pad[4];         ///< to align double period...
+        double          period;         ///< period at which the channel is archived (secs)
+        epicsTimeStamp  begin_time;     ///< first time stamp of data in this file
+        epicsTimeStamp  next_file_time; ///< first time stamp of data in the next file
+        epicsTimeStamp  end_time;       ///< last time this file was updated
+        char            prev_file[FilenameLength]; ///< basename for prev. buffer
+        char            next_file[FilenameLength]; ///< basename for next buffer
+    } data;
+
+    /// The currently used DataFile (DataHeader handles ref and release).
+    DataFile *datafile;
+
+    /// Offset in current file for this header.
+    FileOffset offset;
+    
+    /// Fill the data with zeroes, invalidate the data.
     void clear();
 
-    // Cast to bool tests if DataHeader is valid.
-    // All the other operations are forbidden if DataHeader is invalid!
-    bool isValid() const
-    {   return header_offset != INVALID_OFFSET;    }
-
-    DataHeader  header;
+    /// Is offset valid?
+    bool isValid();
     
-    // Get previous/next header (might be in different data file).
-    // Returns invalid iterator if there is no prev./next header (see bool-cast).
-    // Careful people might try haveNext/PrevHeader(),
-    // since this DataHeaderIterator is toast
-    // after stepping beyond the ends of the double-linked header list.
-    bool getNext();
-    bool getPrev();
+    /// Returns number of unused samples in buffer
+    size_t available();
+    
+    /// Read (and convert) from offset in current DataFile, updating offset.
+    bool read(FileOffset offset);
 
-    bool haveNextHeader()
-    {   return Filename::isValidFilename(header.next_file);    }
+    /// Convert and write to current offset in current DataFile
+    bool write() const;
 
-    bool havePrevHeader()
-    {   return Filename::isValidFilename(header.prev_file);    }
-
-    // Re-read the current DataHeader
-    void sync();
-
-    // Save the current DataHeader
-    void save()
-    {   header.write(datafile->file, header_offset); }
-
-    FileOffset getOffset() const
-    {   return header_offset; }
-
-    FileOffset getDataOffset() const;
-
-private:
-    DataFile    *datafile;
-    FileOffset  header_offset; // valid or INVALID_OFFSET
-
-    void init();
-
-    bool getHeader(FileOffset position);
+    bool read_next();
 };
 
 #endif // !defined(_DATAFILE_H_)

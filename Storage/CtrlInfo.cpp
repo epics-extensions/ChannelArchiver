@@ -1,9 +1,13 @@
+// Base
 #include <cvtFast.h>
+// Tools
 #include "string2cp.h"
 #include "ArchiveException.h"
+#include "Conversions.h"
+// Storage
 #include "CtrlInfo.h"
 #include "RawValue.h"
-#include "Conversions.h"
+#include "DataFile.h"
 
 CtrlInfo::CtrlInfo()
 {
@@ -214,13 +218,13 @@ bool CtrlInfo::parseState(const char *text,
 // For other types, the current info is maintained
 // so that the reader can decide to ignore the problem.
 // In other cases, the type is set to Invalid
-void CtrlInfo::read(FILE *file, FileOffset offset)
+void CtrlInfo::read(DataFile *datafile, FileOffset offset)
 {
     // read size field only
     unsigned short size;
-    if (fseek(file, offset, SEEK_SET) != 0 ||
-        (FileOffset) ftell(file) != offset ||
-        fread(&size, sizeof size, 1, file) != 1)
+    if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(datafile->file) != offset ||
+        fread(&size, sizeof size, 1, datafile->file) != 1)
     {
         _infobuf.mem()->type = Invalid;
         throwDetailedArchiveException(
@@ -257,7 +261,7 @@ void CtrlInfo::read(FILE *file, FileOffset offset)
     }
     // read remainder of CtrlInfo:
     if (fread (((char *)info) + sizeof size,
-               info->size - sizeof size, 1, file) != 1)
+               info->size - sizeof size, 1, datafile->file) != 1)
     {
         info->type = Invalid;
         throwDetailedArchiveException (ReadError,
@@ -304,7 +308,7 @@ void CtrlInfo::read(FILE *file, FileOffset offset)
 }
 
 // Write CtrlInfo to file.
-void CtrlInfo::write(FILE *file, FileOffset offset) const
+void CtrlInfo::write(DataFile *datafile, FileOffset offset) const
 {   // Attention:
     // copy holds only the fixed CtrlInfo portion,  not enum strings etc.!
     const CtrlInfoData *info = _infobuf.mem();
@@ -334,16 +338,16 @@ void CtrlInfo::write(FILE *file, FileOffset offset) const
     SHORTToDisk (copy.size);
     SHORTToDisk (copy.type);
 
-    if (fseek(file, offset, SEEK_SET) != 0 ||
-        (FileOffset) ftell(file) != offset ||
-        fwrite(&copy, converted, 1, file) != 1)
+    if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
+        (FileOffset) ftell(datafile->file) != offset ||
+        fwrite(&copy, converted, 1, datafile->file) != 1)
         throwArchiveException (WriteError);
 
     // only the common, minimal CtrlInfoData portion was converted,
     // the remaining strings are written from 'this'
     if (info->size > converted &&
         fwrite(((char *)info) + converted,
-               info->size - converted, 1, file) != 1)
+               info->size - converted, 1, datafile->file) != 1)
         throwArchiveException (WriteError);
 }
 

@@ -11,16 +11,10 @@
 #ifndef __CHANNELINFO_H__
 #define __CHANNELINFO_H__
 
-#include <list>
 #include <cadef.h>
 #include "CircularBuffer.h"
 #include "Bitset.h"
 #include "ArchiveI.h"
-
-BEGIN_NAMESPACE_CHANARCH
-#ifdef USE_NAMESPACE_STD
-using std::list;
-#endif
 
 class GroupInfo; // forward
 
@@ -47,7 +41,7 @@ public:
     typedef enum { none, use_monitor, use_get } GetMechanism;
     GetMechanism getMechanism () const                          { return _get_mechanism; }
 
-    const list<GroupInfo *> &getGroups () const                 { return _groups; }
+    const stdList<GroupInfo *> &getGroups () const                 { return _groups; }
     void addToGroup (GroupInfo *group, bool disabling);
 
     double getPeriod () const                                   { return _period; }
@@ -118,7 +112,7 @@ private:
     };
 
     stdString           _name;
-    list<GroupInfo *>   _groups;            // Groups that this channel belongs to
+    stdList<GroupInfo *>   _groups;            // Groups that this channel belongs to
     BitSet              _disabling;         // bit indicates if Channel could disable that group
     bool                _currently_disabling;// Does this Channel right now disable groups?
     size_t              _disabled;          // disabled by how many groups?
@@ -173,8 +167,6 @@ inline void ChannelInfo::setCtrlInfo (const CtrlInfoI *info)
     LOG_ASSERT (info);
     _ctrl_info = *info;
 }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__CHANNELINFO_H__
 

@@ -12,8 +12,6 @@
 #include <strstream>
 #include <stdarg.h>
 
-USE_STD_NAMESPACE
-
 HTMLPage::HTMLPage (SOCKET socket, const char *title, int refresh)
 {
 	_socket = socket;

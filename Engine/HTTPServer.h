@@ -89,7 +89,7 @@ public:
 
 private:
     SOCKET              _socket;
-    vector<stdString>   _input_line;
+    stdVector<stdString>   _input_line;
     char                _line[200];
     char                *_dest;
 

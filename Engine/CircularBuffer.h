@@ -4,8 +4,6 @@
 #include <ValueI.h>
 #include <Thread.h>
 
-BEGIN_NAMESPACE_CHANARCH
-
 // Circular buffer:
 // Each channel has one to buffer the incoming values
 // until they are written to the disk.
@@ -104,7 +102,5 @@ inline const RawValueI::Type *CircularBuffer::removeRawValue ()
 	_lock.give();
 	return val;
 }
-
-END_NAMESPACE_CHANARCH
 
 #endif //__CIRCULARBUFFER_H__

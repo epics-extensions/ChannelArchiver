@@ -43,12 +43,15 @@ bool key_AU_Iterator::getFirst(const interval& search_Interval, key_Object * res
         current_Entry.attach(index_File, first_Address);
         long temp;
         if(current_Entry.readPreviousIndex(&temp) == false) return false;
-        first_Address = source->index2address(temp);
-        current_Entry.attach(index_File, first_Address);
-        if(current_Entry.readInterval() == false) return false;
-        //set the initial interval
-        initial_Interval.setStart(current_Entry.getInterval().getEnd());
-        initial_Interval.setEnd(current_Entry.getInterval().getEnd());        
+        if(temp > -1)
+        {
+            first_Address = source->index2address(temp);
+            current_Entry.attach(index_File, first_Address);
+            if(current_Entry.readInterval() == false) return false;
+            //set the initial interval
+            initial_Interval.setStart(current_Entry.getInterval().getEnd());
+            initial_Interval.setEnd(current_Entry.getInterval().getEnd());
+        }
     }
     //get the initial key
     if(!getKey(first_Address, result)) return false;

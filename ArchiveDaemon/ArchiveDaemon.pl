@@ -18,6 +18,7 @@
 use English;
 use strict;
 use Socket;
+use Sys::Hostname;
 use Time::Local;
 use File::Basename;
 use File::CheckTree;
@@ -43,6 +44,26 @@ my ($config_file) = "";
 # Log file, created in current directory.
 # No good reason to change this one.
 my ($logfile) = "ArchiveDaemon.log";
+
+# Name of this host. Used to connect ArchiveEngines on this host,
+# also part of the links on the daemon's web pages.
+# Possible options:
+# 1) Fixed string 'localhost'.
+#    This will get you started, won't require DNS or any
+#    other setup, and will always work for engines and web
+#    clients on the local machine.
+#    Won't work with web clients on other machines,
+#    since they'll then follow links to 'localhost'.
+# 2) Fixed string 'name.of.your.host'.
+#    Will also always work plus allow web clients from
+#    other machines on the network, but you have to assert
+#    that your fixed string is correct.
+# 3) In theory, this is the best method.
+#    In practice, it might fail when you have more than one
+#    netowork card or no DNS.
+#my ($localhost) = 'localhost';
+#my ($localhost) = 'ics-srv-archive1';
+my ($localhost) = hostname();
 
 # TCP Port of ArchiveDaemon's HTTPD
 my ($http_port) = 4610;
@@ -114,10 +135,6 @@ my ($http_check_timeout) = 1;
 # Timeout used when reading a HTTP client or ArchiveEngine.
 # 10 seconds is reasonable.
 my ($read_timeout) = 10;
-
-# This host. 'localhost' should work unless you have
-# more than one network card and a messed up network config.
-my ($host) = 'localhost';
 
 # Number of entries in the "Messages" log.
 my ($message_queue_length) = 20;
@@ -391,7 +408,7 @@ sub handle_HTTP_main($)
     {
 	print $client "<TR>";
 	print $client "<TH BGCOLOR=#FFFFFF>" .
-	    "<A HREF=\"http://$host:$engine->{port}\">" .
+	    "<A HREF=\"http://$localhost:$engine->{port}\">" .
 	    "$engine->{desc}</A></TH>";
 	print $client "<TD ALIGN=CENTER>$engine->{port}</TD>";
 	if ($engine->{daily})
@@ -497,9 +514,9 @@ sub handle_HTTP_postal($)
     {
 	next unless ($engine->{started});
 	print $client "Stopping " .
-	    "<A HREF=\"http://$host:$engine->{port}\">" .
+	    "<A HREF=\"http://$localhost:$engine->{port}\">" .
 	    "$engine->{desc}</A> on port $engine->{port}<br>\n";
-	stop_engine($host, $engine->{port});
+	stop_engine($localhost, $engine->{port});
     }
     print $client "Quitting<br>\n";
     html_stop($client);
@@ -640,7 +657,7 @@ sub start_engine($$)
 	my ($cfg) = basename($engine->{config});
 	my ($index) = make_indexname($now, $engine);
 	add_message(
-	       "Starting Engine '$engine->{desc}': $host:$engine->{port}\n");
+	   "Starting Engine '$engine->{desc}': $localhost:$engine->{port}\n");
 	my ($path) = dirname("$dir/$index");
 	if (not -d $path)
 	{
@@ -784,7 +801,7 @@ sub check_restart($$)
 	# Restart if we're past the restart time and the engine's too old:
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
-	    stop_engine($host, $engine->{port});
+	    stop_engine($localhost, $engine->{port});
 	    $engine->{started} = $engine->{lockfile} = 0;
 	    ++ $stopped;
 	}
@@ -797,7 +814,7 @@ sub check_restart($$)
 	#print "Restart: ", time_as_text($restart_secs), "\n";
 	if ($now > $restart_secs and $engine_secs < $restart_secs)
 	{
-	    stop_engine($host, $engine->{port});
+	    stop_engine($localhost, $engine->{port});
 	    $engine->{started} = $engine->{lockfile} = 0;
 	    ++ $stopped;
 	}
@@ -827,7 +844,7 @@ sub check_engines($)
 	my ($dir) = dirname($engine->{config});
 	$engine->{lockfile} = (-f "$dir/archive_active.lck");
 	($desc, $started, $channels, $connected) =
-	    check_engine($host, $engine->{port});
+	    check_engine($localhost, $engine->{port});
 	if (length($started) > 0)
 	{
 	    $engine->{started} = $started;
@@ -897,7 +914,7 @@ $master_index_dtd = $opt_i if ($opt_i);
 add_message("Started");
 print("Read $config_file, will disassociate from terminal\n");
 print("and from now on only respond via\n");
-print("          http://localhost:$http_port\n");
+print("          http://$localhost:$http_port\n");
 print("You can also monitor the log file:\n");
 print("          $logfile\n");
 # Daemonization, see "perldoc perlipc"

@@ -42,7 +42,7 @@
 #endif
 
 USING_NAMESPACE_CHANARCH
-using namespace std;
+USE_STD_NAMESPACE
 
 // For communication sigint_handler -> main loop
 static bool run = true;

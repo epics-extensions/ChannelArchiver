@@ -1,1 +1,0 @@
-export PYTHONPATH=`pwd`/O.$EPICS_HOST_ARCH

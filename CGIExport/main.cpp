@@ -64,7 +64,7 @@ void showEnvironment (HTMLPage &page, char *envp[])
 }
 
 // "visitor" for BinaryTree of channel names
-static void listChannelsTraverser (const stdString &item)
+static void listChannelsTraverser (const stdString &item, void *arg)
 {
 	cout << "<TR><TD>"
 		 << item.c_str()
@@ -112,7 +112,7 @@ bool operator < (const class Info &a, const class Info &b)
 {	return a.channel < b.channel; }
 
 // Visitor routine for BinaryTree<Info>
-static void listInfoTraverser (const Info &info)
+static void listInfoTraverser (const Info &info, void *arg)
 {
 	cout << "<TR><TD>" << info.channel
 		<< "</TD><TD>" << info.first

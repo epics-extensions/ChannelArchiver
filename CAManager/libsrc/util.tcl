@@ -114,7 +114,9 @@ proc checkForBgManager { {force 0} } {
   set hosts {}
   foreach arc [camMisc::arcIdx] {
     set h [camMisc::arcGet $arc host]
-    if {$force || !([info exists ::continuewithout($h)] && $::continuewithout($h))} {
+    if {($force || !([info exists ::continuewithout($h)] &&
+		     $::continuewithout($h))) &&
+	("[camMisc::arcGet $arc descr]" != "<enter description>")} {
       lappend hosts $h
     }
   }

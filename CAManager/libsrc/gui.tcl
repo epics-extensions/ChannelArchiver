@@ -458,7 +458,7 @@ proc camGUI::aEdit {w} {
       if {\"\$fn\" != \"\"} {set var($row,cfg) \$fn}"
 
   checkbutton $f.olcfgc -text "disable configuration changes via Archiver's web interface" \
-      -variable var($row,cfgc) -onvalue 1 -offvalue 0
+      -variable var($row,cfgc) -onvalue 1 -offvalue 0 -anchor w
   checkbutton $f.olcvs -text "check configuration changes into CVS (if avail.)" \
       -variable var($row,cvs) -onvalue 1 -offvalue 0 -anchor w
   checkbutton $f.rmlock -text "force remove of bogus lockfile" \

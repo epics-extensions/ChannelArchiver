@@ -72,6 +72,9 @@ proc camMisc::init {} {
  
   variable cfg_file_tail [file tail $cfg_file]
   if {$force_cfg_file} {
+    if {![file exists $cfg_file]} {
+      catch {write_file $cfg_file ""}
+    }
     catch {source $cfg_file}
     if {![info exists Archivers]} {set Archivers {}}
   } else {

@@ -17,8 +17,9 @@ The daemon will attempt to start any ArchiveEngine that it does not
 find running. In addition, the daemon can periodically stop and
 restart ArchiveEngines in order to create e.g.\ daily sub-archives.
 Furthermore, it adds each sub-archive of newly created ArchiveEngines
-to a configuration file for the ArchiveIndexTool and runs the latter,
-so that all the sub-archives can be accessed as if they were one big archive.
+to a configuration file for the ArchiveIndexTool and runs the latter
+periodically, so that all the sub-archives can be accessed as if they
+were one big archive.
 
 Before using the ArchiveDaemon, one should be familiar
 with the configuration of the ArchiveEngine (sec.\ \ref{sec:engine}),
@@ -57,8 +58,10 @@ Engines need to be different. You cannot use the same port number more
 than once per computer.
 
 \subsubsection{config}
-This mandatory element must contain the full path to the configuration
+This mandatory element must contain the path to the configuration
 file of the respective ArchiveEngine, see section \ref{sec:engineconfig}.
+This can be either the full path to the engine configuration file or a path
+beneath the current working directory in which the ArchiveDaemon is running.
 
 \subsubsection{daily}
 This optional element configures the ArchiveDaemon to restart the
@@ -99,8 +102,14 @@ Options:
         -f file  : config. file
 \end{lstlisting}
 
-\noindent The ArchiveDaemon will create or use the following files in the
-directory in which it was started:
+\noindent The first few lines of the ArchiveDaemon.pl script contain
+numerous configuration variables. They allow fine tuning of e.g.\ the
+time period between runs of the ArchiveIndexTool, how often the daemon
+queries the Archive Engines and other customization options. In there
+you can also change many of the file names from their defaults up to
+the point where none of the following applies. With the original
+settings, the ArchiveDaemon will create or use the following files in
+the directory in which it was started:
 \begin{itemize}
 \item ArchiveDaemon.log\\
   The log file of the ArchiveDaemon.
@@ -119,6 +128,15 @@ directory in which it was started:
   order to \emph{remove} indices from indexconfig.xml, it is therefore
   required to stop the running daemon, since it will otherwise
   overwrite indexconfig.xml with its in-memory version.
+\item indexupdate.xml\\
+  This file is similar to indexconfig.xml, except that the index files
+  for sub-archives that are older than the master index file are
+  commented out, assuming that the master index already contains all
+  the information from those older sub-archives.
+  Running ArchiveIndexTool with this indexupdate file is naturally faster
+  than using indexconfig.xml. The ArchiveDaemon uses the full index
+  configuration from indexconfig.xml once after startup, and then
+  switches to indexupdate.xml.
 \item ArchiveIndexTool.log\\
   The log file of the last run of the ArchiveIndexTool.
 \item master\_index\\
@@ -127,7 +145,8 @@ directory in which it was started:
 \end{itemize}
 
 \noindent The ArchiveDaemon configuration file must list the full path
-names to the configuration files for the ArchiveEngines.
+names to the configuration files for the ArchiveEngines or use a path
+that is below the current working directory of the ArchiveDaemon.
 Within each of those directories, an ArchiveEngine is run and the
 following files will be created:
 \begin{itemize}

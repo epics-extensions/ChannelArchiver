@@ -8,6 +8,10 @@ other applications that happen to run on the same CPU,
 the CPU speed is less important. Most crucial is probably the hard
 disk performance. Access to data on NFS-mounted disks is by orders of
 magnitude slower than access to data on local disks.
+Hard disk access is also hard to reproduce: Under Linux, the second
+run of a test is always faster because the operating system caches the
+disk access. In general, the fewer files are involved the better as
+far as speed is concerned.
 
 The following are performance values obtained on a computer
 with a 1~GHz CPU, an ordinary IDE disk, that was mostly idle
@@ -15,7 +19,7 @@ while the archiver tools ran. % That's blitz.ta53.lanl.gov
 The corresponding values on a machine with an 800~MHz CPU, concurrently
 used by other people, but faster hard disks (Mylex
 DAC960PTL1 PCI RAID Controller with 5 Quantum Atlas 10K drives) were
-slightly better.
+slightly better. % That's bogart.ta53.lanl.gov
 
 We also provide some comparison to the previous architecture that used
 the same data file format but instead of the RTree-based index there
@@ -30,7 +34,7 @@ at least 80000 values per second on the test computer.
 
 \subsection{Index Performance}
 Performance and index size depends on the $M$ value configuration of
-the RTree.
+the RTree. In the following, $M$ was set to 50.
 \begin{itemize}
 % LANL Xmtr Data 2002:
 \item 12 sub-archives, 1.2~MB of old directory files, 1.4~GB Data
@@ -41,12 +45,12 @@ the RTree.
       The master index is slightly smaller than the sum of the
       individual sub-indices because of better RTree utilization:
       The $M$ was configured to be 50 in all cases and many channels
-      in the the sub-archives use only a fraction of a single RTree
+      in the sub-archives use only a fraction of a single RTree
       node, down to an average record usage of 8\%, while the master
       index uses around 50\%.
       A re-run of the ArchiveIndexTool tool is faster because
-      it detects when data block are already in the master index and
-      does not add them again. In this case, the re-run took 10~seconds.
+      it detects data block that are already listed in the master index and
+      therefore not added again. In this case, the re-run took 10~seconds.
 % LANL Xmtr Data 2003:
 \item 92 sub-archives, 12~MB directory files, 2.3GB of data files:\\
       Converting into 61~MB of index files: About 12 minutes.\\
@@ -67,10 +71,26 @@ the RTree.
       Index file requires $<$0.5~seconds, old index uses 1.5~seconds.
 \end{itemize}
 
+\subsection{Data Management Performance}
+As a less-than-perfect example, we created a collection of mostly
+hourly sub-archives, resulting in 297 sub-archives, 158~MB index
+files, 307~MB data files.  Creation of a master index took about
+25~minutes.  resulting in a master index file size of 65~MB.  A re-run
+of the IndexTool took about 3~minutes.
+
+By combining the hourly sub-archives into monthly ones, the count was
+reduced from 297 sub-archives into only 16.  This took about
+8~minutes, resulting in 5.5~MB for index files and 148~MB for data
+files. Creation of a master index for the 16 sub-archives now took
+26~seconds, a re-run was further reduced to 1.5~seconds.
+Overall this shows that periodic data management, combining individual
+sub-archievs into fewer ones, will reduce not only the number of files
+but also file sizes, resulting in better performance.
+
 \subsection{Retrieval Performance}
 Tests of the retrieval performance often include not only the
 code for getting at the data but also for presenting it. In the
-case of the command-line ArchiveExport program this means the process
+case of the command-line ArchiveExport program this would be the process
 of converting time stamps and values into ASCII text and printing them.
 The output was redirected to /dev/null to avoid additional penalties.
 

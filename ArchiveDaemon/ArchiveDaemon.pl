@@ -13,11 +13,6 @@
 #
 # kasemir@lanl.gov
 
-# TODO: when creating indexconfig,
-#       omit indices whose modification time are old
-#       (what's old?) so that the ArchiveIndexTool
-#       runs faster
-
 # TODO: daemon often tries to stop twice. Is that an issue?
 
 use English;
@@ -46,31 +41,49 @@ use Getopt::Std;
 my ($config_file) = "";
 
 # Log file, created in current directory.
+# No good reason to change this one.
 my ($logfile) = "ArchiveDaemon.log";
 
 # TCP Port of ArchiveDaemon's HTTPD
 my ($http_port) = 4610;
 
-# The master index configuration that this tool creates or updates
-my ($master_index_config) = "indexconfig.xml";
-
 # The default DTD for the index config file
 # (unless we could parse it from an existing one)
 my ($master_index_dtd) = "indexconfig.dtd";
 
+# The master index configuration that this tool creates or updates
+# Probably a bad idea to change this one.
+my ($index_config) = "indexconfig.xml";
+
+# The reduced master index configuration that this tool creates,
+# omitting sub-archives whose indices are much older than
+# the master_index and thus needn't be checked over and over again
+# (see $index_omit_age).
+# Probably a bad idea to change this one.
+my ($index_update_config) = "indexupdate.xml";
+
+# If a sub-archive's index is this number of days older
+# than the master index, we omit it in the update process:
+# It's still listed in the complete $index_config,
+# but commented out in $index_update_config.
+my ($index_omit_age) = 1.0;
+
 # The name of the master index to create/update.
+# Probably a bad idea to change this one.
 my ($master_index) = "master_index";
 
 # What ArchiveEngine to use. Just "ArchiveEngine" works if it's in the path.
 my ($ArchiveEngine) = "ArchiveEngine";
 
 # Log file of the ArchiveEngine.
+# No good reason to change this one.
 my ($EngineLog) = "ArchiveEngine.log";
 
 # What ArchiveIndexTool to use. "ArchiveIndexTool" works if it's in the path.
 my ($ArchiveIndexTool) = "ArchiveIndexTool -v 1";
 
 # Log file of the Index Tool.
+# No good reason to change this one.
 my ($ArchiveIndexLog) = "ArchiveIndexTool.log";
 
 # Seconds between "is the engine running?" checks.
@@ -87,6 +100,12 @@ my ($engine_check_period) = 30;
 # Can be a smaller number. You need to check how long
 # the index tool runs. You don't want it running all the time.
 my ($index_update_period) = 60*60;
+
+# Most of the time, the ArchiveIndexTool is run with
+# the $index_update_config.
+# But about once a day it's a good idea to
+# run it will the full $index_config.
+my ($full_index_period) = 24*60*60;
 
 # Timeout used for "is there a HTTP client request?"
 # 1 second gives good response yet daemon uses hardly any CPU.
@@ -131,12 +150,10 @@ my (@config);
 my (@indices);
 
 my (@message_queue);
-
 my ($start_time_text);
-
 my ($last_check) = 0;
-
 my ($last_index_update) = 0;
+my ($last_full_index) = 0;
 
 # ----------------------------------------------------------------
 # Message Queue
@@ -185,9 +202,10 @@ sub get_DTD($)
 sub read_config($)
 {
     my ($file) = @ARG;
-    my $parser = XML::Simple->new();
-    my $doc = $parser->XMLin($file, ForceArray=>1);
-    foreach my $engine ( @{$doc->{engine}} )
+    my ($parser, $doc, $engine);
+    $parser = XML::Simple->new();
+    $doc = $parser->XMLin($file, ForceArray=>1);
+    foreach $engine ( @{$doc->{engine}} )
     {
 	++$#config;
 	$config[$#config]{desc} = $engine->{desc}[0];
@@ -209,12 +227,10 @@ sub read_config($)
 # IndexTool Config File
 # ----------------------------------------------------------------
 
-# Reads an IndexTool config according to indexconfig.dtd,
-# returning an array of index file names
+# Reads an IndexTool config according to indexconfig.dtd
 sub read_indexconfig($)
 {
     my ($file) = @ARG;
-    my (@indices);
     if (-f $file)
     {
 	my $parser = XML::Simple->new();
@@ -224,30 +240,37 @@ sub read_indexconfig($)
 	    push @indices, $index->{index}[0];
 	}
     }
-    return @indices;
 }
 
 # Add a new index file to the array (unless it's already in there)
-# Note 1: It needs a REFERENCE to the index array!
-# Note 2: Returns "1" if the array was modified
-sub add_index($$)
+# Returns "1" if the array was modified
+sub add_index($)
 {
-    my ($nindex, $indices) = @ARG;
+    my ($nindex) = @ARG;
     my ($index);
-    foreach $index ( @{$indices} )
+    foreach $index ( @indices )
     {
 	return 0 if ($nindex eq $index);
     }
     # insert new index at head of @indices
-    @{$indices} = ( $nindex, @{$indices} );
+    @indices = ( $nindex, @indices );
     return 1;
 }
 
 # Write IndexTool config file
-sub write_indexconfig($@)
+sub write_indexconfig($$)
 {
-    my ($filename, @indices) = @ARG;
-    my ($index);
+    my ($filename, $full) = @ARG;
+    my ($index, $skip, $index_age, $diff, $why);
+    $skip = 0;
+    if (-f $master_index)
+    {
+	$index_age = -M $master_index;
+    }
+    else
+    {   # Need full update if master doesn't exist, yet.
+	$full = 1;
+    }
     unless (open(INDEX, ">$filename"))
     {
 	add_message("Cannot create $filename");
@@ -262,13 +285,35 @@ sub write_indexconfig($@)
     print INDEX "<indexconfig>\n";
     foreach $index ( @indices )
     {
+	if (not $full)
+	{
+            if (-f $index)
+            {
+		$diff = (-M $index) - $index_age;
+		$skip = $diff > $index_omit_age;
+		$why = "$diff days older than $master_index";
+            }
+	    else
+	    {
+		$skip = 1;
+		$why = "Doesn't exist";
+	    }
+	}
+	print INDEX "\t<!-- skipped: $why\n" if ($skip);
 	print INDEX "\t<archive>\n";
 	print INDEX "\t\t<index>$index</index>\n";
 	print INDEX "\t</archive>\n";
+	print INDEX "\t-->\n" if ($skip);
     }
     print INDEX "</indexconfig>\n";
     close(INDEX);
     add_message("Updated $filename");
+}
+
+sub write_indexconfigs()
+{
+    write_indexconfig($index_config, 1);
+    write_indexconfig($index_update_config, 0);
 }
 
 # ----------------------------------------------------------------
@@ -434,9 +479,10 @@ sub handle_HTTP_info($)
     print $client "<TR><TD><B>Check Period:</B></TD><TD> $engine_check_period secs</TD></TR>\n";
     print $client "<TR><TD><B>Last Check:</B></TD><TD> ", time_as_text($last_check), "</TD></TR>\n";
     print $client "<TR><TD><B>Index DTD:</B></TD><TD> $master_index_dtd</TD></TR>\n";
-    print $client "<TR><TD><B>Index Period:</B></TD><TD> $index_update_period secs</TD></TR>\n";
-    print $client
-	"<TR><TD><B>Index Update:</B></TD><TD> ", time_as_text($last_index_update), "</TD></TR>\n";
+    print $client "<TR><TD><B>Full Index Period:</B></TD><TD> $full_index_period secs</TD></TR>\n";
+    print $client "<TR><TD><B>Last:</B></TD><TD> ", time_as_text($last_full_index), "</TD></TR>\n";
+    print $client "<TR><TD><B>Index Update Period:</B></TD><TD> $index_update_period secs</TD></TR>\n";
+    print $client "<TR><TD><B>Last:</B></TD><TD> ", time_as_text($last_index_update), "</TD></TR>\n";
     print $client "</TABLE>\n";
     html_stop($client);
 }
@@ -606,25 +652,32 @@ sub start_engine($$)
 	    "-p $engine->{port} $cfg $index >$null 2>&1 &";
 	print(time_as_text(time), ": Command: '$cmd'\n");
 	system($cmd);
-	if (add_index("$dir/$index", \@indices))
+	if (add_index("$dir/$index"))
 	{
-	    write_indexconfig($master_index_config, @indices);
+	    write_indexconfigs();
 	    return 1;
 	}
 	return 0;
 }
 
-sub run_indextool()
+sub run_indextool($)
 {
-    my ($dir, $cfg, $cmd);
-    $dir = dirname($master_index_config);
-    $cfg = basename($master_index_config);
-    $cmd = "cd $dir;$ArchiveIndexTool $cfg master_index " .
+    my ($now) = @ARG;
+    my ($dir, $cfg, $cmd, $config);
+    $config = $index_update_config;
+    if (($now - $last_full_index) > $full_index_period)
+    {
+	$config = $index_config;
+	$last_full_index = $now;
+    }
+    $dir = dirname($config);
+    $cfg = basename($config);
+    $cmd = "cd $dir;$ArchiveIndexTool $cfg $master_index " .
 	">$ArchiveIndexLog 2>&1 &";
     print(time_as_text(time), ": Command: '$cmd'\n");
-    add_message("Running Index Tool");
+    add_message("Running Index Tool w/ $config");
     system($cmd);
-    $last_index_update = time;
+    $last_index_update = $now;
 }
 
 # Connects to HTTPD at host/port and reads a URL,
@@ -801,7 +854,7 @@ sub start_engines($)
     }
     if ($index_changed > 0)
     {
-	run_indextool();
+	run_indextool(time());
     }
 }
 
@@ -834,11 +887,11 @@ if (length($config_file) <= 0)
     usage();
 }
 read_config($config_file);
-if (length($master_index_config) > 0  and -f $master_index_config)
+if (length($index_config) > 0  and -f $index_config)
 {
-    my ($dtd) = get_DTD($master_index_config);
+    my ($dtd) = get_DTD($index_config);
     $master_index_dtd = $dtd if (length($dtd) > 0);
-    @indices = read_indexconfig($master_index_config);
+    read_indexconfig($index_config);
 }  
 $master_index_dtd = $opt_i if ($opt_i);
 add_message("Started");
@@ -860,7 +913,7 @@ if ($daemonization)
 $start_time_text = time_as_text(time);
 my ($httpd) = create_HTTPD($http_port);
 my ($now);
-$last_index_update = 0;
+write_indexconfigs();
 while (1)
 {
     $now = time;
@@ -880,7 +933,7 @@ while (1)
     }
     if (($now - $last_index_update) > $index_update_period)
     {
-	run_indextool();
+	run_indextool($now);
     }
     check_HTTPD($httpd);
 }

@@ -37,7 +37,7 @@ static void caException(struct exception_handler_args args)
         pName = "?";
 
     LOG_MSG("CA Exception %s - with request "
-            "chan=%s op=%d type=%s count=%d:\n%s", 
+            "chan=%s op=%d type=%s count=%d:\n%s\n", 
             args.ctx, pName, args.op, dbr_type_to_text(args.type), args.count,
             ca_message(args.stat));
 }

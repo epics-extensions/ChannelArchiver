@@ -153,7 +153,7 @@ BEGIN
                     BS_AUTORADIOBUTTON,15,53,55,10
     CONTROL         "&Matlab",IDC_MATLAB,"Button",BS_AUTORADIOBUTTON,15,64,
                     37,10
-    CONTROL         "&Raw Date",IDC_RAW,"Button",BS_AUTORADIOBUTTON | 
+    CONTROL         "&Raw Data",IDC_RAW,"Button",BS_AUTORADIOBUTTON | 
                     WS_GROUP,88,37,51,13
     CONTROL         "&Linear Interp.",IDC_INTERPOL,"Button",
                     BS_AUTORADIOBUTTON,88,51,51,13

@@ -11,14 +11,21 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+CString CDlgExport::m_last_filename;
+
 CDlgExport::CDlgExport(CWnd* pParent /*=NULL*/)
 	: CDialog(CDlgExport::IDD, pParent)
 {
-	const char *tmp = getenv ("TEMP");
-	if (tmp)
-		m_filename.Format ("%s\\data.xls", tmp);
-	else
-		m_filename = "\\data.xls";
+    if (m_last_filename.IsEmpty())
+    {
+	    const char *tmp = getenv ("TEMP");
+	    if (tmp)
+    		m_filename.Format ("%s\\data.xls", tmp);
+    	else
+		    m_filename = "\\data.xls";
+    }
+    else
+        m_filename = m_last_filename;
 	//{{AFX_DATA_INIT(CDlgExport)
 	m_format = SpreadSheet;
 	m_interpol = Raw;
@@ -62,5 +69,7 @@ void CDlgExport::OnPickExportName()
 		return;
 
 	m_filename = dlg.m_ofn.lpstrFile;
+    m_last_filename = m_filename;
+
 	UpdateData (FALSE);
 }

@@ -46,6 +46,7 @@ protected:
 	afx_msg void OnPickExportName();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+	static CString	m_last_filename;
 };
 
 //{{AFX_INSERT_LOCATION}}

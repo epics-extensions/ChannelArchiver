@@ -9,7 +9,7 @@
 # --------------------------------------------------------
 
 # Dump all values for some channel, no error checking at all
-source atacTools.tcl
+source casiTools.tcl
 
 set archiveName "../../Engine/Test/freq_directory"
 set channelName "fred"

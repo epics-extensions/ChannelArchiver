@@ -1,5 +1,14 @@
+# --------------------------------------------------------
+# $Id$
+#
+# Please refer to NOTICE.txt,
+# included as part of this distribution,
+# for legal information.
+#
+# Kay-Uwe Kasemir, kasemir@lanl.gov
+# --------------------------------------------------------
 
-source atacTools.tcl
+source casiTools.tcl
 
 proc usage {} {
 	global argv0
@@ -21,7 +30,10 @@ if { $argc > 1 } {
 set archive [ archive ]
 set channel [ channel ]
 set value   [ value ]
-$archive open $archiveName
+if { ! [ $archive open $archiveName ] } {
+    error "Cannot open $archiveName"
+}
+
 $archive findChannelByPattern $channelPattern $channel
 while { [ $channel valid ] } {
 	puts -nonewline [ $channel name ]

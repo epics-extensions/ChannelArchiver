@@ -16,7 +16,7 @@
 #
 
 set installPath "."
-source $installPath/atacTools.tcl
+source $installPath/casiTools.tcl
 
 proc usage {} {
 	global argv0

@@ -1,4 +1,14 @@
-source atacTools.tcl
+# --------------------------------------------------------
+# $Id$
+#
+# Please refer to NOTICE.txt,
+# included as part of this distribution,
+# for legal information.
+#
+# Kay-Uwe Kasemir, kasemir@lanl.gov
+# --------------------------------------------------------
+
+source casiTools.tcl
 
 proc usage {} {
 	global argv0

@@ -8,7 +8,7 @@
 # Kay-Uwe Kasemir, kasemir@lanl.gov
 # --------------------------------------------------------
 
-source atacTools.tcl
+source casiTools.tcl
 
 proc usage {} {
 	global argv0
@@ -56,9 +56,11 @@ if { $argc > 3 } {
 set archive [ archive ]
 set channel [ channel ]
 set value   [ value ]
-$archive open $archiveName
-$archive findChannelByName $channelName $channel
-if { ! [ $channel valid ] } {
+if { ! [ $archive open $archiveName ] } {
+	puts "$archiveName: cannot open"
+	exit 1
+}
+if { ! [ $archive findChannelByName $channelName $channel ] } {
 	puts "$channelName: not found"
 	exit 1
 }

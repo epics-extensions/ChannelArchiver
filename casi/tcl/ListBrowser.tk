@@ -3,7 +3,7 @@
 	exec atac $0 ${1+"$@"}
 
 set installPath "."
-source $installPath/atacTools.tcl
+source $installPath/casiTools.tcl
 
 proc usage {} {
 	global argv0
@@ -213,7 +213,7 @@ proc restart {} {
     listBackward $endStamp
 }
 
-showAtacNag
+showCasiNag
 restart
 
 

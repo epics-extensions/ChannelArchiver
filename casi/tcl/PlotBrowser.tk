@@ -18,8 +18,8 @@
 # Demo of plotting from archive with BLT
 #######################################################################
 
-source atacTools.tcl
-source atacGraph.tk
+source casiTools.tcl
+source casiGraph.tk
 
 # Globals --------------------------------------------
 # graph:
@@ -118,7 +118,7 @@ pack .buttons -fill x -side bottom
 pack .samples -fill x -side bottom
 pack .end -fill x -side bottom
 pack .start -fill x -side bottom
-createAtacGraph .g
+createCasiGraph .g
 set graph .g
 pack .g -expand yes -fill both -side top
 

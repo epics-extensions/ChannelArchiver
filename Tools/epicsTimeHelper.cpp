@@ -32,8 +32,11 @@ bool isValidTime(const epicsTime &t)
 // Result: true for OK
 bool string2epicsTime(const stdString &txt, epicsTime &time)
 {
-    // TODO: number check ("ab/cd/efgh" not caught here)
-    size_t tlen = txt.length();
+    size_t i, tlen = txt.length();
+    // number check ("ab/cd/efgh" is caught here)
+    for (i=0; i<tlen; ++i)
+        if (!strchr("/0123456789 :.", txt[i]))
+            return false;
     //  0123456789
     // "mm/dd/yyyy" ?
     if (tlen < 10  ||  txt[2] != '/' || txt[5] != '/')
@@ -150,12 +153,10 @@ void vals2epicsTime(int year, int month, int day,
 #define NSEC 1000000000L
 epicsTime roundTimeDown(const epicsTime &time, double secs)
 {
-    if (secs <= 0)
+    if (secs <= 0.0)
         return time;
-
-    struct local_tm_nano_sec tm = (local_tm_nano_sec) time;
+    struct local_tm_nano_sec tm;
     unsigned long round;
-
     if (secs < 1.0)
     {
         epicsTimeStamp stamp = (epicsTimeStamp)time;
@@ -166,17 +167,15 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
     else if (secs < secsPerDay)
     {
         epicsTimeStamp stamp = (epicsTimeStamp)time;
-        
-        double t = stamp.secPastEpoch + stamp.nsec / NSEC;
-        t = floor(t / secs) * secs;
-        
-        stamp.secPastEpoch = (epicsUInt32) t;
-        stamp.nsec = (epicsUInt32) ((t - stamp.secPastEpoch) * NSEC);
-        
+        // secs >= 1.0, so nanosecs are 0
+        round = stamp.secPastEpoch / (unsigned long) secs;
+        stamp.secPastEpoch = (epicsUInt32) (round*secs);
+        stamp.nsec = 0;
         return epicsTime(stamp);
     }
     else if (secs < secsPerMonth)
     {
+        tm = (local_tm_nano_sec) time;
         round = (unsigned long) (secs/secsPerDay);
         tm.nSec = 0;
         tm.ansi_tm.tm_sec = 0;
@@ -186,6 +185,7 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
     }
     else if (secs < secsPerYear)
     {
+        tm = (local_tm_nano_sec) time;
         round = (unsigned long) (secs/secsPerMonth);
         tm.nSec = 0;
         tm.ansi_tm.tm_sec = 0;
@@ -196,6 +196,7 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
     }
     else
     {
+        tm = (local_tm_nano_sec) time;
         tm.nSec = 0;
         tm.ansi_tm.tm_sec = 0;
         tm.ansi_tm.tm_min = 0;
@@ -204,17 +205,15 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
         tm.ansi_tm.tm_mon = 0;
     }
     // TODO: round weeks, fortnights?
-
     return epicsTime(tm);
 }
 
 // Round up
 epicsTime roundTimeUp(const epicsTime &time, double secs)
 {
-    if (secs <= 0)
+    if (secs <= 0.0)
         return time;
-
-    struct local_tm_nano_sec tm = (local_tm_nano_sec) time;
+    struct local_tm_nano_sec tm;
     unsigned long round;
     if (secs < 1.0)
     {
@@ -232,18 +231,15 @@ epicsTime roundTimeUp(const epicsTime &time, double secs)
     else if (secs < secsPerDay)
     {
         epicsTimeStamp stamp = (epicsTimeStamp)time;
-        
-        double t = stamp.secPastEpoch + stamp.nsec / NSEC;
-        double div = floor(t / secs); 
-        t = (div+1)*secs;
-        
-        stamp.secPastEpoch = (epicsUInt32) t;
-        stamp.nsec = (epicsUInt32) ((t - stamp.secPastEpoch) * NSEC);
-        
+        // secs >= 1.0, so nanosecs are 0
+        round = stamp.secPastEpoch / (unsigned long) secs;
+        stamp.secPastEpoch = (epicsUInt32) ((round+1)*secs);
+        stamp.nsec = 0;
         return epicsTime(stamp);
     }
     else if (secs < secsPerMonth)
     {
+        tm = (local_tm_nano_sec) time;
         round = (unsigned long) (secs/secsPerDay);
         tm.nSec = 0;
         tm.ansi_tm.tm_sec = 0;
@@ -253,6 +249,7 @@ epicsTime roundTimeUp(const epicsTime &time, double secs)
     }
     else if (secs < secsPerYear)
     {
+        tm = (local_tm_nano_sec) time;
         round = (unsigned long) (secs/secsPerMonth);
         tm.nSec = 0;
         tm.ansi_tm.tm_sec = 0;
@@ -263,6 +260,7 @@ epicsTime roundTimeUp(const epicsTime &time, double secs)
     }
     else
     {
+        tm = (local_tm_nano_sec) time;
         tm.nSec = 0;
         tm.ansi_tm.tm_sec = 0;
         tm.ansi_tm.tm_min = 0;
@@ -272,31 +270,16 @@ epicsTime roundTimeUp(const epicsTime &time, double secs)
         tm.ansi_tm.tm_year += 1;
     }
     // TODO: round weeks, fortnights?
-
     return epicsTime(tm);
 }
 
-// Find timestamp near 'time' which is a multiple
-// of 'secs'.
-epicsTime roundTime (const epicsTime &time, double secs)
+// Find timestamp near 'time' which is a multiple of 'secs'.
+epicsTime roundTime(const epicsTime &time, double secs)
 {
     epicsTime up = roundTimeUp(time, secs);
     epicsTime down = roundTimeDown(time, secs);
-
     if (time - down  <  up - time)
         return down;
     return up;
-
-#if 0
-    // TODO:
-    // The above implementation is expensive.
-    // Can something like this made to work
-    // after converting the time to a double and back?
-    if (secs == 0)
-        return time;
-    double val = time;
-    double rounded = floor (val / secs + 0.5) * secs;
-    return epicsTime (rounded);
-#endif
 }
 

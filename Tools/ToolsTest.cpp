@@ -4,18 +4,16 @@
 
 // Enable/disable certain tests in case one doesn't work out
 // on your architecture
-#define TEST_AUTOPTR
-#if 0
+//#define TEST_AUTOPTR
 #define TEST_STRING
 #define TEST_TIME
-#define TEST_AVL
-#define TEST_LOG
-#define TEST_THREADS
-#define TEST_TIMER
-#define TEST_CA
-#define TEST_BITSET
-#endif
-#define TEST_FUX
+//#define TEST_AVL
+//#define TEST_LOG
+//#define TEST_THREADS
+//#define TEST_TIMER
+//#define TEST_CA
+//#define TEST_BITSET
+//#define TEST_FUX
 
 // Nothing should need to be touched from here down
 
@@ -270,8 +268,6 @@ void test_time()
 
     t.show(10);
     start.show(10);
-    
-
     
     t += 60;
     TEST(t != start);

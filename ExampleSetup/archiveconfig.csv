@@ -1,0 +1,15 @@
+# Archive configuration file
+# This is TAB delimited!
+# Careful when editing, don't disturb the TABS,
+# because this file won't parse unless everything is perfect.
+#
+# There needs to be exactly one TAB between Type, Name, Port, Desc, ...
+
+# Type  Name    Port    Desc    Time    Frequency
+DAEMON	ICS	4090	ICS Daemon
+ENGINE	tim	4091	ICS Timing Engine	08:00	daily
+ENGINE	mps	4092	ICS MPS Engine	08:30	daily
+
+DAEMON	RF	4900	RF
+ENGINE	llrf	4901	LLRF	We 10:20	weekly
+ENGINE	hprf	4902	HPRF	We 10:30	weekly

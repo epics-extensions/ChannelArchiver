@@ -15,7 +15,7 @@ use Sys::Hostname;
 use archiveconfig;
 
 # Globals, Defaults
-my ($config_name) = "archiveconfig.csv";
+my ($config_name);
 my ($index_dtd)   = "/arch/indexconfig.dtd";
 my ($daemon_dtd)  = "/arch/ArchiveDaemon.dtd";
 my ($engine_dtd)  = "/arch/engineconfig.dtd";
@@ -162,7 +162,14 @@ if (!getopts("dhc:") ||  $opt_h)
     usage();
     exit(0);
 }
-$config_name = $opt_c  if (length($opt_c) > 0);
+if (length($opt_c) <= 0)
+{
+    print("You must supply the -c <config file> option\n\n");
+    usage();
+    exit(0);
+}
+
+$config_name = $opt_c;
 
 @daemons = parse_config_file($config_name, $opt_d);
 dump_config(\@daemons) if ($opt_d);

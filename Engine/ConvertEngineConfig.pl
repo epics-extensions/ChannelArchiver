@@ -5,7 +5,7 @@
 
 use English;
 #use strict;
-use vars qw($opt_d $opt_o);
+use vars qw($opt_v $opt_d $opt_o);
 use Getopt::Std;
 use File::Basename;
 
@@ -14,6 +14,7 @@ sub usage()
     print("USAGE: ConvertEngineConfig [options] ASCII-config { ASCII-config }\n");
     print("\n");
     print("Options:\n");
+    print("  -v             :  Verbose\n");
     print("  -d <DTD>       :  Specify DTD\n");
     print("  -o <filename>  :  Set output file name\n");
     print("\n");
@@ -26,12 +27,16 @@ sub usage()
     exit(-1);
 }
 
-if (!getopts('d:o:')  ||  $#ARGV < 0)
+if (!getopts('vd:o:')  ||  $#ARGV < 0)
 {
     usage();
 }
 my ($outfile) = "";
-$outfile = $opt_o if (length($opt_o) > 0);
+if (length($opt_o) > 0)
+{
+    $outfile = $opt_o;
+    print("Creating output file '$outfile'\n") if ($opt_v);
+}
 
 unless (length($opt_d) > 0)
 {
@@ -55,11 +60,13 @@ $filesize_warning = 0;
 
 foreach $filename ( @ARGV )
 {
+    print("- group '$filename'\n") if ($opt_v);
     $directory = dirname($filename);
     $file = basename($filename);
     parse($file,'fh00');
 }
 dump_xml();
+print("Done.\n") if ($opt_v);
 
 # parse(<group file name>, file handle to use)
 # creates something like this:

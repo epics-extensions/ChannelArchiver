@@ -1,0 +1,47 @@
+<html>
+
+<head>
+<title>Export: Rounding</title>
+<meta content="text/html; charset=windows-1252" http-equiv="Content-Type">
+<meta content="text/html; charset=windows-1252" http-equiv="Content-Type">
+</head>
+
+<body bgcolor="#FFFFFF" vlink="#0000FF" background="blueback.jpg">
+<font face="Comic Sans MS, Arial, Helvetica">
+
+<blockquote>
+  <h1>Exporting into a SpreadSheet</h1>
+  <h2>What to do</h2>
+  <p>When you press the &quot;GET&quot; button to retrieve a SpreadSheet, the archive export
+  software provides you with a text that can be saved from within your Web borwser to your
+  local disk.</p>
+  <p>Usually it's a good idea to save that data to a file named
+  &quot;c:\temp\data.xls&quot;, i.e. ending in &quot;.xls&quot;. Then you can double-click
+  on the created file, MS Excel will be launched and you're ready to process the data.</p>
+  <p>The comments preceeding the data itself give some more hints for plotting.</p>
+  <h2>Internet Explorer 5</h2>
+  <p>There is a problem with this specific version of the&nbsp; MS Internet Explorer. The
+  following does <em>not</em> apply to Netscape or older versions of IE:<br>
+  <br>
+  Even if you choose the menu item &quot;File/Save As&quot; and then &quot;Save as type=Text
+  File&quot;, the generated text file will contain additional leading lines like these: </p>
+  <code><p>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0 Transitional//EN&quot;&gt;<br>
+  &lt;HTML&gt;&lt;HEAD&gt;<br>
+  &lt;META content=&quot;text/html; charset=windows-1252&quot;
+  http-equiv=Content-Type&gt;&lt;/HEAD&gt;<br>
+  &lt;BODY&gt;&lt;XMP&gt;; Generated from archive data<br>
+  ;<br>
+  ... </code></p>
+  <p>These lines, wrongly added by IE 5, have to be removed with e.g. the notepad program
+  before Excel can parse the file.<br>
+  Another option: Save as &quot;Text File&quot; <u>AND</u> use &quot;txt&quot; for an
+  ending, not &quot;xls&quot;.</p>
+  <hr WIDTH="80%">
+  <address>
+    Requests/comments?<br>
+    <a href="mailto:kasemir@lanl.gov">E-Mail: Kay-Uwe Kasemir</a><br>
+  </address>
+</blockquote>
+</font>
+</body>
+</html>

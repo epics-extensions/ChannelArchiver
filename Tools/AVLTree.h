@@ -136,22 +136,23 @@ private:
     }    
 
     // Result: Did we grow the tree from *node on down?
-    bool insert(AVLItem<Item> *new_item, AVLItem<Item> **node)
+    bool insert(AVLItem<Item> *new_node, AVLItem<Item> **node)
     {
         if (*node == 0)
         {
-            *node = new_item;
+            *node = new_node;
             return true;
         }
-        int comp = sort_compare(new_item->item, (*node)->item);
+        int comp = sort_compare(new_node->item, (*node)->item);
         if (comp == 0)
-        {
-            (*node)->item = new_item->item;
+        {   // Don't insert new node, only update data item
+            (*node)->item = new_node->item;
+            delete new_node;
             return false;
         }
         if (comp > 0)
         {
-            if (insert(new_item, & ((*node)->left)))
+            if (insert(new_node, & ((*node)->left)))
             {
                 --(*node)->balance;
                 if ((*node)->balance < -1)
@@ -164,7 +165,7 @@ private:
         }
         else if (comp < 0)
         {
-            if (insert(new_item, & ((*node)->right)))
+            if (insert(new_node, & ((*node)->right)))
             {
                 ++(*node)->balance;
                 if ((*node)->balance > 1)

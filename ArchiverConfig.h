@@ -106,6 +106,14 @@
 #define URL_PATH "/tmp/"
 
 // ----------------------------------------------------------
+// Atac
+// ----------------------------------------------------------
+
+// (The tcl extension has to be compiled seperately,
+//  but the sources are configured in here):
+#define ATAC_ARCHIVE_TYPE MultiArchive
+
+// ----------------------------------------------------------
 // ArchiveExport
 // ----------------------------------------------------------
 

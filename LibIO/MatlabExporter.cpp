@@ -112,6 +112,8 @@ void MatlabExporter::exportChannelList(
     *out << "%  datetick('x');\n";
     *out << "%  xlabel([data.t{1} ' - ' data.t{data.l}]);\n";
     *out << "%  title(data.n);\n";
+    *out << "%\n";
+    *out << "% For the of data.v being an array, try the 'mesh' function.\n";
 
     
     for (i=0; i<num; ++i)
@@ -156,7 +158,17 @@ void MatlabExporter::exportChannelList(
             *out << info << "\n";
         
             if (value->isInfo())
-                *out << variable << ".v(" << line << ")=nan;\n";
+            {
+                if (count > 1)
+                {
+                    *out << variable << ".v(:," << line << ")=";
+                    for (ai=0; ai<count; ++ai)
+                        *out << "nan ";
+                    *out << ";\n";
+                }
+                else
+                    *out << variable << ".v(:," << line << ")= nan;\n";
+            }
             else
             {
                 const CtrlInfoI *info = value->getCtrlInfo();
@@ -170,13 +182,9 @@ void MatlabExporter::exportChannelList(
                          << value->getDouble() << ";\n";
                 else
                 {
-                    *out << variable << ".v(" << line << ")=[";
-                    for (ai=0; ai<count; ++i)
-                    {
-                        *out << value->getDouble(ai);
-                        if (ai != count-1)
-                            *out << ",";
-                    }
+                    *out << variable << ".v(:," << line << ")=[";
+                    for (ai=0; ai<count; ++ai)
+                        *out << value->getDouble(ai) << " ";
                     *out << "];\n";
                 }
             }

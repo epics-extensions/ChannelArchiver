@@ -395,7 +395,12 @@ proc camGUI::checkentry {val Descr descr w tl {absFn 0}} {
   if {"$descr" == "filename"} {
     set fnchars "\[^/<>\]+"
     set re "^"
-    if {$absFn} {append re "/"}
+    if {$absFn} {
+      if {{[regexp "Windows" $::tcl_platform(os)]} {
+	append re "(.:)?"
+      }
+      append re "/"
+    }
     append re "($fnchars/)*$fnchars"
     append re "$"
     if {![regexp $re $val]} {

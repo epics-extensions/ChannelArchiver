@@ -51,9 +51,9 @@ proc init {} {
   regsub "\\..*" $::_host "" ::_host
 
   signal ignore *
-  catch {signal trap SIGTERM {puts stderr "Terminating(TERM)..."; after 1 {exit -15}}}
-  catch {signal trap SIGINT {puts stderr "Terminating(INT)..."; after 1 {Exit -2}}}
-  catch {signal trap SIGQUIT {puts stderr "Terminating(QUIT)..."; after 1 {Exit -3}}}
+  catch {signal trap SIGTERM {Puts "Terminating(TERM)..." console; after 1 {exit -15}}}
+  catch {signal trap SIGINT {Puts "Terminating(INT)..." console; after 1 {Exit -2}}}
+  catch {signal trap SIGQUIT {Puts "Terminating(QUIT)..." console; after 1 {Exit -3}}}
   catch {signal trap SIGUSR1 {after 1 {listJobs 0}}}
   catch {signal trap SIGUSR2 {if {$::postJobs == 0} {after 1 {listJobs 1}}}}
   catch {signal trap SIGHUP {if {[set ::postJobs [expr 1 - $::postJobs]]} {listJobs 1}}}

@@ -35,22 +35,28 @@ namespace eval camMisc {
     {log+.arg "" "append to logfile"}
     {nocmd "" "without start/stop-interface (CAbgManager only)"}
   }]
-  if {[regexp "^\[^/\]" $::args(log)]} {set ::args(log) [pwd]/$::args(log)}
-  if {[regexp "^\[^/\]" $::args(log+)]} {set ::args(log+) [pwd]/$::args(log+)}
-  regsub "^(.*/)/.*" $::args(log) "" ::args(log)
-  regsub "^(.*/)/.*" $::args(log+) "" ::args(log+)
-
-  if {$::args(log) != ""} {
-    file delete -force "$::args(log)"
+  if {($::args(log) != "-") && [regexp "^\[^/\]" $::args(log)]} {
+    set ::args(log) [pwd]/$::args(log)
   }
-  if {$::args(log+) != ""} {
+  if {($::args(log+) != "-") && [regexp "^\[^/\]" $::args(log+)]} {
+    set ::args(log+) [pwd]/$::args(log+)
+  }
+  regsub "^.*//" $::args(log) "/" ::args(log)
+  regsub "^.*//" $::args(log+) "/" ::args(log+)
+  if {$::args(log) == ""} {array unset ::args log}
+  if {$::args(log+) == ""} {array unset ::args log+}
+
+  if {[info exists ::args(log+)]} {
     set $::args(log) $::args(log+)
   }
-
+  if {[info exists ::args(log)] && ($::args(log) != "-")} {
+    file delete -force "$::args(log)"
+  }
+  
   foreach k $::argv {
     set d [file dirname $k]
     if {[file exists "$k"]} {
-      set cfg_file $k
+      regsub "^.*//" "[pwd]/$k" "/" cfg_file
       set force_cfg_file 1
     } elseif {![regexp "^/" $k] && [file exists "$rcdir/$k"]} {
       set cfg_file "$rcdir/$k"
@@ -67,7 +73,7 @@ namespace eval camMisc {
       puts stderr "    neither [pwd]"
       puts stderr "    nor     $rcdir"
       exit 1
-    }      
+    }
   }
 
   variable _Archiver {}

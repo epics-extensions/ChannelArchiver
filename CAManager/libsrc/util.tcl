@@ -108,13 +108,15 @@ proc Puts {s {color normal}} {
   set color $::colormap($color)
   set now "[clock format [clock seconds] -format %Y/%m/%d\ %H:%M:%S]: "
   if {$color != "NO"} {
-    if {[info exists ::args(log)] && ("$::args(log)" != "")} {
-      set w [open $::args(log) a+]
-      puts $w "${now}([file rootname [file tail [info script]]]) $s"
-      close $w
+    if {[info exists ::args(log)]} {
+      if {"$::args(log)" != "-"} {
+	set w [open $::args(log) a+]
+	puts $w "${now}([file rootname [file tail [info script]]]) $s"
+	close $w
+      } else {
+	puts stdout "${now}([file rootname [file tail [info script]]]) $s"
+      }
     }
-    
-    puts stdout "${now}([file rootname [file tail [info script]]]) $s"
   }
   if {[string toupper $color] == "NO"} {return 1}
   if {$color != "normal"} {

@@ -25,10 +25,10 @@ namespace eval httpd {
 proc httpd::init {} {
   variable _starttime [clock seconds]
   if [catch {socket -server httpd::connect $::_port}] {
-    puts "Couldn't use port $::_port, port is already in use or privileged!"
+    puts stderr "Couldn't use port $::_port, port is already in use or privileged!"
     exit
   } else {
-    puts "Info on http://[info hostname]:$::_port/"
+    Puts "Info on http://[info hostname]:$::_port/"
   }
 }
 

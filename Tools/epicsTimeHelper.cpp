@@ -54,14 +54,22 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
     tm.ansi_tm.tm_mday = (txt[3]-'0')*10 + (txt[4]-'0');
     tm.ansi_tm.tm_year = (txt[6]-'0')*1000 + (txt[7]-'0')*100 +
                          (txt[8]-'0')*10 + (txt[9]-'0') - 1900;
+
+    //  0123456789012345
+    // "mm/dd/yyyy 00:00"
+    if (tlen >= 16)
+    {
+        if (txt[13] != ':')
+            return false;
+        tm.ansi_tm.tm_hour = (txt[11]-'0')*10 + (txt[12]-'0');
+        tm.ansi_tm.tm_min  = (txt[14]-'0')*10 + (txt[15]-'0');
+    }
     //  0123456789012345678
     // "mm/dd/yyyy 00:00:00"
     if (tlen >= 19)
     {
-        if (txt[13] != ':' || txt[16] != ':')
+        if (txt[16] != ':')
             return false;
-        tm.ansi_tm.tm_hour = (txt[11]-'0')*10 + (txt[12]-'0');
-        tm.ansi_tm.tm_min  = (txt[14]-'0')*10 + (txt[15]-'0');
         tm.ansi_tm.tm_sec  = (txt[17]-'0')*10 + (txt[18]-'0');
     }
     //  01234567890123456789012345678

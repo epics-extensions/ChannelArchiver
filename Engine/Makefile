@@ -11,7 +11,6 @@ ArchiveEngine_SRCS += SampleMechanism.cpp
 ArchiveEngine_SRCS += ScanList.cpp
 ArchiveEngine_SRCS += GroupInfo.cpp
 ArchiveEngine_SRCS += HTMLPage.cpp
-ArchiveEngine_SRCS += LockFile.cpp
 ArchiveEngine_SRCS += HTTPServer.cpp
 ArchiveEngine_SRCS += EngineConfig.cpp
 ArchiveEngine_SRCS += EngineServer.cpp

@@ -12,6 +12,7 @@
 #include <ArgParser.h>
 #include <epicsTimeHelper.h>
 #include <FUX.h>
+#include <Lockfile.h>
 // Index
 #include <IndexFile.h>
 
@@ -179,6 +180,10 @@ int main(int argc, const char *argv[])
         parser.usage();
         return -1;
     }
+
+    Lockfile lock_file("indextool_active.lck");
+    if (! lock_file.Lock (argv[0]))
+        return -1;
     BenchTimer timer;
     if (!create_masterindex(RTreeM, parser.getArgument(0),
                             parser.getArgument(1)))
@@ -188,6 +193,7 @@ int main(int argc, const char *argv[])
         timer.stop();
         printf("Time: %s\n", timer.toString().c_str());
     }
+    lock_file.Unlock ();
     
     return 0;
 }

@@ -1,5 +1,11 @@
 function [times,values]=ml_arch_plot(url, key, name, t0, t1, how, count)
-% Plot archive data in Matlab
+% [times,values]=ml_arch_plot(url, key, name, t0, t1, how, count)
+%
+% Plot archive data in Matlab.
+%
+% Calls ml_arch_get, check there for more info.
+%
+% See ml_arch_get.
 
 if (nargin < 7)
    count=100;

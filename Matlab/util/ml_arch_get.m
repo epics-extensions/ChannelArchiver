@@ -1,5 +1,14 @@
 function [times,micros,values]=ml_arch_get(url, key, name, t0, t1, how, count)
-% Get archive data into Matlab
+% [times,micros,values]=ml_arch_get(url, key, name, t0, t1, how, count)
+%
+% Get data for given channel name, start and end time into Matlab.
+% TIMES  - Array of date numbers.
+% MICROS - Microseconds of the time stamps
+% VALUES - Da Data with NaN indicating non-values (disconnected, ...)
+%
+% The underlying XML-RPC protocol and the raw ArchiveData call support
+% retrieval of more than one channel at once.
+% Use that directly for better performance. 
 
 if (nargin < 7)
    count=100

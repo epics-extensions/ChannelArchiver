@@ -40,16 +40,27 @@ for <I>++</I> or <I>-- operators</I>.
 LinInterpolValueIteratorI (ValueIteratorI *base, double deltaT);
 </PRE>
 <LI>
+When the original values are further apart in time than <I>maxDeltaT</I>,
+ARCH_STOPPED ("Archive_Off") will be assumed.
+This prevents seemingly endless interpolation over huge gaps in time.
+Default: 0 (continue interpolation)
+<PRE>
+void setMaxDeltaT (double maxDeltaT);
+double getMaxDeltaT () const;
+</PRE>
+<LI>
 This method will return <I>deltaT</I>,
 not the original scan period of the underlying
 base iterator
 <PRE>
 double getPeriod () const;
-
-* Get interpolated <A HREF="Value.htm#Main">Value</A> for an arbitrary time stamp.
+</PRE>
+<LI>
+Get interpolated <A HREF="Value.htm#Main">Value</A> for an arbitrary time stamp.
 <BR>
 Use <I>++</I> or <I>-- operators</I> to get the next/prev.
 Value at a period of <I>deltaT</I>.
+<PRE>
 const ValueI * interpolate (const osiTime &time);
 </PRE>
 </UL>

@@ -23,3 +23,21 @@ Same, but on office PC with server on the same computer (no network)
 4 channels, 12000 values total in 17 wallclock secs (15.51 usr +  0.19 sys = 15.70 CPU)
 4 channels, 14000 values total in 21 wallclock secs (17.96 usr +  0.20 sys = 18.16 CPU)
 4 channels, 16000 values total in 23 wallclock secs (21.27 usr +  0.25 sys = 21.52 CPU)
+
+Comparison:
+I instrumented the server (the CGI tool) to print its
+runtime, measured at start & stop of the main() routine.
+Those times are tiny compared to the above:
+
+get_values(4 channels, each 2000 values = 8000 values) ran 0.830194 seconds
+get_values(4 channels, each 10 values = 40 values) ran 0.00993 seconds
+get_values(4 channels, each 100 values = 400 values) ran 0.030336 seconds
+get_values(4 channels, each 200 values = 800 values) ran 0.064259 seconds
+get_values(4 channels, each 400 values = 1600 values) ran 0.134112 seconds
+get_values(4 channels, each 500 values = 2000 values) ran 0.165618 seconds
+get_values(4 channels, each 1000 values = 4000 values) ran 0.343979 seconds
+get_values(4 channels, each 2000 values = 8000 values) ran 0.675459 seconds
+get_values(4 channels, each 2500 values = 10000 values) ran 0.843693 seconds
+get_values(4 channels, each 3000 values = 12000 values) ran 1.01765 seconds
+get_values(4 channels, each 3500 values = 14000 values) ran 1.18937 seconds
+get_values(4 channels, each 4000 values = 16000 values) ran 1.33184 seconds

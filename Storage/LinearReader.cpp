@@ -3,6 +3,8 @@
 // Storage
 #include "LinearReader.h"
 
+#undef DEBUG_LINREAD
+
 LinearReader::LinearReader(archiver_Index &index, double delta)
         : reader(index), delta(delta)
 {
@@ -24,11 +26,13 @@ const RawValue::Data *LinearReader::find(
     reader_data = reader.find(channel_name, start, end);
     if (reader_data)
     {
+#ifdef DEBUG_LINREAD
         printf("Raw: ");
         RawValue::show(stdout,
                        reader.getType(), reader.getCount(),
                        reader_data,
                        &reader.getInfo());
+#endif
         time_slot =
             roundTimeUp(RawValue::getTime(reader_data), delta);
         return next();
@@ -38,9 +42,10 @@ const RawValue::Data *LinearReader::find(
     
 const RawValue::Data *LinearReader::next()
 {
+#ifdef DEBUG_LINREAD
     stdString txt;
     printf("Next time slot: %s\n", epicsTimeTxt(time_slot, txt));
-
+#endif
     // iterate reader until just after time_slot
     int N = 0;
     double d, d2, sum = 0;
@@ -77,6 +82,7 @@ const RawValue::Data *LinearReader::next()
             ++N;
         }   
         reader_data = reader.next();
+#ifdef DEBUG_LINREAD
         if (reader_data)
         {
             printf("Raw: ");
@@ -84,6 +90,7 @@ const RawValue::Data *LinearReader::next()
                            reader.getType(), reader.getCount(),
                            reader_data, &reader.getInfo());
         }
+#endif
     }
     if (!reader_data)
         return 0;
@@ -100,7 +107,9 @@ const RawValue::Data *LinearReader::next()
         RawValue::getDouble(reader.getType(), reader.getCount(),
                             reader_data, d2))
     {
+#ifdef DEBUG_LINREAD
         printf("Interpolating %g .. %g onto time slot\n", d, d2);
+#endif
         epicsTime t = RawValue::getTime(data);
         epicsTime t2 = RawValue::getTime(reader_data);
         double dT = t2-t;
@@ -108,22 +117,23 @@ const RawValue::Data *LinearReader::next()
             RawValue::setDouble(type, count, data,
                                 d + (d2-d)*((time_slot-t)/dT));
         else // Use average if there's no time between d..d2?
-        {
-            printf("dT==0\n");
             RawValue::setDouble(type, count, data, (d + d2)/2);
-        }
         RawValue::setTime(data, time_slot);
     }
     else if (N > 1)
     {   // If more than one point fell into the time_slot,
         // report average at middle of slot
+#ifdef DEBUG_LINREAD
         printf("Using average over last %d samples\n", N);
+#endif
         RawValue::setDouble(type, count, data, sum/N);
         RawValue::setTime(data, time_slot-delta/2);
     }
 	else
     {   // Otherwise map last point before slot onto slot
+#ifdef DEBUG_LINREAD
         printf("Staircase-mapping onto time_slot\n");
+#endif
         RawValue::setTime(data, time_slot);
     }
     time_slot += delta;

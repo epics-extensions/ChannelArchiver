@@ -238,7 +238,7 @@ void spreadsheet_test(const stdString &index_name)
         fprintf(stderr, "Cannot open index %s\n", index_name.c_str());
         return;
     }
-    SpreadsheetReader sheet(index);
+    SpreadsheetReader sheet(index, 0);
     stdVector<stdString> names;
     names.push_back("jane");
     names.push_back("janet");

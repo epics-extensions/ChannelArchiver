@@ -5,9 +5,10 @@
 #include "DirectoryFile.h"
 #include "Filename.h"
 
-BinArchive::BinArchive (const stdString &archive_name, bool for_write)
+BinArchive::BinArchive(const stdString &archive_name, bool for_write)
 {
-    _dir = new DirectoryFile (archive_name, for_write);
+    initOsiHelpers();
+    _dir = new DirectoryFile(archive_name, for_write);
     _secs_per_file = SECS_PER_MONTH;
 }
 
@@ -17,19 +18,19 @@ BinArchive::~BinArchive()
     _dir = 0;
 }
 
-ChannelIteratorI *BinArchive::newChannelIterator () const
+ChannelIteratorI *BinArchive::newChannelIterator() const
 {
-    return new BinChannelIterator ();
+    return new BinChannelIterator();
 }
 
-ValueIteratorI *BinArchive::newValueIterator () const
+ValueIteratorI *BinArchive::newValueIterator() const
 {
-    return new BinValueIterator ();
+    return new BinValueIterator();
 }
 
-ValueI *BinArchive::newValue (DbrType type, DbrCount count)
+ValueI *BinArchive::newValue(DbrType type, DbrCount count)
 {
-    return BinValue::create (type, count);
+    return BinValue::create(type, count);
 }
 
 bool BinArchive::findFirstChannel (ChannelIteratorI *channel)

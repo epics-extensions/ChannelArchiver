@@ -57,11 +57,6 @@ inline void BinValue::setCtrlInfo (const CtrlInfoI *info)
     _ctrl_info = info;
 }
 
-inline const CtrlInfoI *BinValue::getCtrlInfo () const
-{
-    return _ctrl_info;
-}
-
 inline void BinValue::read (LowLevelIO &file, FileOffset offset)
 {
     BinRawValue::read (_type, _count, _size, _value, file, offset);

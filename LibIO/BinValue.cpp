@@ -120,6 +120,9 @@ BinValue::BinValue (DbrType type, DbrCount count)
     _ctrl_info = 0;
 }
 
+const CtrlInfoI *BinValue::getCtrlInfo () const
+{   return _ctrl_info; }
+
 ValueI *BinValue::clone () const
 {
     BinValue *value = create (_type, _count);

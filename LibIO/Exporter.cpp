@@ -20,11 +20,11 @@ inline double fabs(double x)
 { return x>=0 ? x : -x; }
 
 // Loop over current values and find oldest
-static osiTime findOldestValue(const stdVector<ValueIteratorI *> &values)
+static osiTime findOldestValue(ValueIteratorI *values[], size_t num)
 {
     size_t i;
     osiTime first;
-    for (i=0; i<values.size(); ++i) // get first valid time
+    for (i=0; i<num; ++i) // get first valid time
     {
         if (values[i]->isValid())
         {
@@ -32,7 +32,7 @@ static osiTime findOldestValue(const stdVector<ValueIteratorI *> &values)
             break;
         }
     }
-    for (++i; i<values.size(); ++i) // see if anything is older
+    for (++i; i<num; ++i) // see if anything is older
     {
         if (values[i]->isValid() &&
             first > values[i]->getValue()->getTime())
@@ -113,7 +113,11 @@ void Exporter::printValue(std::ostream *out,
     }
     else
     {
-        const CtrlInfoI *info = v->getCtrlInfo();
+        const CtrlInfoI *info;
+        
+        info = v->getCtrlInfo();
+        if (info == 0)
+            abort();
         
         // Format according to precision.
         // Unfortuately that is usually configured wrongly
@@ -154,25 +158,29 @@ void Exporter::printValue(std::ostream *out,
 void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
 {
     size_t i, ai, num = channel_names.size();
-    stdVector<ChannelIteratorI *> channels(num);
-    stdVector<ValueIteratorI *>   base(num);
-    stdVector<ValueIteratorI *>   values(num);
-    stdVector<ValueI *>           prev_values(num);
+    ChannelIteratorI **channels = 0;
+    ValueIteratorI   **base = 0;
+    ValueIteratorI   **values = 0;
+    ValueI           **prev_values = 0;
     const ValueI *v;
     char info[300];
 
     _datacount = 0;
-    if (channel_names.size() > _max_channel_count)
+    if (num > _max_channel_count)
     {
         sprintf(info,
                 "You tried to export %d channels.\n"
                 "For performance reason you are limited "
                 "to export %d channels at once",
-                channel_names.size(), _max_channel_count);
+                num, _max_channel_count);
         throwDetailedArchiveException(Invalid, info);
         return;
     }
 
+    channels = new ChannelIteratorI *[num];
+    base = new ValueIteratorI *[num];
+    values = new ValueIteratorI *[num];
+    prev_values = new ValueI *[num];
     // Open Channel & ValueIterator
     for (i=0; i<num; ++i)
     {
@@ -186,6 +194,7 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
         }
         base[i] = _archive->newValueIterator();
         prev_values[i] = 0;
+        values[i] = 0;
 
         if (_fill)
         {
@@ -217,7 +226,7 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
                         "not together with another channel",
                         channel_names[i].c_str());
                 throwDetailedArchiveException(Invalid, info);
-                return;
+                goto cleanup;
             }
         }
     }
@@ -232,7 +241,10 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
 #else
         if (! file.is_open ())
 #endif
+        {
             throwDetailedArchiveException(WriteError, _filename);
+            goto cleanup;
+        }
         out = &file;
     }
 
@@ -258,7 +270,7 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
     *out << "\n";
 
     // Find first time stamp
-    osiTime time = findOldestValue(values);
+    osiTime time = findOldestValue(values, num);
     while (time != nullTime && (_end==nullTime  ||  time <= _end))
     {
 #if 0
@@ -310,13 +322,14 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
         }
         *out << "\n";
         // Find time stamp for next line
-        time = findOldestValue(values);
+        time = findOldestValue(values, num);
     }
     post_scriptum(channel_names);
 
     if (out == &file)
         file.close();
 
+  cleanup:
     for (i=0; i<num; ++i)
     {
         delete prev_values[i];
@@ -324,5 +337,9 @@ void Exporter::exportChannelList(const stdVector<stdString> &channel_names)
         delete base[i];
         delete channels[i];
     }
+    delete [] prev_values;
+    delete [] values;
+    delete [] base;
+    delete [] channels;
 }
 

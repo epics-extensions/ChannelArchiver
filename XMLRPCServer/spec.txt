@@ -14,13 +14,13 @@ Pattern is a regular expression.
 If left empty, all names are returned.
 
 {string name, int32 start_sec, int32 start_nano,
-              int32 end_sec,   int32 end_nano}[] = archiver.get_names(string pattern)
+              int32 end_sec,   int32 end_nano}[] 
+            = archiver.get_names(string pattern)
 
 
 Time Stamps:
 Not(!) the raw EPICS time stamps with 1990 epoch,
 but time_t (1970 epoch).
-
 
 ** archiver.get_values
 result = archiver.get_values(string name[],
@@ -31,7 +31,8 @@ result = archiver.get_values(string name[],
 how : 0 - get raw data from archive, starting w/ start,
           up to either ('end' time or max. 'count' samples)
 
-Result := { meta, data }
+# NEW: Result is an array, one item per requested/returned channel
+Result := { meta, data }[]
 
 meta := { int32 type;
           type==0: string states[],
@@ -45,7 +46,7 @@ type:  string	0
        int      2
        double   3
 
-value := { int32 status, int32 sevr, int32 secs, int32 nano,
+value := { int32 stat, int32 sevr, int32 secs, int32 nano,
            <type> value([]) }
 
 count == 1 : scalar, value.value is just a value

@@ -19,12 +19,12 @@ int main(int argc, const char *argv[])
                              "fill", "fill columns w/ repeated values");
     CmdArgDouble interpol   (parser,
                              "interpolate", "<seconds>", "interpolate values");
-    CmdArgInt    reduce     (parser,
-                             "reduce", "<# of buckets>", "reduce data to # buckets");
     CmdArgFlag   verbose    (parser,
                              "verbose", "verbose mode");
     CmdArgFlag   GNUPlot    (parser,
                              "gnuplot", "generate GNUPlot output");
+    CmdArgInt    reduce     (parser,
+                             "reduce", "<# of buckets>", "reduce data to # buckets");
     CmdArgFlag   image      (parser,
                              "Gnuplot", "generate GNUPlot output for Image");
     CmdArgFlag   pipe       (parser,
@@ -46,6 +46,13 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
+	if (reduce > 0  && ! GNUPlot)
+    {
+        std::cerr << "Error:\n"
+                  << "Reduce option works only for GNUPlot output\n";
+        parser.usage();
+        return -1;
+    }
     if (image || pipe)
         GNUPlot.set();
     if (GNUPlot  &&  output.get().empty())

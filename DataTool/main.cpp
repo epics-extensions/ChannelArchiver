@@ -38,9 +38,9 @@ void list_names(const stdString &index_name)
 {
     IndexFile index(3);
     IndexFile::NameIterator names;
-    epicsTime stime, etime;
+    epicsTime stime, etime, t0, t1;
     stdString start, end;
-    bool ok;
+    bool ok, first =true;
     if (!index.open(index_name))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
@@ -64,8 +64,23 @@ void list_names(const stdString &index_name)
                tree->getM(),
                epicsTimeTxt(stime, start),
                epicsTimeTxt(etime, end));
+        if (first)
+        {
+            t0 = stime;
+            t1 = etime;
+            first = false;
+        }
+        else
+        {
+            if (t0 > stime)
+                t0 = stime;
+            if (t1 < etime)
+                t1 = etime;
+        }
     }
     index.close();
+    printf("Overall time range: %s - %s\n",
+           epicsTimeTxt(t0, start), epicsTimeTxt(t1, end));
 }
 
 DataHeader *get_dataheader(const stdString &dir, const stdString &file,

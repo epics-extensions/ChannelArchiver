@@ -29,7 +29,6 @@ I instrumented the server (the CGI tool) to print its
 runtime, measured at start & stop of the main() routine.
 Those times are tiny compared to the above:
 
-get_values(4 channels, each 2000 values = 8000 values) ran 0.830194 seconds
 get_values(4 channels, each 10 values = 40 values) ran 0.00993 seconds
 get_values(4 channels, each 100 values = 400 values) ran 0.030336 seconds
 get_values(4 channels, each 200 values = 800 values) ran 0.064259 seconds
@@ -41,3 +40,63 @@ get_values(4 channels, each 2500 values = 10000 values) ran 0.843693 seconds
 get_values(4 channels, each 3000 values = 12000 values) ran 1.01765 seconds
 get_values(4 channels, each 3500 values = 14000 values) ran 1.18937 seconds
 get_values(4 channels, each 4000 values = 16000 values) ran 1.33184 seconds
+
+
+Tried again with a C client (using xmlrpc-c-0.9.9).
+When the client printed everything, redirected to a file,
+these are the times:
+
+Total of 40 values
+real    0m0.183s
+user    0m0.080s
+sys     0m0.010s
+
+Total of 400 values
+real    0m0.311s
+user    0m0.160s
+sys     0m0.010s
+
+Total of 800 values
+real    0m0.510s
+user    0m0.300s
+sys     0m0.010s
+
+Total of 1600 values
+real    0m0.753s
+user    0m0.450s
+sys     0m0.050s
+
+Total of 2000 values
+real    0m0.886s
+user    0m0.530s
+sys     0m0.060s
+
+Total of 4000 values
+real    0m1.670s
+user    0m1.010s
+sys     0m0.040s
+
+Total of 8000 values
+real    0m3.278s
+user    0m1.800s
+sys     0m0.220s
+
+Total of 10000 values
+real    0m4.063s
+user    0m2.380s
+sys     0m0.180s
+
+Total of 12000 values
+real    0m4.750s
+user    0m2.790s
+sys     0m0.240s
+
+Total of 14000 values
+real    0m5.564s
+user    0m3.240s
+sys     0m0.310s
+
+Total of 16000 values
+real    0m6.280s
+user    0m3.650s
+sys     0m0.380s                    

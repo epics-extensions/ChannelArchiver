@@ -13,6 +13,20 @@ namespace eval camMisc {
   variable cfg_file $cfg_file_d
   variable force_cfg_file $force_cfg_file_d
 
+  package require cmdline
+  array set ::args [cmdline::getoptions ::argv {
+    {log.arg "" "create logfile"}
+    {log+.arg "" "append to logfile"}
+  }]
+  if {[regexp "^\[^/\]" $::args(log)]} {set ::args(log) $::pwd/$::args(log)}
+  if {[regexp "^\[^/\]" $::args(log+)]} {set ::args(log+) $::pwd/$::args(log+)}
+  if {$::args(log) != ""} {
+    file delete -force "$::args(log)"
+  }
+  if {$::args(log+) != ""} {
+    set $::args(log) $::args(log+)
+  }
+
   foreach k $::argv {
     if {[file exists "$k"]} {
       set cfg_file $k
@@ -114,12 +128,12 @@ proc camMisc::arcIdx {} {
 }
 
 proc camMisc::Block {row {var x}} {
-  write_file [file dirname [camMisc::arcGet $row cfg]]/BLOCKED ""
+  write_file [file join [file dirname [camMisc::arcGet $row cfg]] BLOCKED] ""
   set $var [lindex $::yesno 1]
 }
 
 proc camMisc::Release {row {var x}} {
-  file delete -force [file dirname [camMisc::arcGet $row cfg]]/BLOCKED
+  file delete -force [file join [file dirname [camMisc::arcGet $row cfg]] BLOCKED]
   set $var  [lindex $::yesno 0]
 }
 
@@ -148,9 +162,9 @@ if {$::debug} {
 
 proc camMisc::recCopyCfg {file dir} {
   set sdir [file dirname $file]
-  file copy -force $file $dir/
+  file copy -force $file $dir
   for_file line $file {
-    if [regexp "^!group\[ 	\]*(.*)\[ 	\]*$" $line all nfile] {
+    if {[regexp "^!group\[ 	\]*(.*)\[ 	\]*$" $line all nfile]} {
       recCopyCfg $sdir/$nfile $dir
     }
   }

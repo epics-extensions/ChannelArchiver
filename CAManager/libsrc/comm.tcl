@@ -12,7 +12,7 @@ proc camComm::CheckRunning {i rvar} {
     set $rvar "NO"
     return
   }
-  incr ::openSocks
+  lappend ::Socks $sock
 
   puts $sock "GET / HTTP/1.0"
   puts $sock ""
@@ -33,7 +33,7 @@ proc camComm::Close {sock} {
 #  array unset fstate $sock
   set fstate($sock) closed
   close $sock
-  incr ::openSocks -1
+  if {[set i [lsearch -exact $::socks $sock]] >= 0} { set ::socks [lreplace $::socks $i $i] }
 }
 
 proc camComm::condSet {var val} {
@@ -49,7 +49,7 @@ proc camComm::processAnswer {sock} {
   global fstate fsvar
   append ::bytes($sock) [read $sock]
   set bl [string bytelength $::bytes($sock)]
-  if {[eof $sock]} { append $::bytes($sock) "\n" }
+  if {[eof $sock]} { append ::bytes($sock) "\n" }
   set nl [string first "\n" $::bytes($sock)]
 
   # no full line yet...
@@ -62,7 +62,6 @@ proc camComm::processAnswer {sock} {
     open {
       if {![regexp "^HTTP/.* 200 OK" $line]} {
 	condSet $fsvar($sock) "invalid response"
-#	set fstate($sock) closed
 	camComm::Close $sock
       } else {
 	set fstate($sock) http
@@ -72,7 +71,6 @@ proc camComm::processAnswer {sock} {
       if {[regexp "^Server: (.*)" $line all server]} {
 	if {"$server" != "ArchiveEngine"} {
 	  condSet $fsvar($sock) "unknown Server"
-#	  set fstate($sock) closed
 	  camComm::Close $sock
 	} else {
 	  set fstate($sock) server

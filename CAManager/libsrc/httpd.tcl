@@ -79,7 +79,7 @@ proc httpd::getInput {fd} {
       puts $fd "</TABLE>"
       puts $fd "</body></html>"
       close $fd
-      exit
+      Exit
     }
     if [regexp "(.*)\\?(.*)" $_page($fd) all page args] {
 #      puts stderr [join $_query($fd) "\n"]
@@ -175,7 +175,7 @@ proc httpd::sendOutput {fd} {
   puts $fd "</TABLE>"
 
   if {$::debug} {
-    puts $fd "<p>is running since [time $_starttime] (currently $::openSocks open sockets)</p>"
+    puts $fd "<p>is running since [time $_starttime] (currently [llength $::socks] open sockets)</p>"
   }
   puts $fd "<table border=0 cellpadding=5>"
   puts $fd "<tr><th colspan=5 bgcolor=black><font color=white>Configured ArchiveEngines for config <font color=yellow><em>[file tail $camMisc::cfg_file]</em></font> of user <font color=yellow><em>$tcl_platform(user)</em></font> on host <font color=yellow><em>$::_host</em></font></font></th></tr>"

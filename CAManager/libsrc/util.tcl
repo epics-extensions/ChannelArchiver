@@ -16,7 +16,7 @@ set ::bgCheckInt 10
 set ::bgUpdateInt 10
 
 set ::multiVersion 1
-set ::openSocks 0
+set ::socks {}
 
 if [info exists tk_version] {
   set funame xxx
@@ -27,16 +27,38 @@ if [info exists tk_version] {
 proc $funame {args} {
   global errorInfo
   foreach l [split $errorInfo "\n"] {
-    puts stderr $l
     Puts "$l" error
   }
   if {$::debug} exit
 }
 
+proc Exit {{code 0}} {
+  if {[llength $::socks] > 0} {
+    puts stderr "waiting for open connections to close..."
+  }
+  set ::nextLoop 0
+  while {[llength $::socks] > 0} {
+    after 1000 {incr ::nextLoop}
+    update
+    vwait ::nextLoop
+    if {$::nextLoop >= 10} {break}
+  }
+  if {[llength $::socks] > 0} {
+    puts stderr "connections still open - terminating anyway!"
+  }
+  exit $code
+}
+
 proc Puts {s {color normal}} {
   set color $::colormap($color)
   set now "[clock format [clock seconds] -format %Y/%m/%d\ %H:%M:%S]: "
-  if {$::debug} {puts stderr "$now$s"}
+  if {[info exists ::args(log)] && ("$::args(log)" != "")} {
+    set w [open $::args(log) a+]
+    puts $w "$now$s"
+    close $w
+  }
+
+  puts stdout "$now$s"
   if {$color == "no"} return
   if {$color != "normal"} {
     set s "<font color=$color>$s</font>"
@@ -285,8 +307,15 @@ proc readCFG {} {
   }
   update
 }
-set ::mutex 0
 
+proc EPuts {i lvl msg} {
+  if {![info exists ::wasError($i)] || ($::wasError($i) != $lvl)} {
+    Puts "$msg" error
+  }
+  set ::wasError($i) $lvl
+}
+
+set ::mutex 0
 proc semTake {} {
   while {$::mutex} {
     after 100 {set ::pipi 1}
@@ -342,16 +371,46 @@ proc runArchiver {i {forceRun 0}} {
     return
   }
 
-  file delete -force $ROOT/archive_active.lck
-  if {[file exists $ROOT/archive_active.lck]} {
-    if {![info exists ::wasError($i)] || ($::wasError($i) != 2)} {
-      Puts "Lockfile for \"$descr\" exists - Archiver already running! (or terminated abnormally?)" error
+  # Inspect the first 20 lines of the previous log-file for possible
+  # problems.
+  if {[file exists [file join $ROOT runlog]]} {
+    set rh [open [file join $ROOT runlog] r]
+    for {set j 0} {$j < 20} {incr j} {
+      if {[eof $rh]} break
+      gets $rh line
+      switch -regexp -- $line {
+	"Found an existing lock file" {
+	  EPuts $i 2 "\"$descr\" terminated because it found an existing lock file!"
+	}
+	"bind failed for HTTPServer::create" {
+	  EPuts $i 3 "\"$descr\" terminated because it couldn't bind to the required port!"
+	}
+	"Config file '.*': cannot open" {
+	  EPuts $i 4 "\"$descr\" terminated because it couldn't open the config-file!"
+	}
+      }
     }
-    set ::wasError($i) 2
-    semGive
-    return
+    close $rh
   }
 
+  # The lockfile may still exist, because the previous archiver still needs
+  # time to flush it's buffers and close the archive.
+  # We'll try again later.
+  if {![info exists ::tryAgain($i)]} {set ::tryAgain($i) 1}
+  if {[file exists [file join $ROOT archive_active.lck]]} {
+    incr ::tryAgain($i)
+    if {($::tryAgain($i) > 6)} {
+      EPuts $i 5 "Lockfile for \"$descr\" exists - Archiver already/still running! (or terminated abnormally?)"
+      semGive
+      return
+    } else {
+      Puts "Lockfile for \"$descr\" exists - $::tryAgain($i). try in $::bgCheckInt seconds"
+      semGive
+      return
+    }
+  }
+  set ::tryAgain($i) 1
+  
   lassign [duetime $i] starttime stoptime
 
   set toggle 0
@@ -369,14 +428,24 @@ proc runArchiver {i {forceRun 0}} {
   }
 
   # if it's a toggle-archive, delete the one to overwrite
+#  set adir [file dirname $archive]
   if {$toggle && ("$::lastArc($i)" != "$archive")} {
-    set files [glob -nocomplain [file dirname $archive]/*]
+#     if {[file exists $ROOT/$archive]} {
+#       file mkdir $ROOT/last/$adir
+#       if {[file exists $ROOT/last/$adir]} {
+# 	file delete -force $ROOT/last/$adir
+#       }
+#       file rename $ROOT/$adir $ROOT/last/$adir
+#    }
+    set files [glob -nocomplain $ROOT/[file dirname $archive]/*]
     if {[llength $files] > 0} {
+      Puts "deleting $files"
       eval file delete -force $files
-    } 
+    }
   }
+  set ::lastArc($i) $archive
 
-  if {!$forceRun && [file exists $ROOT/BLOCKED]} {
+  if {!$forceRun && [file exists [file join $ROOT BLOCKED]]} {
     if { ![info exists ::wasError($i)] || ($::wasError($i) != 3) } {
       Puts "start of \"$descr\" blocked!" error
       set ::wasError($i) 3
@@ -414,8 +483,10 @@ proc runArchiver {i {forceRun 0}} {
   Puts "start \"$descr\"" command
   cd $ROOT
   if {$cfgc} {
+#    exec strace -oTRACE ArchiveEngine -p $port -description "$descr" -log $log -nocfg $cfg $archive >&runlog &
     exec ArchiveEngine -p $port -description "$descr" -log $log -nocfg $cfg $archive >&runlog &
   } else {
+#    exec strace -oTRACE ArchiveEngine -p $port -description "$descr" -log $log $cfg $archive >&runlog &
     exec ArchiveEngine -p $port -description "$descr" -log $log $cfg $archive >&runlog &
   }
 
@@ -501,14 +572,26 @@ proc stopArchiver {i {forceStop 0}} {
   }
   Puts "stop \"[camMisc::arcGet $i descr]\"" command
   if {![catch {set sock [socket [camMisc::arcGet $i host] [camMisc::arcGet $i port]]}]} {
-    incr ::openSocks
+    fconfigure $sock -blocking 0
+    fileevent $sock readable [list justread $sock]
+    lappend ::socks $sock
     puts $sock "GET /stop HTTP/1.0"
     puts $sock ""
-    after 300 {set ::pipi 0}
-    vwait ::pipi
-    close $sock
-    incr ::openSocks -1
+    flush $sock
+#    puts stderr "                   sent stop-request($sock)"
   }
+}
+
+proc justread {sock} {
+#  puts stderr "                   consuming data($sock)"
+  set data [read $sock]
+  flush $sock
+  if {[eof $sock]} {
+#    puts stderr "                   closing $sock"
+    close $sock
+    if {[set i [lsearch -exact $::socks $sock]] >= 0} { set ::socks [lreplace $::socks $i $i] }
+  }
+  update
 }
 
 proc updateMultiArchives {} {

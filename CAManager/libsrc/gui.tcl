@@ -43,7 +43,6 @@ proc camGUI::init {} {
     }
     foreach k [registry keys "$camMisc::reg_stem\\Settings"] {
       foreach v [registry values "$camMisc::reg_stem\\Settings\\$k"] {
-	puts "  setting ::${k}($v) to [registry get $camMisc::reg_stem\\Settings\\$k $v]"
 	set ::${k}($v) [registry get "$camMisc::reg_stem\\Settings\\$k" $v]
       }
     }
@@ -60,7 +59,7 @@ proc camGUI::actionDialog {title} {
   set f [toplevel .t$::tl_cnt]
   wm protocol $f WM_DELETE_WINDOW "after 1 $f.bb.cancel invoke"
   wm title $f $title
-
+  
   camGUI::packTree $f {
     {frame bb {-bd 0} {-side bottom -fill x} {
       {button go {-text Go -command {set ::var(%P,go) 1}} {-side right -padx 4 -pady 4}}
@@ -73,27 +72,9 @@ proc camGUI::actionDialog {title} {
     }}
   }
 
-#  frame $f.bb -bd 0
-#  button $f.bb.go -text Go -command "set ::var($f,go) 1"
-#  button $f.bb.cancel -text Cancel -command "set ::var($f,go) 0"
-#  pack $f.bb.go $f.bb.cancel -side right -padx 4 -pady 4
-#  pack $f.bb -side bottom -fill x
-
-#  frame $f.tf -bd 0
-#  text $f.tf.t -bg white -state disabled -wrap none -width 80 -height 15 -xscrollcommand "$f.tf.h set" -yscrollcommand "$f.tf.v set"
   $f.tf.t tag add error end; $f.tf.t tag configure error -foreground red
   $f.tf.t tag add command end; $f.tf.t tag configure command -foreground blue
   $f.tf.t tag add normal end;
-#  scrollbar $f.tf.h -orient horiz -command "$f.tf.t xview"
-#  scrollbar $f.tf.v -orient vert -command "$f.tf.t yview"
-  #     grid $f.tf.t $f.tf.v -sticky wens
-  #     grid $f.tf.h -sticky wens
-  #     grid columnconfigure $f 1 -weight 10
-  #     grid rowconfigure $f 1 -weight 10
-#  pack $f.tf.h -side bottom -fill x
-#  pack $f.tf.v -side right -fill y
-#  pack $f.tf.t -fill both -expand t
-#  pack $f.tf -side bottom -expand t -fill both -padx 4 -pady 4
   return $f
 }
 
@@ -139,18 +120,22 @@ proc camGUI::entrybox {w label labelside var args} {
   eval pack $w.e -side top -fill both $args
 }
 
+
 proc camGUI::checkJob {} {
   after [expr $::checkInt * 1000] camGUI::checkJob
   if {$::dontCheckAtAll} return
   set ::busyIndicator "@"
   for {set row 0} {$row < [llength [camMisc::arcIdx]]} {incr row} {
-    camComm::condSet camGUI::aEngines($row,$::iBlocked) [lindex $::yesno [file exists [file dirname [camMisc::arcGet $row cfg]]/BLOCKED]]
+    camComm::condSet camGUI::aEngines($row,$::iBlocked) \
+	[lindex $::yesno [file exists [file join [file dirname [camMisc::arcGet $row cfg]] BLOCKED]]]
 	
     after 10 camComm::CheckRunning $row camGUI::aEngines($row,$::iRun)
     update
   }
   after 500 {set ::busyIndicator ""}
 }
+
+
 
 proc camGUI::aCheck {w} {
   if {[regexp (\[0-9\]*), [$w cursel] all row] && 
@@ -957,7 +942,8 @@ proc camGUI::initTable {table} {
     set aEngines($i,$::iRun) Dunno
     set aEngines($i,$::iBlocked) Dunno
 
-    set camGUI::aEngines($i,$::iBlocked) [lindex $::yesno [file exists [file dirname [camMisc::arcGet $i cfg]]/BLOCKED]]
+    set camGUI::aEngines($i,$::iBlocked) \
+	[lindex $::yesno [file exists [file join [file dirname [camMisc::arcGet $i cfg]] BLOCKED]]]
     after 1 "camComm::CheckRunning $i camGUI::aEngines($i,$::iRun)"
   }
   for {set i [llength [camMisc::arcIdx]]} {$i < $row} {incr i} {
@@ -1514,7 +1500,7 @@ proc camGUI::SaveSettings {{fh -1}} {
   save $wh ::bgCheckInt $::bgCheckInt bgCheckInt
   save $wh ::bgUpdateInt $::bgUpdateInt bgUpdateInt
   save $wh ::multiVersion $::multiVersion multiVersion
-  if {$wh != $fh} { 
+  if {$fh != -1} { 
     close $wh 
     file rename -force $camMisc::cfg_file.N $camMisc::cfg_file
   }
@@ -1753,7 +1739,7 @@ proc camGUI::switchOptions {a b c} {
 proc camGUI::aTest {w} {
   set initialdir [pwd]
   set arch ""
-  if [regexp (\[0-9\]*), [$w cursel] all row] {
+  if {[regexp (\[0-9\]*), [$w cursel] all row]} {
     set initialdir [file dirname [camMisc::arcGet $row cfg]]
     set arch [clock format [clock seconds] -format $initialdir/[camMisc::arcGet $row archive]]
     if {![file exists $arch]} {set arch ""}

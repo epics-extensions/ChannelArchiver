@@ -233,7 +233,7 @@ public:
     /// Helper to set data.next_file/offset
     void set_next(const stdString &basename, FileOffset offset);
 
-    void show(FILE *f);
+    void show(FILE *f, bool full_detail);
 
 private:
     bool get_prev_next(const char *name, FileOffset new_offset);

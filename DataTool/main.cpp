@@ -405,6 +405,8 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
                                           unsigned long &direct_count,
                                           unsigned long &chained_count)
 {
+    DataFile *datafile;
+    DataHeader *header;
     direct_count = chained_count = 0;
     AutoPtr<RTree> tree(index.getTree(channel_name));
     if (! tree)
@@ -425,22 +427,21 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
     {
         ++direct_count;
         if (verbose > 2)
-            printf("'%s' @ 0x%lX: %s - %s\n",
+            printf("'%s' @ 0x%lX: Indexed range %s - %s\n",
                    block.data_filename.c_str(), block.data_offset,
                    epicsTimeTxt(node.record[idx].start, start),
                    epicsTimeTxt(node.record[idx].end, end));
         if (verbose > 3)
         {
-            DataFile *datafile = DataFile::reference(index.getDirectory(),
-                                                     block.data_filename,
-                                                     false);
+            datafile = DataFile::reference(index.getDirectory(),
+                                           block.data_filename,
+                                           false);
             if (datafile)
             {
-                DataHeader *header = datafile->getHeader(block.data_offset);
+                header = datafile->getHeader(block.data_offset);
                 if (header)
                 {
-                    printf("Header:\n");
-                    header->show(stdout);
+                    header->show(stdout, true);
                     delete header;
                 }
                 else
@@ -450,13 +451,42 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
             else
                 printf("Cannot access data file\n");
         }
+        bool first_hidden_block = true;
         while (tree->getNextChainedBlock(block))
         {
+            if (first_hidden_block && verbose > 2)
+            {
+                first_hidden_block = false;
+                printf("Hidden blocks with smaller time range:\n");
+            }
             ++chained_count;
             if (verbose > 2)
+            {
                 printf("---  '%s' @ 0x%lX\n",
                        block.data_filename.c_str(), block.data_offset);
+                if (verbose > 3)
+                {
+                    datafile = DataFile::reference(index.getDirectory(),
+                                                   block.data_filename,
+                                                   false);
+                    if (datafile)
+                    {
+                        header = datafile->getHeader(block.data_offset);
+                        if (header)
+                        {
+                            header->show(stdout, false);
+                            delete header;
+                        }
+                        else
+                            printf("Cannot read header in data file.\n");
+                        datafile->release();
+                    }
+                    else
+                        printf("Cannot access data file\n");
+                }   
+            }
         }
+        printf("\n");
     }
     return direct_count + chained_count;
 }

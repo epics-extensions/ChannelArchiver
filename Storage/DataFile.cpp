@@ -455,32 +455,44 @@ void DataHeader::set_next(const stdString &basename, FileOffset offset)
     data.next_offset = offset;
 }
 
-void DataHeader::show(FILE *f)
+void DataHeader::show(FILE *f, bool full_detail)
 {
-    stdString t;
-    fprintf(f, "Buffer  : '%s' @ 0x%lX\n",
-           datafile->basename.c_str(), offset);               
-    fprintf(f, "Prev    : '%s' @ 0x%lX\n",
-            data.prev_file, data.prev_offset);
-    epicsTime2string(data.begin_time, t);
-    fprintf(f, "Time    : %s\n", t.c_str());
-    epicsTime2string(data.end_time, t);
-    fprintf(f, "...     : %s\n", t.c_str());
-    epicsTime2string(data.next_file_time, t);
-    fprintf(f, "New File: %s\n", t.c_str());
     size_t val_size = RawValue::getSize(data.dbr_type, data.dbr_count);
     size_t maxcount = (val_size > 0) ?
         (data.buf_size - sizeof(DataHeader::DataHeaderData)) / val_size : 0;
-    fprintf(f, "DbrType : %d, %d elements (%lu bytes/sample)\n",
-            data.dbr_type, data.dbr_count,
-            (unsigned long) val_size);
-    fprintf(f, "Samples : %ld used out of %d\n", data.num_samples, maxcount);
-    fprintf(f, "Size    : %ld bytes, free: %ld bytes (header: %d bytes)\n",
-            data.buf_size, data.buf_free, sizeof(DataHeader::DataHeaderData));
-    fprintf(f, "Curr.   : %ld\n", data.curr_offset);
-    fprintf(f, "Period  : %g\n", data.period);
-    fprintf(f, "CtrlInfo@ 0x%lX\n", data.ctrl_info_offset);
-    fprintf(f, "Next    : '%s' @ 0x%lX\n",
-            data.next_file, data.next_offset);
-    fprintf(f, "\n");
+    stdString t;
+    if (full_detail)
+    {
+        fprintf(f, "Buffer  : '%s' @ 0x%lX\n",
+                datafile->basename.c_str(), offset);               
+        fprintf(f, "Prev    : '%s' @ 0x%lX\n",
+                data.prev_file, data.prev_offset);
+        epicsTime2string(data.begin_time, t);
+        fprintf(f, "Time    : %s\n", t.c_str());
+        epicsTime2string(data.end_time, t);
+        fprintf(f, "...     : %s\n", t.c_str());
+        epicsTime2string(data.next_file_time, t);
+        fprintf(f, "New File: %s\n", t.c_str());
+        fprintf(f, "DbrType : %d, %d elements (%lu bytes/sample)\n",
+                data.dbr_type, data.dbr_count,
+                (unsigned long) val_size);
+        fprintf(f, "Samples : %ld used out of %d\n", data.num_samples, maxcount);
+        fprintf(f, "Size    : %ld bytes, free: %ld bytes (header: %d bytes)\n",
+                data.buf_size, data.buf_free, sizeof(DataHeader::DataHeaderData));
+        fprintf(f, "Curr.   : %ld\n", data.curr_offset);
+        fprintf(f, "Period  : %g\n", data.period);
+        fprintf(f, "CtrlInfo@ 0x%lX\n", data.ctrl_info_offset);
+        fprintf(f, "Next    : '%s' @ 0x%lX\n",
+                data.next_file, data.next_offset);
+    }
+    else
+    {
+        fprintf(f, "'%s' @ 0x%lX ", datafile->basename.c_str(), offset);
+        fprintf(f, "%ld/%d samples from ", data.num_samples, maxcount);
+        epicsTime2string(data.begin_time, t);
+        fprintf(f, " %s - ", t.c_str());
+        epicsTime2string(data.end_time, t);
+        fprintf(f, "%s\n", t.c_str());
+        epicsTime2string(data.next_file_time, t);
+    }
 }

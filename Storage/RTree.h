@@ -177,7 +177,7 @@ public:
     /// the one originally inserted and commonly used
     /// for data retrieval. It can also contain a chain of
     /// data blocks that were inserted later (at a lower priority).
-    /// In case you care about those, invoke getCoveredBlock()
+    /// In case you care about those, invoke getNextChainedBlock()
     /// until it returns false.
     bool getNextChainedBlock(Datablock &block) const;
     

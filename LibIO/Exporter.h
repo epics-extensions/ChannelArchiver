@@ -1,5 +1,8 @@
 // Exporter.h
 
+#ifndef __EXPORTER_H__
+#define __EXPORTER_H__
+
 #include "ArchiveI.h"
 #include <iostream>
 
@@ -9,6 +12,7 @@
 // <UL>
 // <LI>CLASS SpreadSheetExporter
 // <LI>CLASS GNUPlotExporter
+// <LI>CLASS MatlabExporter
 // </UL>
 //
 // These classes export the values of selected channels
@@ -64,7 +68,7 @@ public:
     void exportMatchingChannels(const stdString &channel_name_pattern);
 
     //* Export channels from provided list
-    void exportChannelList(const stdVector<stdString> &channel_names);
+    virtual void exportChannelList(const stdVector<stdString> &channel_names);
 
     //* Return number of data lines produced
     size_t getDataCount();
@@ -138,3 +142,5 @@ inline void Exporter::setMaxChannelCount(size_t limit)
     _max_channel_count = limit;
 }
 
+
+#endif //__EXPORTER_H__

@@ -16,6 +16,7 @@ INC += ExpandingValueIteratorI.h
 INC += LinInterpolValueIteratorI.h
 INC += Exporter.h
 INC += GNUPlotExporter.h
+INC += MatlabExporter.h
 INC += InfoFilterValueIteratorI.h
 INC += SpreadSheetExporter.h
 INC += DataFile.h
@@ -62,6 +63,7 @@ LIBSRCS += ExpandingValueIteratorI.cc
 LIBSRCS += LinInterpolValueIteratorI.cc
 LIBSRCS += Exporter.cc
 LIBSRCS += SpreadSheetExporter.cc
+LIBSRCS += MatlabExporter.cc
 LIBSRCS += GNUPlotExporter.cc
 
 #       Library to build:

@@ -4,6 +4,7 @@
 #include "BinArchive.h"
 #include "MultiArchive.h"
 #include "GNUPlotExporter.h"
+#include "MatlabExporter.h"
 #include "ArgParser.h"
 
 int main(int argc, const char *argv[])
@@ -16,7 +17,8 @@ int main(int argc, const char *argv[])
     CmdArgDouble round      (parser, "round", "<seconds>", "round time stamps within 'seconds'");
     CmdArgDouble interpol   (parser, "interpolate", "<seconds>", "interpolate values");
     CmdArgFlag   verbose    (parser, "verbose", "verbose mode");
-    CmdArgFlag   GNUPlot    (parser, "gnuplot", "generate GNUPlot output mode");
+    CmdArgFlag   GNUPlot    (parser, "gnuplot", "generate GNUPlot output");
+    CmdArgFlag   Matlab     (parser, "Matlab", "generate Matlap output");
     CmdArgFlag   GIFPlot    (parser, "GIF", "generate GNUPlot output for gif image");
     CmdArgFlag   status_text(parser, "text", "include status information");
     CmdArgString output     (parser, "output", "<file>", "output to file instead of stdout");
@@ -52,6 +54,11 @@ int main(int argc, const char *argv[])
             if (GIFPlot)
                 gnu->makeImage();
             exporter = gnu;
+        }
+        else if (Matlab)
+        {
+            MatlabExporter *matlab = new MatlabExporter(archive, output);
+            exporter = matlab;
         }
         else
             exporter = new SpreadSheetExporter(archive, output);

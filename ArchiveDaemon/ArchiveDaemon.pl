@@ -13,7 +13,6 @@
 #
 # kasemir@lanl.gov
 
-# TODO: Show next stop & restart, handle 'overlap' archive (for PPS)
 # TODO: daemon often tries to stop twice. Is that an issue?
 
 use English;
@@ -135,7 +134,7 @@ my ($http_check_timeout) = 1;
 my ($read_timeout) = 10;
 
 # Number of entries in the "Messages" log.
-my ($message_queue_length) = 20;
+my ($message_queue_length) = 25;
 
 # Detach from terminal etc. to run as a background daemon?
 # 1 should always be OK unless you're doing strange debugging.
@@ -171,6 +170,23 @@ my ($start_time_text);
 my ($last_check) = 0;
 my ($last_index_update) = 0;
 my ($last_full_index) = 0;
+
+# TODO: This looks bad.
+my (%weekdays, @weekdays);
+$weekdays{Su} = 0;
+$weekdays{Mo} = 1;
+$weekdays{Tu} = 2;
+$weekdays{We} = 3;
+$weekdays{Th} = 4;
+$weekdays{Fr} = 5;
+$weekdays{Sa} = 6;
+$weekdays[0] = "Su";
+$weekdays[1] = "Mo";
+$weekdays[2] = "Tu";
+$weekdays[3] = "We";
+$weekdays[4] = "Th";
+$weekdays[5] = "Fr";
+$weekdays[6] = "Sa";
 
 # ----------------------------------------------------------------
 # Message Queue
@@ -237,6 +253,15 @@ sub read_config($)
 	$config[$#config]{desc} = $engine->{desc}[0];
 	$config[$#config]{port} = $engine->{port}[0];
 	$config[$#config]{config} = $engine->{config}[0];
+	if (defined($engine->{weekly}))
+	{
+	    my ($daytxt, $daily) = split(/ /, $engine->{weekly}[0]);
+	    die ("Engine '$config[$#config]{desc}': " .
+		 "Unknown day name in weekly config $engine->{weekly}[0]")
+		unless defined($weekdays{$daytxt});	    
+	    $config[$#config]{day} = $weekdays{$daytxt};
+	    $config[$#config]{daily} = $daily;
+	}
 	if (defined($engine->{daily}))
 	{
 	    $config[$#config]{daily} = $engine->{daily}[0];
@@ -260,12 +285,13 @@ sub update_schedule($)
 {
     my ($now) = @ARG;
     my ($engine, $engine_start_secs);
-    my ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$x);
+    my ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$n_wday,$x);
     my ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec);
     my ($hour, $minute, $hours, $minutes);
 
     print " ------ update_schedule  : ", time_as_text($now), "\n";
-    ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$x,$x,$x) = localtime($now);
+    ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$n_wday,$x,$x) =
+	localtime($now);
     foreach $engine ( @config )
     {
 	print " Engine $engine->{desc} ";
@@ -293,12 +319,21 @@ sub update_schedule($)
 		$engine->{next_stop}  = 0;
 	    }
 	    else
-	    {   # Running: Determine stop time
+	    {   
+                # Running: Determine stop time
 		($hour, $minute) = split ':', $engine->{daily};
 		$engine->{next_start} = 0;
+		if defined($engine->{day})
+		{
+		    # Today's daynum: $n_wday
+		    # Target:         $engine->{day}
+		}
+		else
+		{
+		    $engine->{next_stop} = timelocal(0,$minute,$hour,
+						     $n_mday,$n_mon,$n_year);
+		}
 		# Today or already into the next day?
-		$engine->{next_stop} = timelocal(0,$minute,$hour,
-						 $n_mday,$n_mon,$n_year);
 		if ($engine_start_secs > $engine->{next_stop})
 		{
 		    $engine->{next_stop} += 24*60*60;
@@ -396,10 +431,17 @@ sub add_index($)
 }
 
 # Write IndexTool config file
-sub write_indexconfig($$)
+# For a _full_ update, we include
+# every sub-index in the master index config.
+# Otherwise, sub-indices that are older than
+# the master index (by $index_omit_age in days)
+# are omitted, assuming they're already in the master.
+sub write_indexconfig($)
 {
-    my ($filename, $full) = @ARG;
-    my ($index, $skip, $index_age, $diff, $why);
+    my ($full) = @ARG;
+    my ($filename, $index, $skip, $index_age, $diff, $why);
+    $filename = $index_update_config;
+    $filename = $index_config if ($full);
     $skip = 0;
     if (-f $master_index)
     {
@@ -446,12 +488,6 @@ sub write_indexconfig($$)
     print INDEX "</indexconfig>\n";
     close(INDEX);
     add_message("Updated $filename");
-}
-
-sub write_indexconfigs()
-{
-    write_indexconfig($index_config, 1);
-    write_indexconfig($index_update_config, 0);
 }
 
 # ----------------------------------------------------------------
@@ -561,7 +597,15 @@ sub handle_HTTP_main($)
 	print $client "<TD ALIGN=CENTER>";
 	if ($engine->{daily})
 	{
-	    print $client "Daily at $engine->{daily}.";
+	    if ($engine->{day})
+	    {
+		print $client "Every $weekdays[$engine->{day}] " .
+		    "at $engine->{daily}.";
+	    }
+	    else
+	    {
+		print $client "Daily at $engine->{daily}.";
+	    }
 	}
 	elsif ($engine->{hourly})
 	{
@@ -965,7 +1009,8 @@ sub start_engine($$)
 	system($cmd);
 	if (add_index("$dir/$index"))
 	{
-	    write_indexconfigs();
+	    write_indexconfig(1);
+	    write_indexconfig(0);
 	    return 1;
 	}
 	return 0;
@@ -1057,7 +1102,8 @@ if ($daemonization)
 $start_time_text = time_as_text(time);
 my ($httpd) = create_HTTPD($http_port);
 my ($now);
-write_indexconfigs();
+write_indexconfig(1);
+write_indexconfig(0);
 while (1)
 {
     $now = time;
@@ -1079,6 +1125,7 @@ while (1)
     }
     if (($now - $last_index_update) > $index_update_period)
     {
+	write_indexconfig(0);
 	run_indextool($now);
     }
     check_HTTPD($httpd);

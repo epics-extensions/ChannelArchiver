@@ -1,3 +1,13 @@
+// --------------------------------------------------------
+// $Id$
+//
+// Please refer to NOTICE.txt,
+// included as part of this distribution,
+// for legal information.
+//
+// Kay-Uwe Kasemir, kasemir@lanl.gov
+// --------------------------------------------------------
+
 #ifndef __LININTERPOLVALUEITERATOR_H__
 #define __LININTERPOLVALUEITERATOR_H__
 

@@ -134,7 +134,7 @@ xmlrpc_value *get_values(xmlrpc_env *env,
     xmlrpc_value *values, *val_array, *value;
     xmlrpc_int32 key, start_sec, start_nano, end_sec, end_nano, count, how;
     xmlrpc_int32 secs, nano;
-    xmlrpc_int32 name_count, name_index, name_len, i;
+    xmlrpc_int32 name_count, name_index, name_len, i, Dsec, Dnano;
     char *name;
 
     // Extract arguments
@@ -162,10 +162,12 @@ xmlrpc_value *get_values(xmlrpc_env *env,
         meta = make_ctrl_info(env, name);
         // Values
         values = xmlrpc_build_value(env, STR("()"));
+	Dsec = (end_sec - start_sec)/count;
+        Dnano = (end_nano - start_nano)/count;
         for (i=0; i<count; ++i)
         {
-            secs = start_sec + i*(end_sec - start_sec)/count;
-            nano = start_nano + i*(end_nano - start_nano)/count;
+            secs = start_sec + i*Dsec;
+            nano = start_nano + i*Dnano;
             val_array = xmlrpc_build_value(env, STR("(d)"),
                                            ((double)3.14+i));
             value = xmlrpc_build_value(env,

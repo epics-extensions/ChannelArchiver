@@ -10,7 +10,7 @@ export REQUEST_METHOD=POST
 export CONTENT_TYPE=text/xml
 export CONTENT_LENGTH=`wc --bytes <$REQUEST`
 export SERVERCONFIG=test.xml
-cat $REQUEST | O.linux-x86/ArchiveDataServer
+cat $REQUEST | O.${EPICS_HOST_ARCH}/ArchiveDataServer
 
 #cat /tmp/archserver.log
 #rm /tmp/archserver.log

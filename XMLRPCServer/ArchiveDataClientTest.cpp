@@ -4,8 +4,7 @@
 // local
 #include "ArchiveDataClient.h"
 
-//#define URL "http://localhost/cgi-bin/xmlrpc/ArchiveDataServer.cgi"
-#define URL "http://bogart/cgi-bin/xmlrpc/ArchiveDataServer4.cgi"
+#define URL "http://localhost/archive/cgi/ArchiveDataServer.cgi"
 
 bool printer(void *arg, const char *name, size_t n, size_t i,
              const CtrlInfo &info,
@@ -65,16 +64,7 @@ void run_test(bool verbose=false)
     // ------------------------------------------------------
     stdVector<ArchiveDataClient::NameInfo> name_infos;
     stdString start_txt, end_txt;
-    if (client.getNames(1, "IOC", name_infos))
-    {
-        printf("Names:\n");
-        for (i=0; i<name_infos.size(); ++i)
-            printf("'%s': %s - %s\n",
-                   name_infos[i].name.c_str(),
-                   epicsTimeTxt(name_infos[i].start, start_txt),
-                   epicsTimeTxt(name_infos[i].end, end_txt));
-    }
-    if (client.getNames(4, "", name_infos))
+    if (client.getNames(1, "PV", name_infos))
     {
         printf("Names:\n");
         for (i=0; i<name_infos.size(); ++i)
@@ -86,19 +76,19 @@ void run_test(bool verbose=false)
     // ------------------------------------------------------
     stdVector<stdString> names;
     names.push_back(stdString("DoublePV"));
-    names.push_back(stdString("U16PV"));
-    names.push_back(stdString("BoolPV"));
-    names.push_back(stdString("EnumPV"));
-    names.push_back(stdString("TextPV"));
-    names.push_back(stdString("ExampleArray"));
+//    names.push_back(stdString("U16PV"));
+//    names.push_back(stdString("BoolPV"));
+//    names.push_back(stdString("EnumPV"));
+//    names.push_back(stdString("TextPV"));
+//    names.push_back(stdString("ExampleArray"));
     epicsTime start, end;
     string2epicsTime("03/01/2004", start);
     string2epicsTime("03/01/2005", end);
-    client.getValues(4, names, start, end, 10, 0, printer, 0);
+    client.getValues(1, names, start, end, 10, 0, printer, 0);
 }
 
 int main (int argc, char** argv)
 {
-    run_test();
+    run_test(true);
     return 0;
 }

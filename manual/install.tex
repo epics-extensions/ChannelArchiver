@@ -1,4 +1,8 @@
 \chapter{Setup, Installation} \label{sec:install}
+In general, the archiver toolset should build on Unix-type operating
+systems that are supported by EPICS base 3.14.
+Specific instructions for Linux (RedHat and Mandrake) as well as the Apple
+Mac OS~X follow.
 
 \section{Compilation}
 The archiver tools use the EPICS build system as for example described
@@ -84,6 +88,19 @@ created as a result of ``configure'', you might prefer to read that
 patch file and apply the changes manually when you're not on RedHat 9
 or Mandrake 10.
 
+For Mac OS X, a version with patched configure scripts
+\cite{darwinports} that also includes the ``small numbers'' patch
+mentioned above'' is included in a different tar file:
+\begin{lstlisting}[keywordstyle=\sffamily]
+ tar vzcf xmlrpc-c-0.9.10_darwin.tgz xmlrpc-c-0.9.10
+ ll
+ cd xmlrpc-c-0.9.10
+ ./configure 
+ make
+ su
+ make install
+\end{lstlisting}
+
 The XML-RPC library depends on other packages. \emph{The ``configure''
 step will report errors in case those are missing.} For RedHat, those
 packages are usually included in the distribution but might not have
@@ -91,9 +108,10 @@ been installed by default, so look for the RPMs on your RedHat CDs.
 The following are also provided in the ThirdParty subdirectory:
 
 \subsubsection{w3c-libwww}
-Needed to compile the XML-RPC library, doesn't seem to come with
-Mandrake~10. For Readhat or Fedora, you can instead install the libwww
+This is needed to compile the XML-RPC library.
+For Readhat or Fedora, you can instead install the libwww
 and libwww-devel RPMs that come with the OS.
+For Mandrake~10, you can use the w3c-libwww sources as is:
 \begin{lstlisting}[keywordstyle=\sffamily]
 cd ChannelArchiver/ThirdParty
 tar vzoxf w3c-libwww-5.4.0.tgz
@@ -102,6 +120,14 @@ cd w3c-libwww-5.4.0
 make
 su
 make install
+\end{lstlisting}
+
+\noindent Mac OS X requires a patch to the configure script \cite{darwinports}:
+\begin{lstlisting}[keywordstyle=\sffamily]
+cd w3c-libwww-5.4.0
+patch <../w3c-libwww-5.4.0_osx_patch
+./configure --enable-shared --enable-static --with-zlib --with-ssl
+make
 \end{lstlisting}
 
 \subsection{Xerces XML Library}
@@ -132,6 +158,12 @@ make
 su
 make install
 \end{lstlisting}
+
+\noindent For Mac OS X the runConfigure looks like this:
+\begin{lstlisting}[keywordstyle=\sffamily]
+./runConfigure -p macosx -n native -P /usr/local
+\end{lstlisting}
+
 % Building Samples
 %cd $XERCESCROOT/samples
 %./runConfigure -plinux -cgcc -xg++

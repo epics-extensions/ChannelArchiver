@@ -52,7 +52,8 @@ What follows is an example setup for the Apache Web Server under Linux:
   found in ``/etc/httpd/conf/httpd.conf''. (For Mandrake 10, check
   ``/etc/httpd/conf/commonhttpd.conf'').
 \item Create a new web directory for the archiver with a CGI
-   sub-directory.
+   sub-directory. This is typically done under /var/www/html,
+   except for Mac OS~X, where you would use /Library/WebServer/Documents:
 \begin{lstlisting}[keywordstyle=\sffamily]
 mkdir /var/www/html/archive
 mkdir /var/www/html/archive/cgi

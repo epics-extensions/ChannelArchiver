@@ -175,7 +175,9 @@ Engine::Engine (const stdString &directory_file_name)
 	_buffer_reserve = 3;
 	_get_threshhold = 20.0;
 	_secs_per_file = BinArchive::SECS_PER_DAY;
+	_configuration = 0; // init. so that setSecsPerFile works
 	_archive = new Archive (new ENGINE_ARCHIVE_TYPE (directory_file_name, true /* for write */));
+	setSecsPerFile (_secs_per_file);
 
 	if (ca_task_initialize() != ECA_NORMAL)
 		throwDetailedArchiveException (Fail, "ca_task_initialize");
@@ -195,7 +197,6 @@ Engine::Engine (const stdString &directory_file_name)
 	// The CaPoller timer takes care of that:
 	ca_poller = new CaPoller (twentyth_second);
 	write_thread.create (Thread::lowPriority);
-	_configuration = 0;
 
 #ifdef USE_PASSWD
     _user = DEFAULT_USER;

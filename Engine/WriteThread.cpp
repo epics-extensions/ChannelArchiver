@@ -11,7 +11,6 @@ USING_NAMESPACE_CHANARCH
 int WriteThread::run ()
 {
 	LOG_MSG ("WriteThread started\n");
-	
 	while (_go)
 	{
 		_wait.take ();

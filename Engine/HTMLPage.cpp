@@ -8,6 +8,8 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+#include "ToolsConfig.h"
+#include "NetTools.h"
 #include "HTMLPage.h"
 #include <strstream>
 #include <stdarg.h>

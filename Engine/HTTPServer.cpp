@@ -12,6 +12,8 @@
 #pragma warning (disable: 4786)
 #endif
 
+#include "ToolsConfig.h"
+#include "NetTools.h"
 #include "HTTPServer.h"
 #include "MsgLogger.h"
 

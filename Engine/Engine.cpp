@@ -8,6 +8,8 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+#include "ToolsConfig.h"
+#include "NetTools.h"
 #include "ArchiveException.h"
 #include "Engine.h"
 #include "EngineServer.h"

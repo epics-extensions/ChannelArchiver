@@ -93,10 +93,9 @@ proc checkArchivers {args} {
 
 proc checkBgManager {fd h} {
   gets $fd line
-  if [regexp "Server: Channel Archiver bgManager (.*)@(.*):(\[0-9\]*):(.*)" $line \
-	  all user host port cfg] {
-    # don't care about the user-id
-    set ::reply($h) "$host:$port:$cfg"
+  if {[regexp "Server: Channel Archiver bgManager (.*)@(.*):(\[0-9\]*):(.*)" $line \
+	   all ::reply($h,user) ::reply($h,host) ::reply($h,port) ::reply($h,cfg)]} {
+    set ::reply($h) "$::reply($h,host):$::reply($h,port):$::reply($h,cfg)"
   }
   if {"$line" == "</html>"} {
     close $fd
@@ -152,7 +151,7 @@ proc checkForBgManager { {force 0} } {
       set msg "CAbgManager $tcl_platform(user)@$h:$::_port didn't reply within 3s!"
       set act restart
     } elseif {"$::reply($h)" != "$hn:$::_port:$camMisc::cfg_file"} {
-      set msg "CAbgManager expected to run like\n   $h:$::_port:$camMisc::cfg_file\nidentified itself as\n   $::reply($h)!"
+      set msg "CAbgManager expected to run \n   on host \"$h\" (port $::_port)\n   with config-file \"$camMisc::cfg_file\"\nidentified itself as\n   running on host \"$::reply($h,host)\" (port $::reply($h,port)\n   with config-file \"$::reply($h,cfg)\"\n   started by user \"$::reply($h,user)\"!"
       set act config
     } else {
       set msg "CAbgManager $tcl_platform(user)@$h:$::_port OK!"

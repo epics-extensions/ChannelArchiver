@@ -95,7 +95,8 @@ void MatlabExporter::exportChannelList(
                  << "' in archive\n";
             continue;
         }
-        if (! channel->getValueAfterTime(_start, value))
+        if (! channel->getValueBeforeTime(_start, value) &&
+            ! channel->getValueAfterTime(_start, value))
         {
             *out << "% No values found for channel '" << channel_names[i]
                  << "'\n";
@@ -116,10 +117,9 @@ void MatlabExporter::exportChannelList(
         // Value loop per channel
         line = 0;
         count = value->getCount();
-        while (value &&
-               (time=value->getTime()) !=nullTime &&
-               (_end==nullTime || time <= _end))
+        while (value)
         {
+            time=value->getTime();
             ++line;
             ++_data_count;
             osiTime2vals (time, year, month, day, hour, min, sec, nano);
@@ -153,6 +153,9 @@ void MatlabExporter::exportChannelList(
                 *out << variable << ".s(" << line << ")={'"
                      << txt << "'};\n";
             }
+            // Show one value after _end, then quit:
+            if (isValidTime(_end) && time >= _end)
+                break;
             ++value;
         }
         *out << variable << ".d=datenum(char("

@@ -23,4 +23,6 @@ StorageObj_DIR = $(INSTALL_LIB)
 Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 
+SCRIPTS_HOST += make_compress_script.pl
+
 include $(TOP)/configure/RULES

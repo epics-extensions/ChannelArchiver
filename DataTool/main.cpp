@@ -667,14 +667,14 @@ int main(int argc, const char *argv[])
     {
         start = new epicsTime;
         string2epicsTime(start_time.get(), *start);
-        if (verbose)
+        if (verbose > 1)
             printf("Using start time %s\n", epicsTimeTxt(*start, txt));
     }
     if (end_time.get().length() > 0)
     {
         end = new epicsTime();
         string2epicsTime(end_time.get(), *end);
-        if (verbose)
+        if (verbose > 1)
             printf("Using end time   %s\n", epicsTimeTxt(*end, txt));
     }
     // What's requested?

@@ -53,11 +53,11 @@ sub analyze_sub_archives()
     {
 	if ($subarchive =~ '(.*/)?([0-9]{4})/([0-9]{2})_([0-9]{2})\Z')
 	{   # Format path/YYYY/MM_DD
-	    $time = timelocal(0, 0, 0, $4, $3, $2);
+	    $time = timelocal(0, 0, 0, $4, $3-1, $2-1900);
 	}
 	elsif ($subarchive =~ '(.*/)?([0-9]{4})/([0-9]{2})_([0-9]{2})_([0-9]{2})\Z')
 	{   # Format path/YYYY/MM_DD_HH
-	    $time = timelocal(0, 0, $5, $4, $3, $2);
+	    $time = timelocal(0, 0, $5, $4, $3-1, $2-1900);
 	}
 	else
 	{
@@ -75,7 +75,7 @@ sub time2txt($)
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
 	= localtime($time);
     return sprintf("%02d/%02d/%04d %02d:%02d:%02d",
-		   $mon, $mday, 1900+$year, $hour, $min, $sec);
+		   $mon+1, $mday, 1900+$year, $hour, $min, $sec);
 }
 
 sub create_script()
@@ -91,7 +91,7 @@ sub create_script()
     {
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
 	    = localtime($times[0]);
-	$new_index = sprintf("%04d/%02d/index", 1900+$year, $mon);
+	$new_index = sprintf("%04d/%02d/index", 1900+$year, $mon+1);
     }
     print "# Combine the following $N sub-archives into $new_index:\n";
     for ($i=0; $i<$N; ++$i)
@@ -103,6 +103,7 @@ sub create_script()
     print "# Check that $new_index can be created, i.e. the path exists!\n";
     print "mkdir -p `dirname $new_index`\n";
     print "\n";
+    $prev_diff = undef;
     for ($i=0; $i<$N; ++$i)
     {
 	$t0 = $times[$i];
@@ -118,7 +119,7 @@ sub create_script()
 	    $end = undef;
 	    $diff = undef;
 	}
-	print "ArchiveDataTool $archives{$t0}->{path}/index ";
+	print "nice ArchiveDataTool -v 1 $archives{$t0}->{path}/index ";
 	print "-c $new_index ";
 	if (defined($end))
 	{
@@ -128,13 +129,21 @@ sub create_script()
 	{
 	    print "-s '$start'\n";
 	}
-	if ($prev_diff != 0  and $diff != $prev_diff)
+	if (defined($prev_diff) and defined($diff) and $diff != $prev_diff)
 	{
-	    print "# NOTE: Interval changed!\n";
+	    if ($diff >= 24*60*60)
+	    {
+		printf("# NOTE: Interval changed from %g to %g days!\n",
+		       $prev_diff/(24*60*60), $diff/(24*60*60));
+	    }
+	    else
+	    {
+		printf("# NOTE: Interval changed from %g to %g hours!\n",
+		       $prev_diff/(60*60), $diff/(60*60));
+	    }
 	}
 	$prev_diff = $diff;
     }
-    print "#\n";
 }
 
 # ----------------------------------------------------------------

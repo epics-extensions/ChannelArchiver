@@ -56,3 +56,15 @@ while (casi::value_valid($v)  and  casi::value_time($v) le $end)
     casi::value_next($v);
 }
 
+# Cleanup
+casi::delete_value($v);
+casi::delete_channel($c);
+casi::delete_archive($a);
+
+# With RedHat 8 & EPICS Base 3.14.1,
+# the code from "my($a) = casi::new_archive();"
+# until here was run in an infinite loop
+# (well, I stopped it after 30min)
+# and revealed no mem. leaks.
+# Without the delete_* calls, memory of course grew.
+

@@ -6,8 +6,20 @@ leads to difficulties when comparing values from different
 channels. The following subsections investigate the issue in more
 detail and show several ways of manipulating the data in order to
 allow data reduction and cross-channel comparisons.
+In short, the options described in the following subsections are:
+\begin{description}
+\item[\sffamily Raw Data:]
+  Provides every archived sample ``as is''.
+\item[\sffamily Staircase/Filling:]
+  Duplicates samples to form a spreadsheet.
+\item[\sffamily Linear/Averaged Interpolation:]
+  Provides exactly the requested number of data points by
+  interpolating or averaging the raw samples.
+\item[\sffamily Plot Binning:]
+  Reduces the number of samples for plotting.
+\end{description}
 
-\subsection{``Raw'' Data}
+\subsection{``Raw'' Data} \label{sec:rawdata}
 Even when two channels were served by the same IOC, and originating from
 records on the same scan rate, their time stamps will slightly differ
 because a single CPU cannot scan several channels at exactly the same
@@ -88,7 +100,7 @@ It is left to the end user to decide whether that previous sample is
 still useful at the requested start time, if it's ``close enough'', or
 if it needs to be ignored.
 
-\subsection{Staircase Interpolation}
+\subsection{Staircase Interpolation/Filling} \label{sec:filling}
 There are several ways of mapping channels onto matching time
 stamps. One is what we call \INDEX{Staircase Interpolation} or
 \INDEX{Filling}: Whenever there is no current value for a channel, we
@@ -146,7 +158,7 @@ channels A and B each had 2 values. With staircase interpolation, we
 don't get a spreadsheet with 2 lines of data but 4 lines of data.  The
 main advantage of filling lies is the preservation of original time stamps.
 
-\subsection{Linear Interpolation}
+\subsection{Linear/Averaged Interpolation}  \label{sec:lininterpol}
 Linear interpolation generates artificial values from the raw
 data. This can be used to reduce the amount of data: For a summary of
 the last day, it might be sufficient to look at one value every 30
@@ -232,3 +244,37 @@ within the queried time range:
   used to transfer structures.)
 \end{itemize}
 
+\subsection{Plot-Binning} \label{sec:plotbinning}
+This method is meant for plotting, providing data that --- when
+plotted --- looks exactly like the raw data, albeit significantly
+reducing the number of data points and hence speeding up the plot.  To
+accomplish this, the data is binned. For example, the time span of one
+day, 24~hours, can be divided into 800 sections, each of which covers 108
+seconds. Each of those sections is called a ``Bin''. The raw samples
+for the day are then investigated as follows:
+\begin{itemize}
+\item If there is no sample for the time span of a bin, the bin
+  remains empty.
+\item If there is one sample, it is placed in the bin.
+\item If there are two samples, they are placed in the bin.
+\item If there are more than two samples, the first and last one
+  are placed in the bin. In addition, two artificial samples are
+  created with a time stamp right between the first and last sample.
+  One contains the minimum, the other the maximum of all raw samples
+  who's time stamps fall into the bin. They are presented to the user
+  in the sequence initial, minimum, maximum, final.
+\end{itemize}
+
+In general, the use of $N$ bins can result in up to 4$N$ data points
+if we assume that each bin provides an initial, minimum, maximum and
+final value. In most cases, this results in a significant data
+reduction. As long as we plot this such that the width of the plot in
+pixes is close to the number of bins, there is no visual difference
+between the raw data plot and the binned plot.  Typical numbers for
+$N$ are around the width of a computer screen in pixels, that is
+800\ldots 1200.  For the special case were 3 raw values happen to fall
+into every bin, we will get 4$N$ instead of 4$N$ data points. For
+typical $N$, that is a slight but not dramatic increase in retrieval
+or plotting time. It is neglectable compared to the fact that binning
+guarantees an upper limit of 4$N$ data points, no matter how many raw
+samples there are.

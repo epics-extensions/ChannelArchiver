@@ -32,7 +32,9 @@ TAB-separated ASCII text, suitable for import into most spreadsheet
 programs for further analysis. Per default, ArchiveExport uses
 Staircase Interpolation to map the data for the requested channels
 onto matching time stamps, but one can select Linear Interpolation via
-the ``-interpolate'' option. See section \ref{sec:timestampcorr} on
+the ``-interpolate'' option. When GNUPlot output is selected, the
+Plot-Binning method is used, where the bin size is determined by the
+``-interpolate'' argument. See section \ref{sec:timestampcorr} on
 page~\pageref{sec:timestampcorr} for details.
 
 Assuming that your current working directory contains an
@@ -60,7 +62,20 @@ those spreadsheet columns with a user-defined format like
 ``MM/DD/YYYY HH:MM:SS.000000000''.
 If you use Microsoft Excel, you might be limited to a format with
 millisecond resolution: ``MM/DD/YYYY HH:MM:SS.000''.
-
 For graphing the data, the most suitable option is often an
 ``X-Y-Graph'', using the first row for labels, with the data series
 taken from the columns.
+
+The following call sequence will generate a GNUPlot data file ``data''
+together with a GNUPlot command file ``data.plt'' and execute it
+within GNUPlot:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+ArchiveExport index -m IOC \
+              -s "01/27/2003" \
+              -e "01/28/2003" -o data -gnu
+gnuplot
+        G N U P L O T
+        Version 3.7 patchlevel 3
+....
+gnuplot> load 'data.plt'
+\end{lstlisting}

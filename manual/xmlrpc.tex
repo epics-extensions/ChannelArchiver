@@ -101,27 +101,36 @@ result = archiver.values(
          int32 how)
 \end{lstlisting}
 
-\noindent The parameter ''how'' determines how the raw values of the various
-channels get arranged to meet the requested time range and count:
+\noindent The parameter ''how'' determines how the raw values of the
+various channels get arranged to meet the requested time range and
+count.  For details on the methods mentioned in here refer to section
+\ref{sec:timestampcorr} and following, beginning on page
+\pageref{sec:timestampcorr}.
 \begin{description}
 \item[\sffamily how = 0 (raw):]
-  Get raw data from archive,  starting w/ start,
+  Get raw data from archive (see \ref{sec:rawdata}), starting w/ 'start',
   up to either 'end' time or max. 'count' samples.
-\item[\sffamily how = 1 (spreadsheet):]
-  Get ``filled'' or staircase-interpolated data from archive, starting
-  w/ start, up to either 'end' time or max. 'count' samples.
-  For each channel, the same number of values is returned, and the
+\item[\sffamily how = 1 (filled/staircase spreadsheet):]
+  Get data that is filled or staircase-interpolated, starting
+  w/ 'start', up to either 'end' time or max. 'count' samples
+  (see \ref{sec:filling}).
+  For each channel, the same number of values is returned. The
   time stamps of the samples match accross channels, so that one can
-  print the samples for each channel as columns in a spread sheet.
+  print the samples for each channel as columns in a spreadsheet.
   If a spreadsheet cell is empty because the channel does not have any
   useful value for that point in time, a status/severity of
-  UDF/INVALID is returned (Tables \ref{tab:sevr} and \ref{tab:stat})
-  For details on the staircase interpolation, refer to section \ref{sec:timestampcorr} and following, beginning on page \pageref{sec:timestampcorr}.
+  UDF/INVALID is returned (Tables \ref{tab:sevr} and \ref{tab:stat}).
 \item[\sffamily how = 2 (interpol.):]
-  Get interpolated data from archive, starting w/ start,
-  up to either 'end' time or max. 'count' samples.
+  Get interpolated/averaged data from archive, starting w/ 'start',
+  up to either 'end' time or max. 'count' samples
+  (see \ref{sec:lininterpol}).
   The data is interpolated with time slots that are multiples
-  of (end-start)/count. Again refer to section \ref{sec:timestampcorr}.
+  of (end-start)/count, so you should expect to get close to 'count'
+  values which cover 'start' to 'end'.
+  Again refer to section \ref{sec:timestampcorr}.
+\item[\sffamily how = 3 (plot binning):]
+  Uses the plot-binning method based on 'count' bins
+  (see \ref{sec:plotbinning}).
 \end{description}
 
 \noindent The result is an array of structures,  one structure per

@@ -81,8 +81,8 @@ sub create_stuff()
 	    printf("# Launch the %s daemon (%s)\n",
 		   $daemon->{name}, $daemon->{desc});
 	    printf("\n");
-	    printf("ArchiveDaemon.pl -p %d -i %s -u 20 -f %s\n",   
-		   $daemon->{port}, $index_dtd, $daemonfile);
+	    printf("ArchiveDaemon.pl -p %d -i %s -u 20 -f %s/%s/%s\n",   
+		   $daemon->{port}, $index_dtd, $path, $daemon->{name}, $daemonfile);
 	    select $old_fd;
 	    close OUT;
 	}

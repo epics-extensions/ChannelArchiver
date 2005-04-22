@@ -16,7 +16,7 @@
 #include "HTTPServer.h"
 #include "MsgLogger.h"
 
-#undef MOZILLA_HACK
+#define MOZILLA_HACK
 
 // The HTTPServer launches one HTTPClientConnection per
 // web client, which runs until

@@ -16,7 +16,7 @@
 #include "HTTPServer.h"
 #include "MsgLogger.h"
 
-#define MOZILLA_HACK
+#undef MOZILLA_HACK
 
 // The HTTPServer launches one HTTPClientConnection per
 // web client, which runs until
@@ -301,11 +301,15 @@ void HTTPClientConnection::run()
     // to read the web page before it stops because
     // the connection quits.
     epicsThreadSleep(2.0);
-    shutdown(socket, 2);
 #endif
+    shutdown(socket, 2);
     epicsSocketDestroy(socket);
     runtime = epicsTime::getCurrent() - birthtime;
     server->UpdateClientDuration(runtime);
+#if HTTPD_DEBUG >= 3
+    printf("Closed client #%d, socket %d after %.3f seconds\n",
+           num, socket, runtime);
+#endif
     done = true;
 }
 

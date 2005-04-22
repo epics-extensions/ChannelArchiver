@@ -46,6 +46,8 @@ use Socket;
 use IO::Handle;
 use Sys::Hostname;
 use Data::Dumper;
+# Linux and MacOSX seem to include this one per default:
+use LWP::Simple;
 
 # Timeout used when reading a HTTP client or ArchiveEngine.
 # 10 seconds is reasonable.
@@ -132,33 +134,9 @@ sub dump_config($)
 sub read_URL($$$)
 {
     my ($host, $port, $URL) = @ARG;
-    my ($ip, $addr, $EOL);
-    $EOL = "\015\012";
-    $ip = inet_aton($host) or die "Invalid host: $host";
-    $addr = sockaddr_in($port, $ip);
-    socket(SOCK, PF_INET, SOCK_STREAM, getprotobyname('tcp'))
-        or die "Cannot create socket: $!\n";
-    connect(SOCK, $addr)  or  return "";
-    autoflush SOCK 1;
-    print SOCK "GET $URL HTTP/1.0$EOL";
-    print SOCK "Accept: text/html, text/plain$EOL";
-    print SOCK "User-Agent: perl$EOL";
-    print SOCK "$EOL";
-    print SOCK "$EOL";
-    my ($mask, $num, $line, @doc);
-    $mask = '';
-    vec($mask, fileno(SOCK), 1) = 1;
-    $num = select($mask, undef, undef, $read_timeout);
-    while ($num > 0  and not eof SOCK)
-    {
-        $line = <SOCK>;
-        push @doc, $line;
-        chomp $line;
-        $mask = '';
-        vec($mask, fileno(SOCK), 1) = 1;
-        $num = select($mask, undef, undef, $read_timeout);
-    }
-    close (SOCK);
+    my ($content, @doc);
+    $content = get("http://$host:$port/$url");
+    @doc = split /[\r\n]+/, $content;
     return @doc;
 }
 

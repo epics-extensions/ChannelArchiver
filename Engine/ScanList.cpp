@@ -18,16 +18,14 @@ SinglePeriodScanList::SinglePeriodScanList(double period)
         : period(period)
 {
 #   ifdef DEBUG_SCANLIST
-    LOG_MSG("new SinglePeriodScanList(%g seconds)\n",
-            period);
+    LOG_MSG("new SinglePeriodScanList(%g seconds)\n", period);
 #   endif
 }
 
 SinglePeriodScanList::~SinglePeriodScanList()
 {
 #   ifdef DEBUG_SCANLIST
-    LOG_MSG("delete SinglePeriodScanList(%g seconds)\n",
-            period);
+    LOG_MSG("delete SinglePeriodScanList(%g seconds)\n", period);
 #   endif
 }
 
@@ -44,8 +42,8 @@ void SinglePeriodScanList::remove(ArchiveChannel *channel)
         if (*ci == channel)
         {
 #           ifdef DEBUG_SCANLIST
-            printf("SinglePeriodScanList(%g s): Removed '%s'\n",
-                   period, channel->getName().c_str());
+            LOG_MSG("SinglePeriodScanList(%g s): Removed '%s'\n",
+                    period, channel->getName().c_str());
 #           endif
             ci = channels.erase(ci);
         }
@@ -76,14 +74,26 @@ ScanList::ScanList()
 {
     is_due_at_all = false;
     next_list_scan = nullTime;
+#   ifdef DEBUG_SCANLIST
+    LOG_MSG("Created ScanList\n");
+#   endif
 }
 
 ScanList::~ScanList()
 {
+#   ifdef DEBUG_SCANLIST
+    LOG_MSG("Destroying ScanList\n");
+#   endif
+    if (!period_lists.empty())
+    {
+        LOG_MSG("Hmmm. At this point, channels should have removed themselves from the scan lists,\n");
+        LOG_MSG("and the scan lists should then have quit.\n");
+    }
     while (!period_lists.empty())
     {
         SinglePeriodScanList *sl = period_lists.front();
         period_lists.pop_front();
+        LOG_MSG("Removing the %g second scan list.\n", sl->period);
         delete sl;
     }
 }
@@ -132,11 +142,16 @@ void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
 void ScanList::removeChannel(ArchiveChannel *channel)
 {
     stdList<SinglePeriodScanList *>::iterator li = period_lists.begin();
+    SinglePeriodScanList *l;
     while (li != period_lists.end())
     {
-        (*li)->remove(channel);
-        if ((*li)->empty())
+        l = *li;
+        l->remove(channel);
+        if (l->empty())
+        {
             li = period_lists.erase(li);
+            delete l;
+        }
         else
             ++li;
     }

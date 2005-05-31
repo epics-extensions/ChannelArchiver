@@ -8,6 +8,25 @@ New  "versions"  are  marked  by some additional functionality. The
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 05/31/2005 --- Version 2.2.1:\\
+At the SNS with EPICS R3.14.7, there is an instance of an engine crashing in
+ipAddrToAsciiEnginePrivate.cpp in the transactionComplete callback while
+pCurrent was 0, which shouldn't happen:
+\begin{verbatim}
+if (!this->pCurrent)
+    continue;
+{
+    epicsGuardRelease < epicsMutex > unguard ( guard );
+     this->pCurrent->pCB->transactionComplete ( this->nameTmp );
+}
+\end{verbatim}
+
+In the process of debugging it, an uninitialized use of the HTTPD run duration
+variable and a scanlist memory leak on exit have been found by 'valgrind'.
+None of this should matter in the real world, but I prefer as little valgrind
+complaints as possible. Remaining memory leaks on exit are in the EPICS base
+code.
+
 \item 03/31/2005 --- Version 2.2.0:\\
 Added a "Write Duration" status to the main
 page of the Engine HTTPD.

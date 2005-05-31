@@ -33,7 +33,7 @@ use Getopt::Std;
 # ----------------------------------------------------------------
 
 # Compare: manual/changes.tex
-my ($version) = "2.2.0";
+my ($version) = "2.2.1";
 
 # Setting this to 1 disables(!) caching and might help with debugging.
 # Default: leave it commented-out.

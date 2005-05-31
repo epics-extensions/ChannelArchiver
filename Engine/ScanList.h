@@ -21,6 +21,7 @@ class SinglePeriodScanList
 {
 public:
     SinglePeriodScanList(double period);
+    ~SinglePeriodScanList();
 
     void add(ArchiveChannel *channel);
     void remove(ArchiveChannel *channel);

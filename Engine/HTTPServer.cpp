@@ -50,7 +50,7 @@ HTTPServer::HTTPServer(SOCKET socket)
         : thread(*this, "HTTPD",
                  epicsThreadGetStackSize(epicsThreadStackBig),
                  epicsThreadPriorityMedium),
-          go(true), socket(socket), total_clients(0)
+          go(true), socket(socket), total_clients(0), client_duration(0.0)
 {}
 
 HTTPServer::~HTTPServer()

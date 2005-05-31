@@ -16,7 +16,20 @@
 
 SinglePeriodScanList::SinglePeriodScanList(double period)
         : period(period)
-{}
+{
+#   ifdef DEBUG_SCANLIST
+    LOG_MSG("new SinglePeriodScanList(%g seconds)\n",
+            period);
+#   endif
+}
+
+SinglePeriodScanList::~SinglePeriodScanList()
+{
+#   ifdef DEBUG_SCANLIST
+    LOG_MSG("delete SinglePeriodScanList(%g seconds)\n",
+            period);
+#   endif
+}
 
 void SinglePeriodScanList::add(ArchiveChannel *channel)
 {

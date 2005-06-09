@@ -224,7 +224,7 @@ bool dump_gnuplot(Index &index,
     }
     if (is_array)
     {
-        fprintf(f, "set view 60,260,1\n");
+        fprintf(f, "set view 120, 100, 1\n");
         fprintf(f, "#set contour\n");
         fprintf(f, "set surface\n");
         fprintf(f, "#set hidden3d\n");

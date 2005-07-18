@@ -6,12 +6,15 @@
 #include <xmlrpc.h>
 // EPICS Base
 #include <epicsTime.h>
+// Storage
+#include <IndexFile.h>
+// XMPRPCServer
+#include "ServerConfig.h"
 
 /// \defgroup DataServer
 /// Code related to the network data server
 
 // The version of this server
-// (We use 0 as long as we didn't really release anything)
 #define ARCH_VER 0
 
 // Code numbers for 'how'
@@ -47,3 +50,28 @@ void epicsTime2pieces(const epicsTime &t,
 
 // Inverse to epicsTime2pieces
 void pieces2epicsTime(xmlrpc_int32 secs, xmlrpc_int32 nano, epicsTime &t);
+
+// NOTE: User of the ArchiverDataServer.cpp code must provide
+// implementations of these routines!
+// ---------------------------------------------
+const char *get_config_name(xmlrpc_env *env);
+bool get_config(xmlrpc_env *env, ServerConfig &config);
+// Return open index for given key or 0
+IndexFile *open_index(xmlrpc_env *env, int key);
+// ---------------------------------------------
+
+// { int32  ver, string desc } = archiver.info()
+xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user);
+
+// {int32 key, string name, string path}[] = archiver.archives()
+xmlrpc_value *get_archives(xmlrpc_env *env, xmlrpc_value *args, void *user);
+
+// {string name, int32 start_sec, int32 start_nano,
+//               int32 end_sec,   int32 end_nano}[]
+// = archiver.names(int32 key, string pattern)
+xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user);
+
+// very_complex_array = archiver.values(key, names[], start, end, ...)
+xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user);
+
+

@@ -96,7 +96,7 @@ mkdir /var/www/html/archive/cgi
   data server.
 \end{enumerate}
 
-\subsection{Configuration}
+\subsection{Configuration}  % ---------------------------------------------
 You need to prepare an XML-formatted configuration file for the
 ArchiveDataServer that follows the DTD from listing
 \ref{lst:serverconfigdtd} (see section \ref{sec:dtdfiles} on DTD file
@@ -109,3 +109,72 @@ use the respective 'key' to access them.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for the Data Server Configuration},label=lst:serverconfigdtd]{../XMLRPCServer/serverconfig.dtd}
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Data Server Configuration},label=lst:serverconfigex]{../XMLRPCServer/serverconfig.xml}
+
+\clearpage
+
+\subsection{Standalone Data Server} % ---------------------------------------------
+The preferred deployment of the network data server is within a
+standard web server as described in the previous sections.
+For experiments, however, there is a way to use a version of the 
+data server which combines the simple ``Abyss''
+web server and the network data server into one standalone program.
+
+\noindent Advantages:
+\begin{itemize}
+\item Easier to configure than a standard web server. No
+  serverconfig.xml, no serverconfig.dtd, no CGI setup trouble. When running
+  ``ArchiveDataServerStandalone'', you will see right away if e.g.\ a
+  shared library is missing, while the ``ArchiveDataServer''
+  CGI-plugin to a web server would simply not run for reasons harder
+  to diagnose.
+\item Ordinary users beyond ``root'' or ``Administrator''
+  can run the standalone data server.
+\end{itemize}
+
+\noindent Disadvantages:
+\begin{itemize}
+\item The Abyss HTTPD still requires some configuration.
+\item Compared to e.g.\ the Apache web server, there is much less
+  control over who can access the data.
+\item Currently limited to serving a single archive per running
+  instance of the standalone data server.
+  The 'key' of that archive is fixed to '1' and  the 'name' to 'Archive'.
+  Under a standard web server, one can run more than one
+  ArchiveDataServer and configure each one to serve multiple archives
+  with selected key and name.
+\end{itemize}
+
+\subsection{Running ArchiveDataServerStandalone} % ---------------------------------------------
+After successful compilation in ChannelArchiver/XMLRPCServer, you will
+have a program ``ArchiveDataServerStandalone''.
+
+\begin{enumerate}
+\item For starters, you can test in the ``ChannelArchiver/DemoData''
+      directory, but typically you would copy all ``abys*'' files and
+      directories from there into the directory to where you intend to
+      run the standalone data server.
+\item Edit ``abyss.conf'' to suit your needs. Most users might only
+      have to adjust the ``Port'' option, which defaults to 8080.
+\item Run the data server with the abys config file and the path of
+  the archive's index. When inside DemoData, this would be an example:
+\begin{lstlisting}[keywordstyle=\sffamily]
+> ArchiveDataServerStandalone abyss.conf index 
+ ArchiveDataServerStandalone Running
+ Unless your 'abyss.conf' selects
+ a different port number,
+ the data should now be available via the XML-RPC URL
+    http://localhost:8080/RPC2
+\end{lstlisting}
+\end{enumerate}
+
+\noindent The data is now accessible via XML-RPC by
+pointing the ArchiveDataClient.pl test tool or the Java
+ArchiveViewer to the URL
+\begin{lstlisting}[keywordstyle=\sffamily]
+     http://<hostname>:<port>/RPC2
+\end{lstlisting}
+\noindent Example:
+\begin{lstlisting}[keywordstyle=\sffamily]
+    http://localhost:8080/RPC2
+\end{lstlisting}
+

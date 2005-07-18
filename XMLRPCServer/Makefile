@@ -15,8 +15,10 @@ LIBRARY_HOST := DataServer
 
 # Products, but not installed (need to copy into CGI-bin)
 TESTPROD_HOST := DummyDataServer ArchiveDataServer ArchiveDataClientTest
+PROD_HOST := ArchiveDataServerStandalone
 DummyDataServer_SRCS   += DummyServer.cpp
-ArchiveDataServer_SRCS += ServerConfig.cpp main.cpp
+ArchiveDataServer_SRCS += ServerConfig.cpp ArchiveDataServer.cpp main_cgi.cpp
+ArchiveDataServerStandalone_SRCS += ServerConfig.cpp ArchiveDataServer.cpp main_standalone.cpp
 
 PROD_LIBS_DEFAULT  := DataServer    Storage    Tools    $(EPICS_BASE_IOC_LIBS)
 PROD_LIBS_WIN32    := DataServerObj StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
@@ -35,11 +37,12 @@ ToolsObj_DIR      = $(INSTALL_LIB)
 # would be inserted before the object files are listed.
 # So we hack the make system  by adding new "ENDFLAGS"
 # (thanks to jba@aps.anl.gov for insight)
-USR_CXXFLAGS                   += $(shell xmlrpc-c-config cgi-server --cflags)
-DummyDataServer_ENDFLAGS       += $(shell xmlrpc-c-config cgi-server --libs)
-ArchiveDataServer_ENDFLAGS     += $(shell xmlrpc-c-config cgi-server --libs)
-ArchiveDataClientTest_ENDFLAGS += $(shell xmlrpc-c-config libwww-client --libs)
-bench_ENDFLAGS                 += $(shell xmlrpc-c-config libwww-client --libs)
+USR_CXXFLAGS                         += $(shell xmlrpc-c-config cgi-server --cflags)
+DummyDataServer_ENDFLAGS             += $(shell xmlrpc-c-config cgi-server --libs)
+ArchiveDataServer_ENDFLAGS           += $(shell xmlrpc-c-config cgi-server --libs)
+ArchiveDataServerStandalone_ENDFLAGS += $(shell xmlrpc-c-config abyss-server --libs)
+ArchiveDataClientTest_ENDFLAGS       += $(shell xmlrpc-c-config libwww-client --libs)
+bench_ENDFLAGS                       += $(shell xmlrpc-c-config libwww-client --libs)
 #LINK.cpp += $($*_ENDFLAGS)
 PROD_LDLIBS += $($*_ENDFLAGS)
 

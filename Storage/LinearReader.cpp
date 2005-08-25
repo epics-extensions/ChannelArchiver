@@ -19,7 +19,7 @@ const RawValue::Data *LinearReader::find(
     if (!channel_found)
         return 0;
     if (start)
-        end_of_bin = *start;
+        end_of_bin = roundTimeUp(*start, delta);
     else
         end_of_bin =
             roundTimeUp(RawValue::getTime(reader_data), delta);

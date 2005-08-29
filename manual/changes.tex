@@ -6,6 +6,33 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 08/29/2005 --- Version 2.4.0:\\
+LinearReader rounds start time,
+because otherwise a request for multiple channels,
+all using linear interpolation, could loose
+lockstep, and when the result is put in a spreadsheet
+form, there are many more lines than expected
+from the per-channel view of the data,
+which confused the data viewer.
+
+XML-RPC, being XML, sends all numbers as strings.
+Unfortunately, XML-RPC also insists in the simple 'dot'
+notation and prohibits exponential notation.
+A number like 1e-300 would turn into
+"0.0000000..." with 300 zeroes,
+which is too long for the internal print buffer of
+the xml-rpc C library.
+Since such huge and tiny numbers can't be transferred,
+they are replaced by 0 with stat/sevr UDF/INVALID.
+
+The cut-off point is somewhat arbitrary.
+The XML-RPC library uses an internal print buffer
+of about 120 characters.
+Since PVs are usually scaled to be human-readable,
+with only vacuum readings using exp. notation for
+data like "1e-8 Torr", exponents of +-50 seemed
+reasonable.
+
 \item 07/18/2005 --- Version 2.3.0:\\
 Added ArchiveDataServerStandalone.
 

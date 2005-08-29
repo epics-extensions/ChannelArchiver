@@ -67,6 +67,8 @@ sub string2time($)
     $hour = $min = $sec = $nano = 0;
     ($mon, $mday, $year, $hour, $min, $sec) = split '[/ :.]', $text;
     $secs=timelocal($sec, $min, $hour, $mday, $mon-1, $year-1900);
+
+    printf("%s -> %d secs, %d nano\n", $text, $secs, $nano) if ($opt_v);
     return ( $secs, $nano );
 }
 

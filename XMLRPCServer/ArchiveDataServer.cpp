@@ -181,8 +181,37 @@ void encode_value(xmlrpc_env *env,
             double d;
             for (i=0; i < xml_count; ++i)
             {
-                if (!data  ||
-                    !RawValue::getDouble(dbr_type, dbr_count, data, d, i))
+                if (data  &&
+                    RawValue::getDouble(dbr_type, dbr_count, data, d, i))
+                
+                {   /* XML-RPC, being XML, sends all numbers as strings.
+                     * Unfortunately, XML-RPC also insists in the simple 'dot'
+                     * notation and prohibits exponential notation.
+                     * A number like 1e-300 would turn into
+                     * "0.0000000..." with 300 zeroes,
+                     * which is too long for the internal print buffer of
+                     * the xml-rpc C library.
+                     * Since such huge and tiny numbers can't be transferred,
+                     * they are replaced by 0 with stat/sevr UDF/INVALID.
+                     *
+                     * The cut-off point is somewhat arbitrary.
+                     * The XML-RPC library uses an internal print buffer
+                     * of about 120 characters.
+                     * Since PVs are usually scaled to be human-readable,
+                     * with only vacuum readings using exp. notation for
+                     * data like "1e-8 Torr", exponents of +-50 seemed
+                     * reasonable.
+                     */
+                    if (d > 0.0)
+                    {
+                        if (d < 1e-50  ||  d > 1e50)   { d = 0.0; data = 0; }
+                    }
+                    else if (d < 0.0)
+                    {  
+                        if (d > -1e-50  ||  d < -1e50) { d = 0.0; data = 0; }
+                    }
+                } 
+                else
                     d = 0.0;
                 element = xmlrpc_build_value(env, "d", d);
                 xmlrpc_array_append_item(env, val_array, element);

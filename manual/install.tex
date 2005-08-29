@@ -118,13 +118,11 @@ For Mac OS X, a version with patched configure scripts
 \cite{darwinports} that also includes the ``small numbers'' patch
 mentioned above is included in a different tar file:
 \begin{lstlisting}[keywordstyle=\sffamily]
- tar vzcf xmlrpc-c-0.9.10_darwin.tgz xmlrpc-c-0.9.10
- ll
+ tar vzxf xmlrpc-c-0.9.10_darwin.tgz
  cd xmlrpc-c-0.9.10
  ./configure 
  make
- su
- make install
+ sudo make install
 \end{lstlisting}
 
 The XML-RPC library depends on other packages. \emph{The ``configure''
@@ -172,7 +170,7 @@ or try this direct link:
 to get the sources. The Makefiles assume this to be installed under /usr/local.
 Example installation under RH9:
 \begin{lstlisting}[keywordstyle=\sffamily]
-tar vzoxf xerces-c-current.tar.gz 
+tar vzxf xerces-c-current.tar.gz 
 cd xerces-c-src2_4_0
 export XERCESCROOT=`pwd`
 cd $XERCESCROOT/src/xercesc
@@ -190,6 +188,16 @@ make install
 \begin{lstlisting}[keywordstyle=\sffamily]
 ./runConfigure -p macosx -n native -P /usr/local
 \end{lstlisting}
+
+\noindent Newer compilers (like gcc 4.0 as used on Mac OS 10.4)
+need to patch this:
+\begin{lstlisting}[keywordstyle=\sffamily]
+Add
+   #include <xercesc/framework/MemoryManager.hpp>
+to
+   src/xercesc/util/RefArrayOf.hpp
+\end{lstlisting}
+
 
 % Building Samples
 %cd $XERCESCROOT/samples

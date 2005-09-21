@@ -195,6 +195,9 @@ public:
     
     stdString makeDataFileName();
 
+    void setInfoDumpFile(const stdString &name)
+    {   info_dump_file = name; }
+
 private:
     Engine(const stdString &index_name); // use create
     ~Engine() {} // Use shutdown
@@ -214,6 +217,7 @@ private:
     
     double          get_threshhold;
     bool            disconnect_on_disable;
+    stdString       info_dump_file;
     ScanList        scan_list;      // list of scanned, not monitored channels
 
     double          write_period;   // period between writes to archive file

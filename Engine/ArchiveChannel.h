@@ -129,6 +129,9 @@ public:
     /// Time stamp of last value added to archive
     const epicsTime &getLastStamp(Guard &guard) const;
 
+    /// Get ChannelAccess Info
+    const char *getCAInfo(Guard &guard) const;
+
 private:
     friend class SampleMechanismMonitored;
     friend class SampleMechanismGet;

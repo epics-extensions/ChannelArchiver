@@ -145,6 +145,23 @@ void ArchiveChannel::stopCA(Guard &engine_guard, Guard &guard)
     guard.lock();
 }
 
+const char *ArchiveChannel::getCAInfo(Guard &guard) const
+{
+    if (chid_valid)
+    {
+        switch (ca_state(ch_id))
+        {
+        case cs_never_conn: return "Never Conn.";
+        case cs_prev_conn:  return "Prev. Conn.";
+        case cs_conn:       return "Connected";
+        case cs_closed:     return "Closed";
+        default:            return "unknown";
+        }
+    }
+    return "Not Initialized";
+}
+
+
 void ArchiveChannel::issueCaGet(Guard &guard)
 {
     guard.check(mutex);

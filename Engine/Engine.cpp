@@ -8,6 +8,8 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
+// System
+#include <fcntl.h>
 // Base
 #include <cadef.h>
 // Tools
@@ -373,6 +375,19 @@ unsigned long Engine::writeArchive(Guard &engine_guard)
 
 bool Engine::process()
 {
+    if (info_dump_file.length() > 0)
+    {
+        int out = open(info_dump_file.c_str(), O_CREAT|O_WRONLY, 0x777);
+        info_dump_file.assign(0, 0);
+        if (out >= 0)
+        {
+            int oldout = dup(1);
+            dup2(out, 1);
+            ca_client_status(10);
+            dup2(oldout, 1);
+        }
+    }
+
     // When there's nothing to scan or write, we
     // sleep a little. But not too long, because
     // that e.g. determines the max. response time

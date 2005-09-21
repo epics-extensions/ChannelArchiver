@@ -6,6 +6,14 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 09/21/2005 --- Version 2.5.0:\\
+New engine URL
+\begin{verbatim}
+.... castatus?/tmp/x
+\end{verbatim}
+will cause the engine to dump the ca\_client\_status() output
+into the given file the next time it writes to the disk.
+
 \item 08/29/2005 --- Version 2.4.0:\\
 LinearReader rounds start time,
 because otherwise a request for multiple channels,

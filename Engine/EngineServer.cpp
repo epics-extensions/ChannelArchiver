@@ -266,6 +266,7 @@ static void channels(HTTPClientConnection *connection, const stdString &path)
 static void channelInfoTable(HTMLPage &page)
 {
     page.openTable(1, "Name",
+                   1, "State",
                    1, "CA State",
                    1, "Mechanism",
                    1, "Disabling",
@@ -301,11 +302,13 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
                 disabling += num;
             }
     }
+
     page.tableLine(
         channel_link.c_str(),
         (channel->isConnected(guard) ? 
          "connected" :
          "<FONT COLOR=#FF0000>NOT CONNECTED</FONT>"),
+        channel->getCAInfo(guard),
         channel->getMechanism(guard)->getDescription(guard).c_str(),
         disabling.c_str(),
         (channel->isDisabled(guard) ?
@@ -580,6 +583,21 @@ static void channelGroups(HTTPClientConnection *connection,
     page.closeTable();
 }
 
+static void caStatus(HTTPClientConnection *connection,
+                     const stdString &path)
+{   //   "castatus?name
+    if (!theEngine)
+        return;
+    stdString name = path.substr(10);
+
+    HTMLPage page(connection->getSocket(), "Archiver Engine");
+    page.out("<H2>CA Client Status</H2>");
+    page.out("Will create ");
+    page.out(name.c_str());
+    page.out(" at next write cycle.\n");
+    theEngine->setInfoDumpFile(name);
+}
+
 static PathHandlerList  handlers[] =
 {
     //  URL, substring length?, handler. The order matters!
@@ -597,6 +615,7 @@ static PathHandlerList  handlers[] =
     { "/addgroup?", 10, addGroup },
     { "/parseconfig?", 12, parseConfig },
     { "/channelgroups?", 15, channelGroups },
+    { "/castatus?", 10, caStatus },
     { "/",  0, engineinfo },
     { 0,    0,  },
 };

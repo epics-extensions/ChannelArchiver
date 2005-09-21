@@ -10,6 +10,7 @@
 
 // System
 #include <fcntl.h>
+#include <unistd.h>
 // Base
 #include <cadef.h>
 // Tools

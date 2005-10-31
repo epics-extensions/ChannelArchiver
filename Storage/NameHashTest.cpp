@@ -25,12 +25,12 @@ bool name_hash_test()
     LOG_ASSERT(ID == 2);
 
     NameHash::Entry entry;
-    unsigned long hashvalue;
+    uint32_t hashvalue;
     bool valid = names.startIteration(hashvalue, entry);
     while (valid)
     {
         printf("%4ld - Name: %-30s ID: %ld\n",
-               hashvalue, entry.name.c_str(), entry.ID);
+               (long)hashvalue, entry.name.c_str(), (long)entry.ID);
         valid = names.nextIteration(hashvalue, entry);
     }
     names.showStats(stdout);

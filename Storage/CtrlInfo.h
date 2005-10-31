@@ -16,22 +16,22 @@
 class NumericInfo
 {
 public:
-	float	disp_high;	// high display range
-	float	disp_low;	// low display range
-	float	low_warn;
-	float	low_alarm;
-	float	high_warn;
-	float	high_alarm;
-	long	prec;		// display precision
-	char	units[1];	// actually as long as needed,
+	float	 disp_high;	// high display range
+	float	 disp_low;	// low display range
+	float	 low_warn;
+	float	 low_alarm;
+	float	 high_warn;
+	float	 high_alarm;
+    int32_t  prec;		// display precision
+	char	 units[1];	// actually as long as needed,
 };
 
 // Similar to NumericInfo, this is for enumerated channels
 class EnumeratedInfo
 {
 public:
-	short	num_states;     // state_strings holds num_states strings
-	short	pad;	 	// one after the other, separated by '\0'
+	int16_t	num_states;     // state_strings holds num_states strings
+	int16_t	pad;	 	// one after the other, separated by '\0'
 	char	state_strings[1];
 };
 
@@ -45,13 +45,13 @@ public:
 class CtrlInfoData
 {
 public:
-	unsigned short	size;
-	unsigned short	type;
+	uint16_t  size;
+	uint16_t  type;
 	union
 	{
 		NumericInfo		analog;
 		EnumeratedInfo	index;
-	}				value;
+	}         value;
 	// class will be as long as necessary
 	// to hold the units or all the state_strings
 };
@@ -89,7 +89,7 @@ public:
 	/// Read Control Information:
 	/// Numeric precision, units,
 	/// high/low limits for display etc.:
-	long getPrecision() const;
+	int32_t getPrecision() const;
 	const char *getUnits() const;
 	float getDisplayHigh() const;
 	float getDisplayLow() const;
@@ -100,7 +100,7 @@ public:
 
 	/// Initialize a Numeric CtrlInfo
 	/// (sets Type to Numeric and then sets fields)
-	void setNumeric(long prec, const stdString &units,
+	void setNumeric(int32_t prec, const stdString &units,
 					float disp_low, float disp_high,
 					float low_alarm, float low_warn,
                     float high_warn, float high_alarm);

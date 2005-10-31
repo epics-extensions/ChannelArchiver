@@ -12,18 +12,19 @@ CtrlInfo::CtrlInfo()
 {
     size_t additional_buffer = 10;
 
-    _infobuf.reserve (sizeof(CtrlInfoData) + additional_buffer);
+    _infobuf.reserve(sizeof(CtrlInfoData) + additional_buffer);
     CtrlInfoData *info = _infobuf.mem();
     info->type = Invalid;
-    info->size = sizeof (DbrCount) + sizeof(DbrType);
+    //sizeof (DbrCount) + sizeof(DbrType);
+    info->size = 2 + 2;
 }
 
 CtrlInfo::CtrlInfo(const CtrlInfo &rhs)
 {
     const CtrlInfoData *rhs_info = rhs._infobuf.mem();
-    _infobuf.reserve (rhs_info->size);
+    _infobuf.reserve(rhs_info->size);
     CtrlInfoData *info = _infobuf.mem();
-    memcpy (info, rhs_info, rhs_info->size);
+    memcpy(info, rhs_info, rhs_info->size);
 }
 
 CtrlInfo & CtrlInfo::operator = (const CtrlInfo &rhs)
@@ -49,13 +50,13 @@ bool CtrlInfo::operator == (const CtrlInfo &rhs) const
     return info->size == rhs_info->size &&
         info->type == rhs_info->type &&
         memcmp(&info->value, &rhs_info->value,
-               rhs_info->size - 2*sizeof(unsigned short)) == 0;
+               rhs_info->size - 2*sizeof(uint16_t)) == 0;
 }
 
 CtrlInfo::Type CtrlInfo::getType() const
 {	return (CtrlInfo::Type) (_infobuf.mem()->type);}
 
-long CtrlInfo::getPrecision() const
+int32_t CtrlInfo::getPrecision() const
 {
 	if (getType() == Numeric)
         return _infobuf.mem()->value.analog.prec;
@@ -93,8 +94,9 @@ size_t CtrlInfo::getNumStates() const
 		return _infobuf.mem()->value.index.num_states;
 	return 0;
 }
+
 void CtrlInfo::setNumeric(
-    long prec, const stdString &units,
+    int32_t prec, const stdString &units,
     float disp_low, float disp_high,
     float low_alarm, float low_warn, float high_warn, float high_alarm)
 {
@@ -266,7 +268,7 @@ bool CtrlInfo::parseState(const char *text,
 bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
 {
     // read size field only
-    unsigned short size;
+    uint16_t size;
     if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(datafile->file) != offset ||
         fread(&size, sizeof size, 1, datafile->file) != 1)
@@ -379,8 +381,8 @@ bool CtrlInfo::write(DataFile *datafile, FileOffset offset) const
                     offset, info->type, info->size);
             return false;
     }
-    SHORTToDisk (copy.size);
-    SHORTToDisk (copy.type);
+    SHORTToDisk(copy.size);
+    SHORTToDisk(copy.type);
     if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(datafile->file) != offset ||
         fwrite(&copy, converted, 1, datafile->file) != 1)

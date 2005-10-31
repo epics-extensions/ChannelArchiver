@@ -303,8 +303,8 @@ bool FileAllocator::dump(int level)
     FileOffset next_offset = 0;
     if (level > 0)
         printf("bytes in file: %ld. Reserved/Allocated/Free: %ld/%ld/%ld\n",
-               file_size,
-               reserved_space, allocated_head.bytes, free_head.bytes);
+               (long)file_size,
+               (long)reserved_space, (long)allocated_head.bytes, (long)free_head.bytes);
     allocated_offset = allocated_head.next;
     free_offset = free_head.next;
     while(allocated_offset || free_offset)
@@ -318,11 +318,11 @@ bool FileAllocator::dump(int level)
             allocated_mem += allocated_node.bytes;
             if (level > 0)
                 printf("Allocated Block @ %10ld: %ld bytes\n",
-                       allocated_offset, allocated_node.bytes);
+                       (long)allocated_offset, (long)allocated_node.bytes);
             if (next_offset && next_offset != allocated_offset)
             {
                 printf("! There is a gap, %ld unmaintained bytes "
-                       "before this block!\n", allocated_offset - next_offset);
+                       "before this block!\n", (long)allocated_offset - (long)next_offset);
                 ok = false;
             }
             if (allocated_prev != allocated_node.prev)
@@ -341,11 +341,11 @@ bool FileAllocator::dump(int level)
             free_mem += free_node.bytes;
             if (level > 0)
                 printf("Free      Block @ %10ld: %ld bytes\n",
-                       free_offset, free_node.bytes);
+                       (long)free_offset, (long)free_node.bytes);
             if (next_offset && next_offset != free_offset)
             {
                 printf("! There is a gap, %ld unmaintained bytes "
-                       "before this block!\n", free_offset - next_offset);
+                       "before this block!\n", (long)free_offset - (long)next_offset);
                 ok = false;
             }
             if (free_prev != free_node.prev)

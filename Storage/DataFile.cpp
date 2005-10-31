@@ -158,7 +158,7 @@ bool DataFile::reopen()
         file = fopen(filename.c_str(), "rb");
     if (file)
     {   // Opened existing file. Check type
-        unsigned long file_cookie;
+        uint32_t file_cookie;
         fseek(file, 0, SEEK_SET);
         is_tagged_file = readLong(file, &file_cookie) && file_cookie == cookie;
         return true;
@@ -282,12 +282,12 @@ DataHeader *DataFile::addHeader(const stdString &name,
         return 0;   
     }
     // allocate data buffer by writing some marker at the end:
-    long marker = 0xfacefade;
+    uint32_t marker = 0xfacefade;
     FileOffset pos = header->offset
         + header->data.buf_size - sizeof marker;    
     if (fseek(file, pos, SEEK_SET) != 0 ||
         (FileOffset) ftell(file) != pos ||
-        fwrite(&marker, sizeof marker, 1, file) != 1)    
+        !writeLong(file, marker))    
    {
         LOG_MSG("DataFile::addHeader(%s, %s): Cannot mark end of new buffer\n",
                 filename.c_str(), name.c_str());

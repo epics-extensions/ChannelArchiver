@@ -37,7 +37,7 @@ public:
         bool read(FILE *f);
     };
 
-    static const long anchor_size = 8;
+    static const uint32_t anchor_size = 8;
     
     /// Constructor
     
@@ -51,7 +51,7 @@ public:
     /// \param ht_size determines the hash table size and should be prime.
     ///
     ///
-    bool init(unsigned long ht_size=1009);
+    bool init(uint32_t ht_size=1009);
 
     /// Attach to existing hash table
     bool reattach();
@@ -67,27 +67,27 @@ public:
     /// \return Returns true if hashvalue & entry were set to something valid.
     ///
     ///
-    bool startIteration(unsigned long &hashvalue, Entry &entry);
+    bool startIteration(uint32_t &hashvalue, Entry &entry);
     
     /// Get next entry during iteration.
 
     /// \pre start_iteration() was successfully invoked.
     /// \return Returns true on success.
     ///
-    bool nextIteration(unsigned long &hashvalue, Entry &entry);
+    bool nextIteration(uint32_t &hashvalue, Entry &entry);
     
     /// Get hash value (public to allow for test code)
-    long hash(const stdString &name) const;  
+    uint32_t hash(const stdString &name) const;  
 
     /// Generate info on table fill ratio and list length
     void showStats(FILE *f);
 private:
     FileAllocator &fa;
     FileOffset anchor;       // Where offset gets deposited in file
-    unsigned long ht_size;   // Hash Table size (entries, not bytes)
+    uint32_t ht_size;   // Hash Table size (entries, not bytes)
     FileOffset table_offset; // Start of HT in file
-    bool read_HT_entry(unsigned long hash_value, FileOffset &offset);
-    bool write_HT_entry(unsigned long hash_value, FileOffset offset) const;
+    bool read_HT_entry(uint32_t hash_value, FileOffset &offset);
+    bool write_HT_entry(uint32_t hash_value, FileOffset offset) const;
 };
 
 /// \@}

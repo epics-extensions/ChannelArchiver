@@ -553,6 +553,8 @@ bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
     case DBR_TIME_STRING:
         break;
 
+        // The following might generate 'unused variable dbr_...'
+        // warnings on systems where no byte swapping is required
 #define FROM_DISK(DBR, TYP, TIMETYP, MACRO)                             \
     case DBR:                                                           \
         {                                                               \

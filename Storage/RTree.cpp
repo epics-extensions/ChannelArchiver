@@ -67,8 +67,8 @@ static bool writeEpicsTime(FILE *f, const epicsTime &t)
 static bool readEpicsTime(FILE *f, epicsTime &t)
 {
     epicsTimeStamp stamp;
-    if (! (readLong(f, (unsigned long *)&stamp.secPastEpoch) &&
-           readLong(f, (unsigned long *)&stamp.nsec)))
+    if (! (readLong(f, (uint32_t *)&stamp.secPastEpoch) &&
+           readLong(f, (uint32_t *)&stamp.nsec)))
         return false;
     t = stamp;
     return true;
@@ -160,7 +160,7 @@ bool RTree::Node::read(FILE *f)
 {
     if (fseek(f, offset, SEEK_SET))
         return false;
-    char c;
+    uint8_t c;
     if (! (readByte(f, &c) && readLong(f, &parent)))
         return false;
     isLeaf = c > 0;
@@ -229,7 +229,7 @@ bool RTree::init(int M)
 
 bool RTree::reattach()
 {
-    unsigned long RTreeM;
+    uint32_t RTreeM;
     if (!(fseek(fa.getFile(), anchor, SEEK_SET)==0 &&
           readLong(fa.getFile(), &root_offset)==true &&
           readLong(fa.getFile(), &RTreeM) == true))

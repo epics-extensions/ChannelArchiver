@@ -50,7 +50,7 @@ public:
     private:
         friend class IndexFile;
         friend class ListIndex;
-        unsigned long hashvalue;
+        uint32_t hashvalue;
         NameHash::Entry entry;
     };
 

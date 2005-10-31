@@ -170,10 +170,12 @@ bool dump_blocks()
         printf("%s - %s: '%s' @ 0x%lX\n",
                epicsTimeTxt(node.record[idx].start, s),
                epicsTimeTxt(node.record[idx].end, e),
-               block.data_filename.c_str(), block.data_offset);
+               block.data_filename.c_str(),
+               (unsigned long)block.data_offset);
         while (tree.getNextChainedBlock(block))
             printf("---  '%s' @ 0x%lX\n",
-                   block.data_filename.c_str(), block.data_offset);
+                   block.data_filename.c_str(),
+                   (unsigned long)block.data_offset);
     }
     fa.detach();
     fclose(f);

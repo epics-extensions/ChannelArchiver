@@ -26,12 +26,12 @@ class IndexFile : public Index
 {
 public:
     // == 'CAI2', Chan. Arch. Index 2
-    static const unsigned long cookie = 0x43414932;
+    static const uint32_t cookie = 0x43414932;
 
     IndexFile(int RTreeM);
 
     /// The hash table size used for new channel name tables.
-    static long ht_size;
+    static uint32_t ht_size;
     
     /// Open an index.
     bool open(const stdString &filename, bool readonly=true);

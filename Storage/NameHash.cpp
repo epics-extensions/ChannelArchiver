@@ -95,7 +95,7 @@ NameHash::NameHash(FileAllocator &fa, FileOffset anchor)
         : fa(fa), anchor(anchor), ht_size(0), table_offset(0)
 {}
 
-bool NameHash::init(unsigned long ht_size)
+bool NameHash::init(uint32_t ht_size)
 {
     this->ht_size = ht_size;
     if (!(table_offset = fa.allocate(4*ht_size)))
@@ -103,12 +103,12 @@ bool NameHash::init(unsigned long ht_size)
         LOG_MSG("NameHash::init: Cannot allocate hash table\n");
         return false;
     }
-    unsigned long i;
     if (fseek(fa.getFile(), table_offset, SEEK_SET))
     {
         LOG_MSG("NameHash::init: Cannot seek to hash table\n");
         return false;   
     }
+    uint32_t i;
     for (i=0; i<ht_size; ++i)
         if (!writeLong(fa.getFile(), 0))
         {
@@ -141,7 +141,7 @@ bool NameHash::insert(const stdString &name,
                       const stdString &ID_txt, FileOffset ID)
 {
     LOG_ASSERT(name.length() > 0);
-    long h = hash(name);
+    uint32_t h = hash(name);
     Entry entry;
     if (!read_HT_entry(h, entry.offset))
         return false;
@@ -193,7 +193,7 @@ bool NameHash::insert(const stdString &name,
 bool NameHash::find(const stdString &name, stdString &ID_txt, FileOffset &ID)
 {
     LOG_ASSERT(name.length() > 0);
-    long h = hash(name);
+    uint32_t h = hash(name);
     Entry entry;
     FILE *f = fa.getFile();
     read_HT_entry(h, entry.offset);
@@ -210,7 +210,7 @@ bool NameHash::find(const stdString &name, stdString &ID_txt, FileOffset &ID)
     return false;
 }
 
-bool NameHash::startIteration(unsigned long &hashvalue, Entry &entry)
+bool NameHash::startIteration(uint32_t &hashvalue, Entry &entry)
 {
     FILE *f = fa.getFile();
     if (fseek(f, table_offset, SEEK_SET))
@@ -231,7 +231,7 @@ bool NameHash::startIteration(unsigned long &hashvalue, Entry &entry)
     return entry.offset && entry.read(f); // return that entry
 }  
 
-bool NameHash::nextIteration(unsigned long &hashvalue, Entry &entry)
+bool NameHash::nextIteration(uint32_t &hashvalue, Entry &entry)
 {
     if (entry.next) // Is another entry in list for same hashvalue?
         entry.offset = entry.next;
@@ -250,13 +250,13 @@ bool NameHash::nextIteration(unsigned long &hashvalue, Entry &entry)
 }
 
 // From Sergei Chevtsov's rtree code:
-long NameHash::hash(const stdString &name) const
+uint32_t NameHash::hash(const stdString &name) const
 {
     const char *c = name.c_str();
-    short h = 0;
+    uint8_t h = 0;
     while (*c)
         h = (128*h + *(c++)) % ht_size;
-    return (long)h;
+    return (uint32_t)h;
 }
 
 void NameHash::showStats(FILE *f)
@@ -292,14 +292,14 @@ void NameHash::showStats(FILE *f)
         }
     }
     fprintf(f, "Hash table fill ratio: %ld out of %ld entries (%ld %%)\n",
-            used_entries, ht_size, used_entries*100/ht_size);
+            used_entries, (unsigned long)ht_size, used_entries*100/ht_size);
     if (used_entries > 0)
         fprintf(f, "Average list length  : %ld entries\n",
                 total_list_length / used_entries);
     fprintf(f, "Maximum list length  : %ld entries\n", max_length);
 }
 
-bool NameHash::read_HT_entry(unsigned long hash_value, FileOffset &offset)
+bool NameHash::read_HT_entry(uint32_t hash_value, FileOffset &offset)
 {
     LOG_ASSERT(hash_value >= 0 && hash_value < ht_size);
     FileOffset o = table_offset + hash_value*4;
@@ -313,7 +313,7 @@ bool NameHash::read_HT_entry(unsigned long hash_value, FileOffset &offset)
     return true;
 }    
 
-bool NameHash::write_HT_entry(unsigned long hash_value,
+bool NameHash::write_HT_entry(uint32_t hash_value,
                               FileOffset offset) const
 {
     LOG_ASSERT(hash_value >= 0 && hash_value < ht_size);

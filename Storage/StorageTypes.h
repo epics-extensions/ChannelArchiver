@@ -8,10 +8,12 @@
 ///
 ///
 
+#include <stdint.h>
+
 /// \typedef FileOffset is used as a system independent
 /// type for, well, offsets into files.
 ///
-typedef unsigned long FileOffset;
+typedef uint32_t FileOffset;
 
 // used internally for offsets inside files:
 const FileOffset INVALID_OFFSET = 0xffffffff;

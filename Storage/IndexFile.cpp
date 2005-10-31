@@ -12,7 +12,7 @@
 // NameHash::anchor_size anchor;
 // Rest handled by FileAllocator, NameHash and RTree
 
-long IndexFile::ht_size = 1009;
+uint32_t IndexFile::ht_size = 1009;
 
 IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
 {}
@@ -59,7 +59,7 @@ bool IndexFile::open(const stdString &filename, bool readonly)
         goto open_error;
     }
     // Check existing file
-    unsigned long file_cookie;
+    uint32_t file_cookie;
     if (fseek(f, 0, SEEK_SET)  ||  !readLong(f, &file_cookie))
     {
         LOG_MSG("IndexFile::open(%s) cannot read cookie.\n",
@@ -96,7 +96,7 @@ RTree *IndexFile::addChannel(const stdString &channel, stdString &directory)
     if (tree)
         return tree;
     stdString tree_filename;
-    long tree_anchor;
+    FileOffset tree_anchor;
     if (!(tree_anchor = fa.allocate(RTree::anchor_size)))
     {
         LOG_MSG("IndexFile::add_channel(%s): cannot allocate tree anchor\n",

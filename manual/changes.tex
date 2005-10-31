@@ -7,7 +7,32 @@ the beginning of the R3.14 port.
 \begin{itemize}
 
 \item 10/31/2005 --- Version 2.6.0:\\
-Some changes to make it work on a 64bit Linux system.
+Some changes to make it work on a 64bit Linux system,
+specifically a RedHat Enterprise Linux WS release 4
+with gcc 3.4.4.
+
+The goal here was to keep binary compatibility,
+so that index and data files can be moved from
+32~bit computers to 64~bit machines and back.
+This means that the 32~bit limititations on
+file sizes still apply, even when running
+on a 64~bit computer.
+
+The following was checked:
+\begin{itemize}
+\item 'Tools' libary self-test
+\end{itemize}
+
+TODO:
+\begin{itemize}
+\item All compiles with the 64~bit compiler.
+\item 'Storage' libary self-test
+\item ArchiveExport can dump demo data,
+      matches results on 32~bit machine.
+\item ArchiveDataTool can copy demo data,
+      matches results on 32~bit machine.
+\item ArchiveEngine runs
+\end{itemize}
 
 \item 09/21/2005 --- Version 2.5.0:\\
 New engine URL

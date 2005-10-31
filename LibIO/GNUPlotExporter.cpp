@@ -110,10 +110,10 @@ void GNUPlotExporter::exportChannelList(
     if (num > _max_channel_count)
     {
         sprintf(info,
-                "You tried to export %d channels.\n"
+                "You tried to export %ld channels.\n"
                 "For performance reason you are limited "
-                "to export %d channels at once",
-                num, _max_channel_count);
+                "to export %ld channels at once",
+                (long)num, (long)_max_channel_count);
         throwDetailedArchiveException(Invalid, info);
         return;
     }

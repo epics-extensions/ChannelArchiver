@@ -497,9 +497,10 @@ void headers(const stdString &directory, const stdString &channel_name)
     {
         printf("Buffer  : '%s' @ 0x%lX\n",
                bvi->getHeader().getFilename().c_str(),
-               bvi->getHeader().getOffset());
+               (unsigned long)bvi->getHeader().getOffset());
         printf("Prev    : '%s' @ 0x%lX\n",
-               bvi->getHeader()->getPrevFile(), bvi->getHeader()->getPrev());
+               bvi->getHeader()->getPrevFile(),
+               (unsigned long)bvi->getHeader()->getPrev());
         epicsTime2string(bvi->getHeader()->getBeginTime(), t);
         printf("Time    : %s\n", t.c_str());
         epicsTime2string(bvi->getHeader()->getEndTime(), t);

@@ -29,7 +29,7 @@ class DataFile
 {
 public:
     // == 'ADF1', Archive Data File 1
-    static const unsigned long cookie = 0x41444631;
+    static const uint32_t cookie = 0x41444631;
 
     /// Reference a data file.
     
@@ -179,13 +179,13 @@ public:
         FileOffset      next_offset;    ///< abs. offs. of data header in next buffer
         FileOffset      prev_offset;    ///< abs. offs. of data header in prev buffer
         FileOffset      curr_offset;    ///< rel. offs. from data header to free entry
-        unsigned long   num_samples;    ///< number of samples in this buffer
+        uint32_t        num_samples;    ///< number of samples in this buffer
         FileOffset      ctrl_info_offset;  ///< abs. offset to CtrlInfo
-        unsigned long   buf_size;       ///< disk space alloc. for this buffer including sizeof(DataHeader)
-        unsigned long   buf_free;       ///< remaining bytes in this buffer
+        uint32_t        buf_size;       ///< disk space alloc. for this buffer including sizeof(DataHeader)
+        uint32_t        buf_free;       ///< remaining bytes in this buffer
         DbrType         dbr_type;       ///< ca type of data
         DbrCount        dbr_count;      ///< array dimension of this data type
-        char            pad[4];         ///< to align double period...
+        uint8_t         pad[4];         ///< to align double period...
         double          period;         ///< period at which the channel is archived (secs)
         epicsTimeStamp  begin_time;     ///< first time stamp of data in this file
         epicsTimeStamp  next_file_time; ///< first time stamp of data in the next file

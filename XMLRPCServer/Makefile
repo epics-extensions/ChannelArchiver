@@ -37,12 +37,15 @@ ToolsObj_DIR      = $(INSTALL_LIB)
 # would be inserted before the object files are listed.
 # So we hack the make system  by adding new "ENDFLAGS"
 # (thanks to jba@aps.anl.gov for insight)
-USR_CXXFLAGS                         += $(shell xmlrpc-c-config cgi-server --cflags)
-DummyDataServer_ENDFLAGS             += $(shell xmlrpc-c-config cgi-server --libs)
-ArchiveDataServer_ENDFLAGS           += $(shell xmlrpc-c-config cgi-server --libs)
-ArchiveDataServerStandalone_ENDFLAGS += $(shell xmlrpc-c-config abyss-server --libs)
-ArchiveDataClientTest_ENDFLAGS       += $(shell xmlrpc-c-config libwww-client --libs)
-bench_ENDFLAGS                       += $(shell xmlrpc-c-config libwww-client --libs)
+#
+# In addition, xmlrpc-c-config options changed with
+# versions, so we have a wrapper script
+USR_CXXFLAGS                         += $(shell ../xmlrpc-config-wrapper server-flags)
+DummyDataServer_ENDFLAGS             += $(shell ../xmlrpc-config-wrapper cgi-libs)
+ArchiveDataServer_ENDFLAGS           += $(shell ../xmlrpc-config-wrapper cgi-libs)
+ArchiveDataServerStandalone_ENDFLAGS += $(shell ../xmlrpc-config-wrapper abyss-libs)
+ArchiveDataClientTest_ENDFLAGS       += $(shell ../xmlrpc-config-wrapper client-libs)
+bench_ENDFLAGS                       += $(shell ../xmlrpc-config-wrapper client-libs)
 #LINK.cpp += $($*_ENDFLAGS)
 PROD_LDLIBS += $($*_ENDFLAGS)
 

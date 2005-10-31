@@ -176,7 +176,7 @@ void CtrlInfo::getState(size_t state, stdString &result) const
     }
 
     char buffer[80];
-    sprintf(buffer, "<Undef: %d>", state);
+    sprintf(buffer, "<Undef: %d>", (int)state);
     result = buffer;
 }
 
@@ -294,7 +294,7 @@ void CtrlInfo::read(FILE *file, FileOffset offset)
             SHORTFromDisk (info->value.index.num_states);
             break;
         default:
-            LOG_MSG("CtrlInfo::read @offset 0x%X:\n", (void *) offset);
+            LOG_MSG("CtrlInfo::read @offset 0x%lX:\n", (unsigned long) offset);
             LOG_MSG("Invalid CtrlInfo, type %d, size %d\n",
                     info->type, info->size);
             info->type = Invalid;

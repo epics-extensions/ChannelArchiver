@@ -171,7 +171,8 @@ bool EngineConfig::write(Guard &engine_guard, class Engine *engine)
     doc->add(e);
 
     e = new FUX::Element(doc, "file_size");
-    sprintf(buf, "%lu", DataWriter::file_size_limit/1024/1024);
+    sprintf(buf, "%lu",
+            (unsigned long)DataWriter::file_size_limit/1024/1024);
     e->value = buf;
     doc->add(e);
 

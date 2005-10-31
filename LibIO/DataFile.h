@@ -77,13 +77,13 @@ private:
     FileOffset      next_offset;    // abs. offs. of data header in next buffer
     FileOffset      prev_offset;    // abs. offs. of data header in prev buffer
     FileOffset      curr_offset;    // rel. offs. from data header to curr data
-    unsigned long   num_samples;    // number of samples written in this buffer
+    uint32_t        num_samples;    // number of samples written in this buffer
     FileOffset      config_offset;  // dbr_ctrl information
-    unsigned long   buf_size;       // disk space alloc. for this channel including sizeof(DataHeader)
-    unsigned long   buf_free;       // remaining space  f. channel in this file
+    uint32_t        buf_size;       // disk space alloc. for this channel including sizeof(DataHeader)
+    uint32_t        buf_free;       // remaining space  f. channel in this file
     DbrType         dbr_type;       // ca type of data
     DbrCount        nelements;      // array dimension of this data type
-    char            pad[4];         // to align double period...
+    uint8_t         pad[4];         // to align double period...
     double          period;         // period at which the channel is archived (secs)
     epicsTimeStamp  begin_time;     // first time stamp of data in this file
     epicsTimeStamp  next_file_time; // first time stamp of data in the next file

@@ -108,7 +108,8 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path)
         sprintf(line, "%.1f sec", write_period);
         page.tableLine("Write Period", line, 0);
 
-        sprintf(line, "%lu MB", DataWriter::file_size_limit/1024/1024);
+        sprintf(line, "%lu MB",
+                (unsigned long)DataWriter::file_size_limit/1024/1024);
         page.tableLine("File Size Limit", line, 0);
         
         sprintf(line, "%.1f sec", get_threshhold);

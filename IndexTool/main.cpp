@@ -55,7 +55,8 @@ bool add_tree_to_master(const stdString &index_name,
                    block.data_filename.c_str(), datafile.c_str());
         if (verbose > 2)
             printf("'%s' @ 0x%lX: %s - %s\n",
-                   datafile.c_str(), block.data_offset,
+                   datafile.c_str(),
+                   (unsigned long)block.data_offset,
                    epicsTimeTxt(node.record[idx].start, start),
                    epicsTimeTxt(node.record[idx].end, end));
         // Note that there's no inner loop over the 'chained'

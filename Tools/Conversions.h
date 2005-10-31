@@ -2,6 +2,10 @@
 #include "ArchiverConfig.h"
 
 #ifdef CONVERSION_REQUIRED
+// System
+#include<stdint.h>
+
+// EPICS
 #include<osiSock.h>
 #include<db_access.h>
 
@@ -13,19 +17,19 @@
 // In a test run writing 1200000 values,
 // the htons version took 0.15 seconds,
 // the custom code only   0.04 seconds!
-inline void ULONGFromDisk(unsigned long &item)
+inline void ULONGFromDisk(uint32_t &item)
 {	item = ntohl (item);	}
 
-inline void ULONGToDisk(unsigned long &item)
+inline void ULONGToDisk(uint32_t &item)
 {	item = htonl (item);	}
 
-inline void USHORTFromDisk(unsigned short &item)
+inline void USHORTFromDisk(uint16_t &item)
 {	item = ntohs (item);	}
 
-inline void USHORTToDisk(unsigned short &item)
+inline void USHORTToDisk(uint16_t &item)
 { //	item = htons(item);
-	unsigned short big_endian;
-	unsigned char *p = (unsigned char *)&big_endian;
+	uint16_t big_endian;
+	uint8_t *p = (uint8_t *)&big_endian;
 	p[0] = item >> 8;
 	p[1] = item & 0xFF;
 	item = big_endian;
@@ -63,10 +67,10 @@ inline void epicsTimeStampToDisk(epicsTimeStamp &ts)
 	ts.nsec = ntohl(ts.nsec);
 }
 
-#define SHORTFromDisk(s)	USHORTFromDisk((unsigned short &)s)
-#define SHORTToDisk(s)		USHORTToDisk((unsigned short &)s)
-#define LONGFromDisk(l)		ULONGFromDisk((unsigned long &)l)
-#define LONGToDisk(l)		ULONGToDisk((unsigned long &)l)
+#define SHORTFromDisk(s)	USHORTFromDisk((uint16_t &)s)
+#define SHORTToDisk(s)		USHORTToDisk((uint16_t &)s)
+#define LONGFromDisk(l)		ULONGFromDisk((uint32_t &)l)
+#define LONGToDisk(l)		ULONGToDisk((uint32_t &)l)
 
 #else
 

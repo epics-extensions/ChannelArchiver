@@ -62,7 +62,7 @@ static void output_info(const CtrlInfo *info)
     else if (info->getType() == CtrlInfo::Enumerated)
     {
         printf("\ttype=Enumerated\n");
-        printf("\tstates=%d\n", info->getNumStates());
+        printf("\tstates=%ld\n", (long)info->getNumStates());
         size_t i;
         stdString state;
         for (i=0; i<info->getNumStates(); ++i)
@@ -179,7 +179,7 @@ bool ArchiveParser::handleHeader(Archive &archive)
     if (!nextLine()  ||
         getLine () != "{")
     {
-        printf("Line %d: missing start of Header\n", getLineNo());
+        printf("Line %ld: missing start of Header\n", (long)getLineNo());
         return false;
     }
 
@@ -195,8 +195,8 @@ bool ArchiveParser::handleHeader(Archive &archive)
             {
                 if (! ValueI::parseType(value, type))
                 {
-                    printf("Line %d: invalid type %s\n",
-                           getLineNo(), value.c_str());
+                    printf("Line %ld: invalid type %s\n",
+                           (long)getLineNo(), value.c_str());
                     return false;
                 }
             }
@@ -209,7 +209,7 @@ bool ArchiveParser::handleHeader(Archive &archive)
 
     if (_period < 0.0 || type >= LAST_BUFFER_TYPE || count <= 0)
     {
-        printf("Line %d: incomplete header\n", getLineNo());
+        printf("Line %ld: incomplete header\n", (long)getLineNo());
         return false;
     }
     if (_value)
@@ -248,7 +248,7 @@ bool ArchiveParser::handleCtrlInfo(ChannelIterator &channel)
     if (!nextLine()  ||
         getLine() != "{")
     {
-        printf("Line %d: missing start of CtrlInfo\n", getLineNo());
+        printf("Line %ld: missing start of CtrlInfo\n", (long)getLineNo());
         return false;
     }
     
@@ -316,7 +316,7 @@ bool ArchiveParser::handleCtrlInfo(ChannelIterator &channel)
     }
     else
     {
-        printf("Line %d: Invalid CtrlInfo\n", getLineNo());
+        printf("Line %ld: Invalid CtrlInfo\n", (long)getLineNo());
         return false;
     }
 
@@ -330,7 +330,7 @@ bool ArchiveParser::handleValue(ChannelIterator &channel)
 {
     if (!_value)
     {
-        printf("Line %d: no header, yet\n", getLineNo());
+        printf("Line %ld: no header, yet\n", (long)getLineNo());
         return false;
     }
     // Format of line:   time\tvalue\tstatus
@@ -338,8 +338,8 @@ bool ArchiveParser::handleValue(ChannelIterator &channel)
     size_t valtab = line.find('\t');
     if (valtab == stdString::npos)
     {
-        printf("Line %d: expected time stamp of value\n%s\n",
-               getLineNo(), line.c_str());
+        printf("Line %ld: expected time stamp of value\n%s\n",
+               (long)getLineNo(), line.c_str());
         return false;
     }
 
@@ -348,7 +348,8 @@ bool ArchiveParser::handleValue(ChannelIterator &channel)
     epicsTime time;
     if (! string2epicsTime(text, time))
     {
-        printf("Line %d: invalid time '%s'\n", getLineNo(), text.c_str());
+        printf("Line %ld: invalid time '%s'\n",
+               (long)getLineNo(), text.c_str());
         return false;
     }
     _value->setTime(time);
@@ -377,15 +378,15 @@ bool ArchiveParser::handleValue(ChannelIterator &channel)
     {
         if (!_value->parseStatus(status))
         {
-            printf("Line %d: invalid status '%s'\n%s\n",
-                   getLineNo(), status.c_str(), line.c_str());
+            printf("Line %ld: invalid status '%s'\n%s\n",
+                   (long)getLineNo(), status.c_str(), line.c_str());
             return false;
         }
     }
 
     if (isValidTime(_last_time)  && _value->getTime() < _last_time)
     {
-        printf("Line %d: back in time\n", getLineNo());
+        printf("Line %ld: back in time\n", (long)getLineNo());
         return false;
     }
 

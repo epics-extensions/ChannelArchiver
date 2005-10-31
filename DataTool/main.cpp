@@ -334,7 +334,7 @@ void convert_dir_index(int RTreeM,
                 epicsTime2string(header->data.end_time, end);    
                 printf("'%s' @ 0x0%lX: %s - %s\n",
                        header->datafile->getBasename().c_str(),
-                       header->offset,
+                       (unsigned long)header->offset,
                        start.c_str(),
                        end.c_str());
             }
@@ -468,7 +468,8 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
         ++direct_count;
         if (verbose > 2)
             printf("'%s' @ 0x%lX: Indexed range %s - %s\n",
-                   block.data_filename.c_str(), block.data_offset,
+                   block.data_filename.c_str(),
+                   (unsigned long)block.data_offset,
                    epicsTimeTxt(node.record[idx].start, start),
                    epicsTimeTxt(node.record[idx].end, end));
         if (verbose > 3)
@@ -503,7 +504,8 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
             if (verbose > 2)
             {
                 printf("---  '%s' @ 0x%lX\n",
-                       block.data_filename.c_str(), block.data_offset);
+                       block.data_filename.c_str(),
+                       (unsigned long)block.data_offset);
                 if (verbose > 3)
                 {
                     datafile = DataFile::reference(directory,

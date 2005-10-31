@@ -64,10 +64,10 @@ void MatlabExporter::exportChannelList(
     {
         archive.detach();
         sprintf(info,
-                "You tried to export %d channels.\n"
-                "For performance reason you are limited to export %d "
+                "You tried to export %ld channels.\n"
+                "For performance reason you are limited to export %ld "
                 "channels at once",
-                channel_names.size(), _max_channel_count);
+                (long)channel_names.size(), (long)_max_channel_count);
         throwDetailedArchiveException(Invalid, info);
         return;
     }

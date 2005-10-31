@@ -213,8 +213,8 @@ int main (int argc, const char *argv[])
     }
     
     double secs = stop - start;
-    printf("%d values in %g seconds: %g vals/sec\n",
-           count, secs,
+    printf("%ld values in %g seconds: %g vals/sec\n",
+           (long)count, secs,
            (double)count / secs);
     return 0;
 }

@@ -20,7 +20,7 @@ void BitSet::grow(size_t minimum)
     if (! minimum)
         return;
     num = (minimum-1) / 32 + 1;
-    W32 *new_bits = new W32[num];
+    uint32_t *new_bits = new uint32_t[num];
     memset(new_bits, 0, num*4);
 
     if (bits)
@@ -36,7 +36,7 @@ void BitSet::set(size_t bit)
 {
     if (bit >= size)
         return;
-    W32 *b = bits + (bit / 32);
+    uint32_t *b = bits + (bit / 32);
     bit %= 32;
     *b |= (1 << bit);
 }
@@ -45,7 +45,7 @@ void BitSet::clear(size_t bit)
 {
     if(bit >= size)
         return;
-    W32 *b = bits + (bit / 32);
+    uint32_t *b = bits + (bit / 32);
     bit %= 32;
     *b &= ~(1 << bit);
 }
@@ -62,7 +62,7 @@ bool BitSet::test(size_t bit) const
 {
     if (bit >= size)
         return false;
-    W32 *b = bits + (bit / 32);
+    uint32_t *b = bits + (bit / 32);
     bit %= 32;
     return !!(*b & (1 << bit));
 }
@@ -72,7 +72,7 @@ bool BitSet::empty() const
 
 bool BitSet::any() const
 {
-    W32 *b;
+    uint32_t *b;
     size_t i;
     for (b=bits, i=num; i>0; --i)
     {
@@ -86,7 +86,7 @@ bool BitSet::any() const
 size_t BitSet::count() const
 {
     size_t c = 0, i;
-    W32 t, *b=bits;
+    uint32_t t, *b=bits;
     for (i=num; i>0; --i)
     {
         for (t=*b; t; t >>= 4) // hack taken from STL
@@ -126,7 +126,7 @@ BitSet & BitSet::operator = (const BitSet &rhs)
     size = rhs.size;
     if (num > 0)
     {
-        bits = new W32[num];
+        bits = new uint32_t[num];
         memcpy (bits, rhs.bits, num*4);
     }
     else

@@ -3,12 +3,13 @@
 #define __BITSET_H__
 
 #include<stdString.h>
+#include<stdint.h>
 
 /// \ingroup Tools BitSet, inspired by STL bitset.
 
 /// Reasons for reinventing this type of class:
 /// - The STL version is not part of e.g. the egcs compiler (as of Sept. 1999).
-/// - This BitSet grows during runtime, size isn't had-coded at compiletime.
+/// - This BitSet grows during runtime, size is not locked at compiletime.
 ///
 class BitSet
 {
@@ -62,8 +63,7 @@ private:
     BitSet (const BitSet &rhs); // not implemented
     BitSet & operator = (const BitSet &rhs); // not implemented
 
-    typedef unsigned long W32;
-    W32 *bits;
+    uint32_t *bits;
     size_t num;   // # of W32 that _bits points to
     size_t size;  // bits used
 };

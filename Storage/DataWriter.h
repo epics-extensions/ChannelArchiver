@@ -37,6 +37,8 @@ public:
     /// Destructor.
     ~DataWriter();
 
+    static void setDataFileNameBase(const char *base = "data");
+
     /// Returns the last time stamp in the archive.
 
     /// This allows you to avoid teh back-in-time error
@@ -70,6 +72,7 @@ private:
     double period;
     size_t raw_value_size;
 
+    static stdString data_file_name_base;
     void makeDataFileName(int serial, stdString &name);
     DataFile *createNewDataFile(size_t headroom);
 
@@ -85,3 +88,4 @@ private:
 
     bool addNewHeader(bool new_ctrl_info);
 };
+

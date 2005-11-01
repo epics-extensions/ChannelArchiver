@@ -10,6 +10,8 @@
 
 FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
 
+stdString DataWriter::data_file_name_base;
+
 DataWriter::DataWriter(IndexFile &index,
                        const stdString &channel_name,
                        const CtrlInfo &ctrl_info,
@@ -161,12 +163,28 @@ DataWriter::DWA DataWriter::add(const RawValue::Data *data)
     return DWA_Yes;
 }
 
-// Create name "<today>[-serial]"
+void DataWriter::setDataFileNameBase(const char *base)
+{
+    data_file_name_base = base;
+}
+
 void DataWriter::makeDataFileName(int serial, stdString &name)
 {
+    char buffer[30];    
+
+    if (data_file_name_base.length() > 0)
+    {
+	name = data_file_name_base;
+        if (serial > 0)
+        {
+            sprintf(buffer, "-%d", serial);
+            name.append(buffer, strlen(buffer));
+        }
+        return;
+    }
+    // Else: Create name based on  "<today>[-serial]"
     int year, month, day, hour, min, sec;
     unsigned long nano;
-    char buffer[30];    
     epicsTime now = epicsTime::getCurrent();    
     epicsTime2vals(now, year, month, day, hour, min, sec, nano);
     if (serial > 0)

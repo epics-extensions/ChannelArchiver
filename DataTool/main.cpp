@@ -18,6 +18,8 @@
 
 int verbose;
 
+bool do_enforce_off = false;
+
 // TODO: export/import: ASCII or XML
 // TODO: delete/rename channel
 
@@ -207,7 +209,7 @@ void copy_channel(const stdString &channel_name,
             printf("Copied %lu values\r", (unsigned long) count);
         
     }
-    if (last_value_set && count > 0 &&
+    if (do_enforce_off && last_value_set && count > 0 &&
         RawValue::getSevr(last_value) != ARCH_STOPPED)
     {   // Try to add an "Off" Sample.
         RawValue::setStatus(last_value, 0, ARCH_STOPPED);
@@ -652,15 +654,17 @@ int main(int argc, const char *argv[])
                       ", built " __DATE__ ", " __TIME__ "\n\n"
                      );
     parser.setArgumentsInfo("<index-file>");
-    CmdArgFlag help           (parser, "help", "Show help");
+    CmdArgFlag help          (parser, "help", "Show help");
     CmdArgInt  verbosity     (parser, "verbose", "<level>", "Show more info");
-    CmdArgFlag info           (parser, "info", "Simple archive info");
+    CmdArgFlag info          (parser, "info", "Simple archive info");
     CmdArgFlag list_index    (parser, "list", "List channel name info");
     CmdArgString copy_index  (parser, "copy", "<new index>", "Copy channels");
     CmdArgString start_time  (parser, "start", "<time>",
                               "Format: \"mm/dd/yyyy[ hh:mm:ss[.nano-secs]]\"");
     CmdArgString end_time    (parser, "end", "<time>", "(exclusive)");
     CmdArgDouble file_limit  (parser, "file_limit", "<MB>", "File Size Limit");
+    CmdArgString basename    (parser, "basename", "<string>", "Basename for new data files");
+    CmdArgFlag enforce_off   (parser, "append_off", "Enforce a final 'Archive_Off' value when copying data");
     CmdArgString dir2index   (parser, "dir2index", "<dir. file>",
                               "Convert old directory file to index");
     CmdArgString index2dir   (parser, "index2dir", "<dir. file>",
@@ -717,6 +721,11 @@ int main(int argc, const char *argv[])
         if (verbose > 1)
             printf("Using end time   %s\n", epicsTimeTxt(*end, txt));
     }
+    // Base name
+    if (basename.get().length() > 0)
+	DataWriter::setDataFileNameBase(basename.get().c_str());
+    if (enforce_off)
+	do_enforce_off = true;
     // What's requested?
     if (info)
 	list_names(index_name, false);

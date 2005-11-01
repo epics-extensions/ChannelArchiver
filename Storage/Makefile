@@ -52,6 +52,7 @@ LIBRARY_HOST := Storage
 # Tools to build but not install
 TESTPROD_HOST += FileAllocatorTest FileAllocatorTool
 TESTPROD_HOST += NameHashTest RTreeTest
+TESTPROD_HOST += ReadTest
 PROD_LIBS_DEFAULT := Storage    Tools    $(EPICS_BASE_IOC_LIBS)
 PROD_LIBS_WIN32   := StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
 Storage_DIR    = $(INSTALL_LIB)

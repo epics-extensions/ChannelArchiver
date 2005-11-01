@@ -252,8 +252,8 @@ bool NameHash::nextIteration(uint32_t &hashvalue, Entry &entry)
 // From Sergei Chevtsov's rtree code:
 uint32_t NameHash::hash(const stdString &name) const
 {
-    const char *c = name.c_str();
-    uint8_t h = 0;
+    const int8_t *c = (const int8_t *)name.c_str();
+    uint32_t h = 0;
     while (*c)
         h = (128*h + *(c++)) % ht_size;
     return (uint32_t)h;

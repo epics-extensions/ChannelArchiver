@@ -520,7 +520,8 @@ void headers(const stdString &directory, const stdString &channel_name)
             printf("No CtrlInfo\n");
 
         printf("Next    : '%s' @ 0x%lX\n",
-               bvi->getHeader()->getNextFile(), bvi->getHeader()->getNext());
+               bvi->getHeader()->getNextFile(),
+               (unsigned long)bvi->getHeader()->getNext());
         printf("\n");
     }
     while (run && bvi->nextBuffer());

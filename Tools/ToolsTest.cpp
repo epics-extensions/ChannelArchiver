@@ -690,10 +690,12 @@ typedef enum
     
 static CA_State state = not_connected;
 static evid event_id;
+static size_t num_monitors = 0;
 
 static void event_cb(struct event_handler_args args)
 {
     state = got_data;
+    ++num_monitors;
     if (args.type == DBF_DOUBLE)
     {
         LOG_MSG("PV %s = %g in thread 0x%08X\n",
@@ -749,12 +751,16 @@ void test_ca()
            "ca_create_channel");
     SEVCHK(ca_flush_io(), "ca_pend_io");
     epicsThreadSleep(5.0);
-    TEST(state == got_data);
     
     LOG_MSG("Cleanup from thread 0x%08X\n",
             epicsThreadGetIdSelf());
     ca_clear_channel(chid);
     ca_context_destroy();
+
+    TEST(state == got_data);
+    printf("Received %zd monitored values\n",
+           num_monitors);
+    TEST(abs(num_monitors - 50) < 10);
 }
 
 #endif

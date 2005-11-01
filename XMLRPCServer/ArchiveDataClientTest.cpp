@@ -13,7 +13,7 @@ bool printer(void *arg, const char *name, size_t n, size_t i,
 {
     if (i==0)
     {
-        printf("Channel # %d: '%s'\n", n, name);
+        printf("Channel # %zd: '%s'\n", n, name);
         info.show(stdout);
     }
     RawValue::show(stdout, type, count, value, &info);
@@ -37,10 +37,10 @@ void run_test(bool verbose=false)
         {
             printf("Request Types:\n");
             for (i=0; i<hows.size(); ++i)
-                printf("%3d: %s\n", i, hows[i].c_str());
+                printf("%3zd: %s\n", i, hows[i].c_str());
             printf("Status Strings:\n");
             for (i=0; i<stats.size(); ++i)
-                printf("%3d: %s\n", i, stats[i].c_str());
+                printf("%3zd: %s\n", i, stats[i].c_str());
             printf("Severity Info:\n");
             for (i=0; i<sevrs.size(); ++i)
                 printf("0x%04X: %-22s %-13s %s\n",

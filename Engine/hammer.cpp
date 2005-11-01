@@ -95,7 +95,7 @@ int main(int argc, const char *argv[])
     signal(SIGINT, sighandler);
     signal(SIGTERM, sighandler);
   connect:
-    printf("Connecting to %d PVs\n", num);
+    printf("Connecting to %zd PVs\n", num);
     for (i=0; i<num; ++i)
         ca_create_channel(names[i].c_str(), connection_handler,
                           0, CA_PRIORITY_ARCHIVE, &pvs[i]);
@@ -112,7 +112,7 @@ int main(int argc, const char *argv[])
         if (connected == values  &&
             values == num)
         {
-            printf("Disconnecting from %d PVs\n", num);
+            printf("Disconnecting from %zd PVs\n", num);
             for (i=0; i<num; ++i)
                 ca_clear_channel(pvs[i]);
             connected = values = 0;

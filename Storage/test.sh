@@ -40,6 +40,36 @@ then
 else
 	echo "FAILED RTree update_data, check test/update_data.dot"
 fi
+
+O.linux-x86/ReadTest ../DemoData/index fred >test/fred
+diff test/fred.OK test/fred
+if [ $? -eq 0 ]
+then
+        echo "OK: fred"
+else
+        echo "FAILED fred"
+fi
+
+O.linux-x86/ReadTest ../DemoData/index alan >test/alan
+diff test/alan.OK test/alan
+if [ $? -eq 0 ]
+then
+        echo "OK: alan"
+else
+        echo "FAILED alan"
+fi
+                                                                                         
+O.linux-x86/ReadTest ../DemoData/index BoolPV >test/BoolPV
+diff test/BoolPV.OK test/BoolPV
+if [ $? -eq 0 ]
+then
+        echo "OK: BoolPV"
+else
+        echo "FAILED BoolPV"
+fi
+                                                                                         
+
+
 # Comparison of last two updates:
 #dot -Tpng -o0.png update0.dot
 #dot -Tpng -o1.png update1.dot

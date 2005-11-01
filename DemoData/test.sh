@@ -10,6 +10,7 @@ function compare()
         echo "OK : $info"
     else
         echo "FAILED : $info. Check test/${name}.OK against test/${name}"
+	exit 1
     fi
 }
 

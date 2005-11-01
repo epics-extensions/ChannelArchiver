@@ -25,7 +25,10 @@
        if (t)                        \
            printf("OK  : %s\n", #t); \
        else                          \
-           printf("FAIL: %s\n", #t)
+       {                             \
+           printf("FAIL: %s\n", #t); \
+           exit(1);                  \
+       }
 
 #ifdef TEST_AUTOPTR
 #include "AutoPtr.h"

@@ -22,3 +22,8 @@ stats:
 	@wc -l */*.h */*.cpp */*.cpp | fgrep total
 	@echo -n "Lines of Documentation Source:"
 	@wc -l manual/*.tex | fgrep total
+
+run_tests:
+	cd Tools; O.$(EPICS_HOST_ARCH)/ToolsTest
+	cd Storage; sh test.sh
+	cd DemoData; sh test.sh

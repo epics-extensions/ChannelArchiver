@@ -1,13 +1,25 @@
+function compare()
+{
+    file1=$1
+    file2=$2
+    info=$3
+    diff -q test/$file1 test/$file2
+    if [ $? -eq 0 ]
+    then
+        echo "OK : $info"
+    else
+        echo "FAILED : $info. Check test/$file1 against test/$file2"
+        exit 1
+    fi
+}
+
+
+
+
 make
 rm -f test/file_allocator.dat
 O.$EPICS_HOST_ARCH/FileAllocatorTest >test/file_allocator.out
-diff test/file_allocator.out test/file_allocator.OK
-if [ $? -eq 0 ]
-then
-	echo "OK: FileAllocator"
-else
-	echo "FAILED FileAllocator test, check test/file_allocator.out"
-fi
+compare file_allocator.out file_allocator.OK "FileAllocator"
 
 O.$EPICS_HOST_ARCH/NameHashTest
 if [ $? -eq 0 ]
@@ -15,6 +27,7 @@ then
 	echo "OK: NameHashTest"
 else
         echo "FAILED NameHashTest"
+        exit 1
 fi
 
 rm -f test/index1 test/index2
@@ -25,50 +38,19 @@ then
 	echo "OK: RTreeTest"
 else
         echo "FAILED RTree Test"
+        exit 1
 fi
-diff test/test_data1.dot test/test_data1.dot.OK
-if [ $? -eq 0 ]
-then
-	echo "OK: RTree test_data1"
-else
-	echo "FAILED RTree test_data1, check test/test_data1.dot"
-fi
-diff test/update_data.dot test/update_data.dot.OK
-if [ $? -eq 0 ]
-then
-	echo "OK: RTree update_data"
-else
-	echo "FAILED RTree update_data, check test/update_data.dot"
-fi
+compare test_data1.dot test_data1.dot.OK "RTree test_data1"
+compare update_data.dot update_data.dot.OK "RTree update_data"
 
 O.$EPICS_HOST_ARCH/ReadTest ../DemoData/index fred >test/fred
-diff test/fred.OK test/fred
-if [ $? -eq 0 ]
-then
-        echo "OK: fred"
-else
-        echo "FAILED fred"
-fi
+compare fred.OK fred "ReadTest"
 
 O.$EPICS_HOST_ARCH/ReadTest ../DemoData/index alan >test/alan
-diff test/alan.OK test/alan
-if [ $? -eq 0 ]
-then
-        echo "OK: alan"
-else
-        echo "FAILED alan"
-fi
-                                                                                         
-O.$EPICS_HOST_ARCH/ReadTest ../DemoData/index BoolPV >test/BoolPV
-diff test/BoolPV.OK test/BoolPV
-if [ $? -eq 0 ]
-then
-        echo "OK: BoolPV"
-else
-        echo "FAILED BoolPV"
-fi
-                                                                                         
+compare alan.OK alan "Dump of PV alan"
 
+O.$EPICS_HOST_ARCH/ReadTest ../DemoData/index BoolPV >test/BoolPV
+compare BoolPV.OK BoolPV "BoolPV"
 
 # Comparison of last two updates:
 #dot -Tpng -o0.png update0.dot

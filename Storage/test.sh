@@ -41,7 +41,7 @@ else
 	echo "FAILED RTree update_data, check test/update_data.dot"
 fi
 
-O.linux-x86/ReadTest ../DemoData/index fred >test/fred
+O.$EPICS_HOST_ARCH/ReadTest ../DemoData/index fred >test/fred
 diff test/fred.OK test/fred
 if [ $? -eq 0 ]
 then
@@ -50,7 +50,7 @@ else
         echo "FAILED fred"
 fi
 
-O.linux-x86/ReadTest ../DemoData/index alan >test/alan
+O.$EPICS_HOST_ARCH/ReadTest ../DemoData/index alan >test/alan
 diff test/alan.OK test/alan
 if [ $? -eq 0 ]
 then
@@ -59,7 +59,7 @@ else
         echo "FAILED alan"
 fi
                                                                                          
-O.linux-x86/ReadTest ../DemoData/index BoolPV >test/BoolPV
+O.$EPICS_HOST_ARCH/ReadTest ../DemoData/index BoolPV >test/BoolPV
 diff test/BoolPV.OK test/BoolPV
 if [ $? -eq 0 ]
 then

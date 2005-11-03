@@ -1,6 +1,5 @@
 Status: 200 OK
 Content-type: text/xml; charset="utf-8"
-Content-length: 36900
 
 <?xml version="1.0" encoding="UTF-8"?>
 <methodResponse>

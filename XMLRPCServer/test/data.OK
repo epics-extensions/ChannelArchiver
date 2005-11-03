@@ -1,5 +1,5 @@
 Status: 200 OK
-Content-type: text/xml; charset="utf-8"
+Content-length: 36900
 
 <?xml version="1.0" encoding="UTF-8"?>
 <methodResponse>
@@ -199,7 +199,7 @@ Content-type: text/xml; charset="utf-8"
 <member><name>secs</name>
 <value><i4>1080056919</i4></value></member>
 <member><name>nano</name>
-<value><i4>900812667</i4></value></member>
+<value><i4>900812666</i4></value></member>
 <member><name>value</name>
 <value><array><data>
 <value><double>0.12674</double>
@@ -379,7 +379,7 @@ Content-type: text/xml; charset="utf-8"
 <member><name>secs</name>
 <value><i4>1080056974</i4></value></member>
 <member><name>nano</name>
-<value><i4>721164667</i4></value></member>
+<value><i4>721164666</i4></value></member>
 <member><name>value</name>
 <value><array><data>
 <value><double>0.061853</double>

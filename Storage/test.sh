@@ -13,8 +13,10 @@ function compare()
     fi
 }
 
-
-
+echo ""
+echo "Storage Library Test"
+echo "********************"
+echo ""
 
 make
 rm -f test/file_allocator.dat

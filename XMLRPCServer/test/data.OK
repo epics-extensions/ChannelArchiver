@@ -1,3 +1,5 @@
+epicsTime: Tue Mar 23 2004 10:48:39.900812666
+epicsTime: revision "@(#) EPICS 3.14.6, Common Utilities Library Jun  7 2004"
 Status: 200 OK
 Content-length: 36900
 
@@ -199,7 +201,6 @@ Content-length: 36900
 <member><name>secs</name>
 <value><i4>1080056919</i4></value></member>
 <member><name>nano</name>
-<value><i4>900812667</i4></value></member>
 <member><name>value</name>
 <value><array><data>
 <value><double>0.12674</double>
@@ -379,7 +380,6 @@ Content-length: 36900
 <member><name>secs</name>
 <value><i4>1080056974</i4></value></member>
 <member><name>nano</name>
-<value><i4>721164667</i4></value></member>
 <member><name>value</name>
 <value><array><data>
 <value><double>0.061853</double>

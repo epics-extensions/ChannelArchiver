@@ -22,6 +22,8 @@
 #include "ArgParser.h"
 #include "MsgLogger.h"
 #include "Lockfile.h"
+// Storage
+#include "DataWriter.h"
 // Engine
 #include "Engine.h"
 #include "EngineConfig.h"
@@ -73,6 +75,8 @@ int main(int argc, const char *argv[])
                               "description for HTTP display");
     CmdArgString log         (parser, "log", "<filename>", "write logfile");
     CmdArgFlag   nocfg       (parser, "nocfg", "disable online configuration");
+    CmdArgString basename    (parser, "basename", "<string>", "Basename for new data files");
+
     parser.setHeader ("ArchiveEngine Version " ARCH_VERSION_TXT ", "
                       EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n");
@@ -87,6 +91,9 @@ int main(int argc, const char *argv[])
     HTMLPage::_nocfg = (bool)nocfg;
     const stdString &config_name = parser.getArgument (0);
     stdString index_name = parser.getArgument (1);
+    // Base name
+    if (basename.get().length() > 0)
+        DataWriter::setDataFileNameBase(basename.get().c_str());
     if (log.get().length() > 0)
     {
         logfile = fopen(log.get().c_str(), "wt");

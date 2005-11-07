@@ -55,7 +55,7 @@ sleep 10
 
 lynx -dump http://localhost:5973 | tee html.dump
 cat html.dump | wc -l
-c=`cat ramp1.dat | wc -l`
+c=`cat html.dump | wc -l`
 if [ $c -ge 10 ]
 then
         echo "OK : Get data from the HTTPD"
@@ -70,8 +70,9 @@ echo ""
 echo "Stopping archive engine via httpd"
 echo ""
 lynx -dump http://localhost:5973/stop
-sleep 5
-kill $ioc >/dev/null 2>&1
+# Stopping can take some time
+sleep 10
+kill -9 $ioc >/dev/null 2>&1
 
 c=`tail -1 log | grep -c 'Done.$'`
 if [ $c -eq 1 ]

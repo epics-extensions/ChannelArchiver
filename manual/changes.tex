@@ -7,9 +7,9 @@ the beginning of the R3.14 port.
 \begin{itemize}
 
 \item 10/31/2005 --- Version 2.6.0:\\
-Some changes to make it work on a 64bit Linux system,
-specifically a RedHat Enterprise Linux WS release 4
-with gcc 3.4.4.
+The toolset now compiles and runs on a 64~bit Linux system,
+specifically RedHat Enterprise Linux~WS release~4
+with gcc~3.4.4.
 
 The goal here was to keep binary compatibility,
 so that index and data files can be moved from
@@ -18,22 +18,21 @@ This means that the 32~bit limititations on
 file sizes still apply, even when running
 on a 64~bit computer.
 
-The following was checked:
+Several new self-tests were added to check
+the following on the 64~bit system as well
+as 32~bit Linux and Mac OS~X 10.3:
 \begin{itemize}
 \item All compiles with the 64~bit compiler, no warnings on the test system.
-\item 'Tools' libary self-test passes.
-\item 'Storage' libary self-test passes.
+\item 'Tools' library self-test passes.
+\item 'Storage' library self-test passes.
 \item ArchiveExport can dump demo data,
-      matches results on 32~bit machine.
+      matching results on all architectures.
 \item ArchiveDataTool can copy demo data,
-      matches results on 32~bit machine.
+      matching results on all architectures.
 \item DataServer runs from within shell script
       the simulates a CGI environment.
-\end{itemize}
-
-TODO:
-\begin{itemize}
-\item ArchiveEngine runs
+\item ArchiveEngine runs, HTTPD responds,
+      collected data passes simple tests.
 \end{itemize}
 
 \item 09/21/2005 --- Version 2.5.0:\\

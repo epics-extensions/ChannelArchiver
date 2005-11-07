@@ -23,8 +23,9 @@ stats:
 	@echo -n "Lines of Documentation Source:"
 	@wc -l manual/*.tex | fgrep total
 
-run_tests:
+tests:
 	cd Tools; O.$(EPICS_HOST_ARCH)/ToolsTest
 	cd Storage; sh test.sh
 	cd DemoData; sh test.sh
 	cd XMLRPCServer; sh test.sh
+	cd Engine; sh test.sh

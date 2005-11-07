@@ -1,6 +1,6 @@
 \chapter{Common Errors and Questions}
 
-The following explains error messages and commonly
+The following explains \INDEX{error messages} and commonly
 asked questions.
 
 \section{Why is there no data in my archive?}
@@ -37,6 +37,42 @@ The most common reason for missing values, however, simply results
 from the fact that we archive the original time stamps and you are
 trying to look at more than one channel at a time. See the section on
 time stamp correlation on page~\pageref{sec:timestampcorr}.  
+
+\section{Why do I not get what I think I should get from the network data server?}
+I do not know a good way to debug the archive data server when it runs
+as a CGI tool. Since it is started by the web server, one cannot easily
+attach a debugger to it.
+About the only thing that one can check:
+\begin{lstlisting}[keywordstyle=\sffamily]
+   /tmp/archserver.log
+\end{lstlisting}
+
+Per default, the archive data server will append to the \INDEX{archserver.log} file
+whenever run. As a result of a 'get\_values' request, it will log
+the request and some basic result information:
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+ ---- ArchiveServer Started ----
+ archiver.get_values
+ how=3, count=10
+ get_channel_data
+ Start:  03/23/2004 10:47:46.000000000
+ End  :  03/23/2004 10:50:57.000000000
+ Method: Plot-Binning, 19.1 sec bins
+ Open index, key 1 = '../DemoData/index'
+ Handling 'fred'
+ 40 values
+ Handling 'janet'
+ 40 values
+ ArchiveServer ran 0.00754285 seconds
+\end{lstlisting}
+
+In case of problems, one can check if the data server received the
+correct request. On the machine where the data server is running,
+one can then try to reproduce the request with the command-line
+ArchiveExport tool.
+
+To disable this data server log file, look for 'LOGFILE' in the data server sources.
 
 \section{Back in time?} \label{sec:back-in-timefaq} 
 The archiver relies on the world going forward in time. When

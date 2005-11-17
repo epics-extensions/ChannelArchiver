@@ -67,6 +67,10 @@ mkdir /var/www/html/archive/cgi
    at your site.
    Add the following to the Apache config file:
 \begin{lstlisting}[keywordstyle=\sffamily]
+# This marks everything ending in "*.cgi" as a CGI
+# program, including ArchiveDataServer.cgi:
+AddHandler cgi-script .cgi
+
 <Directory /var/www/html/archive>
    Order Allow,Deny
    Allow from All
@@ -110,7 +114,38 @@ use the respective 'key' to access them.
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for the Data Server Configuration},label=lst:serverconfigdtd]{../XMLRPCServer/serverconfig.dtd}
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Data Server Configuration},label=lst:serverconfigex]{../XMLRPCServer/serverconfig.xml}
 
-\clearpage
+\subsection{Testing, Debugging}  % ---------------------------------------------
+Section \ref{sec:perlclient} describes a perl client to the network
+data server. It can be used to see if all the archives you listed
+in the configuration are actually accessible and so on.
+
+In case that client tool gets nothing but errors, debugging of the
+CGI ArchiveDataServer can be difficult, since one cannot easily
+peek into the running (or failing to run) program when it is
+launched by the web server.
+
+The XMLRPCServer directory contains some self-tests in test.sh,
+where the ArchiveDataServer is run without an actual web server.
+If test.sh works, your ArchiveDataServer program is fundamentally
+functional.
+
+If it doesn't work from within your web server, try changing
+your user ID to 'guest' or 'nobody', somebody similar to the user ID
+used by the web server when it runs your CGI tool. Set the
+LD\_LIBRARY\_PATH as you set it for the web server cgi directory,
+and try test.sh again.
+
+\noindent You can also try this to see more of the web server response:
+
+\begin{lstlisting}[keywordstyle=\sffamily]
+telnet my_web_server_host 80
+GET /archive/cgi/ArchiveDataServer.cgi HTTP/1.0<RETURN>
+<RETURN>
+\end{lstlisting}
+
+\noindent If you see only pages of binary-looking garbage, your web server
+doesn't recognize ArchiveDataServer.cgi as a CGI program,
+and instead of running it, you get a copy of it.
 
 \subsection{Standalone Data Server} % ---------------------------------------------
 The preferred deployment of the network data server is within a

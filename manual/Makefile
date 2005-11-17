@@ -10,7 +10,7 @@ tex: manual.tex
         done
 
 show:
-	xpdf manual.pdf
+	open manual.pdf
 
 clean:
 	-rm *.log *.toc *.aux *.idx *.ilg *.ind *.out *~

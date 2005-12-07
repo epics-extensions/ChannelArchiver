@@ -46,14 +46,24 @@ have a program ``ArchiveDataServer''. You need to copy that binary as
 assert that the web server can execute the ArchiveDataServer.
 The ``.cgi'' extension is important, because otherwise your web server
 might not recognize your CGI program as such.
-What follows is an example setup for the Apache Web Server under Linux:
+What follows is an example setup for the Apache Web Server under Linux
+and Mac OS X, but beware that your web server or Apache version
+could be different.
 \begin{enumerate}
-\item Locate your Apache configuration file, which can often been
-  found in ``/etc/httpd/conf/httpd.conf''. (For Mandrake 10, check
-  ``/etc/httpd/conf/commonhttpd.conf'').
+\item Locate your web server configuration file. This is is often 
+  a variant of ``/etc/httpd/conf/httpd.conf''. For Mandrake 10, check
+  ``/etc/httpd/conf/commonhttpd.conf'',
+  for Mac OS X it's ``/etc/httpd/httpd.conf''.
+\item After each change to the configuration, you will have to restart the
+ web server. This is often done via 
+``/etc/rc.d/initd/httpd restart''
+or
+``/usr/sbin/apachectl restart''.
 \item Create a new web directory for the archiver with a CGI
    sub-directory. This is typically done under /var/www/html,
-   except for Mac OS~X, where you would use /Library/WebServer/Documents:
+   except for Mac OS~X, where you would use /Library/WebServer/Documents.
+   Check the ``DocumentRoot'' variable in your web server configuration file
+   for the correct location and adjust the following accordingly.
 \begin{lstlisting}[keywordstyle=\sffamily]
 mkdir /var/www/html/archive
 mkdir /var/www/html/archive/cgi
@@ -67,8 +77,18 @@ mkdir /var/www/html/archive/cgi
    at your site.
    Add the following to the Apache config file:
 \begin{lstlisting}[keywordstyle=\sffamily]
-# This marks everything ending in "*.cgi" as a CGI
-# program, including ArchiveDataServer.cgi:
+# Check that environment variables are available,
+# assert that this directive is not commented-out:
+LoadModule env_module  libexec/httpd/mod_env.so
+AddModule mod_env.c
+
+# Check that CGI is enabled, i.e. assert that
+# these are not commented-out:
+LoadModule cgi_module    libexec/httpd/mod_cgi.so
+AddModule mod_cgi.c
+
+# This tells Apache that ArchiveDataServer.cgi
+# is a CGI program:
 AddHandler cgi-script .cgi
 
 <Directory /var/www/html/archive>
@@ -78,10 +98,15 @@ AddHandler cgi-script .cgi
 <Directory /var/www/html/archive/cgi>
    SetEnv EPICS_TS_MIN_WEST 300
    SetEnv LD_LIBRARY_PATH  /usr/local/lib:...
-   SetEnv SERVERCONFIG /var/www/cgi-bin/ \
-                   xmlrpc/serverconfig.xml
+   SetEnv SERVERCONFIG \
+    /var/www/html/archive/cgi/serverconfig.xml
+
+   # I also like to enable perl-CGI, but that is
+   # unrelated to the archiver
    PerlHandler Apache::Registry
    PerlSendHeader On
+
+   # This directive enables CGI for this dir.:
    Options +ExecCGI
 </Directory>
 \end{lstlisting}
@@ -143,7 +168,10 @@ GET /archive/cgi/ArchiveDataServer.cgi HTTP/1.0<RETURN>
 <RETURN>
 \end{lstlisting}
 
-\noindent If you see only pages of binary-looking garbage, your web server
+\noindent You should see an error message about ``XML-RPC Fault: Expected HTTP method POST'',
+indicating that the data server was launched correctly and
+was looking for a proper XML-RPC request.
+If you see only pages of binary-looking garbage, your web server
 doesn't recognize ArchiveDataServer.cgi as a CGI program,
 and instead of running it, you get a copy of it.
 

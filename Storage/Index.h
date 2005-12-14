@@ -3,6 +3,8 @@
 #ifndef __INDEX_H__
 #define __INDEX_H__
 
+// Tools
+#include <ErrorInfo.h>
 // Storage
 #include <NameHash.h>
 
@@ -16,7 +18,7 @@ public:
     virtual ~Index();
     
     /// Open an index.
-    virtual bool open(const stdString &filename, bool readonly=true) = 0;
+    virtual bool open(const stdString &filename, bool readonly, ErrorInfo &error_info) = 0;
 
     /// Close the index.
     virtual void close() = 0;
@@ -39,7 +41,8 @@ public:
     /// which together with the data block in the RTree will then
     /// lead to the actual data files.
     virtual class RTree *getTree(const stdString &channel,
-                                 stdString &directory) = 0;
+                                 stdString &directory,
+                                 ErrorInfo &error_info) = 0;
     
     /// Used by get_first_channel(), get_next_channel().
     class NameIterator

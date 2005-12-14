@@ -16,8 +16,7 @@ const RawValue::Data *LinearReader::find(
 {
     this->channel_name = channel_name;
     reader_data = reader.find(channel_name, start, error_info);
-    channel_found = reader_data != 0;
-    if (!channel_found)
+    if (!reader_data)
         return 0;
     if (start)
         end_of_bin = roundTimeUp(*start, delta);
@@ -77,6 +76,8 @@ const RawValue::Data *LinearReader::next(ErrorInfo &error_info)
         }
         RawValue::copy(type, count, data, reader_data);
         reader_data = reader.next(error_info);
+        if (!reader_data && error_info.error)
+            return 0;
         if (count==1  &&  !RawValue::isInfo(data) &&
             RawValue::getDouble(type, count, data, d0))
         {

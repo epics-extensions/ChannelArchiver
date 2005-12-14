@@ -107,6 +107,7 @@ bool Engine::attachToCAContext(Guard &engine_guard)
 
 void Engine::shutdown()
 {
+    ErrorInfo error_info;
     LOG_MSG("Shutdown:\n");
     LOG_ASSERT(this == theEngine);
     delete engine_server;
@@ -116,7 +117,7 @@ void Engine::shutdown()
     {
         Guard engine_guard(mutex);
         IndexFile index(RTreeM);
-        if (index.open(index_name.c_str(), false))
+        if (index.open(index_name.c_str(), false, error_info))
         {
             stdList<ArchiveChannel *>::iterator ch;
             for (ch = channels.begin(); ch != channels.end(); ++ch)
@@ -131,8 +132,8 @@ void Engine::shutdown()
             index.close();
         }
         else
-            LOG_MSG("Engine::shutdown cannot open index %s\n",
-                    index_name.c_str());
+            LOG_MSG("Engine::shutdown error, %s\n",
+                    error_info.info.c_str());
         LOG_MSG("Removing memory for channels and groups\n");
         while (! channels.empty())
         {
@@ -243,11 +244,12 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     channel->setMechanism(engine_guard, guard, mechanism, now);
     group->addChannel(engine_guard, guard, channel);
     channel->addToGroup(guard, group, disabling);
+    ErrorInfo error_info;
     IndexFile index(RTreeM);
-    if (index.open(index_name.c_str(), false))
+    if (index.open(index_name.c_str(), false, error_info))
     {   // Is channel already in Archive?
         stdString directory;
-        AutoPtr<RTree> tree(index.getTree(channel_name, directory));
+        AutoPtr<RTree> tree(index.getTree(channel_name, directory, error_info));
         if (tree)
         {
             RTree::Datablock block;
@@ -296,8 +298,10 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                 }
             }
         }
+        // else ignore that we can't read data for the channel
         index.close();
     }
+    // else: Ignore that we can't read existing data
     channel->startCA(guard);
     return channel;
 }
@@ -352,8 +356,9 @@ unsigned long Engine::writeArchive(Guard &engine_guard)
     unsigned long count = 0;
     //LOG_MSG("Engine: writing\n");
     is_writing = true;
+    ErrorInfo error_info;
     IndexFile index(RTreeM);
-    if (index.open(index_name.c_str(), false))
+    if (index.open(index_name.c_str(), false, error_info))
     {
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
@@ -365,8 +370,8 @@ unsigned long Engine::writeArchive(Guard &engine_guard)
     }
     else
     {
-        LOG_MSG("Engine::writeArchive cannot open index %s\n",
-                index_name.c_str());
+        LOG_MSG("Engine::writeArchive error, %s\n",
+                error_info.info.c_str());
     }
     DataFile::close_all();
     is_writing = false;

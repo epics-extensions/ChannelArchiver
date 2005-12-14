@@ -25,8 +25,9 @@ bool do_enforce_off = false;
 
 void show_hash_info(const stdString &index_name)
 {
+    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name))
+    if (!index.open(index_name, true, error_info))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
                 index_name.c_str());
@@ -38,13 +39,14 @@ void show_hash_info(const stdString &index_name)
 
 void list_names(const stdString &index_name, bool channel_detail)
 {
+    ErrorInfo error_info;
     IndexFile index(3);
     IndexFile::NameIterator names;
     epicsTime stime, etime, t0, t1;
     stdString directory, start, end;
     bool ok;
     size_t count = 0;
-    if (!index.open(index_name))
+    if (!index.open(index_name, true, error_info))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
                 index_name.c_str());
@@ -54,11 +56,10 @@ void list_names(const stdString &index_name, bool channel_detail)
          ok;
          ok = index.getNextChannel(names))
     {
-        AutoPtr<RTree> tree(index.getTree(names.getName(), directory));
+        AutoPtr<RTree> tree(index.getTree(names.getName(), directory, error_info));
         if (!tree)
         {
-            fprintf(stderr, "Cannot get tree for channel '%s'\n",
-                    names.getName().c_str());
+            fprintf(stderr, "%s\n", error_info.info.c_str());
             continue;
         }
         tree->getInterval(stime, etime);
@@ -105,13 +106,14 @@ void determine_period_and_samples(IndexFile &index,
                                   const stdString &channel,
                                   double &period, size_t &num_samples)
 {
+    ErrorInfo error_info;
     period      = 1.0; // initial guess
     num_samples = 10;
     // Whatever fails only means that there is no data,
     // so the initial guess remains OK.
     // Otherwise we peek into the last datablock.
     stdString directory;
-    AutoPtr<RTree> tree(index.getTree(channel, directory));
+    AutoPtr<RTree> tree(index.getTree(channel, directory, error_info));
     if (!tree)
         return;
     RTree::Node node(tree->getM(), false);
@@ -242,6 +244,7 @@ void copy(const stdString &index_name, const stdString &copy_name,
           int RTreeM, const epicsTime *start, const epicsTime *end,
           const stdString &single_name)
 {
+    ErrorInfo error_info;
     IndexFile               index(RTreeM), new_index(RTreeM);
     IndexFile::NameIterator names;
     size_t                  channel_count = 0, value_count = 0, back_count = 0;
@@ -256,9 +259,9 @@ void copy(const stdString &index_name, const stdString &copy_name,
                "(%s)\n", copy_name.c_str(), index_name.c_str());
         return;
     }
-    if (! index.open(index_name))
+    if (! index.open(index_name, true, error_info))
         return;
-    if (! new_index.open(copy_name, false))
+    if (! new_index.open(copy_name, false, error_info))
     {
         index.close();
         return;
@@ -301,11 +304,12 @@ void convert_dir_index(int RTreeM,
         return;
     
     DirectoryFileIterator channels = dir.findFirst();
+    ErrorInfo error_info;
     IndexFile index(RTreeM);
     stdString index_directory;
     if (verbose)
         printf("Opened directory file '%s'\n", dir_name.c_str());
-    if (!index.open(index_name, false))
+    if (!index.open(index_name, false, error_info))
         return;
     if (verbose)
         printf("Created index '%s'\n", index_name.c_str());
@@ -363,6 +367,7 @@ void convert_dir_index(int RTreeM,
 
 void convert_index_dir(const stdString &index_name, const stdString &dir_name)
 {
+    ErrorInfo error_info;
     IndexFile::NameIterator names;
     IndexFile index(50);
     stdString index_directory;
@@ -371,7 +376,7 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
     FileOffset start_offset, end_offset;
     epicsTime start_time, end_time;
     bool ok;
-    if (!index.open(index_name.c_str()))
+    if (!index.open(index_name.c_str(), true, error_info))
         return;
     DirectoryFile dir;
     if (!dir.open(dir_name, true))
@@ -383,10 +388,12 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
     {
         if (verbose)
             printf("Channel '%s':\n", names.getName().c_str());
-        AutoPtr<const RTree> tree(index.getTree(names.getName(), index_directory));
+        AutoPtr<const RTree> tree(index.getTree(names.getName(),
+                                                index_directory,
+                                                error_info));
         if (!tree)
         {
-            printf("No RTree for channel '%s'\n", names.getName().c_str());
+            printf("%s\n", error_info.info.c_str());
             continue;
         }
         RTree::Node node(tree->getM(), false);
@@ -451,11 +458,12 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
                                           unsigned long &direct_count,
                                           unsigned long &chained_count)
 {
+    ErrorInfo error_info;
     DataFile *datafile;
     DataHeader *header;
     direct_count = chained_count = 0;
     stdString directory;
-    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory, error_info));
     if (! tree)
         return 0;
     RTree::Datablock block;
@@ -544,8 +552,9 @@ unsigned long dump_datablocks(const stdString &index_name,
                               const stdString &channel_name)
 {
     unsigned long direct_count, chained_count;
+    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name))
+    if (!index.open(index_name, true, error_info))
         return 0;
     dump_datablocks_for_channel(index, channel_name,
                                 direct_count, chained_count);
@@ -559,9 +568,10 @@ unsigned long dump_datablocks(const stdString &index_name,
 unsigned long dump_all_datablocks(const stdString &index_name)
 {
     unsigned long total = 0, direct = 0, chained = 0, channels = 0;
+    ErrorInfo error_info;
     IndexFile index(3);
     bool ok;
-    if (!index.open(index_name))
+    if (!index.open(index_name, true, error_info))
         return 0;
     IndexFile::NameIterator names;
     for (ok = index.getFirstChannel(names);
@@ -583,19 +593,21 @@ unsigned long dump_all_datablocks(const stdString &index_name)
 void dot_index(const stdString &index_name, const stdString channel_name,
                const stdString &dot_name)
 {
+    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name))
+    if (!index.open(index_name, true, error_info))
     {
         fprintf(stderr, "Cannot open index '%s'\n",
                 index_name.c_str());
         return;
     }
     stdString directory;
-    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory, error_info));
     if (!tree)
     {
-        fprintf(stderr, "Cannot find '%s' in index '%s'\n",
-                channel_name.c_str(), index_name.c_str());
+        fprintf(stderr, "Cannot find '%s' in index '%s'.\n%s\n",
+                channel_name.c_str(), index_name.c_str(),
+                error_info.info.c_str());
         return;
     }
     tree->makeDot(dot_name.c_str());
@@ -613,11 +625,12 @@ bool seek_time(const stdString &index_name,
                 start_txt.c_str());
         return false;
     }
+    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name))
+    if (!index.open(index_name, true, error_info))
         return false;
     stdString directory;
-    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory, error_info));
     if (tree)
     {
         RTree::Datablock block;
@@ -641,8 +654,9 @@ bool seek_time(const stdString &index_name,
 
 bool check (const stdString &index_name)
 {
+    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name))
+    if (!index.open(index_name, true, error_info))
         return false;
     bool ok = index.check(verbose);
     index.close();

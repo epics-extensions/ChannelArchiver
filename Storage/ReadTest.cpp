@@ -17,10 +17,10 @@ int main(int argc, char *argv[])
         return 1;
     }
     
+    ErrorInfo error_info;
     IndexFile index(50);
-    if (index.open(index_name))
+    if (index.open(index_name, true, error_info))
     {
-        ErrorInfo error_info;
         RawDataReader reader(index);
         const RawValue::Data *value = reader.find(channel_name, 0, error_info);
         while (value)

@@ -84,6 +84,8 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
                 return false;
             }
         }
+        else if (error_info.error)
+            return false;
     }
     return next(error_info);
 }
@@ -133,6 +135,8 @@ bool SpreadsheetReader::next(ErrorInfo &error_info)
                 }
                 RawValue::copy(type[i], count[i], value[i], read_data[i]);
                 read_data[i] = reader[i]->next(error_info); // advance reader
+                if (read_data[i] == 0  &&  error_info.error)
+                    return false;
             }
             // else leave value[i] as is, which initially means: 0
         }

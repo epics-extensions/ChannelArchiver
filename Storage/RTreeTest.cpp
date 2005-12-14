@@ -59,6 +59,7 @@ static TestData fill_data[] =
 bool fill_test(bool use_index, const char *index_name,
                const TestData *data, int num, const char *dotfile)
 {
+    ErrorInfo error_info;
     IndexFile index(3);
     stdString directory;
     FILE *f;
@@ -68,7 +69,11 @@ bool fill_test(bool use_index, const char *index_name,
     FileAllocator fa;
     if (use_index)
     {
-        index.open(index_name, false);
+        if (!index.open(index_name, false, error_info))
+        {
+            fprintf(stderr, "Error: %s\n", error_info.info.c_str());
+            return false;
+        }
         tree = index.addChannel("test", directory);
         if (!tree)
         {
@@ -200,13 +205,18 @@ static TestData update_data[] =
 bool update_test(const char *index_name,
                  const TestData *data, int num, const char *dotfile)
 {
+    ErrorInfo error_info;
     IndexFile index(10);
     stdString directory;
     RTree *tree;
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
     FileAllocator fa;
-    index.open(index_name, false);
+    if (!index.open(index_name, false, error_info))
+    {
+        fprintf(stderr, "Error: %s\n", error_info.info.c_str());
+        return false;
+    }
     tree = index.addChannel("test", directory);
     if (!tree)
     {

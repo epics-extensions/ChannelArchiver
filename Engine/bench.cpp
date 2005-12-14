@@ -30,13 +30,13 @@ bool write_samples(const stdString &index_name,
                    const stdString &channel_name,
                    size_t samples)
 {
+    ErrorInfo error_info;
     IndexFile index(50);
     CtrlInfo info;
 
-    if (!index.open(index_name.c_str(), false))
+    if (!index.open(index_name.c_str(), false, error_info))
     {
-        fprintf(stderr, "Cannot create index '%s'\n",
-                index_name.c_str());
+        fprintf(stderr, "%s\n", error_info.info.c_str());
         return false;
     }
     info.setNumeric (2, "socks",
@@ -119,19 +119,18 @@ bool old_write_samples(const stdString &index_name,
 size_t read_samples(const stdString &index_name,
                     const stdString &channel_name)
 {
+    ErrorInfo error_info;
     IndexFile index(50);
 
-    if (!index.open(index_name.c_str()))
+    if (!index.open(index_name.c_str(), true, error_info))
     {
-        fprintf(stderr, "Cannot open index '%s'\n",
-                index_name.c_str());
+        fprintf(stderr, "%s\n", error_info.info.c_str());
         return 0;
     }
     size_t samples = 0;
-    ErrorInfo error_info;
     DataReader *reader = new RawDataReader(index);
-    const RawValue::Data *data = reader->find(channel_name, 0,
-                                              error_info);
+    const RawValue::Data *data =
+        reader->find(channel_name, 0, error_info);
     while (data)
     {
         ++samples;

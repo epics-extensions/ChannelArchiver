@@ -14,31 +14,35 @@ ListIndex::ListIndex()
 #endif
 }
 
-bool ListIndex::open(const stdString &filename, bool readonly)
+bool ListIndex::open(const stdString &filename, bool readonly, ErrorInfo &error_info)
 {
     if (!readonly)
     {
-        LOG_MSG("ListIndex '%s' Writing is not supported!\n",
-                filename.c_str());
+        error_info.set("ListIndex '%s' Writing is not supported!\n",
+                       filename.c_str());
         return false;
     }
     IndexConfig config;
     SubArchInfo info;
+    stdList<stdString>::const_iterator subs;
     info.index = 0;
-    if (config.parse(filename))
+    switch (config.parse(filename))
     {
-        stdList<stdString>::const_iterator subs;
+    case IndexConfig::error:
+        error_info.set("ListIndex cannot access '%s'\n", filename.c_str());
+        return false;
+    case IndexConfig::cannot_parse:
+        // Assume a single index, no list of indices.
+        info.name = filename;
+        sub_archs.push_back(info);
+        break;
+    case IndexConfig::ok:
         for (subs  = config.subarchives.begin();
              subs != config.subarchives.end();    ++subs)
         {      
             info.name = *subs;
             sub_archs.push_back(info);
         }
-    }
-    else
-    {   // Assume a single index, no list of indices.
-        info.name = filename;
-        sub_archs.push_back(info);
     }
 #ifdef DEBUG_LISTINDEX
     printf("ListIndex::open(%s)\n", filename.c_str());
@@ -84,7 +88,8 @@ class RTree *ListIndex::addChannel(const stdString &channel,
 }
 
 class RTree *ListIndex::getTree(const stdString &channel,
-                                stdString &directory)
+                                stdString &directory,
+                                ErrorInfo &error_info)
 {
     RTree *tree;
     stdList<SubArchInfo>::iterator archs = sub_archs.begin();
@@ -97,15 +102,17 @@ class RTree *ListIndex::getTree(const stdString &channel,
                 LOG_MSG("ListIndex::getTree out of mem\n");
                 return 0;
             }
-            if (!archs->index->open(archs->name, true))
-            {   // can't open this one; drop it from list
+            if (!archs->index->open(archs->name, true, error_info))
+            {   // can't open this one; ignore error, drop it from list
                 delete archs->index;
                 archs = sub_archs.erase(archs);
                 continue;
             }
         }
-        if ((tree = archs->index->getTree(channel, directory)))
-        {
+        if ((tree = archs->index->getTree(channel, directory, error_info)))
+        {   // In case there was one index->open error, reset
+            // because we did find something after all:
+            error_info.error = false;
 #ifdef DEBUG_LISTINDEX
             printf("Found '%s' in '%s'\n",
                    channel.c_str(), archs->name.c_str());
@@ -165,7 +172,8 @@ bool ListIndex::getFirstChannel(NameIterator &iter)
                     LOG_MSG("ListIndex::getFirstChannel out of mem\n");
                     return 0;
                 }
-                if (!archs->index->open(archs->name, true))
+                ErrorInfo error_info;
+                if (!archs->index->open(archs->name, true, error_info))
                 {   // can't open this one; drop it from list
                     delete archs->index;
                     archs = sub_archs.erase(archs);

@@ -95,12 +95,13 @@ bool create_masterindex(int RTreeM,
             return false;
     IndexFile::NameIterator names;
     stdString index_directory, sub_directory;
+    ErrorInfo error_info;
     IndexFile index(RTreeM), subindex(RTreeM);
     bool ok;
-    if (!index.open(index_name, false))
+    if (!index.open(index_name, false, error_info))
     {
-        fprintf(stderr, "Cannot create master index file '%s'\n",
-                index_name.c_str());
+        fprintf(stderr, "Cannot create master index file '%s'\n%s\n",
+                index_name.c_str(), error_info.info.c_str());
         return false;
     }
     if (verbose)
@@ -110,9 +111,10 @@ bool create_masterindex(int RTreeM,
          subs != config.subarchives.end(); ++subs)
     {
         const stdString &sub_name = *subs;
-        if (!subindex.open(sub_name))
+        if (!subindex.open(sub_name, false, error_info))
         {
-            fprintf(stderr, "Cannot open sub-index '%s'\n", sub_name.c_str());
+            fprintf(stderr, "Cannot open sub-index '%s'\n%s\n",
+                    sub_name.c_str(),  error_info.info.c_str());
             continue;
         }
         if (verbose)
@@ -124,11 +126,13 @@ bool create_masterindex(int RTreeM,
             const stdString &channel = names.getName();
             if (verbose > 1)
                 printf("'%s'\n", channel.c_str());
-            AutoPtr<RTree> subtree(subindex.getTree(channel, sub_directory));
+            AutoPtr<RTree> subtree(subindex.getTree(channel, sub_directory,
+                                   error_info));
             if (!subtree)
             {
-                fprintf(stderr, "Cannot get tree for '%s' from '%s'\n",
-                        channel.c_str(), sub_name.c_str());
+                fprintf(stderr, "Cannot get tree for '%s' from '%s'\n%s",
+                        channel.c_str(), sub_name.c_str(),
+                        error_info.info.c_str());
                 continue;
             }
             AutoPtr<RTree> tree(index.addChannel(channel, index_directory));

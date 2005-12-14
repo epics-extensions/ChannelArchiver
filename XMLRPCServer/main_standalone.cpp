@@ -43,12 +43,12 @@ IndexFile *open_index(xmlrpc_env *env, int key)
                                        "Cannot allocate index");
         return 0;
     }
-    if (index->open(index_name))
+    ErrorInfo error_info;
+    if (index->open(index_name, true, error_info))
         return index;
     delete index;
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
-                                   "Cannot open index '%s'",
-                                   index_name.c_str());
+                                   "%s", error_info.info.c_str());
     return 0;
 }
 

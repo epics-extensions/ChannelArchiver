@@ -34,7 +34,7 @@ public:
     static uint32_t ht_size;
     
     /// Open an index.
-    bool open(const stdString &filename, bool readonly=true);
+    bool open(const stdString &filename, bool readonly, ErrorInfo &error_info);
 
     /// Close the index.
     void close();
@@ -54,7 +54,8 @@ public:
     /// Caller not delete the tree pointer.
     ///
     ///
-    class RTree *getTree(const stdString &channel, stdString &directory);
+    class RTree *getTree(const stdString &channel, stdString &directory,
+                         ErrorInfo &error_info);
 
     /// Locate NameIterator on first channel.
     bool getFirstChannel(NameIterator &iter);

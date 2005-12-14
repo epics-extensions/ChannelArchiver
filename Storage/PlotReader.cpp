@@ -33,7 +33,6 @@ const RawValue::Data *PlotReader::find(const stdString &channel_name,
 {
     this->channel_name = channel_name;
     reader_data = reader.find(channel_name, start, error_info);
-    channel_found = reader.channel_found;
     if (!reader_data)
         return 0;
     if (delta <= 0.0)
@@ -128,6 +127,11 @@ const RawValue::Data *PlotReader::fill_bin(ErrorInfo &error_info)
             }
         }   
         reader_data = reader.next(error_info);
+    }
+    if (error_info.error)
+    {
+        state = s_dunno;
+        return 0;
     }
     // Options at this point:
     // 1) Found absolutely nothing (!have_initial_final)

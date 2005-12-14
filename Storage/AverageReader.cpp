@@ -24,8 +24,7 @@ const RawValue::Data *AverageReader::find(
 {
     this->channel_name = channel_name;
     reader_data = reader.find(channel_name, start, error_info);
-    channel_found = reader_data != 0;
-    if (!channel_found)
+    if (!reader_data)
         return 0;
     if (start)
     {
@@ -101,6 +100,8 @@ const RawValue::Data *AverageReader::next(ErrorInfo &error_info)
                 stat = RawValue::getStat(data);
             }
             reader_data = reader.next(error_info);
+            if (!reader_data  &&   error_info.error)
+                return 0;
         }
         else
         {   // Special values, non-scalars and non-numerics
@@ -110,6 +111,8 @@ const RawValue::Data *AverageReader::next(ErrorInfo &error_info)
             do
             {
                 reader_data = reader.next(error_info);
+                if (!reader_data  &&   error_info.error)
+                    return 0;
 #ifdef DEBUG_AVGREAD
                 printf("Skipping: ");
                 RawValue::show(stdout, reader.getType(), reader.getCount(),

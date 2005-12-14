@@ -19,6 +19,14 @@ echo "XML-RPC Data Server Test"
 echo "************************"
 echo ""
 
+if [ -f /tmp/archserver.log ]
+then
+    echo "There is already a file /tmp/archserver.log"
+    echo "It might be a good idea to remove that file"
+    echo "before running this test."
+    echo ""
+fi
+
 # sed -e "s/DEMO_INDEX/..\/DemoData\/index/" test_config.template >test_config.xml
 
 # Run the 'info' command,

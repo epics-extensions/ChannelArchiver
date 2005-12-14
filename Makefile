@@ -24,7 +24,7 @@ stats:
 	@wc -l manual/*.tex | fgrep total
 
 tests:
-	cd Tools; O.$(EPICS_HOST_ARCH)/ToolsTest
+	#cd Tools; O.$(EPICS_HOST_ARCH)/ToolsTest
 	cd Storage; sh test.sh
 	cd DemoData; sh test.sh
 	cd XMLRPCServer; sh test.sh

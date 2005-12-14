@@ -51,7 +51,8 @@ class ListIndex : public Index
 public:
     ListIndex();
 
-    virtual bool open(const stdString &filename, bool readonly=true);
+    virtual bool open(const stdString &filename, bool readonly,
+                      ErrorInfo &error_info);
 
     virtual void close();
     
@@ -59,7 +60,8 @@ public:
                                     stdString &directory);
 
     virtual class RTree *getTree(const stdString &channel,
-                                 stdString &directory);
+                                 stdString &directory,
+                                 ErrorInfo &error_info);
 
     virtual bool getFirstChannel(NameIterator &iter);
 

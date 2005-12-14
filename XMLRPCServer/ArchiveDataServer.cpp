@@ -112,7 +112,7 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
     }
     return  xmlrpc_build_value(env, "{s:i,s:(s)}",
                                "type", (xmlrpc_int32)META_TYPE_ENUM,
-                               "states", "<NO DATA or WRONG NAME>");
+                               "states", "<NO DATA>");
 }
 
 void dbr_type_to_xml_type(DbrType dbr_type, DbrCount dbr_count,
@@ -301,10 +301,10 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
                 LOG_MSG("Error: %s\n", error_info.info.c_str());
 #endif
                 xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
-                                               "Error: %s",
-                                               error_info.info.c_str());
+                                               "%s", error_info.info.c_str());
                 goto exit_get_channel_data;
-            } /* else: No file error etc., just no data */
+            }
+            /* else: No file error etc., just no data */
             meta = encode_ctrl_info(env, 0);
             xml_type = XML_ENUM;
             xml_count = 1;
@@ -328,8 +328,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
                      LOG_MSG("Error: %s\n", error_info.info.c_str());
 #endif
                      xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
-                                                    "Error: %s",
-                                                    error_info.info.c_str());
+                                                    "%s", error_info.info.c_str());
                      goto exit_get_channel_data;
                  }
             }
@@ -411,8 +410,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         LOG_MSG("Error: %s\n", error_info.info.c_str());
 #endif
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
-                                       "Error: %s",
-                                       error_info.info.c_str());
+                                       "%s", error_info.info.c_str());
         goto exit_get_sheet_data;
     }
     for (i=0; i<name_count; ++i)
@@ -430,7 +428,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
                                  xml_type[i], xml_count[i]);
         }
         else
-        {
+        {   // Channel exists, but has no data
             meta[i] = encode_ctrl_info(env, 0);
             xml_type[i] = XML_ENUM;
             xml_count[i] = 1;
@@ -454,8 +452,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
             LOG_MSG("Error: %s\n", error_info.info.c_str());
 #endif
             xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
-                                           "Error: %s",
-                                           error_info.info.c_str());
+                                           "%s", error_info.info.c_str());
             goto exit_get_sheet_data;
         }
     }
@@ -683,10 +680,11 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
         if (regex && !regex->doesMatch(ni.getName()))
             continue; // skip what doesn't match regex
         info.name = ni.getName();
-        AutoPtr<RTree> tree(index->getTree(info.name, directory));
+        ErrorInfo error_info;
+        AutoPtr<RTree> tree(index->getTree(info.name, directory, error_info));
         if (tree)
             tree->getInterval(info.start, info.end);
-        else
+        else // Is this an error?
             info.start = info.end = nullTime;
         channels.add(info);
     }

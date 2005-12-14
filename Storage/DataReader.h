@@ -35,6 +35,11 @@ public:
     /// is returned, so that the user can then decide if and how that value
     /// might extrapolate onto the start time.
     ///
+    /// ErrorInfo should indicate file access error or the fact
+    /// that a channel doesn't exist.
+    /// If the channel exists but there simply is no data,
+    /// error_info will be clear yet 0 data will be returned.
+    ///
     /// \param channel_name: Name of the channel
     /// \param start: start time or 0 for first value
     /// \param error_info: may be set to error information
@@ -43,12 +48,6 @@ public:
                                        const epicsTime *start,
                                        ErrorInfo &error_info) = 0;
 
-    /// Did find() find the channel at all?
-
-    /// In case find() returns 0, there's the question if the channel
-    /// has no data or doesn't exist at all. This routine tells you.
-    bool channel_found;
-    
     /// \param error_info: may be set to error information
     /// \return Returns next value or 0.
     virtual const RawValue::Data *next(ErrorInfo &error_info) = 0;

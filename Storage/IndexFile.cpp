@@ -17,7 +17,8 @@ uint32_t IndexFile::ht_size = 1009;
 IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
 {}
 
-bool IndexFile::open(const stdString &filename, bool readonly)
+bool IndexFile::open(const stdString &filename, bool readonly,
+                     ErrorInfo &error_info)
 {
     stdString linked_filename;
     if (Filename::getLinkedFilename(filename, linked_filename))
@@ -38,8 +39,8 @@ bool IndexFile::open(const stdString &filename, bool readonly)
     }
     if (!f)
     {
-        LOG_MSG("IndexFile::open(%s) cannot %s file.\n",
-                filename.c_str(), (new_file ? "create" : "open"));
+        error_info.set("IndexFile::open(%s) cannot %s file.\n",
+                       filename.c_str(), (new_file ? "create" : "open"));
         return false;
     }
     // TODO: Tune these two. All 0 seems best?!
@@ -50,30 +51,36 @@ bool IndexFile::open(const stdString &filename, bool readonly)
     {
         if (fseek(f, 0, SEEK_SET)  ||  !writeLong(f, cookie))
         {
-            LOG_MSG("IndexFile::open(%s) cannot write cookie.\n",
-                    filename.c_str());
+            error_info.set("IndexFile::open(%s) cannot write cookie.\n",
+                           filename.c_str());
             goto open_error;
         }
         if (names.init(ht_size))
             return true;
+        error_info.set("IndexFile::open(%s) cannot init. hash.\n",
+                           filename.c_str());
         goto open_error;
     }
     // Check existing file
     uint32_t file_cookie;
     if (fseek(f, 0, SEEK_SET)  ||  !readLong(f, &file_cookie))
     {
-        LOG_MSG("IndexFile::open(%s) cannot read cookie.\n",
-                filename.c_str());
+        error_info.set("IndexFile::open(%s) cannot read cookie.\n",
+                       filename.c_str());
         goto open_error;
     }
     if (file_cookie != cookie)
     {
-        LOG_MSG("IndexFile::open(%s) doesn't have valid cookie.\n",
-                filename.c_str());
+        error_info.set("IndexFile::open(%s) doesn't have valid cookie.\n",
+                       filename.c_str());
         goto open_error;
     }
     if (!names.reattach())
+    {
+        error_info.set("IndexFile::open(%s) name hash cannot attach.\n",
+                       filename.c_str());
         goto open_error;
+    }
     return true;
   open_error:
     close();
@@ -92,7 +99,9 @@ void IndexFile::close()
 
 RTree *IndexFile::addChannel(const stdString &channel, stdString &directory)
 {
-    RTree *tree = getTree(channel, directory);
+    ErrorInfo error_info;
+    RTree *tree = getTree(channel, directory, error_info);
+    // TODO: Take ErrorInfo arg, handle error_info result
     if (tree)
         return tree;
     stdString tree_filename;
@@ -114,18 +123,24 @@ RTree *IndexFile::addChannel(const stdString &channel, stdString &directory)
     return 0;
 }
 
-RTree *IndexFile::getTree(const stdString &channel, stdString &directory)
+RTree *IndexFile::getTree(const stdString &channel, stdString &directory,
+                          ErrorInfo &error_info)
 {
     stdString  tree_filename;
     FileOffset tree_anchor;
     if (!names.find(channel, tree_filename, tree_anchor))
+    {
+        error_info.set("Channel '%s' not found", channel.c_str());
         return 0;
+    }
     RTree *tree = new RTree(fa, tree_anchor);
     if (tree->reattach())
     {
         directory = dirname;
         return tree;
     }
+    error_info.set("RTree attachement error for channel '%s'",
+                   channel.c_str());
     delete tree;
     return 0;
 }
@@ -166,11 +181,11 @@ bool IndexFile::check(int level)
          have_name = getNextChannel(names))
     {
         ++channels;
-        AutoPtr<RTree> tree(getTree(names.getName(), dir));
+        ErrorInfo error_info;
+        AutoPtr<RTree> tree(getTree(names.getName(), dir, error_info));
         if (!tree)
         {
-            printf("Cannot get tree for channel '%s'\n",
-                   names.getName().c_str());
+            printf("%s", error_info.info.c_str());
             return false;
         }
         printf(".");

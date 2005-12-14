@@ -77,7 +77,8 @@ RawDataReader::~RawDataReader()
 
 const RawValue::Data *RawDataReader::find(
     const stdString &channel_name,
-    const epicsTime *start)
+    const epicsTime *start,
+    ErrorInfo &error_info)
 {
     this->channel_name = channel_name;
     channel_found = false;
@@ -101,22 +102,22 @@ const RawValue::Data *RawDataReader::find(
         epicsTime2string(node->record[rec_idx].end, e);
         printf("- First Block: %s @ 0x%lX: %s - %s\n",
                datablock.data_filename.c_str(),
-               datablock.data_offset,
+               (unsigned long)datablock.data_offset,
                s.c_str(), e.c_str());
     }
 #endif
     // Get the buffer for that data block
     if (!getHeader(directory,
-                   datablock.data_filename, datablock.data_offset))
+                   datablock.data_filename, datablock.data_offset, error_info))
         return 0;
     if (start)
-        return findSample(*start);
+        return findSample(*start, error_info);
     else
-        return findSample(node->record[rec_idx].start);       
+        return findSample(node->record[rec_idx].start, error_info);
 }
 
 // Read next sample, the one to which val_idx points.
-const RawValue::Data *RawDataReader::next()
+const RawValue::Data *RawDataReader::next(ErrorInfo &error_info)
 {
     if (!header)
         return 0;
@@ -130,21 +131,23 @@ const RawValue::Data *RawDataReader::next()
 #           ifdef DEBUG_DATAREADER
             stdString s, e;
             printf("- Next  Block: %s @ 0x%lX: %s - %s\n",
-                   datablock.data_filename.c_str(), datablock.data_offset,
+                   datablock.data_filename.c_str(),
+                   (unsigned long)datablock.data_offset,
                    epicsTimeTxt(node->record[rec_idx].start, s),
                    epicsTimeTxt(node->record[rec_idx].end, e));
 #           endif
             if (!getHeader(directory,
-                           datablock.data_filename, datablock.data_offset))
+                           datablock.data_filename, datablock.data_offset,
+                           error_info))
                 return 0;
-            if (!findSample(node->record[rec_idx].start))
+            if (!findSample(node->record[rec_idx].start, error_info))
                 return 0;
             if (RawValue::getTime(data) >= node->record[rec_idx].start)
                 return data;
 #           ifdef DEBUG_DATAREADER
             printf("- findSample gave sample<start, skipping that one\n");
 #           endif
-            return next();   
+            return next(error_info);   
         }
         else
         {   // Special case: master index might be between updates.
@@ -154,7 +157,7 @@ const RawValue::Data *RawDataReader::next()
             printf("- RawDataReader reached end for '%s' in '%s': ",
                    header->datafile->getBasename().c_str(),
                    header->datafile->getDirname().c_str());
-            printf("Sample %d of %lu\n",
+            printf("Sample %zd of %lu\n",
                    val_idx, (unsigned long)header->data.num_samples);
 #           endif
             // Refresh datafile and header                
@@ -169,7 +172,8 @@ const RawValue::Data *RawDataReader::next()
             {
                 if (!getHeader(header->datafile->getDirname(),
                                header->data.next_file,
-                               header->data.next_offset))
+                               header->data.next_offset,
+                               error_info))
                     return 0; 
 #               ifdef DEBUG_DATAREADER
                 stdString txt;
@@ -177,11 +181,11 @@ const RawValue::Data *RawDataReader::next()
                        header->datafile->getFilename().c_str(),
                        (unsigned int)header->offset);
 #               endif
-                return findSample(header->data.begin_time);
+                return findSample(header->data.begin_time, error_info);
             }
             // else fall through and continue in current header
 #           ifdef DEBUG_DATAREADER 
-            printf("Using sample %d of %lu\n",
+            printf("Using sample %zd of %lu\n",
                    val_idx, (unsigned long)header->data.num_samples);
 #           endif
         }
@@ -207,7 +211,7 @@ const RawValue::Data *RawDataReader::next()
         RawValue::getTime(data) > node->record[rec_idx].end)
     {
         val_idx = header->data.num_samples;
-        return next();
+        return next(error_info);
     }
     ++val_idx;
     return data;
@@ -239,7 +243,8 @@ bool RawDataReader::changedInfo()
 // Either sets header to new dirname/basename/offset or returns false
 bool RawDataReader::getHeader(const stdString &dirname,
                               const stdString &basename,
-                              FileOffset offset)
+                              FileOffset offset,
+                              ErrorInfo &error_info)
 {
     DataFile *datafile;
     DataHeader *new_header;
@@ -247,19 +252,33 @@ bool RawDataReader::getHeader(const stdString &dirname,
         goto no_header;
     // Read new header
     if (basename[0] == '/')
+    {
         // Index gave us the data file with the full path
         datafile = DataFile::reference("", basename, false);
+        if (!datafile)
+        {
+            error_info.set("Cannot access data file '%s'", basename.c_str());
+            goto no_header;
+        }
+    }
     else // Look relative to the index's directory
+    {
         datafile = DataFile::reference(dirname, basename, false);
-    if (!datafile)
-        goto no_header;
+        if (!datafile)
+        {
+            error_info.set("Cannot access data file '%s' in '%s'",
+                           basename.c_str(), dirname.c_str());
+            // DataFile::reference already printed the message
+            goto no_header;
+        }
+    }
     new_header = datafile->getHeader(offset);
     datafile->release(); // now ref'ed by new_header
     if (!new_header)
     {
-        LOG_MSG("RawDataReader(%s): cannot get header %s @ 0x%lX\n",
-                channel_name.c_str(),
-                basename.c_str(), offset);
+        error_info.set("RawDataReader(%s): cannot get header %s @ 0x%lX\n",
+                       channel_name.c_str(), basename.c_str(), offset);
+        LOG_MSG(error_info.info.c_str());
         goto no_header;
     }
     // Need to read CtrlInfo because we don't have any or it changed?
@@ -271,11 +290,12 @@ bool RawDataReader::getHeader(const stdString &dirname,
         if (!new_ctrl_info.read(new_header->datafile,
                                 new_header->data.ctrl_info_offset))
         {
-            LOG_MSG("RawDataReader(%s): header in %s @ 0x%lX"
-                    " has bad CtrlInfo\n",
-                    channel_name.c_str(),
-                    new_header->datafile->getBasename().c_str(),
-                    new_header->offset);
+            error_info.set("RawDataReader(%s): header in %s @ 0x%lX"
+                           " has bad CtrlInfo\n",
+                           channel_name.c_str(),
+                           new_header->datafile->getBasename().c_str(),
+                           (unsigned long)new_header->offset);
+            LOG_MSG(error_info.info.c_str());
             delete new_header;
             goto no_header;
         }
@@ -305,8 +325,9 @@ bool RawDataReader::getHeader(const stdString &dirname,
         data = RawValue::allocate(dbr_type, dbr_count, 1);
         if (!data)
         {
-            LOG_MSG("RawDataReader: Cannot alloc data for '%s'\n",
-                    channel_name.c_str());
+            error_info.set("RawDataReader: Cannot alloc data for '%s'\n",
+                           channel_name.c_str());
+            LOG_MSG(error_info.info.c_str());
             goto no_header;
         }
         type_changed = true;
@@ -329,7 +350,7 @@ bool RawDataReader::getHeader(const stdString &dirname,
 // (i.e. we return sample[val_idx-1],
 //  its stamp is <= start,
 //  and sample[val_idx] should be > start)
-const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
+const RawValue::Data *RawDataReader::findSample(const epicsTime &start, ErrorInfo &error_info)
 {
     LOG_ASSERT(header);
     LOG_ASSERT(data); 
@@ -345,7 +366,7 @@ const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
         printf("- Using the first sample in the buffer\n");
 #endif
         val_idx = 0;
-        return next();
+        return next(error_info);
     }
     // Binary search for sample before-or-at start in current header
     epicsTime stamp;
@@ -362,7 +383,7 @@ const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
         stamp = RawValue::getTime(data);
 #ifdef DEBUG_DATAREADER
         epicsTime2string(stamp, stamp_txt);
-        printf("- Index %d: %s\n", val_idx, stamp_txt.c_str());
+        printf("- Index %zd: %s\n", val_idx, stamp_txt.c_str());
 #endif
         if (high-low <= 1)
         {   // The intervall can't shrink further.
@@ -372,7 +393,7 @@ const RawValue::Data *RawDataReader::findSample(const epicsTime &start)
             if (stamp > start)
             {
                 val_idx = low;
-                return next();
+                return next(error_info);
             }
             // else: val_idx == high is good & already into data
             break;

@@ -34,6 +34,7 @@
 #define ARCH_DAT_SERV_FAULT -600
 #define ARCH_DAT_NO_INDEX -601        
 #define ARCH_DAT_ARG_ERROR -602
+#define ARCH_DAT_DATA_ERROR -603
 
 // Type codes returned by archiver.get_values
 #define XML_STRING 0

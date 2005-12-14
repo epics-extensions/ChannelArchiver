@@ -137,6 +137,7 @@ void copy_channel(const stdString &channel_name,
                   IndexFile &new_index,
                   size_t &channel_count, size_t &value_count, size_t &back_count)
 {
+    ErrorInfo       error_info;
     double          period = 1.0;
     size_t          num_samples = 4096;    
     DataWriter     *writer = 0;
@@ -151,14 +152,14 @@ void copy_channel(const stdString &channel_name,
         fflush(stdout);
     }
     determine_period_and_samples(index, channel_name, period, num_samples);
-    const RawValue::Data *value = reader.find(channel_name, start);
+    const RawValue::Data *value = reader.find(channel_name, start, error_info);
     while (value && start && RawValue::getTime(value) < *start)
     {   // Correct for "before-or-at" idea of find()
         if (verbose > 2)
             printf("Skipping sample before start time\n");
-        value = reader.next();
+        value = reader.next(error_info);
     }
-    for (/**/; value; value = reader.next())
+    for (/**/; value; value = reader.next(error_info))
     {
         if (end  &&  RawValue::getTime(value) >= *end)
             break; // Reached or exceeded end time
@@ -224,6 +225,10 @@ void copy_channel(const stdString &channel_name,
         else
             printf("%lu values                                         \n",
                    (unsigned long) count);
+    }
+    if (error_info.error)
+    {
+        printf("Read error: %s\n", error_info.info.c_str());
     }
     ++channel_count;
     value_count += count;

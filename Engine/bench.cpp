@@ -128,12 +128,14 @@ size_t read_samples(const stdString &index_name,
         return 0;
     }
     size_t samples = 0;
+    ErrorInfo error_info;
     DataReader *reader = new RawDataReader(index);
-    const RawValue::Data *data = reader->find(channel_name, 0);
+    const RawValue::Data *data = reader->find(channel_name, 0,
+                                              error_info);
     while (data)
     {
         ++samples;
-        data = reader->next();    
+        data = reader->next(error_info);    
     }
     delete reader;
     DataFile::close_all();

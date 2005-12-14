@@ -5,6 +5,7 @@
 
 // Tools
 #include "stdString.h"
+#include "ErrorInfo.h"
 // Storage
 #include "CtrlInfo.h"
 #include "RawValue.h"
@@ -36,9 +37,11 @@ public:
     ///
     /// \param channel_name: Name of the channel
     /// \param start: start time or 0 for first value
+    /// \param error_info: may be set to error information
     /// \return Returns value or 0
     virtual const RawValue::Data *find(const stdString &channel_name,
-                                       const epicsTime *start) = 0;
+                                       const epicsTime *start,
+                                       ErrorInfo &error_info) = 0;
 
     /// Did find() find the channel at all?
 
@@ -46,8 +49,9 @@ public:
     /// has no data or doesn't exist at all. This routine tells you.
     bool channel_found;
     
-    /// Returns next value or 0.
-    virtual const RawValue::Data *next() = 0;
+    /// \param error_info: may be set to error information
+    /// \return Returns next value or 0.
+    virtual const RawValue::Data *next(ErrorInfo &error_info) = 0;
 
     /// Name of the channel, i.e. the one passed to find()
     stdString channel_name;
@@ -108,8 +112,9 @@ public:
     RawDataReader(Index &index);
     virtual ~RawDataReader();
     virtual const RawValue::Data *find(const stdString &channel_name,
-                                       const epicsTime *start);
-    virtual const RawValue::Data *next();
+                                       const epicsTime *start,
+                                       ErrorInfo &error_info);
+    virtual const RawValue::Data *next(ErrorInfo &error_info);
     virtual DbrType getType() const;
     virtual DbrCount getCount() const;
     virtual const CtrlInfo &getInfo() const;
@@ -137,8 +142,8 @@ private:
     size_t val_idx; // current index in data buffer
 
     bool getHeader(const stdString &dirname, const stdString &basename,
-                   FileOffset offset);
-    const RawValue::Data *findSample(const epicsTime &start);
+                   FileOffset offset, ErrorInfo &error_info);
+    const RawValue::Data *findSample(const epicsTime &start, ErrorInfo &error_info);
 };
 
 /// @}

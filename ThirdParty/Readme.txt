@@ -22,3 +22,10 @@ might need it for the other packages.
   URI-1.31.tar.gz
 More perl libraries that you might need to make
 Frontier work.
+On Mac OSX, Frontier didn't complain during the installation,
+but to actually run, this was needed as well:
+  tar vzxf libwww-perl-5.800.tar.gz 
+  cd libwww-perl-5.800
+  perl Makefile.PL 
+  sudo make install
+

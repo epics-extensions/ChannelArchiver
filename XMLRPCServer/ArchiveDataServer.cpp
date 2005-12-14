@@ -253,6 +253,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
                                long count,
                                ReaderFactory::How how, double delta)
 {
+    ErrorInfo error_info;
     xmlrpc_value   *results = 0;
 #ifdef LOGFILE
     stdString txt;
@@ -267,6 +268,9 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
     AutoPtr<DataReader> reader(ReaderFactory::create(*index, how, delta));
     if (!reader)
     {
+#ifdef LOGFILE
+        LOG_MSG("Cannot create reader\n");
+#endif
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
                                        "Cannot create reader");
         goto exit_get_channel_data;
@@ -288,9 +292,19 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
         values = xmlrpc_build_value(env, "()");
         if (env->fault_occurred)
             goto exit_get_channel_data;
-        data = reader->find(names[i], &start);
+        data = reader->find(names[i], &start, error_info);
         if (data == 0)
         {
+            if (error_info.error)
+            {
+#ifdef LOGFILE
+                LOG_MSG("Error: %s\n", error_info.info.c_str());
+#endif
+                xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
+                                               "Error: %s",
+                                               error_info.info.c_str());
+                goto exit_get_channel_data;
+            } /* else: No file error etc., just no data */
             meta = encode_ctrl_info(env, 0);
             xml_type = XML_ENUM;
             xml_count = 1;
@@ -307,7 +321,17 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
                              RawValue::getTime(data), data,
                              xml_type, xml_count, values);
                  ++num_vals;
-                 data = reader->next();
+                 data = reader->next(error_info);
+                 if (error_info.error)
+                 {
+#ifdef LOGFILE
+                     LOG_MSG("Error: %s\n", error_info.info.c_str());
+#endif
+                     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
+                                                    "Error: %s",
+                                                    error_info.info.c_str());
+                     goto exit_get_channel_data;
+                 }
             }
         }
         // Assemble result = { name, meta, type, count, values }
@@ -328,6 +352,11 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
     }
   exit_get_channel_data:
     index->close();
+    if (env->fault_occurred  &&  results)
+    {
+        xmlrpc_DECREF(results);
+        results = 0;
+    }
     return results;
 }
 
@@ -343,6 +372,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
                              long count,
                              ReaderFactory::How how, double delta)
 {
+    ErrorInfo error_info;
     xmlrpc_value *results = 0, **meta = 0, **values = 0;
     xmlrpc_int32 *xml_type = 0, *xml_count = 0;
     long i, num_vals = 0, name_count = names.size();
@@ -359,7 +389,12 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         return 0;
     AutoPtr<SpreadsheetReader> sheet(new SpreadsheetReader(*index, how, delta));
     if (!sheet)
+    {
+#ifdef LOGFILE
+        LOG_MSG("Cannot create SpreadsheetReader\n");
+#endif
         goto exit_get_sheet_data;
+    }
     results = xmlrpc_build_value(env, "()");
     if (env->fault_occurred)
         goto exit_get_sheet_data;
@@ -369,7 +404,17 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
     xml_count = (xmlrpc_int32 *) calloc(name_count, sizeof(xmlrpc_int32));
     if (! (results && meta && values && xml_type && xml_count))
         goto exit_get_sheet_data;
-    ok = sheet->find(names, &start);
+    ok = sheet->find(names, &start, error_info);
+    if (error_info.error)
+    {
+#ifdef LOGFILE
+        LOG_MSG("Error: %s\n", error_info.info.c_str());
+#endif
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
+                                       "Error: %s",
+                                       error_info.info.c_str());
+        goto exit_get_sheet_data;
+    }
     for (i=0; i<name_count; ++i)
     {
 #ifdef LOGFILE
@@ -402,7 +447,17 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
             
         }
         ++num_vals;
-        ok = sheet->next();
+        ok = sheet->next(error_info);
+        if (error_info.error)
+        {
+#ifdef LOGFILE
+            LOG_MSG("Error: %s\n", error_info.info.c_str());
+#endif
+            xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
+                                           "Error: %s",
+                                           error_info.info.c_str());
+            goto exit_get_sheet_data;
+        }
     }
     for (i=0; i<name_count; ++i)
     {   // Assemble result = { name, meta, type, count, values }
@@ -437,6 +492,11 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         free(values);
     if (meta)
         free(meta);
+    if (env->fault_occurred && results)
+    {
+        xmlrpc_DECREF(results);
+        results = 0;
+    }
     return results;
 }
 

@@ -9,6 +9,6 @@
 <archive>
      <key>2</key>
      <name>RF-LLRF</name>
-     <path>/home/data/llrf/index</path>
+     <path>/Users/kasemir/epics/R3.14.6/extensions/src/ChannelArchiver/xxx/index</path>
 </archive>
 </serverconfig>

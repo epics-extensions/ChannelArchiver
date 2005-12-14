@@ -48,7 +48,8 @@ SpreadsheetReader::~SpreadsheetReader()
 }
 
 bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
-                             const epicsTime *start)
+                             const epicsTime *start,
+                             ErrorInfo &error_info)
 {
     size_t i;
     num = channel_names.size();
@@ -60,31 +61,34 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
     value = (RawValue::Data **)calloc(num, sizeof(RawValue::Data *));
     if (!(reader && read_data && info && type && count && value))
     {
-        LOG_MSG("SpreadsheetReader::find cannot allocate mem\n");
+        error_info.set("SpreadsheetReader::find cannot allocate mem\n");
+        LOG_MSG(error_info.info.c_str());
         return false;
     }
     for (i=0; i<num; ++i)
     {
         if (!(reader[i] = ReaderFactory::create(index, how, delta)))
         {
-            LOG_MSG("SpreadsheetReader::find cannot allocate reader %d\n", i);
+            error_info.set("SpreadsheetReader::find cannot allocate reader %d\n", i);
+            LOG_MSG(error_info.info.c_str());
             return false;
         }
-        read_data[i] = reader[i]->find(channel_names[i], start);
+        read_data[i] = reader[i]->find(channel_names[i], start, error_info);
         if (read_data[i])
         {
             info[i] = new CtrlInfo(reader[i]->getInfo());
             if (!info[i])
             {
-                LOG_MSG("SpreadsheetReader::find cannot allocate info %d\n",i);
+                error_info.set("SpreadsheetReader::find cannot allocate info %d\n",i);
+                LOG_MSG(error_info.info.c_str());
                 return false;
             }
         }
     }
-    return next();
+    return next(error_info);
 }
 
-bool SpreadsheetReader::next()
+bool SpreadsheetReader::next(ErrorInfo &error_info)
 {
     bool have_any = false;
     epicsTime stamp;
@@ -122,15 +126,17 @@ bool SpreadsheetReader::next()
                     value[i] = RawValue::allocate(type[i], count[i], 1);
                     if (!value[i])
                     {
-                        LOG_MSG("SpreadsheetReader cannot allocate value\n");
+                        error_info.set("SpreadsheetReader cannot allocate value\n");
+                        LOG_MSG(error_info.info.c_str());
                         return false;
                     }
                 }
                 RawValue::copy(type[i], count[i], value[i], read_data[i]);
-                read_data[i] = reader[i]->next(); // advance reader
+                read_data[i] = reader[i]->next(error_info); // advance reader
             }
             // else leave value[i] as is, which initially means: 0
         }
     }    
     return have_any;
 }
+

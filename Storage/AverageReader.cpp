@@ -19,10 +19,11 @@ AverageReader::~AverageReader()
 }
 
 const RawValue::Data *AverageReader::find(
-    const stdString &channel_name, const epicsTime *start)
+    const stdString &channel_name, const epicsTime *start,
+    ErrorInfo &error_info)
 {
     this->channel_name = channel_name;
-    reader_data = reader.find(channel_name, start);
+    reader_data = reader.find(channel_name, start, error_info);
     channel_found = reader_data != 0;
     if (!channel_found)
         return 0;
@@ -31,17 +32,17 @@ const RawValue::Data *AverageReader::find(
         end_of_bin = *start + delta;
         while (RawValue::getTime(reader_data) < *start)
         {
-            if (!(reader_data = reader.next()))
+            if (!(reader_data = reader.next(error_info)))
                 return 0;
         }
     }
     else
         end_of_bin =
             roundTimeUp(RawValue::getTime(reader_data), delta);
-    return next();
+    return next(error_info);
 }
     
-const RawValue::Data *AverageReader::next()
+const RawValue::Data *AverageReader::next(ErrorInfo &error_info)
 {
     if (!reader_data)
         return 0;
@@ -82,8 +83,9 @@ const RawValue::Data *AverageReader::next()
             count = reader.getCount();
             if (!(data  = RawValue::allocate(type, count, 1)))
             {
-                LOG_MSG("AverageReader: Cannot allocate data %d/%d\n",
-                        type, count);
+                error_info.set("AverageReader: Cannot allocate data %d/%d\n",
+                               type, count);
+                LOG_MSG(error_info.info.c_str());
                 return 0;
             }
         }
@@ -98,7 +100,7 @@ const RawValue::Data *AverageReader::next()
                 sevr = RawValue::getSevr(data);
                 stat = RawValue::getStat(data);
             }
-            reader_data = reader.next();
+            reader_data = reader.next(error_info);
         }
         else
         {   // Special values, non-scalars and non-numerics
@@ -107,7 +109,7 @@ const RawValue::Data *AverageReader::next()
             N = 0;
             do
             {
-                reader_data = reader.next();
+                reader_data = reader.next(error_info);
 #ifdef DEBUG_AVGREAD
                 printf("Skipping: ");
                 RawValue::show(stdout, reader.getType(), reader.getCount(),
@@ -129,7 +131,7 @@ const RawValue::Data *AverageReader::next()
     end_of_bin += delta;
     if (anything)
         return data;
-    return next();
+    return next(error_info);
 }
 
 DbrType AverageReader::getType() const

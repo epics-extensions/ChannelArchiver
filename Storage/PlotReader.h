@@ -41,8 +41,9 @@ public:
     PlotReader(Index &index, double delta);
     ~PlotReader();
     const RawValue::Data *find(const stdString &channel_name,
-                               const epicsTime *start);
-    const RawValue::Data *next();
+                               const epicsTime *start,
+                               ErrorInfo &error_info);
+    const RawValue::Data *next(ErrorInfo &error_info);
     DbrType getType() const;
     DbrCount getCount() const;
     const CtrlInfo &getInfo() const;
@@ -70,7 +71,7 @@ private:
     // State machine for next()
     enum { s_dunno, s_gotit, s_ini, s_min, s_max, s_fin } state;
 
-    const RawValue::Data *fill_bin();
+    const RawValue::Data *fill_bin(ErrorInfo &error_info);
 };
 
 /// @}

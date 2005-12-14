@@ -20,8 +20,9 @@ int main(int argc, char *argv[])
     IndexFile index(50);
     if (index.open(index_name))
     {
+        ErrorInfo error_info;
         RawDataReader reader(index);
-        const RawValue::Data *value = reader.find(channel_name, 0);
+        const RawValue::Data *value = reader.find(channel_name, 0, error_info);
         while (value)
         {
             epicsTime2string(RawValue::getTime(value), t);
@@ -30,7 +31,7 @@ int main(int argc, char *argv[])
                 v, reader.getType(), reader.getCount(), value);
             printf("%s\t%s\t%s\n",
                    t.c_str(), v.c_str(), s.c_str());
-            value = reader.next();
+            value = reader.next(error_info);
         }
         index.close();
     }

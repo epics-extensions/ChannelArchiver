@@ -42,7 +42,15 @@ sleep 5
 
 echo ""
 echo "Some data from the soft-ioc"
-caget ramp1 ramp2 ramp2_threshold
+caget ramp1 ramp2 ramp2_threshold | tee caget.out
+pvs=`cat caget.out | wc -l`
+if [ $pvs -eq 3 ]
+then
+        echo "OK : Get PVs from softIoc"
+else
+        echo "FAILED : Cannot get PVs from softIoc"
+        exit 1
+fi
 
 echo ""
 echo "Starting an archive engine"
@@ -51,7 +59,10 @@ $ENGINE -p 5973 -d test -nocfg -basename data -l log test.xml index &
 engine=$!
 
 # Let it run for a while
-sleep 10
+echo ""
+echo "Running engine for about 20 seconds"
+echo ""
+sleep 20
 
 lynx -dump http://localhost:5973 | tee html.dump
 cat html.dump | wc -l
@@ -64,7 +75,10 @@ else
         exit 1
 fi
 
-sleep 10
+echo ""
+echo "Running engine for another 30 seconds"
+echo ""
+sleep 30
 
 echo ""
 echo "Stopping archive engine via httpd"
@@ -72,6 +86,8 @@ echo ""
 lynx -dump http://localhost:5973/stop
 # Stopping can take some time
 sleep 10
+
+# Stop the softIoc
 kill -9 $ioc >/dev/null 2>&1
 
 c=`tail -1 log | grep -c 'Done.$'`

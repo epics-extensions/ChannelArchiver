@@ -20,8 +20,9 @@ public:
     AverageReader(Index &index, double delta);
     virtual ~AverageReader();
     const RawValue::Data *find(const stdString &channel_name,
-                               const epicsTime *start);
-    const RawValue::Data *next();
+                               const epicsTime *start,
+                               ErrorInfo &error_info);
+    const RawValue::Data *next(ErrorInfo &error_info);
     DbrType getType() const;
     DbrCount getCount() const;
     const CtrlInfo &getInfo() const;

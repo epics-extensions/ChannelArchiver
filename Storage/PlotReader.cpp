@@ -28,10 +28,11 @@ PlotReader::~PlotReader()
 }
 
 const RawValue::Data *PlotReader::find(const stdString &channel_name,
-                                       const epicsTime *start)
+                                       const epicsTime *start,
+                                       ErrorInfo &error_info)
 {
     this->channel_name = channel_name;
-    reader_data = reader.find(channel_name, start);
+    reader_data = reader.find(channel_name, start, error_info);
     channel_found = reader.channel_found;
     if (!reader_data)
         return 0;
@@ -42,17 +43,17 @@ const RawValue::Data *PlotReader::find(const stdString &channel_name,
         end_of_bin = *start + delta;
         while (RawValue::getTime(reader_data) < *start)
         {
-            reader_data = reader.next();
+            reader_data = reader.next(error_info);
             if (!reader_data)
                 return 0;
         }
     }
     else
         end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
-    return fill_bin();
+    return fill_bin(error_info);
 }
 
-const RawValue::Data *PlotReader::fill_bin()
+const RawValue::Data *PlotReader::fill_bin(ErrorInfo &error_info)
 {
     double d;
     N = 0;
@@ -97,8 +98,9 @@ const RawValue::Data *PlotReader::fill_bin()
             have_initial_final = have_mini_maxi = false;
             if (!(initial && final))
             {
-                LOG_MSG("PlotReader: Cannot allocate data %d/%d\n",
-                        type, count);
+                error_info.set("PlotReader: Cannot allocate data %d/%d\n",
+                               type, count);
+                LOG_MSG(error_info.info.c_str());
                 return 0;
             }
         }
@@ -125,7 +127,7 @@ const RawValue::Data *PlotReader::fill_bin()
                 have_mini_maxi = true;
             }
         }   
-        reader_data = reader.next();
+        reader_data = reader.next(error_info);
     }
     // Options at this point:
     // 1) Found absolutely nothing (!have_initial_final)
@@ -140,13 +142,13 @@ const RawValue::Data *PlotReader::fill_bin()
         state = s_gotit;
     else
         state = s_dunno;  // case 1: Give up
-    return next();
+    return next(error_info);
 }
 
-const RawValue::Data *PlotReader::next()
+const RawValue::Data *PlotReader::next(ErrorInfo &error_info)
 {
     if (delta <= 0.0)
-        return reader.next();
+        return reader.next(error_info);
     if (state != s_dunno)
     {   // Anything in current bin?
         LOG_ASSERT(have_initial_final && initial && final);
@@ -213,7 +215,7 @@ const RawValue::Data *PlotReader::next()
     }
     // Check next bin
     end_of_bin += delta;
-    return fill_bin();
+    return fill_bin(error_info);
 }
 
 DbrType PlotReader::getType() const

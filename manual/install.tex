@@ -96,7 +96,7 @@ then look as follows:
 
 \begin{lstlisting}[keywordstyle=\sffamily]
 cd ChannelArchiver/ThirdParty
-tar vzoxf xmlrpc-c-0.9.9.tar.gz
+tar vzxf xmlrpc-c-0.9.9.tar.gz
 cd xmlrpc-c-0.9.9
 ./configure
 # Patch for serialization and name spaces
@@ -138,7 +138,7 @@ and libwww-devel RPMs that come with the OS.
 For Mandrake~10, you can use the w3c-libwww sources as is:
 \begin{lstlisting}[keywordstyle=\sffamily]
 cd ChannelArchiver/ThirdParty
-tar vzoxf w3c-libwww-5.4.0.tgz
+tar vzxf w3c-libwww-5.4.0.tgz
 cd w3c-libwww-5.4.0
 ./configure
 make
@@ -224,7 +224,7 @@ It is available from
 \href{http://www.cpan.org}{http://www.cpan.org}.
 \end{center}
 \begin{lstlisting}[keywordstyle=\sffamily]
-tar vzoxf XML-Simple-2.09.tar.gz
+tar vzxf XML-Simple-2.09.tar.gz
 cd XML-Simple-2.09
 perl Makefile.PL
 su
@@ -238,11 +238,10 @@ including the ArchiveDataClient.pl test script.
 Under RedHat 9.0, Fedora 2 and Mandrake 10, it was sufficient to install
 Frontier-RPC-0.07b4 like this:
 \begin{lstlisting}[keywordstyle=\sffamily]
-tar vzoxf Frontier-RPC-0.07b4.tar.gz
+tar vzxf Frontier-RPC-0.07b4.tar.gz
 cd Frontier-RPC-0.07b4
 perl Makefile.PL
-su
-make install
+sudo make install
 \end{lstlisting}
 
 \noindent RedHat 6.2 was hopeless because many of the required perl

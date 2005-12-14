@@ -33,7 +33,8 @@ class SpreadsheetReader
     /// It's a severe error to invoke any of the following
     /// after find() returns false.
     virtual bool find(const stdVector<stdString> &channel_names,
-                      const epicsTime *start);
+                      const epicsTime *start,
+                      ErrorInfo &error_info);
 
     /// Time stamp for the current slice of data
     virtual const epicsTime &getTime() const;
@@ -68,7 +69,7 @@ class SpreadsheetReader
     virtual const CtrlInfo &getCtrlInfo(size_t i) const;
     
     /// Get the next time slice
-    bool next();  
+    bool next(ErrorInfo &error_info);  
   
 protected:
     Index              &index;

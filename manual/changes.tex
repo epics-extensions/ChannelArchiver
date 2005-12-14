@@ -6,6 +6,28 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 12/13/2005 --- Version 2.7.0:\\
+Error reporting: When a command-line tool failed,
+one could see a rather specific error message
+like "Cannot open DataFile '20040323'".
+It also ended up in the log file of the network
+data server, but was not reported well via
+the XML-RPC protocol.
+
+Now an XML-RPC fault like
+"Cannot access data file '20040323' in '/Users/....'"
+will be reported.
+
+Note that a misspelled name or the fact that there is
+simply no data for the requested time is still not
+considered a severe error, since this is quite common,
+especially when more than one channel is requested.
+Instead of failing the whole request,
+only a hint is embedded inside fake type information:
+The channel's type information will pretends to be
+enumerated with only one state, and that state
+would be "<NO DATA or WRONG NAME>".
+
 \item 10/31/2005 --- Version 2.6.0:\\
 The toolset now compiles and runs on a 64~bit Linux system,
 specifically RedHat Enterprise Linux~WS release~4

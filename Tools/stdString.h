@@ -1,6 +1,8 @@
+// -*- c++ -*-
 #ifndef __STD_STRING_H__
 #define __STD_STRING_H__
 
+// System
 #include <cstring>
 
 /// \ingroup Tools Meant to behave like std::string.
@@ -26,7 +28,8 @@ public:
 	/// Get C-type data which is always != NULL
 	const char *c_str() const;
 
-	/// Character access, <I>no test for valid index value!!</I>
+	/// Character access.
+        /// @exception GenericException
 	char operator [] (size_t index) const;
 
 	/// Assignments
@@ -62,12 +65,17 @@ public:
 	/// Reserve space for string of given max. length.
 	///
 	/// Call in advance to make assignments and concatenations
-	/// more effective
+	/// more effective.
+    /// Does not throw any exceptions on memory errors,
+    /// since we can't create a GenericException because
+    /// that uses yet another stdString.
+    /// So in case of memory errors, reserve() will return false,
+    /// and it's up to the caller to check for that.
 	bool reserve(size_type len);
 
-	/// Get position [0 .. length()-1] of first/last ch
+	/// Get position [0 .. length()-1] of first/last ch.
 	///
-	/// Retuns npos if not found
+	/// @return Returns npos if not found.
 	size_type find(char ch) const; 
 	size_type find(const stdString &s) const; 
 	size_type find(const char *) const; 
@@ -75,7 +83,7 @@ public:
 
 	static const size_type npos; 
 
-	/// Extract sub-string from position <I>from</I>, up to n elements
+	/// Extract sub-string from position <I>from</I>, up to n elements.
 	stdString substr(size_type from = 0, size_type n = npos) const;
 
 private:
@@ -123,9 +131,6 @@ inline stdString::~stdString()
 	if (_str)
 		delete [] _str;
 }
-
-inline char stdString::operator [] (size_t index) const
-{	return _str[index]; }
 
 inline stdString & stdString::operator = (const stdString &rhs)
 {
@@ -235,3 +240,5 @@ inline stdString::size_type stdString::find_last_of(char ch) const
 }
 
 #endif
+
+

@@ -168,6 +168,18 @@ void test_string()
     a += stdString("!");
     TEST(strcmp(a.c_str(), "Hello World!")==0);
     TEST(a.length() == 12);
+
+    TEST(a[0] == 'H');
+    TEST(a[11] == '!');
+    try
+    {
+         char c = a[20];
+         TEST(c == '?');
+    }
+    catch (GenericException &got_exception)
+    {
+        TEST(&got_exception != 0);
+    }
     TEST(a.length() == strlen(a.c_str()));
     
     a = " World!";

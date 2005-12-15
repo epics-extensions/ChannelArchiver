@@ -1,6 +1,15 @@
 #include "ToolsConfig.h"
+#include "GenericException.h"
 
 const stdString::size_type stdString::npos = static_cast<size_type>(-1); 
+
+char stdString::operator [] (size_t index) const
+{
+    if (index >= _len)
+        throw GenericException(__FILE__, __LINE__,
+                               "stdString [] index %zd, len %zd", index, _len);
+    return _str[index];
+}
 
 stdString & stdString::assign(const char *s, size_type len)
 {
@@ -56,7 +65,14 @@ bool stdString::reserve(size_type len)
 		return true;
 
 	char *prev = _str;
-	_str = new char [len+1];
+    try
+    {
+        _str = new char [len+1];
+    }
+    catch (...)
+    {
+        _str = 0;
+    }
 	if (!_str)
 	{
 		_res = 0;

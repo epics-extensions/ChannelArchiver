@@ -1,6 +1,6 @@
 // -*- c++ -*-
 
-/// \ingroup Index
+/// \ingroup Tools
 /// InsertionSort implements a simple, well, insertion sort.
 ///
 /// Yes, of course this sucks in comparison to e.g. quicksort

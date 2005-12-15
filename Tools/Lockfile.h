@@ -7,10 +7,10 @@
 
 #include <ToolsConfig.h>
 
-/// \ingroup Tools Meant to behave like std::string.
+/// \ingroup Tools
 
-/// Lock file
-
+/// Lock file.
+///
 /// Generate a lock file containing the generation time.
 /// Meant as a portable way to prevent multiple instances
 /// of a program to run, also gives evidence of a non-graceful

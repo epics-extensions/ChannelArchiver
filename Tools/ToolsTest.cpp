@@ -1,6 +1,9 @@
-#include<stdio.h>
-#include"ToolsConfig.h"
-#include"math.h"
+// System
+#include <stdio.h>
+#include <math.h>
+// Tools
+#include "ToolsConfig.h"
+#include "ArchiveException.h"
 
 // Enable/disable certain tests in case one doesn't work out
 // on your architecture
@@ -29,6 +32,52 @@
            printf("FAIL: %s\n", #t); \
            exit(1);                  \
        }
+
+
+void test_exception()
+{
+    int exception_count = 0;
+    try
+    {
+        throw GenericException(__FILE__, __LINE__);
+    }
+    catch (GenericException &e)
+    {
+        printf("'%s'\n", e.what());
+        ++exception_count;
+    }
+
+    try
+    {
+        throw GenericException(__FILE__, __LINE__, "Hello %s", "World");
+    }
+    catch (GenericException &e)
+    {
+        printf("'%s'\n", e.what());
+        ++exception_count;
+    }
+
+    try
+    {
+        throwArchiveException(Invalid);
+    }
+    catch (GenericException &e)
+    {
+        printf("'%s'\n", e.what());
+        ++exception_count;
+    }
+
+    try
+    {
+        throwDetailedArchiveException(Invalid, "in a test");
+    }
+    catch (GenericException &e)
+    {
+        printf("'%s'\n", e.what());
+        ++exception_count;
+    }
+    TEST(exception_count == 4);
+}
 
 #ifdef TEST_AUTOPTR
 #include "AutoPtr.h"
@@ -836,6 +885,8 @@ void test_fux()
 
 int main ()
 {
+    test_exception();
+
 #ifdef TEST_AUTOPTR
     test_autoptr();
 #endif

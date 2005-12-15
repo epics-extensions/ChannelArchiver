@@ -1,22 +1,60 @@
-// GenericException.cpp: implementation of the GenericException class.
-//////////////////////////////////////////////////////////////////////
 
-#include"GenericException.h"
-#include<stdio.h>
+// System
+#include <stdio.h>
 
-//////////////////////////////////////////////////////////////////////
-// GenericException
-//////////////////////////////////////////////////////////////////////
-const char *GenericException::what() const
+// Tools
+#include "GenericException.h"
+
+GenericException::GenericException(const char *sourcefile,
+                                   size_t line,
+                                   const char *format, ...)
+        : sourcefile(sourcefile), line(line)
 {
-	if (_error_info.empty())
-	{
+    va_list ap;
+    va_start(ap, format);
+    sprintf(detail, format, ap);
+    va_end(ap);
+}
+
+const char *GenericException::what() const throw ()
+{
+    if (error_info.length() > 0)
+        return error_info.c_str();   
+    if (detail.empty())
+        return sprintf(error_info,
+                       "%s (%zd): GenericException\n",
+                       sourcefile, line);
+    return sprintf(error_info,
+                   "%s (%zd): %s\n",
+                   sourcefile, line, detail.c_str());
+}
+
+const char *GenericException::sprintf(stdString &s,
+                                      const char *format,
+                                      ...) const throw ()
+{
+    va_list ap;
+    va_start(ap, format);
+    const char *result = sprintf(s, format, ap);
+    va_end(ap);
+    return result;
+}
+
+const char *GenericException::sprintf(stdString &s,
+                                      const char *format,
+                                      va_list ap) const throw ()
+{
+    try
+    {
         char buffer[1024];
-        sprintf(buffer, "%s (%u): GenericException",
-                _sourcefile, (unsigned int)_line);
-		_error_info = buffer;
-	}
-	return _error_info.c_str();
+        vsnprintf(buffer, sizeof(buffer), format, ap);
+        s = buffer;
+    }
+    catch (...)
+    {
+        return "GenericException::sprintf failed";
+    }
+    return s.c_str();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -74,5 +112,3 @@ private:
 static my_new_handler_obj _g_new_handler_obj;
 
 #endif
-
-

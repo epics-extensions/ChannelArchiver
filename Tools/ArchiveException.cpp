@@ -1,5 +1,3 @@
-// ChannelArchiveException.cc
-//////////////////////////////////////////////////////////////////////
 
 #include"ArchiveException.h"
 
@@ -15,26 +13,19 @@ static const char *error_text[] =
 /* Unsupported */	"Not Supported",
 };
 
-const char *ArchiveException::what() const
-{
-	if (_error_info.empty ())
-	{
-        char buffer[2048];
-		if (_detail.empty())
-            sprintf(buffer, "%s (%u): %s\n",
-                    getSourceFile(),
-                    (unsigned int)getSourceLine(),
-                    error_text[_code]);
-        else
-            sprintf(buffer, "%s (%u): %s\n(%s)",
-                    getSourceFile(),
-                    (unsigned int)getSourceLine(),
-                    error_text[_code],
-                    _detail.c_str());
-        _error_info = buffer;
-	}
+ArchiveException::ArchiveException(const char *sourcefile, size_t line, Code code)
+        : GenericException(sourcefile, line,
+                           "Archive Exception: %s", error_text[code]),
+          code(code)
+{}
 
-	return _error_info.c_str ();
-}
+ArchiveException::ArchiveException(const char *sourcefile, size_t line,
+                                   Code code, const stdString &detail)
+        : GenericException(sourcefile, line,
+                           "Archive Exception: %s,\n%s\n",
+                           error_text[code], detail.c_str()),
+          code(code)
+{}
+
 
 

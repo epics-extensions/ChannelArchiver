@@ -3,8 +3,10 @@
 
 #include <ToolsConfig.h>
 
-/// \ingroup Tools A memory region that can be resized.
+/// \ingroup Tools
 
+/// A memory region that can be resized.
+///
 /// A MemoryBuffer<T> which has reserved size,
 /// may grow in size (new, no realloc)
 /// and is automatically deallocated.

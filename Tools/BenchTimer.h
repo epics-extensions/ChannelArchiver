@@ -8,7 +8,9 @@
 // Tools
 #include <stdString.h>
 
-/// \ingroup Start/stop type of timer.
+/// \ingroup Tools
+
+/// Start/stop type of timer.
 class BenchTimer
 {
 public:

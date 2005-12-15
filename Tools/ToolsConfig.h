@@ -16,7 +16,7 @@
 // (very unclear what's defined. Try to use -D$(HOST_ARCH))
 // WIN32, Linux, solaris, HP_UX
 
-/// \defgroup Tools
+/// \defgroup Tools Common Tools
 /// The Tools classes started out with the idea to
 /// be useful beyond the archiver.
 
@@ -62,4 +62,8 @@
 typedef int socklen_t;
 #endif
 
+// If defined, the base class of all exceptions will
+// be std::exception.
+// Otherwise, we start with GenericException
+#define USE_STD_EXCEPTION
 

@@ -1,32 +1,32 @@
-// DirectoryFile.cpp
+// OldDirectoryFile.cpp
 //////////////////////////////////////////////////////////////////////
 
 #include "MsgLogger.h"
 #include "Filename.h"
 #include "Conversions.h"
-#include "DirectoryFile.h"
+#include "OldDirectoryFile.h"
 
 //#define LOG_DIRFILE
 
-DirectoryFileEntry::DirectoryFileEntry()
+OldDirectoryFileEntry::OldDirectoryFileEntry()
 {
     LOG_ASSERT(sizeof(data) == DataSize);
 	init();
 }
 
-void DirectoryFileEntry::setFirst(const stdString &file, FileOffset offset)
+void OldDirectoryFileEntry::setFirst(const stdString &file, FileOffset offset)
 {
     string2cp(data.first_file, file, FilenameLength);
     data.first_offset = offset;
 }
 
-void DirectoryFileEntry::setLast(const stdString &file, FileOffset offset)
+void OldDirectoryFileEntry::setLast(const stdString &file, FileOffset offset)
 {
     string2cp(data.last_file, file, FilenameLength);
     data.last_offset = offset;
 }
 
-void DirectoryFileEntry::init(const char *name)
+void OldDirectoryFileEntry::init(const char *name)
 {
 	memset(&data, 0, sizeof(data));
 	if (name)
@@ -38,7 +38,7 @@ void DirectoryFileEntry::init(const char *name)
 		data.name[0] = '\0';
 }
 
-bool DirectoryFileEntry::read(FILE *file, FileOffset offset)
+bool OldDirectoryFileEntry::read(FILE *file, FileOffset offset)
 {
 	if (fseek(file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(file) != offset  ||
@@ -54,7 +54,7 @@ bool DirectoryFileEntry::read(FILE *file, FileOffset offset)
     return true;
 }
 
-bool DirectoryFileEntry::write(FILE *file, FileOffset offset)
+bool OldDirectoryFileEntry::write(FILE *file, FileOffset offset)
 {
 	Data copy = data;
 
@@ -76,18 +76,18 @@ bool DirectoryFileEntry::write(FILE *file, FileOffset offset)
 }
 
 //////////////////////////////////////////////////////////////////////
-// DirectoryFile
+// OldDirectoryFile
 //////////////////////////////////////////////////////////////////////
 
 // Attach DiskBasedHashTable to disk file of given name.
 // a) new file: setup Hash Table
 // b) existing file for read-only: check HT
 // c) existing file for read-write: check HT
-DirectoryFile::DirectoryFile()
+OldDirectoryFile::OldDirectoryFile()
 {
 }
 
-bool DirectoryFile::open(const stdString &filename, bool for_write)
+bool OldDirectoryFile::open(const stdString &filename, bool for_write)
 {
     _filename = filename;
     Filename::getDirname(_filename, _dirname);
@@ -105,7 +105,7 @@ bool DirectoryFile::open(const stdString &filename, bool for_write)
     {
         if (!for_write) // ... but it should
         {
-            LOG_MSG("DirectoryFile::open(%s): Missing HT\n",
+            LOG_MSG("OldDirectoryFile::open(%s): Missing HT\n",
                     filename.c_str());
             return false;
         }
@@ -120,7 +120,7 @@ bool DirectoryFile::open(const stdString &filename, bool for_write)
     
     // Check if file size = HT + N full entries
     FileOffset rest = (_next_free_entry - FirstEntryOffset)
-        % DirectoryFileEntry::DataSize;
+        % OldDirectoryFileEntry::DataSize;
     if (rest)
         LOG_MSG("Suspicious directory file %s has a 'tail' of %d Bytes\n",
                 filename.c_str(), rest);
@@ -128,34 +128,34 @@ bool DirectoryFile::open(const stdString &filename, bool for_write)
 #ifdef LOG_DIRFILE
     if (_file.isReadonly())
         LOG_MSG("(readonly) ");
-    LOG_MSG("DirectoryFile %s\n", _filename);
+    LOG_MSG("OldDirectoryFile %s\n", _filename);
 #endif
     return true;
 }
 
-DirectoryFile::~DirectoryFile()
+OldDirectoryFile::~OldDirectoryFile()
 {
 #ifdef LOG_DIRFILE
     if (_file.isReadonly())
         LOG_MSG("(readonly) ");
-    LOG_MSG("~DirectoryFile %s\n", _filename);
+    LOG_MSG("~OldDirectoryFile %s\n", _filename);
 #endif
     if (_file)
         fclose(_file);
 }
 
-DirectoryFileIterator DirectoryFile::findFirst()
+OldDirectoryFileIterator OldDirectoryFile::findFirst()
 {
-    DirectoryFileIterator i(this);
+    OldDirectoryFileIterator i(this);
     i.findValidEntry(0);
 
     return i;
 }
 
 // Try to locate entry with given name.
-DirectoryFileIterator DirectoryFile::find(const stdString &name)
+OldDirectoryFileIterator OldDirectoryFile::find(const stdString &name)
 {
-    DirectoryFileIterator i(this);
+    OldDirectoryFileIterator i(this);
 
     i._hash   = HashTable::Hash(name.c_str());
     FileOffset offset = readHTEntry(i._hash);
@@ -176,9 +176,9 @@ DirectoryFileIterator DirectoryFile::find(const stdString &name)
 // After calling this routine the current entry
 // is undefined. It must be initialized and
 // then written with saveEntry ().
-DirectoryFileIterator DirectoryFile::add(const stdString &name)
+OldDirectoryFileIterator OldDirectoryFile::add(const stdString &name)
 {
-    DirectoryFileIterator i(this);
+    OldDirectoryFileIterator i(this);
     const char *cname = name.c_str();
 
     i._hash = HashTable::Hash(cname);
@@ -208,16 +208,16 @@ DirectoryFileIterator DirectoryFile::add(const stdString &name)
     i.entry.data.next_entry_offset = INVALID_OFFSET;
     i.entry.write(_file, _next_free_entry);
     fflush(_file);
-    _next_free_entry += DirectoryFileEntry::DataSize;
+    _next_free_entry += OldDirectoryFileEntry::DataSize;
     
     return i;
 }
 
 // Remove name from directory file.
 // Will not remove data but only "pointers" to the data!
-bool DirectoryFile::remove(const stdString &name)
+bool OldDirectoryFile::remove(const stdString &name)
 {
-    DirectoryFileIterator i(this);
+    OldDirectoryFileIterator i(this);
     HashTable::HashValue hash = HashTable::Hash(name.c_str());
     FileOffset prev=0, offset = readHTEntry(hash);
 
@@ -251,7 +251,7 @@ bool DirectoryFile::remove(const stdString &name)
     return false;
 }
 
-FileOffset DirectoryFile::readHTEntry(HashTable::HashValue entry) const
+FileOffset OldDirectoryFile::readHTEntry(HashTable::HashValue entry) const
 {
     FileOffset offset;
     FileOffset pos = entry * sizeof(FileOffset);
@@ -264,7 +264,7 @@ FileOffset DirectoryFile::readHTEntry(HashTable::HashValue entry) const
     return offset;
 }
 
-bool DirectoryFile::writeHTEntry(HashTable::HashValue entry, FileOffset offset)
+bool OldDirectoryFile::writeHTEntry(HashTable::HashValue entry, FileOffset offset)
 {       // offset is value parm -> safe to convert in place
     FileOffsetToDisk (offset);
     FileOffset pos = entry * sizeof(FileOffset);
@@ -276,34 +276,34 @@ bool DirectoryFile::writeHTEntry(HashTable::HashValue entry, FileOffset offset)
 }
 
 //////////////////////////////////////////////////////////////////////
-// DirectoryFileIterator
+// OldDirectoryFileIterator
 //////////////////////////////////////////////////////////////////////
 
-void DirectoryFileIterator::clear()
+void OldDirectoryFileIterator::clear()
 {
     _dir = 0;
     _hash = HashTable::HashTableSize;
     entry.clear();
 }
 
-DirectoryFileIterator::DirectoryFileIterator()
+OldDirectoryFileIterator::OldDirectoryFileIterator()
 {
     clear();
 }
 
-DirectoryFileIterator::DirectoryFileIterator(DirectoryFile *dir)
+OldDirectoryFileIterator::OldDirectoryFileIterator(OldDirectoryFile *dir)
 {
     clear();
     _dir = dir;
 }
 
-DirectoryFileIterator::DirectoryFileIterator(const DirectoryFileIterator &dir)
+OldDirectoryFileIterator::OldDirectoryFileIterator(const OldDirectoryFileIterator &dir)
 {
     clear();
     *this = dir;
 }
 
-bool DirectoryFileIterator::next()
+bool OldDirectoryFileIterator::next()
 {
     if (_hash >= HashTable::HashTableSize ||
         entry.offset == INVALID_OFFSET ||
@@ -324,7 +324,7 @@ bool DirectoryFileIterator::next()
 }
 
 // Search HT for the first non-empty entry:
-bool DirectoryFileIterator::findValidEntry(HashTable::HashValue start)
+bool OldDirectoryFileIterator::findValidEntry(HashTable::HashValue start)
 {
     entry.clear();
     if (!_dir)
@@ -346,7 +346,7 @@ bool DirectoryFileIterator::findValidEntry(HashTable::HashValue start)
     return false;
 }
 
-void DirectoryFileIterator::save()
+void OldDirectoryFileIterator::save()
 {
     if (_dir)
         entry.write(_dir->_file, entry.offset);

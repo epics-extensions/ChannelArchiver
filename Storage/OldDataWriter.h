@@ -3,7 +3,7 @@
 // Tools
 #include "stdString.h"
 // Storage
-#include "DirectoryFile.h"
+#include "OldDirectoryFile.h"
 #include "CtrlInfo.h"
 #include "RawValue.h"
 
@@ -24,7 +24,7 @@ public:
     /// \param dbr_type: the dbr_time_xxx type
     /// \param dbr_count: array size
     /// \param num_samples: estimated number of samples (helps w/ buffer allocation)
-    OldDataWriter(DirectoryFile &index,
+    OldDataWriter(OldDirectoryFile &index,
                const stdString &channel_name,
                const CtrlInfo &ctrl_info,
                DbrType dbr_type,
@@ -38,7 +38,7 @@ public:
     bool add(const RawValue::Data *data);
 
 private:
-    DirectoryFile &index;
+    OldDirectoryFile &index;
     const stdString &channel_name;
     const CtrlInfo &ctrl_info;
     DbrType dbr_type;
@@ -52,7 +52,7 @@ private:
     void calc_next_buffer_size(size_t start);
     size_t next_buffer_size;
 
-    DirectoryFileIterator dfi;
+    OldDirectoryFileIterator dfi;
     class DataHeader *header;
     size_t available;
     MemoryBuffer<dbr_time_string> cvt_buffer;

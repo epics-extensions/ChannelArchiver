@@ -12,9 +12,11 @@
 #pragma warning (disable: 4786)
 #endif
 
-#include "ArchiverConfig.h"
+// Tools
+#include <MsgLogger.h>
+#include <ToolsConfig.h>
+// Engine
 #include "HTTPServer.h"
-#include "MsgLogger.h"
 
 #undef MOZILLA_HACK
 

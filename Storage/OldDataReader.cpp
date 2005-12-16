@@ -7,7 +7,7 @@
 #include "DataFile.h"
 #include "OldDataReader.h"
 
-OldDataReader::OldDataReader(DirectoryFile &index)
+OldDataReader::OldDataReader(OldDirectoryFile &index)
         : index(index), data(0), header(0)
 {
 }
@@ -25,7 +25,7 @@ const RawValue::Data *OldDataReader::find(
     const stdString &channel_name, const epicsTime *start)
 {
     this->channel_name = channel_name;
-    DirectoryFileIterator dfi = index.find(channel_name);
+    OldDirectoryFileIterator dfi = index.find(channel_name);
     if (!dfi.isValid())
     {
         LOG_MSG ("OldDataReader: Cannot find '%s' in index\n",

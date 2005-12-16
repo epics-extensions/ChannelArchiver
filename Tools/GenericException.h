@@ -19,14 +19,14 @@
 /// <PRE>
 ///  try
 ///  {
-///      ... throw GenericException(__FILE__, __LINE__);
+///      ... throw GenericException(__FILE__, __LINE__, "Trouble at mill!");
 ///  }
 ///  catch (GenericException &e)
 ///  {
 ///      fprintf(stderr, "Exception:\n%s\n", e.what);
 ///  }
 /// </PRE>
-/// (According to Scott Meyers "More Effective C++
+/// (According to Scott Meyers "More Effective C++",
 ///  a copy will be thrown, but Visual C++ seems to
 ///  efficiently throw without copying).
 ///

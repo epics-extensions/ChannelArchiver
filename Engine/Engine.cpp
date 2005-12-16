@@ -21,7 +21,6 @@
 #include "MsgLogger.h"
 // Storage
 #include "IndexFile.h"
-#include "DirectoryFile.h"
 #include "DataFile.h"
 // Engine
 #include "Engine.h"

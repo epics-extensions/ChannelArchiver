@@ -1,3 +1,5 @@
+// ToolsTest.cpp
+
 // System
 #include <stdio.h>
 #include <math.h>
@@ -33,6 +35,34 @@
            exit(1);                  \
        }
 
+// -----------------------------------------------------------------
+#include "AutoFilePtr.h"
+
+void test_auto_file_ptr()  
+{
+    printf("\nAutoFilePtr Tests\n");
+    printf("------------------------------------------\n");
+    char line[100];
+    FILE *stale_copy;
+    {
+        AutoFilePtr bogus_file(fopen("notthere", "r"));
+        TEST(! bogus_file);
+    }
+    {
+        AutoFilePtr file_ok(fopen("ToolsTest.cpp", "r"));
+        TEST(file_ok);
+        TEST(fread(line, 1, 20, file_ok) == 20);
+        line[17] = '\0';
+        TEST(strcmp(line, "// ToolsTest.cpp\n") == 0);
+        stale_copy = file_ok;
+    }
+    // Now the file should be closed
+    // and this read should fail.
+    TEST(fread(line, 1, 20, stale_copy) == 0);
+}
+
+// -----------------------------------------------------------------
+
 class Huge
 {
 public:
@@ -49,6 +79,8 @@ public:
 
 void test_exception()
 {
+    printf("\nException Tests\n");
+    printf("------------------------------------------\n");
     int exception_count = 0;
 
     size_t num = 0x7FFFFFFFL;
@@ -56,16 +88,21 @@ void test_exception()
     try
     {
         mem = new Huge[num];
+        // We should not reach this point
         TEST(mem != 0);
         delete [] mem;
     }
-    catch (std::bad_alloc)
+    // In theory, this should happen
+    //    catch (std::bad_alloc)
+    // But with the gcc 4.0 on Mac OS X 10.4,
+    // we get a 'malloc' error message
+    // and then end up here:
+    catch (...)
     {
-        TEST("new fails with bad_alloc");
+        TEST("new fails with unknown exception");
         mem = (Huge *)1;
     }
     TEST(mem == (Huge *)1);
-    exit(1);
 
     try
     {
@@ -108,6 +145,8 @@ void test_exception()
     }
     TEST(exception_count == 4);
 }
+
+// -----------------------------------------------------------------
 
 #ifdef TEST_AUTOPTR
 #include "AutoPtr.h"
@@ -927,6 +966,8 @@ void test_fux()
 
 int main ()
 {
+    test_auto_file_ptr();
+
     test_exception();
 
 #ifdef TEST_AUTOPTR

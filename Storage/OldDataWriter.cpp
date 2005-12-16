@@ -28,7 +28,7 @@ static stdString makeDataFileName()
     //return stdString(buffer);
 }
 
-OldDataWriter::OldDataWriter(DirectoryFile &index,
+OldDataWriter::OldDataWriter(OldDirectoryFile &index,
                              const stdString &channel_name,
                              const CtrlInfo &ctrl_info,
                              DbrType dbr_type,

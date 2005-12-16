@@ -33,6 +33,29 @@
 // get compilation errors.
 // --------------------------------------------------------
 
+// Little-Endian Architectures require conversions
+// because the binary archive stores all data
+// in the big-endian (aka network or Motorola) format.
+// CONVERSION_REQUIRED is required on:
+// Intel PCs (WIN32, Linux, OpenBSD, ...)
+// It is usually not required on Sun Solaris machines.
+//
+// Note: The archiver assumes IEEE Floats
+//       It won't work on VAX/VMS systems!
+#define CONVERSION_REQUIRED 
+
+// This seems to work for Mac OS X
+#if defined(__POWERPC__) && defined(__APPLE__)
+#undef CONVERSION_REQUIRED
+#endif
+
+#if defined(HP_UX)
+#undef CONVERSION_REQUIRED
+#endif
+
+// C++ Tweaks
+// ----------------------------------------------------------
+
 // Support for standard C++ library
 #include <stdString.h>
 

@@ -14,12 +14,12 @@
 /// \addtogroup Storage
 /// @{
 
-class DirectoryFileIterator;
+class OldDirectoryFileIterator;
 
-class DirectoryFileEntry
+class OldDirectoryFileEntry
 {
 public:
-    DirectoryFileEntry();
+    OldDirectoryFileEntry();
 
     enum
     {
@@ -54,7 +54,7 @@ public:
     bool write(FILE *fd, FileOffset offset);
 };
 
-inline void DirectoryFileEntry::clear()
+inline void OldDirectoryFileEntry::clear()
 {
     offset = INVALID_OFFSET;
     data.name[0] = '\0';
@@ -77,10 +77,10 @@ inline void DirectoryFileEntry::clear()
 ///
 /// DirectoryFile::_next_free_entry points to the end
 /// of the DirectoryFile.
-class DirectoryFile
+class OldDirectoryFile
 {
 public:
-    DirectoryFile();
+    OldDirectoryFile();
     
     /// Attach DirectoryFile to disk file.
     
@@ -90,20 +90,20 @@ public:
     bool open(const stdString &filename, bool for_write=false);
 
     /// Close file.
-    ~DirectoryFile();
+    ~OldDirectoryFile();
 
     /// Get first entry.
-    DirectoryFileIterator findFirst();
+    OldDirectoryFileIterator findFirst();
 
     /// Try to locate entry with given name.
-    DirectoryFileIterator find(const stdString &name);
+    OldDirectoryFileIterator find(const stdString &name);
 
     /// Add new DirectoryEntry with given name.
 
     /// Entry will be empty, i.e. point to no data file.
     ///
     ///
-    DirectoryFileIterator add(const stdString &name);
+    OldDirectoryFileIterator add(const stdString &name);
 
     /// Remove name from directory file.
 
@@ -119,7 +119,7 @@ public:
     bool isForWrite()                {   return _file_for_write; }
 
 private:
-    friend class DirectoryFileIterator;
+    friend class OldDirectoryFileIterator;
     enum
     {
         FirstEntryOffset = HashTable::HashTableSize * sizeof(FileOffset)
@@ -127,8 +127,8 @@ private:
 
     // Prohibit assignment: two DirectoryFiles cannot access the same file
     // (However, more than one iterator are OK)
-    DirectoryFile(const DirectoryFile &);
-    DirectoryFile &operator =(const DirectoryFile &);
+    OldDirectoryFile(const OldDirectoryFile &);
+    OldDirectoryFile &operator =(const OldDirectoryFile &);
 
     // Read (first) FileOffset for given HashValue
     // Returns INVALID_OFFSET for error
@@ -154,20 +154,20 @@ private:
 ///
 /// DirectoryFileIterator allows read/write access
 /// to individual Channels in a DirectoryFile.
-class DirectoryFileIterator
+class OldDirectoryFileIterator
 {
 public:
     /// DirectoryFileIterator has to be bound to DirectoryFile:
-    DirectoryFileIterator();
-    DirectoryFileIterator(DirectoryFile *dir);
-    DirectoryFileIterator(const DirectoryFileIterator &dir);
+    OldDirectoryFileIterator();
+    OldDirectoryFileIterator(OldDirectoryFile *dir);
+    OldDirectoryFileIterator(const OldDirectoryFileIterator &dir);
 
     /// getChannel must only be called when the iterator is valid.
     bool isValid() const   
     {   return entry.offset != INVALID_OFFSET; }
 
     /// The current entry.
-    DirectoryFileEntry entry;
+    OldDirectoryFileEntry entry;
     
     /// Move to next DirectoryEntry.
     bool next();
@@ -176,15 +176,15 @@ public:
     void save();
 
 private:
-    friend class DirectoryFile;
+    friend class OldDirectoryFile;
     void clear();
 
     bool findValidEntry(HashTable::HashValue start);
 
-    bool operator == (const DirectoryFileIterator& rhs) const; // not impl.
-    bool operator != (const DirectoryFileIterator& rhs) const; // not impl.
+    bool operator == (const OldDirectoryFileIterator& rhs) const; // not impl.
+    bool operator != (const OldDirectoryFileIterator& rhs) const; // not impl.
 
-    DirectoryFile           *_dir;
+    OldDirectoryFile           *_dir;
     HashTable::HashValue    _hash;  // ... for _entry
 };
 

@@ -11,12 +11,23 @@
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
+// Tools
+#include <ToolsConfig.h>
 // Engine
-#include "ArchiverConfig.h"
 #include "GroupInfo.h"
 #include "ScanList.h"
 
 #undef ENGINE_DEBUG
+
+// Show full path to engine config in HTTPD?
+#undef SHOW_DIR
+
+// Use password mechanism
+// (for stopping the engine over the web)
+#undef USE_PASSWD
+
+#define DEFAULT_USER    "engine"
+#define DEFAULT_PASS    "password"   
 
 // The ArchiveEngine uses these locks:
 //

@@ -6,12 +6,11 @@
 #include <epicsVersion.h>
 // Tools
 #include <AutoPtr.h>
-#include <ArchiverConfig.h>
 #include <ArgParser.h>
 #include <BenchTimer.h>
 #include <epicsTimeHelper.h>
 // Storage
-#include <DirectoryFile.h>
+#include <OldDirectoryFile.h>
 #include <DataFile.h>
 #include <DataReader.h>
 #include <DataWriter.h>
@@ -299,11 +298,11 @@ void copy(const stdString &index_name, const stdString &copy_name,
 void convert_dir_index(int RTreeM,
                        const stdString &dir_name, const stdString &index_name)
 {
-    DirectoryFile dir;
+    OldDirectoryFile dir;
     if (!dir.open(dir_name))
         return;
     
-    DirectoryFileIterator channels = dir.findFirst();
+    OldDirectoryFileIterator channels = dir.findFirst();
     ErrorInfo error_info;
     IndexFile index(RTreeM);
     stdString index_directory;
@@ -378,7 +377,7 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
     bool ok;
     if (!index.open(index_name.c_str(), true, error_info))
         return;
-    DirectoryFile dir;
+    OldDirectoryFile dir;
     if (!dir.open(dir_name, true))
     {
         fprintf(stderr, "Cannot create  '%s'\n", dir_name.c_str());
@@ -438,7 +437,7 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
                 printf("%s - %s\n",
                        epicsTimeTxt(start_time, start),
                        epicsTimeTxt(end_time, end));
-            DirectoryFileIterator dfi;
+            OldDirectoryFileIterator dfi;
             dfi = dir.find(names.getName());
             if (!dfi.isValid())
                 dfi = dir.add(names.getName());

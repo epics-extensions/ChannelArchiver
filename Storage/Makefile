@@ -7,7 +7,7 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 INC += StorageTypes.h
 # Old
 INC += HashTable.h
-INC += DirectoryFile.h
+INC += OldDirectoryFile.h
 INC += OldDataWriter.h
 INC += OldDataReader.h
 # Current
@@ -28,7 +28,7 @@ INC += PlotReader.h
 INC += SpreadsheetReader.h
 # Old
 LIB_SRCS += HashTable.cpp
-LIB_SRCS += DirectoryFile.cpp
+LIB_SRCS += OldDirectoryFile.cpp
 LIB_SRCS += OldDataWriter.cpp
 LIB_SRCS += OldDataReader.cpp
 # Current

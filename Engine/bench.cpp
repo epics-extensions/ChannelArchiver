@@ -21,7 +21,6 @@ gopher0, 2x333Mhz, RAID5          8600
 // Storage
 #include <DataWriter.h>
 #include <DataReader.h>
-#include <DirectoryFile.h>
 #include <OldDataWriter.h>
 #include <OldDataReader.h>
 #include <DataFile.h>
@@ -76,7 +75,7 @@ bool old_write_samples(const stdString &index_name,
                    const stdString &channel_name,
                    size_t samples)
 {
-    DirectoryFile index;
+    OldDirectoryFile index;
     CtrlInfo info;
 
     if (!index.open(index_name, true))
@@ -145,7 +144,7 @@ size_t read_samples(const stdString &index_name,
 size_t old_read_samples(const stdString &index_name,
                     const stdString &channel_name)
 {
-    DirectoryFile index;
+    OldDirectoryFile index;
 
     if (!index.open(index_name))
     {

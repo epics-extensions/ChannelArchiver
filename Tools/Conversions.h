@@ -1,5 +1,5 @@
 // -*- c++ -*-
-#include "ArchiverConfig.h"
+#include "ToolsConfig.h"
 
 #ifdef CONVERSION_REQUIRED
 // System

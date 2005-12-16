@@ -9,7 +9,6 @@
 #include <BenchTimer.h>
 #include <stdString.h>
 #include <Filename.h>
-#include <ArchiverConfig.h>
 #include <ArgParser.h>
 #include <epicsTimeHelper.h>
 #include <IndexConfig.h>

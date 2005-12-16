@@ -11,6 +11,10 @@
 #ifndef __AVL_TREE_H
 #define __AVL_TREE_H
 
+// Tools
+#include <GenericException.h>
+#include <AutoFilePtr.h>
+
 // Tree Item:
 // Holds the full Item as well as left/right pointers
 template<class Item> class AVLItem
@@ -46,10 +50,18 @@ public:
     {   clear(); }
 
     /// Add (copy) Item into the tree.
+    /// @exception GenericException
     void add(const Item &item)
     {
-        AVLItem<Item> *n = new AVLItem<Item>(item);
-        insert(n, &root);
+        try
+        {
+            AVLItem<Item> *n = new AVLItem<Item>(item);
+            insert(n, &root);
+        }
+        catch (...)
+        {
+            throw GenericException(__FILE__, __LINE__, "AVLTree::add failed");
+        }
     }
 
     /// Try to find item in tree.
@@ -257,18 +269,21 @@ void AVLTree<Item>::make_dotfile(const char *name)
     char filename[200];
     int i;
     sprintf(filename, "%s.dot", name);
-    FILE *f = fopen(filename, "wt");
-    if (!f)
-        return;
-    fprintf(f, "# dot -Tpng %s.dot -o %s.png && eog %s.png\n",
-            name, name, name);
-    fprintf(f, "\n");
-    fprintf(f, "digraph AVLTree\n");
-    fprintf(f, "{\n");
-    i=0;
-    print_dot_node(f, root, i);
-    fprintf(f, "}\n");
-    fclose(f);
+    try
+    {
+        AutoFilePtr f(filename, "wt");
+        if (!f)
+            return;
+        fprintf(f, "# dot -Tpng %s.dot -o %s.png && eog %s.png\n",
+                name, name, name);
+        fprintf(f, "\n");
+        fprintf(f, "digraph AVLTree\n");
+        fprintf(f, "{\n");
+        i=0;
+        print_dot_node(f, root, i);
+        fprintf(f, "}\n");
+    }
+    catch (...) {}
 }
 
 #endif

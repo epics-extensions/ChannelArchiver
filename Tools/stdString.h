@@ -29,7 +29,7 @@ public:
 	const char *c_str() const;
 
 	/// Character access.
-        /// @exception GenericException
+    /// @exception GenericException
 	char operator [] (size_t index) const;
 
 	/// Assignments
@@ -66,8 +66,8 @@ public:
 	///
 	/// Call in advance to make assignments and concatenations
 	/// more effective.
-    /// Does not throw any exceptions on memory errors,
-    /// since we can't create a GenericException because
+    /// Does <u>not</u> throw any exceptions on memory errors!
+    /// We do not try to create a GenericException because
     /// that uses yet another stdString.
     /// So in case of memory errors, reserve() will return false,
     /// and it's up to the caller to check for that.

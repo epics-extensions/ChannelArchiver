@@ -3,7 +3,7 @@
 // Tools
 #include "stdString.h"
 // Storage
-#include "DirectoryFile.h"
+#include "OldDirectoryFile.h"
 #include "CtrlInfo.h"
 #include "RawValue.h"
 
@@ -19,7 +19,7 @@ class OldDataReader
 {
 public:
     /// Create a reader for an index.
-    OldDataReader(DirectoryFile &index);
+    OldDataReader(OldDirectoryFile &index);
 
     ~OldDataReader();
     
@@ -59,7 +59,7 @@ public:
     double period;    
 
 private:
-    DirectoryFile &index;
+    OldDirectoryFile &index;
     DataFile *datafile;
     stdString channel_name;
     RawValue::Data *data;

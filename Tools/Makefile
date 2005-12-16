@@ -6,8 +6,8 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 # Library to build
 INC += ToolsConfig.h 
 INC += AutoPtr.h
+INC += AutoFilePtr.h
 INC += ArchiveException.h
-INC += ArchiverConfig.h
 INC += ArgParser.h
 INC += ArrayTools.h
 INC += ASCIIParser.h

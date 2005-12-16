@@ -24,14 +24,17 @@ already or beyond this manual to explain, in which case we have to
 refer you to the EPICS web site
 \href{http://www.aps.anl.gov/epics}{http://www.aps.anl.gov/epics}. 
 
-You need to read and maybe adjust Tools/ToolsConfig.h and
-Tools/ArchiverConfig.h to suit your needs. The most important
-parameter in there is ``CONVERION\_REQUIRED''. Assert that it is
+{\bf You need to read and maybe adjust Tools/ToolsConfig.h and
+LibIO/ArchiverConfig.h to suit your needs. The most important
+parameter in there is ``CONVERSION\_REQUIRED''. Assert that it is
 correctly configured! If you use the wrong setting for
-CONVERION\_REQUIRED, you might not notice any problems for some time,
+CONVERSION\_REQUIRED, you might not notice any problems for some time,
 but your data files will be invalid when transferred to another
 operating system; your network data server will only provide garbage
-data to network clients.  One good thing to do for a sanity check is
+data to network clients. 
+}
+
+One good thing to do for a sanity check is
 to run the ArchiveExport tool on the data provided in the DemoData
 subdirectory. Try to retrieve the PV ``DoublePV''; you should see
 values in the range of 0...10 with time stamps in recent years:

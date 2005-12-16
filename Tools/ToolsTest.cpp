@@ -494,7 +494,7 @@ void test_time()
 
 #include<signal.h>
 #include<epicsThread.h>
-#include<epicsMutex.h>
+#include<Guard.h>
 
 bool go = true;
 
@@ -534,14 +534,14 @@ public:
     {
         while (go && _count < TURN_LIMIT)
         {
-            forks[_left].lock();
-            forks[_right].lock();
-            LOG_MSG("%s eating, utilizing %s and %s\n",
-                    _name, names[_left], names[_right]);
-            ++_count;
-            _thread.sleep(0.1);
-            forks[_right].unlock();
-            forks[_left].unlock();
+            {
+                Guard left(forks[_left]);
+                Guard right(forks[_right]);
+                LOG_MSG("%s eating, utilizing %s and %s\n",
+                        _name, names[_left], names[_right]);
+                ++_count;
+                _thread.sleep(0.1);
+            }
             _thread.sleep(0.1);
         }
     }
@@ -627,8 +627,28 @@ void test_threads()
 {
     int i;
 
-    printf("\nThread Tests\n");
+    printf("\nMutex and Thread Tests\n");
     printf("------------------------------------------\n");
+    printf("\n");
+    printf("Guard test\n");
+
+
+    epicsMutex mutex1, mutex2;
+    {
+        Guard guard(mutex1);
+	guard.check(__FILE__, __LINE__, mutex1);
+        TEST("Guard::check is OK");
+        try
+        {
+            guard.check(__FILE__, __LINE__, mutex2);
+            TEST(0);
+        }
+        catch (GenericException &e)
+        {
+            printf("OK: Caught %s", e.what());
+        }
+    }
+
     printf("\n");
     printf("epicsEvent test\n");
 

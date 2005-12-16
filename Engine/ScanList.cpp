@@ -8,8 +8,12 @@
 // kasemir@lanl.gov
 // --------------------------------------------------------
 
+// System
 #include <float.h>
+// Tools
 #include <epicsTimeHelper.h>
+#include <MsgLogger.h>
+// Engine
 #include "ScanList.h"
 
 #undef DEBUG_SCANLIST

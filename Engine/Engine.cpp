@@ -94,7 +94,7 @@ void Engine::create(const stdString &index_name)
 
 bool Engine::attachToCAContext(Guard &engine_guard)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     if (ca_attach_context(ca_context) != ECA_NORMAL)
     {
         LOG_MSG("ca_attach_context failed for thread 0x%08X (%s)\n",
@@ -168,7 +168,7 @@ bool Engine::checkUser(const stdString &user, const stdString &pass)
 
 GroupInfo *Engine::findGroup(Guard &engine_guard, const stdString &name)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     stdList<GroupInfo *>::iterator group = groups.begin();
     while (group != groups.end())
     {
@@ -181,7 +181,7 @@ GroupInfo *Engine::findGroup(Guard &engine_guard, const stdString &name)
 
 GroupInfo *Engine::addGroup(Guard &engine_guard, const stdString &name)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     if (name.empty())
     {
         LOG_MSG("Engine::addGroup: No name given\n");
@@ -198,7 +198,7 @@ GroupInfo *Engine::addGroup(Guard &engine_guard, const stdString &name)
 
 ArchiveChannel *Engine::findChannel(Guard &engine_guard, const stdString &name)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
     {
@@ -215,7 +215,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                                    double period, bool disabling,
                                    bool monitored)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     ArchiveChannel *channel = findChannel(engine_guard, channel_name);
     if (!channel)
     {
@@ -307,7 +307,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
 
 void Engine::setWritePeriod(Guard &engine_guard, double period)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     write_period = period;
     next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
     // Re-set ev'ry channel's period so that they might adjust buffers
@@ -322,19 +322,19 @@ void Engine::setWritePeriod(Guard &engine_guard, double period)
 
 void Engine::setDescription(Guard &engine_guard, const stdString &description)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     this->description = description;
 }
 
 void Engine::setGetThreshold(Guard &engine_guard, double get_threshhold)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     this->get_threshhold = get_threshhold;
 }
 
 void Engine::setBufferReserve(Guard &engine_guard, int reserve)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     buffer_reserve = reserve;
 }
 

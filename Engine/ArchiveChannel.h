@@ -195,43 +195,43 @@ inline const stdString &ArchiveChannel::getName() const
 
 inline double ArchiveChannel::getPeriod(Guard &guard) const
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     return period;
 }    
     
 inline stdList<class GroupInfo *> &ArchiveChannel::getGroups(Guard &guard)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     return groups;
 }
 
 inline const SampleMechanism *ArchiveChannel::getMechanism(Guard &guard) const
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
    return mechanism;
 }
 
 inline bool ArchiveChannel::isConnected(Guard &guard) const
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     return connected;
 }
 
 inline const BitSet &ArchiveChannel::getGroupsToDisable(Guard &guard) const
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     return groups_to_disable;
 }
 
 inline bool ArchiveChannel::isDisabled(Guard &guard) const
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     return disabled_count >= (int)groups.size();
 }
 
 inline const epicsTime &ArchiveChannel::getLastStamp(Guard &guard) const
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     return last_stamp_in_archive;
 }
 

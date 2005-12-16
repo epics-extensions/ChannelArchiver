@@ -177,22 +177,22 @@ public:
     const stdString &getIndexName() const { return index_name;  }
     double getProcessDelayAvg(Guard &engine_guard) const
     {
-        engine_guard.check(mutex);
+        engine_guard.check(__FILE__, __LINE__, mutex);
         return process_delay_avg;
     }
     double getWriteDuration(Guard &engine_guard) const
     {
-        engine_guard.check(mutex);
+        engine_guard.check(__FILE__, __LINE__, mutex);
         return write_duration;
     }
     unsigned long getWriteCount(Guard &engine_guard) const
     {
-        engine_guard.check(mutex);
+        engine_guard.check(__FILE__, __LINE__, mutex);
         return write_count;
     }
     const epicsTime &getNextWriteTime(Guard &engine_guard) const
     {
-        engine_guard.check(mutex);
+        engine_guard.check(__FILE__, __LINE__, mutex);
         return next_write_time;
     }
     bool isWriting() const        { return is_writing; }
@@ -200,7 +200,7 @@ public:
     /// Get Engine's scan list
     ScanList &getScanlist(Guard &engine_guard)
     {
-        engine_guard.check(mutex);
+        engine_guard.check(__FILE__, __LINE__, mutex);
         return scan_list;
     }
     
@@ -249,13 +249,13 @@ extern Engine *theEngine;
 
 inline stdList<ArchiveChannel *> &Engine::getChannels(Guard &engine_guard)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     return channels;
 }
 
 inline stdList<GroupInfo *> &Engine::getGroups(Guard &engine_guard)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     return groups;
 }
 
@@ -278,13 +278,13 @@ inline bool Engine::disconnectOnDisable(Guard &engine_guard)
 
 inline void Engine::incNumConnected(Guard &engine_guard)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     ++num_connected;
 }
 
 inline void Engine::decNumConnected(Guard &engine_guard)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     if (num_connected <= 0)
         LOG_MSG("Engine: discrepancy w/ # of connected channels\n");
     else
@@ -293,7 +293,7 @@ inline void Engine::decNumConnected(Guard &engine_guard)
 
 inline size_t Engine::getNumConnected(Guard &engine_guard)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     return num_connected;
 }
 
@@ -308,13 +308,13 @@ inline double Engine::getIgnoredFutureSecs() const
 
 inline void Engine::setIgnoredFutureSecs(Guard &engine_guard, double secs)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     future_secs = secs;
 }
 
 inline size_t Engine::suggestedBufferSize(Guard &engine_guard, double period)
 {
-    engine_guard.check(mutex);
+    engine_guard.check(__FILE__, __LINE__, mutex);
     size_t	num;
 	if (write_period <= 0)
 		return 100;

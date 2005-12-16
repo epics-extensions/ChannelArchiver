@@ -43,7 +43,7 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
                                   SampleMechanism *new_mechanism,
                                   const epicsTime &now)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     // We treat it like a disconnect/connect,
     // so that both the old and (maybe) new mechanism
     // can properly stop/start subscriptions etc. 
@@ -70,7 +70,7 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
 void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard,
                                double period)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     this->period = period;
     if (connected)
         buffer.allocate(dbr_time_type, nelements,
@@ -79,7 +79,7 @@ void ArchiveChannel::setPeriod(Guard &engine_guard, Guard &guard,
 
 void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     size_t id = group->getID();
     // bit in 'disabling' indicates if we could disable that group
     groups_to_disable.grow(id + 1);
@@ -99,7 +99,7 @@ void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
     
 void ArchiveChannel::startCA(Guard &guard)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     if (chid_valid)
         return;
 #ifdef DEBUG_CHANNEL
@@ -130,7 +130,7 @@ void ArchiveChannel::startCA(Guard &guard)
 
 void ArchiveChannel::stopCA(Guard &engine_guard, Guard &guard)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     if (!chid_valid)
         return;
 #ifdef DEBUG_CHANNEL
@@ -164,7 +164,7 @@ const char *ArchiveChannel::getCAInfo(Guard &guard) const
 
 void ArchiveChannel::issueCaGet(Guard &guard)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     if (connected)
     {
         guard.unlock();
@@ -184,7 +184,7 @@ void ArchiveChannel::issueCaGet(Guard &guard)
 void ArchiveChannel::disable(Guard &engine_guard,
                              Guard &guard, const epicsTime &when)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     ++disabled_count;
     if (disabled_count > (int)groups.size())
     {
@@ -209,7 +209,7 @@ void ArchiveChannel::disable(Guard &engine_guard,
 void ArchiveChannel::enable(Guard &engine_guard,
                             Guard &guard, const epicsTime &when)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     --disabled_count;
     if (disabled_count < 0)
     {
@@ -244,7 +244,7 @@ void ArchiveChannel::init(Guard &engine_guard, Guard &guard,
                           const CtrlInfo *ctrl_info,
                           const epicsTime *last_stamp)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     this->dbr_time_type = dbr_time_type;
     this->nelements = nelements;
     this->dbr_size =  RawValue::getSize(dbr_time_type, nelements);
@@ -263,7 +263,7 @@ void ArchiveChannel::init(Guard &engine_guard, Guard &guard,
 unsigned long ArchiveChannel::write(Guard &guard, IndexFile &index)
 {
     unsigned long count = 0;
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     size_t i, num_samples = buffer.getCount();
     if (num_samples <= 0)
         return count;
@@ -501,7 +501,7 @@ void ArchiveChannel::handleConnectionChange(Guard &engine_guard,
 
 void ArchiveChannel::handleDisabling(Guard &guard, const RawValue::Data *value)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     if (groups_to_disable.empty())
         return;
     // We disable if the channel is above zero
@@ -542,7 +542,7 @@ void ArchiveChannel::addEvent(Guard &guard,
                               dbr_short_t status, dbr_short_t severity,
                               const epicsTime &event_time)
 {
-    guard.check(mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     if (nelements <= 0)
     {
 #ifdef DEBUG_CHANNEL

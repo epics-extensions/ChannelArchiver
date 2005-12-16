@@ -99,7 +99,7 @@ void SampleMechanismMonitored::handleValue(Guard &guard,
                                            const epicsTime &stamp,
                                            const RawValue::Data *value)
 {
-    guard.check(channel->mutex);
+    guard.check(__FILE__, __LINE__, channel->mutex);
 #   ifdef DEBUG_SAMPLING
     LOG_MSG("SampleMechanismMonitored::handleValue %s\n",
             channel->getName().c_str());
@@ -208,7 +208,7 @@ void SampleMechanismGet::handleValue(Guard &guard,
                                      const epicsTime &stamp,
                                      const RawValue::Data *value)
 {
-    guard.check(channel->mutex);
+    guard.check(__FILE__, __LINE__, channel->mutex);
 #   ifdef DEBUG_SAMPLING
     LOG_MSG("SampleMechanismGet::handleValue %s\n",channel->getName().c_str());
 #   endif
@@ -286,7 +286,7 @@ void SampleMechanismGet::handleValue(Guard &guard,
 void SampleMechanismGet::flushPreviousValue(Guard &guard,
                                             const epicsTime &stamp)
 {
-    guard.check(channel->mutex);
+    guard.check(__FILE__, __LINE__, channel->mutex);
     if (previous_value_set == false || repeat_count <= 0)
         return;
 #   ifdef DEBUG_SAMPLING
@@ -397,7 +397,7 @@ void SampleMechanismMonitoredGet::handleValue(
     Guard &guard, const epicsTime &now,
     const epicsTime &stamp, const RawValue::Data *value)
 {
-    guard.check(channel->mutex);
+    guard.check(__FILE__, __LINE__, channel->mutex);
     // Want to use SampleMechanismGet's handling of repeat counts etc.
     // ==> need to throttle the incoming CA monitors
     // down to the scan rate of this channel.

@@ -1,6 +1,7 @@
 
 // System
 #include <stdio.h>
+#include <stdarg.h>
 
 // Tools
 #include "GenericException.h"

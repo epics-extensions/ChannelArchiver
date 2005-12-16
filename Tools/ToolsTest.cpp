@@ -33,10 +33,40 @@
            exit(1);                  \
        }
 
+class Huge
+{
+public:
+    Huge()
+    {
+        mem = new char[0x7FFFFFFFL];
+    }
+    ~Huge()
+    {
+        delete [] mem;
+    }
+    char *mem;
+};
 
 void test_exception()
 {
     int exception_count = 0;
+
+    size_t num = 0x7FFFFFFFL;
+    Huge *mem = 0;
+    try
+    {
+        mem = new Huge[num];
+        TEST(mem != 0);
+        delete [] mem;
+    }
+    catch (std::bad_alloc)
+    {
+        TEST("new fails with bad_alloc");
+        mem = (Huge *)1;
+    }
+    TEST(mem == (Huge *)1);
+    exit(1);
+
     try
     {
         throw GenericException(__FILE__, __LINE__);

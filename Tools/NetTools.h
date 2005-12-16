@@ -31,7 +31,7 @@ void GetSocketInfo (SOCKET sock, stdString &local, stdString &peer);
 // Create a broadcast socket, bound to port.
 // Returns a sockaddr for broadcasting also.
 bool CreateBroadcastSocket (int port /*I*/, SOCKET &sock /*O*/, 
-						   int peer_port, sockaddr_in &broadcast /*O*/);
+                            int peer_port, sockaddr_in &broadcast /*O*/);
 
 // Get description for the last error
 const char *GetSocketErrorString ();

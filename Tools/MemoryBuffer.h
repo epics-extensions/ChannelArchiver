@@ -1,7 +1,8 @@
+// -*- c++ -*-
 #ifndef __MEMORYBUFFER_H__
 #define __MEMORYBUFFER_H__
 
-#include <ToolsConfig.h>
+#include <GenericException.h>
 
 /// \ingroup Tools
 
@@ -15,42 +16,48 @@ class MemoryBuffer
 {
 public:
     /// Constructor: Buffer is initially empty.
-	MemoryBuffer() : memory(0), size(0)	{}
+    MemoryBuffer() : memory(0), size(0)    {}
 
-    /// Desstructor.
-	~MemoryBuffer()
-	{
-		if (memory)
-			free(memory);
-	}
+    /// Destructor.
+    ~MemoryBuffer()
+    {
+        if (memory)
+            free(memory);
+    }
 
-	/// Reserve or grow buffer.
-	void reserve(size_t wanted)
-	{
-		if (size < wanted)
-		{
-			if (memory)
-				free(memory);
-			memory = (char *)calloc(wanted, 1);
-			size = wanted;
-		}
-	}
+    /// Reserve or grow buffer.
+    ///
+    /// @exception GenericException
+    void reserve(size_t wanted)
+    {
+        if (size < wanted)
+        {
+            if (memory)
+                free(memory);
+            memory = (char *)calloc(wanted, 1);
+            if (!memory)
+                throw GenericException(__FILE__, __LINE__,
+                                       "MemoryBuffer::reserve(%zu) failed",
+                                       wanted);
+            size = wanted;
+        }
+    }
 
-	/// Access as (T *)
-	const T *mem () const
-	{	return (const T *)memory; }
+    /// Access as (T *)
+    const T *mem () const
+    {    return (const T *)memory; }
 
-	/// Access as (T *)
-	T *mem ()
-	{	return (T *) memory; }
+    /// Access as (T *)
+    T *mem ()
+    {    return (T *) memory; }
 
     /// Get current size.
-	size_t getBufferSize () const
-	{	return size; }
+    size_t getBufferSize () const
+    {    return size; }
 
 private:
-	char	*memory;
-	size_t	size;
+    char    *memory;
+    size_t    size;
 };
 
 #endif //__MEMORYBUFFER_H__

@@ -26,7 +26,7 @@ public:
     {
         if (!is_locked)
             throw GenericException(__FILE__, __LINE__,
-				   "Found a released lock in Guard::~Guard()");
+                   "Found a released lock in Guard::~Guard()");
         mutex.unlock();
     }
 

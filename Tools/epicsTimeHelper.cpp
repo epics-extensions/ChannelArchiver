@@ -174,7 +174,7 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
     }
     else if (secs < secsPerDay)
     {
-	full_secs = (unsigned long)secs;
+    full_secs = (unsigned long)secs;
         epicsTimeStamp stamp = (epicsTimeStamp)time;
         // secs >= 1.0, so nanosecs are 0
         round = stamp.secPastEpoch / full_secs;
@@ -184,7 +184,7 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
     }
     else if (secs < secsPerMonth)
     {
-	full_secs = (unsigned long)secs;
+    full_secs = (unsigned long)secs;
         tm = (local_tm_nano_sec) time;
         round = full_secs/secsPerDay;
         tm.nSec = 0;
@@ -195,7 +195,7 @@ epicsTime roundTimeDown(const epicsTime &time, double secs)
     }
     else if (secs < secsPerYear)
     {
-	full_secs = (unsigned long)secs;
+    full_secs = (unsigned long)secs;
         tm = (local_tm_nano_sec) time;
         round = full_secs/secsPerMonth;
         tm.nSec = 0;
@@ -241,7 +241,7 @@ epicsTime roundTimeUp(const epicsTime &time, double secs)
     }
     else if (secs < secsPerDay)
     {
-	full_secs = (unsigned long)secs;
+    full_secs = (unsigned long)secs;
         epicsTimeStamp stamp = (epicsTimeStamp)time;
         // secs >= 1.0, so nanosecs are 0
         round = stamp.secPastEpoch / full_secs;
@@ -251,7 +251,7 @@ epicsTime roundTimeUp(const epicsTime &time, double secs)
     }
     else if (secs < secsPerMonth)
     {
-	full_secs = (unsigned long)secs;
+    full_secs = (unsigned long)secs;
         tm = (local_tm_nano_sec) time;
         round = full_secs/secsPerDay;
         tm.nSec = 0;
@@ -262,7 +262,7 @@ epicsTime roundTimeUp(const epicsTime &time, double secs)
     }
     else if (secs < secsPerYear)
     {
-	full_secs = (unsigned long)secs;
+    full_secs = (unsigned long)secs;
         tm = (local_tm_nano_sec) time;
         round = full_secs/secsPerMonth;
         tm.nSec = 0;

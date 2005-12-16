@@ -66,7 +66,6 @@ public:
     void assign(T *new_ptr)
     {
         if (ptr)
-            
             delete ptr;
         ptr = new_ptr;
     }

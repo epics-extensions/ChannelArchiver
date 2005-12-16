@@ -36,6 +36,28 @@
        }
 
 // -----------------------------------------------------------------
+
+// System
+#include <stdint.h>
+// Tools
+#include "Conversions.h"
+
+void test_conversions()
+{
+    uint8_t raw[] = { 0x01, 0x23, 0x45, 0x67 }; 
+    uint32_t i32 = *( (uint32_t *)raw ); 
+    uint16_t i16 = *( (uint16_t *)raw );
+
+    printf("\nConversion Tests\n");
+    printf("------------------------------------------\n");
+
+    ULONGFromDisk(i32);
+    USHORTFromDisk(i16);
+    TEST(i32 == 0x01234567);
+    TEST(i16 == 0x0123);
+}
+
+// -----------------------------------------------------------------
 #include "AutoFilePtr.h"
 
 void test_auto_file_ptr()  
@@ -59,6 +81,36 @@ void test_auto_file_ptr()
     // Now the file should be closed
     // and this read should fail.
     TEST(fread(line, 1, 20, stale_copy) == 0);
+}
+
+
+// -----------------------------------------------------------------
+#include "BinIO.h"
+
+void test_bin_io()
+{
+    {
+        AutoFilePtr f("/tmp/bin_io_test.bin", "w");
+        TEST(writeLong(f, 0x01234567));
+        TEST(writeShort(f, 0x0123));
+        TEST(writeByte(f, 0x01));
+    }
+    {
+        uint8_t i8;
+        AutoFilePtr f("/tmp/bin_io_test.bin", "r");
+        // long
+        TEST(readByte(f, &i8) && i8 == 0x01);
+        TEST(readByte(f, &i8) && i8 == 0x23);
+        TEST(readByte(f, &i8) && i8 == 0x45);
+        TEST(readByte(f, &i8) && i8 == 0x67);
+        // short
+        TEST(readByte(f, &i8) && i8 == 0x01);
+        TEST(readByte(f, &i8) && i8 == 0x23);
+        // byte
+        TEST(readByte(f, &i8) && i8 == 0x01);
+        // end
+        TEST(readByte(f, &i8) == false);
+    }
 }
 
 // -----------------------------------------------------------------
@@ -205,18 +257,18 @@ void test_autoptr()
 #ifdef TEST_STRING
 stdString addWorld(const stdString &in)
 {
-	stdString	result;
-	result = in;
-	result += "World !";
-	return result;
+    stdString    result;
+    result = in;
+    result += "World !";
+    return result;
 }
 
 int findChar(stdString s, char c)
 {
-	stdString::size_type pos = s.find_last_of(c);
-	if (pos == s.npos)
+    stdString::size_type pos = s.find_last_of(c);
+    if (pos == s.npos)
         return -1;
-	else
+    else
         return pos;
 }
 
@@ -229,7 +281,7 @@ void test_string()
 #endif
     printf("------------------------------------------\n");
 
-    stdString	a;
+    stdString    a;
 
     a = stdString("Hello ") + "W";
     a += "o";
@@ -636,7 +688,7 @@ void test_threads()
     epicsMutex mutex1, mutex2;
     {
         Guard guard(mutex1);
-	guard.check(__FILE__, __LINE__, mutex1);
+    guard.check(__FILE__, __LINE__, mutex1);
         TEST("Guard::check is OK");
         try
         {
@@ -986,6 +1038,10 @@ void test_fux()
 
 int main ()
 {
+    test_conversions();
+
+    test_bin_io();
+
     test_auto_file_ptr();
 
     test_exception();
@@ -1076,5 +1132,5 @@ int main ()
     test_ca();
 #endif
 
-	return 0;
+    return 0;
 }

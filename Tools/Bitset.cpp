@@ -1,5 +1,7 @@
 
+// Tools
 #include "Bitset.h"
+#include "GenericException.h"
 
 BitSet::BitSet()
 {
@@ -20,9 +22,19 @@ void BitSet::grow(size_t minimum)
     if (! minimum)
         return;
     num = (minimum-1) / 32 + 1;
-    uint32_t *new_bits = new uint32_t[num];
+    
+    uint32_t *new_bits = 0;
+    try
+    {
+        new_bits = new uint32_t[num];
+    }
+    catch (...)
+    {
+        throw GenericException(__FILE__, __LINE__,
+                               "BitSet::grow(%zu) from %zu bits failed",
+                               minimum, size);
+    }
     memset(new_bits, 0, num*4);
-
     if (bits)
     {
         memcpy(new_bits, bits, size / 8);
@@ -35,7 +47,9 @@ void BitSet::grow(size_t minimum)
 void BitSet::set(size_t bit)
 {
     if (bit >= size)
-        return;
+        throw GenericException(__FILE__, __LINE__,
+                               "BitSet::set(%zu) for only %zu bits failed",
+                               bit, size);
     uint32_t *b = bits + (bit / 32);
     bit %= 32;
     *b |= (1 << bit);
@@ -44,7 +58,9 @@ void BitSet::set(size_t bit)
 void BitSet::clear(size_t bit)
 {
     if(bit >= size)
-        return;
+        throw GenericException(__FILE__, __LINE__,
+                               "BitSet::clear(%zu) for only %zu bits failed",
+                               bit, size);
     uint32_t *b = bits + (bit / 32);
     bit %= 32;
     *b &= ~(1 << bit);
@@ -61,7 +77,9 @@ void BitSet::set(size_t bit, bool value)
 bool BitSet::test(size_t bit) const
 {
     if (bit >= size)
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "BitSet::test(%zu) for only %zu bits failed",
+                               bit, size);
     uint32_t *b = bits + (bit / 32);
     bit %= 32;
     return !!(*b & (1 << bit));
@@ -106,7 +124,7 @@ stdString BitSet::to_string() const
     while (i > 0)
     {
         --i;
-        if (operator[](i))
+        if (test(i))
         {
             s += '1';
             leading = true;

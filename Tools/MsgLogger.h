@@ -58,7 +58,7 @@ void LOG_MSG(const char *format, ...);
     if (! (e))                                                      \
     {                                                               \
         if (log_cmlog)                                              \
-	        cmlog_assert( #e, __FILE__, __LINE__ );             \
+            cmlog_assert( #e, __FILE__, __LINE__ );             \
         LOG_MSG("\nASSERT '%s' FAILED:\n%s (%d)\n\n",               \
                 #e, __FILE__, __LINE__);                            \
         exit(42);                                                   \

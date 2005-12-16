@@ -6,9 +6,10 @@
 #include<stdint.h>
 
 /// \ingroup Tools BitSet, inspired by STL bitset.
-
+///
 /// Reasons for reinventing this type of class:
-/// - The STL version is not part of e.g. the egcs compiler (as of Sept. 1999).
+///
+/// - The STL version was not part of the Sept 1999 egcs compiler.
 /// - This BitSet grows during runtime, size is not locked at compiletime.
 ///
 class BitSet
@@ -23,25 +24,29 @@ public:
     /// only work with bits 0...minimum, so you need
     /// to grow the BitSet to the required size before
     /// accessing any bits in there!
+    ///
+    /// @exception GenericException
     void grow(size_t minimum);
     
     /// Set bit to 1
+    ///
+    /// @exception GenericException
     void set(size_t bit);
 
     /// Clear bit, i.e. set to 0.
+    ///
+    /// @exception GenericException
     void clear(size_t bit);
 
     /// Set bit to 0 or 1
+    ///
+    /// @exception GenericException
     void set(size_t bit, bool value);
 
     /// Check individual bit.
+    ///
+    /// @exception GenericException
     bool test(size_t bit) const;
-
-    ///
-    /// Valid bit numbers are [0...size()[.
-    ///
-    bool operator [] (size_t bit) const
-    { return test(bit); }
 
     /// Whole bitset empty?
     bool empty() const;
@@ -69,3 +74,4 @@ private:
 };
 
 #endif //__BITSET_H__
+

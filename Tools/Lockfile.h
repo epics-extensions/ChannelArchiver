@@ -18,20 +18,20 @@
 class Lockfile  
 {
 public:
-	Lockfile(const stdString &filename) : filename(filename) {}
+    Lockfile(const stdString &filename) : filename(filename) {}
 
-	/// Try to generate lock file.
+    /// Try to generate lock file.
     
-	/// Result: succesful?
+    /// Result: succesful?
     ///
     ///
-	bool Lock(const stdString &prog_name);
+    bool Lock(const stdString &prog_name);
 
-	// Remove lock file.
-	void Unlock();
+    // Remove lock file.
+    void Unlock();
 
 private:
-	stdString filename;
+    stdString filename;
 };
 
 #endif

@@ -65,7 +65,7 @@ public:
     {   return line;   }
 
     /// Return detail text (if set)
-	const stdString &getDetail () const
+    const stdString &getDetail () const
     {   return detail; }
 
 protected:

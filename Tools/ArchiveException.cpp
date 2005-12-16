@@ -3,14 +3,14 @@
 
 static const char *error_text[] =
 {
-/* NoError */		"NoError: This should never occur...",
-/* Fail  */			"Failure",
-/* Invalid */		"Invalid",
-/* OpenError */		"Cannot open file",
-/* CreateError*/	"Cannot create new file",
-/* ReadError */		"Read Error",
-/* WriteError */	"Write Error",
-/* Unsupported */	"Not Supported",
+/* NoError */        "NoError: This should never occur...",
+/* Fail  */            "Failure",
+/* Invalid */        "Invalid",
+/* OpenError */        "Cannot open file",
+/* CreateError*/    "Cannot create new file",
+/* ReadError */        "Read Error",
+/* WriteError */    "Write Error",
+/* Unsupported */    "Not Supported",
 };
 
 ArchiveException::ArchiveException(const char *sourcefile, size_t line, Code code)

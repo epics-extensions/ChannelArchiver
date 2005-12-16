@@ -11,12 +11,12 @@ MsgLogger TheMsgLogger;
 
 MsgLogger::MsgLogger()
 {
-	SetDefaultPrintRoutine();
+    SetDefaultPrintRoutine();
 }
 
 void MsgLogger::Print(const char *s)
 {
-	print(print_arg, s);
+    print(print_arg, s);
 }
 
 #ifdef WIN32
@@ -34,8 +34,8 @@ static void DefaultPrintRoutine(void *arg, const char *text)
 
 void MsgLogger::SetDefaultPrintRoutine()
 {
-	print = DefaultPrintRoutine;
-	print_arg = 0; // not used
+    print = DefaultPrintRoutine;
+    print_arg = 0; // not used
 }
 
 static void LOG_MSG_NL(const char *format, va_list ap)

@@ -17,14 +17,12 @@
 class Lockfile  
 {
 public:
-    Lockfile(const stdString &filename) : filename(filename) {}
-
     /// Try to generate lock file.
     /// @exception GenericException
-    void Lock(const stdString &prog_name);
+    Lockfile(const char *filename, const char *program);
 
-    // Remove lock file.
-    void Unlock();
+    /// Remove lockfile.
+    ~Lockfile();
 
 private:
     stdString filename;

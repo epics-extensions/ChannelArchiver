@@ -29,8 +29,8 @@ public:
     ///
     /// This logger replaces the existing logger,
     /// in case there is one.
-    /// If no filename is supplied,
-    /// stderr is used.
+    /// If no filename (null or empty string)
+    /// is supplied, stderr is used.
     ///
     /// @exception GenericException if file fails to open.
     MsgLogger(const char *filename = 0);

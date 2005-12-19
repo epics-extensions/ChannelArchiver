@@ -80,44 +80,45 @@ int main(int argc, const char *argv[])
 
     try
     {
-        MsgLog log(log.get().c_str());
-        Lockfile lock_file("archive_active.lck");
-        lock_file.Lock(argv[0]);
-        LOG_MSG("Starting Engine with configuration file %s, index %s\n",
-                config_name.c_str(), index_name.c_str());
-        Engine::create(index_name);
+        MsgLogger log(log.get().c_str());
         {
-            Guard guard(theEngine->mutex);
-            if (! description.get().empty())
-                theEngine->setDescription(guard, description);
-            EngineConfig config;
-            run = config.read(guard, theEngine, config_name);
-        }
+            Lockfile lock_file("archive_active.lck", argv[0]);
+            LOG_MSG("Starting Engine with configuration file %s, index %s\n",
+                    config_name.c_str(), index_name.c_str());
+            Engine::create(index_name);
+            {
+                Guard guard(theEngine->mutex);
+                if (! description.get().empty())
+                    theEngine->setDescription(guard, description);
+                EngineConfig config;
+                run = config.read(guard, theEngine, config_name);
+            }
 #ifdef HAVE_SIGACTION
-        struct sigaction action;
-        memset(&action, 0, sizeof(struct sigaction));
-        action.sa_handler = signal_handler;
-        sigemptyset(&action.sa_mask);
-        action.sa_flags = 0;
-        if (sigaction(SIGINT, &action, 0) ||
-            sigaction(SIGTERM, &action, 0))
-            LOG_MSG("Error setting signal handler\n");
+            struct sigaction action;
+            memset(&action, 0, sizeof(struct sigaction));
+            action.sa_handler = signal_handler;
+            sigemptyset(&action.sa_mask);
+            action.sa_flags = 0;
+            if (sigaction(SIGINT, &action, 0) ||
+                sigaction(SIGTERM, &action, 0))
+                LOG_MSG("Error setting signal handler\n");
 #else
-        signal(SIGINT, signal_handler);
-        signal(SIGTERM, signal_handler);
+            signal(SIGINT, signal_handler);
+            signal(SIGTERM, signal_handler);
 #endif
-        // Main loop
-        LOG_MSG("\n----------------------------------------------------\n"
-                "Engine Running. Stop via http://localhost:%d/stop\n"
-                "----------------------------------------------------\n",
-                EngineServer::_port);
-        while (run)
-            theEngine->process();
-        // If engine is not shut down properly (ca_task_exit !),
-        // the MS VC debugger will freak out
-        LOG_MSG ("Shutting down Engine\n");
-        theEngine->shutdown ();    
-
+            // Main loop
+            LOG_MSG("\n----------------------------------------------------\n"
+                    "Engine Running. Stop via http://localhost:%d/stop\n"
+                    "----------------------------------------------------\n",
+                    EngineServer::_port);
+            while (run)
+                theEngine->process();
+            // If engine is not shut down properly (ca_task_exit !),
+            // the MS VC debugger will freak out
+            LOG_MSG ("Shutting down Engine\n");
+            theEngine->shutdown ();    
+            LOG_MSG ("Removing Lockfile\n");
+        }
         LOG_MSG ("Done.\n");
     }
     catch (GenericException &e)

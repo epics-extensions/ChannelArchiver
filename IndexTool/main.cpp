@@ -189,8 +189,7 @@ int main(int argc, const char *argv[])
 
     try
     {
-        Lockfile lock_file("indextool_active.lck");
-        lock_file.Lock (argv[0]);
+        Lockfile lock_file("indextool_active.lck", argv[0]);
         BenchTimer timer;
         if (!create_masterindex(RTreeM, parser.getArgument(0),
                                 parser.getArgument(1), reindex))

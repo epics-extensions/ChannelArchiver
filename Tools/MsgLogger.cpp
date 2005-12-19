@@ -12,7 +12,7 @@ MsgLogger *MsgLogger::TheMsgLogger = 0;
 MsgLogger::MsgLogger(const char *filename)
         : prev_logger(TheMsgLogger), f(0)
 {
-    if (filename)
+    if (filename && filename[0] != '\0')
     {
         f.set(fopen(filename, "w"));
         if (! f)

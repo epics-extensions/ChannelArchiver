@@ -24,7 +24,6 @@ INC += Filename.h
 INC += GenericException.h
 INC += Guard.h
 INC += IndexConfig.h
-INC += InsertionSort.h
 INC += Lockfile.h 
 INC += MemoryBuffer.h 
 INC += MsgLogger.h

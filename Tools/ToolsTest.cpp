@@ -379,27 +379,23 @@ void avl_test()
 
 #endif
 
-
 // -----------------------------------------------------------------
 #ifdef TEST_LOG
 #include<MsgLogger.h>
-
-void my_log(void *arg, const char *text)
-{
-    fputs(text, (FILE *)arg);
-}
     
 void test_log()
 {
     printf("\nLog Test\n");
     printf("------------------------------------------\n");
-    FILE *log_fd = fopen("msg_log_test.txt", "w");
-    TheMsgLogger.SetPrintRoutine(my_log, log_fd);
-
-    LOG_MSG("Hi\n");
-    LOG_MSG("Test went %c%c%s", 'O', 'K', "\n");
-    fclose(log_fd);
-    TheMsgLogger.SetDefaultPrintRoutine();
+    {
+        MsgLogger log("msg_log_test.txt");
+        LOG_MSG("Hi\n");
+        LOG_MSG("Test went %c%c%s", 'O', 'K', "\n");
+        LOG_MSG("You should see this message in the log file,\n"
+                "not on the screen\n");
+    }    
+    LOG_MSG("You should see this message on the screen,\n"
+            "not in the log file\n");
     TEST("Check 'msg_log_test.txt' for result of MsgLogger test");
 }
 #endif

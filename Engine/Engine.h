@@ -29,6 +29,23 @@
 #define DEFAULT_USER    "engine"
 #define DEFAULT_PASS    "password"   
 
+// Define if sigaction() is available in signal.h
+//
+// On Win32, signal() is good enough.
+// On Unix, this does not work in a multithreaded program,
+// so sigaction() should be used.
+//
+// On solaris I couldn't get it to compile, struct sigaction
+// isn't there.
+// This might be a feature of our local installation, though.
+#define HAVE_SIGACTION
+#ifdef WIN32
+#undef HAVE_SIGACTION
+#endif
+#ifdef solaris
+#undef HAVE_SIGACTION
+#endif
+
 // The ArchiveEngine uses these locks:
 //
 // HTTPServer::client_list_mutex

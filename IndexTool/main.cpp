@@ -187,22 +187,24 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    Lockfile lock_file("indextool_active.lck");
-    if (! lock_file.Lock (argv[0]))
-        return -1;
-    BenchTimer timer;
-    if (!create_masterindex(RTreeM, parser.getArgument(0),
-                            parser.getArgument(1), reindex))
+    try
     {
-        lock_file.Unlock();
-        return -1;
+        Lockfile lock_file("indextool_active.lck");
+        lock_file.Lock (argv[0]);
+        BenchTimer timer;
+        if (!create_masterindex(RTreeM, parser.getArgument(0),
+                                parser.getArgument(1), reindex))
+            return -1;
+        if (verbose > 0)
+        {
+            timer.stop();
+            printf("Time: %s\n", timer.toString().c_str());
+        }
     }
-    if (verbose > 0)
+    catch (GenericException &e)
     {
-        timer.stop();
-        printf("Time: %s\n", timer.toString().c_str());
+        printf("Error:\n%s", e.what());
     }
-    lock_file.Unlock();
     
     return 0;
 }

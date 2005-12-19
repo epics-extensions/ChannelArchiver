@@ -1,71 +1,78 @@
+// System
 #include <stdarg.h>
 #include <stdio.h>
+// Tools
 #include "MsgLogger.h"
+#include "GenericException.h"
 #include "epicsTimeHelper.h"
-#ifdef WIN32
-#include <windows.h>
-#endif
 
 // The global tracer object:
-MsgLogger TheMsgLogger;
+MsgLogger *MsgLogger::TheMsgLogger = 0;
 
-MsgLogger::MsgLogger()
+MsgLogger::MsgLogger(const char *filename)
+        : prev_logger(TheMsgLogger), f(0)
 {
-    SetDefaultPrintRoutine();
+    if (filename)
+    {
+        f.set(fopen(filename, "w"));
+        if (! f)
+            throw GenericException(__FILE__, __LINE__,
+                                   "Cannot open '%s' for writing",
+                                   filename);
+    }
+    // Make this logger the current one.
+    TheMsgLogger = this;
 }
 
-void MsgLogger::Print(const char *s)
+MsgLogger::~MsgLogger()
 {
-    print(print_arg, s);
+    // Restore previous logger
+    TheMsgLogger = prev_logger;
 }
 
-#ifdef WIN32
-static void DefaultPrintRoutine(void *arg, const char *text)
+void MsgLogger::print(const char *s)
 {
-    OutputDebugString(text);
-    printf("%s", text);
-}
-#else
-static void DefaultPrintRoutine(void *arg, const char *text)
-{
-    printf("%s", text);
-}
-#endif
-
-void MsgLogger::SetDefaultPrintRoutine()
-{
-    print = DefaultPrintRoutine;
-    print_arg = 0; // not used
+    if (f)
+        fprintf(f, "%s", s);
+    else
+        fprintf(stderr, "%s", s);
 }
 
-static void LOG_MSG_NL(const char *format, va_list ap)
+void MsgLogger::log(const char *format, va_list ap)
 {
-    enum { BufferSize = 2048 };
-    char buffer[BufferSize];
-
+    char buffer[2048];
     stdString s;
     epicsTime2string(epicsTime::getCurrent(), s);
-    TheMsgLogger.Print(s.substr(0, 19).c_str());
-    TheMsgLogger.Print(" ");
-    //vsprintf(buffer, format, ap);
-    vsnprintf(buffer, BufferSize-1, format, ap);
-    if (strlen(buffer) >= BufferSize)
-        TheMsgLogger.Print("LOG_MSG_NL: Buffer overrun\n");
-    TheMsgLogger.Print(buffer);
-#ifdef CMLOG
-    if (log_cmlog)
-        cmlog_log(buffer);
-#endif
+    int chars = vsnprintf(buffer, sizeof(buffer), format, ap);
+    if (chars < 1  ||  (size_t)chars > sizeof(buffer))
+        print("MsgLogger: Buffer overrun\n");
+    print(s.substr(0, 19).c_str());
+    print(" ");
+    print(buffer);
 }
 
 void LOG_MSG(const char *format, ...)
 {
+    if (MsgLogger::TheMsgLogger == 0)
+    {   // Initialize when first used
+        try
+        {
+            MsgLogger::TheMsgLogger = new MsgLogger();
+        }
+        catch (...)
+        {
+            MsgLogger::TheMsgLogger = 0;
+        }
+    }
+    if (! MsgLogger::TheMsgLogger)
+    {   // Error
+        fprintf(stderr, "LOG_MSG: No message logger!\n");
+        return;
+    }
     va_list ap;
     va_start(ap, format);
-    TheMsgLogger.lock.lock();
-    LOG_MSG_NL(format, ap);
-    TheMsgLogger.lock.unlock();
+    MsgLogger::TheMsgLogger->log(format, ap);
     va_end(ap);
 }
 
-// EOF MsgLogger.cc
+// EOF MsgLogger.cpp

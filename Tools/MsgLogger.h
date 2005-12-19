@@ -1,76 +1,82 @@
 // -*- c++ -*-
-#if !defined(_TRACER_H_)
-#define _TRACER_H_
+#if !defined(__MSG_LOGGER_H__)
+#define __MSG_LOGGER_H__
 
 // System
-#include <stdlib.h>
-// Base
-#include <epicsMutex.h>
+#include <stdio.h>
+// Tools
+#include <GenericException.h>
+#include <AutoFilePtr.h>
 
 /// \ingroup Tools
-/// The MsgLogger is a trace or logging helper.
+/// The MsgLogger is a trace or logging facility.
 ///
-/// Note that it is not necessary to instantiate
-/// another logger. Instead, one can use the following
-/// printf and assert-like macros that call a predefined,
-/// global MsgLogger:
+/// The following printf and assert-like macros
+/// routines and macros will call TheMsgLogger->log:
+///
 /// \code
 ///  LOG_MSG("in init()\n");
 ///  LOG_MSG("Value of i is %d\n", i);
 ///  LOG_ASSERT(i > 2);
 /// \endcode
+///
+/// If no logger is created by the application,
+/// LOG_... will create a default logger for stderr.
 class MsgLogger
 {
 public:
-    /// Constructor
-    MsgLogger();
+    /// Construct a new logger.
+    ///
+    /// This logger replaces the existing logger,
+    /// in case there is one.
+    /// If no filename is supplied,
+    /// stderr is used.
+    ///
+    /// @exception GenericException if file fails to open.
+    MsgLogger(const char *filename = 0);
 
-    /// Type for user-defined output routine.
-    typedef void (*PrintRoutine) (void *arg, const char *text);
-    
-    /// Override default output routine.
-    void SetPrintRoutine(PrintRoutine print, void *arg = 0)
-    {
-        this->print = print;
-        this->print_arg = arg;
-    }
-
-    /// Restore default output routine
-    void SetDefaultPrintRoutine();
+    /// Destructor.
+    ///
+    /// Will restore whatever previous logger was
+    /// in place.
+    virtual ~MsgLogger();
 
     /// Log some text.
-    void Print(const char *s);
+    ///
+    /// Prepends info with time stamp,
+    /// then invokes print.
+    void log(const char *format, va_list ap);
 
-    epicsMutex   lock;
+protected:
+    /// The current MsgLogger.
+    static MsgLogger *TheMsgLogger;
 
-private:
-    PrintRoutine print;
-    void         *print_arg;
+    /// Each MsgLogger keeps track of the previous
+    /// logger so that it can be restored when
+    /// this logger is closed.
+    MsgLogger *prev_logger;
+
+    friend void ::LOG_MSG(const char *format, ...);
+
+    /// The file used by print in this logger.
+    AutoFilePtr f;
+
+    /// Derived classes can override this to redirect the
+    /// messages, and then point TheMsgLogger to the
+    /// custom MsgLogger.
+    virtual void print(const char *s);
 };
-
-// The gloablly available MsgLogger instance:
-extern MsgLogger TheMsgLogger;
 
 void LOG_MSG(const char *format, ...);
 
-#ifdef CMLOG
-# define LOG_ASSERT(e)                                              \
-    if (! (e))                                                      \
-    {                                                               \
-        if (log_cmlog)                                              \
-            cmlog_assert( #e, __FILE__, __LINE__ );             \
-        LOG_MSG("\nASSERT '%s' FAILED:\n%s (%d)\n\n",               \
-                #e, __FILE__, __LINE__);                            \
-        exit(42);                                                   \
+#define LOG_ASSERT(e)                                                \
+    if (! (e))                                                       \
+    {                                                                \
+        LOG_MSG("\nASSERT '%s' FAILED:\n%s (%d)\n\n",                \
+                #e, __FILE__, __LINE__);                             \
+        throw GenericException(__FILE__, __LINE__,                   \
+                               "ASSERT '%s' FAILED", #e);            \
     }
-#else
-# define LOG_ASSERT(e)                                              \
-    if (! (e))                                                      \
-    {                                                               \
-        LOG_MSG("\nASSERT '%s' FAILED:\n%s (%d)\n\n",               \
-                #e, __FILE__, __LINE__);                            \
-        exit(42);                                                   \
-    }
+
 #endif
 
-#endif // !defined(_TRACER_H_)

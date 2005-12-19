@@ -8,7 +8,6 @@
 #include <ToolsConfig.h>
 
 /// \ingroup Tools
-
 /// Lock file.
 ///
 /// Generate a lock file containing the generation time.
@@ -21,11 +20,8 @@ public:
     Lockfile(const stdString &filename) : filename(filename) {}
 
     /// Try to generate lock file.
-    
-    /// Result: succesful?
-    ///
-    ///
-    bool Lock(const stdString &prog_name);
+    /// @exception GenericException
+    void Lock(const stdString &prog_name);
 
     // Remove lock file.
     void Unlock();

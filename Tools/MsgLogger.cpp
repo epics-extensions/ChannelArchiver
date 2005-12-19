@@ -14,7 +14,7 @@ MsgLogger::MsgLogger(const char *filename)
 {
     if (filename && filename[0] != '\0')
     {
-        f.set(fopen(filename, "w"));
+        f.set(fopen(filename, "a"));
         if (! f)
             throw GenericException(__FILE__, __LINE__,
                                    "Cannot open '%s' for writing",

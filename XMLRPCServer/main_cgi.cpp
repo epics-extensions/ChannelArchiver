@@ -18,20 +18,6 @@
 // what's happening.
 #define LOGFILE "/tmp/archserver.log"
 
-#ifdef LOGFILE
-static FILE *logfile = 0;
-static void LogRoutine(void *arg, const char *text)
-{
-    if (logfile)
-    {
-        fputs(text, logfile);
-        fflush(logfile);
-    }
-    else
-        printf("log: %s", text);
-}
-#endif
-
 // Return name of configuration file from environment or 0
 const char *get_config_name(xmlrpc_env *env)
 {
@@ -92,28 +78,31 @@ IndexFile *open_index(xmlrpc_env *env, int key)
 
 int main(int argc, char *argv[])
 {
+    try
+    {
 #ifdef LOGFILE
-    struct timeval t0, t1;
-    gettimeofday(&t0, 0);
-    logfile = fopen(LOGFILE, "a");
-    TheMsgLogger.SetPrintRoutine(LogRoutine, 0);
-    LOG_MSG("---- ArchiveServer Started ----\n");
+        struct timeval t0, t1;
+        gettimeofday(&t0, 0);
+        MsgLogger logger(LOGFILE);
+        LOG_MSG("---- ArchiveServer Started ----\n");
 #endif
-    xmlrpc_cgi_init(XMLRPC_CGI_NO_FLAGS);
-    xmlrpc_cgi_add_method_w_doc("archiver.info",     &get_info,     0, "S:", "Get info");
-    xmlrpc_cgi_add_method_w_doc("archiver.archives", &get_archives, 0, "A:", "Get archives");
-    xmlrpc_cgi_add_method_w_doc("archiver.names",    &get_names,    0, "A:is", "Get channel names");
-    xmlrpc_cgi_add_method_w_doc("archiver.values",   &get_values,   0, "A:iAiiiiii", "Get values");
-    xmlrpc_cgi_process_call();
-    xmlrpc_cgi_cleanup();
+        xmlrpc_cgi_init(XMLRPC_CGI_NO_FLAGS);
+        xmlrpc_cgi_add_method_w_doc("archiver.info",     &get_info,     0, "S:", "Get info");
+        xmlrpc_cgi_add_method_w_doc("archiver.archives", &get_archives, 0, "A:", "Get archives");
+        xmlrpc_cgi_add_method_w_doc("archiver.names",    &get_names,    0, "A:is", "Get channel names");
+        xmlrpc_cgi_add_method_w_doc("archiver.values",   &get_values,   0, "A:iAiiiiii", "Get values");
+        xmlrpc_cgi_process_call();
+        xmlrpc_cgi_cleanup();
 #ifdef LOGFILE
-    gettimeofday(&t1, 0);
-    double run_secs = (t1.tv_sec + t1.tv_usec/1.0e6)
-        - (t0.tv_sec + t0.tv_usec/1.0e6);
-    LOG_MSG("ArchiveServer ran %g seconds\n", run_secs);
-    if (logfile)
-        fclose(logfile);
+        gettimeofday(&t1, 0);
+        double run_secs = (t1.tv_sec + t1.tv_usec/1.0e6)
+            - (t0.tv_sec + t0.tv_usec/1.0e6);
+        LOG_MSG("ArchiveServer ran %g seconds\n", run_secs);
 #endif
-    
+    }
+    catch (GenericException &e)
+    {
+        fprintf(stderr, "Error: %s\n", e.what());
+    }
     return 0;
 }

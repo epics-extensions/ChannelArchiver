@@ -31,6 +31,8 @@ public:
     /// in case there is one.
     /// If no filename (null or empty string)
     /// is supplied, stderr is used.
+    /// If a filename is provided, that file is
+    /// opened or created for <u>appending</u>.
     ///
     /// @exception GenericException if file fails to open.
     MsgLogger(const char *filename = 0);

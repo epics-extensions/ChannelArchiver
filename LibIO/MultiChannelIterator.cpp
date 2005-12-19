@@ -26,11 +26,8 @@ MultiChannelIterator::MultiChannelIterator(MultiArchive *archive)
 MultiChannelIterator::~MultiChannelIterator ()
 {
 	clear ();
-	if (_regex)
-	{
-		_regex->release ();
-		_regex = 0;
-	}    
+	delete _regex;
+	_regex = 0;
 }
 
 bool MultiChannelIterator::isValid () const
@@ -73,9 +70,8 @@ void MultiChannelIterator::clear ()
 
 bool MultiChannelIterator::moveToMatchingChannel (const stdString &pattern)
 {
-	if (_regex)
-		_regex->release ();
-	_regex = RegularExpression::reference (pattern.c_str());
+	delete _regex;
+	_regex = new RegularExpression(pattern.c_str());
 
 	if (_is_valid && _regex && _regex->doesMatch (_channel.getName())==false)
 		return next ();

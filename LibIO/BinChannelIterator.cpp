@@ -19,10 +19,11 @@ BinChannelIterator & BinChannelIterator::operator = (const BinChannelIterator &r
     _archive = rhs._archive;
     _dir = rhs._dir;
     _dir.getChannel()->setChannelIterator (this);
-    if (_regex)
-        _regex->release ();
-    _regex = rhs._regex ? rhs._regex->reference () : 0;
-
+    delete _regex;
+    if (rhs._regex)
+        _regex = new RegularExpression(*rhs._regex);
+    else
+        _regex = 0;
     return *this;
 }
 
@@ -35,8 +36,7 @@ void BinChannelIterator::attach (BinArchive *arch, const DirectoryFileIterator &
     _dir.getChannel()->setChannelIterator (this);
     // Set pattern and move on to first matching channel name:
     if (regular_expression)
-        _regex = RegularExpression::reference (regular_expression);
-
+        _regex = new RegularExpression(regular_expression);
     while (_dir.isValid()  &&  _regex  &&
            !_regex->doesMatch (_dir.getChannel()->getName()))
         _dir.next ();
@@ -44,11 +44,8 @@ void BinChannelIterator::attach (BinArchive *arch, const DirectoryFileIterator &
 
 void BinChannelIterator::clear ()
 {
-    if (_regex)
-    {
-        _regex->release ();
-        _regex = 0;
-    }
+    delete _regex;
+    _regex = 0;
     _archive = 0;
     _dir.getChannel()->setChannelIterator (0);
 }

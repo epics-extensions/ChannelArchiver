@@ -5,6 +5,7 @@
 #include <xmlrpc.h>
 #include <xmlrpc_cgi.h>
 // Tools
+#include "AutoPtr.h"
 #include "RegularExpression.h"
 // XMLRPCServer
 #include "ArchiveDataServer.h"
@@ -66,7 +67,7 @@ xmlrpc_value *get_names(xmlrpc_env *env,
                         xmlrpc_value *args,
                         void *user)
 {
-    RegularExpression *re = 0;
+    AutoPtr<RegularExpression> re;
     xmlrpc_int32 key;
     char *pattern;
     size_t pattern_len; 
@@ -74,9 +75,7 @@ xmlrpc_value *get_names(xmlrpc_env *env,
     if (env->fault_occurred)
         return NULL;
     if (pattern_len > 0)
-    {
-        re = RegularExpression::reference(pattern);
-    }
+        re.assign(new RegularExpression(pattern));
 
     xmlrpc_value *result, *channel;
     result = xmlrpc_build_value(env, "()");
@@ -105,8 +104,6 @@ xmlrpc_value *get_names(xmlrpc_env *env,
         xmlrpc_array_append_item(env, result, channel);
         xmlrpc_DECREF(channel);
     }    
-    if (re)
-        re->release();
     return result;
 }
 

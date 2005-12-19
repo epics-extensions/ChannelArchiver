@@ -33,10 +33,10 @@ void get_names_for_pattern(Index &index,
 {
     if (verbose)
         printf("Expanding pattern '%s'\n", pattern.c_str());
-    RegularExpression *regex = 0;
+    AutoPtr<RegularExpression> regex;
     if (pattern.length() > 0)
     {
-        regex = RegularExpression::reference(pattern.c_str());
+        regex.assign(RegularExpression::reference(pattern.c_str()));
         if (!regex)
         {
             fprintf(stderr, "Cannot allocate regular expression\n");
@@ -55,8 +55,6 @@ void get_names_for_pattern(Index &index,
         channels.add(name_iter.getName());
     }
     while (index.getNextChannel(name_iter));
-    if (regex)
-        regex->release();
     // Sorted dump of names
     channels.traverse(add_name2vector, (void *)&names);
 }

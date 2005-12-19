@@ -1,11 +1,13 @@
 // RegularExpression.cpp: implementation of the RegularExpression class.
 //////////////////////////////////////////////////////////////////////
 
-#include<ctype.h>
-#include"RegularExpression.h"
-#include"MsgLogger.h"
+// System
+#include <ctype.h>
+// Tools
+#include "RegularExpression.h"
+#include "MsgLogger.h"
+#include "GenericException.h"
 
-//#include<sys/types.h>
 extern "C"
 {
 #ifdef WIN32
@@ -51,29 +53,32 @@ stdString RegularExpression::fromGlobPattern(const stdString &glob)
 // which is quite big and does not contain extern "C".
 // Using a void pointer is also nasty but keeps
 // RegularExpression.h minimal.
-RegularExpression *RegularExpression::reference(const char *pattern,
-                                                bool case_sensitive)
+void RegularExpression::set(const char *pattern, bool case_sensitive)
 {
-    RegularExpression *re = new RegularExpression;
-    re->_compiled_pattern = new regex_t;
+    _pattern = pattern;
+    _case_sensitive = case_sensitive;
+    try
+    {
+        _compiled_pattern = new regex_t;
+    }
+    catch (...)
+    {
+        _compiled_pattern = 0;
+    }
+    if (! _compiled_pattern)
+        throw GenericException(__FILE__, __LINE__,
+                               "Cannot allocate regular expression");
     int flags = REG_EXTENDED | REG_NOSUB;
     if (! case_sensitive)
         flags |= REG_ICASE;
-    
-    if (regcomp((regex_t *) re->_compiled_pattern, pattern, flags) != 0)
+    if (regcomp((regex_t *) _compiled_pattern, pattern, flags) != 0)
     {
-        delete ((regex_t *)re->_compiled_pattern);
-        re->_compiled_pattern = 0;
-        delete re;
-        return 0;
+        delete ((regex_t *)_compiled_pattern);
+        _compiled_pattern = 0;
+        throw GenericException(__FILE__, __LINE__,
+                               "Cannot compile regular expression '%s'", pattern);
     }
-
-    return re;
 }
-
-RegularExpression::RegularExpression()
- : _compiled_pattern(0), _refs(1)
-{ }
 
 RegularExpression::~RegularExpression()
 {

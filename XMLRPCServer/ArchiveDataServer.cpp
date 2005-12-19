@@ -22,6 +22,39 @@
 
 #define LOGFILE
 
+class AutoXmlRpcValue
+{
+public:
+    AutoXmlRpcValue(xmlrpc_value *val = 0) 
+            : val(val) 
+    {}
+
+    ~AutoXmlRpcValue()
+    {
+        set(0);
+    }
+
+    void set(xmlrpc_value *nval)
+    {
+        if (val)
+            xmlrpc_DECREF(val);
+        val = nval;
+    }       
+
+    operator bool () const
+    {
+        return val != 0;
+    }
+    
+    operator xmlrpc_value * () const
+    {
+        return val;
+    }
+
+private:
+    xmlrpc_value *val;
+};
+
 // Some compilers have "finite()",
 // others have "isfinite()".
 // This hopefully works everywhere:
@@ -60,17 +93,14 @@ public:
 
         LOG_MSG("Found name '%s'\n", info.name.c_str());
 
-        xmlrpc_value *channel = xmlrpc_build_value(
-            user_arg->env,
-            "{s:s,s:i,s:i,s:i,s:i}",
-            "name", info.name.c_str(),
-            "start_sec", ss, "start_nano", sn,
-            "end_sec", es,   "end_nano", en);
+        AutoXmlRpcValue channel(xmlrpc_build_value(
+                                    user_arg->env,
+                                    "{s:s,s:i,s:i,s:i,s:i}",
+                                    "name", info.name.c_str(),
+                                    "start_sec", ss, "start_nano", sn,
+                                    "end_sec", es,   "end_nano", en));
         if (channel)
-        {
             xmlrpc_array_append_item(user_arg->env, user_arg->result, channel);
-            xmlrpc_DECREF(channel);
-        }
     }
 };
 
@@ -79,21 +109,21 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
 {
     if (info && info->getType() == CtrlInfo::Enumerated)
     {
-        xmlrpc_value *state, *states = xmlrpc_build_value(env, "()");
+        AutoXmlRpcValue states(xmlrpc_build_value(env, "()"));
         stdString state_txt;
         size_t i, num = info->getNumStates();
         for (i=0; i<num; ++i)
         {
             info->getState(i, state_txt);
-            state = xmlrpc_build_value(env, "s#",
-                                       state_txt.c_str(), state_txt.length());
+            AutoXmlRpcValue state(
+                xmlrpc_build_value(env, "s#",
+                                   state_txt.c_str(), state_txt.length()));
             xmlrpc_array_append_item(env, states, state);
-            xmlrpc_DECREF(state);
         }
         xmlrpc_value *meta = xmlrpc_build_value(
             env, "{s:i,s:V}",
-            "type", (xmlrpc_int32)META_TYPE_ENUM, "states", states);
-        xmlrpc_DECREF(states);
+            "type", (xmlrpc_int32)META_TYPE_ENUM,
+            "states", (xmlrpc_value *)states);
         return meta;
     }
     if (info && info->getType() == CtrlInfo::Numeric)
@@ -144,7 +174,7 @@ void encode_value(xmlrpc_env *env,
 {
     if (xml_count > dbr_count)
         xml_count = dbr_count;
-    xmlrpc_value *element, *val_array =  xmlrpc_build_value(env, "()");
+    AutoXmlRpcValue val_array(xmlrpc_build_value(env, "()"));
     if (env->fault_occurred)
         return;
     int i;
@@ -155,10 +185,9 @@ void encode_value(xmlrpc_env *env,
             stdString txt;
             if (data)
                 RawValue::getValueString(txt, dbr_type, dbr_count, data, 0);
-            element = xmlrpc_build_value(env, "s#",
-                                         txt.c_str(), txt.length());
+            AutoXmlRpcValue element(xmlrpc_build_value(env, "s#",
+                                                       txt.c_str(), txt.length()));
             xmlrpc_array_append_item(env, val_array, element);
-            xmlrpc_DECREF(element);
         }
         break;
         case XML_INT:
@@ -170,9 +199,8 @@ void encode_value(xmlrpc_env *env,
                 if (!data  ||
                     !RawValue::getLong(dbr_type, dbr_count, data, l, i))
                     l = 0;
-                element = xmlrpc_build_value(env, "i", (xmlrpc_int32)l);
+                AutoXmlRpcValue element(xmlrpc_build_value(env, "i", (xmlrpc_int32)l));
                 xmlrpc_array_append_item(env, val_array, element);
-                xmlrpc_DECREF(element);
             }
         }
         break;
@@ -213,34 +241,31 @@ void encode_value(xmlrpc_env *env,
                 } 
                 else
                     d = 0.0;
-                element = xmlrpc_build_value(env, "d", d);
+                AutoXmlRpcValue element(xmlrpc_build_value(env, "d", d));
                 xmlrpc_array_append_item(env, val_array, element);
-                xmlrpc_DECREF(element);
             }
         }
     }
     xmlrpc_int32 secs, nano;
     epicsTime2pieces(time, secs, nano);
-    xmlrpc_value *value;
+    AutoXmlRpcValue value;
     if (data)
-        value = xmlrpc_build_value(
-            env, "{s:i,s:i,s:i,s:i,s:V}",
-            "stat", (xmlrpc_int32)RawValue::getStat(data),
-            "sevr", (xmlrpc_int32)RawValue::getSevr(data),
-            "secs", secs,
-            "nano", nano,
-            "value", val_array);
+        value.set(xmlrpc_build_value(
+                      env, "{s:i,s:i,s:i,s:i,s:V}",
+                      "stat", (xmlrpc_int32)RawValue::getStat(data),
+                      "sevr", (xmlrpc_int32)RawValue::getSevr(data),
+                      "secs", secs,
+                      "nano", nano,
+                      "value", (xmlrpc_value *)val_array));
     else
-        value = xmlrpc_build_value(
-            env, "{s:i,s:i,s:i,s:i,s:V}",
-            "stat", (xmlrpc_int32)UDF_ALARM,
-            "sevr", (xmlrpc_int32)INVALID_ALARM,
-            "secs", secs,
-            "nano", nano,
-            "value", val_array);    
-    xmlrpc_DECREF(val_array);
+        value.set(xmlrpc_build_value(
+                      env, "{s:i,s:i,s:i,s:i,s:V}",
+                      "stat", (xmlrpc_int32)UDF_ALARM,
+                      "sevr", (xmlrpc_int32)INVALID_ALARM,
+                      "secs", secs,
+                      "nano", nano,
+                      "value",  (xmlrpc_value *)val_array));    
     xmlrpc_array_append_item(env, values, value);
-    xmlrpc_DECREF(value);
 }
 
 // Return the data for all the names[], start .. end etc.
@@ -641,67 +666,69 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
     LOG_MSG("archiver.names\n");
 #endif
     // Get args, maybe setup pattern
-    RegularExpression *regex = 0;
+    AutoPtr<RegularExpression> regex;
     xmlrpc_int32 key;
     char *pattern;
     size_t pattern_len; 
     xmlrpc_parse_value(env, args, "(is#)", &key, &pattern, &pattern_len);
     if (env->fault_occurred)
-        return NULL;
-    if (pattern_len > 0)
-        regex = RegularExpression::reference(pattern);
+        return 0;
     // Create result
     xmlrpc_value *result = xmlrpc_build_value(env, "()");
     if (!result)
     {
-        if (regex)
-            regex->release();
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
                                        "Cannot create result");
         return 0;
     }
-    // Open Index
-    stdString directory;
-    AutoPtr<IndexFile> index(open_index(env, key));
-    if (env->fault_occurred)
+    try
     {
-        if (regex)
-            regex->release();
-        return 0;
-    }
-    // Put all names in binary tree
-    IndexFile::NameIterator ni;
-    BinaryTree<ChannelInfo> channels;
-    ChannelInfo info;
-    bool ok;
-    for (ok = index->getFirstChannel(ni);
-         ok; ok = index->getNextChannel(ni))
-    {
-        if (regex && !regex->doesMatch(ni.getName()))
-            continue; // skip what doesn't match regex
-        info.name = ni.getName();
-        ErrorInfo error_info;
-        AutoPtr<RTree> tree(index->getTree(info.name, directory, error_info));
-        if (tree)
-            tree->getInterval(info.start, info.end);
-        else // Is this an error?
-            info.start = info.end = nullTime;
-        channels.add(info);
-    }
-    index->close();
-    if (regex)
-        regex->release();
-    // Sorted dump of names
-    ChannelInfo::UserArg user_arg;
-    user_arg.env = env;
-    user_arg.result = result;
-    channels.traverse(ChannelInfo::add_name_to_result, (void *)&user_arg);
+        if (pattern_len > 0)
+            regex.assign(new RegularExpression(pattern));
+        // Open Index
+        stdString directory;
+        AutoPtr<IndexFile> index(open_index(env, key));
+        if (env->fault_occurred)
+            return 0;
+        // Put all names in binary tree
+        IndexFile::NameIterator ni;
+        BinaryTree<ChannelInfo> channels;
+        ChannelInfo info;
+        bool ok;
+        for (ok = index->getFirstChannel(ni);
+             ok; ok = index->getNextChannel(ni))
+        {
+            if (regex && !regex->doesMatch(ni.getName()))
+                continue; // skip what doesn't match regex
+            info.name = ni.getName();
+            ErrorInfo error_info;
+            AutoPtr<RTree> tree(index->getTree(info.name, directory, error_info));
+            if (tree)
+                tree->getInterval(info.start, info.end);
+            else // Is this an error?
+                info.start = info.end = nullTime;
+            channels.add(info);
+        }
+        index->close();
+        // Sorted dump of names
+        ChannelInfo::UserArg user_arg;
+        user_arg.env = env;
+        user_arg.result = result;
+        channels.traverse(ChannelInfo::add_name_to_result, (void *)&user_arg);
 #ifdef LOGFILE
-    LOG_MSG("get_names(%d, '%s') -> %d names\n",
-            key,
-            (pattern ? pattern : "<no pattern>"),
-            xmlrpc_array_size(env, result));
+        LOG_MSG("get_names(%d, '%s') -> %d names\n",
+                key,
+                (pattern ? pattern : "<no pattern>"),
+                xmlrpc_array_size(env, result));
 #endif
+    }
+    catch (GenericException &e)
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
+                                       (char *) e.what());
+        xmlrpc_DECREF(result);
+        result = 0;
+    }
     return result;
 }
 

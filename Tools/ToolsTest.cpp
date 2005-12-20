@@ -83,12 +83,13 @@ void test_auto_file_ptr()
     TEST(fread(line, 1, 20, stale_copy) == 0);
 }
 
-
 // -----------------------------------------------------------------
 #include "BinIO.h"
 
 void test_bin_io()
 {
+    printf("\nBinIO Tests\n");
+    printf("------------------------------------------\n");
     {
         AutoFilePtr f("/tmp/bin_io_test.bin", "w");
         TEST(writeLong(f, 0x01234567));
@@ -111,6 +112,39 @@ void test_bin_io()
         // end
         TEST(readByte(f, &i8) == false);
     }
+}
+
+// -----------------------------------------------------------------
+
+#include "ASCIIParser.h"
+void test_ascii_parser()
+{
+    printf("\nASCIIParser Tests\n");
+    printf("------------------------------------------\n");
+    ASCIIParser parser;
+    stdString parm, val;
+
+    TEST(parser.open("ascii_test.txt"));
+    TEST(parser.nextLine());
+    TEST(parser.getLine() == "fred");
+    TEST(parser.nextLine());
+    TEST(parser.getLine() == "Jane Doe");
+    TEST(parser.nextLine());
+    TEST(parser.getParameter(parm, val));
+    TEST(parm == "parm");
+    TEST(val == "42");
+    TEST(parser.nextLine());
+    TEST(parser.getParameter(parm, val));
+    TEST(parm == "another");
+    TEST(val == "x");
+    TEST(parser.nextLine());
+    TEST(parser.getParameter(parm, val));
+    TEST(parm == "a");
+    TEST(val == "b");
+    TEST(parser.nextLine());
+    TEST(parser.getParameter(parm, val) == false);
+    TEST(parser.nextLine());
+    TEST(parser.getParameter(parm, val) == false);
 }
 
 // -----------------------------------------------------------------
@@ -684,7 +718,7 @@ void test_threads()
     epicsMutex mutex1, mutex2;
     {
         Guard guard(mutex1);
-    guard.check(__FILE__, __LINE__, mutex1);
+        guard.check(__FILE__, __LINE__, mutex1);
         TEST("Guard::check is OK");
         try
         {
@@ -693,7 +727,7 @@ void test_threads()
         }
         catch (GenericException &e)
         {
-            printf("OK: Caught %s", e.what());
+            printf("OK  : Caught %s", e.what());
         }
     }
 
@@ -1039,6 +1073,8 @@ int main ()
     test_bin_io();
 
     test_auto_file_ptr();
+
+    test_ascii_parser();
 
     test_exception();
 

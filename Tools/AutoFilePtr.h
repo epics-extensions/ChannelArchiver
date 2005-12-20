@@ -13,9 +13,12 @@ class AutoFilePtr
 {
 public:
     /// Construct AutoFilePtr for given filename and mode.
+    ///
+    /// To test the result, use the bool operator.
     AutoFilePtr(const char *filename, const char *mode)
+        : f(0)
     {
-        f = fopen(filename, mode);
+        open(filename, mode);
     }
 
     /// Construct AutoFilePtr for existing FILE,
@@ -24,6 +27,19 @@ public:
 
     /// Destructor closes the FILE under control of this AutoFilePtr.
     ~AutoFilePtr()
+    {
+        close();
+    }
+
+    /// Open a (new) file.
+    bool open(const char *filename, const char *mode)
+    {
+        set(fopen(filename, mode));
+        return f != 0;
+    }
+
+    /// Close the current file.
+    void close()
     {
         set(0);
     }
@@ -52,7 +68,6 @@ private:
     FILE *f;
 
     // Not implemented, don't use these
-    AutoFilePtr();
     AutoFilePtr & operator = (const AutoFilePtr &rhs);
 };
 

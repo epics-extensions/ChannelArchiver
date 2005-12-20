@@ -33,30 +33,31 @@ void get_names_for_pattern(Index &index,
 {
     if (verbose)
         printf("Expanding pattern '%s'\n", pattern.c_str());
-    AutoPtr<RegularExpression> regex;
-    if (pattern.length() > 0)
+    try
     {
-        regex.assign(RegularExpression::reference(pattern.c_str()));
-        if (!regex)
+        AutoPtr<RegularExpression> regex;
+        if (pattern.length() > 0)
+            regex.assign(new RegularExpression(pattern.c_str()));
+        Index::NameIterator name_iter;
+        if (!index.getFirstChannel(name_iter))
+            return; // No names
+        // Put all names in binary tree
+        BinaryTree<stdString> channels;
+        do
         {
-            fprintf(stderr, "Cannot allocate regular expression\n");
-            return;
+            if (regex && !regex->doesMatch(name_iter.getName()))
+                continue; // skip what doesn't match regex
+            channels.add(name_iter.getName());
         }
+        while (index.getNextChannel(name_iter));
+        // Sorted dump of names
+        channels.traverse(add_name2vector, (void *)&names);
     }
-    Index::NameIterator name_iter;
-    if (!index.getFirstChannel(name_iter))
-        return; // No names
-    // Put all names in binary tree
-    BinaryTree<stdString> channels;
-    do
+    catch (GenericException &e)
     {
-        if (regex && !regex->doesMatch(name_iter.getName()))
-            continue; // skip what doesn't match regex
-        channels.add(name_iter.getName());
+        fprintf(stderr, "Error while expanding name pattern '%s':\n%s\n",
+                pattern.c_str(), e.what());
     }
-    while (index.getNextChannel(name_iter));
-    // Sorted dump of names
-    channels.traverse(add_name2vector, (void *)&names);
 }
 
 bool list_channels(Index &index, stdVector<stdString> names, bool info)

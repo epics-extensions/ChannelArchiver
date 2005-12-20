@@ -12,49 +12,39 @@
 #include <ctype.h>
 
 ASCIIParser::ASCIIParser()
-{
-    _line_no = 0;
-    _file = 0;
-}
-
-ASCIIParser::~ASCIIParser()
-{
-    if (_file)
-        fclose(_file);
-}
+    : line_no(0)
+{}
 
 bool ASCIIParser::open(const stdString &file_name)
 {
-    _file = fopen(file_name.c_str(), "rt");
-    return _file != 0;
+    return file.open(file_name.c_str(), "rt");
 }
 
 bool ASCIIParser::nextLine()
 {
-#define MAX_LEN    1024
-    char line[MAX_LEN];
+    char buf[1024];
     char *ch;
     size_t i;
 
     while (true)
     {
-        if (fgets(line, MAX_LEN, _file) == 0)
+        if (fgets(buf, sizeof(buf), file) == 0)
         {   // got nothing -> quit
-            _line.assign((const char *)0, 0);
+            line.assign((const char *)0, 0);
             return false;
         }
-        ++_line_no;
+        ++line_no;
 
-        ch = line;
+        ch = buf;
         i = 0;
         // skip leading white space
         while (*ch && isspace(*ch))
         {
             ++ch;
             ++i;
-            if (i >= MAX_LEN)
+            if (i >= sizeof(buf))
             {
-                _line.assign((const char *)0, 0);
+                line.assign((const char *)0, 0);
                 return false;
             }
         }
@@ -71,25 +61,46 @@ bool ASCIIParser::nextLine()
             --i;
         ch[i] = '\0';
 
-        _line = ch;
+        line = ch;
         return true;
     }
-#undef MAX_LEN
+}
+
+// Get trimmed substring from line.
+// s : start index to use
+// e : index of last char to consider
+// Both s & e must be valid, not point to '\0', and s < e
+// On success, result is placed in result.
+static bool get_trimmed_substring(const stdString line, size_t s, size_t e, stdString &result)
+{
+    if (s > e)
+        return false;
+    // Skip initial whitespace
+    while (isspace(line[s]))
+    {
+        ++s;
+        if (s > e)
+            return false;
+    }
+    // Skip trailing whitespace
+    while (isspace(line[e]))
+    {
+        --e;
+        if (e < s)
+            return false;
+    }
+    result = line.substr(s, e-s+1);
+    return result.length() > 0;
 }
 
 bool ASCIIParser::getParameter(stdString &parameter, stdString &value)
 {
-    size_t pos = _line.find('=');
-    if (pos == _line.npos)
+    size_t sep = line.find('=');
+    size_t l = line.length();
+    if (sep == line.npos   ||   sep == 0  ||  sep == l-1)
         return false;
-
-    parameter = _line.substr(0, pos);
-    ++pos;
-    while (_line[pos] && isspace(_line[pos]))
-        ++pos;
-    value = _line.substr (pos);
-
-    return true;
+    return get_trimmed_substring(line, 0, sep-1, parameter) &&
+           get_trimmed_substring(line, sep+1, l-1, value);
 }
 
 // EOF ASCIIParser.cpp

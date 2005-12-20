@@ -18,6 +18,11 @@ public:
     /// Constructor: Buffer is initially empty.
     MemoryBuffer() : memory(0), size(0)    {}
 
+    MemoryBuffer(size_t wanted) : memory(0), size(0)
+    {
+        reserve(wanted);
+    }
+
     /// Destructor.
     ~MemoryBuffer()
     {
@@ -44,15 +49,15 @@ public:
     }
 
     /// Access as (T *)
-    const T *mem () const
+    const T *mem() const
     {    return (const T *)memory; }
 
     /// Access as (T *)
-    T *mem ()
+    T *mem()
     {    return (T *) memory; }
 
     /// Get current size.
-    size_t getBufferSize () const
+    size_t capacity() const
     {    return size; }
 
 private:

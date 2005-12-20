@@ -8,15 +8,9 @@
 // Kay-Uwe Kasemir, kasemir@lanl.gov
 // --------------------------------------------------------
 
-#ifdef WIN32
-#pragma warning (disable: 4786)
-#endif
-
+// Tools
 #include "CGIDemangler.h"
-
-#ifdef WIN32
-#define strcasecmp strcmpi
-#endif
+#include "MemoryBuffer.h"
 
 // Convert a two-char hex string into the char it represents
 static char x2c(const char *what)
@@ -47,14 +41,11 @@ void CGIDemangler::unescape(char *url)
 
 void CGIDemangler::unescape(stdString &text)
 {
-    size_t len = text.length() + 1;
-    char *buf = (char *)malloc(len);
-    if (!buf)
-        return;
-    memcpy(buf, text.c_str(), len);
-    unescape(buf);
-    text = buf;
-    free(buf);
+    size_t total = text.length() + 1;
+    MemoryBuffer<char> buf(total);
+    memcpy(buf.mem(), text.c_str(), total);
+    unescape(buf.mem());
+    text = buf.mem();
 }
 
 void CGIDemangler::analyseVar(char *var)
@@ -65,25 +56,30 @@ void CGIDemangler::analyseVar(char *var)
     if ((eq=strchr(var, '=')))
     {
         *eq = '\0';
-        unescape (var);
-        unescape (eq+1);
+        unescape(var);
+        unescape(eq+1);
         stdString name, value;
         name = var;
         value = eq+1;
-        add (name, value);
+        add(name, value);
     }
 }
 
-void CGIDemangler::parse (char *input)
+void CGIDemangler::parse (const char *const_input)
 {
-    size_t i;
+    // Since we're changing the string in place,
+    // we need to create a copy of the const input:
+    size_t i =  strlen(const_input)+1;
+    MemoryBuffer<char> buf(i);
+    char *input = buf.mem();
+    memcpy(input, const_input, i);
 
     // Change all plusses back to spaces
     for(i=0; input[i]; i++)
         if (input[i] == '+') input[i] = ' ' ;
 
     // Split on "&" to extract the name-value pairs
-    char *var = strtok (input, "&");
+    char *var = strtok(input, "&");
     while (var)
     {
         analyseVar (var);

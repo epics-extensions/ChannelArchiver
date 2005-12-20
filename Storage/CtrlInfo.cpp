@@ -176,7 +176,7 @@ void CtrlInfo::calcEnumeratedSize ()
     }
 
     info->size = total;
-    LOG_ASSERT(total <= _infobuf.getBufferSize());
+    LOG_ASSERT(total <= _infobuf.capacity());
 }
 
 void CtrlInfo::formatDouble(double value, stdString &result) const
@@ -296,7 +296,7 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
     _infobuf.reserve(size+1); // +1 for possible unit string hack, see below
     CtrlInfoData *info = _infobuf.mem();
     info->size = size;
-    if (info->size > _infobuf.getBufferSize())
+    if (info->size > _infobuf.capacity())
     {
         info->type = Invalid;
         LOG_MSG("Datafile %s: CtrlInfo @ 0x%lX is too big\n",

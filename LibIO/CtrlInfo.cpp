@@ -125,7 +125,7 @@ void CtrlInfo::calcEnumeratedSize ()
     }
 
     info->size = total;
-    LOG_ASSERT(total <= _infobuf.getBufferSize());
+    LOG_ASSERT(total <= _infobuf.capacity());
 }
 
 // Convert a double value into text, formatted according to CtrlInfo
@@ -247,7 +247,7 @@ void CtrlInfo::read(FILE *file, FileOffset offset)
     _infobuf.reserve (size+1); // +1 for possible unit string hack, see below
     CtrlInfoData *info = _infobuf.mem();
     info->size = size;
-    if (info->size > _infobuf.getBufferSize ())
+    if (info->size > _infobuf.capacity ())
     {
         info->type = Invalid;
         char buffer[100];

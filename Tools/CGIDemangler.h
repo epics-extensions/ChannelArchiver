@@ -27,24 +27,19 @@
 class CGIDemangler
 {
 public:
-    /// Reduce any %xx escape sequences to the characters they represent.
+    /// Reduce any '%%xx' (percent sign,...) escape sequences to the characters they represent.
+    /// Changes the text! The resulting text may be shorter than the original.
     static void unescape(char *text);
 
-    /// Reduce any %xx escape sequences to the characters they represent.
+    /// Reduce any '%%xx' (percent sign,...) escape sequences to the characters they represent.
+    /// Creates an internal copy of the text for processing.
+    /// @exception GenericException when the copy fails.
     static void unescape(stdString &text);
 
-    /// Input will be altered (but not extended) !
-    void parse(char *input);
-
     /// Demangle string input
-    void parse(const char *input)
-    {
-        size_t len = strlen(input)+1;
-        char *safe_copy = new char[len];
-        memcpy (safe_copy, input, len);
-        parse (safe_copy);
-        delete [] safe_copy;
-    }
+    /// Creates an internal copy of the text for processing.
+    /// @exception GenericException when the copy fails.
+    void parse(const char *input);
 
     /// Manually add another name/value to map
     void add(const stdString &name, const stdString &value);

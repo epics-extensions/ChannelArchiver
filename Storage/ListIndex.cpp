@@ -26,23 +26,28 @@ bool ListIndex::open(const stdString &filename, bool readonly, ErrorInfo &error_
     SubArchInfo info;
     stdList<stdString>::const_iterator subs;
     info.index = 0;
-    switch (config.parse(filename))
+
+    try
     {
-    case IndexConfig::error:
-        error_info.set("ListIndex cannot access '%s'\n", filename.c_str());
-        return false;
-    case IndexConfig::cannot_parse:
-        // Assume a single index, no list of indices.
-        info.name = filename;
-        sub_archs.push_back(info);
-        break;
-    case IndexConfig::ok:
-        for (subs  = config.subarchives.begin();
-             subs != config.subarchives.end();    ++subs)
-        {      
-            info.name = *subs;
+        if (config.parse(filename))
+        {
+            for (subs  = config.subarchives.begin();
+                 subs != config.subarchives.end();    ++subs)
+            {
+                info.name = *subs;
+                sub_archs.push_back(info);
+            }
+        }
+        else
+        {   // Assume a single index, no list of indices.
+            info.name = filename;
             sub_archs.push_back(info);
         }
+    }
+    catch (GenericException &e)
+    {
+        error_info.set("ListIndex cannot access '%s'\n", filename.c_str());
+        return false;
     }
 #ifdef DEBUG_LISTINDEX
     printf("ListIndex::open(%s)\n", filename.c_str());

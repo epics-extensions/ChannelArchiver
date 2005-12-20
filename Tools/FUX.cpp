@@ -73,7 +73,6 @@ void FUX::start_tag(void *data, const char *el, const char **attr)
     FUX *me = (FUX *)data;
     try
     {
-        printf("Start: '%s'\n", el);
         if (me->root == 0)
             me->root = me->current = new Element(0, el);
         else
@@ -94,14 +93,12 @@ void FUX::text_handler(void *data, const char *s, int len)
 {
     FUX *me = (FUX *)data;
     if (me->inside_tag)
-        return;
-    me->current->value.append(s, len);
+        me->current->value.append(s, len);
 }
 
 void FUX::end_tag(void *data, const char *el)
 {
     FUX *me = (FUX *)data;
-    printf("End: '%s'\n", el);
     if (!me->current)
         throw GenericException(__FILE__, __LINE__, "FUX: malformed '%s'", el);
     me->current = me->current->parent;

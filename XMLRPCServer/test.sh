@@ -9,7 +9,7 @@ function compare()
     then
         echo "OK : $info"
     else
-        echo "FAILED : $info. Check test/${name}.OK against test/${name}"
+        echo "FAILED : $info. diff test/${name}.OK test/${name}"
 	exit 1
     fi
 }

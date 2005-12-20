@@ -81,7 +81,7 @@ bool add_tree_to_master(const stdString &index_name,
 }
 
 
-bool create_masterindex(int RTreeM,
+void create_masterindex(int RTreeM,
                         const stdString &config_name,
                         const stdString &index_name,
                         bool reindex)
@@ -91,18 +91,18 @@ bool create_masterindex(int RTreeM,
         config.subarchives.push_back(config_name);
     else
         if (!config.parse(config_name))
-            return false;
+            throw GenericException(__FILE__, __LINE__,
+                               "File '%s' is no XML indexconfig",
+                               config_name.c_str());
     IndexFile::NameIterator names;
     stdString index_directory, sub_directory;
     ErrorInfo error_info;
     IndexFile index(RTreeM), subindex(RTreeM);
     bool ok;
     if (!index.open(index_name, false, error_info))
-    {
-        fprintf(stderr, "Cannot create master index file '%s'\n%s\n",
-                index_name.c_str(), error_info.info.c_str());
-        return false;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "Cannot create master index file '%s'\n%s",
+                               index_name.c_str(), error_info.info.c_str());
     if (verbose)
         printf("Opened master index '%s'.\n", index_name.c_str());
     stdList<stdString>::const_iterator subs;
@@ -151,7 +151,6 @@ bool create_masterindex(int RTreeM,
     index.close();
     if (verbose)
         printf("Closed master index '%s'.\n", index_name.c_str());
-    return true;
 }
 
 int main(int argc, const char *argv[])
@@ -191,9 +190,8 @@ int main(int argc, const char *argv[])
     {
         Lockfile lock_file("indextool_active.lck", argv[0]);
         BenchTimer timer;
-        if (!create_masterindex(RTreeM, parser.getArgument(0),
-                                parser.getArgument(1), reindex))
-            return -1;
+        create_masterindex(RTreeM, parser.getArgument(0),
+                           parser.getArgument(1), reindex);
         if (verbose > 0)
         {
             timer.stop();
@@ -203,6 +201,7 @@ int main(int argc, const char *argv[])
     catch (GenericException &e)
     {
         printf("Error:\n%s", e.what());
+        return -1;
     }
     
     return 0;

@@ -585,7 +585,8 @@ void quit(int)
     go = false;
 }
 
-const char *names[] =
+#define NUM 5
+const char *names[NUM] =
 {
     "A",
     "B",
@@ -593,8 +594,7 @@ const char *names[] =
     "D",
     "E",
 };
-#define NUM ((int)(sizeof(names)/sizeof(const char *)))
-#define TURN_LIMIT 40
+#define TURN_LIMIT 5
 epicsMutex forks[NUM];
 class Philosopher *phils[NUM];
 
@@ -602,52 +602,54 @@ class Philosopher : public epicsThreadRunable
 {
 public:
     Philosopher(const char *name, int left, int right)
-            : _thread(*this, name,
-                      epicsThreadGetStackSize(epicsThreadStackSmall),
-                      epicsThreadPriorityMedium)
+            : thread(*this, name,
+                     epicsThreadGetStackSize(epicsThreadStackSmall),
+                     epicsThreadPriorityMedium),
+              name(name), left(left), right(right), count(0)
     {
-        _name = name;
-        _left = left;
-        _right = right;
-        _count = 0;
+         printf("%s created\n", name);
     }
 
     void run()
     {
-        while (go && _count < TURN_LIMIT)
+        printf("%s running\n", name);
+        while (go && count < TURN_LIMIT)
         {
             {
-                Guard left(forks[_left]);
-                Guard right(forks[_right]);
-                LOG_MSG("%s eating, utilizing %s and %s\n",
-                        _name, names[_left], names[_right]);
-                ++_count;
-                _thread.sleep(0.1);
+                Guard left(forks[this->left]);
+                Guard right(forks[this->right]);
+                printf("%s eating, utilizing %s and %s\n",
+                        name, names[this->left], names[this->right]);
+                ++count;
+                thread.sleep(0.2);
             }
-            _thread.sleep(0.1);
+            thread.sleep(0.2);
         }
+        printf("%s quits after %d turns\n", name, count);
     }
 
     void start()
     {
-        _thread.start();
+        printf("%s starting\n", name);
+        thread.start();
     }
 
     void join()
     {
-        _thread.exitWait();
+        printf("%s waiting to exit\n", name);
+        thread.exitWait();
     }
 
     void info()
     {
-        LOG_MSG("%s got %d chances\n", _name, _count);
+        printf("%s got %d chances\n", name, count);
     }
 
 private:
-    epicsThread _thread;
-    const char *_name;
-    int _count;
-    int _left, _right;
+    epicsThread thread;
+    const char *name;
+    int left, right;
+    int count;
 };
 
 class Worker : public epicsThreadRunable
@@ -761,6 +763,16 @@ void test_threads()
 
     for (i=0; i<NUM; ++i)
         phils[i]->start();
+
+    // Very interesting:
+    // On Mac OS X 10.4.3 I noticed that the first
+    // Philosopher would never run without this delay.
+    // Since we join/waitForExit right after creation,
+    // that thread would never enter the run state!
+    // Have not seen this behavior anywhere else,
+    // i.e. other OS have the threads enter the
+    // runstate.
+    epicsThreadSleep(5.0);
 
     for (i=0; i<NUM; ++i)
         phils[i]->join();

@@ -1043,10 +1043,21 @@ void test_fux()
     printf("------------------------------------------\n");
     FUX fux;
     FUX::Element *xml_doc;
+
+    try
+    {
+        xml_doc = fux.parse("does_not_exist.xml");
+        xml_doc = (FUX::Element *)2;
+    }
+    catch (GenericException &e)
+    {
+        TEST("Caught Exception:");
+        printf("%s", e.what());
+    }
+    TEST(xml_doc != (FUX::Element *)2);
+
     xml_doc = fux.parse("test.xml");
     TEST(xml_doc != 0);
-    if (xml_doc == 0)
-        return;
     fux.DTD="../Engine/engineconfig.dtd";
     fux.dump(stdout);
     TEST(xml_doc->find("write_period") != 0);
@@ -1057,6 +1068,18 @@ void test_fux()
     TEST(group->find("name") != 0);
     TEST(group->find("channel") != 0);
     TEST(group->find("quark") == 0);
+
+    try
+    {
+        xml_doc = fux.parse("damaged.xml");
+        xml_doc = (FUX::Element *)2;
+    }
+    catch (GenericException &e)
+    {
+        TEST("Caught Exception:");
+        printf("%s", e.what());
+    }
+    TEST(xml_doc != (FUX::Element *)2);
 }
 #endif
 

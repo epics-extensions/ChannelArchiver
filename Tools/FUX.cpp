@@ -2,8 +2,8 @@
 #include <unistd.h>
 
 // Tools
-#include "MsgLogger.h"
 #include "FUX.h"
+#include "GenericException.h"
 
 // XML library
 #ifdef FUX_XERCES
@@ -16,12 +16,15 @@
 XERCES_CPP_NAMESPACE_USE
 #else
 #include <xmlparse.h>
+
+// Tools
+#include "AutoFilePtr.h"
 #endif
 
 // TODO: Catch the name of the DTD so that
 //       we can print it out in dump()?
 //       Unclear how to do that in a SAX
-//       environment. he Xerces entity resolver
+//       environment. The Xerces entity resolver
 //       sees the systemID of the <!DOCTYPE ... >
 //       entry, but it's not obvious that
 //       the parser is in a <!DOCTYPE> tag at that point.
@@ -48,13 +51,12 @@ FUX::Element *FUX::Element::find(const char *name)
 }
 
 FUX::FUX()
-        : state(idle), root(0), current(0)
+    : root(0), current(0), inside_tag(false)
 {}
 
 FUX::~FUX()
 {
-    if (root)
-        delete root;
+    clear();
 }
 
 void FUX::setDoc(Element *doc)
@@ -62,27 +64,36 @@ void FUX::setDoc(Element *doc)
     if (root)
         delete root;
     root = doc;
+    current = 0;
+    inside_tag = false;
 }
 
 void FUX::start_tag(void *data, const char *el, const char **attr)
 {
     FUX *me = (FUX *)data;
-    if (me->state == error)
-        return;
-    if (me->root == 0)
-        me->root = me->current = new Element(0, el);
-    else
+    try
     {
-        me->current = new Element(me->current, el);
-        me->current->parent->add(me->current);
+        printf("Start: '%s'\n", el);
+        if (me->root == 0)
+            me->root = me->current = new Element(0, el);
+        else
+        {
+            me->current = new Element(me->current, el);
+            me->current->parent->add(me->current);
+        }
+        me->inside_tag = true;
     }
-    me->state = element;
+    catch (...)
+    {
+        throw GenericException(__FILE__, __LINE__,
+                               "FUX::start_tag out of memory");
+    }
 }
 
 void FUX::text_handler(void *data, const char *s, int len)
 {
     FUX *me = (FUX *)data;
-    if (me->state != element)
+    if (me->inside_tag)
         return;
     me->current->value.append(s, len);
 }
@@ -90,13 +101,11 @@ void FUX::text_handler(void *data, const char *s, int len)
 void FUX::end_tag(void *data, const char *el)
 {
     FUX *me = (FUX *)data;
-    if (me->state == error)
-        return;
-    if (me->current)
-        me->current = me->current->parent;
-    else
-        fprintf(stderr, "FUX: malformed '%s'\n", el);
-    me->state = idle;
+    printf("End: '%s'\n", el);
+    if (!me->current)
+        throw GenericException(__FILE__, __LINE__, "FUX: malformed '%s'", el);
+    me->current = me->current->parent;
+    me->inside_tag = false;
 }
 
 inline void indent(FILE *f, int depth)
@@ -209,10 +218,8 @@ void FUXContentHandler::characters(const XMLCh *const chars,
     if (len >= (int)sizeof(buf))
         len = sizeof(buf) - 1;
     if (!XMLString::transcode(chars, buf, len))
-    {
-        LOG_MSG("FUXContentHandler: Transcode error\n");
-        fux->state = FUX::error;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "FUXContentHandler: Transcode error");
     fux->text_handler(fux, buf, len);
 }
 
@@ -239,31 +246,39 @@ private:
 void FUXErrorHandler::warning(const SAXParseException& exception)
 {
     char* message = XMLString::transcode(exception.getMessage());
-    LOG_MSG("XML Warning, Line %d: %s\n", exception.getLineNumber(), message);
+    GenericException e(__FILE__, __LINE__,
+                       "XML Warning, Line %d:\n%s",
+                       exception.getLineNumber(), message);
     XMLString::release(&message);
+    throw e;
 }
 
 void FUXErrorHandler::error(const SAXParseException& exception)
 {
-    fux->state = FUX::error;
     char* message = XMLString::transcode(exception.getMessage());
-    LOG_MSG("XML Error, Line %d: %s\n", exception.getLineNumber(), message);
+    GenericException e(__FILE__, __LINE__,
+                       "XML Error, Line %d:\n%s",
+                       exception.getLineNumber(), message);
     XMLString::release(&message);
+    throw e;
 }
 
 void FUXErrorHandler::fatalError(const SAXParseException& exception)
 {
-    fux->state = FUX::error;
     char* message = XMLString::transcode(exception.getMessage());
-    LOG_MSG("XML Error (fatal), Line %d: %s\n",
-            exception.getLineNumber(), message);
+    GenericException e(__FILE__, __LINE__,
+                       "XML Error (fatal), Line %d:\n%s",
+                       exception.getLineNumber(), message);
     XMLString::release(&message);
+    throw e;
 }
 
 FUX::Element *FUX::parse(const char *file_name)
 {
+    clear();
     if (file_name[0] == '\0' or !file_name)
-       return 0;
+       throw GenericException(__FILE__, __LINE__,
+                              "FUX::parse invoked with empty filename");
     try
     {
         XMLPlatformUtils::Initialize();
@@ -272,10 +287,7 @@ FUX::Element *FUX::parse(const char *file_name)
         FUXErrorHandler   error_handler(this);
         SAX2XMLReader *parser = XMLReaderFactory::createXMLReader();
         if (!parser)
-        {
-            LOG_MSG("Couldn't allocate parser\n");
-            return 0;
-        }
+            throw GenericException(__FILE__, __LINE__, "Couldn't allocate parser");
         // Very strange notation, but these XMLUni constants
         // are simply the XMLCh strings shown in the following comments.
         // Those URLs matche the SAX2XMLReader documentation,
@@ -318,46 +330,72 @@ FUX::Element *FUX::parse(const char *file_name)
         }
         delete parser;
         XMLPlatformUtils::Terminate();
-        if (state == error)
-            return 0;
+    }
+    catch (GenericException &e)
+    {
+        throw GenericException(__FILE__, __LINE__,
+                               "Error parsing '%s'\n%s", file_name, e.what());
     }
     catch (const XMLException &toCatch)
     {
         char* message = XMLString::transcode(toCatch.getMessage());
-        LOG_MSG("Xerces exception: %s\n", message);
+        GenericException e(__FILE__, __LINE__,
+                           "Xerces exception: %s", message);
         XMLString::release(&message);
-        return 0;
+        throw e;
     }
     catch (const SAXParseException &toCatch)
     {
         char* message = XMLString::transcode(toCatch.getMessage());
-        LOG_MSG("Xerces exception: %s\n", message);
+        GenericException e(__FILE__, __LINE__,
+                           "Xerces exception: %s", message);
         XMLString::release(&message);
-        return 0;
+        throw e;
     }
     catch (...)
     {
-        printf("Xerces error\n");
-        return 0;
+        throw GenericException(__FILE__, __LINE__, "Unkown Xerces error");
     }  
     return root;
 }
 // End of Xerces implementation --------------------------------------------
 #else
+
+class AutoXML_Parser
+{
+public:
+    AutoXML_Parser()
+    {
+        p =  XML_ParserCreate(NULL);
+        if (! p)
+            throw GenericException(__FILE__, __LINE__,
+                               "Couldn't allocate memory for parser\n");
+    }
+
+    ~AutoXML_Parser()
+    {
+        XML_ParserFree(p);
+        p = 0;
+    }
+
+    operator XML_Parser () const
+    {
+        return p;
+    }
+private:
+    XML_Parser p;
+};
+
 // Expat implementation ----------------------------------------------------
 FUX::Element *FUX::parse(const char *file_name)
 {
+    clear();
     bool done = false;
-    FILE *f = 0;
-    f = fopen(file_name, "rt");
+    AutoFilePtr f(file_name, "rt");
     if (!f)
-        return 0;
-    XML_Parser p = XML_ParserCreate(NULL);
-    if (! p)
-    {
-        LOG_MSG("Couldn't allocate memory for parser\n");
-        goto parse_error;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "Cannot open '%s'", file_name);
+    AutoXML_Parser p;
     XML_SetUserData(p, this);
     XML_SetElementHandler(p, start_tag, end_tag);
     XML_SetCharacterDataHandler(p, text_handler);
@@ -365,33 +403,19 @@ FUX::Element *FUX::parse(const char *file_name)
     {
         void *buf = XML_GetBuffer(p, 1000);
         if (!buf)
-        {
-            LOG_MSG("FUX: No buffer\n");
-            goto parse_error;
-        }
-            
-        int len = fread(buf, 1, sizeof(buf), f);
+            throw GenericException(__FILE__, __LINE__, "FUX: No buffer");
+        int len = fread(buf, 1, 1000, f);
         if (ferror(f))
-        {
-            LOG_MSG("FUX: Read error\n");
-            goto parse_error;
-        }
+            throw GenericException(__FILE__, __LINE__, "FUX: Read error");
         done = feof(f);
         if (! XML_ParseBuffer(p, len, done))
-        {
-            LOG_MSG("FUX: Error at line %d: %s\n",
-                    XML_GetCurrentLineNumber(p),
-                    XML_ErrorString(XML_GetErrorCode(p)));
-            goto parse_error;
-        }
+            throw GenericException(__FILE__, __LINE__, 
+                                   "FUX: Error at line %d of '%s': %s\n",
+                                   XML_GetCurrentLineNumber(p),
+                                   file_name,
+                                   XML_ErrorString(XML_GetErrorCode(p)));
     }
-    XML_ParserFree(p);
-    fclose(f);
     return root;
-  parse_error:
-    XML_ParserFree(p);
-    fclose(f);
-    return 0;
 }
 // End of Expat implementation ----------------------------------------------
 #endif

@@ -16,26 +16,33 @@
 /// \ingroup Tools
 
 /// FUX: the f.u. XML helper class.
-
+///
 /// "f.u." could stand for
-/// - frightingly useless
-/// - friendly and utilitarian
-/// - ... or whatever you want.
+/// <UL>
+/// <li> fast and lightweight
+/// <li> friendly and utilitarian
+/// <li> frightingly useless
+/// </UL>
+/// or whatever you want.
 ///
 /// In any case, FUX implements XML read
 /// and write support.
 /// The 'read' part is based on XML libraries,
 /// there's a choice of using
-/// - Xerces C++, see http://xml.apache.org/index.html
-/// - Expat, see http://www.libexpat.org.
+/// <UL>
+/// <li> Xerces C++, see http://xml.apache.org/index.html
+/// <li> Expat, see http://www.libexpat.org.
+/// </UL>
 /// Since Xerces handles validation and Expat doesn't,
 /// the former should be preferred.
 /// You pick which one you want to use in the FUX.h header file.
 class FUX
 {
 public:
-    FUX(); ///< Constructor
-    ~FUX(); ///< Destructor
+    /// Constructor.
+    FUX();
+    /// Destructor.
+    ~FUX();
 
     /// One element in the FUX tree.
     class Element
@@ -61,11 +68,16 @@ public:
     stdString DTD; ///< The DTD. Set for dump().
 
     /// Parse the given XML file into the FUX tree.
-
-    /// Returns root of the FUX document or zero.
     ///
-    ///
+    /// Returns root of the FUX document.
+    /// @exception GenericException in case of errors.
     Element *parse(const char *file_name);
+
+    /// Clear/delete the current document
+    void clear()
+    {
+        setDoc(0);
+    }
 
     /// Set the document.
     void setDoc(Element *doc);
@@ -82,11 +94,9 @@ private:
     friend class FUXContentHandler;
     friend class FUXErrorHandler;
 #endif
-    enum State { error, idle, element };
-    State state;
-
     Element *root;
     Element *current;
+    bool inside_tag;
     
     static void start_tag(void *data, const char *el, const char **attr);
     static void text_handler(void *data, const char *s, int len);

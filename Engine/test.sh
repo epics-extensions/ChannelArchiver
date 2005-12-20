@@ -36,6 +36,9 @@ echo ""
 # (softIoc has to be in PATH)
 softIoc -d test.db &
 ioc=$!
+echo ""
+echo "IOC running with PID $ioc"
+echo ""
 
 # Wait for it to start up
 sleep 5
@@ -60,6 +63,7 @@ engine=$!
 
 # Let it run for a while
 echo ""
+echo "Started engine, http://localhost:5973, PID $engine"
 echo "Running engine for about 20 seconds"
 echo ""
 sleep 20
@@ -69,9 +73,46 @@ cat html.dump | wc -l
 c=`cat html.dump | wc -l`
 if [ $c -ge 10 ]
 then
-        echo "OK : Get data from the HTTPD"
+        echo "OK : lynx -dump http://localhost:5973 "
 else
-        echo "FAILED : No data from the engine's HTTPD?"
+        echo "FAILED : lynx -dump http://localhost:5973"
+        exit 1
+fi
+
+c=`lynx -dump http://localhost:5973/server | grep -c "Average client runtime"`
+if [ $c -eq 1 ]
+then
+        echo "OK : lynx -dump http://localhost:5973/server" 
+else
+        echo "FAILED : lynx -dump http://localhost:5973/server"
+        exit 1
+fi
+
+c=`lynx -dump http://localhost:5973/groups | grep -c test.lst`
+if [ $c -eq 2 ]
+then
+        echo "OK : lynx -dump http://localhost:5973/groups"
+else
+        echo "FAILED : lynx -dump http://localhost:5973/groups"
+        exit 1
+fi
+
+c=`lynx -dump http://localhost:5973/group/test.lst | wc -l`
+if [ $c -ge 20 ]
+then
+        echo "OK : lynx -dump http://localhost:5973/group/test.lst"
+else
+        echo "FAILED : lynx -dump http://localhost:5973/group/test.lst"
+#        exit 1
+fi
+
+
+c=`lynx -dump http://localhost:5973/channel/fred | grep -c "No such channel"`
+if [ $c -eq 1 ]
+then
+        echo "OK : lynx -dump http://localhost:5973/channel/fred"
+else
+        echo "FAILED : lynx -dump http://localhost:5973/channel/fred"
         exit 1
 fi
 

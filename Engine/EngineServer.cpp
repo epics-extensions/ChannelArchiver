@@ -142,40 +142,50 @@ static void showStopForm(HTMLPage &page)
 static void stop(HTTPClientConnection *connection, const stdString &path)
 {
     SOCKET s = connection->getSocket();
-    stdString line, peer;
-    GetSocketPeer(s, peer);
-    line = "Shutdown initiated via HTTP from ";
-    line += peer;
-    line += "\n";
-    LOG_MSG(line.c_str());
     HTMLPage page(s, "Archive Engine Stop");
-#ifdef USE_PASSWD
-    if (theEngine)
+    try
     {
-        CGIDemangler args;
-        args.parse(path.substr(6).c_str());
-        stdString user = args.find("USER");
-        stdString pass = args.find("PASS");
-        if (! theEngine->checkUser(user, pass))
+        stdString line, peer;
+        GetSocketPeer(s, peer);
+        line = "Shutdown initiated via HTTP from ";
+        line += peer;
+        line += "\n";
+        LOG_MSG(line.c_str());
+#ifdef USE_PASSWD
+        if (theEngine)
         {
-            page.line("<H3><FONT COLOR=#FF0000>"
-                      "Wrong user/password</FONT></H3>");
-            LOG_MSG("USER: '%s', PASS: '%s' - wrong user/password\n",
-                    user.c_str(), pass.c_str());
-            showStopForm(page);
-            return;
+            CGIDemangler args;
+            args.parse(path.substr(6).c_str());
+            stdString user = args.find("USER");
+            stdString pass = args.find("PASS");
+            if (! theEngine->checkUser(user, pass))
+            {
+                page.line("<H3><FONT COLOR=#FF0000>"
+                          "Wrong user/password</FONT></H3>");
+                LOG_MSG("USER: '%s', PASS: '%s' - wrong user/password\n",
+                        user.c_str(), pass.c_str());
+                showStopForm(page);
+                return;
+            }
+            LOG_MSG("user/password accepted\n");
         }
-        LOG_MSG("user/password accepted\n");
-    }
 #endif
-    page.line("<H3>Engine Stopped</H3>");
-    page.line(line);
-    page.line("<P>");
-    page.line("Engine will quit as soon as possible...");
-    page.line("<P>");
-    page.line("Therefore the web interface stops responding now.");
-    extern bool run;
-    run = false;
+        page.line("<H3>Engine Stopped</H3>");
+        page.line(line);
+        page.line("<P>");
+        page.line("Engine will quit as soon as possible...");
+        page.line("<P>");
+        page.line("Therefore the web interface stops responding now.");
+        extern bool run;
+        run = false;
+    }
+    catch (GenericException &e)
+    {
+         page.line("<H3>Error</H3>");
+         page.line("<PRE>");
+         page.line(e.what());
+         page.line("</PRE>");
+    }
 }
 
 static void config(HTTPClientConnection *connection, const stdString &path)
@@ -396,194 +406,245 @@ void groups(HTTPClientConnection *connection, const stdString &path)
 
 static void groupInfo(HTTPClientConnection *connection, const stdString &path)
 {
-    stdString group_name = path.substr(7);
-    CGIDemangler::unescape(group_name);
-    if (!theEngine)
-        return;
-    Guard engine_guard(theEngine->mutex);
-    const GroupInfo *group = theEngine->findGroup(engine_guard, group_name);
-    if (! group)
-    {
-        connection->error("No such group: " + group_name);
-        return;
-    }
     HTMLPage page(connection->getSocket(), "Group Info");
-    char id[10];
-    cvtUlongToString((unsigned long) group->getID(), id);
-    page.openTable(2, "Group", 0);
-    page.tableLine("Name", group_name.c_str(), 0);
-    page.tableLine("ID", id, 0);
-    page.closeTable();
-    if (theEngine->getChannels(engine_guard).empty())
+    try
     {
-        page.line("no channels");
-        return;
+        stdString group_name = path.substr(7);
+        CGIDemangler::unescape(group_name);
+        if (!theEngine)
+            throw GenericException(__FILE__, __LINE__, "No Engine");
+        Guard engine_guard(theEngine->mutex);
+        const GroupInfo *group = theEngine->findGroup(engine_guard, group_name);
+        if (! group)
+        {
+            page.line("No such group: ");
+            page.line(group_name);
+            return;
+        }
+        char id[10];
+        cvtUlongToString((unsigned long) group->getID(), id);
+        page.openTable(2, "Group", 0);
+        page.tableLine("Name", group_name.c_str(), 0);
+        page.tableLine("ID", id, 0);
+        page.closeTable();
+        if (theEngine->getChannels(engine_guard).empty())
+        {
+            page.line("no channels");
+            return;
+        }
+        page.line("<P>");
+        page.line("<H2>Channels</H2>");
+        channelInfoTable(page);
+        const stdList<ArchiveChannel *> group_channels = group->getChannels();
+        stdList<ArchiveChannel *>::const_iterator channel;
+        for (channel = group_channels.begin();
+             channel != group_channels.end(); ++channel)
+            channelInfoLine(page, *channel);
+        page.closeTable();
     }
-    page.line("<P>");
-    page.line("<H2>Channels</H2>");
-    channelInfoTable(page);
-    const stdList<ArchiveChannel *> group_channels = group->getChannels();
-    stdList<ArchiveChannel *>::const_iterator channel;
-    for (channel = group_channels.begin();
-         channel != group_channels.end(); ++channel)
-        channelInfoLine(page, *channel);
-    page.closeTable();
+    catch (GenericException &e)
+    {
+         page.line("<H3>Error</H3>");
+         page.line("<PRE>");
+         page.line(e.what());
+         page.line("</PRE>");
+    }
 }
 
 static void addChannel(HTTPClientConnection *connection,
                        const stdString &path)
 {
-    CGIDemangler args;
-    args.parse(path.substr(12).c_str());
-    stdString channel_name = args.find("CHANNEL");
-    stdString group_name   = args.find("GROUP");
-    if (channel_name.empty() || group_name.empty())
-    {
-        connection->error("Channel and group names must not be empty");
-        return;
-    }
-    if (!theEngine)
-        return;
-    Guard engine_guard(theEngine->mutex);
-    GroupInfo *group = theEngine->findGroup(engine_guard, group_name);
-    if (!group)
-    {
-        stdString msg = "Cannot find group " + group_name;
-        connection->error(msg);
-        return;
-    }
-    double period = atof(args.find("PERIOD").c_str());
-    if (period <= 0)
-        period = 1.0;
-    bool monitored = false;
-    if (atoi(args.find("MONITOR").c_str()) > 0)
-        monitored = true;
-    bool disabling = false;
-    if (atoi(args.find("DISABLE").c_str()) > 0)
-        disabling = true;
     HTMLPage page(connection->getSocket(), "Add Channel");
-    page.out("Channel <I>");
-    page.out(channel_name);
-    theEngine->attachToCAContext(engine_guard);
-    if (theEngine->addChannel(engine_guard, group, channel_name, period,
-                              disabling, monitored))
+    try
     {
-        page.line("</I> was added");
-        EngineConfig config;
-        config.write(engine_guard, theEngine);
+        CGIDemangler args;
+        args.parse(path.substr(12).c_str());
+        stdString channel_name = args.find("CHANNEL");
+        stdString group_name   = args.find("GROUP");
+        if (channel_name.empty() || group_name.empty())
+        {
+            page.line("Channel and group names must not be empty");
+            return;
+        }
+        if (!theEngine)
+            throw GenericException(__FILE__, __LINE__, "No Engine");
+        Guard engine_guard(theEngine->mutex);
+        GroupInfo *group = theEngine->findGroup(engine_guard, group_name);
+        if (!group)
+        {
+            stdString msg = "Cannot find group " + group_name;
+            page.line(msg.c_str());
+            return;
+        }
+        double period = atof(args.find("PERIOD").c_str());
+        if (period <= 0)
+            period = 1.0;
+        bool monitored = false;
+        if (atoi(args.find("MONITOR").c_str()) > 0)
+            monitored = true;
+        bool disabling = false;
+        if (atoi(args.find("DISABLE").c_str()) > 0)
+            disabling = true;
+        page.out("Channel <I>");
+        page.out(channel_name);
+        theEngine->attachToCAContext(engine_guard);
+        if (theEngine->addChannel(engine_guard, group, channel_name, period,
+                                  disabling, monitored))
+        {
+            page.line("</I> was added");
+            EngineConfig config;
+            config.write(engine_guard, theEngine);
+        }
+        else
+            page.line("</I> could not be added");
+        page.out(" to group <I>");
+        page.out(group_name);
+        page.line("</I>.");
     }
-    else
-        page.line("</I> could not be added");
-    page.out(" to group <I>");
-    page.out(group_name);
-    page.line("</I>.");
+    catch (GenericException &e)
+    {
+         page.line("<H3>Error</H3>");
+         page.line("<PRE>");
+         page.line(e.what());
+         page.line("</PRE>");
+    }
 }
 
 static void addGroup(HTTPClientConnection *connection, const stdString &path)
 {
-    CGIDemangler args;
-    args.parse(path.substr(10).c_str());
-    stdString group_name   = args.find("GROUP");
-    if (group_name.empty())
-    {
-        connection->error("Group name must not be empty");
-        return;
-    }
-    if (!theEngine)
-        return;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
-    page.line("<H1>Groups</H1>");
-    page.out("Group <I>");
-    page.out(group_name);
-    Guard engine_guard(theEngine->mutex);
-    if (theEngine->addGroup(engine_guard, group_name))
+    try
     {
-        page.line("</I> was added to the engine.");
-        EngineConfig config;
-        config.write(engine_guard, theEngine);
+        CGIDemangler args;
+        args.parse(path.substr(10).c_str());
+        stdString group_name   = args.find("GROUP");
+        if (group_name.empty())
+        {
+            page.line("Group name must not be empty");
+            return;
+        }
+        if (!theEngine)
+            throw GenericException(__FILE__, __LINE__, "No Engine");
+        page.line("<H1>Groups</H1>");
+        page.out("Group <I>");
+        page.out(group_name);
+        Guard engine_guard(theEngine->mutex);
+        if (theEngine->addGroup(engine_guard, group_name))
+        {
+            page.line("</I> was added to the engine.");
+            EngineConfig config;
+            config.write(engine_guard, theEngine);
+        }
+        else
+            page.line("</I> could not be added to the engine.");
     }
-    else
-        page.line("</I> could not be added to the engine.");
+    catch (GenericException &e)
+    {
+         page.line("<H3>Error</H3>");
+         page.line("<PRE>");
+         page.line(e.what());
+         page.line("</PRE>");
+    }
 }
 
+    
 static void parseConfig(HTTPClientConnection *connection,
                         const stdString &path)
 {
-    CGIDemangler args;
-    args.parse(path.substr(13).c_str());
-    stdString config_name   = args.find("CONFIG");
-    if (config_name.empty())
-    {
-        connection->error("Config. name must not be empty");
-        return;
-    }
-    if (!theEngine)
-        return;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
-    page.line("<H1>Configuration</H1>");
-    page.out("Configuration <I>");
-    page.out(config_name);
-    Guard engine_guard(theEngine->mutex);
-    theEngine->attachToCAContext(engine_guard);
-    EngineConfig config;
-    if (config.read(engine_guard, theEngine, config_name))
+    try
     {
-        page.line("</I> was loaded.");
+        CGIDemangler args;
+        args.parse(path.substr(13).c_str());
+        stdString config_name   = args.find("CONFIG");
+        if (config_name.empty())
+        {
+            page.line("Config. name must not be empty");
+            return;
+        }
+        if (!theEngine)
+            throw GenericException(__FILE__, __LINE__, "No Engine");
+        page.line("<H1>Configuration</H1>");
+        page.out("Configuration <I>");
+        page.out(config_name);
+        Guard engine_guard(theEngine->mutex);
+        theEngine->attachToCAContext(engine_guard);
         EngineConfig config;
-        config.write(engine_guard, theEngine);
+        if (config.read(engine_guard, theEngine, config_name))
+        {
+            page.line("</I> was loaded.");
+            EngineConfig config;
+            config.write(engine_guard, theEngine);
+        }
+        else
+            page.line("</I> could not be loaded.<P>");
     }
-    else
-        page.line("</I> could not be loaded.<P>");
+    catch (GenericException &e)
+    {
+         page.line("<H3>Error</H3>");
+         page.line("<PRE>");
+         page.line(e.what());
+         page.line("</PRE>");
+    }
 }
 
 static void channelGroups(HTTPClientConnection *connection,
                           const stdString &path)
 {
-    CGIDemangler args;
-    args.parse(path.substr(15).c_str());
-    stdString channel_name = args.find("CHANNEL");
-    if (!theEngine)
-        return;
-    Guard engine_guard(theEngine->mutex);
-    ArchiveChannel *channel =
-        theEngine->findChannel(engine_guard, channel_name);
-    if (! channel)
-    {
-        connection->error("No such channel: " + channel_name);
-        return;
-    }
-
     HTMLPage page(connection->getSocket(), "Archiver Engine");
-    page.out("<H2>Channel '");
-    page.out(channel_name);
-    page.line("'</H2>");
-    Guard guard(channel->mutex);
-    stdString s;
-    epicsTime2string(channel->getLastStamp(guard), s);
-    page.line("Last time stamp: ");
-    page.line(s.c_str());
-    page.out("<H2>Group membership</H2>");
-    page.openTable(1, "Group", 1, "ID", 1, "Enabled", 0);
-    stdList<GroupInfo *>::const_iterator group;
-    stdString link;
-    link.reserve(80);
-    char id[10];
-    stdList<class GroupInfo *> &groups = channel->getGroups(guard);
-    for (group=groups.begin(); group!=groups.end(); ++group)
+    try
     {
-        link = "<A HREF=\"/group/";
-        link += (*group)->getName();
-        link += "\">";
-        link += (*group)->getName();
-        link += "</A>";
-        cvtUlongToString((unsigned long) (*group)->getID(), id);
-        page.tableLine(link.c_str(), id,
-                       ((*group)->isEnabled() ?
-                        "Yes" : "<FONT COLOR=#FF0000>No</FONT>"), 0);
+        CGIDemangler args;
+        args.parse(path.substr(15).c_str());
+        stdString channel_name = args.find("CHANNEL");
+        if (!theEngine)
+            throw GenericException(__FILE__, __LINE__, "No Engine");
+        Guard engine_guard(theEngine->mutex);
+        ArchiveChannel *channel =
+            theEngine->findChannel(engine_guard, channel_name);
+        if (! channel)
+        {
+            page.line("No such channel: " + channel_name);
+            return;
+        }
+        page.out("<H2>Channel '");
+        page.out(channel_name);
+        page.line("'</H2>");
+        Guard guard(channel->mutex);
+        stdString s;
+        epicsTime2string(channel->getLastStamp(guard), s);
+        page.line("Last time stamp: ");
+        page.line(s.c_str());
+        page.out("<H2>Group membership</H2>");
+        page.openTable(1, "Group", 1, "ID", 1, "Enabled", 0);
+        stdList<GroupInfo *>::const_iterator group;
+        stdString link;
+        link.reserve(80);
+        char id[10];
+        stdList<class GroupInfo *> &groups = channel->getGroups(guard);
+        for (group=groups.begin(); group!=groups.end(); ++group)
+        {
+            link = "<A HREF=\"/group/";
+            link += (*group)->getName();
+            link += "\">";
+            link += (*group)->getName();
+            link += "</A>";
+            cvtUlongToString((unsigned long) (*group)->getID(), id);
+            page.tableLine(link.c_str(), id,
+                           ((*group)->isEnabled() ?
+                            "Yes" : "<FONT COLOR=#FF0000>No</FONT>"), 0);
+        }
+        page.closeTable();
     }
-    page.closeTable();
+    catch (GenericException &e)
+    {   
+         page.line("<H3>Error</H3>");
+         page.line("<PRE>");
+         page.line(e.what());
+         page.line("</PRE>");
+    }
 }
-
+    
 static void caStatus(HTTPClientConnection *connection,
                      const stdString &path)
 {   //   "castatus?name

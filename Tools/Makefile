@@ -64,3 +64,7 @@ ToolsObj_DIR = $(INSTALL_LIB)
 TESTPROD_HOST += ToolsTest
 
 include $(TOP)/configure/RULES
+
+tests:
+	O.$(EPICS_HOST_ARCH)/ToolsTest
+	

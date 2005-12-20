@@ -176,7 +176,7 @@ bool dump_gnuplot(Index &index,
                         RawValue::getDouble(reader->getType(),
                                             reader->getCount(),
                                             value, dbl, e);
-                        fprintf(f, "%s\t%d\t%g\n", time.c_str(), e, dbl);
+                        fprintf(f, "%s\t%zu\t%g\n", time.c_str(), e, dbl);
                     }
                     fprintf(f, "\n");
                 }
@@ -248,7 +248,7 @@ bool dump_gnuplot(Index &index,
                 output_name.c_str(),
                 names[0].c_str(), units[0].c_str());
         for (i=1; i<names.size(); ++i)
-            fprintf(f, ", '%s' index %d using 1:3 %s title '%s [%s]'",
+            fprintf(f, ", '%s' index %zu using 1:3 %s title '%s [%s]'",
                     output_name.c_str(), i,
                     ((second_y_axis && i==1) ? "axes x1y2" : ""),
                     names[i].c_str(), units[i].c_str());

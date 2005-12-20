@@ -80,7 +80,7 @@ int main(int argc, const char *argv[])
 
     try
     {
-        MsgLogger log(log.get().c_str());
+        MsgLogger logger(log.get().c_str());
         {
             Lockfile lock_file("archive_active.lck", argv[0]);
             LOG_MSG("Starting Engine with configuration file %s, index %s\n",

@@ -49,6 +49,10 @@ void MsgLogger::log(const char *format, va_list ap)
     print(s.substr(0, 19).c_str());
     print(" ");
     print(buffer);
+    if (f)
+        fflush(f);
+    else
+        fflush(stderr);
 }
 
 void LOG_MSG(const char *format, ...)

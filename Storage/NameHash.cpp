@@ -45,7 +45,8 @@ bool NameHash::Entry::read(FILE *f)
           readShort(f, &name_len) &&
           readShort(f, &ID_len)))
     {
-        LOG_MSG("NameHash: Cannot read entry @ 0x%lX\n", offset);
+        LOG_MSG("NameHash: Cannot read entry @ 0x%lX\n",
+                (unsigned long)offset);
         return false;
     }
     if (name_len >= sizeof(buffer)-1)
@@ -62,13 +63,15 @@ bool NameHash::Entry::read(FILE *f)
     }
     if (fread(buffer, name_len, 1, f) != 1)
     {
-        LOG_MSG("NameHash: Read error for name of entry @ 0x%lX\n", offset);
+        LOG_MSG("NameHash: Read error for name of entry @ 0x%lX\n",
+                (unsigned long)offset);
         return false;
     }
     name.assign(buffer, name_len);
     if (name.length() != name_len)
     {
-        LOG_MSG("NameHash: Error for name of entry @ 0x%lX\n", offset);
+        LOG_MSG("NameHash: Error for name of entry @ 0x%lX\n",
+                (unsigned long)offset);
         return false;
     }
     if (ID_len > 0)
@@ -76,13 +79,14 @@ bool NameHash::Entry::read(FILE *f)
         if (fread(buffer, ID_len, 1, f) != 1)
         {
             LOG_MSG("NameHash: Read error for ID_txt of entry @ 0x%lX\n",
-                    offset);
+                    (unsigned long)offset);
             return false;
         }
         ID_txt.assign(buffer, ID_len);
         if (ID_txt.length() != ID_len)
         {
-            LOG_MSG("NameHash: Error for ID_txt of entry @ 0x%lX\n", offset);
+            LOG_MSG("NameHash: Error for ID_txt of entry @ 0x%lX\n",
+                    (unsigned long)offset);
             return false;
         }
     }
@@ -307,7 +311,7 @@ bool NameHash::read_HT_entry(uint32_t hash_value, FileOffset &offset)
           readLong(fa.getFile(), &offset)))
     {
         LOG_MSG("NameHash::read_HT_entry: Cannot read entry %ld\n",
-                hash_value);
+                (long)hash_value);
         return false;
     }
     return true;
@@ -322,7 +326,7 @@ bool NameHash::write_HT_entry(uint32_t hash_value,
           writeLong(fa.getFile(), offset)))
     {
         LOG_MSG("NameHash::write_HT_entry: Cannot write entry %ld\n",
-                hash_value);
+                (long)hash_value);
         return false;
     }
     return true;

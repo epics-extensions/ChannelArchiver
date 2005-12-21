@@ -56,7 +56,7 @@ void GroupInfo::enable(Guard &engine_guard,
             cause->getName().c_str(), name.c_str());
     if (disable_count <= 0)
     {
-        LOG_MSG("Group %d is not disabled, ERROR!\n", name.c_str());
+        LOG_MSG("Group %s is not disabled, ERROR!\n", name.c_str());
         return;
     }
     --disable_count;

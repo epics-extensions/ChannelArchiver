@@ -696,7 +696,8 @@ EngineServer::EngineServer()
         return;
     }
 #ifdef HTTPD_DEBUG
-    LOG_MSG("EngineServer starting HTTPServer 0x%X\n", _server);
+    LOG_MSG("EngineServer starting HTTPServer 0x%lX\n",
+            (unsigned long)_server);
 #endif
     _server->start();
 }

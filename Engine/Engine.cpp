@@ -40,7 +40,8 @@ static void caException(struct exception_handler_args args)
 
     LOG_MSG("CA Exception %s - with request "
             "chan=%s op=%d type=%s count=%d:\n%s\n", 
-            args.ctx, pName, args.op, dbr_type_to_text(args.type), args.count,
+            args.ctx, pName, (int)args.op, dbr_type_to_text(args.type),
+            (int)args.count,
             ca_message(args.stat));
 }
 
@@ -97,8 +98,9 @@ bool Engine::attachToCAContext(Guard &engine_guard)
     engine_guard.check(__FILE__, __LINE__, mutex);
     if (ca_attach_context(ca_context) != ECA_NORMAL)
     {
-        LOG_MSG("ca_attach_context failed for thread 0x%08X (%s)\n",
-                epicsThreadGetIdSelf(), epicsThreadGetNameSelf());
+        LOG_MSG("ca_attach_context failed for thread 0x%08lX (%s)\n",
+                (unsigned long)epicsThreadGetIdSelf(),
+                epicsThreadGetNameSelf());
         return false;
     }
     return true;

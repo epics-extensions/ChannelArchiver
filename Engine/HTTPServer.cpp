@@ -116,7 +116,8 @@ void HTTPServer::run()
     struct sockaddr_in  peername;
     socklen_t  len;
 #ifdef HTTPD_DEBUG
-    LOG_MSG("HTTPServer thread 0x%08X running\n", epicsThreadGetIdSelf());
+    LOG_MSG("HTTPServer thread 0x%08lX running\n",
+            (unsigned long)epicsThreadGetIdSelf());
 #endif
     while (go)
     {
@@ -138,8 +139,8 @@ void HTTPServer::run()
 #if             defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
                 stdString local_info, peer_info;
                 GetSocketInfo(peer, local_info, peer_info);
-                LOG_MSG("HTTPServer thread 0x%08X accepted %s/%s\n",
-                        epicsThreadGetIdSelf(),
+                LOG_MSG("HTTPServer thread 0x%08lX accepted %s/%s\n",
+                        (unsigned long)epicsThreadGetIdSelf(),
                         local_info.c_str(), peer_info.c_str());
 #endif
                 client_list_mutex.lock();
@@ -162,7 +163,8 @@ void HTTPServer::run()
         }
     }
 #ifdef HTTPD_DEBUG
-    LOG_MSG("HTTPServer thread 0x%08X exiting\n", epicsThreadGetIdSelf());
+    LOG_MSG("HTTPServer thread 0x%08lX exiting\n",
+            (unsigned long)epicsThreadGetIdSelf());
 #endif
 }
 

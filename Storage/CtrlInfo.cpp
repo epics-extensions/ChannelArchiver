@@ -275,7 +275,7 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
     {
         _infobuf.mem()->type = Invalid;
         LOG_MSG("Datafile %s: Cannot read size of CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), offset);
+                datafile->getBasename().c_str(), (unsigned long)offset);
         return false;
     }
     SHORTFromDisk(size);
@@ -290,7 +290,7 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
         }
         // keep current values for _infobuf!
         LOG_MSG("Datafile %s: Incomplete CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), offset);
+                datafile->getBasename().c_str(), (unsigned long)offset);
         return false;
     }
     _infobuf.reserve(size+1); // +1 for possible unit string hack, see below
@@ -300,7 +300,7 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
     {
         info->type = Invalid;
         LOG_MSG("Datafile %s: CtrlInfo @ 0x%lX is too big\n",
-                datafile->getBasename().c_str(), offset);
+                datafile->getBasename().c_str(), (unsigned long)offset);
         return false;
     }
     // read remainder of CtrlInfo:
@@ -309,7 +309,7 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
     {
         info->type = Invalid;
         LOG_MSG("Datafile %s: Cannot read remainder of CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), offset);
+                datafile->getBasename().c_str(), (unsigned long)offset);
         return false;
     }
     // convert rest from disk format
@@ -341,9 +341,9 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
             break;
         default:
             LOG_MSG("Datafile %s: "
-                    "CtrlInfo @ 0x%lX has invalid  type %d, size %d\n",
+                    "CtrlInfo @ 0x%lX has invalid  type %d, size %zu\n",
                     datafile->getBasename().c_str(),
-                    offset, info->type, info->size);
+                    (unsigned long)offset, info->type, info->size);
             info->type = Invalid;
             return false;
     }
@@ -376,9 +376,10 @@ bool CtrlInfo::write(DataFile *datafile, FileOffset offset) const
                 + sizeof (EnumeratedInfo);
             break;
         default:
-            LOG_MSG("Datafile %s: CtrlInfo for 0x%lX has invalid  type %d, size %d\n",
+            LOG_MSG("Datafile %s: CtrlInfo for 0x%lX has invalid type %d,"
+                    " size %d\n",
                     datafile->getBasename().c_str(),
-                    offset, info->type, info->size);
+                    (unsigned long)offset, info->type, info->size);
             return false;
     }
     SHORTToDisk(copy.size);
@@ -388,7 +389,7 @@ bool CtrlInfo::write(DataFile *datafile, FileOffset offset) const
         fwrite(&copy, converted, 1, datafile->file) != 1)
     {
         LOG_MSG("Datafile %s: Cannot write CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), offset);
+                datafile->getBasename().c_str(), (unsigned long)offset);
         return false;
     }
     // only the common, minimal CtrlInfoData portion was converted,
@@ -398,7 +399,7 @@ bool CtrlInfo::write(DataFile *datafile, FileOffset offset) const
                info->size - converted, 1, datafile->file) != 1)
     {
         LOG_MSG("Datafile %s: Cannot write rest of CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), offset);
+                datafile->getBasename().c_str(), (unsigned long)offset);
         return false;
     }
     return true;
@@ -412,7 +413,7 @@ void CtrlInfo::show(FILE *f) const
         fprintf(f, "Display : %g ... %g\n", getDisplayLow(), getDisplayHigh());
         fprintf(f, "Alarm   : %g ... %g\n", getLowAlarm(), getHighAlarm());
         fprintf(f, "Warning : %g ... %g\n", getLowWarning(), getHighWarning());
-        fprintf(f, "Prec    : %ld '%s'\n", getPrecision(), getUnits());
+        fprintf(f, "Prec    : %ld '%s'\n", (long)getPrecision(), getUnits());
     }
     else if (getType() == Enumerated)
     {

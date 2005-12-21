@@ -340,7 +340,9 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
             meta = encode_ctrl_info(env, &reader->getInfo());
             dbr_type_to_xml_type(reader->getType(), reader->getCount(),
                                  xml_type, xml_count);
-            while (num_vals < count  &&  data  &&  RawValue::getTime(data) < end)
+            while (num_vals < count
+                   && data
+                   && RawValue::getTime(data) < end)
             {
                 encode_value(env, reader->getType(), reader->getCount(),
                              RawValue::getTime(data), data,
@@ -371,7 +373,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
         xmlrpc_array_append_item(env, results, result);
         xmlrpc_DECREF(result);
 #ifdef LOGFILE
-        LOG_MSG("%d values\n", num_vals);
+        LOG_MSG("%ld values\n", num_vals);
 #endif
     }
   exit_get_channel_data:
@@ -495,7 +497,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         xmlrpc_DECREF(result);
     }
 #ifdef LOGFILE
-    LOG_MSG("%d values total\n", num_vals);
+    LOG_MSG("%ld values total\n", num_vals);
 #endif
   exit_get_sheet_data:
     index->close();

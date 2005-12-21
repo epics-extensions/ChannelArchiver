@@ -55,7 +55,8 @@ DataWriter::DataWriter(IndexFile &index,
         {
             LOG_MSG("DataWriter(%s): cannot get header %s @ 0x%lX\n",
                     channel_name.c_str(),
-                    block.data_filename.c_str(), block.data_offset);
+                    block.data_filename.c_str(),
+                    (unsigned long)block.data_offset);
             return;
         }
         // See if anything has changed
@@ -67,7 +68,7 @@ DataWriter::DataWriter(IndexFile &index,
                     " has bad CtrlInfo\n",
                     channel_name.c_str(),
                     header->datafile->getBasename().c_str(),
-                    header->offset);
+                    (unsigned long)header->offset);
             delete header;
             header = 0;
             return;            
@@ -112,7 +113,7 @@ DataWriter::~DataWriter()
             {
                 LOG_MSG("Cannot add %s @ 0x%lX to index\n",
                         header->datafile->getBasename().c_str(),
-                        header->offset);
+                        (unsigned long)header->offset);
             }
             delete tree;
             tree = 0;
@@ -324,7 +325,8 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
                     header->offset, header->datafile->getBasename()))
             {
                 LOG_MSG("Cannot add %s @ 0x%lX to index\n",
-                        header->datafile->getBasename().c_str(), header->offset);
+                        header->datafile->getBasename().c_str(),
+                        (unsigned long)header->offset);
             }
         }
         delete header;

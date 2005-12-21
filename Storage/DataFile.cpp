@@ -464,9 +464,9 @@ void DataHeader::show(FILE *f, bool full_detail)
     if (full_detail)
     {
         fprintf(f, "Buffer  : '%s' @ 0x%lX\n",
-                datafile->basename.c_str(), offset);               
+                datafile->basename.c_str(), (unsigned long)offset);
         fprintf(f, "Prev    : '%s' @ 0x%lX\n",
-                data.prev_file, data.prev_offset);
+                data.prev_file, (unsigned long)data.prev_offset);
         epicsTime2string(data.begin_time, t);
         fprintf(f, "Time    : %s\n", t.c_str());
         epicsTime2string(data.end_time, t);
@@ -476,19 +476,23 @@ void DataHeader::show(FILE *f, bool full_detail)
         fprintf(f, "DbrType : %d, %d elements (%lu bytes/sample)\n",
                 data.dbr_type, data.dbr_count,
                 (unsigned long) val_size);
-        fprintf(f, "Samples : %ld used out of %d\n", data.num_samples, maxcount);
-        fprintf(f, "Size    : %ld bytes, free: %ld bytes (header: %d bytes)\n",
-                data.buf_size, data.buf_free, sizeof(DataHeader::DataHeaderData));
-        fprintf(f, "Curr.   : %ld\n", data.curr_offset);
+        fprintf(f, "Samples : %ld used out of %d\n",
+                (long)data.num_samples, maxcount);
+        fprintf(f, "Size    : %ld bytes, free: %ld bytes"
+                " (header: %zu bytes)\n",
+                (long)data.buf_size, (long)data.buf_free,
+                sizeof(DataHeader::DataHeaderData));
+        fprintf(f, "Curr.   : %ld\n", (unsigned long)data.curr_offset);
         fprintf(f, "Period  : %g\n", data.period);
-        fprintf(f, "CtrlInfo@ 0x%lX\n", data.ctrl_info_offset);
+        fprintf(f, "CtrlInfo@ 0x%lX\n", (unsigned long)data.ctrl_info_offset);
         fprintf(f, "Next    : '%s' @ 0x%lX\n",
-                data.next_file, data.next_offset);
+                data.next_file, (unsigned long)data.next_offset);
     }
     else
     {
-        fprintf(f, "'%s' @ 0x%lX ", datafile->basename.c_str(), offset);
-        fprintf(f, "%ld/%d samples from ", data.num_samples, maxcount);
+        fprintf(f, "'%s' @ 0x%lX ",
+                datafile->basename.c_str(), (unsigned long)offset);
+        fprintf(f, "%ld/%d samples from ", (long)data.num_samples, maxcount);
         epicsTime2string(data.begin_time, t);
         fprintf(f, " %s - ", t.c_str());
         epicsTime2string(data.end_time, t);

@@ -569,7 +569,7 @@ bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
         FROM_DISK(DBR_TIME_LONG,  dbr_long_t,  dbr_time_long,   LONGFromDisk)
     default:
         LOG_MSG("RawValue::read(%s @ 0x%lX): Unknown DBR_xx %d\n",
-                datafile->getFilename().c_str(), offset, type);
+                datafile->getFilename().c_str(), (unsigned long)offset, type);
         return false;
 #undef FROM_DISK
     }

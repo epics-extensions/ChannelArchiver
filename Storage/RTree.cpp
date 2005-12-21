@@ -26,7 +26,7 @@ bool RTree::Datablock::read(FILE *f)
 {
     if (fseek(f, offset, SEEK_SET))
     {
-        LOG_MSG("Datablock seek error @ 0x%lX\n", offset);
+        LOG_MSG("Datablock seek error @ 0x%lX\n", (unsigned long)offset);
         return false;
     }
     unsigned short len;
@@ -35,7 +35,7 @@ bool RTree::Datablock::read(FILE *f)
           readLong(f, &data_offset) &&
           readShort(f, &len)))
     {
-        LOG_MSG("Datablock read error @ 0x%lX\n", offset);
+        LOG_MSG("Datablock read error @ 0x%lX\n", (unsigned long)offset);
         return false;
     }
     if (len >= sizeof(buf)-1)
@@ -45,14 +45,15 @@ bool RTree::Datablock::read(FILE *f)
     }
     if (fread(buf, len, 1, f) != 1)
     {
-        LOG_MSG("Datablock filename read error @ 0x%lX\n", offset);
+        LOG_MSG("Datablock filename read error @ 0x%lX\n",(unsigned long) offset);
         return false;
     }
     buf[len] = '\0';
     data_filename.assign(buf, len);
     if (data_filename.length() != len)
     {
-        LOG_MSG("Datablock filename length error @ 0x%lX\n", offset);
+        LOG_MSG("Datablock filename length error @ 0x%lX\n",
+                (unsigned long)offset);
         return false;
     }
     return true;
@@ -236,7 +237,7 @@ bool RTree::reattach()
         return false;
     if (RTreeM < 1  ||  RTreeM > 100)
     {
-        LOG_MSG("RTree::reattach: Got suspicious RTree M %ld\n", RTreeM);
+        LOG_MSG("RTree::reattach: Got suspicious RTree M %ld\n",(long)RTreeM);
         return false;
     }
     M = RTreeM;
@@ -418,7 +419,8 @@ bool RTree::self_test_node(unsigned long &nodes, unsigned long &records,
     node.offset = n;
     if (!read_node(node))
     {
-        LOG_MSG("RTree::self_test cannot read node @ 0x%lX\n", node.offset);
+        LOG_MSG("RTree::self_test cannot read node @ 0x%lX\n",
+                (unsigned long)node.offset);
         return false;
     }
     ++nodes;
@@ -426,14 +428,17 @@ bool RTree::self_test_node(unsigned long &nodes, unsigned long &records,
     if (node.parent != p)
     {
         LOG_MSG("Node @ 0x%lX, %s ... %s: parent = 0x%lX != 0x%lX\n",
-                node.offset, epicsTimeTxt(s, txt1), epicsTimeTxt(e, txt2),
-                node.parent, p);
+                (unsigned long)node.offset,
+                epicsTimeTxt(s, txt1), epicsTimeTxt(e, txt2),
+                (unsigned long)node.parent,
+                (unsigned long)p);
         return false;
     }
     if (p && (s != start || e != end))
     {
         LOG_MSG("Node @ 0x%lX: Node Interval %s ... %s\n",
-                node.offset, epicsTimeTxt(s, txt1), epicsTimeTxt(e, txt2));
+                (unsigned long)node.offset,
+                epicsTimeTxt(s, txt1), epicsTimeTxt(e, txt2));
         LOG_MSG("              Parent        %s ... %s\n",
                 epicsTimeTxt(start, txt1), epicsTimeTxt(end, txt2));
         return false;
@@ -447,13 +452,14 @@ bool RTree::self_test_node(unsigned long &nodes, unsigned long &records,
             ++records;
             if (node.record[i-1].end > node.record[i].start)
             {
-                LOG_MSG("Node @ 0x%lX: Records not in order\n", node.offset);
+                LOG_MSG("Node @ 0x%lX: Records not in order\n",
+                        (unsigned long)node.offset);
                 return false;
             }
             if (!node.record[i-1].child_or_ID) 
             {
                 LOG_MSG("Node @ 0x%lX: Empty record before filled one\n",
-                        node.offset);
+                        (unsigned long)node.offset);
                 return false;
             }
         }
@@ -485,10 +491,10 @@ void RTree::make_node_dot(FILE *dot, FILE *f, FileOffset node_offset)
     if (! node.read(f))
     {
         LOG_MSG("RTree::make_node_dot cannot read node @ 0x%lX\n",
-                node.offset);
+                (unsigned long)node.offset);
         return;
     }
-    fprintf(dot, "\tnode%ld [ label=\"", node.offset);
+    fprintf(dot, "\tnode%ld [ label=\"", (unsigned long)node.offset);
     for (i=0; i<M; ++i)
     {
         if (i>0)
@@ -508,24 +514,27 @@ void RTree::make_node_dot(FILE *dot, FILE *f, FileOffset node_offset)
             datablock.offset = node.record[i].child_or_ID;
             if (datablock.offset)
                 fprintf(dot, "\tnode%ld:f%d->id%ld;\n",
-                        node.offset, i, datablock.offset);
+                        (unsigned long)node.offset, i,
+                        (unsigned long)datablock.offset);
             while (datablock.offset)
             {
                 if (!datablock.read(f))
                 {
                     LOG_MSG("RTree::make_node_dot cannot read data "
-                            "@ 0x%lX\n", datablock.offset);
+                            "@ 0x%lX\n",
+                            (unsigned long)datablock.offset);
                     return;
                 }
-                fprintf(dot, "\tid%ld "
+                fprintf(dot, "\tid%lu "
                         "[ label=\"'%s' \\r@ 0x%lX \\r\",style=filled ];\n",
-                        datablock.offset,
+                        (unsigned long)datablock.offset,
                         datablock.data_filename.c_str(),
-                        datablock.data_offset);
+                        (unsigned long)datablock.data_offset);
                 if (datablock.next_ID)
                 {
-                    fprintf(dot, "\tid%ld -> id%ld;\n",
-                            datablock.offset, datablock.next_ID);
+                    fprintf(dot, "\tid%lu -> id%ld;\n",
+                            (unsigned long)datablock.offset,
+                            (long)datablock.next_ID);
                 }
                 datablock.offset = datablock.next_ID;
             }
@@ -536,8 +545,9 @@ void RTree::make_node_dot(FILE *dot, FILE *f, FileOffset node_offset)
         for (i=0; i<M; ++i)
         {            
             if (node.record[i].child_or_ID)
-                fprintf(dot, "\tnode%ld:f%d->node%ld:f0;\n",
-                        node.offset, i, node.record[i].child_or_ID);
+                fprintf(dot, "\tnode%lu:f%d->node%ld:f0;\n",
+                        (unsigned long)node.offset, i,
+                        (long)node.record[i].child_or_ID);
         }
         for (i=0; i<M; ++i)
         {
@@ -555,7 +565,8 @@ bool RTree::search(const epicsTime &start, Node &node, int &i) const
     {
         if (!read_node(node))
         {
-            LOG_MSG("RTree::search cannot read node @ 0x%lX\n", node.offset);
+            LOG_MSG("RTree::search cannot read node @ 0x%lX\n",
+                    (unsigned long)node.offset);
             return false;
         }
         if (start < node.record[0].start) // request before start of tree?
@@ -832,7 +843,8 @@ bool RTree::write_new_datablock(FileOffset data_offset,
     if (!(block.offset && block.write(fa.getFile())))
     {
         LOG_MSG("RTree::write_new_datablock(%s @ 0x%lX) failed\n",
-                data_filename.c_str(), data_offset);
+                data_filename.c_str(),
+                (unsigned long)data_offset);
         return false;
     }
     return true;
@@ -1002,7 +1014,8 @@ bool RTree::adjust_tree(Node &node, Node *new_node)
     }
     if (!read_node(parent))
     {
-        LOG_MSG("RTree::adjust_tree cannot read node @ 0x%lX\n",parent.offset);
+        LOG_MSG("RTree::adjust_tree cannot read node @ 0x%lX\n",
+                (unsigned long)parent.offset);
         return false;
     }
     for (i=0; i<M; ++i)   // update parent's interval for node
@@ -1016,7 +1029,7 @@ bool RTree::adjust_tree(Node &node, Node *new_node)
                 if (!write_node(parent))
                 {
                     LOG_MSG("RTree::adjust_tree cannot write node @ 0x%lX\n",
-                            parent.offset);
+                            (unsigned long)parent.offset);
                     return false;
                 }               
             }
@@ -1086,7 +1099,8 @@ bool RTree::remove(const epicsTime &start, const epicsTime &end, FileOffset ID)
     {
         if (!read_node(node))
         {
-            LOG_MSG("RTree::remove cannot read node @ 0x%lX\n", node.offset);
+            LOG_MSG("RTree::remove cannot read node @ 0x%lX\n",
+                    (unsigned long)node.offset);
             return false;
         }
         for (go=false, i=0;  i<M;  ++i)
@@ -1122,7 +1136,8 @@ bool RTree::remove_record(Node &node, int i)
     if (!write_node(node))
     {
         LOG_MSG("RTree::remove_record: "
-                "Cannot remove write node @ 0x%lX\n", node.offset);
+                "Cannot remove write node @ 0x%lX\n",
+                (unsigned long)node.offset);
         return false;
     }
     return condense_tree(node);
@@ -1149,7 +1164,8 @@ bool RTree::condense_tree(Node &node)
                 if (!read_node(node))
                 {
                     LOG_MSG("RTree::condense_tree cannot read "
-                            "node @ 0x%lX\n", node.offset);
+                            "node @ 0x%lX\n",
+                            (unsigned long)node.offset);
                     return false;
                 }
                 node.parent = 0;
@@ -1177,7 +1193,7 @@ bool RTree::condense_tree(Node &node)
     if (!read_node(parent))
     {
         LOG_MSG("RTree::condense_tree cannot read node @ 0x%lX\n",
-                node.offset);
+                (unsigned long)node.offset);
         return false;
     }
     for (i=0; i<M; ++i)
@@ -1197,7 +1213,7 @@ bool RTree::condense_tree(Node &node)
             if (!write_node(parent))
             {
                 LOG_MSG("RTree::condense_tree cannot write node @ 0x%lX\n",
-                        node.offset);
+                        (unsigned long)node.offset);
                 return false;           
             }
             return condense_tree(parent);

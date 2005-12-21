@@ -197,7 +197,7 @@ bool FileAllocator::free(FileOffset block_offset)
     {
         fprintf(stderr,
                 "FileAllocator::free called with impossible offset %ld\n",
-                block_offset);
+                (unsigned long)block_offset);
         return false;
     }
 
@@ -209,7 +209,7 @@ bool FileAllocator::free(FileOffset block_offset)
     {
         fprintf(stderr,
                 "FileAllocator::free called with broken node %ld\n",
-                block_offset);
+                (unsigned long)block_offset);
         return false;
     }
     

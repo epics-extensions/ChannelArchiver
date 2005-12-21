@@ -13,6 +13,12 @@
 
 typedef bool TEST_CASE;
 
+#define FAIL(msg)                       \
+       {                                \
+           printf("  FAIL: %s\n", msg); \
+           return false;                \
+       }
+
 #define TEST(t)                        \
        if (t)                          \
            printf("  OK  : %s\n", #t); \

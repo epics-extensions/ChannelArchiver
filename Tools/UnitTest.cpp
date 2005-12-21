@@ -10,6 +10,8 @@
 
 // Unit ASCIIParserTest:
 extern TEST_CASE test_ascii_parser();
+// Unit AVLTreeTest:
+extern TEST_CASE avl_test();
 // Unit AutoFilePtrTest:
 extern TEST_CASE bogus_auto_file_ptr();
 extern TEST_CASE auto_file_ptr();
@@ -23,6 +25,8 @@ extern TEST_CASE test_conversions();
 // Unit GenericExceptionTest:
 extern TEST_CASE how_new_fails();
 extern TEST_CASE various_exception_tests();
+// Unit stdStringTest:
+extern TEST_CASE test_string();
 
 int main()
 {
@@ -35,6 +39,14 @@ int main()
     ++run;
     printf("test_ascii_parser:\n");
     if (test_ascii_parser())
+        ++passed;
+    printf("==================================================\n");
+    printf("Unit AVLTreeTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("avl_test:\n");
+    if (avl_test())
         ++passed;
     printf("==================================================\n");
     printf("Unit AutoFilePtrTest:\n");
@@ -88,6 +100,14 @@ int main()
     printf("various_exception_tests:\n");
     if (various_exception_tests())
         ++passed;
+    printf("==================================================\n");
+    printf("Unit stdStringTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_string:\n");
+    if (test_string())
+        ++passed;
 
     printf("==================================================\n");
     size_t failed = run - passed;
@@ -99,8 +119,16 @@ int main()
            passed, failed);
     printf("Success rate: %.1f%%\n", 100.0*passed/run);
 
-    if (failed > 0)
+    printf("==================================================\n");
+    printf("--------------------------------------------------\n");
+    if (failed != 0)
+    {
+        printf("THERE WERE ERRORS!\n");
         return -1;
+    }
+    printf("All is OK\n");
+    printf("--------------------------------------------------\n");
+    printf("==================================================\n");
 
     return 0;
 }

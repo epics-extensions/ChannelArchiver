@@ -84,5 +84,5 @@ test:
 	O.$(EPICS_HOST_ARCH)/UnitTest
 	
 valgrind:
-	valgrind O.$(EPICS_HOST_ARCH)/UnitTest
+	IN_VALGRIND=1 valgrind O.$(EPICS_HOST_ARCH)/UnitTest
 

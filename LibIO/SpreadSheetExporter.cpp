@@ -230,7 +230,7 @@ void SpreadSheetExporter::exportChannelList(
                     values[i]->getValue()->getCtrlInfo()->getUnits());
         // Array columns
         for (ai=1; ai<values[i]->getValue()->getCount(); ++ai)
-            fprintf(f, "\t[%d]", ai);
+            fprintf(f, "\t[%zu]", ai);
         if (_show_status)
             fprintf(f, "\tStatus");
     }

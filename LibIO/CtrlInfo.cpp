@@ -191,7 +191,7 @@ bool CtrlInfo::parseState(const char *text,
         state_text = getState(i, len);
         if (! state_text)
         {
-            LOG_MSG("CtrlInfo::parseState: missing state %d", i);
+            LOG_MSG("CtrlInfo::parseState: missing state %zu", i);
             return false;
         }
         if (!strncmp(text, state_text, len))

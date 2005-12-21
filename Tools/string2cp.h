@@ -12,7 +12,7 @@ inline void string2cp(char *dest, const stdString &src, size_t maxlen)
 {
     if (src.length() >= maxlen)
     {
-        LOG_MSG("string2cp: Truncating '%s' to %d chars.\n",
+        LOG_MSG("string2cp: Truncating '%s' to %zu chars.\n",
                 src.c_str(), maxlen);
         strncpy(dest, src.c_str(), maxlen);
         dest[maxlen-1] = '\0';

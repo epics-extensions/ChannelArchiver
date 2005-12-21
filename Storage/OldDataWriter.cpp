@@ -107,7 +107,8 @@ OldDataWriter::OldDataWriter(OldDirectoryFile &index,
         {
             LOG_MSG("OldDataWriter(%s): cannot get header %s @ 0x%lX\n",
                     channel_name.c_str(),
-                    dfi.entry.data.last_file, dfi.entry.data.last_offset);
+                    dfi.entry.data.last_file,
+                    (unsigned long)dfi.entry.data.last_offset);
             return;
         }
         // See if anything has changed
@@ -119,7 +120,7 @@ OldDataWriter::OldDataWriter(OldDirectoryFile &index,
                     " has bad CtrlInfo\n",
                     channel_name.c_str(),
                     header->datafile->getBasename().c_str(),
-                    header->offset);
+                    (unsigned long)header->offset);
             delete header;
             header = 0;
             return;            

@@ -35,6 +35,7 @@
 /// That line will then usually read "filename (line-#)"
 /// and this format allows easy lookup from within IDEs.
 /// The error string might include newlines and usually also ends in one.
+
 class GenericException
 #ifdef USE_STD_EXCEPTION
    : public std::exception
@@ -47,7 +48,11 @@ public:
     {}
 
     /// Construct with file, line info and printf-type arguments.
-    GenericException(const char *sourcefile, size_t line, const char *format, ...);
+    GenericException(const char *sourcefile, size_t line, const char *format, ...)
+         __attribute__ ((format (printf, 4, 5)));
+
+    // Strange but true, __attribute__ format seems to include
+    // an initial 'this' argument in the position count.
 
     /// Virtual destructor to allow inheritance.
     virtual ~GenericException() throw () {}
@@ -82,7 +87,8 @@ protected:
 
     /// sprintf into stdString.
     /// @return The current error_info.c_str()    
-    const char *sprintf(stdString &s, const char *format, va_list ap) const throw ();
+    const char *sprintf(stdString &s, const char *format, va_list ap) const throw ()
+              __attribute__ ((format (printf, 3, 0)));
 
 private:
     const char  *sourcefile;

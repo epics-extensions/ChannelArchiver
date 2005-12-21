@@ -47,7 +47,8 @@ public:
     ///
     /// Prepends info with time stamp,
     /// then invokes print.
-    void log(const char *format, va_list ap);
+    void log(const char *format, va_list ap)
+         __attribute__ ((format (printf, 2, 0)));
 
 protected:
     /// The current MsgLogger.
@@ -69,7 +70,8 @@ protected:
     virtual void print(const char *s);
 };
 
-void LOG_MSG(const char *format, ...);
+void LOG_MSG(const char *format, ...)
+    __attribute__ ((format (printf, 1, 2)));
 
 #define LOG_ASSERT(e)                                                \
     if (! (e))                                                       \

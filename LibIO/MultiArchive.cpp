@@ -156,7 +156,7 @@ bool MultiArchive::parseMasterFile(const stdString &master_file,
                 string2epicsTime(parser.getLine().substr(20, 19), t);
                 if ( !isValidTime(f) || !isValidTime(t) )
                 {
-                    LOG_MSG("Invalid timestamp in master file '%s' line %d\n",
+                    LOG_MSG("Invalid timestamp in master file '%s' line %zu\n",
                             master_file.c_str(), parser.getLineNo());
                     continue;
                 }

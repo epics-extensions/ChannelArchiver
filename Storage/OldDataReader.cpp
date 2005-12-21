@@ -85,7 +85,7 @@ const RawValue::Data *OldDataReader::find(
                 " has bad CtrlInfo\n",
                 channel_name.c_str(),
                 header->datafile->getBasename().c_str(),
-                header->offset);
+                (unsigned long)header->offset);
         delete header;
         header = 0;
         return 0;     
@@ -198,7 +198,7 @@ const RawValue::Data *OldDataReader::next()
                         " has bad CtrlInfo\n",
                         channel_name.c_str(),
                         new_header->datafile->getBasename().c_str(),
-                        new_header->offset);
+                        (unsigned long)new_header->offset);
                 delete new_header;
                 delete header;
                 header = 0;
@@ -274,7 +274,7 @@ DataHeader *OldDataReader::getHeader(const stdString &dirname,
     {
         LOG_MSG("OldDataReader(%s): cannot get header %s @ 0x%lX\n",
                 channel_name.c_str(),
-                basename.c_str(), offset);
+                basename.c_str(), (unsigned long)offset);
         return 0;
     }
     return new_header;

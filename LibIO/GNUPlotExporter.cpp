@@ -50,7 +50,7 @@ static void printTimeAndValue(FILE *f, const epicsTime &time,
         for (size_t ai=0; ai<value.getCount(); ++ai)
         {
             ::printTime(f, time);
-            if (value.getCount() > 1) fprintf(f, "\t%d", ai);
+            if (value.getCount() > 1) fprintf(f, "\t%zu", ai);
             v = value.getDouble(ai);
             if (!isfinite(v))
                 v = 0.0;
@@ -360,7 +360,7 @@ void GNUPlotExporter::exportChannelList(
         fprintf(f, "plot ");
         for (size_t i=0; i<num; ++i)
         {
-            fprintf(f, "'%s' index %d using 1:3",
+            fprintf(f, "'%s' index %zu using 1:3",
                     data_name.c_str(), i);
             if (num==2 && i==1)
                 fprintf(f, " axes x1y2");

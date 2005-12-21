@@ -144,28 +144,28 @@ void MatlabExporter::exportChannelList(
             ++line;
             ++_data_count;
             epicsTime2datestr(time, datestr);
-            fprintf(f, "%s.t(%d)={'%s'};\n", variable, line, datestr);
+            fprintf(f, "%s.t(%zu)={'%s'};\n", variable, line, datestr);
 
             if (value->isInfo())
             {
                 if (count > 1)
                 {
-                    fprintf(f, "%s.v(:,%d)=[", variable, line);
+                    fprintf(f, "%s.v(:,%zu)=[", variable, line);
                     for (ai=0; ai<count; ++ai)
                         fprintf(f, "nan ");
                     fprintf(f, "];\n");
                 }
                 else
-                    fprintf(f, "%s.v(%d)=nan;\n", variable, line);
+                    fprintf(f, "%s.v(%zu)=nan;\n", variable, line);
             }
             else
             {
                 if (count == 1)
-                    fprintf(f, "%s.v(%d)=%g;\n",
+                    fprintf(f, "%s.v(%zu)=%g;\n",
                             variable, line, value->getDouble());
                 else
                 {
-                    fprintf(f, "%s.v(:,%d)=[", variable, line);
+                    fprintf(f, "%s.v(:,%zu)=[", variable, line);
                     for (ai=0; ai<count; ++ai)
                         fprintf(f, "%g ", value->getDouble(ai));
                     fprintf(f, "];\n");
@@ -175,7 +175,7 @@ void MatlabExporter::exportChannelList(
             if (_show_status)
             {
                 value->getStatus (txt);
-                fprintf(f, "%s.s(%d)={'%s'}",
+                fprintf(f, "%s.s(%zu)={'%s'}",
                         variable, line, txt.c_str());
             }
             // Show one value after _end, then quit:

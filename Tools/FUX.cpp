@@ -244,8 +244,8 @@ void FUXErrorHandler::warning(const SAXParseException& exception)
 {
     char* message = XMLString::transcode(exception.getMessage());
     GenericException e(__FILE__, __LINE__,
-                       "XML Warning, Line %d:\n%s",
-                       exception.getLineNumber(), message);
+                       "XML Warning, Line %zu:\n%s",
+                       (size_t)exception.getLineNumber(), message);
     XMLString::release(&message);
     throw e;
 }
@@ -254,8 +254,8 @@ void FUXErrorHandler::error(const SAXParseException& exception)
 {
     char* message = XMLString::transcode(exception.getMessage());
     GenericException e(__FILE__, __LINE__,
-                       "XML Error, Line %d:\n%s",
-                       exception.getLineNumber(), message);
+                       "XML Error, Line %zu:\n%s",
+                       (size_t)exception.getLineNumber(), message);
     XMLString::release(&message);
     throw e;
 }
@@ -264,8 +264,8 @@ void FUXErrorHandler::fatalError(const SAXParseException& exception)
 {
     char* message = XMLString::transcode(exception.getMessage());
     GenericException e(__FILE__, __LINE__,
-                       "XML Error (fatal), Line %d:\n%s",
-                       exception.getLineNumber(), message);
+                       "XML Error (fatal), Line %zu:\n%s",
+                       (size_t)exception.getLineNumber(), message);
     XMLString::release(&message);
     throw e;
 }

@@ -92,3 +92,12 @@ typedef int socklen_t;
 // Otherwise, we start with GenericException
 #define USE_STD_EXCEPTION
 
+// We use the GCC __attribute__((format....)
+// to have the compiler check printf-type
+// format strings.
+// Define this one to disable when your compiler
+// fails to understand __attribute__
+#ifndef __GNUC__
+#define __attribute__(x) /* */
+#endif
+ 

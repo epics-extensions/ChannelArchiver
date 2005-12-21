@@ -1,0 +1,108 @@
+use English;
+use File::Basename;
+
+my (%test_units);
+
+sub parse($)
+{
+    my ($filename) = @ARG;
+    my ($test_unit, $test_case);
+
+    return if $filename eq "UnitTest.cpp";
+
+    open(F,$filename) or die "Cannot read '$filename'\n";
+    $test_unit = basename($filename, ".cpp");
+    print "Parsing '$filename', unit '$test_unit'\n";
+    while (<F>)
+    {
+        if ($ARG =~ '\s*TEST_CASE (\S+)\(')
+        {
+            $test_case = $1;
+            print "+ Test Case '$test_case'\n";
+            push @{ $test_units{$test_unit} }, $test_case;
+        }
+    }
+    close(F);
+}
+
+foreach (<*.cpp>)
+{
+    parse($ARG);
+}
+
+######################################
+printf("Creating UnitTest.mk\n");
+######################################
+open(F, ">UnitTest.mk") or die "Cannot create UnitTest.mk\n";
+select(F);
+
+printf("# Created by makeUnitTestMain.pl, do NOT modify!\n");
+printf("\n");
+printf("TESTPROD_HOST += UnitTest\n");
+printf("\n");
+foreach $test_unit ( sort keys %test_units )
+{
+    printf("UnitTest_SRCS += $test_unit.cpp\n");
+}
+printf("UnitTest_SRCS += UnitTest.cpp\n");
+
+close(F);
+
+######################################
+printf("Creating UnitTest.cpp\n");
+######################################
+open(F, ">UnitTest.cpp") or die "Cannot create UnitTest.cpp\n";
+select(F);
+
+printf("// UnitTest Suite,\n");
+printf("// created by makeUnitTestMain.pl.\n");
+printf("// Do NOT modify!\n");
+printf("\n");
+printf("\n");
+printf("// System\n");
+printf("#include <stdio.h>\n");
+printf("// Tools\n");
+printf("#include <UnitTest.h>\n");
+printf("\n");
+foreach $test_unit ( sort keys %test_units )
+{
+    printf("// Unit $test_unit:\n");
+    foreach $test_case ( @{ $test_units{$test_unit}} )
+    {
+        print "extern TEST_CASE $test_case();\n";
+    }
+}
+printf("\n");
+printf("int main()\n");
+printf("{\n");
+printf("    size_t run = 0, passed = 0;\n");
+printf("\n");
+foreach $test_unit ( sort keys %test_units )
+{
+    printf("    printf(\"Unit $test_unit:\\n\");\n");
+    printf("    printf(\"--------------------------------------------------\\n\");\n");
+    foreach $test_case ( @{ $test_units{$test_unit}} )
+    {
+        print "    ++run;\n";
+        print "    printf(\"* $test_case:\\n\");\n";
+        print "    if ($test_case())\n";
+        print "        ++passed;\n";
+    }
+}
+printf("\n");
+printf("    printf(\"--------------------------------------------------\\n\");\n");
+printf("    printf(\"--------------------------------------------------\\n\");\n");
+printf("    size_t failed = run - passed;\n");
+printf("    printf(\"Ran %%zu test%%s, %%zu passed, %%zu failed.\\n\",\n");
+printf("           run,\n");
+printf("           (run > 1 ? \"s\" : \"\"),\n");
+printf("           passed, failed);\n");
+printf("    printf(\"Success rate: %%.1f%%%%\\n\", 100.0*passed/run);\n");
+printf("\n");
+printf("    if (failed > 0)\n");
+printf("        return -1;\n");
+printf("\n");
+printf("    return 0;\n");
+printf("}\n");
+printf("\n");
+

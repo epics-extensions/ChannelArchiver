@@ -63,8 +63,23 @@ Tools_DIR    = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 TESTPROD_HOST += ToolsTest
 
+# UnitTest Pre-RULES:
+#
+# Include the UnitTest make-snipped,
+# from both this directory and later
+# when we're down in O.$(EPICS_HOST_ARCH):
+-include UnitTest.mk
+-include ../UnitTest.mk
+
 include $(TOP)/configure/RULES
 
-tests:
-	O.$(EPICS_HOST_ARCH)/ToolsTest
+# UnitTest Post-RULES:
+#
+# Make target to rebuild & run the tests.
+# Extend this if tests also include shell scripts etc.
+
+test:
+	perl makeUnitTestMain.pl
+	$(MAKE)
+	O.$(EPICS_HOST_ARCH)/UnitTest
 	

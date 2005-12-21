@@ -13,6 +13,7 @@ UnitTest_SRCS += ConversionsTest.cpp
 UnitTest_SRCS += FUXTest.cpp
 UnitTest_SRCS += GenericExceptionTest.cpp
 UnitTest_SRCS += GuardTest.cpp
+UnitTest_SRCS += IndexConfigTest.cpp
 UnitTest_SRCS += MsgLoggerTest.cpp
 UnitTest_SRCS += ThreadTest.cpp
 UnitTest_SRCS += TimerTest.cpp

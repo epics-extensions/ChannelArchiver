@@ -59,9 +59,9 @@ printf("// UnitTest Suite,\n");
 printf("// created by makeUnitTestMain.pl.\n");
 printf("// Do NOT modify!\n");
 printf("\n");
-printf("\n");
 printf("// System\n");
 printf("#include <stdio.h>\n");
+printf("#include <string.h>\n");
 printf("// Tools\n");
 printf("#include <UnitTest.h>\n");
 printf("\n");
@@ -77,22 +77,30 @@ printf("\n");
 printf("int main(int argc, const char *argv[])\n");
 printf("{\n");
 printf("    size_t units = 0, run = 0, passed = 0;\n");
+printf("    const char *single_test = 0;\n");
+printf("\n");
+printf("    if (argc == 2)\n");
+printf("        single_test = argv[1];\n");
 printf("\n");
 foreach $test_unit ( sort keys %test_units )
 {
-    printf("    printf(\"==================================================\\n\");\n");
-    printf("    printf(\"Unit $test_unit:\\n\");\n");
-    printf("    printf(\"--------------------------------------------------\\n\");\n");
-    printf("    ++units;\n");
+    printf("    if (single_test==0  ||  strcmp(single_test, \"$test_unit\")==0)\n");
+    printf("    {\n");
+
+    printf("        printf(\"==================================================\\n\");\n");
+    printf("        printf(\"Unit $test_unit:\\n\");\n");
+    printf("        printf(\"--------------------------------------------------\\n\");\n");
+    printf("        ++units;\n");
     foreach $test_case ( @{ $test_units{$test_unit}} )
     {
-        print "    ++run;\n";
-        print "    printf(\"$test_case:\\n\");\n";
-        print "    if ($test_case())\n";
-        print "        ++passed;\n";
-        print "    else\n";
-        printf("        printf(\"THERE WERE ERRORS!\\n\");\n");
+        print("        ++run;\n");
+        print("        printf(\"$test_case:\\n\");\n");
+        print("        if ($test_case())\n");
+        print("            ++passed;\n");
+        print("        else\n");
+        print("            printf(\"THERE WERE ERRORS!\\n\");\n");
     }
+    printf("    }\n");
 }
 printf("\n");
 printf("    printf(\"==================================================\\n\");\n");

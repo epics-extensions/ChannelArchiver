@@ -2,9 +2,9 @@
 // created by makeUnitTestMain.pl.
 // Do NOT modify!
 
-
 // System
 #include <stdio.h>
+#include <string.h>
 // Tools
 #include <UnitTest.h>
 
@@ -33,6 +33,8 @@ extern TEST_CASE how_new_fails();
 extern TEST_CASE various_exception_tests();
 // Unit GuardTest:
 extern TEST_CASE guard_test();
+// Unit IndexConfigTest:
+extern TEST_CASE index_config_test();
 // Unit MsgLoggerTest:
 extern TEST_CASE test_log();
 // Unit ThreadTest:
@@ -48,191 +50,256 @@ extern TEST_CASE test_string();
 int main(int argc, const char *argv[])
 {
     size_t units = 0, run = 0, passed = 0;
+    const char *single_test = 0;
 
-    printf("==================================================\n");
-    printf("Unit ASCIIParserTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_ascii_parser:\n");
-    if (test_ascii_parser())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit AVLTreeTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("avl_test:\n");
-    if (avl_test())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit AutoFilePtrTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("bogus_auto_file_ptr:\n");
-    if (bogus_auto_file_ptr())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    ++run;
-    printf("auto_file_ptr:\n");
-    if (auto_file_ptr())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit AutoPtrTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_autoptr:\n");
-    if (test_autoptr())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit BinIOTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("bin_io_write:\n");
-    if (bin_io_write())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    ++run;
-    printf("bin_io_read:\n");
-    if (bin_io_read())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit BitsetTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_bitset:\n");
-    if (test_bitset())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit CATest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_ca:\n");
-    if (test_ca())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit ConversionsTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_conversions:\n");
-    if (test_conversions())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit FUXTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_fux:\n");
-    if (test_fux())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit GenericExceptionTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("how_new_fails:\n");
-    if (how_new_fails())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    ++run;
-    printf("various_exception_tests:\n");
-    if (various_exception_tests())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit GuardTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("guard_test:\n");
-    if (guard_test())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit MsgLoggerTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_log:\n");
-    if (test_log())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit ThreadTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("worker_thread:\n");
-    if (worker_thread())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    ++run;
-    printf("test_threads:\n");
-    if (test_threads())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit TimerTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_timer:\n");
-    if (test_timer())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit epicsTimeHelperTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_time:\n");
-    if (test_time())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
-    printf("==================================================\n");
-    printf("Unit stdStringTest:\n");
-    printf("--------------------------------------------------\n");
-    ++units;
-    ++run;
-    printf("test_string:\n");
-    if (test_string())
-        ++passed;
-    else
-        printf("THERE WERE ERRORS!\n");
+    if (argc == 2)
+        single_test = argv[1];
+
+    if (single_test==0  ||  strcmp(single_test, "ASCIIParserTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit ASCIIParserTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_ascii_parser:\n");
+        if (test_ascii_parser())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "AVLTreeTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit AVLTreeTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("avl_test:\n");
+        if (avl_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "AutoFilePtrTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit AutoFilePtrTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("bogus_auto_file_ptr:\n");
+        if (bogus_auto_file_ptr())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("auto_file_ptr:\n");
+        if (auto_file_ptr())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "AutoPtrTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit AutoPtrTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_autoptr:\n");
+        if (test_autoptr())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "BinIOTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit BinIOTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("bin_io_write:\n");
+        if (bin_io_write())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("bin_io_read:\n");
+        if (bin_io_read())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "BitsetTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit BitsetTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_bitset:\n");
+        if (test_bitset())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "CATest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit CATest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_ca:\n");
+        if (test_ca())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "ConversionsTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit ConversionsTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_conversions:\n");
+        if (test_conversions())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "FUXTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit FUXTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_fux:\n");
+        if (test_fux())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "GenericExceptionTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit GenericExceptionTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("how_new_fails:\n");
+        if (how_new_fails())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("various_exception_tests:\n");
+        if (various_exception_tests())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "GuardTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit GuardTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("guard_test:\n");
+        if (guard_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "IndexConfigTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit IndexConfigTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("index_config_test:\n");
+        if (index_config_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "MsgLoggerTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit MsgLoggerTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_log:\n");
+        if (test_log())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "ThreadTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit ThreadTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("worker_thread:\n");
+        if (worker_thread())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("test_threads:\n");
+        if (test_threads())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "TimerTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit TimerTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_timer:\n");
+        if (test_timer())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "epicsTimeHelperTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit epicsTimeHelperTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_time:\n");
+        if (test_time())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "stdStringTest")==0)
+    {
+        printf("==================================================\n");
+        printf("Unit stdStringTest:\n");
+        printf("--------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("test_string:\n");
+        if (test_string())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
 
     printf("==================================================\n");
     size_t failed = run - passed;

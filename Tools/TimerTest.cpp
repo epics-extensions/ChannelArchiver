@@ -32,9 +32,9 @@ public:
         double time = epicsTime::getCurrent() - timer_test_start;
         LOG_MSG("OneShotTimer expires in thread 0x%08lX after %g secs\n",
                 (unsigned long)epicsThreadGetIdSelf(), time);
-        if (fabs(time - delay) < 0.2)
+        if (fabs(time - delay) > 0.2)
         {
-            printf("Timer expired after %.1f instead of %.1f secs",
+            printf("Timer expired after %.1f instead of %.1f secs\n",
                    time, delay);
             ok = false;
         }
@@ -72,9 +72,9 @@ public:
         double time = epicsTime::getCurrent() - period_start;
         LOG_MSG("PeriodTimer expires in thread 0x%08lX after %g secs\n",
                 (unsigned long)epicsThreadGetIdSelf(), time);
-        if ( fabs(time - period) < 0.2 )
+        if ( fabs(time - period) > 0.2 )
         {
-            printf("Timer expired after %.1f instead of %.1f secs",
+            printf("Timer expired after %.1f instead of %.1f secs\n",
                    time, period);
             ok = false;
         }

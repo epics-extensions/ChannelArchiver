@@ -16,16 +16,20 @@ TEST_CASE auto_file_ptr()
     char line[100];
     FILE *stale_copy;
     {
-        AutoFilePtr file_ok(fopen("ToolsTest.cpp", "r"));
+        AutoFilePtr file_ok("ToolsTest.cpp", "r");
         TEST(file_ok);
         TEST(fread(line, 1, 20, file_ok) == 20);
         line[17] = '\0';
         TEST(strcmp(line, "// ToolsTest.cpp\n") == 0);
         stale_copy = file_ok;
     }
-    // Now the file should be closed
-    // and this read should fail.
-    TEST(fread(line, 1, 20, stale_copy) == 0);
+    // Now the file should be closed,
+    // and stale_copy should point to an invalid
+    // entry. Is there a way to check?
+    // The following will result in 'valgrind'
+    // errors and sometimes cause a deferred crash,
+    // so that's NOT the way to do it:
+    //   TEST(fread(line, 1, 20, stale_copy) == 0);
     TEST_OK;
 }
 

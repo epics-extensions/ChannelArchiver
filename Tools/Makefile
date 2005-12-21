@@ -83,3 +83,6 @@ test:
 	$(MAKE)
 	O.$(EPICS_HOST_ARCH)/UnitTest
 	
+valgrind:
+	valgrind O.$(EPICS_HOST_ARCH)/UnitTest
+

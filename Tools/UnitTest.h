@@ -1,9 +1,15 @@
+// -*- c++ -*-
 
+// Simple Unit-Test Framework.
+//
+// makeUnitTestMain.pl parses current directory,
+// creating UnitTest.cpp test suite and
+// UnitTest.mk makefile snippet.
+//
+// See Tools/*Test.cpp for example test cases
+// and Tools/Makefile for how to build and run.
 
-/*
-TESTPROD_HOST += UnitTest
-UnitTest_CXXFLAGS += -DUNIT_TEST
-*/
+#include <stdio.h>
 
 typedef bool TEST_CASE;
 

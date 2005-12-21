@@ -13,11 +13,16 @@ extern TEST_CASE test_ascii_parser();
 // Unit AutoFilePtrTest:
 extern TEST_CASE bogus_auto_file_ptr();
 extern TEST_CASE auto_file_ptr();
+// Unit AutoPtrTest:
+extern TEST_CASE test_autoptr();
 // Unit BinIOTest:
 extern TEST_CASE bin_io_write();
 extern TEST_CASE bin_io_read();
 // Unit ConversionsTest:
 extern TEST_CASE test_conversions();
+// Unit GenericExceptionTest:
+extern TEST_CASE how_new_fails();
+extern TEST_CASE various_exception_tests();
 
 int main()
 {
@@ -44,6 +49,14 @@ int main()
     if (auto_file_ptr())
         ++passed;
     printf("==================================================\n");
+    printf("Unit AutoPtrTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_autoptr:\n");
+    if (test_autoptr())
+        ++passed;
+    printf("==================================================\n");
     printf("Unit BinIOTest:\n");
     printf("--------------------------------------------------\n");
     ++units;
@@ -62,6 +75,18 @@ int main()
     ++run;
     printf("test_conversions:\n");
     if (test_conversions())
+        ++passed;
+    printf("==================================================\n");
+    printf("Unit GenericExceptionTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("how_new_fails:\n");
+    if (how_new_fails())
+        ++passed;
+    ++run;
+    printf("various_exception_tests:\n");
+    if (various_exception_tests())
         ++passed;
 
     printf("==================================================\n");

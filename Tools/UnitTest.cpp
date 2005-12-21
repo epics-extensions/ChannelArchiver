@@ -27,9 +27,13 @@ extern TEST_CASE how_new_fails();
 extern TEST_CASE various_exception_tests();
 // Unit GuardTest:
 extern TEST_CASE guard_test();
+// Unit MsgLoggerTest:
+extern TEST_CASE test_log();
 // Unit ThreadTest:
 extern TEST_CASE worker_thread();
 extern TEST_CASE test_threads();
+// Unit TimerTest:
+extern TEST_CASE test_timer();
 // Unit epicsTimeHelperTest:
 extern TEST_CASE test_time();
 // Unit stdStringTest:
@@ -138,6 +142,16 @@ int main(int argc, const char *argv[])
     else
         printf("THERE WERE ERRORS!\n");
     printf("==================================================\n");
+    printf("Unit MsgLoggerTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_log:\n");
+    if (test_log())
+        ++passed;
+    else
+        printf("THERE WERE ERRORS!\n");
+    printf("==================================================\n");
     printf("Unit ThreadTest:\n");
     printf("--------------------------------------------------\n");
     ++units;
@@ -150,6 +164,16 @@ int main(int argc, const char *argv[])
     ++run;
     printf("test_threads:\n");
     if (test_threads())
+        ++passed;
+    else
+        printf("THERE WERE ERRORS!\n");
+    printf("==================================================\n");
+    printf("Unit TimerTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_timer:\n");
+    if (test_timer())
         ++passed;
     else
         printf("THERE WERE ERRORS!\n");

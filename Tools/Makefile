@@ -61,7 +61,6 @@ PROD_LIBS_DEFAULT := Tools    $(EPICS_BASE_IOC_LIBS)
 PROD_LIBS_WIN32   := ToolsObj $(EPICS_BASE_IOC_LIBS)
 Tools_DIR    = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
-TESTPROD_HOST += ToolsTest
 
 # UnitTest Pre-RULES:
 #

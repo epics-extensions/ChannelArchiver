@@ -1,6 +1,7 @@
 use English;
 use File::Basename;
 
+my ($opt_v) = 0;
 my (%test_units);
 
 sub parse($)
@@ -12,13 +13,13 @@ sub parse($)
 
     open(F,$filename) or die "Cannot read '$filename'\n";
     $test_unit = basename($filename, ".cpp");
-    print "Parsing '$filename', unit '$test_unit'\n";
+    print "Parsing '$filename', unit '$test_unit'\n" if ($opt_v);
     while (<F>)
     {
         if ($ARG =~ '\s*TEST_CASE (\S+)\(')
         {
             $test_case = $1;
-            print "+ Test Case '$test_case'\n";
+            print "+ Test Case '$test_case'\n" if ($opt_v);
             push @{ $test_units{$test_unit} }, $test_case;
         }
     }
@@ -73,7 +74,7 @@ foreach $test_unit ( sort keys %test_units )
     }
 }
 printf("\n");
-printf("int main()\n");
+printf("int main(int argc, const char *argv[])\n");
 printf("{\n");
 printf("    size_t units = 0, run = 0, passed = 0;\n");
 printf("\n");
@@ -89,6 +90,8 @@ foreach $test_unit ( sort keys %test_units )
         print "    printf(\"$test_case:\\n\");\n";
         print "    if ($test_case())\n";
         print "        ++passed;\n";
+        print "    else\n";
+        printf("        printf(\"THERE WERE ERRORS!\\n\");\n");
     }
 }
 printf("\n");

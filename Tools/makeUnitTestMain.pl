@@ -75,25 +75,28 @@ foreach $test_unit ( sort keys %test_units )
 printf("\n");
 printf("int main()\n");
 printf("{\n");
-printf("    size_t run = 0, passed = 0;\n");
+printf("    size_t units = 0, run = 0, passed = 0;\n");
 printf("\n");
 foreach $test_unit ( sort keys %test_units )
 {
+    printf("    printf(\"==================================================\\n\");\n");
     printf("    printf(\"Unit $test_unit:\\n\");\n");
     printf("    printf(\"--------------------------------------------------\\n\");\n");
+    printf("    ++units;\n");
     foreach $test_case ( @{ $test_units{$test_unit}} )
     {
         print "    ++run;\n";
-        print "    printf(\"* $test_case:\\n\");\n";
+        print "    printf(\"$test_case:\\n\");\n";
         print "    if ($test_case())\n";
         print "        ++passed;\n";
     }
 }
 printf("\n");
-printf("    printf(\"--------------------------------------------------\\n\");\n");
-printf("    printf(\"--------------------------------------------------\\n\");\n");
+printf("    printf(\"==================================================\\n\");\n");
 printf("    size_t failed = run - passed;\n");
-printf("    printf(\"Ran %%zu test%%s, %%zu passed, %%zu failed.\\n\",\n");
+printf("    printf(\"Tested %zu unit%%s, ran %%zu test%%s, %%zu passed, %%zu failed.\\n\",\n");
+printf("           units,\n");
+printf("           (units > 1 ? \"s\" : \"\"),\n");
 printf("           run,\n");
 printf("           (run > 1 ? \"s\" : \"\"),\n");
 printf("           passed, failed);\n");

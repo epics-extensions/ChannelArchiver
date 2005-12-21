@@ -8,29 +8,67 @@
 // Tools
 #include <UnitTest.h>
 
+// Unit ASCIIParserTest:
+extern TEST_CASE test_ascii_parser();
 // Unit AutoFilePtrTest:
 extern TEST_CASE bogus_auto_file_ptr();
 extern TEST_CASE auto_file_ptr();
+// Unit BinIOTest:
+extern TEST_CASE bin_io_write();
+extern TEST_CASE bin_io_read();
+// Unit ConversionsTest:
+extern TEST_CASE test_conversions();
 
 int main()
 {
-    size_t run = 0, passed = 0;
+    size_t units = 0, run = 0, passed = 0;
 
+    printf("==================================================\n");
+    printf("Unit ASCIIParserTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_ascii_parser:\n");
+    if (test_ascii_parser())
+        ++passed;
+    printf("==================================================\n");
     printf("Unit AutoFilePtrTest:\n");
     printf("--------------------------------------------------\n");
+    ++units;
     ++run;
-    printf("* bogus_auto_file_ptr:\n");
+    printf("bogus_auto_file_ptr:\n");
     if (bogus_auto_file_ptr())
         ++passed;
     ++run;
-    printf("* auto_file_ptr:\n");
+    printf("auto_file_ptr:\n");
     if (auto_file_ptr())
         ++passed;
+    printf("==================================================\n");
+    printf("Unit BinIOTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("bin_io_write:\n");
+    if (bin_io_write())
+        ++passed;
+    ++run;
+    printf("bin_io_read:\n");
+    if (bin_io_read())
+        ++passed;
+    printf("==================================================\n");
+    printf("Unit ConversionsTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_conversions:\n");
+    if (test_conversions())
+        ++passed;
 
-    printf("--------------------------------------------------\n");
-    printf("--------------------------------------------------\n");
+    printf("==================================================\n");
     size_t failed = run - passed;
-    printf("Ran %zu test%s, %zu passed, %zu failed.\n",
+    printf("Tested %zu unit%s, ran %zu test%s, %zu passed, %zu failed.\n",
+           units,
+           (units > 1 ? "s" : ""),
            run,
            (run > 1 ? "s" : ""),
            passed, failed);

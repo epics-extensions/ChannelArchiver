@@ -7,6 +7,58 @@ TEST_CASE test_time()
 {
     initEpicsTimeHelper();
 
+    struct local_tm_nano_sec tm;
+    tm.ansi_tm.tm_year = 2003 - 1900;
+    tm.ansi_tm.tm_mon  = 4 - 1;
+    tm.ansi_tm.tm_mday = 10;
+    tm.ansi_tm.tm_hour = 11;
+    tm.ansi_tm.tm_min  = 0;
+    tm.ansi_tm.tm_sec  = 0;
+    tm.ansi_tm.tm_isdst   = -1;
+    tm.nSec = 0;
+    epicsTime time = tm;
+    time.show(10);
+
+    // At Wed Apr  9 10:43:37 MDT 2003 (daylight saving on),
+    //  Win32 adds 1hour...
+    // Convert 03/18/1990 12:13:44.800000019L back and forth:
+    tm.ansi_tm.tm_year = 1990 - 1900;
+    tm.ansi_tm.tm_mon  = 3 - 1;
+    tm.ansi_tm.tm_mday = 18;
+    tm.ansi_tm.tm_hour = 12;
+    tm.ansi_tm.tm_min  = 13;
+    tm.ansi_tm.tm_sec  = 44;
+    tm.ansi_tm.tm_isdst   = -1;
+    tm.nSec = 800000019L;
+
+    // to epicsTime
+    time = tm;
+
+    // back to tm
+    tm = time;
+    const char *dst;
+    switch (tm.ansi_tm.tm_isdst)
+    {
+        case 0:
+            dst = "standard";
+            break;
+        case 1:
+            dst = "daylight saving";
+            break;
+        default:
+            dst = "unknown";
+    }
+    printf("%02d/%02d/%04d %02d:%02d:%02d.%09ld (%s)\n",
+           tm.ansi_tm.tm_mon + 1,
+           tm.ansi_tm.tm_mday,
+           tm.ansi_tm.tm_year + 1900,
+           tm.ansi_tm.tm_hour,
+           tm.ansi_tm.tm_min,
+           tm.ansi_tm.tm_sec,
+           tm.nSec,
+           dst);
+
+
     epicsTime t;
     TEST(isValidTime(t) == false);
     

@@ -79,7 +79,7 @@ public:
             ok = false;
         }
         period_start = epicsTime::getCurrent();
-        return expireStatus(restart, 1.5);
+        return expireStatus(restart, period);
     }
     bool ok;
 private:
@@ -115,13 +115,13 @@ TEST_CASE test_timer()
     epicsTimerQueueActive &act_queue = epicsTimerQueueActive::allocate(true);
     {
         timer_test_start = epicsTime::getCurrent();
-        OneShotTimer once(act_queue, 4.0);
-        PeriodTimer  period(act_queue, 1.5);
+        OneShotTimer once(act_queue, 3.0);
+        PeriodTimer  period(act_queue, 1.0);
         once.start();
         period.start();
-        epicsThreadSleep(10.0);
+        epicsThreadSleep(5.0);
         double test_duration = epicsTime::getCurrent() - timer_test_start;
-        TEST( fabs(test_duration - 10.0) < 0.1 );
+        TEST( fabs(test_duration - 5.0) < 0.1 );
         TEST( once.ok );
         TEST( period.ok );
     }
@@ -134,13 +134,13 @@ TEST_CASE test_timer()
         epicsTimerQueuePassive::create(*passive_handler);
     {
         timer_test_start = epicsTime::getCurrent();
-        OneShotTimer once(passive_queue, 4.0);
-        PeriodTimer  period(passive_queue, 1.5);
+        OneShotTimer once(passive_queue, 3.0);
+        PeriodTimer  period(passive_queue, 1.0);
         once.start();
         period.start();
         double delay_to_next;
         epicsTime now = epicsTime::getCurrent();
-        while (now - timer_test_start  < 10.0)
+        while (now - timer_test_start  < 5.0)
         {
             delay_to_next = passive_queue.process(now);
             if (delay_to_next > 1.0)

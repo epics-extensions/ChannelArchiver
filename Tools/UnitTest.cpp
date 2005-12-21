@@ -20,8 +20,14 @@ extern TEST_CASE test_autoptr();
 // Unit BinIOTest:
 extern TEST_CASE bin_io_write();
 extern TEST_CASE bin_io_read();
+// Unit BitsetTest:
+extern TEST_CASE test_bitset();
+// Unit CATest:
+extern TEST_CASE test_ca();
 // Unit ConversionsTest:
 extern TEST_CASE test_conversions();
+// Unit FUXTest:
+extern TEST_CASE test_fux();
 // Unit GenericExceptionTest:
 extern TEST_CASE how_new_fails();
 extern TEST_CASE various_exception_tests();
@@ -106,12 +112,42 @@ int main(int argc, const char *argv[])
     else
         printf("THERE WERE ERRORS!\n");
     printf("==================================================\n");
+    printf("Unit BitsetTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_bitset:\n");
+    if (test_bitset())
+        ++passed;
+    else
+        printf("THERE WERE ERRORS!\n");
+    printf("==================================================\n");
+    printf("Unit CATest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_ca:\n");
+    if (test_ca())
+        ++passed;
+    else
+        printf("THERE WERE ERRORS!\n");
+    printf("==================================================\n");
     printf("Unit ConversionsTest:\n");
     printf("--------------------------------------------------\n");
     ++units;
     ++run;
     printf("test_conversions:\n");
     if (test_conversions())
+        ++passed;
+    else
+        printf("THERE WERE ERRORS!\n");
+    printf("==================================================\n");
+    printf("Unit FUXTest:\n");
+    printf("--------------------------------------------------\n");
+    ++units;
+    ++run;
+    printf("test_fux:\n");
+    if (test_fux())
         ++passed;
     else
         printf("THERE WERE ERRORS!\n");

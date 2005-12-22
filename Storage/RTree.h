@@ -60,12 +60,14 @@ public:
         Datablock() : next_ID(0), data_offset(0), offset(0) {}
         FileOffset    next_ID;       
         FileOffset    data_offset;   ///< This block's offset in DataFile
-        stdString data_filename; ///< DataFile for this block
+        stdString data_filename;     ///< DataFile for this block
         
-        FileOffset offset;  ///< Location of DataBlock in index file
+        FileOffset offset;           ///< Location of DataBlock in index file
         FileOffset getSize() const;
-        bool write(FILE *f) const;
-        bool read(FILE *f);
+        /// @exception GenericException on write error
+        void write(FILE *f) const;
+        /// @exception GenericException on read error
+        void read(FILE *f);
     };
 
     class Record
@@ -75,8 +77,10 @@ public:
         void clear();
         epicsTime  start, end;  // Range
         FileOffset child_or_ID; // data block ID for leaf node; 0 if unused
-        bool write(FILE *f) const;
-        bool read(FILE *f);
+        /// @exception GenericException on write error
+        void write(FILE *f) const;
+        /// @exception GenericException on read error
+        void read(FILE *f);
     };
 
     class Node
@@ -94,12 +98,15 @@ public:
         FileOffset  offset;  ///< Location in file
         
         /// Write to file at offset (needs to be set beforehand)
-        bool write(FILE *f) const;
+        /// @exception GenericException on write error
+        void write(FILE *f) const;
 
         /// Read from file at offset (needs to be set beforehand)
-        bool read(FILE *f);
+        /// @exception GenericException on read error
+        void read(FILE *f);
 
         /// Obtain interval covered by this node
+        /// @return True if there is a valid interval, false if empty.
         bool getInterval(epicsTime &start, epicsTime &end) const;
     private:
         int M;
@@ -118,41 +125,41 @@ public:
     RTree(FileAllocator &fa, FileOffset anchor);
     
     /// Initialize empty tree. Compare to reattach().
-    bool init(int M);
+    /// @exception GenericException on write error.
+    void init(int M);
 
     /// Re-attach to an existing tree. Compare to init().
-    bool reattach();
+    /// @exception GenericException on write error.
+    void reattach();
 
     /// The 'M' value, i.e. Node size, of this RTree.
     int getM() const
     { return M; }
     
     /// Return range covered by this RTree
+    /// @return True if there is a valid interval, false if empty.
+    /// @exception GenericException on read error
     bool getInterval(epicsTime &start, epicsTime &end);
 
-    /// Yes-no-error type of return used by RTree methods.
-    enum YNE
-    {
-        YNE_Error, ///< Error.
-        YNE_Yes,   ///< Success.
-        YNE_No     ///< Didn't do anything, but all's fine.
-    };
-    
     /// Create and insert a new Datablock.
-
+    ///
     /// Note: Once a data block (offset and filename) is inserted
     ///       for a given start and end time, the RTree code assumes
-    ///       that it stays that way. I.e. if we try to indert the same
+    ///       that it stays that way. I.e. if we try to insert the same
     ///       start/end/offset/file again, this will result in a NOP
-    ///       and return YNE_No.
+    ///       and return false.
     ///       It is an error to insert the same offset/file again with
     ///       a different start and/or end time!
-    YNE insertDatablock(const epicsTime &start, const epicsTime &end,
-                        FileOffset data_offset,
-                        const stdString &data_filename);
+    ///
+    /// @see updateLastDatablock for the special case up updating the _end_ time.
+    /// @return true if a new entry was created, false if offset and filename were already found.
+    /// @exception GenericException on write error.
+    bool insertDatablock(const epicsTime &start, const epicsTime &end,
+                         FileOffset data_offset,
+                         const stdString &data_filename);
     
     /// Locate entry after start time.
-
+    ///
     /// Updates Node & i and returns true if found.
     ///
     /// Specifically, the last record with data at or just before
@@ -161,11 +168,14 @@ public:
     /// There's one exception: When requesting a start time
     /// that preceeds the first available data point, so that there is
     /// no previous data point, the very first record is returned.
-
+    ///
+    /// @exception GenericException on read error.
     bool searchDatablock(const epicsTime &start, Node &node, int &i,
                          Datablock &block) const;
 
     /// Locate first datablock in tree.
+    ///
+    /// @exception GenericException on read error.
     bool getFirstDatablock(Node &node, int &i, Datablock &block) const;
     
     /// \see getFirstDatablock
@@ -179,12 +189,19 @@ public:
     /// data blocks that were inserted later (at a lower priority).
     /// In case you care about those, invoke getNextChainedBlock()
     /// until it returns false.
+    ///
+    /// @exception GenericException on read error.
     bool getNextChainedBlock(Datablock &block) const;
     
     /// Absolutely no clue what this one could do.
+    /// @see getNextDatablock
+    ///
+    /// @exception GenericException on read error.
     bool getPrevDatablock(Node &node, int &i, Datablock &block) const;
 
-    /// \see getPrevDatablock
+    /// @see getPrevDatablock
+    ///
+    /// @exception GenericException on read error.
     bool getNextDatablock(Node &node, int &i, Datablock &block) const;
     
     /// Tries to update existing datablock.
@@ -228,9 +245,11 @@ private:
     
     mutable AVLTree<Node> node_cache;
 
-    bool read_node(Node &node) const;
+    /// @exception GenericException on read error
+    void read_node(Node &node) const;
 
-    bool write_node(const Node &node);
+    /// @exception GenericException on write error
+    void write_node(const Node &node);
     
     bool self_test_node(unsigned long &nodes, unsigned long &records,
                         FileOffset n, FileOffset p,
@@ -240,10 +259,12 @@ private:
 
     bool search(const epicsTime &start, Node &node, int &i) const;
 
-    /// Locate first entry.
+    /// Set node & record index to first entry in tree.
+    /// @exception GenericException on read error
     bool getFirst(Node &node, int &i) const;
 
     /// Set node & record index to last entry in tree.
+    /// @exception GenericException on read error
     bool getLast(Node &node, int &i) const;
 
     /// If node & i were set to a valid entry by search(), update to prev.
@@ -254,21 +275,30 @@ private:
     bool next(Node &node, int &i) const
     {    return prev_next(node, i, +1); }
 
+    /// Like prev() or next(). Dir must be +-1.
     bool prev_next(Node &node, int &i, int dir) const;
     
-    YNE add_block_to_record(const Node &node, int i,
+    /// @return true if new block offset/filename was added under node/i,
+    ///         false if block with offset/filename was already there.
+    /// @exception GenericException if something's messed up.
+    bool add_block_to_record(const Node &node, int i,
                             FileOffset data_offset,
                             const stdString &data_filename);
     
-    bool write_new_datablock(FileOffset data_offset,
+    /// Configure block for data_offset/name,
+    /// allocate space in file and write.
+    /// @exception GenericException on write error.
+    void write_new_datablock(FileOffset data_offset,
                              const stdString &data_filename,
                              Datablock &block);
     
-    // Sets node to selected leaf for new entry start/end/ID or returns false.
-    // Invoke by setting node.offset == root_offset.
-    bool choose_leaf(const epicsTime &start, const epicsTime &end, Node &node);
+    /// Sets node to selected leaf for new entry start/end/ID.
+    /// Invoke by setting node.offset == root_offset.
+    /// @exception GenericException on read error.
+    void choose_leaf(const epicsTime &start, const epicsTime &end, Node &node);
 
-    bool insert_record_into_node(Node &node,
+    /// @exception GenericException on read/write error
+    void insert_record_into_node(Node &node,
                                  int idx,
                                  const epicsTime &start,
                                  const epicsTime &end,

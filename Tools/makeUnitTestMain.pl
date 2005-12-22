@@ -87,9 +87,9 @@ foreach $test_unit ( sort keys %test_units )
     printf("    if (single_test==0  ||  strcmp(single_test, \"$test_unit\")==0)\n");
     printf("    {\n");
 
-    printf("        printf(\"==================================================\\n\");\n");
+    printf("        printf(\"======================================================================\\n\");\n");
     printf("        printf(\"Unit $test_unit:\\n\");\n");
-    printf("        printf(\"--------------------------------------------------\\n\");\n");
+    printf("        printf(\"----------------------------------------------------------------------\\n\");\n");
     printf("        ++units;\n");
     foreach $test_case ( @{ $test_units{$test_unit}} )
     {
@@ -103,7 +103,7 @@ foreach $test_unit ( sort keys %test_units )
     printf("    }\n");
 }
 printf("\n");
-printf("    printf(\"==================================================\\n\");\n");
+printf("    printf(\"======================================================================\\n\");\n");
 printf("    size_t failed = run - passed;\n");
 printf("    printf(\"Tested %zu unit%%s, ran %%zu test%%s, %%zu passed, %%zu failed.\\n\",\n");
 printf("           units,\n");

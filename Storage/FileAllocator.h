@@ -8,11 +8,12 @@
 // Storage
 #include <StorageTypes.h>
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
+///
 
 /// Maintains memory blocks within a file.
-
+///
 /// The FileAllocator maintains the space in a given file
 /// by keeping track of allocated blocks.
 /// Sections can also be released, in which case they
@@ -21,7 +22,7 @@ class FileAllocator
 {
 public:
     /// Constructor/destructor check if attach/detach have been called.
-
+    ///
     /// We could have made these perform the attach/detach,
     /// but then the error reporting would have had to use
     /// exceptions which we'd like to avoid.
@@ -31,6 +32,21 @@ public:
     ~FileAllocator();
     
     /// <B>Must be</B> invoked to attach (& initialize) a file.
+    ///
+    /// Can be invoked on an empty file,
+    /// in thich case the reserved space
+    /// and some FileAllocator header will be added
+    /// to the file.
+    /// Can also be invoked on an existing file
+    /// which was initialized by the FileAllocator,
+    /// in which case the reserved_space has to match
+    /// the value that was used when initializing the file!
+    ///
+    /// @return true when an empty file was initialized.
+    ///         Otherwise, some weak tests are performed
+    ///         so see if this file does indeed contain
+    ///         a FileAllocator header, and false is returned.
+    /// @exception GenericException on error.
     bool attach(FILE *f, FileOffset reserved_space);
 
     /// After attaching to a file, this returns the file
@@ -40,20 +56,21 @@ public:
     void detach();
 
     /// Allocate a block with given size, returning a file offset (for fseek).
-
-    /// \see free()
     ///
-    ///
+    /// @see free()
+    /// @exception GenericException on error.
     FileOffset allocate(FileOffset num_bytes);
 
     /// Release a file block (will be placed in free list).
-
+    ///
     /// \param offset A file offset previously obtained from allocate()
     /// \warning It is an error to free space that wasn't allocated.
     /// There is no 100% dependable way to check this,
     /// but free() will perform some basic test and return false
     /// for inknown memory regions.
-    bool free(FileOffset offset);
+    ///
+    /// @exception GenericException on error.
+    void free(FileOffset offset);
 
     /// To avoid allocating tiny areas,
     /// also to avoid splitting free blocks into pieces
@@ -68,16 +85,21 @@ public:
     static FileOffset file_size_increment;
     
     /// Show ASCII-type info about the file structure.
-
+    ///
     /// This routines lists all the allocated and free blocks
     /// together with some other size information.
     /// It also performs some sanity checks.
     /// When called with <i>level=0</i>, it will only perform
     /// the tests and only report possible problems.
+    ///
+    /// Should not throw exceptions but simply return false
+    /// on errors.
+    ///
     /// Returns true for 'OK'.
     bool dump(int level=1);
     
 private:
+    // TODO: Refactor as class??
     typedef struct
     {
         FileOffset bytes;
@@ -95,35 +117,22 @@ private:
     //   of what's on the disk!
     list_node allocated_head, free_head;
     
-    bool read_node(FileOffset offset, list_node *node);
-    bool write_node(FileOffset offset, const list_node *node);
+    // Read/write a list_node.
+    // @exception GenericException on read/write error.
+    void read_node(FileOffset offset, list_node *node);
+    void write_node(FileOffset offset, const list_node *node);
+
     // Unlink node from list, node itself remains unchanged
-    bool remove_node(FileOffset head_offset, list_node *head,
+    void remove_node(FileOffset head_offset, list_node *head,
                      FileOffset node_offset, const list_node *node);
     // Insert node (sorted), node's prev/next get changed
-    bool insert_node(FileOffset head_offset, list_node *head,
+    void insert_node(FileOffset head_offset, list_node *head,
                      FileOffset node_offset, list_node *node);
 };
 
+///
 /// @}
+///
 
-#endif // _R_TREE_H_
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 

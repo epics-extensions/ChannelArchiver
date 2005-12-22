@@ -8,10 +8,11 @@
 // Index
 #include "IndexFile.h"
 
-/// \ingroup Storage
+/// \addtogroup Storage
+/// @{
 
 /// Writes data to storage.
-
+///
 /// The data writer interfaces between a series of
 /// RawValue values and the Index/DataFile.
 ///
@@ -89,3 +90,4 @@ private:
     bool addNewHeader(bool new_ctrl_info);
 };
 
+/// @}

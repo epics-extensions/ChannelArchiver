@@ -7,7 +7,7 @@
 #include <IndexFile.h>
 #include <IndexConfig.h>
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
 
 /// Support list of sub-archives.

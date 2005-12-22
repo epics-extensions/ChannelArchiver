@@ -8,12 +8,11 @@
 #include <NameHash.h>
 #include <RTree.h>
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
+
 /// Defines routines for the RTree-based index.
-
-/// The archiver's index file.
-
+///
 /// The IndexFile combines the NameHash for channel name
 /// lookup with one RTree per channel into an index.
 ///

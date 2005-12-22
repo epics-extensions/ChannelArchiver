@@ -37,22 +37,22 @@ LIB_SRCS += RawValue.cpp
 LIB_SRCS += DataFile.cpp
 LIB_SRCS += FileAllocator.cpp
 LIB_SRCS += NameHash.cpp
-LIB_SRCS += RTree.cpp
-LIB_SRCS += Index.cpp
-LIB_SRCS += IndexFile.cpp
-LIB_SRCS += ListIndex.cpp
-LIB_SRCS += DataWriter.cpp
-LIB_SRCS += DataReader.cpp
-LIB_SRCS += AverageReader.cpp
-LIB_SRCS += LinearReader.cpp
-LIB_SRCS += PlotReader.cpp
-LIB_SRCS += SpreadsheetReader.cpp
+#LIB_SRCS += RTree.cpp
+#LIB_SRCS += Index.cpp
+#LIB_SRCS += IndexFile.cpp
+#LIB_SRCS += ListIndex.cpp
+#LIB_SRCS += DataWriter.cpp
+#LIB_SRCS += DataReader.cpp
+#LIB_SRCS += AverageReader.cpp
+#LIB_SRCS += LinearReader.cpp
+#LIB_SRCS += PlotReader.cpp
+#LIB_SRCS += SpreadsheetReader.cpp
 LIBRARY_HOST := Storage
 
 # Tools to build but not install
-TESTPROD_HOST += FileAllocatorTest FileAllocatorTool
-TESTPROD_HOST += NameHashTest RTreeTest
-TESTPROD_HOST += ReadTest
+TESTPROD_HOST += FileAllocatorTool
+#TESTPROD_HOST += NameHashTest RTreeTest
+#TESTPROD_HOST += ReadTest
 PROD_LIBS_DEFAULT := Storage    Tools    $(EPICS_BASE_IOC_LIBS)
 PROD_LIBS_WIN32   := StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
 Storage_DIR    = $(INSTALL_LIB)
@@ -60,7 +60,28 @@ StorageObj_DIR = $(INSTALL_LIB)
 Tools_DIR      = $(INSTALL_LIB)
 ToolsObj_DIR   = $(INSTALL_LIB)
 
+# UnitTest Pre-RULES:
+#
+# Include the UnitTest make-snipped,
+# from both this directory and later
+# when we're down in O.$(EPICS_HOST_ARCH):
+-include UnitTest.mk
+-include ../UnitTest.mk
+
 include $(TOP)/configure/RULES
 
+# UnitTest Post-RULES:
+#
+# Make target to rebuild & run the tests.
+# Extend this if tests also include shell scripts etc.
 
+.PHONY: test
+
+test:
+	perl ../Tools/makeUnitTestMain.pl
+	$(MAKE)
+	O.$(EPICS_HOST_ARCH)/UnitTest
+        
+valgrind:
+	IN_VALGRIND=1 valgrind O.$(EPICS_HOST_ARCH)/UnitTest
 

@@ -5,7 +5,7 @@
 
 #include "DataReader.h"
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
 
 /// Reads data from storage, modified for plotting.

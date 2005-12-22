@@ -5,11 +5,11 @@
 
 #include "DataReader.h"
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
 
 /// Reads data from storage, averaging over the raw samples.
-
+///
 /// The AverageReader is an implementaion of a DataReader
 /// that returns the average value of the raw values within
 /// each 'bin' of 'delta' seconds on the time axis.

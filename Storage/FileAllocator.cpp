@@ -53,10 +53,10 @@ bool FileAllocator::attach(FILE *f, FileOffset reserved_space)
     this->f = f;
     this->reserved_space = reserved_space;
     if (fseek(this->f, 0, SEEK_END))
-        return false;
+        throw GenericException(__FILE__, __LINE__, "fseek error");
     file_size = ftell(this->f);
     if (file_size < 0)
-        return false;
+        throw GenericException(__FILE__, __LINE__, "ftell error");
     // File size should be
     // 0 for new file or at least reserved_space + list headers
     if (file_size == 0)
@@ -64,21 +64,27 @@ bool FileAllocator::attach(FILE *f, FileOffset reserved_space)
         // create empty list headers
         memset(&allocated_head, 0, list_node_size);
         memset(&free_head, 0, list_node_size);
-        if (!write_node(this->reserved_space, &allocated_head) ||
-            !write_node(this->reserved_space+list_node_size, &free_head))
-            return false;
+        write_node(this->reserved_space, &allocated_head);
+        write_node(this->reserved_space+list_node_size, &free_head);
         file_size = ftell(this->f);
-        return file_size == reserved_space + 2*list_node_size;
+        FileOffset expected = reserved_space + 2*list_node_size;
+        if (file_size != expected)
+             throw GenericException(__FILE__, __LINE__,
+                                    "Initialization error: "
+                                    "Expected file size %ld, found %ld",
+                                    (long) expected, (long) file_size);
+        return true; 
     }
-    if (file_size < this->reserved_space + 2*list_node_size)
-    {
-        fprintf(stderr, "FileAllocator: File contains broken header\n");
-        return false;
-    }
+    FileOffset expected = this->reserved_space + 2*list_node_size;
+    if (file_size < expected)
+        throw GenericException(__FILE__, __LINE__,
+                               "FileAllocator: Broken file header,"
+                               "expected at least %ld bytes",
+                               (long) expected);
     // read existing list headers
-    return 
-        read_node(this->reserved_space, &allocated_head) &&
-        read_node(this->reserved_space+list_node_size, &free_head);
+    read_node(this->reserved_space, &allocated_head);
+    read_node(this->reserved_space+list_node_size, &free_head);
+    return false; // Didn't initialize the file
 }
 
 FILE *FileAllocator::getFile() const
@@ -106,17 +112,15 @@ FileOffset FileAllocator::allocate(FileOffset num_bytes)
     node_offset = free_head.next;
     while (node_offset)
     {
-        if (!read_node(node_offset, &node))
-            return false;
+        read_node(node_offset, &node);
         if (node.bytes >= num_bytes)
         {   // Found an appropriate block on the free list.
             if (node.bytes < num_bytes + list_node_size + minimum_size)
             {   // not worth splitting, return as is:
-                if (!remove_node(reserved_space+list_node_size, &free_head,
-                                 node_offset, &node) ||
-                    !insert_node(reserved_space, &allocated_head,
-                                 node_offset, &node))
-                    return 0;
+                remove_node(reserved_space+list_node_size, &free_head,
+                            node_offset, &node);
+                insert_node(reserved_space, &allocated_head,
+                            node_offset, &node);
                 return node_offset + list_node_size;
             }
             else
@@ -124,17 +128,15 @@ FileOffset FileAllocator::allocate(FileOffset num_bytes)
                 // Split requested size off, correct free list
                 node.bytes -= list_node_size + num_bytes;
                 free_head.bytes -= list_node_size + num_bytes;
-                if (!(write_node(node_offset, &node) &&
-                      write_node(reserved_space+list_node_size, &free_head)))
-                    return 0;
+                write_node(node_offset, &node);
+                write_node(reserved_space+list_node_size, &free_head);
                 // Create, insert & return new node
                 FileOffset new_offset =
                     node_offset + list_node_size + node.bytes;
                 list_node new_node;
                 new_node.bytes = num_bytes;
-                if (!insert_node(reserved_space, &allocated_head,
-                                 new_offset, &new_node))
-                    return 0;
+                insert_node(reserved_space, &allocated_head,
+                            new_offset, &new_node);
                 return new_offset + list_node_size;
             }
         }
@@ -142,30 +144,27 @@ FileOffset FileAllocator::allocate(FileOffset num_bytes)
     }
     // Need to append new block.
     // grow file
-    fseek(f, file_size+list_node_size+num_bytes-1, SEEK_SET);
-    fwrite("", 1, 1, f);
+    if (fseek(f, file_size+list_node_size+num_bytes-1, SEEK_SET) != 0  ||
+        fwrite("", 1, 1, f) != 1)
+        throw GenericException(__FILE__, __LINE__, "Write Error");
     // write new node
     node.bytes = num_bytes;
     node.prev = allocated_head.prev;
     node.next = 0;
-    if (!write_node(file_size, &node))
-        return false;
+    write_node(file_size, &node);
     // maybe update what used to be the last block
     if (allocated_head.prev)
     {
-        if (!read_node(allocated_head.prev, &node))
-            return false;
+        read_node(allocated_head.prev, &node);
         node.next = file_size;
-        if (!write_node(allocated_head.prev, &node))
-            return false;
+        write_node(allocated_head.prev, &node);
     }
     // update head of list
     allocated_head.bytes += num_bytes;
     if (allocated_head.next == 0)
         allocated_head.next = file_size;
     allocated_head.prev = file_size;
-    if (!write_node(reserved_space, &allocated_head))
-        return false;
+    write_node(reserved_space, &allocated_head);
     // Update overall file size, return offset of new data block
     FileOffset data_offset = file_size + list_node_size;
     file_size = data_offset + num_bytes;
@@ -188,68 +187,52 @@ FileOffset FileAllocator::allocate(FileOffset num_bytes)
     return data_offset;
 }
 
-bool FileAllocator::free(FileOffset block_offset)
+void FileAllocator::free(FileOffset block_offset)
 {
     // list_node should precede the memory block,
-    // so it cannot start before reserved_space + heads + 1st buffer node
+    // so it cannot start before reserved_space + heads + 1st buffer node,
+    // and it cannot start beyond the known file size.
     if (block_offset < reserved_space + 3*list_node_size  ||
         block_offset >= file_size)
-    {
-        fprintf(stderr,
-                "FileAllocator::free called with impossible offset %ld\n",
-                (unsigned long)block_offset);
-        return false;
-    }
-
+        throw GenericException(__FILE__, __LINE__,
+                               "FileAllocator::free, impossible offset %ld\n",
+                               (unsigned long)block_offset);
     list_node node;
     FileOffset node_offset = block_offset - list_node_size;
-    if (!read_node(node_offset, &node))
-        return false;
+    read_node(node_offset, &node);
     if (node_offset + node.bytes > file_size)
-    {
-        fprintf(stderr,
-                "FileAllocator::free called with broken node %ld\n",
-                (unsigned long)block_offset);
-        return false;
-    }
-    
+        throw GenericException(__FILE__, __LINE__,
+                               "FileAllocator::free called with broken node %ld\n",
+                               (unsigned long)block_offset);
     // remove node at 'offset' from list of allocated blocks,
     // add node to list of free blocks
-    if (! (remove_node(reserved_space, &allocated_head,
-                       node_offset, &node) &&
-           insert_node(reserved_space+list_node_size, &free_head,
-                       node_offset, &node))
-        )
-        return false;
+    remove_node(reserved_space, &allocated_head, node_offset, &node);
+    insert_node(reserved_space+list_node_size, &free_head,
+                node_offset, &node);
     // Check if we can merge with the preceeding block
     list_node pred;
     FileOffset pred_offset = node.prev;
     if (pred_offset)
     {
-        if (!read_node(pred_offset, &pred))
-            return false;
+        read_node(pred_offset, &pred);
         if (pred_offset + list_node_size + pred.bytes == node_offset)
         {   // Combine this free'ed node with prev. block
             pred.bytes += list_node_size + node.bytes;
             // skip the current node
             pred.next = node.next;
-            if (!write_node(pred_offset, &pred))
-                return false;
+            write_node(pred_offset, &pred);
             if (pred.next)
             {   // correct back pointer
-                if (!read_node(pred.next, &node))
-                    return false;
+                read_node(pred.next, &node);
                 node.prev = pred_offset;
-                if (!write_node(pred.next, &node))
-                    return false;
+                write_node(pred.next, &node);
             }
             else
             {   // we changed the tail of the free list
                 free_head.prev = pred_offset;
             }
             free_head.bytes += list_node_size;
-            if (!write_node(reserved_space+list_node_size, &free_head))
-                return false;
+            write_node(reserved_space+list_node_size, &free_head);
             
             // 'pred' is now the 'current' node
             node_offset = pred_offset;
@@ -263,142 +246,153 @@ bool FileAllocator::free(FileOffset block_offset)
     if (succ_offset)
     {
         if (node_offset + list_node_size + node.bytes == succ_offset)
-        {
-            // Combine this free'ed node with following block
-            if (!read_node(succ_offset, &succ))
-                return false;
+        {   // Combine this free'ed node with following block
+            read_node(succ_offset, &succ);
             node.bytes += list_node_size + succ.bytes;
             // skip the next node
             node.next = succ.next;
-            if (!write_node(node_offset, & node))
-                return false;
+            write_node(node_offset, & node);
             if (node.next)
             {   // correct back pointer
                 list_node after;
-                if (!read_node(node.next, &after))
-                    return false;
+                read_node(node.next, &after);
                 after.prev = node_offset;
-                if (!write_node(node.next, &after))
-                    return false;
+                write_node(node.next, &after);
             }
             else
             {   // we changed the tail of the free list
                 free_head.prev = node_offset;
             }
             free_head.bytes += list_node_size;
-            return write_node(reserved_space+list_node_size, &free_head);
+            write_node(reserved_space+list_node_size, &free_head);
         }
     }
-    return true;
 }
 
 bool FileAllocator::dump(int level)
 {
     bool ok = true;
-    list_node allocated_node, free_node;
-    FileOffset allocated_offset, free_offset;
-    FileOffset allocated_prev = 0, free_prev = 0;
-    FileOffset allocated_mem = 0, allocated_blocks = 0;
-    FileOffset free_mem = 0, free_blocks = 0;
-    FileOffset next_offset = 0;
-    if (level > 0)
-        printf("bytes in file: %ld. Reserved/Allocated/Free: %ld/%ld/%ld\n",
-               (long)file_size,
-               (long)reserved_space, (long)allocated_head.bytes, (long)free_head.bytes);
-    allocated_offset = allocated_head.next;
-    free_offset = free_head.next;
-    while(allocated_offset || free_offset)
+    try
     {
-        // Show the node that's next in the file
-        if (allocated_offset &&
-            (free_offset == 0 || free_offset > allocated_offset))
+        list_node allocated_node, free_node;
+        FileOffset allocated_offset, free_offset;
+        FileOffset allocated_prev = 0, free_prev = 0;
+        FileOffset allocated_mem = 0, allocated_blocks = 0;
+        FileOffset free_mem = 0, free_blocks = 0;
+        FileOffset next_offset = 0;
+        if (level > 0)
+            printf("bytes in file: %ld. Reserved/Allocated/Free: %ld/%ld/%ld\n",
+                   (long)file_size,
+                   (long)reserved_space,
+                   (long)allocated_head.bytes,
+                   (long)free_head.bytes);
+        allocated_offset = allocated_head.next;
+        free_offset = free_head.next;
+        while(allocated_offset || free_offset)
         {
-            read_node(allocated_offset, &allocated_node);
-            ++allocated_blocks;
-            allocated_mem += allocated_node.bytes;
-            if (level > 0)
-                printf("Allocated Block @ %10ld: %ld bytes\n",
-                       (long)allocated_offset, (long)allocated_node.bytes);
-            if (next_offset && next_offset != allocated_offset)
+            // Show the node that's next in the file
+            if (allocated_offset &&
+                (free_offset == 0 || free_offset > allocated_offset))
             {
-                printf("! There is a gap, %ld unmaintained bytes "
-                       "before this block!\n", (long)allocated_offset - (long)next_offset);
-                ok = false;
+                read_node(allocated_offset, &allocated_node);
+                ++allocated_blocks;
+                allocated_mem += allocated_node.bytes;
+                if (level > 0)
+                    printf("Allocated Block @ %10ld: %10ld bytes\n",
+                           (long)allocated_offset, (long)allocated_node.bytes);
+                if (next_offset && next_offset != allocated_offset)
+                {
+                    printf("! There is a gap, %ld unmaintained bytes "
+                           "before this block!\n",
+                           (long)allocated_offset - (long)next_offset);
+                    ok = false;
+                }
+                if (allocated_prev != allocated_node.prev)
+                {
+                    printf("! Block's ''prev'' pointer is broken!\n");
+                    ok = false;
+                }
+                next_offset = allocated_offset + list_node_size + allocated_node.bytes;
+                allocated_prev = allocated_offset;
+                allocated_offset = allocated_node.next;
             }
-            if (allocated_prev != allocated_node.prev)
+            else if (free_offset)
             {
-                printf("! Block's ''prev'' pointer is broken!\n");
-                ok = false;
+                read_node(free_offset, &free_node);
+                ++free_blocks;
+                free_mem += free_node.bytes;
+                if (level > 0)
+                    printf("Free      Block @ %10ld: %10ld bytes\n",
+                           (long)free_offset, (long)free_node.bytes);
+                if (next_offset && next_offset != free_offset)
+                {
+                    printf("! There is a gap, %ld unmaintained bytes "
+                           "before this block!\n", (long)free_offset - (long)next_offset);
+                    ok = false;
+                }
+                if (free_prev != free_node.prev)
+                {
+                    printf("! Block's ''prev'' pointer is broken!\n");
+                    ok = false;
+                }
+                next_offset = free_offset + list_node_size + free_node.bytes;
+                free_prev = free_offset;
+                free_offset = free_node.next;
             }
-            next_offset = allocated_offset + list_node_size + allocated_node.bytes;
-            allocated_prev = allocated_offset;
-            allocated_offset = allocated_node.next;
         }
-        else if (free_offset)
+        if (file_size !=
+            (reserved_space +
+             2*list_node_size + // allocated/free list headers
+             allocated_blocks*list_node_size +
+             allocated_head.bytes +
+             free_blocks*list_node_size +
+             free_head.bytes))
         {
-            read_node(free_offset, &free_node);
-            ++free_blocks;
-            free_mem += free_node.bytes;
-            if (level > 0)
-                printf("Free      Block @ %10ld: %ld bytes\n",
-                       (long)free_offset, (long)free_node.bytes);
-            if (next_offset && next_offset != free_offset)
-            {
-                printf("! There is a gap, %ld unmaintained bytes "
-                       "before this block!\n", (long)free_offset - (long)next_offset);
-                ok = false;
-            }
-            if (free_prev != free_node.prev)
-            {
-                printf("! Block's ''prev'' pointer is broken!\n");
-                ok = false;
-            }
-            next_offset = free_offset + list_node_size + free_node.bytes;
-            free_prev = free_offset;
-            free_offset = free_node.next;
+            printf("! The total file size does not compute!\n");
+            ok = false;
+        }
+        if (allocated_mem != allocated_head.bytes)
+        {
+            printf("! The amount of allocated space does not compute!\n");
+            ok = false;
+        }
+        if (free_mem != free_head.bytes)
+        {
+            printf("! The amount of allocated space does not compute!\n");
+            ok = false;
         }
     }
-    if (file_size !=
-        (reserved_space +
-         2*list_node_size + // allocated/free list headers
-         allocated_blocks*list_node_size +
-         allocated_head.bytes +
-         free_blocks*list_node_size +
-         free_head.bytes))
+    catch (GenericException &e)
     {
-        printf("! The total file size does not compute!\n");
-        ok = false;
-    }
-    if (allocated_mem != allocated_head.bytes)
-    {
-        printf("! The amount of allocated space does not compute!\n");
-        ok = false;
-    }
-    if (free_mem != free_head.bytes)
-    {
-        printf("! The amount of allocated space does not compute!\n");
-        ok = false;
+        printf("Error: %s", e.what());
+        return false;
     }
     return ok;
 }
 
-bool FileAllocator::read_node(FileOffset offset, list_node *node)
+void FileAllocator::read_node(FileOffset offset, list_node *node)
 {
-    fseek(f, offset, SEEK_SET);
-    return readLong(f, &node->bytes) &&
-        readLong(f, &node->prev) &&
-        readLong(f, &node->next);
+    if (! (fseek(f, offset, SEEK_SET) == 0  &&
+           readLong(f, &node->bytes) &&
+           readLong(f, &node->prev) &&
+           readLong(f, &node->next)))
+        throw GenericException(__FILE__, __LINE__,
+                               "FileAllocator node read at 0x%08lX failed",
+                               (unsigned long)offset);
 }
 
-bool FileAllocator::write_node(FileOffset offset, const list_node *node)
+void FileAllocator::write_node(FileOffset offset, const list_node *node)
 {
-    fseek(f, offset, SEEK_SET);
-    return writeLong(f, node->bytes) &&
-        writeLong(f, node->prev) &&
-        writeLong(f, node->next);
+    if (! (fseek(f, offset, SEEK_SET) == 0  &&
+           writeLong(f, node->bytes) &&
+           writeLong(f, node->prev) &&
+           writeLong(f, node->next)))
+        throw GenericException(__FILE__, __LINE__,
+                               "FileAllocator node write at 0x%08lX failed",
+                               (unsigned long)offset);
 }
 
-bool FileAllocator::remove_node(FileOffset head_offset, list_node *head,
+void FileAllocator::remove_node(FileOffset head_offset, list_node *head,
                                 FileOffset node_offset, const list_node *node)
 {
     list_node tmp;
@@ -412,47 +406,41 @@ bool FileAllocator::remove_node(FileOffset head_offset, list_node *head,
             head->prev = 0;
         else
         {   // correct 'prev' ptr of what's now the first node
-            if (!read_node(head->next, &tmp))
-                return false;
+            read_node(head->next, &tmp);
             tmp.prev = 0;
-            if (!write_node(head->next, &tmp))
-                return false;
+            write_node(head->next, &tmp);
         }
-        return write_node(head_offset, head);
+        write_node(head_offset, head);
     }
     else
     {   // locate a node that's not the first
         tmp_offset = head->next;
-        if (!read_node(tmp_offset, &tmp))
-            return false;
+        read_node(tmp_offset, &tmp);
         while (tmp.next != node_offset)
         {
             tmp_offset = tmp.next;
             if (!tmp_offset)
-                return false;
-            if (!read_node(tmp_offset, &tmp))
-                return false;
+                throw GenericException(__FILE__, __LINE__,
+                                       "node not found");
+            read_node(tmp_offset, &tmp);
         }
         // tmp/tmp_offset == node before the one to be removed
         tmp.next = node->next;
-        if (!write_node(tmp_offset, &tmp))
-            return false;
+        write_node(tmp_offset, &tmp);
         if (node->next)
         {   // adjust prev pointer of node->next
-            if (!read_node(node->next, &tmp))
-                return false;
+            read_node(node->next, &tmp);
             tmp.prev = tmp_offset;
-            if (!write_node(node->next, &tmp))
-                return false;
+            write_node(node->next, &tmp);
         }
         head->bytes -= node->bytes;
         if (head->prev == node_offset)
             head->prev = node->prev;
-        return write_node(head_offset, head);
+        write_node(head_offset, head);
     }
 }
 
-bool FileAllocator::insert_node(FileOffset head_offset, list_node *head,
+void FileAllocator::insert_node(FileOffset head_offset, list_node *head,
                                  FileOffset node_offset, list_node *node)
 {
     // add node to list of free blocks
@@ -463,58 +451,50 @@ bool FileAllocator::insert_node(FileOffset head_offset, list_node *head,
         node->next = 0;
         node->prev = 0;
         head->bytes += node->bytes;
-        return
-            write_node(node_offset, node) &&
-            write_node(head_offset, head);
+        write_node(node_offset, node);
+        write_node(head_offset, head);
+        return;
     }
     // insert into free list, sorted by position (for nicer dump() printout)
     if (node_offset < head->next)
     {   // new first item
         node->prev = 0;
         node->next = head->next;
-        if (!write_node(node_offset, node))
-            return false;
+        write_node(node_offset, node);
         list_node tmp;
-        if (!read_node(node->next, &tmp))
-            return false;
+        read_node(node->next, &tmp);
         tmp.prev = node_offset;
-        if (!write_node(node->next, &tmp))
-            return false;
+        write_node(node->next, &tmp);
         head->next = node_offset;
         head->bytes += node->bytes;
-        return write_node(head_offset, head);
+        write_node(head_offset, head);
+        return;
     }
     // find proper location in free list
     list_node pred;
     FileOffset pred_offset = head->next;
-    if (!read_node(pred_offset, &pred))
-        return false;
+    read_node(pred_offset, &pred);
     while (pred.next && pred.next < node_offset)
     {
         pred_offset = pred.next;
-        if (!read_node(pred_offset, &pred))
-            return false;
+        read_node(pred_offset, &pred);
     }
     // pred.next == 0  or >= node_offset: insert here!
     node->next = pred.next;
     node->prev = pred_offset;
-    if (!write_node(node_offset, node))
-        return false;
+    write_node(node_offset, node);
     if (pred.next)
     {
         list_node after;
-        if (!read_node(pred.next, &after))
-            return false;
+        read_node(pred.next, &after);
         after.prev = node_offset;
-        if (!write_node(pred.next, &after))
-            return false;
+        write_node(pred.next, &after);
     }
     pred.next = node_offset;
-    if (!write_node(pred_offset, &pred))
-        return false;
+    write_node(pred_offset, &pred);
     if (head->prev == pred_offset)
         head->prev = node_offset;
     head->bytes += node->bytes;
-    return write_node(head_offset, head);
+    write_node(head_offset, head);
 }
 

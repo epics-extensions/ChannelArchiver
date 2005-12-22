@@ -8,7 +8,7 @@
 // Storage
 #include <NameHash.h>
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// \@{
 
 /// Base class for the archiver's indices.

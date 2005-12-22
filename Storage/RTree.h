@@ -36,11 +36,11 @@
 //
 // --> NFS is bad, small RTreeM values are bad.
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// \@{
 
 /// Implements a file-based RTree as described in Antonin Guttman.
-
+///
 /// See the Guttman paper
 /// "R-Trees: A Dynamic Index Structure for Spatial Searching"
 /// (Proc. 1984 ACM-SIGMOD Conference on Management of Data, pp. 47-57).

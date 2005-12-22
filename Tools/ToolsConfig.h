@@ -16,10 +16,6 @@
 // (very unclear what's defined. Try to use -D$(HOST_ARCH))
 // WIN32, Linux, solaris, HP_UX
 
-/// \defgroup Tools Common Tools
-/// The Tools classes started out with the idea to
-/// be useful beyond the archiver.
-
 // Namespaces:
 // After great problems with doing so initially,
 // these sources try to avoid namespaces.

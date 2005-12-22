@@ -8,11 +8,11 @@
 // Index
 #include "FileAllocator.h"
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// \@{
 
 /// A file-based Hash table for strings.
-
+///
 /// Beginning at the 'anchor' position in the file,
 /// NameHash deposits the start offset of the hash table
 /// and the number of table entries.
@@ -39,15 +39,15 @@ public:
 
     static const uint32_t anchor_size = 8;
     
-    /// Constructor
-    
+    /// Constructor.
+    ///
     /// \param anchor: The NameHash will deposit its root pointer there.
     ///                Caller needs to assert that there are anchor_size
     ///                bytes available at that location in the file.
     NameHash(FileAllocator &fa, FileOffset anchor);
 
     /// Create a new hash table of given size.
-
+    ///
     /// \param ht_size determines the hash table size and should be prime.
     ///
     ///
@@ -63,14 +63,14 @@ public:
     bool find(const stdString &name, stdString &ID_txt, FileOffset &ID);
     
     /// Start iterating over all entries (in table's order).
-
+    ///
     /// \return Returns true if hashvalue & entry were set to something valid.
     ///
     ///
     bool startIteration(uint32_t &hashvalue, Entry &entry);
     
     /// Get next entry during iteration.
-
+    ///
     /// \pre start_iteration() was successfully invoked.
     /// \return Returns true on success.
     ///

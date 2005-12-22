@@ -46,7 +46,7 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "Cannot attach FileAllocator\n");
         return -1;
     }   
-    fa.dump();
+    fa.dump(verbose ? 10 : 0);
     fa.detach();
     fclose(f);
     

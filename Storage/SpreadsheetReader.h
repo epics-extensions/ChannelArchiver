@@ -7,7 +7,7 @@
 // Index
 #include "Index.h"
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
 
 /// Reads data from storage, formatted as spreadsheet.

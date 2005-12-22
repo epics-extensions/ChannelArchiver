@@ -11,10 +11,10 @@
 /// \addtogroup Storage
 /// @{
 
-/// \typedef DbrType is used to hold dbr_time_xxx types.
+/// DbrType is used to hold dbr_time_xxx types.
 typedef unsigned short DbrType;
 
-/// \typedef DbrCount is used to hold the array size of CA channels.
+/// DbrCount is used to hold the array size of CA channels.
 typedef unsigned short DbrCount;
 
 /// Non-CA events to the archiver;

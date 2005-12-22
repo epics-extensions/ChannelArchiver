@@ -5,7 +5,7 @@
 
 #include "AverageReader.h"
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
 
 /// Reads data from storage w/ linear interpolation.

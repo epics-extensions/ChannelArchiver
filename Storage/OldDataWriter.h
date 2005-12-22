@@ -7,7 +7,7 @@
 #include "CtrlInfo.h"
 #include "RawValue.h"
 
-/// \ingroup Storage
+/// \addtogroup Storage
 /// @{
 
 /// Writes data to storage using the old Directory File.

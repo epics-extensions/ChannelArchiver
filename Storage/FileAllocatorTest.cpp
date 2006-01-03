@@ -110,6 +110,11 @@ TEST_CASE file_allocator_open_existing()
     TEST_MSG((o3=fa.allocate(5000)), "allocate 5000");
     printf("Got offset %ld\n", o3);
     TEST_MSG(fa.dump(), "Consistency Check\n");
+    {
+        AutoFilePtr file("test/file_allocator.out", "wt");
+        TEST_MSG(fa.dump(1, file), "Consistency Check\n");
+    }
+    TEST_FILEDIFF("test/file_allocator.out", "test/file_allocator.OK");
 
     TEST("Performing some random tests");
     long o[10];

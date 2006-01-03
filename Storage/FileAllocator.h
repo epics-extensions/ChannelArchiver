@@ -63,8 +63,8 @@ public:
 
     /// Release a file block (will be placed in free list).
     ///
-    /// \param offset A file offset previously obtained from allocate()
-    /// \warning It is an error to free space that wasn't allocated.
+    /// @param offset A file offset previously obtained from allocate()
+    /// @warning It is an error to free space that wasn't allocated.
     /// There is no 100% dependable way to check this,
     /// but free() will perform some basic test and return false
     /// for inknown memory regions.
@@ -95,8 +95,11 @@ public:
     /// Should not throw exceptions but simply return false
     /// on errors.
     ///
+    /// @param level Level of verbosity.
+    /// @param filename When non-zero, it is used instead of stdout.
+    ///
     /// Returns true for 'OK'.
-    bool dump(int level=1);
+    bool dump(int level=1, FILE *f=stdout);
     
 private:
     // TODO: Refactor as class??

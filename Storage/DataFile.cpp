@@ -8,13 +8,13 @@
 #endif
 
 // Tools
-#include "AutoPtr.h"
-#include "BinIO.h"
-#include "Conversions.h"
-#include "MsgLogger.h"
-#include "Filename.h"
-#include "epicsTimeHelper.h"
-#include "string2cp.h"
+#include <AutoPtr.h>
+#include <BinIO.h>
+#include <Conversions.h>
+#include <MsgLogger.h>
+#include <Filename.h>
+#include <epicsTimeHelper.h>
+#include <string2cp.h>
 // Storage
 #include "DataFile.h"
 #include "CtrlInfo.h"
@@ -31,13 +31,14 @@ static stdList<DataFile *> open_data_files;
 DataFile::DataFile(const stdString &dirname,
                    const stdString &basename,
                    const stdString &filename, bool for_write)
+  : ref_count(1),
+    for_write(for_write),
+    is_tagged_file(false),
+    filename(filename),
+    dirname(dirname),
+    basename(basename)
+
 {
-    this->for_write = for_write;
-    this->dirname = dirname;
-    this->basename = basename;
-    this->filename = filename;
-    file = 0;
-    ref_count = 1;
 #ifdef LOG_DATAFILE
     LOG_MSG("DataFile %s (%c) opened\n",
             filename.c_str(), (for_write?'W':'R'));
@@ -50,14 +51,12 @@ DataFile::~DataFile ()
     LOG_MSG("DataFile %s (%c) closed\n",
             filename.c_str(), (for_write?'W':'R'));
 #endif
-    if (file)
-        fclose(file);
 }
 
 DataFile *DataFile::reference(const stdString &req_dirname,
                               const stdString &req_basename, bool for_write)
 {
-    DataFile *file;
+    DataFile *datafile;
     stdString dirname, basename, filename;
 
     Filename::build(req_dirname, req_basename, filename);
@@ -72,39 +71,50 @@ DataFile *DataFile::reference(const stdString &req_dirname,
             dirname.c_str(), basename.c_str(), filename.c_str());
 #endif
     stdList<DataFile *>::iterator i = open_data_files.begin();
-    while (i != open_data_files.end ())
+    for (/**/;  i != open_data_files.end ();  ++i)
     {
-        file = *i;
-        if (file->getFilename() == filename  &&
-            file->for_write == for_write)
+        datafile = *i;
+        if (datafile->getFilename() == filename  &&
+            datafile->for_write == for_write)
         {
 #ifdef LOG_DATAFILE
             LOG_MSG("DataFile %s (%c) is cached (%d)\n",
                     filename.c_str(),
-                    (for_write?'W':'R'), file->ref_count);
+                    (for_write?'W':'R'), datafile->ref_count);
 #endif
-            file->reference();
+            datafile->reference();
             // When it was put in the cache, it might
             // have been a new file.
             // But now it's one that already existed,
             // so reset is_new_file:
-            file->is_new_file = false;
-            return file;
+            datafile->is_new_file = false;
+            return datafile;
         }
-        ++i;
     }
-    file = new DataFile(dirname, basename, filename, for_write);
-    if (file->reopen())
+    try
     {
-        open_data_files.push_back(file);
-        return file;
+        datafile = new DataFile(dirname, basename, filename, for_write);
     }
-    delete file;
-    return 0;
+    catch (...)
+    {
+        throw GenericException(__FILE__, __LINE__, "Cannot reference '%s'",
+                               filename.c_str());
+    }
+    try
+    {
+        datafile->reopen();
+    }
+    catch (GenericException &e)
+    {
+        delete datafile;
+        throw;
+    }
+    open_data_files.push_back(datafile);
+    return datafile;
 }
 
 // Add reference to current DataFile
-DataFile *DataFile::reference ()
+DataFile *DataFile::reference()
 {
     ++ref_count;
 #ifdef LOG_DATAFILE
@@ -115,118 +125,105 @@ DataFile *DataFile::reference ()
 }
 
 // Call instead of delete:
-void DataFile::release ()
+void DataFile::release()
 {
     --ref_count;
+    // You might expect
+    //   delete this;
+    // in here, but we keep the files open
+    // and cache them until close_all() is called.
 #ifdef LOG_DATAFILE
     LOG_MSG("DataFile %s released (%d)\n",
             filename.c_str(), ref_count);
 #endif
 }
 
-bool DataFile::getSize(FileOffset &size) const
+FileOffset DataFile::getSize() const
 {
     if (fseek(file, 0, SEEK_END) != 0)
-    {
-        LOG_MSG("DataFile::getSize(%s): Cannot seek to end\n",
-                filename.c_str());
-        return false;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile(%s): Cannot seek to end",
+                               filename.c_str());
     long end = ftell(file);
     if (end < 0)
-    {
-        LOG_MSG("DataFile::getSize(%s): ftell failed\n",
-                filename.c_str());
-        return false;
-    }
-    size = (FileOffset) end;
-    return true;
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile(%s): ftell failed",
+                               filename.c_str());
+    return (FileOffset) end;
 }
 
-bool DataFile::reopen()
+void DataFile::reopen()
 {
     is_new_file = is_tagged_file = false;
-    if (file)
-    {
-        fclose(file);
-        file = 0;
-    }
     // Try existing
     if (for_write)
-        file = fopen(filename.c_str(), "r+b");
+        file.open(filename.c_str(), "r+b");
     else
-        file = fopen(filename.c_str(), "rb");
+        file.open(filename.c_str(), "rb");
     if (file)
     {   // Opened existing file. Check type
         uint32_t file_cookie;
-        fseek(file, 0, SEEK_SET);
-        is_tagged_file = readLong(file, &file_cookie) && file_cookie == cookie;
-        return true;
+        if (fseek(file, 0, SEEK_SET) != 0  ||
+            readLong(file, &file_cookie) == false)
+            throw GenericException(__FILE__, __LINE__,
+                                   "DataFile(%s): Read error",
+                                   filename.c_str());
+        is_tagged_file = file_cookie == cookie;
+        return;
     }
-    // No file, yet. Create a new one?
-    if (for_write)
-    {
-        if (!(file = fopen(filename.c_str(), "w+b")))
-        {
-            LOG_MSG("Cannot create DataFile '%s'\n", filename.c_str());
-            return false;
-        }
-        is_new_file = true;
-        fseek(file, 0, SEEK_SET);
-        if (!(is_tagged_file = writeLong(file, cookie)))
-        {
-            LOG_MSG("Cannot tag new DataFile '%s'\n", filename.c_str());
-            return false;
-        }
-        return true;
-    }
-    LOG_MSG("Cannot open DataFile '%s'\n", filename.c_str());
-    return false;
+    // No file, yet.
+    if (!for_write)
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile(%s): No existing file found.",
+                               filename.c_str());
+    // Create a new one.
+    if (!file.open(filename.c_str(), "w+b"))
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile(%s): Cannot create new file.",
+                               filename.c_str());
+    is_new_file = true;
+    if (fseek(file, 0, SEEK_SET) != 0  ||
+        writeLong(file, cookie) == false)
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile(%s): Cannot write to file.",
+                               filename.c_str());
+    is_tagged_file = true;
 }
 
-bool DataFile::close_all(bool verbose)
+void DataFile::close_all()
 {
-    DataFile *file;
-    bool all_closed = true;
-    
     stdList<DataFile *>::iterator i = open_data_files.begin();
     while (i != open_data_files.end())
     {
-        file = *i;
+        DataFile *file = *i;
         if (file->ref_count > 0)
-        {
-            if (verbose)
-            {
-                LOG_MSG("DataFile %s still ref'ed in close_all (%d)\n",
-                        file->filename.c_str(), file->ref_count);
-            }
-            all_closed = false;
-            ++i;
-        }
-        else
-        {
+           throw GenericException(__FILE__, __LINE__,
+                                  "DataFile %s still ref'ed in close_all (%d)\n",
+                                  file->filename.c_str(), file->ref_count);
 #ifdef LOG_DATAFILE
-            LOG_MSG("DataFile::close_all: %s released (%d)\n",
-                    file->filename.c_str(), file->ref_count);
+        LOG_MSG("DataFile::close_all: closing %s\n",
+                file->filename.c_str());
 #endif
-            i = open_data_files.erase(i);
-            delete file;
-        }
+        i = open_data_files.erase(i);
+        delete file;
     }
-    return all_closed;
 }
 
 DataHeader *DataFile::getHeader(FileOffset offset)
 {
-    DataHeader *header = new DataHeader(this);
-    if (header)
+    DataHeader *header = 0;
+    try
     {
-        if (header->read(offset))
-            return header;
-        else
-            delete header;
+        header = new DataHeader(this);
     }
-    return 0;
+    catch (...)
+    {
+        throw GenericException(__FILE__, __LINE__, "Cannot allocate DataHeader");
+    }
+    if (!header->read(offset))
+        throw GenericException(__FILE__, __LINE__, "Cannot read DataHeader (%s)",
+                               filename.c_str());
+    return header;
 }
 
 size_t DataFile::getHeaderSize(const stdString &name,
@@ -244,28 +241,30 @@ DataHeader *DataFile::addHeader(const stdString &name,
                                 DbrType dbr_type, DbrCount dbr_count,
                                 double period, size_t num_samples)
 {
-    AutoPtr<DataHeader> header(new DataHeader(this));
-    if (! header)
+    AutoPtr<DataHeader> header;
+    try
     {
-        LOG_MSG("DataFile::addHeader(%s): Cannot alloc new header\n",
-                filename.c_str());
-        return 0;
+        header = new DataHeader(this);
     }
-    FileOffset new_offset;
-    if (!getSize(new_offset))
-        return 0;
+    catch (...)
+    {
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile(%s): Cannot alloc new header",
+                               filename.c_str());
+    }
+    FileOffset new_offset = getSize();
     if (fseek(file, new_offset, SEEK_SET))
     {
-        LOG_MSG("DataFile::addHeader(%s, %s): Cannot seek to 0x%X\n",
-                filename.c_str(), name.c_str(), new_offset);
-        return 0;   
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile::addHeader(%s, %s): Cannot seek to 0x%X",
+                               filename.c_str(), name.c_str(), new_offset);
     }
     if (fwrite("DATA", 4, 1, file) != 1  ||
         fwrite(name.c_str(), name.length() + 1, 1, file) != 1)
     {
-        LOG_MSG("DataFile::addHeader(%s, %s): Cannot tag at 0x%X\n",
-                filename.c_str(), name.c_str(), new_offset);
-        return 0;   
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile::addHeader(%s, %s): Cannot tag at 0x%X",
+                               filename.c_str(), name.c_str(), new_offset);
     }
     header->offset = new_offset + 4 + name.length() + 1;
     size_t raw_value_size = RawValue::getSize(dbr_type, dbr_count);
@@ -276,11 +275,9 @@ DataHeader *DataFile::addHeader(const stdString &name,
     header->data.buf_size =
         header->data.buf_free + sizeof(DataHeader::DataHeaderData);
     if (!header->write())
-    {
-        LOG_MSG("DataFile::addHeader(%s, %s): Cannot write new header\n",
-                filename.c_str(), name.c_str());
-        return 0;   
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile::addHeader(%s, %s): Cannot write new header",
+                               filename.c_str(), name.c_str());
     // allocate data buffer by writing some marker at the end:
     uint32_t marker = 0xfacefade;
     FileOffset pos = header->offset
@@ -288,27 +285,26 @@ DataHeader *DataFile::addHeader(const stdString &name,
     if (fseek(file, pos, SEEK_SET) != 0 ||
         (FileOffset) ftell(file) != pos ||
         !writeLong(file, marker))    
-   {
-        LOG_MSG("DataFile::addHeader(%s, %s): Cannot mark end of new buffer\n",
-                filename.c_str(), name.c_str());
-        return 0;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile::addHeader(%s, %s): "
+                               "Cannot mark end of new buffer",
+                               filename.c_str(), name.c_str());
     return header.release();
 }
 
-bool DataFile::addCtrlInfo(const CtrlInfo &info, FileOffset &offset)
+void DataFile::addCtrlInfo(const CtrlInfo &info, FileOffset &offset)
 {
     if (fseek(file, 0, SEEK_END) != 0)
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile(%s): Seek error",
+                               filename.c_str());
     offset = ftell(file);
     if (fwrite("INFO", 4, 1, file) != 1)
-    {
-        LOG_MSG("DataFile::addCtrlInfo(%s): Cannot tag at 0x%X\n",
-                filename.c_str(), offset);
-        return false;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile::addCtrlInfo(%s): Cannot tag at 0x%X\n",
+                               filename.c_str(), offset);
     offset += 4;
-    return info.write(this, offset);
+    info.write(this, offset);
 }
 
 DataHeader::DataHeader(DataFile *datafile)
@@ -336,21 +332,20 @@ bool DataHeader::isValid()
 
 size_t DataHeader::available()
 {
-    if (!isValid()  ||  data.buf_free <= 0)
+    LOG_ASSERT(isValid());
+    if (data.buf_free <= 0)
         return 0;
     size_t val_size = RawValue::getSize(data.dbr_type, data.dbr_count);
-    if (val_size > 0)
-        return data.buf_free / val_size;
-    return 0;
+    LOG_ASSERT(val_size > 0);
+    return data.buf_free / val_size;
 }
 
 size_t DataHeader::capacity()
 {
     size_t val_size = RawValue::getSize(data.dbr_type, data.dbr_count);
-    if (val_size > 0)
-        return (data.buf_size - sizeof(DataHeader::DataHeaderData))
+    LOG_ASSERT(val_size > 0);
+    return (data.buf_size - sizeof(DataHeader::DataHeaderData))
             / val_size;
-    return 0;
 }
 
 bool DataHeader::read(FileOffset offset)
@@ -432,11 +427,6 @@ bool DataHeader::get_prev_next(const char *name, FileOffset new_offset)
         DataFile *next = DataFile::reference(
             datafile->dirname,
             name, datafile->for_write);
-        if (! next)
-        {
-            clear();
-            return false;
-        }
         datafile->release();
         datafile = next;
     }
@@ -500,3 +490,4 @@ void DataHeader::show(FILE *f, bool full_detail)
         epicsTime2string(data.next_file_time, t);
     }
 }
+

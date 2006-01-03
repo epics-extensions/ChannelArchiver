@@ -47,7 +47,7 @@ private:
     AutoPtr<class DataHeader> header;
     size_t val_idx; // current index in data buffer
 
-    bool getHeader(const stdString &dirname, const stdString &basename,
+    void getHeader(const stdString &dirname, const stdString &basename,
                    FileOffset offset);
     const RawValue::Data *findSample(const epicsTime &start);
 };

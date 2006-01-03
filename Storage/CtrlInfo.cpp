@@ -1,8 +1,9 @@
 // Base
 #include <cvtFast.h>
 // Tools
-#include "string2cp.h"
-#include "Conversions.h"
+#include <GenericException.h>
+#include <string2cp.h>
+#include <Conversions.h>
 // Storage
 #include "CtrlInfo.h"
 #include "RawValue.h"
@@ -36,9 +37,6 @@ CtrlInfo & CtrlInfo::operator = (const CtrlInfo &rhs)
     return *this;
 }
 
-CtrlInfo::~CtrlInfo()
-{}
-
 bool CtrlInfo::operator == (const CtrlInfo &rhs) const
 {
     const CtrlInfoData *rhs_info = rhs._infobuf.mem();
@@ -54,11 +52,11 @@ bool CtrlInfo::operator == (const CtrlInfo &rhs) const
 }
 
 CtrlInfo::Type CtrlInfo::getType() const
-{	return (CtrlInfo::Type) (_infobuf.mem()->type);}
+{   return (CtrlInfo::Type) (_infobuf.mem()->type);}
 
 int32_t CtrlInfo::getPrecision() const
 {
-	if (getType() == Numeric)
+    if (getType() == Numeric)
         return _infobuf.mem()->value.analog.prec;
     return 0;
 }
@@ -71,28 +69,28 @@ const char *CtrlInfo::getUnits() const
 }
 
 float CtrlInfo::getDisplayHigh() const
-{	return _infobuf.mem()->value.analog.disp_high; }
+{   return _infobuf.mem()->value.analog.disp_high; }
 
 float CtrlInfo::getDisplayLow() const
-{	return _infobuf.mem()->value.analog.disp_low; }
+{   return _infobuf.mem()->value.analog.disp_low; }
 
 float CtrlInfo::getHighAlarm() const
-{	return _infobuf.mem()->value.analog.high_alarm; }
+{   return _infobuf.mem()->value.analog.high_alarm; }
 
 float CtrlInfo::getHighWarning() const
-{	return _infobuf.mem()->value.analog.high_warn; }
+{   return _infobuf.mem()->value.analog.high_warn; }
 
 float CtrlInfo::getLowWarning() const
-{	return _infobuf.mem()->value.analog.low_warn; }
+{   return _infobuf.mem()->value.analog.low_warn; }
 
 float CtrlInfo::getLowAlarm() const
-{	return _infobuf.mem()->value.analog.low_alarm; }
+{   return _infobuf.mem()->value.analog.low_alarm; }
 
 size_t CtrlInfo::getNumStates() const
 {
-	if (getType() == Enumerated)
-		return _infobuf.mem()->value.index.num_states;
-	return 0;
+    if (getType() == Enumerated)
+        return _infobuf.mem()->value.index.num_states;
+    return 0;
 }
 
 void CtrlInfo::setNumeric(
@@ -265,7 +263,7 @@ bool CtrlInfo::parseState(const char *text,
 // For other types, the current info is maintained
 // so that the reader can decide to ignore the problem.
 // In other cases, the type is set to Invalid
-bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
+void CtrlInfo::read(DataFile *datafile, FileOffset offset)
 {
     // read size field only
     uint16_t size;
@@ -274,9 +272,11 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
         fread(&size, sizeof size, 1, datafile->file) != 1)
     {
         _infobuf.mem()->type = Invalid;
-        LOG_MSG("Datafile %s: Cannot read size of CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), (unsigned long)offset);
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "Datafile %s: Cannot read size of CtrlInfo "
+                               " @ 0x%lX\n",
+                               datafile->getBasename().c_str(),
+                               (unsigned long)offset);
     }
     SHORTFromDisk(size);
     if (size < offsetof(CtrlInfoData, value) + sizeof(EnumeratedInfo))
@@ -286,12 +286,13 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
             LOG_MSG("CtrlInfo too small: %d, "
                     "forcing to empty enum for compatibility\n", size);
             setEnumerated (0, 0);
-            return false;
+            return;
         }
         // keep current values for _infobuf!
-        LOG_MSG("Datafile %s: Incomplete CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), (unsigned long)offset);
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "Datafile %s: Incomplete CtrlInfo @ 0x%lX\n",
+                               datafile->getBasename().c_str(),
+                               (unsigned long)offset);
     }
     _infobuf.reserve(size+1); // +1 for possible unit string hack, see below
     CtrlInfoData *info = _infobuf.mem();
@@ -299,18 +300,21 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
     if (info->size > _infobuf.capacity())
     {
         info->type = Invalid;
-        LOG_MSG("Datafile %s: CtrlInfo @ 0x%lX is too big\n",
-                datafile->getBasename().c_str(), (unsigned long)offset);
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "Datafile %s: CtrlInfo @ 0x%lX is too big\n",
+                               datafile->getBasename().c_str(),
+                               (unsigned long)offset);
     }
     // read remainder of CtrlInfo:
     if (fread(((char *)info) + sizeof size,
               info->size - sizeof size, 1, datafile->file) != 1)
     {
         info->type = Invalid;
-        LOG_MSG("Datafile %s: Cannot read remainder of CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), (unsigned long)offset);
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "Datafile %s: Cannot read remainder of "
+                               "CtrlInfo @ 0x%lX\n",
+                               datafile->getBasename().c_str(),
+                               (unsigned long)offset);
     }
     // convert rest from disk format
     SHORTFromDisk(info->type);
@@ -331,7 +335,7 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
                 end = info->size - offsetof(CtrlInfoData, value.analog.units);
                 for (i=0; i<end; ++i)
                     if (info->value.analog.units[i] == '\0')
-                        return true; // OK, string is terminated
+                        return; // OK, string is terminated
                 ++info->size; // include string terminator
                 info->value.analog.units[end] = '\0';
             }
@@ -340,18 +344,19 @@ bool CtrlInfo::read(DataFile *datafile, FileOffset offset)
             SHORTFromDisk(info->value.index.num_states);
             break;
         default:
-            LOG_MSG("Datafile %s: "
-                    "CtrlInfo @ 0x%lX has invalid  type %d, size %zu\n",
-                    datafile->getBasename().c_str(),
-                    (unsigned long)offset, info->type, info->size);
             info->type = Invalid;
-            return false;
+            throw GenericException(__FILE__, __LINE__,
+                                   "Datafile %s: "
+                                   "CtrlInfo @ 0x%lX has invalid  type %d, "
+                                   "size %zu\n",
+                                   datafile->getBasename().c_str(),
+                                   (unsigned long)offset, info->type,
+                                   info->size);
     }
-    return true;
 }
 
 // Write CtrlInfo to file.
-bool CtrlInfo::write(DataFile *datafile, FileOffset offset) const
+void CtrlInfo::write(DataFile *datafile, FileOffset offset) const
 {   // Attention:
     // copy holds only the fixed CtrlInfo portion,  not enum strings etc.!
     const CtrlInfoData *info = _infobuf.mem();
@@ -376,33 +381,32 @@ bool CtrlInfo::write(DataFile *datafile, FileOffset offset) const
                 + sizeof (EnumeratedInfo);
             break;
         default:
-            LOG_MSG("Datafile %s: CtrlInfo for 0x%lX has invalid type %d,"
-                    " size %d\n",
-                    datafile->getBasename().c_str(),
-                    (unsigned long)offset, info->type, info->size);
-            return false;
+            throw GenericException(__FILE__, __LINE__,
+                                   "Datafile %s: CtrlInfo for 0x%lX has "
+                                   "invalid type %d, size %d\n",
+                                   datafile->getBasename().c_str(),
+                                   (unsigned long)offset, info->type,
+                                   info->size);
     }
     SHORTToDisk(copy.size);
     SHORTToDisk(copy.type);
     if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(datafile->file) != offset ||
         fwrite(&copy, converted, 1, datafile->file) != 1)
-    {
-        LOG_MSG("Datafile %s: Cannot write CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), (unsigned long)offset);
-        return false;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "Datafile %s: Cannot write CtrlInfo @ 0x%lX\n",
+                               datafile->getBasename().c_str(),
+                               (unsigned long)offset);
     // only the common, minimal CtrlInfoData portion was converted,
     // the remaining strings are written from 'this'
     if (info->size > converted &&
         fwrite(((char *)info) + converted,
                info->size - converted, 1, datafile->file) != 1)
-    {
-        LOG_MSG("Datafile %s: Cannot write rest of CtrlInfo @ 0x%lX\n",
-                datafile->getBasename().c_str(), (unsigned long)offset);
-        return false;
-    }
-    return true;
+        throw GenericException(__FILE__, __LINE__,
+                               "Datafile %s: Cannot write rest of "
+                               "CtrlInfo @ 0x%lX\n",
+                               datafile->getBasename().c_str(),
+                               (unsigned long)offset);
 }
 
 void CtrlInfo::show(FILE *f) const
@@ -428,9 +432,4 @@ void CtrlInfo::show(FILE *f) const
     else
         fprintf(f, "CtrlInfo: Unknown\n");
 }
-
-
-
-
-
 

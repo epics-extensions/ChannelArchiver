@@ -10,29 +10,40 @@
 #undef DEBUG_DATAREADER
 
 RawDataReader::RawDataReader(Index &index)
-        : index(index), tree(0), node(0), rec_idx(0), valid_datablock(false),
-          dbr_type(0), dbr_count(0),
-          type_changed(false), ctrl_info_changed(false),
-          data(0), header(0)
+        : index(index),
+          rec_idx(0),
+          valid_datablock(false),
+          dbr_type(0),
+          dbr_count(0),
+          type_changed(false),
+          ctrl_info_changed(false),
+          period(0.0),
+          raw_value_size(0),
+          val_idx(0)
 {}
 
 RawDataReader::~RawDataReader()
 {
-    if (data)
-        RawValue::free(data);
     DataFile::close_all();
 }
 
-const RawValue::Data *RawDataReader::find(
-    const stdString &channel_name,
-    const epicsTime *start,
-    ErrorInfo &error_info)
+const RawValue::Data *RawDataReader::find(const stdString &channel_name,
+                                          const epicsTime *start)
 {
     this->channel_name = channel_name;
     // Get tree
-    if (!(tree = index.getTree(channel_name, directory, error_info)))
-        return 0;
-    node = new RTree::Node(tree->getM(), true);
+    tree = index.getTree(channel_name, directory);
+    if (! tree)
+        return 0; // Channel not found
+    try
+    {
+        node = new RTree::Node(tree->getM(), true);
+    }
+    catch (...)
+    {
+        throw GenericException(__FILE__, __LINE__, "Cannot alloc node for '%s'",
+                               channel_name.c_str());
+    }
     // Get 1st data block
     if (start)
         valid_datablock = tree->searchDatablock(*start, *node,
@@ -54,7 +65,7 @@ const RawValue::Data *RawDataReader::find(
 #endif
     // Get the buffer for that data block
     if (!getHeader(directory,
-                   datablock.data_filename, datablock.data_offset, error_info))
+                   datablock.data_filename, datablock.data_offset))
         return 0;
     if (start)
         return findSample(*start, error_info);
@@ -186,17 +197,19 @@ bool RawDataReader::changedInfo()
     return changed;
 } 
     
-// Either sets header to new dirname/basename/offset or returns false
-bool RawDataReader::getHeader(const stdString &dirname,
+// Sets header to new dirname/basename/offset,
+// or throws GenericException with details.
+void RawDataReader::getHeader(const stdString &dirname,
                               const stdString &basename,
-                              FileOffset offset,
-                              ErrorInfo &error_info)
+                              FileOffset offset)
 {
-    DataFile *datafile;
-    DataHeader *new_header;
     if (!Filename::isValid(basename))
-        goto no_header;
+        throw GenericException(__FILE__, __LINE__, "Invalid basename");
     // Read new header
+
+
+XXXXXX HERE XXXXXXX
+    DataFile              *datafile;
     if (basename[0] == '/')
     {
         // Index gave us the data file with the full path
@@ -218,6 +231,8 @@ bool RawDataReader::getHeader(const stdString &dirname,
             goto no_header;
         }
     }
+
+    AutoPtr<DataHeader>   new_header;
     new_header = datafile->getHeader(offset);
     datafile->release(); // now ref'ed by new_header
     if (!new_header)

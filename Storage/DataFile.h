@@ -6,6 +6,8 @@
 #include <stdio.h>
 // Tools
 #include <Filename.h>
+#include <AutoPtr.h>
+#include <AutoFilePtr.h>
 // Storage
 #include <RawValue.h>
 
@@ -32,15 +34,21 @@ public:
     static const uint32_t cookie = 0x41444631;
 
     /// Reference a data file.
-    
-    /// \param dirname: Path/directory up to the filename
-    /// \param basename: filename inside dirname
-    /// \param for_write: open for writing or read-only?
+    ///
+    /// Either opens a new one, or returns another reference
+    /// to a file that is in the DataFile cache.
+    ///
+    /// @param dirname: Path/directory up to the filename
+    /// @param basename: filename inside dirname
+    /// @param for_write: open for writing or read-only?
+    ///
     /// The reference call will normalize the dirname/basename/filename.
     /// As an example, it's acceptable to pass a basename that still
     /// contains pieces of a pathname, which will then be moved
     /// into the dirname.
-    /// \sa release
+    ///
+    /// @sa release
+    /// @exception GenericException on error.
     static DataFile *reference(const stdString &dirname,
                                const stdString &basename, bool for_write);
 
@@ -54,10 +62,8 @@ public:
     bool isTaggedFile() { return is_tagged_file; }
     
     /// De-reference a data file (Call instead of delete).
-
-    /// \sa close_all
-    ///
-    ///
+    //
+    /// @sa close_all
     void release();
 
     /// Returns true if DataFile is writable.
@@ -65,19 +71,23 @@ public:
     { return for_write; }
 
     /// Get current file size in bytes.
-    bool getSize(FileOffset &size) const;
-    
-    /// For synchr. with a file that's actively written
-    /// by another prog. is might help to reopen:
     ///
-    bool reopen();
+    /// @exception GenericException on file seek error.
+    FileOffset getSize() const;
+    
+    /// Closes and re-opens a DataFile.
+    ///
+    /// For synchr. with a file that's actively written
+    /// by another prog. is might help to reopen.
+    ///
+    /// @exception GenericException on error.
+    void reopen();
 
     /// Close all data files that are currently open.
-
-    /// Returns true if all files could be closed.
-    /// Returns false if at least one data file is still
+    ///
+    /// @exception GenericException if for example one data file is still
     /// referenced and thus we couldn't close it.
-    static bool close_all(bool verbose=false);
+    static void close_all();
 
     /// Check if any data files are still open (e.g. at end of program)
     static bool any_still_open();
@@ -91,10 +101,10 @@ public:
     /// Get base name of data file.
     const stdString &getBasename() {   return basename; }
 
-    /// Read header at given offset
-
-    /// \return Alloc'ed DataHeader or 0 in case of error.
-    /// 
+    /// Read header at given offset.
+    ///
+    /// @return Alloc'ed DataHeader, to be relased by caller.
+    /// @exception GenericException in case of error.
     class DataHeader *getHeader(FileOffset offset);
 
     /// Get size of a header with given parameters.
@@ -103,21 +113,22 @@ public:
                          size_t num_samples);
     
     /// Add a new DataHeader to the file.
-    
-    /// \return Alloc'ed header or 0.
+    ///
+    /// @return Alloc'ed header.
     /// The header's data type and buffer size info
     /// will be initialized.
     /// Links (dir, prev, next) need to be configured and saved.
+    /// @exception GenericException in case of error.    
     class DataHeader *addHeader(const stdString &name,
                                 DbrType dbr_type, DbrCount dbr_count,
                                 double period, size_t num_samples);
 
     /// Add CtrlInfo to the data file
-
-    /// \return true for OK
-    /// \param offset is set to offset of the info
     ///
-    bool addCtrlInfo(const CtrlInfo &info, FileOffset &offset);
+    /// @param offset is set to offset of the info
+    ///
+    /// @exception GenericException in case of error.
+    void addCtrlInfo(const CtrlInfo &info, FileOffset &offset);
 private:
     friend class DataHeader;
     friend class CtrlInfo;
@@ -139,7 +150,7 @@ private:
     DataFile &operator = (const DataFile &other);
 
     // The current data file
-    FILE * file;
+    AutoFilePtr file;
     size_t ref_count;
     bool   for_write;
     bool   is_tagged_file;
@@ -216,9 +227,11 @@ public:
     size_t capacity();
     
     /// Read (and convert) from offset in current DataFile, updating offset.
+    /// @return Succeeded?
     bool read(FileOffset offset);
 
     /// Convert and write to current offset in current DataFile.
+    /// @return Succeeded?
     bool write() const;
 
     /// Read the next data header.

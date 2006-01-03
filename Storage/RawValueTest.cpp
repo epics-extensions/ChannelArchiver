@@ -45,3 +45,40 @@ TEST_CASE RawValue_format()
     TEST_OK;
 }
 
+TEST_CASE RawValue_auto_ptr()
+{
+    {
+        RawValueAutoPtr val;
+
+        val = RawValue::allocate(DBR_TIME_DOUBLE, 1, 1);
+        TEST_MSG(val, "Allocated");
+
+        TEST(RawValue::setDouble(DBR_TIME_DOUBLE, 1, val, 3.14));
+        
+        double d;
+        TEST(RawValue::getDouble(DBR_TIME_DOUBLE, 1, val, d, 0));
+        TEST(d == 3.14);
+
+        // This one was caught by valgrind as a duplicate free(),
+        // though hard to build into a unit-test:
+        // RawValue::free(val);
+
+        RawValueAutoPtr copy;
+        copy = val;
+        TEST_MSG(!val, "AutoPtr copy released the original");
+
+        TEST(RawValue::getDouble(DBR_TIME_DOUBLE, 1, copy, d, 0));
+        TEST(d == 3.14);
+
+        long l;
+        TEST(RawValue::getLong(DBR_TIME_DOUBLE, 1, copy, l, 0));
+        TEST(l == 3);
+
+        stdString txt;
+        RawValue::getValueString(txt, DBR_TIME_DOUBLE, 1, copy);
+        TEST_MSG(txt.length() > 0, "Convert to string");
+        printf("       -> '%s'\n", txt.c_str());
+    }
+    TEST_OK;
+}
+

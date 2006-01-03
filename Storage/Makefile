@@ -22,6 +22,8 @@ INC += IndexFile.h
 INC += ListIndex.h
 INC += DataWriter.h
 INC += DataReader.h
+INC += RawDataReader.h
+INC += ReaderFactory.h
 INC += AverageReader.h
 INC += LinearReader.h
 INC += PlotReader.h
@@ -42,7 +44,9 @@ LIB_SRCS += Index.cpp
 LIB_SRCS += IndexFile.cpp
 #LIB_SRCS += ListIndex.cpp
 #LIB_SRCS += DataWriter.cpp
-#LIB_SRCS += DataReader.cpp
+LIB_SRCS += DataReader.cpp
+#LIB_SRCS += RawDataReader.cpp
+#LIB_SRCS += ReaderFactory.cpp
 #LIB_SRCS += AverageReader.cpp
 #LIB_SRCS += LinearReader.cpp
 #LIB_SRCS += PlotReader.cpp
@@ -82,5 +86,5 @@ test:
 	O.$(EPICS_HOST_ARCH)/UnitTest
         
 valgrind:
-	IN_VALGRIND=1 valgrind O.$(EPICS_HOST_ARCH)/UnitTest
+	IN_VALGRIND=1 valgrind $(VALGRIND_FLAGS) O.$(EPICS_HOST_ARCH)/UnitTest
 

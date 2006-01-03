@@ -172,6 +172,84 @@ public:
                       class DataFile *datafile, FileOffset offset);
 };
 
+
+/// AutoPtr for RawValue.
+class RawValueAutoPtr
+{
+public:
+    RawValueAutoPtr() : ptr(0) {};
+
+    /// Assign pointer to AutoPtr.
+    RawValueAutoPtr(RawValue::Data *in) : ptr(in) {};
+
+    /// Copying from other AutoPtr causes rhs to release ownership.
+    RawValueAutoPtr(RawValueAutoPtr &rhs)
+    {
+        ptr = rhs.release();
+    }
+
+    /// Destructor deletes owned pointer.
+    ~RawValueAutoPtr()
+    {
+        assign(0);
+    }
+
+    /// Copying from other AutoPtr causes rhs to release ownership.
+    RawValueAutoPtr & operator = (RawValueAutoPtr &rhs)
+    {
+        assign(rhs.release());
+        return *this;
+    }
+
+    RawValueAutoPtr & operator = (RawValue::Data *p)
+    {
+        assign(p);
+        return *this;
+    }
+    
+    operator bool () const
+    {
+        return ptr != 0;
+    }
+    
+    /// Allow access just like ordinary pointer.
+    RawValue::Data &operator *() const
+    {
+        return *ptr;
+    }
+
+    /// Allow access just like ordinary pointer.
+    RawValue::Data *operator ->() const
+    {
+        return ptr;
+    }
+
+    /// Allow access just like ordinary pointer.
+    operator RawValue::Data * () const
+    {
+        return ptr;
+    }
+
+    /// Assign a new pointer, deleting existing one.
+    void assign(RawValue::Data *new_ptr)
+    {
+        if (ptr)
+            RawValue::free(ptr);
+        ptr = new_ptr;
+    }
+
+    /// Release ownership.
+    RawValue::Data * release()
+    {
+        RawValue::Data *tmp = ptr;
+        ptr = 0;
+        return tmp;
+    }
+    
+private:
+    RawValue::Data *ptr;
+};
+
 /// @}
 
 inline void RawValue::copy(DbrType type, DbrCount count,

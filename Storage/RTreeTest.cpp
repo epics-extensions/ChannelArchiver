@@ -1,3 +1,6 @@
+
+#define INDEX_TEST
+
 // System
 #include <stdlib.h>
 // Tools
@@ -7,6 +10,9 @@
 // Storage
 #include "RTree.h"
 #include "FileAllocator.h"
+#ifdef INDEX_TEST
+#include "IndexFile.h"
+#endif
 
 // Test data for fill_test
 typedef struct
@@ -102,11 +108,16 @@ TEST_CASE fill_tests()
                    test_config[test].index_name,
                    test_config[test].dotfile);
             stdString directory;
-            FileAllocator fa;
+            // Open File
+            TEST_DELETE_FILE(test_config[test].index_name);
             AutoFilePtr f(test_config[test].index_name, "w+b");
+            // Attach FileAllocator
+            FileAllocator fa;
             fa.attach(f, RTree::anchor_size);
+            // Add RTree
             AutoPtr<RTree> tree(new RTree(fa, 0));
             tree->init(3);
+
             unsigned long nodes, records;
             TEST(tree->selfTest(nodes, records));
             epicsTime start, end;
@@ -161,7 +172,7 @@ TEST_CASE fill_tests()
     }
     catch (GenericException &e)
     {
-        printf("Exception durint sub-test %zu, item %zi: %s",
+        printf("Exception during sub-test %zu, item %zi:\n%s\n",
                test, i, e.what());
         FAIL("Exception");
     }
@@ -203,13 +214,13 @@ TEST_CASE dump_blocks()
     }
     catch (GenericException &e)
     {
-        printf("Exception: %s", e.what());
+        printf("Exception:\n%s\n", e.what());
         FAIL("Exception");
     }
     TEST_OK;
 }
 
-#if 0
+#ifdef INDEX_TEST
 static TestData update_data[] =
 {
     { "200", "210", "-last-", 1 }, // Last engine's last block
@@ -224,56 +235,54 @@ static TestData update_data[] =
     { "280", "290", "-new2-", 1 }, // .. growing
 };
 
-bool update_test(const char *index_name,
-                 const TestData *data, int num, const char *dotfile)
+TEST_CASE update_test()
 {
-    IndexFile index(10);
-    stdString directory;
-    RTree *tree;
-    FileAllocator::minimum_size = 0;
-    FileAllocator::file_size_increment = 0;
-    FileAllocator fa;
-    index.open(index_name, false);
-    tree = index.addChannel("test", directory);
-    if (!tree) 
+    size_t i = 0, num = sizeof(update_data)/sizeof(TestData);
+
+    TEST_DELETE_FILE("test/update.tst");
+    try
     {
-        fprintf(stderr, "index.addChannel failed\n");
-        return false;
-    }    
-    unsigned long nodes, records;
-    if (!tree->selfTest(nodes, records))
-    {
-        fprintf(stderr, "Self test failed\n");
-        return false;
-    }
-    int i;
-    epicsTime start, end;
-    for (i=0; i<num; ++i)
-    {
-        if (i==(num-1))
-            tree->makeDot("update0.dot");
-        string2epicsTime(data[i].start, start);
-        string2epicsTime(data[i].end, end);
-        stdString filename = data[i].file;
-        if (tree->updateLastDatablock(start, end, data[i].offset, filename)
-            == RTree::YNE_Error)
+        IndexFile index(10);
+        stdString directory;
+        FileAllocator::minimum_size = 0;
+        FileAllocator::file_size_increment = 0;
+        FileAllocator fa;
+        index.open("test/update.tst", false);
+    
+        AutoPtr<RTree> tree(index.addChannel("test", directory));
+        TEST_MSG(tree, "Added Channel");
+    
+        unsigned long nodes, records;
+        TEST_MSG(tree->selfTest(nodes, records), "Initial Self Test");
+    
+        epicsTime start, end;
+        for (i=0; i<num; ++i)
         {
-            fprintf(stderr, "Update %s..%s: %d failed\n",
-                    data[i].start, data[i].end, i+1);
-            return false;
+            if (i==(num-1))
+                tree->makeDot("update0.dot");
+            string2epicsTime(update_data[i].start, start);
+            string2epicsTime(update_data[i].end, end);
+            stdString filename = update_data[i].file;
+            tree->updateLastDatablock(start, end, update_data[i].offset, filename);
+            if (i==(num-1))
+                tree->makeDot("update1.dot");
+            if (!tree->selfTest(nodes, records))
+            {
+                FAIL("Self test");
+            }
         }
-        if (i==(num-1))
-            tree->makeDot("update1.dot");
-        if (!tree->selfTest(nodes, records))
-        {
-            fprintf(stderr, "Self test failed\n");
-            return false;
-        }
+        tree->makeDot("test/update_data.dot");
+        TEST_MSG(tree->selfTest(nodes, records), "Final Self Test");
+        index.close();
+        TEST_FILEDIFF("test/update_data.dot", "test/update_data.dot.OK");
     }
-    tree->makeDot(dotfile);
-    delete tree;
-    index.close();
-    puts("OK: RTree update");
-    return true;
+    catch (GenericException &e)
+    {
+        printf("Exception while processing item %zu:\n%s\n", i, e.what());
+        FAIL("Exception");
+    }
+
+    TEST_OK;
 }
 #endif
+

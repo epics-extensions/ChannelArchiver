@@ -4,7 +4,7 @@
 #define __INDEX_H__
 
 // Tools
-#include <ErrorInfo.h>
+#include <ToolsConfig.h>
 // Storage
 #include <NameHash.h>
 
@@ -15,34 +15,39 @@
 class Index
 {
 public:
+    /// Destructor.
     virtual ~Index();
     
     /// Open an index.
-    virtual bool open(const stdString &filename, bool readonly, ErrorInfo &error_info) = 0;
+    ///
+    /// @exception GenericException on error (file not found, wrong file format, ...).
+    virtual void open(const stdString &filename, bool readonly) = 0;
 
     /// Close the index.
     virtual void close() = 0;
     
     /// Add a channel to the index.
-
+    ///
     /// A channel has to be added before data blocks get defined
     /// for the channel. When channel is already in index, existing
     /// tree gets returned.
     ///
-    /// Caller must delete the tree pointer.
+    /// @return RTree pointer which caller must delete.
+    /// @exception GenericException on internal error.
     virtual class RTree *addChannel(const stdString &channel,
                                     stdString &directory) = 0;
 
     /// Obtain the RTree for a channel.
-
-    /// Caller must delete the tree pointer.
     ///
     /// Directory is set to the path/directory of the index,
     /// which together with the data block in the RTree will then
     /// lead to the actual data files.
+    ///
+    /// @return RTree pointer which caller must delete.
+    ///         Returns 0 if the channel is not found.
+    /// @exception GenericException on internal error.
     virtual class RTree *getTree(const stdString &channel,
-                                 stdString &directory,
-                                 ErrorInfo &error_info) = 0;
+                                 stdString &directory) = 0;
     
     /// Used by get_first_channel(), get_next_channel().
     class NameIterator
@@ -58,15 +63,15 @@ public:
     };
 
     /// Locate NameIterator on first channel.
+    ///
+    /// @return true if there was a first entry.
     virtual bool getFirstChannel(NameIterator &iter) = 0;
 
     /// Locate NameIterator on next channel.
-
-    /// \pre Successfull call to get_first_channel().
     ///
-    ///
+    /// @pre Successfull call to get_first_channel().
+    /// @return true if there was another entry.
     virtual bool getNextChannel(NameIterator &iter) = 0;
-
 };
 
 /// \@}

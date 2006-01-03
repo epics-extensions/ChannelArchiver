@@ -17,8 +17,7 @@ uint32_t IndexFile::ht_size = 1009;
 IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
 {}
 
-bool IndexFile::open(const stdString &filename, bool readonly,
-                     ErrorInfo &error_info)
+void IndexFile::open(const stdString &filename, bool readonly)
 {
     stdString linked_filename;
     if (Filename::getLinkedFilename(filename, linked_filename))
@@ -27,64 +26,55 @@ bool IndexFile::open(const stdString &filename, bool readonly,
         Filename::getDirname(filename, dirname);
     bool new_file = false;
     if (readonly)
-        f = fopen(filename.c_str(), "rb");
+        f.open(filename.c_str(), "rb");
     else
     {   // Try existing file
-        f = fopen(filename.c_str(), "r+b");
+        f.open(filename.c_str(), "r+b");
         if (!f)
         {   // Create new file
-            f = fopen(filename.c_str(), "w+b");
+            f.open(filename.c_str(), "w+b");
             new_file = true;
         }   
     }
     if (!f)
-    {
-        error_info.set("IndexFile::open(%s) cannot %s file.\n",
-                       filename.c_str(), (new_file ? "create" : "open"));
-        return false;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "IndexFile::open(%s) cannot %s file.",
+                               filename.c_str(), (new_file ? "create" : "open"));
     // TODO: Tune these two. All 0 seems best?!
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
     fa.attach(f, 4+NameHash::anchor_size);
     if (new_file)
     {
-        if (fseek(f, 0, SEEK_SET)  ||  !writeLong(f, cookie))
-        {
-            error_info.set("IndexFile::open(%s) cannot write cookie.\n",
-                           filename.c_str());
-            goto open_error;
-        }
-        if (names.init(ht_size))
-            return true;
-        error_info.set("IndexFile::open(%s) cannot init. hash.\n",
-                           filename.c_str());
-        goto open_error;
+        if (fseek(f, 0, SEEK_SET))
+            throw GenericException(__FILE__, __LINE__,
+                                   "IndexFile::open(%s) seek error",
+                                   filename.c_str());
+        if (!writeLong(f, cookie))
+            throw GenericException(__FILE__, __LINE__,
+                                   "IndexFile::open(%s) cannot write cookie.",
+                                   filename.c_str());
+        names.init(ht_size);
+        return; // OK, created new file.
     }
     // Check existing file
     uint32_t file_cookie;
-    if (fseek(f, 0, SEEK_SET)  ||  !readLong(f, &file_cookie))
-    {
-        error_info.set("IndexFile::open(%s) cannot read cookie.\n",
-                       filename.c_str());
-        goto open_error;
-    }
+    if (fseek(f, 0, SEEK_SET))
+        throw GenericException(__FILE__, __LINE__,
+                               "IndexFile::open(%s) seek error",     
+                               filename.c_str());
+    if (!readLong(f, &file_cookie))
+        throw GenericException(__FILE__, __LINE__,
+                               "IndexFile::open(%s) cannot read cookie.",
+                               filename.c_str());
     if (file_cookie != cookie)
-    {
-        error_info.set("IndexFile::open(%s) doesn't have valid cookie.\n",
-                       filename.c_str());
-        goto open_error;
-    }
-    if (!names.reattach())
-    {
-        error_info.set("IndexFile::open(%s) name hash cannot attach.\n",
-                       filename.c_str());
-        goto open_error;
-    }
-    return true;
-  open_error:
-    close();
-    return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "IndexFile::open(%s) Invalid cookie, "
+                               "0x%08lX instead of 0x%08lX.",
+                               filename.c_str(),
+                               (unsigned long)file_cookie,
+                               (unsigned long)cookie);
+    names.reattach();
 }
 
 void IndexFile::close()
@@ -92,57 +82,61 @@ void IndexFile::close()
     if (f)
     {
         fa.detach();
-        fclose(f);
-        f = 0;
+        f.close();
     }   
 }
 
 RTree *IndexFile::addChannel(const stdString &channel, stdString &directory)
-{
-    ErrorInfo error_info;
-    RTree *tree = getTree(channel, directory, error_info);
-    // TODO: Take ErrorInfo arg, handle error_info result
+{   // Using AutoPtr in case e.g. tree->init throws exception.
+    AutoPtr<RTree> tree(getTree(channel, directory));
     if (tree)
-        return tree;
+        return tree.release(); // Done, found existing.
+    FileOffset tree_anchor = fa.allocate(RTree::anchor_size);
+    try
+    {
+        tree = new RTree(fa, tree_anchor);
+    }
+    catch (...)
+    {
+        tree.release();
+        throw GenericException(__FILE__, __LINE__,
+                               "Cannot allocate RTree for channel '%s'",
+                               channel.c_str());
+    }
     stdString tree_filename;
-    FileOffset tree_anchor;
-    if (!(tree_anchor = fa.allocate(RTree::anchor_size)))
-    {
-        LOG_MSG("IndexFile::add_channel(%s): cannot allocate tree anchor\n",
-                channel.c_str());
-        return false;
-    }
-    tree = new RTree(fa, tree_anchor);
-    if (tree->init(RTreeM) &&
-        names.insert(channel, tree_filename, tree_anchor))
-    {
-        directory = dirname;
-        return tree;
-    }
-    delete tree;
-    return 0;
+    tree->init(RTreeM);
+    if (names.insert(channel, tree_filename, tree_anchor) == false)
+        throw GenericException(__FILE__, __LINE__,
+                               "Index consistency error: New channel '%s' "
+                               "had no RTree but was already in name hash.",
+                               channel.c_str());
+    // Done, new name entry & RTree.
+    directory = dirname;
+    return tree.release();
 }
 
-RTree *IndexFile::getTree(const stdString &channel, stdString &directory,
-                          ErrorInfo &error_info)
+RTree *IndexFile::getTree(const stdString &channel, stdString &directory)
 {
     stdString  tree_filename;
     FileOffset tree_anchor;
     if (!names.find(channel, tree_filename, tree_anchor))
+        return 0; // All OK, but channel not found.
+    // Using AutoPtr in case e.g. tree->reattach throws exception.
+    AutoPtr<RTree> tree;
+    try
     {
-        error_info.set("Channel '%s' not found", channel.c_str());
-        return 0;
+        tree = new RTree(fa, tree_anchor);
     }
-    RTree *tree = new RTree(fa, tree_anchor);
-    if (tree->reattach())
+    catch (...)
     {
-        directory = dirname;
-        return tree;
+        tree.release();
+        throw GenericException(__FILE__, __LINE__,
+                               "Cannot allocate RTree for channel '%s'",
+                               channel.c_str());
     }
-    error_info.set("RTree attachement error for channel '%s'",
-                   channel.c_str());
-    delete tree;
-    return 0;
+    tree->reattach();
+    directory = dirname;
+    return tree.release();
 }
 
 bool IndexFile::getFirstChannel(NameIterator &iter)
@@ -163,47 +157,54 @@ void IndexFile::showStats(FILE *f)
 bool IndexFile::check(int level)
 {
     printf("Checking FileAllocator...\n");
-    if (fa.dump(level))
-        printf("FileAllocator OK\n");
-    else
+    try
     {
-        printf("FileAllocator ERROR\n");
-        return false;
-    }
-    NameIterator names;
-    bool have_name;
-    unsigned long channels = 0;
-    unsigned long total_nodes=0, total_used_records=0, total_records=0;
-    unsigned long nodes, records;
-    stdString dir;
-    for (have_name = getFirstChannel(names);
-         have_name;
-         have_name = getNextChannel(names))
-    {
-        ++channels;
-        ErrorInfo error_info;
-        AutoPtr<RTree> tree(getTree(names.getName(), dir, error_info));
-        if (!tree)
+        if (fa.dump(level))
+            printf("FileAllocator OK\n");
+        else
         {
-            printf("%s", error_info.info.c_str());
+            printf("FileAllocator ERROR\n");
             return false;
         }
-        printf(".");
-        fflush(stdout);
-        if (!tree->selfTest(nodes, records))
+        NameIterator names;
+        bool have_name;
+        unsigned long channels = 0;
+        unsigned long total_nodes=0, total_used_records=0, total_records=0;
+        unsigned long nodes, records;
+        stdString dir;
+        for (have_name = getFirstChannel(names);
+             have_name;
+             have_name = getNextChannel(names))
         {
-            printf("RTree for channel '%s' is broken\n",
-                   names.getName().c_str());
-            return false;
+            ++channels;
+            AutoPtr<RTree> tree(getTree(names.getName(), dir));
+            if (!tree)
+            {
+                printf("%s not found\n", names.getName().c_str());
+                return false;
+            }
+            printf(".");
+            fflush(stdout);
+            if (!tree->selfTest(nodes, records))
+            {
+                printf("RTree for channel '%s' is broken\n",
+                       names.getName().c_str());
+                return false;
+            }
+            total_nodes += nodes;
+            total_used_records += records;
+            total_records += nodes * tree->getM();
         }
-        total_nodes += nodes;
-        total_used_records += records;
-        total_records += nodes * tree->getM();
+        printf("\nAll RTree self-tests check out fine\n");
+        printf("%ld channels\n", channels);
+        printf("Total: %ld nodes, %ld records out of %ld are used (%.1lf %%)\n",
+               total_nodes, total_used_records, total_records,
+               total_used_records*100.0/total_records);
     }
-    printf("\nAll RTree self-tests check out fine\n");
-    printf("%ld channels\n", channels);
-    printf("Total: %ld nodes, %ld records out of %ld are used (%.1lf %%)\n",
-           total_nodes, total_used_records, total_records,
-           total_used_records*100.0/total_records);
+    catch (GenericException &e)
+    {
+        printf("Exception:\n%s\n", e.what());
+    }
     return true;
 }
+

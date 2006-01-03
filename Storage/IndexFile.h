@@ -3,6 +3,8 @@
 #ifndef __INDEX_FILE_H__
 #define __INDEX_FILE_H__
 
+// Tools
+#include <AutoFilePtr.h>
 // Storage
 #include <Index.h>
 #include <NameHash.h>
@@ -32,36 +34,16 @@ public:
     /// The hash table size used for new channel name tables.
     static uint32_t ht_size;
     
-    /// Open an index.
-    bool open(const stdString &filename, bool readonly, ErrorInfo &error_info);
+    void open(const stdString &filename, bool readonly);
 
-    /// Close the index.
     void close();
     
-    /// Add a channel to the index.
+    class RTree *addChannel(const stdString &channel, stdString &directory);
 
-    /// A channel has to be added before data blocks get defined
-    /// for the channel. When channel is already in index, existing
-    /// tree gets returned.
-    ///
-    /// Caller must delete the tree pointer.
-    class RTree *addChannel(const stdString &channel,
-                            stdString &directory);
+    class RTree *getTree(const stdString &channel, stdString &directory);
 
-    /// Obtain the RTree for a channel.
-
-    /// Caller not delete the tree pointer.
-    ///
-    ///
-    class RTree *getTree(const stdString &channel, stdString &directory,
-                         ErrorInfo &error_info);
-
-    /// Locate NameIterator on first channel.
     bool getFirstChannel(NameIterator &iter);
 
-    /// Locate NameIterator on next channel.
-
-    /// \pre Successfull call to get_first_channel().
     bool getNextChannel(NameIterator &iter);
 
     void showStats(FILE *f);   
@@ -70,7 +52,7 @@ public:
     
 private:
     int RTreeM;
-    FILE *f;
+    AutoFilePtr f;
     FileAllocator fa;
     NameHash names;
     stdString dirname;

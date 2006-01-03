@@ -38,7 +38,11 @@ FileAllocator::FileAllocator()
 FileAllocator::~FileAllocator()
 {
     if (f)
+    {
+        fprintf(stderr, "*****************************\n");
         fprintf(stderr, "FileAllocator wasn't detached\n");
+        fprintf(stderr, "*****************************\n");
+    }
 #ifdef DEBUG_FA
     printf("Deleted FileAllocator\n");
 #endif

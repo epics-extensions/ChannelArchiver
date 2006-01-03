@@ -39,9 +39,9 @@
 /// \addtogroup Storage
 /// \@{
 
-/// Implements a file-based RTree as described in Antonin Guttman.
+/// Implements a file-based RTree.
 ///
-/// See the Guttman paper
+/// See the Antonin Guttman paper
 /// "R-Trees: A Dynamic Index Structure for Spatial Searching"
 /// (Proc. 1984 ACM-SIGMOD Conference on Management of Data, pp. 47-57).
 ///

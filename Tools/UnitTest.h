@@ -37,6 +37,19 @@ typedef bool TEST_CASE;
            return false;                \
        }
 
+// Deletes the given file.
+bool test_delete_file(const char *filename);
+
+#define TEST_DELETE_FILE(file)                                 \
+       if (test_delete_file(file))                             \
+           printf("  OK  : '%s' was removed\n", file);         \
+       else                                                    \
+       {                                                       \
+           printf("  FAIL: cannot remove file '%s'\n", file);  \
+           return false;                                       \
+       }
+
+
 // Runs 'diff', returns true when files match.
 bool test_filediff(const char *filename1, const char *filename2);
 

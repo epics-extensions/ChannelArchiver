@@ -3,9 +3,10 @@
 // Tools
 #include <MsgLogger.h>
 #include <BinIO.h>
+#include <UnitTest.h>
 // Storage
-#include "RawValue.h"
-#include "IndexFile.h"
+#include "RTree.h"
+#include "FileAllocator.h"
 
 typedef struct
 {
@@ -56,38 +57,18 @@ static TestData fill_data[] =
     { "37", "38", "37-38",  20 }, // overflow left in central node
 };
 
-bool fill_test(bool use_index, const char *index_name,
-               const TestData *data, int num, const char *dotfile)
+static bool fill_test(const char *index_name,
+                      const TestData *data, int num, const char *dotfile)
 {
-    ErrorInfo error_info;
-    IndexFile index(3);
     stdString directory;
-    FILE *f;
     RTree *tree;
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
     FileAllocator fa;
-    if (use_index)
-    {
-        if (!index.open(index_name, false, error_info))
-        {
-            fprintf(stderr, "Error: %s\n", error_info.info.c_str());
-            return false;
-        }
-        tree = index.addChannel("test", directory);
-        if (!tree)
-        {
-            fprintf(stderr, "index.addChannel failed\n");
-            return false;
-        }
-    }
-    else
-    {
-        f = fopen(index_name, "w+b");
-        fa.attach(f, RTree::anchor_size);
-        tree = new RTree(fa, 0);
-        tree->init(3);
-    }
+    AutoFilePtr f(index_name, "w+b");
+    fa.attach(f, RTree::anchor_size);
+    tree = new RTree(fa, 0);
+    tree->init(3);
     unsigned long nodes, records;
     if (!tree->selfTest(nodes, records))
     {
@@ -103,15 +84,13 @@ bool fill_test(bool use_index, const char *index_name,
         string2epicsTime(data[i].start, start);
         string2epicsTime(data[i].end, end);
         stdString filename = data[i].file;
-        if (tree->insertDatablock(start, end, data[i].offset, filename)
-            != RTree::YNE_Yes)
+        if (!tree->insertDatablock(start, end, data[i].offset, filename))
         {
             fprintf(stderr, "Insert %s..%s: %d failed\n",
                     data[i].start, data[i].end, i+1);
             return false;
         }
-        if (tree->insertDatablock(start, end, data[i].offset, filename)
-            != RTree::YNE_No)
+        if (tree->insertDatablock(start, end, data[i].offset, filename))
         {
             fprintf(stderr, "Re-Insert %s..%s: %d failed\n",
                     data[i].start, data[i].end, i+1);
@@ -130,29 +109,23 @@ bool fill_test(bool use_index, const char *index_name,
            records*100.0/(nodes*tree->getM()));
     tree->makeDot(dotfile);
     delete tree;
-    if (use_index)
-    {
-        index.close();
-    }
+    
+    if (fa.dump(0))
+        puts("OK: FileAllocator's view of the tree");
     else
     {
-        if (fa.dump(0))
-            puts("OK: FileAllocator's view of the tree");
-        else
-        {
-            fprintf(stderr, "FileAllocator is unhappy\n");
-            return false;
-        }
-        fa.detach();
-        fclose(f);
+        fprintf(stderr, "FileAllocator is unhappy\n");
+        return false;
     }
+    fa.detach();
+   
     puts("OK: RTree fill");
     return true;
 }
 
 bool dump_blocks()
 {
-    FILE *f = fopen("test/tree.tst", "rb");
+    AutoFilePtr f("test/tree.tst", "rb");
     FileAllocator fa;
     fa.attach(f, RTree::anchor_size);
     RTree tree(fa, 0);
@@ -183,7 +156,6 @@ bool dump_blocks()
                    (unsigned long)block.data_offset);
     }
     fa.detach();
-    fclose(f);
     puts("OK: RTree Dump");
     return true;
 }
@@ -202,119 +174,20 @@ static TestData update_data[] =
     { "280", "290", "-new2-", 1 }, // .. growing
 };
 
-bool update_test(const char *index_name,
-                 const TestData *data, int num, const char *dotfile)
-{
-    ErrorInfo error_info;
-    IndexFile index(10);
-    stdString directory;
-    RTree *tree;
-    FileAllocator::minimum_size = 0;
-    FileAllocator::file_size_increment = 0;
-    FileAllocator fa;
-    if (!index.open(index_name, false, error_info))
-    {
-        fprintf(stderr, "Error: %s\n", error_info.info.c_str());
-        return false;
-    }
-    tree = index.addChannel("test", directory);
-    if (!tree)
-    {
-        fprintf(stderr, "index.addChannel failed\n");
-        return false;
-    }    
-    unsigned long nodes, records;
-    if (!tree->selfTest(nodes, records))
-    {
-        fprintf(stderr, "Self test failed\n");
-        return false;
-    }
-    int i;
-    epicsTime start, end;
-    for (i=0; i<num; ++i)
-    {
-        if (i==(num-1))
-            tree->makeDot("update0.dot");
-        string2epicsTime(data[i].start, start);
-        string2epicsTime(data[i].end, end);
-        stdString filename = data[i].file;
-        if (tree->updateLastDatablock(start, end, data[i].offset, filename)
-            == RTree::YNE_Error)
-        {
-            fprintf(stderr, "Update %s..%s: %d failed\n",
-                    data[i].start, data[i].end, i+1);
-            return false;
-        }
-        if (i==(num-1))
-            tree->makeDot("update1.dot");
-        if (!tree->selfTest(nodes, records))
-        {
-            fprintf(stderr, "Self test failed\n");
-            return false;
-        }
-    }
-    tree->makeDot(dotfile);
-    delete tree;
-    index.close();
-    puts("OK: RTree update");
-    return true;
-}
-
-void fmt(double d)
-{
-    char buffer[50];
-    size_t l;
-
-    puts("Format Test");
-    l = RawValue::formatDouble(d, RawValue::DEFAULT, 6, buffer, sizeof(buffer));
-    printf("DEFAULT   : '%s' (%u)\n", buffer, (unsigned)l);
-    if (strlen(buffer) != l)
-        printf("LENGTH ERROR!\n");
-    l = RawValue::formatDouble(d, RawValue::DECIMAL, 6, buffer, sizeof(buffer));
-    printf("DECIMAL   : '%s' (%u)\n", buffer, (unsigned)l);
-    if (strlen(buffer) != l)
-        printf("LENGTH ERROR!\n");
-    l = RawValue::formatDouble(d, RawValue::ENGINEERING, 6, buffer, sizeof(buffer));
-    printf("ENGINEERING: '%s' (%u)\n", buffer, (unsigned)l);
-    if (strlen(buffer) != l)
-        printf("LENGTH ERROR!\n");
-    l = RawValue::formatDouble(d, RawValue::EXPONENTIAL, 6, buffer, sizeof(buffer));
-    printf("EXPONENTIAL: '%s' (%u)\n\n", buffer, (unsigned)l);
-    if (strlen(buffer) != l)
-        printf("LENGTH ERROR!\n");
-}
-
-int main()
+TEST_CASE rtree_test()
 {
     initEpicsTimeHelper();
-#ifdef DO_FORMAT_TEST
-    fmt(0.0);
-    fmt(-0.321);
-    fmt(1.0e-12);
-    fmt(-1.0e-12);
-    fmt(3.14e-7);
-    fmt(3.14);
-    fmt(3.14e+7);
-    fmt(-3.14e+7);
-    fmt(-0.123456789);
-#endif
-    if (!fill_test(false, "test/tree.tst",
-                   fill_data, sizeof(fill_data)/sizeof(TestData),
-                   "test/test_data1.dot"))
-        return -1;
-    if (!dump_blocks())
-        return -1;
-    if (!fill_test(true, "test/index1",
-                   man_data1, sizeof(man_data1)/sizeof(TestData),
-                   "man_data1.dot"))
-        return -1;
-    if (!fill_test(true, "test/index2",
-                   man_data2, sizeof(man_data2)/sizeof(TestData),
-                   "man_data2.dot"))
-        return -1;
-    if (!update_test("test/update.tst",
-                     update_data, sizeof(update_data)/sizeof(TestData),
-                     "test/update_data.dot"))
-        return -1;
-    return 0;
+    try
+    {
+        TEST(fill_test("test/tree.tst",
+                       fill_data, sizeof(fill_data)/sizeof(TestData),
+                       "test/test_data1.dot"));
+        TEST(dump_blocks());
+    }
+    catch (GenericException &e)
+    {
+        printf("Exception: %s", e.what());
+        FAIL("Exception");
+    }
+    TEST_OK;
 }

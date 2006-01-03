@@ -213,8 +213,8 @@ public:
     /// Returns Yes if anything was done,
     /// No if there was nothing to do (start, end, ... all already in tree),
     /// Error if anything fails.
-    YNE updateLastDatablock(const epicsTime &start, const epicsTime &end,
-                            FileOffset data_offset, stdString data_filename);
+    bool updateLastDatablock(const epicsTime &start, const epicsTime &end,
+                             FileOffset data_offset, stdString data_filename);
     
     /// Create a graphviz 'dot' file.
     void makeDot(const char *filename);
@@ -251,7 +251,8 @@ private:
     /// @exception GenericException on write error
     void write_node(const Node &node);
     
-    bool self_test_node(unsigned long &nodes, unsigned long &records,
+    /// @exception GenericException on error
+    void self_test_node(unsigned long &nodes, unsigned long &records,
                         FileOffset n, FileOffset p,
                         epicsTime start, epicsTime end);
     
@@ -306,18 +307,24 @@ private:
                                  Node &overflow,
                                  bool &caused_overflow, bool &rec_in_overflow);
     
-    // Adjusts tree from node on upwards (update parents).
-    // If new_node!=0, it's added to node's parent,
-    // handling all resulting splits.
-    // adjust_tree will write new_node, but not necessarily node!
-    bool adjust_tree(Node &node, Node *new_node);
+    /// Adjusts tree from node on upwards (update parents).
+    /// If new_node!=0, it's added to node's parent,
+    /// handling all resulting splits.
+    /// adjust_tree will write new_node, but not necessarily node!
+    /// @exception GenericException on read/write error
+    void adjust_tree(Node &node, Node *new_node);
 
     /// Remove entry from tree.
     bool remove(const epicsTime &start, const epicsTime &end, FileOffset ID);
 
-    bool remove_record(Node &node, int i);
+    /// Remove record i from node, condense tree.
+    /// @exception GenericException on read/write error
+    void remove_record(Node &node, int i);
 
-    bool condense_tree(Node &node);
+    /// Starting at a node that was just made "smaller",
+    /// go back up to root and update all parents.
+    /// @exception GenericException on read/write error
+    void condense_tree(Node &node);
 
     /// Special 'update' call for usage by the ArchiveEngine.
 

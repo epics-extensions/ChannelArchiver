@@ -17,19 +17,19 @@ FileOffset RTree::Datablock::getSize() const
 void RTree::Datablock::write(FILE *f) const
 {
     if (fseek(f, offset, SEEK_SET))
-        throw GenericException(__FILE__, __LINE__, "fseek(0x%08lX) failed"
+        throw GenericException(__FILE__, __LINE__, "fseek(0x%08lX) failed",
                                (unsigned long) offset);
     if (!(writeLong(f, next_ID) && writeLong(f, data_offset) &&
           writeShort(f, data_filename.length()) &&
           fwrite(data_filename.c_str(), data_filename.length(), 1, f) == 1))
-        throw GenericException(__FILE__, __LINE__, "write failed @ 0x%08lX"
+        throw GenericException(__FILE__, __LINE__, "write failed @ 0x%08lX",
                                (unsigned long) offset);
 }
 
 void RTree::Datablock::read(FILE *f)
 {
     if (fseek(f, offset, SEEK_SET))
-        throw GenericException(__FILE__, __LINE__, "fseek(0x%08lX) failed"
+        throw GenericException(__FILE__, __LINE__, "fseek(0x%08lX) failed",
                                (unsigned long) offset);
     unsigned short len;
     char buf[300];
@@ -56,7 +56,7 @@ void RTree::Datablock::read(FILE *f)
 static void writeEpicsTime(FILE *f, const epicsTime &t)
 {
     epicsTimeStamp stamp = t;
-    if (writeLong(f, stamp.secPastEpoch) && writeLong(f, stamp.nsec))
+    if (!(writeLong(f, stamp.secPastEpoch) && writeLong(f, stamp.nsec)))
         throw GenericException(__FILE__, __LINE__, "write error");
 }
 
@@ -83,14 +83,16 @@ void RTree::Record::clear()
 
 void RTree::Record::write(FILE *f) const
 {
-    writeEpicsTime(f, start) && writeEpicsTime(f, end);
+    writeEpicsTime(f, start);
+    writeEpicsTime(f, end);
     if (!writeLong(f, child_or_ID))
         throw GenericException(__FILE__, __LINE__, "write error");
 }
 
 void RTree::Record::read(FILE *f)
 {
-    readEpicsTime(f, start) && readEpicsTime(f, end);
+    readEpicsTime(f, start);
+    readEpicsTime(f, end);
     if (!readLong(f, &child_or_ID))
         throw GenericException(__FILE__, __LINE__, "read error");
 }
@@ -142,7 +144,7 @@ RTree::Node &RTree::Node::operator = (const Node &rhs)
 void RTree::Node::write(FILE *f) const
 {
     if (fseek(f, offset, SEEK_SET))
-        throw GenericException(__FILE__, __LINE__, "fseek(0x%08lX) failed"
+        throw GenericException(__FILE__, __LINE__, "fseek(0x%08lX) failed",
                                (unsigned long) offset);
     if (! (writeByte(f, isLeaf) &&
            writeLong(f, parent)))
@@ -155,7 +157,7 @@ void RTree::Node::write(FILE *f) const
 void RTree::Node::read(FILE *f)
 {
     if (fseek(f, offset, SEEK_SET))
-        throw GenericException(__FILE__, __LINE__, "fseek(0x%08lX) failed"
+        throw GenericException(__FILE__, __LINE__, "fseek(0x%08lX) failed",
                                (unsigned long) offset);
     uint8_t c;
     if (! (readByte(f, &c) && readLong(f, &parent)))
@@ -210,7 +212,7 @@ void RTree::init(int M)
            writeLong(fa.getFile(), root_offset)==true &&
            writeLong(fa.getFile(), M) == true))
         throw GenericException(__FILE__, __LINE__,
-                               "write error @ 0x%08X",
+                               "write error @ 0x%08lX",
                                (unsigned long) anchor);
 }
 
@@ -221,11 +223,12 @@ void RTree::reattach()
           readLong(fa.getFile(), &root_offset)==true &&
           readLong(fa.getFile(), &RTreeM) == true))
         throw GenericException(__FILE__, __LINE__,
-                               "read error @ 0x%08X",
+                               "read error @ 0x%08lX",
                                (unsigned long) anchor);
     if (RTreeM < 1  ||  RTreeM > 100)
         throw GenericException(__FILE__, __LINE__,
-                               "RTree::reattach: Suspicious RTree M %ld\n",(long)RTreeM);
+                               "RTree::reattach: Suspicious RTree M %ld\n",
+                               (long)RTreeM);
     M = RTreeM;
 }
 
@@ -367,8 +370,17 @@ void RTree::makeDot(const char *filename)
 bool RTree::selfTest(unsigned long &nodes, unsigned long &records)
 {
     nodes = records = 0;
-    return self_test_node(nodes, records,
-                          root_offset, 0, epicsTime(), epicsTime());
+    try
+    {
+        self_test_node(nodes, records,
+                       root_offset, 0, epicsTime(), epicsTime());
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("RTree Error: %s", e.what());
+        return false;
+    }
+    return true;
 }
 
 // Comparison routine for AVLTree (node_cache)
@@ -393,41 +405,35 @@ void RTree::write_node(const Node &node)
     node.write(fa.getFile());
 }    
 
-bool RTree::self_test_node(unsigned long &nodes, unsigned long &records,
+void RTree::self_test_node(unsigned long &nodes, unsigned long &records,
                            FileOffset n, FileOffset p,
                            epicsTime start, epicsTime end)
 {
-    stdString txt1, txt2;
+    stdString txt1, txt2, txt3, txt4;
     epicsTime s, e;
     int i;
     Node node(M, true);
     node.offset = n;
-    if (!read_node(node))
-    {
-        LOG_MSG("RTree::self_test cannot read node @ 0x%lX\n",
-                (unsigned long)node.offset);
-        return false;
-    }
+    read_node(node);
     ++nodes;
     node.getInterval(s, e);
     if (node.parent != p)
-    {
-        LOG_MSG("Node @ 0x%lX, %s ... %s: parent = 0x%lX != 0x%lX\n",
-                (unsigned long)node.offset,
-                epicsTimeTxt(s, txt1), epicsTimeTxt(e, txt2),
-                (unsigned long)node.parent,
-                (unsigned long)p);
-        return false;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "Node @ 0x%lX, %s ... %s: "
+                               "parent = 0x%lX != 0x%lX\n",
+                               (unsigned long)node.offset,
+                               epicsTimeTxt(s, txt1), epicsTimeTxt(e, txt2),
+                               (unsigned long)node.parent,
+                               (unsigned long)p);
     if (p && (s != start || e != end))
-    {
-        LOG_MSG("Node @ 0x%lX: Node Interval %s ... %s\n",
-                (unsigned long)node.offset,
-                epicsTimeTxt(s, txt1), epicsTimeTxt(e, txt2));
-        LOG_MSG("              Parent        %s ... %s\n",
-                epicsTimeTxt(start, txt1), epicsTimeTxt(end, txt2));
-        return false;
-    }
+                throw GenericException(__FILE__, __LINE__,
+                                       "Node @ 0x%lX: Node Interval %s ... %s\n"
+                                       "              Parent        %s ... %s\n",
+                                       (unsigned long)node.offset,
+                                       epicsTimeTxt(s, txt1),
+                                       epicsTimeTxt(e, txt2),
+                                       epicsTimeTxt(start, txt3),
+                                       epicsTimeTxt(end, txt4));
     if (node.record[0].child_or_ID)
         ++records;
     for (i=1; i<M; ++i)
@@ -436,34 +442,27 @@ bool RTree::self_test_node(unsigned long &nodes, unsigned long &records,
         {
             ++records;
             if (node.record[i-1].end > node.record[i].start)
-            {
-                LOG_MSG("Node @ 0x%lX: Records not in order\n",
-                        (unsigned long)node.offset);
-                return false;
-            }
+                throw GenericException(__FILE__, __LINE__,
+                                       "Node @ 0x%lX: Records not in order\n",
+                                       (unsigned long)node.offset);
             if (!node.record[i-1].child_or_ID) 
-            {
-                LOG_MSG("Node @ 0x%lX: Empty record before filled one\n",
-                        (unsigned long)node.offset);
-                return false;
-            }
+                throw GenericException(__FILE__, __LINE__,
+                                       "Node @ 0x%lX: "
+                                       "Empty record before filled one\n",
+                                       (unsigned long)node.offset);
         }
     }
     if (node.isLeaf)
-        return true;
+        return; // OK until end of this branch
     for (i=0; i<M; ++i)
     {
         if (node.record[i].child_or_ID)
-        {
-            if (!self_test_node(nodes, records,
-                                node.record[i].child_or_ID,
-                                node.offset,
-                                node.record[i].start,
-                                node.record[i].end))
-                return false;
-        }
+            self_test_node(nodes, records,
+                           node.record[i].child_or_ID,
+                           node.offset,
+                           node.record[i].start,
+                           node.record[i].end);
     }       
-    return true;
 }
 
 void RTree::make_node_dot(FILE *dot, FILE *f, FileOffset node_offset)
@@ -473,12 +472,7 @@ void RTree::make_node_dot(FILE *dot, FILE *f, FileOffset node_offset)
     int i;
     Node node(M, true);
     node.offset = node_offset;
-    if (! node.read(f))
-    {
-        LOG_MSG("RTree::make_node_dot cannot read node @ 0x%lX\n",
-                (unsigned long)node.offset);
-        return;
-    }
+    node.read(f);
     fprintf(dot, "\tnode%ld [ label=\"", (unsigned long)node.offset);
     for (i=0; i<M; ++i)
     {
@@ -503,13 +497,7 @@ void RTree::make_node_dot(FILE *dot, FILE *f, FileOffset node_offset)
                         (unsigned long)datablock.offset);
             while (datablock.offset)
             {
-                if (!datablock.read(f))
-                {
-                    LOG_MSG("RTree::make_node_dot cannot read data "
-                            "@ 0x%lX\n",
-                            (unsigned long)datablock.offset);
-                    return;
-                }
+                datablock.read(f);
                 fprintf(dot, "\tid%lu "
                         "[ label=\"'%s' \\r@ 0x%lX \\r\",style=filled ];\n",
                         (unsigned long)datablock.offset,
@@ -548,12 +536,7 @@ bool RTree::search(const epicsTime &start, Node &node, int &i) const
     bool go;
     do
     {
-        if (!read_node(node))
-        {
-            LOG_MSG("RTree::search cannot read node @ 0x%lX\n",
-                    (unsigned long)node.offset);
-            return false;
-        }
+        read_node(node);
         if (start < node.record[0].start) // request before start of tree?
             return getFirst(node, i);
         for (go=false, i=M-1;  i>=0;  --i)
@@ -640,7 +623,8 @@ bool RTree::prev_next(Node &node, int &i, int dir) const
                 break;
         if (i>=M)
             throw GenericException(__FILE__, __LINE__,
-                                   "RTree::next: child_or_ID not listed in parent?\n");
+                                   "RTree::next: child_or_ID "
+                                   "not listed in parent?\n");
         i += dir;
         if (i>=0 && i<M && parent.record[i].child_or_ID)
             break;
@@ -767,7 +751,7 @@ bool RTree::add_block_to_record(const Node &node, int i,
     }
     // Block's now the last in the chain
     Datablock new_block;
-    write_new_datablock(data_offset, data_filename, new_block))
+    write_new_datablock(data_offset, data_filename, new_block);
     block.next_ID = new_block.offset;
     block.write(fa.getFile());
     return true; // added a new datablock
@@ -911,16 +895,25 @@ void RTree::adjust_tree(Node &node, Node *new_node)
     {   
         if (!new_node)
             return; // done
-        // Have new_node parallel to root -> grow taller, add new root
+        // Have new_node parallel to root
+        //    [ node == root ]  [ new_node ]
+        //  -> grow taller, add new root
+        //    [ new_root ]
+        //    [ node ]  [ new_node ]
         Node new_root(M, false);
         new_root.offset = fa.allocate(NodeSize(M));
-        node.getInterval(new_root.record[0].start, new_root.record[0].end);
+        // new_root.child[0] = node
+        if (!node.getInterval(new_root.record[0].start, new_root.record[0].end))
+            throw GenericException(__FILE__, __LINE__, "Empty node?");
         new_root.record[0].child_or_ID = node.offset;
         node.parent = new_root.offset;
-        new_node->getInterval(new_root.record[1].start,
-                               new_root.record[1].end);
+        // new_root.child[1] = new_node
+        if (!new_node->getInterval(new_root.record[1].start,
+                                   new_root.record[1].end))
+            throw GenericException(__FILE__, __LINE__, "Empty new_node?");
         new_node->parent = new_root.offset;
         new_root.record[1].child_or_ID = new_node->offset;
+        // Write all
         write_node(node);
         write_node(*new_node);
         write_node(new_root);
@@ -928,30 +921,33 @@ void RTree::adjust_tree(Node &node, Node *new_node)
         root_offset = new_root.offset;
         if (! (fseek(fa.getFile(), anchor, SEEK_SET)==0 &&
                writeLong(fa.getFile(), root_offset)==true))
-            throw GenericException("write error @ 0x%08lX",
+            throw GenericException(__FILE__, __LINE__, "write error @ 0x%08lX",
                                    (unsigned long) anchor);
         return; // done.
     }
     read_node(parent);
     for (i=0; i<M; ++i)   // update parent's interval for node
-        if (parent.record[i].child_or_ID == node.offset)
+    {
+       if (parent.record[i].child_or_ID == node.offset)
         {
             node.getInterval(start, end);
             if (start!=parent.record[i].start || end!=parent.record[i].end)
             {
                 parent.record[i].start = start;
                 parent.record[i].end   = end;
-                write_node(parent):
+                write_node(parent);
             }
             break;
         }
+    }
     if (!new_node) // Done at this level, go on up.
     {
         adjust_tree(parent, 0);
         return;
     }
     // Have to add new_node to parent
-    new_node->getInterval(start, end);
+    if (!new_node->getInterval(start, end))
+        throw GenericException(__FILE__, __LINE__, "Empty node?");
     for (i=0; i<M; ++i)
         if (parent.record[i].child_or_ID == 0 || end <= parent.record[i].start)
             break;  // new entry belongs into parent.record[i]
@@ -959,10 +955,10 @@ void RTree::adjust_tree(Node &node, Node *new_node)
     bool caused_overflow, rec_in_overflow;
     insert_record_into_node(parent, i, start, end, new_node->offset,
                             overflow, caused_overflow, rec_in_overflow);
-    if (rec_in_overflow == false)
-        new_node->parent = parent.offset;
-    else
+    if (rec_in_overflow)
         new_node->parent = overflow.offset;
+    else
+        new_node->parent = parent.offset;
     write_node(*new_node);
     if (!caused_overflow)
     {
@@ -994,21 +990,17 @@ bool RTree::remove(const epicsTime &start, const epicsTime &end, FileOffset ID)
     Node node(M, true);
     node.offset = root_offset;
     bool go;
+    // search from root on down
     do
     {
-        if (!read_node(node))
-        {
-            LOG_MSG("RTree::remove cannot read node @ 0x%lX\n",
-                    (unsigned long)node.offset);
-            return false;
-        }
+        read_node(node);
         for (go=false, i=0;  i<M;  ++i)
         {   // Find left-most record that includes our target interval
             if (node.record[i].child_or_ID == 0)
                 return false;
             if (!node.isLeaf &&
                 node.record[i].start <= start && node.record[i].end >= end)
-            {   // Search subtree
+            {   // Search subtree.
                 node.offset = node.record[i].child_or_ID;
                 go = true;
                 break;
@@ -1016,14 +1008,17 @@ bool RTree::remove(const epicsTime &start, const epicsTime &end, FileOffset ID)
             if (node.isLeaf &&
                 node.record[i].start == start && node.record[i].end == end &&
                 node.record[i].child_or_ID == ID)
-                return remove_record(node, i);
+            {   // Found the entry.
+                remove_record(node, i);
+                return true;
+            }
         }
     }
     while (go);
     return false;
 }
 
-bool RTree::remove_record(Node &node, int i)
+void RTree::remove_record(Node &node, int i)
 {
     int j;
     // Delete original entry
@@ -1032,23 +1027,17 @@ bool RTree::remove_record(Node &node, int i)
     node.record[j].start = nullTime;
     node.record[j].end = nullTime;
     node.record[j].child_or_ID = 0;
-    if (!write_node(node))
-    {
-        LOG_MSG("RTree::remove_record: "
-                "Cannot remove write node @ 0x%lX\n",
-                (unsigned long)node.offset);
-        return false;
-    }
-    return condense_tree(node);
+    write_node(node);
+    condense_tree(node);
 }
 
-bool RTree::condense_tree(Node &node)
+void RTree::condense_tree(Node &node)
 {
     int i, j=-1;
     if (node.parent==0)
     {   // reached root
         if (!node.isLeaf)
-        {
+        {   // Count children of root
             int children = 0;
             for (i=0; i<M; ++i)
                 if (node.record[i].child_or_ID)
@@ -1060,25 +1049,16 @@ bool RTree::condense_tree(Node &node)
             {   // only child_or_ID j left => make that one root
                 FileOffset old_root = node.offset;
                 root_offset = node.offset = node.record[j].child_or_ID;
-                if (!read_node(node))
-                {
-                    LOG_MSG("RTree::condense_tree cannot read "
-                            "node @ 0x%lX\n",
-                            (unsigned long)node.offset);
-                    return false;
-                }
+                read_node(node);
                 node.parent = 0;
-                if (!(write_node(node) &&
-                      fseek(fa.getFile(), anchor, SEEK_SET)==0 &&
-                      writeLong(fa.getFile(), root_offset)))
-                {
-                    LOG_MSG("RTree::condense_tree cannot update root\n");
-                    return false;      
-                }
+                write_node(node);
+                if (fseek(fa.getFile(), anchor, SEEK_SET) != 0)
+                    throw GenericException(__FILE__, __LINE__, "seek failed");
+                writeLong(fa.getFile(), root_offset);
                 fa.free(old_root);
             }
         }
-        return true;
+        return;
     }
     bool empty = true;
     for (i=0; i<M; ++i)
@@ -1089,12 +1069,7 @@ bool RTree::condense_tree(Node &node)
         }
     Node parent(M, true);
     parent.offset = node.parent;
-    if (!read_node(parent))
-    {
-        LOG_MSG("RTree::condense_tree cannot read node @ 0x%lX\n",
-                (unsigned long)node.offset);
-        return false;
-    }
+    read_node(parent);
     for (i=0; i<M; ++i)
         if (parent.record[i].child_or_ID == node.offset)
         {
@@ -1107,18 +1082,17 @@ bool RTree::condense_tree(Node &node)
                 parent.record[M-1].end   = nullTime;
                 parent.record[M-1].child_or_ID = 0;
             }
-            else
-                node.getInterval(parent.record[i].start,parent.record[i].end);
-            if (!write_node(parent))
-            {
-                LOG_MSG("RTree::condense_tree cannot write node @ 0x%lX\n",
-                        (unsigned long)node.offset);
-                return false;           
-            }
-            return condense_tree(parent);
+            else // Update parent with current interval of node
+                if (!node.getInterval(parent.record[i].start,
+                                      parent.record[i].end))
+                    throw GenericException(__FILE__, __LINE__, "empty node?");
+            // Write updated parent and move up the tree
+            write_node(parent);
+            condense_tree(parent);
+            return;
         }
-    LOG_MSG("RTree::condense_tree: Cannot find child_or_ID in parent\n");
-    return false;
+    throw GenericException(__FILE__, __LINE__,
+                           "Cannot find child_or_ID in parent\n");
 }
 
 bool RTree::updateLast(const epicsTime &start, const epicsTime &end,
@@ -1133,7 +1107,9 @@ bool RTree::updateLast(const epicsTime &start, const epicsTime &end,
         return false; // Cannot update, different data block
     // Update end time, done.
     node.record[i].end = end;
-    return write_node(node) && adjust_tree(node, 0);
+    write_node(node);
+    adjust_tree(node, 0);
+    return true;
 }
 
 

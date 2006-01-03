@@ -24,12 +24,23 @@ void Filename::build(const stdString &dirname, const stdString &basename,
                                "Filename::build cannot alloc %zu",
                                new_len);
     filename = dirname;
-#ifdef WIN32
-    if (dirname.find('\\') != stdString::npos)
-        filename += '\\';
-    else
-#endif    
-        filename += '/';
+    // Check if the dirname ends with a directory separator.
+    size_t dl = dirname.length();
+    if (dl > 0  &&
+        dirname[dl-1] != '/'
+#       ifdef WIN32
+        &&
+        dirname[dl-1] != '\\'
+#       endif
+       )
+    {
+#       ifdef WIN32
+        if (dirname.find('\\') != stdString::npos)
+            filename += '\\';
+        else
+#       endif    
+            filename += '/';
+    }
     filename += basename;
 }
 

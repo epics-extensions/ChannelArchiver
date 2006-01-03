@@ -57,9 +57,9 @@ int main(int argc, const char *argv[])
 
     if (single_test==0  ||  strcmp(single_test, "ASCIIParserTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit ASCIIParserTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_ascii_parser:\n");
@@ -70,9 +70,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "AVLTreeTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit AVLTreeTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("avl_test:\n");
@@ -83,9 +83,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "AutoFilePtrTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit AutoFilePtrTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("bogus_auto_file_ptr:\n");
@@ -102,9 +102,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "AutoPtrTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit AutoPtrTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_autoptr:\n");
@@ -115,9 +115,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "BinIOTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit BinIOTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("bin_io_write:\n");
@@ -134,9 +134,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "BitsetTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit BitsetTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_bitset:\n");
@@ -147,9 +147,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "CATest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit CATest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_ca:\n");
@@ -160,9 +160,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "ConversionsTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit ConversionsTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_conversions:\n");
@@ -173,9 +173,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "FUXTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit FUXTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_fux:\n");
@@ -186,9 +186,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "GenericExceptionTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit GenericExceptionTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("how_new_fails:\n");
@@ -205,9 +205,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "GuardTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit GuardTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("guard_test:\n");
@@ -218,9 +218,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "IndexConfigTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit IndexConfigTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("index_config_test:\n");
@@ -231,9 +231,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "MsgLoggerTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit MsgLoggerTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_log:\n");
@@ -244,9 +244,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "ThreadTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit ThreadTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("worker_thread:\n");
@@ -263,9 +263,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "TimerTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit TimerTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_timer:\n");
@@ -276,9 +276,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "epicsTimeHelperTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit epicsTimeHelperTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_time:\n");
@@ -289,9 +289,9 @@ int main(int argc, const char *argv[])
     }
     if (single_test==0  ||  strcmp(single_test, "stdStringTest")==0)
     {
-        printf("==================================================\n");
+        printf("======================================================================\n");
         printf("Unit stdStringTest:\n");
-        printf("--------------------------------------------------\n");
+        printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
         printf("test_string:\n");
@@ -301,7 +301,7 @@ int main(int argc, const char *argv[])
             printf("THERE WERE ERRORS!\n");
     }
 
-    printf("==================================================\n");
+    printf("======================================================================\n");
     size_t failed = run - passed;
     printf("Tested %zu unit%s, ran %zu test%s, %zu passed, %zu failed.\n",
            units,

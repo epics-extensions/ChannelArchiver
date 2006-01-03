@@ -71,6 +71,11 @@ public:
     }
 
     /// Release ownership.
+    ///
+    /// The AutoPtr is set to 0, and the pointer that
+    /// used to be handled by the AutoPtr is returned.
+    ///
+    /// @return Returns the original value.
     T * release()
     {
         T *tmp = ptr;

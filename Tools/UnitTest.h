@@ -37,5 +37,18 @@ typedef bool TEST_CASE;
            return false;                \
        }
 
+// Runs 'diff', returns true when files match.
+bool test_filediff(const char *filename1, const char *filename2);
+
+#define TEST_FILEDIFF(file1,file2)                                \
+       if (test_filediff(file1,file2))                            \
+           printf("  OK  : '%s' and '%s' match\n", file1, file2); \
+       else                                                       \
+       {                                                          \
+           printf("  FAIL: diff %s %s\n", file1, file2);          \
+           return false;                                          \
+       }
+
+
 #define TEST_OK   return true
 

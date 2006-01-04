@@ -26,7 +26,13 @@
 
 RawValue::Data * RawValue::allocate(DbrType type, DbrCount count, size_t num)
 {
-    return (Data *) calloc(num, getSize(type, count));
+    size_t s = getSize(type, count);
+    Data *data = (Data *) calloc(num, s);
+    if (!data)
+        throw GenericException(__FILE__, __LINE__,
+                               "Cannot allocate %zu bytes for RawValue(%u, %u, %zu)",
+                               s, type, count, num);
+    return data;
 }
 
 void RawValue::free(Data *value)
@@ -533,13 +539,16 @@ void RawValue::show(FILE *file,
             time.c_str(), txt.c_str(), stat.c_str());
 }   
 
-bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
+void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
                     DataFile *datafile, FileOffset offset)
 {
     if (fseek(datafile->file, offset, SEEK_SET) != 0 ||
         (FileOffset) ftell(datafile->file) != offset   ||
         fread(value, size, 1, datafile->file) != 1)
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "Data read error in '%s' @ 0x%08lX",
+                               datafile->getFilename().c_str(),
+                               (unsigned long)offset);
     
     SHORTFromDisk(value->status);
     SHORTFromDisk(value->severity);
@@ -568,15 +577,15 @@ bool RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
         FROM_DISK(DBR_TIME_ENUM,  dbr_enum_t,  dbr_time_enum,   USHORTFromDisk)
         FROM_DISK(DBR_TIME_LONG,  dbr_long_t,  dbr_time_long,   LONGFromDisk)
     default:
-        LOG_MSG("RawValue::read(%s @ 0x%lX): Unknown DBR_xx %d\n",
-                datafile->getFilename().c_str(), (unsigned long)offset, type);
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "Data with unknown DBR_xx %d in '%s' @ 0x%08lX",
+                               type, datafile->getFilename().c_str(),
+                               (unsigned long)offset);
 #undef FROM_DISK
     }
-    return true;
 }
 
-bool RawValue::write(DbrType type, DbrCount count, size_t size,
+void RawValue::write(DbrType type, DbrCount count, size_t size,
                      const Data *value,
                      MemoryBuffer<dbr_time_string> &cvt_buffer,
                      DataFile *datafile, FileOffset offset)
@@ -610,27 +619,24 @@ bool RawValue::write(DbrType type, DbrCount count, size_t size,
         TO_DISK(DBR_TIME_ENUM,   dbr_enum_t,   dbr_time_enum,   USHORTToDisk)
         TO_DISK(DBR_TIME_LONG,   dbr_long_t,   dbr_time_long,   LONGToDisk)
     default:
-        LOG_MSG("RawValue::write: Unknown DBR_.. type %d\n",
-                type);
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "Data with unknown DBR_xx %d in '%s' @ 0x%08lX",
+                               type, datafile->getFilename().c_str(),
+                               (unsigned long)offset);
 #undef TO_DISK
     }
 
     if (fseek(datafile->file, offset, SEEK_SET) != 0  ||
         (FileOffset)ftell(datafile->file) != offset)
-    {
-        LOG_MSG("RawValue::write seek error: '%s' @ 0x%X\n",
-                datafile->getFilename().c_str(), offset);
-        return false;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "Data seek error in '%s' @ 0x%08lX",
+                               datafile->getFilename().c_str(),
+                               (unsigned long)offset);
     size_t written = fwrite(buffer, 1, size, datafile->file);
     if (written != size)
-    {
-        LOG_MSG("RawValue::write write error: '%s' @ 0x%X, %d != %d\n",
-                datafile->getFilename().c_str(), offset,
-                written, size);
-        return false;
-    }
-    return true;
+        throw GenericException(__FILE__, __LINE__,
+                               "Data write error in '%s' @ 0x%08lX, %zu != %zu",
+                               datafile->getFilename().c_str(),
+                               (unsigned long)offset, written, size);
 }
 

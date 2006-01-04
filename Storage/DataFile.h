@@ -47,6 +47,7 @@ public:
     /// contains pieces of a pathname, which will then be moved
     /// into the dirname.
     ///
+    /// @return The referenced DataFile. Do not deleter; use release.
     /// @sa release
     /// @exception GenericException on error.
     static DataFile *reference(const stdString &dirname,
@@ -227,12 +228,12 @@ public:
     size_t capacity();
     
     /// Read (and convert) from offset in current DataFile, updating offset.
-    /// @return Succeeded?
-    bool read(FileOffset offset);
+    /// @exception GenericException on error.
+    void read(FileOffset offset);
 
     /// Convert and write to current offset in current DataFile.
-    /// @return Succeeded?
-    bool write() const;
+    /// @exception GenericException on error.
+    void write() const;
 
     /// Read the next data header.
     bool read_next();

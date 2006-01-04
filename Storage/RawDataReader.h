@@ -4,8 +4,8 @@
 #define __RAW_DATA_READER_H__
 
 // Tools
-#include "stdString.h"
-#include "ErrorInfo.h"
+#include <ToolsConfig.h>
+#include <AutoPtr.h>
 // Storage
 #include "DataReader.h"
 

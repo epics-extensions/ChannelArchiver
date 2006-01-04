@@ -46,12 +46,14 @@ public:
     typedef dbr_time_double Data;
 
     /// Allocate space (via calloc) for num samples of type/count.
+    ///
+    /// @exception GenericException on memory error.
     static Data * allocate(DbrType type, DbrCount count, size_t num);
 
     /// Free space for num samples of type/count.
     static void free(Data *value);
 
-    /// Calculate size of a single value of type/count
+    /// Calculate size of a single value of type/count.
     static size_t getSize(DbrType type, DbrCount count);
 
     /// Compare the value part of two RawValues, not the time stamp or status!
@@ -153,20 +155,20 @@ public:
                      const class CtrlInfo *info=0);
     
     /// Read a value from binary file.
-    
+    ///
     /// size: pre-calculated from type, count.
     ///
-    ///
-    static bool read(DbrType type, DbrCount count,
+    /// @exception GenericException on error.
+    static void read(DbrType type, DbrCount count,
                      size_t size, Data *value,
                      class DataFile *datafile, FileOffset offset);
     
-    /// Write a value to binary file/
-    
+    /// Write a value to binary file.
+    ///
     /// Requires a buffer for the memory-to-disk format conversions.
     ///
-    ///
-    static bool write(DbrType type, DbrCount count,
+    /// @exception GenericException on error.
+    static void write(DbrType type, DbrCount count,
                       size_t size, const Data *value,
                       MemoryBuffer<dbr_time_string> &cvt_buffer,
                       class DataFile *datafile, FileOffset offset);

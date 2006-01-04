@@ -29,12 +29,12 @@ public:
     // == 'CAI2', Chan. Arch. Index 2
     static const uint32_t cookie = 0x43414932;
 
-    IndexFile(int RTreeM);
+    IndexFile(int RTreeM = 50);
 
     /// The hash table size used for new channel name tables.
     static uint32_t ht_size;
     
-    void open(const stdString &filename, bool readonly);
+    void open(const stdString &filename, bool readonly=true);
 
     void close();
     

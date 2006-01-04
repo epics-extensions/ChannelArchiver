@@ -44,8 +44,21 @@ public:
     virtual const RawValue::Data *find(const stdString &channel_name,
                                        const epicsTime *start) = 0;
 
-    /// \param error_info: may be set to error information
-    /// \return Returns next value or 0.
+    /// Obtain the next value.
+    ///
+    /// After a successful call to find() for the first value,
+    /// this routine returns the following values with each call.
+    /// When no more data is available, 0 is returned.
+    /// Any calls to next() after either find() or next() return 0
+    /// to indicate the end of the available data will result in
+    /// exceptions.
+    ///
+    /// @pre find()
+    ///
+    /// @return Returns next value or 0.
+    ///
+    /// @exception GenericException on error: File access,
+    ///            called after reaching the end of data.
     virtual const RawValue::Data *next() = 0;
 
     /// Name of the channel, i.e. the one passed to find()

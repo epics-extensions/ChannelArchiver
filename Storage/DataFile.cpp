@@ -211,7 +211,7 @@ void DataFile::close_all()
 
 DataHeader *DataFile::getHeader(FileOffset offset)
 {
-    DataHeader *header = 0;
+    AutoPtr<DataHeader> header;
     try
     {
         header = new DataHeader(this);
@@ -220,10 +220,8 @@ DataHeader *DataFile::getHeader(FileOffset offset)
     {
         throw GenericException(__FILE__, __LINE__, "Cannot allocate DataHeader");
     }
-    if (!header->read(offset))
-        throw GenericException(__FILE__, __LINE__, "Cannot read DataHeader (%s)",
-                               filename.c_str());
-    return header;
+    header->read(offset);
+    return header.release();
 }
 
 size_t DataFile::getHeaderSize(const stdString &name,
@@ -253,18 +251,14 @@ DataHeader *DataFile::addHeader(const stdString &name,
                                filename.c_str());
     }
     FileOffset new_offset = getSize();
-    if (fseek(file, new_offset, SEEK_SET))
-    {
-        throw GenericException(__FILE__, __LINE__,
-                               "DataFile::addHeader(%s, %s): Cannot seek to 0x%X",
-                               filename.c_str(), name.c_str(), new_offset);
-    }
-    if (fwrite("DATA", 4, 1, file) != 1  ||
+    if (fseek(file, new_offset, SEEK_SET) != 0  ||
+        fwrite("DATA", 4, 1, file) != 1         ||
         fwrite(name.c_str(), name.length() + 1, 1, file) != 1)
     {
         throw GenericException(__FILE__, __LINE__,
-                               "DataFile::addHeader(%s, %s): Cannot tag at 0x%X",
-                               filename.c_str(), name.c_str(), new_offset);
+                               "DataFile::addHeader(%s, %s): Cannot write at 0x%lX",
+                               filename.c_str(), name.c_str(),
+                               (unsigned long) new_offset);
     }
     header->offset = new_offset + 4 + name.length() + 1;
     size_t raw_value_size = RawValue::getSize(dbr_type, dbr_count);
@@ -274,10 +268,7 @@ DataHeader *DataFile::addHeader(const stdString &name,
     header->data.buf_free = num_samples * raw_value_size;
     header->data.buf_size =
         header->data.buf_free + sizeof(DataHeader::DataHeaderData);
-    if (!header->write())
-        throw GenericException(__FILE__, __LINE__,
-                               "DataFile::addHeader(%s, %s): Cannot write new header",
-                               filename.c_str(), name.c_str());
+    header->write();
     // allocate data buffer by writing some marker at the end:
     uint32_t marker = 0xfacefade;
     FileOffset pos = header->offset
@@ -348,7 +339,7 @@ size_t DataHeader::capacity()
             / val_size;
 }
 
-bool DataHeader::read(FileOffset offset)
+void DataHeader::read(FileOffset offset)
 {
     this->offset = offset;
     if (fseek(datafile->file, offset, SEEK_SET) != 0   ||
@@ -356,7 +347,10 @@ bool DataHeader::read(FileOffset offset)
         fread(&data, sizeof(struct DataHeaderData), 1, datafile->file) != 1)
     {
         clear();
-        return false;
+        throw GenericException(__FILE__, __LINE__,
+                               "Read error '%s' @ 0x%08lX",
+                               datafile->getFilename().c_str(),
+                               (unsigned long) offset);
     }
     // convert the data header into host format:
     FileOffsetFromDisk(data.dir_offset);
@@ -373,10 +367,9 @@ bool DataHeader::read(FileOffset offset)
     epicsTimeStampFromDisk(data.begin_time);
     epicsTimeStampFromDisk(data.next_file_time);
     epicsTimeStampFromDisk(data.end_time);
-    return true;
 }
 
-bool DataHeader::write() const
+void DataHeader::write() const
 {
     DataHeaderData copy = data;
     // convert the data header into host format:
@@ -394,9 +387,14 @@ bool DataHeader::write() const
     epicsTimeStampToDisk(copy.begin_time);
     epicsTimeStampToDisk(copy.next_file_time);
     epicsTimeStampToDisk(copy.end_time);
-    return fseek(datafile->file, offset, SEEK_SET) == 0 &&
-        (FileOffset) ftell(datafile->file) == offset  &&
-        fwrite(&copy, sizeof(struct DataHeaderData), 1, datafile->file) == 1;
+    if (!(fseek(datafile->file, offset, SEEK_SET) == 0 &&
+          (FileOffset) ftell(datafile->file) == offset  &&
+          fwrite(&copy, sizeof(struct DataHeaderData), 1, datafile->file) == 1))
+        throw GenericException(__FILE__, __LINE__,
+                               "Write error '%s' @ 0x%08lX",
+                               datafile->getFilename().c_str(),
+                               (unsigned long) offset);
+
 }
 
 bool DataHeader::read_next()
@@ -430,7 +428,8 @@ bool DataHeader::get_prev_next(const char *name, FileOffset new_offset)
         datafile->release();
         datafile = next;
     }
-    return read(new_offset);
+    read(new_offset);
+    return true;
 }
 
 void DataHeader::set_prev(const stdString &basename, FileOffset offset)

@@ -13,12 +13,16 @@ extern TEST_CASE test_data_file();
 // Unit FileAllocatorTest:
 extern TEST_CASE file_allocator_create_new_file();
 extern TEST_CASE file_allocator_open_existing();
+// Unit HashTableTest:
+extern TEST_CASE hash_table_test();
 // Unit NameHashTest:
 extern TEST_CASE name_hash_test();
 // Unit RTreeTest:
 extern TEST_CASE fill_tests();
 extern TEST_CASE dump_blocks();
 extern TEST_CASE update_test();
+// Unit RawDataReaderTest:
+extern TEST_CASE RawDataReaderTest();
 // Unit RawValueTest:
 extern TEST_CASE RawValue_format();
 extern TEST_CASE RawValue_auto_ptr();
@@ -63,6 +67,19 @@ int main(int argc, const char *argv[])
         else
             printf("THERE WERE ERRORS!\n");
     }
+    if (single_test==0  ||  strcmp(single_test, "HashTableTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit HashTableTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("hash_table_test:\n");
+        if (hash_table_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
     if (single_test==0  ||  strcmp(single_test, "NameHashTest")==0)
     {
         printf("======================================================================\n");
@@ -97,6 +114,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("update_test:\n");
         if (update_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "RawDataReaderTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit RawDataReaderTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("RawDataReaderTest:\n");
+        if (RawDataReaderTest())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

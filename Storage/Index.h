@@ -20,8 +20,9 @@ public:
     
     /// Open an index.
     ///
-    /// @exception GenericException on error (file not found, wrong file format, ...).
-    virtual void open(const stdString &filename, bool readonly) = 0;
+    /// @exception GenericException on error
+    ///            (file not found, wrong file format, ...).
+    virtual void open(const stdString &filename, bool readonly=true) = 0;
 
     /// Close the index.
     virtual void close() = 0;

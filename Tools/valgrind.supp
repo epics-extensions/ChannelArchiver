@@ -1,0 +1,19 @@
+
+{
+   unsupported_pthread_attr_setscope1
+   core:PThread
+   fun:pthread_error
+   fun:pthread_attr_setscope
+   fun:once
+   fun:__pthread_once
+}
+
+{
+   unsupported_pthread_attr_setscope2
+   core:PThread
+   fun:pthread_error
+   fun:pthread_attr_setscope
+   fun:init_threadInfo
+   fun:once
+}
+

@@ -28,6 +28,8 @@ extern TEST_CASE test_ca();
 extern TEST_CASE test_conversions();
 // Unit FUXTest:
 extern TEST_CASE test_fux();
+// Unit FilenameTest:
+extern TEST_CASE Filename_Test();
 // Unit GenericExceptionTest:
 extern TEST_CASE how_new_fails();
 extern TEST_CASE various_exception_tests();
@@ -180,6 +182,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("test_fux:\n");
         if (test_fux())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "FilenameTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit FilenameTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("Filename_Test:\n");
+        if (Filename_Test())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

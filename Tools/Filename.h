@@ -31,19 +31,23 @@ public:
                       const stdString &basename,
                       stdString &filename);
 
-    /// Returns true if filename contains a path/directory
+    /// Returns true if filename contains a path/directory.
+    ///
+    /// Really only checks if the filename contains a path separator.
     static bool containsPath(const stdString &filename);
 
-    /// Returns true if filename contains a full path/directory
+    /// Returns true if filename contains a full path/directory.
+    ///
+    /// Really only checks if the filename starts with a path separator.
     static bool containsFullPath(const stdString &filename);
 
-    /// Get directory (path) from full path/filename
+    /// Get directory (path) from full path/filename.
     static void getDirname(const stdString &filename, stdString &dirname);
 
-    /// Get basename from full filename
+    /// Get basename from full filename.
     static void getBasename(const stdString &filename, stdString &basename);
 
-    /// If filename is a link, get target of link. Else return false
+    /// If filename is a link, get target of link. Else return false.
     static bool getLinkedFilename(const stdString &filename, stdString &link);
 };
 

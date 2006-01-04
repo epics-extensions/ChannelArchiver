@@ -13,19 +13,23 @@ static const char *current_dir = ".";
 void Filename::build(const stdString &dirname, const stdString &basename,
                      stdString &filename)
 {
-    if (dirname.empty()  ||  dirname == current_dir)
+    size_t dl = dirname.length();
+    size_t bl = basename.length();
+    if (bl == 0)
+        throw GenericException(__FILE__, __LINE__,
+                               "Filename::build called with empty basename");
+    if (dl == 0  ||  dirname == current_dir)
     {
         filename = basename;
         return;
     }
-    size_t new_len = dirname.length() + basename.length() + 1;
+    size_t new_len = dl + bl + 1;
     if (!filename.reserve(new_len))
         throw GenericException(__FILE__, __LINE__,
                                "Filename::build cannot alloc %zu",
                                new_len);
     filename = dirname;
     // Check if the dirname ends with a directory separator.
-    size_t dl = dirname.length();
     if (dl > 0  &&
         dirname[dl-1] != '/'
 #       ifdef WIN32

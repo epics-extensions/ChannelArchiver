@@ -152,7 +152,8 @@ public:
     ///       a different start and/or end time!
     ///
     /// @see updateLastDatablock for the special case up updating the _end_ time.
-    /// @return true if a new entry was created, false if offset and filename were already found.
+    /// @return true if a new entry was created, false if offset and filename
+    ///         were already found.
     /// @exception GenericException on write error.
     bool insertDatablock(const epicsTime &start, const epicsTime &end,
                          FileOffset data_offset,
@@ -210,9 +211,9 @@ public:
     /// in case start, data_offset and data_filename all match.
     /// Will otherwise fall back to insertDatablock.
     ///
-    /// Returns Yes if anything was done,
-    /// No if there was nothing to do (start, end, ... all already in tree),
-    /// Error if anything fails.
+    /// @return true if a new entry was created, false if offset and filename
+    ///         were already found.
+    /// @exception GenericException on write error.
     bool updateLastDatablock(const epicsTime &start, const epicsTime &end,
                              FileOffset data_offset, stdString data_filename);
     

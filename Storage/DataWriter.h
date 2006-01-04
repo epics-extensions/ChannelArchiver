@@ -20,13 +20,16 @@ class DataWriter
 {
 public:
     /// Create a writer for the given index.
-    /// \param channel_name: name of the channel
-    /// \param ctrl_info:    meta information for the channel
-    /// \param dbr_type:     the dbr_time_xxx type
-    /// \param dbr_count:    array size
-    /// \param period:       estimated periodicity of the channel
-    /// \param num_samples:  estimated number of samples
+    ///
+    /// @param channel_name: name of the channel
+    /// @param ctrl_info:    meta information for the channel
+    /// @param dbr_type:     the dbr_time_xxx type
+    /// @param dbr_count:    array size
+    /// @param period:       estimated periodicity of the channel
+    /// @param num_samples:  estimated number of samples
     ///                      (helps w/ buffer allocation)
+    ///
+    /// @exception GenericException on error.
     DataWriter(IndexFile &index,
                const stdString &channel_name,
                const CtrlInfo &ctrl_info,
@@ -42,7 +45,7 @@ public:
 
     /// Returns the last time stamp in the archive.
 
-    /// This allows you to avoid teh back-in-time error
+    /// This allows you to avoid the back-in-time error
     /// by checking before adding.
     /// The result is a null time stamp in case
     /// there's nothing in the archive, yet.
@@ -65,7 +68,7 @@ public:
 private:
     IndexFile &index;
     stdString directory;
-    RTree     *tree;
+    AutoPtr<RTree> tree;
     const stdString &channel_name;
     const CtrlInfo &ctrl_info;
     DbrType dbr_type;
@@ -83,11 +86,11 @@ private:
     void calc_next_buffer_size(size_t start);
     size_t next_buffer_size;
 
-    class DataHeader *header;
+    AutoPtr<class DataHeader> header;
     size_t available;
     MemoryBuffer<dbr_time_string> cvt_buffer;
 
-    bool addNewHeader(bool new_ctrl_info);
+    void addNewHeader(bool new_ctrl_info);
 };
 
 /// @}

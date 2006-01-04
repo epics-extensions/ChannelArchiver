@@ -43,6 +43,10 @@ void RawValue::free(Data *value)
 
 size_t RawValue::getSize(DbrType type, DbrCount count)
 {
+    if (type > LAST_BUFFER_TYPE)
+        throw GenericException(__FILE__, __LINE__,
+                               "Invalid type code %zu",
+                               (size_t) type);
     // Need to make the buffer size be a properly structure aligned number
     // Not sure why, but this is the way the first chan_arch did it.
     size_t buf_size = dbr_size_n(type, count);

@@ -19,24 +19,23 @@ DataWriter::DataWriter(IndexFile &index,
                        DbrCount dbr_count,
                        double period,
                        size_t num_samples)
-        : index(index), tree(0), channel_name(channel_name),
-          ctrl_info(ctrl_info), dbr_type(dbr_type),
-          dbr_count(dbr_count), period(period), header(0), available(0)
+  : index(index),
+    channel_name(channel_name),
+    ctrl_info(ctrl_info),
+    dbr_type(dbr_type),
+    dbr_count(dbr_count),
+    period(period),
+    raw_value_size(RawValue::getSize(dbr_type, dbr_count),
+    next_buffer_size(0),
+    available(0)
 {
-    DataFile *datafile;
+    DataFile *datafile = 0;
 
     // Size of next buffer should at least hold num_samples
     calc_next_buffer_size(num_samples);
-    raw_value_size = RawValue::getSize(dbr_type, dbr_count);
 
     // Find or add appropriate data buffer
     tree = index.addChannel(channel_name, directory);
-    if (!tree)
-    {
-        LOG_MSG("DataWriter(%s) cannot get Tree\n",
-                channel_name.c_str());
-        return;
-    }
     RTree::Datablock block;
     RTree::Node node(tree->getM(), true);
     int idx;
@@ -101,25 +100,30 @@ DataWriter::DataWriter(IndexFile &index,
     
 DataWriter::~DataWriter()
 {
-    // Update index
-    if (header)
-    {   
-        header->write();
-        if (tree)
-        {
-            if (!tree->updateLastDatablock(
-                    header->data.begin_time, header->data.end_time,
-                    header->offset, header->datafile->getBasename()))
+    try
+    {   // Update index
+        if (header)
+        {   
+            header->write();
+            if (tree)
             {
-                LOG_MSG("Cannot add %s @ 0x%lX to index\n",
-                        header->datafile->getBasename().c_str(),
-                        (unsigned long)header->offset);
+                if (!tree->updateLastDatablock(
+                        header->data.begin_time, header->data.end_time,
+                        header->offset, header->datafile->getBasename()))
+                {
+                    LOG_MSG("Cannot add %s @ 0x%lX to index\n",
+                            header->datafile->getBasename().c_str(),
+                            (unsigned long)header->offset);
+                }
+                tree = 0;
             }
-            delete tree;
-            tree = 0;
+            header = 0;
         }
-        delete header;
-        header = 0;
+    }
+    catch (...)
+    {
+        LOG_MSG("Exception in %s (%zu):\n%s\n",
+                __FILE__, __LINE__, e.what());
     }
 }
 
@@ -198,39 +202,41 @@ void DataWriter::makeDataFileName(int serial, stdString &name)
 // Create new DataFile that's below file_size_limit in size.
 DataFile *DataWriter::createNewDataFile(size_t headroom)
 {
-    DataFile *datafile;
+    DataFile *datafile = 0;
     int serial=0;
     stdString data_file_name;
-    FileOffset file_size;
-    while (true)
-    {
-        makeDataFileName(serial, data_file_name);
-        datafile = DataFile::reference(directory,
-                                       data_file_name, true);
-        if (! datafile)
+    try
+    {   // Keep opening existing data files until we find
+        // one below the file limit.
+        // We might have to create a new one.
+        while (true)
         {
-            LOG_MSG ("DataWriter(%s): Cannot create data file '%s'\n",
-                     channel_name.c_str(), data_file_name.c_str());
-            return 0;
-        }
-        if (!datafile->getSize(file_size))
-        {
+            makeDataFileName(serial, data_file_name);
+            datafile = DataFile::reference(directory,
+                                           data_file_name, true);
+            FileOffset file_size = datafile->getSize();
+            if (file_size+headroom < file_size_limit)
+                return datafile;
+            if (datafile->is_new_file)
+            {
+                LOG_MSG ("Warning: %s: "
+                         "Cannot create a new data file within file size limit\n"
+                         "type %d, count %d, %d samples, file limit: %d bytes.\n",
+                         channel_name.c_str(),
+                         dbr_type, dbr_count, next_buffer_size, file_size_limit);
+                return datafile; // Use anyway
+            }
+            // Try the next one.
+            ++serial;
             datafile->release();
-            return 0;
+            datafile = 0;
         }
-        if (file_size+headroom < file_size_limit)
-            return datafile;
-        if (datafile->is_new_file)
-        {
-            LOG_MSG ("Warning: %s: "
-                     "Cannot create a new data file within file size limit\n"
-                     "type %d, count %d, %d samples, file limit: %d bytes.\n",
-                     channel_name.c_str(),
-                     dbr_type, dbr_count, next_buffer_size, file_size_limit);
-            return datafile; // Use anyway
-        }
-        ++serial;
-        datafile->release();
+    }
+    catch (GenericException &e)
+    {
+        if (datafile)
+            datafile->release();
+        throw e;
     }
 }
 
@@ -259,55 +265,52 @@ void DataWriter::calc_next_buffer_size(size_t start)
 // Might switch to new DataFile.
 // Will write ctrl_info out if new_ctrl_info is set,
 // otherwise the new header tries to point to the existing ctrl_info.
-bool DataWriter::addNewHeader(bool new_ctrl_info)
+void DataWriter::addNewHeader(bool new_ctrl_info)
 {
-    DataFile  *datafile;
-    FileOffset ctrl_info_offset;
+    DataFile  *datafile = 0;
     bool       new_datafile = false;    // Need to use new DataFile?
+    FileOffset ctrl_info_offset;
+    AutoPtr<DataHeader> new_header;
     size_t     headroom = 0;
-    if (header == 0)
-        new_datafile = true;            // Yes, because there's none.
-    else
-    {   // Check how big the current data file would get
-        FileOffset file_size;
-        if (! header->datafile->getSize(file_size))
-            return false;
-        headroom = header->datafile->getHeaderSize(channel_name,
-                                                   dbr_type, dbr_count,
-                                                   next_buffer_size);
-        if (new_ctrl_info)
-            headroom += ctrl_info.getSize();
-        if (file_size+headroom > file_size_limit) // Yes: reached max. size.
-            new_datafile = true;
-    }
-    if (new_datafile)
+
+    try
     {
-        if (! (datafile = createNewDataFile(headroom)))
-            return false;
-        new_ctrl_info = true;
-    }
-    else
-        datafile = header->datafile;
-    if (new_ctrl_info)
-    {
-        if (!datafile->addCtrlInfo(ctrl_info, ctrl_info_offset))
+        if (!header)
+            new_datafile = true;            // Yes, because there's none.
+        else
+        {   // Check how big the current data file would get
+            FileOffset file_size = header->datafile->getSize(file_size);
+            headroom = header->datafile->getHeaderSize(channel_name,
+                                                       dbr_type, dbr_count,
+                                                       next_buffer_size);
+            if (new_ctrl_info)
+                headroom += ctrl_info.getSize();
+            if (file_size+headroom > file_size_limit) // Yes: reached max. size.
+                new_datafile = true;
+        }
+        if (new_datafile)
         {
-            LOG_MSG("DataWriter(%s): Cannot add CtrlInfo to file '%s'\n",
-                    channel_name.c_str(), datafile->getBasename().c_str());
-            if (new_datafile)
-                datafile->release();
-            return false;
-        }        
+            datafile = createNewDataFile(headroom);
+            new_ctrl_info = true;
+        }
+        else
+            datafile = header->datafile;
+        if (new_ctrl_info)
+            datafile->addCtrlInfo(ctrl_info, ctrl_info_offset);
+        else // use existing one
+            ctrl_info_offset = header->data.ctrl_info_offset;
+        LOG_ASSERT(datafile);
+        new_header = datafile->addHeader(channel_name, dbr_type, dbr_count,
+                                         period, next_buffer_size);
     }
-    else // use existing one
-        ctrl_info_offset = header->data.ctrl_info_offset;
-    DataHeader *new_header =
-        datafile->addHeader(channel_name,
-                            dbr_type, dbr_count, period, next_buffer_size);
-    if (new_datafile)
-        datafile->release(); // now ref'ed by new_header
-    if (!new_header)
-        return false;
+    catch (GenericExpression &e)
+    {
+        if (datafile && new_datafile)
+            datafile->release(); // now ref'ed by new_header
+        throw e;
+    }
+    
+    LOG_ASSERT(new_header);
     new_header->data.ctrl_info_offset = ctrl_info_offset;
     if (header)
     {   // Link old header to new one
@@ -319,23 +322,14 @@ bool DataWriter::addNewHeader(bool new_ctrl_info)
                              header->offset);        
         // Update index entry for the old header
         if (tree)
-        {
-            if (!tree->updateLastDatablock(
+            tree->updateLastDatablock(
                     header->data.begin_time, header->data.end_time,
-                    header->offset, header->datafile->getBasename()))
-            {
-                LOG_MSG("Cannot add %s @ 0x%lX to index\n",
-                        header->datafile->getBasename().c_str(),
-                        (unsigned long)header->offset);
-            }
-        }
-        delete header;
+                    header->offset, header->datafile->getBasename());
     }
     // Switch to new header
     header = new_header;
     // Upp the buffer size
     calc_next_buffer_size(next_buffer_size);
     // new header will be added to index when it's closed
-    return true;
 }
     

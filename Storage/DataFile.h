@@ -46,7 +46,7 @@ public:
     /// contains pieces of a pathname, which will then be moved
     /// into the dirname.
     ///
-    /// @return The referenced DataFile. Do not deleter; use release.
+    /// @return The referenced DataFile. Do not delete; use release.
     /// @sa release
     /// @exception GenericException on error.
     static DataFile *reference(const stdString &dirname,

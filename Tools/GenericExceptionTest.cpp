@@ -58,6 +58,7 @@ TEST_CASE various_exception_tests()
     try
     {
         throw GenericException(__FILE__, __LINE__);
+        FAIL("should not get here");
     }
     catch (GenericException &e)
     {
@@ -68,6 +69,7 @@ TEST_CASE various_exception_tests()
     try
     {
         throw GenericException(__FILE__, __LINE__, "Hello %s", "World");
+        FAIL("should not get here");
     }
     catch (GenericException &e)
     {
@@ -77,6 +79,7 @@ TEST_CASE various_exception_tests()
     try
     {
         throwArchiveException(Invalid);
+        FAIL("should not get here");
     }
     catch (GenericException &e)
     {
@@ -87,13 +90,57 @@ TEST_CASE various_exception_tests()
     try
     {
         throwDetailedArchiveException(Invalid, "in a test");
+        FAIL("should not get here");
     }
     catch (GenericException &e)
     {
         printf("     %s", e.what());
         ++exception_count;
     }
-    TEST(exception_count == 4);
+
+    // Nested
+    try
+    {
+        try
+        {
+            throwDetailedArchiveException(Invalid, "Level 1");
+            FAIL("should not get here");
+        }
+        catch (GenericException &e)
+        {
+            ++exception_count;
+            throw GenericException(__FILE__, __LINE__, "Level 2: Caught %s",
+                                   e.what());
+        }
+    }
+    catch (GenericException &e)
+    {
+        printf("     %s", e.what());
+        ++exception_count;
+    }
+
+    // Rethrow
+    try
+    {
+        try
+        {
+            throwDetailedArchiveException(Invalid, "Rethrown");
+            FAIL("should not get here");
+        }
+        catch (GenericException &e)
+        {
+            ++exception_count;
+            throw e;
+        }
+    }
+    catch (GenericException &e)
+    {
+        printf("     %s", e.what());
+        ++exception_count;
+    }
+
+
+    TEST(exception_count == 8);
     TEST_OK;
 }
 

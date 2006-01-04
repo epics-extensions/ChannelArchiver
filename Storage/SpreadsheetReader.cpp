@@ -44,7 +44,7 @@ SpreadsheetReader::~SpreadsheetReader()
                 delete reader[i];
         free(reader);
     }
-    DataFile::close_all();
+    DataFile::clear_cache();
 }
 
 bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,

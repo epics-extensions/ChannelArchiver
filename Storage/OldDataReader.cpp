@@ -18,7 +18,7 @@ OldDataReader::~OldDataReader()
         RawValue::free(data);
     if (header)
         delete header;
-    DataFile::close_all();
+    DataFile::clear_cache();
 }
 
 const RawValue::Data *OldDataReader::find(

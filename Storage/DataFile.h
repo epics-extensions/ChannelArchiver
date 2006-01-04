@@ -15,18 +15,17 @@
 /// @{
 
 /// Binary Data File.
-
+///
 /// The DataFile class handles access to the binary data files.
-/// One important feature is reference counting.
+/// One important feature is reference counting and caching.
 /// When the ArchiveEngine adds samples, it is very likely
 /// to add samples for several channels to the same collection
 /// of data files.
-/// The DataFile class suppors this:
 /// - When referencing a data file for the first time, the file gets opened.
 /// - When releasing it, the data file stays open.
 /// - During a write cycle, it is likely that at least some of the channels
 ///   reference the same files, and voila: The file is already open.
-/// - Finally, close_all() should be called to close all the data files.
+/// - Finally, clear_cache() should be called to close all the data files.
 class DataFile
 {
 public:
@@ -64,7 +63,7 @@ public:
     
     /// De-reference a data file (Call instead of delete).
     //
-    /// @sa close_all
+    /// @sa clear_cache
     void release();
 
     /// Returns true if DataFile is writable.
@@ -84,10 +83,20 @@ public:
     /// @exception GenericException on error.
     void reopen();
 
-    /// Close all data files that are currently open.
+    /// Close as many data files as possible.
     ///
-    /// @exception GenericException if for example one data file is still
-    /// referenced and thus we couldn't close it.
+    /// Closes all data files that are fully released.
+    ///
+    /// @return Returns the number of files which are
+    ///         left open because there is still
+    ///         a reference to them.
+    static size_t clear_cache();
+
+    /// Close all data files.
+    ///
+    /// @sa clear_cache
+    /// @exception GenericException if data files are
+    ///            referenced.
     static void close_all();
 
     /// Check if any data files are still open (e.g. at end of program)

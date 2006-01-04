@@ -21,7 +21,7 @@
 
 // TODO: Convert to BinIO?
 
-#undef LOG_DATAFILE
+#define LOG_DATAFILE
 
 // List of all DataFiles currently open
 // We assume that there aren't that many open,
@@ -40,7 +40,7 @@ DataFile::DataFile(const stdString &dirname,
 
 {
 #ifdef LOG_DATAFILE
-    LOG_MSG("DataFile %s (%c) opened\n",
+    LOG_MSG("DataFile %s (%c) created\n",
             filename.c_str(), (for_write?'W':'R'));
 #endif
 }
@@ -48,7 +48,7 @@ DataFile::DataFile(const stdString &dirname,
 DataFile::~DataFile ()
 {
 #ifdef LOG_DATAFILE
-    LOG_MSG("DataFile %s (%c) closed\n",
+    LOG_MSG("DataFile %s (%c) deleted\n",
             filename.c_str(), (for_write?'W':'R'));
 #endif
 }
@@ -67,7 +67,7 @@ DataFile *DataFile::reference(const stdString &req_dirname,
             req_dirname.c_str(),
             req_basename.c_str(),
             (for_write ?  "read/write" : "read-only"));
-    LOG_MSG("normalized: '%s' + '%s' = %s)\n",
+    LOG_MSG("normalized: '%s' + '%s' = '%s')\n",
             dirname.c_str(), basename.c_str(), filename.c_str());
 #endif
     stdList<DataFile *>::iterator i = open_data_files.begin();
@@ -118,7 +118,7 @@ DataFile *DataFile::reference()
 {
     ++ref_count;
 #ifdef LOG_DATAFILE
-    LOG_MSG("DataFile %s referenced again (%d)\n",
+    LOG_MSG("DataFile %s referenced %d times\n",
             filename.c_str(), ref_count);
 #endif
     return this;
@@ -133,7 +133,7 @@ void DataFile::release()
     // in here, but we keep the files open
     // and cache them until close_all() is called.
 #ifdef LOG_DATAFILE
-    LOG_MSG("DataFile %s released (%d)\n",
+    LOG_MSG("DataFile %s released, %d references\n",
             filename.c_str(), ref_count);
 #endif
 }
@@ -169,6 +169,10 @@ void DataFile::reopen()
                                    "DataFile(%s): Read error",
                                    filename.c_str());
         is_tagged_file = file_cookie == cookie;
+#ifdef LOG_DATAFILE
+        LOG_MSG("DataFile %s opened for %s\n",
+                filename.c_str(), (for_write?"writing":"read-only access"));
+#endif
         return;
     }
     // No file, yet.
@@ -188,25 +192,43 @@ void DataFile::reopen()
                                "DataFile(%s): Cannot write to file.",
                                filename.c_str());
     is_tagged_file = true;
+#ifdef LOG_DATAFILE
+    LOG_MSG("DataFile %s created for writing\n", filename.c_str());
+#endif
 }
 
-void DataFile::close_all()
+size_t DataFile::clear_cache()
 {
+    size_t left = 0;
     stdList<DataFile *>::iterator i = open_data_files.begin();
     while (i != open_data_files.end())
     {
         DataFile *file = *i;
         if (file->ref_count > 0)
-           throw GenericException(__FILE__, __LINE__,
-                                  "DataFile %s still ref'ed in close_all (%d)\n",
-                                  file->filename.c_str(), file->ref_count);
-#ifdef LOG_DATAFILE
-        LOG_MSG("DataFile::close_all: closing %s\n",
-                file->filename.c_str());
-#endif
-        i = open_data_files.erase(i);
-        delete file;
+        {
+            ++left;
+            ++i;
+        }
+        else
+        {
+#           ifdef LOG_DATAFILE
+            LOG_MSG("DataFile::clear_cache: closing %s\n",
+                    file->filename.c_str());
+#           endif
+            i = open_data_files.erase(i);
+            delete file;
+        }
     }
+    return left;
+}
+
+void DataFile::close_all()
+{
+    size_t left = clear_cache();
+    if (left > 0)
+       throw GenericException(__FILE__, __LINE__,
+                              "%zu data files are still ref'ed in close_all",
+                              left);
 }
 
 DataHeader *DataFile::getHeader(FileOffset offset)

@@ -7,7 +7,7 @@
 #include "RawDataReader.h"
 #include "DataFile.h"
 
-#undef DEBUG_DATAREADER
+#define DEBUG_DATAREADER
 
 RawDataReader::RawDataReader(Index &index)
         : index(index),
@@ -24,7 +24,9 @@ RawDataReader::RawDataReader(Index &index)
 
 RawDataReader::~RawDataReader()
 {
-    DataFile::close_all();
+    // Delete the header which might still keep a data file open.
+    header = 0;
+    DataFile::clear_cache();
 }
 
 const RawValue::Data *RawDataReader::find(const stdString &channel_name,

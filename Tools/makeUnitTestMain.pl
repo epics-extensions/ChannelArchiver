@@ -94,7 +94,7 @@ foreach $test_unit ( sort keys %test_units )
     foreach $test_case ( @{ $test_units{$test_unit}} )
     {
         print("        ++run;\n");
-        print("        printf(\"$test_case:\\n\");\n");
+        print("        printf(\"\\n$test_case:\\n\");\n");
         print("        if ($test_case())\n");
         print("            ++passed;\n");
         print("        else\n");

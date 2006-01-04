@@ -64,7 +64,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_ascii_parser:\n");
+        printf("\ntest_ascii_parser:\n");
         if (test_ascii_parser())
             ++passed;
         else
@@ -77,7 +77,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("avl_test:\n");
+        printf("\navl_test:\n");
         if (avl_test())
             ++passed;
         else
@@ -90,13 +90,13 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("bogus_auto_file_ptr:\n");
+        printf("\nbogus_auto_file_ptr:\n");
         if (bogus_auto_file_ptr())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
         ++run;
-        printf("auto_file_ptr:\n");
+        printf("\nauto_file_ptr:\n");
         if (auto_file_ptr())
             ++passed;
         else
@@ -109,7 +109,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_autoptr:\n");
+        printf("\ntest_autoptr:\n");
         if (test_autoptr())
             ++passed;
         else
@@ -122,13 +122,13 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("bin_io_write:\n");
+        printf("\nbin_io_write:\n");
         if (bin_io_write())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
         ++run;
-        printf("bin_io_read:\n");
+        printf("\nbin_io_read:\n");
         if (bin_io_read())
             ++passed;
         else
@@ -141,7 +141,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_bitset:\n");
+        printf("\ntest_bitset:\n");
         if (test_bitset())
             ++passed;
         else
@@ -154,7 +154,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_ca:\n");
+        printf("\ntest_ca:\n");
         if (test_ca())
             ++passed;
         else
@@ -167,7 +167,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_conversions:\n");
+        printf("\ntest_conversions:\n");
         if (test_conversions())
             ++passed;
         else
@@ -180,7 +180,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_fux:\n");
+        printf("\ntest_fux:\n");
         if (test_fux())
             ++passed;
         else
@@ -193,7 +193,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("Filename_Test:\n");
+        printf("\nFilename_Test:\n");
         if (Filename_Test())
             ++passed;
         else
@@ -206,13 +206,13 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("how_new_fails:\n");
+        printf("\nhow_new_fails:\n");
         if (how_new_fails())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
         ++run;
-        printf("various_exception_tests:\n");
+        printf("\nvarious_exception_tests:\n");
         if (various_exception_tests())
             ++passed;
         else
@@ -225,7 +225,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("guard_test:\n");
+        printf("\nguard_test:\n");
         if (guard_test())
             ++passed;
         else
@@ -238,7 +238,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("index_config_test:\n");
+        printf("\nindex_config_test:\n");
         if (index_config_test())
             ++passed;
         else
@@ -251,7 +251,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_log:\n");
+        printf("\ntest_log:\n");
         if (test_log())
             ++passed;
         else
@@ -264,13 +264,13 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("worker_thread:\n");
+        printf("\nworker_thread:\n");
         if (worker_thread())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
         ++run;
-        printf("test_threads:\n");
+        printf("\ntest_threads:\n");
         if (test_threads())
             ++passed;
         else
@@ -283,7 +283,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_timer:\n");
+        printf("\ntest_timer:\n");
         if (test_timer())
             ++passed;
         else
@@ -296,7 +296,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_time:\n");
+        printf("\ntest_time:\n");
         if (test_time())
             ++passed;
         else
@@ -309,7 +309,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_string:\n");
+        printf("\ntest_string:\n");
         if (test_string())
             ++passed;
         else

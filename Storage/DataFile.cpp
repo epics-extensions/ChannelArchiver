@@ -21,7 +21,7 @@
 
 // TODO: Convert to BinIO?
 
-#define LOG_DATAFILE
+//#define LOG_DATAFILE
 
 // List of all DataFiles currently open
 // We assume that there aren't that many open,

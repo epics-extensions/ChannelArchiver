@@ -7,7 +7,7 @@
 #include "RawDataReader.h"
 #include "DataFile.h"
 
-#define DEBUG_DATAREADER
+// #define DEBUG_DATAREADER
 
 RawDataReader::RawDataReader(Index &index)
         : index(index),

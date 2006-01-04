@@ -23,6 +23,7 @@ extern TEST_CASE dump_blocks();
 extern TEST_CASE update_test();
 // Unit RawDataReaderTest:
 extern TEST_CASE RawDataReaderTest();
+extern TEST_CASE DualRawDataReaderTest();
 // Unit RawValueTest:
 extern TEST_CASE RawValue_format();
 extern TEST_CASE RawValue_auto_ptr();
@@ -42,7 +43,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("test_data_file:\n");
+        printf("\ntest_data_file:\n");
         if (test_data_file())
             ++passed;
         else
@@ -55,13 +56,13 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("file_allocator_create_new_file:\n");
+        printf("\nfile_allocator_create_new_file:\n");
         if (file_allocator_create_new_file())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
         ++run;
-        printf("file_allocator_open_existing:\n");
+        printf("\nfile_allocator_open_existing:\n");
         if (file_allocator_open_existing())
             ++passed;
         else
@@ -74,7 +75,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("hash_table_test:\n");
+        printf("\nhash_table_test:\n");
         if (hash_table_test())
             ++passed;
         else
@@ -87,7 +88,7 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("name_hash_test:\n");
+        printf("\nname_hash_test:\n");
         if (name_hash_test())
             ++passed;
         else
@@ -100,19 +101,19 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("fill_tests:\n");
+        printf("\nfill_tests:\n");
         if (fill_tests())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
         ++run;
-        printf("dump_blocks:\n");
+        printf("\ndump_blocks:\n");
         if (dump_blocks())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
         ++run;
-        printf("update_test:\n");
+        printf("\nupdate_test:\n");
         if (update_test())
             ++passed;
         else
@@ -125,8 +126,14 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("RawDataReaderTest:\n");
+        printf("\nRawDataReaderTest:\n");
         if (RawDataReaderTest())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("\nDualRawDataReaderTest:\n");
+        if (DualRawDataReaderTest())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
@@ -138,13 +145,13 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("RawValue_format:\n");
+        printf("\nRawValue_format:\n");
         if (RawValue_format())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");
         ++run;
-        printf("RawValue_auto_ptr:\n");
+        printf("\nRawValue_auto_ptr:\n");
         if (RawValue_auto_ptr())
             ++passed;
         else

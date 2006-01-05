@@ -10,6 +10,8 @@
 
 // Unit DataFileTest:
 extern TEST_CASE test_data_file();
+// Unit DataWriterTest:
+extern TEST_CASE data_writer_test();
 // Unit FileAllocatorTest:
 extern TEST_CASE file_allocator_create_new_file();
 extern TEST_CASE file_allocator_open_existing();
@@ -45,6 +47,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\ntest_data_file:\n");
         if (test_data_file())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "DataWriterTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit DataWriterTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("\ndata_writer_test:\n");
+        if (data_writer_test())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

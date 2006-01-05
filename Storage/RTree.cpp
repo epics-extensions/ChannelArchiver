@@ -329,7 +329,7 @@ bool RTree::updateLastDatablock(const epicsTime &start,
             //   Last block's range:      |---------------|
             //     New/update range:   xxxxxxxxxxxxxxxxxxxx------|
             if (start <= node.record[i].end &&
-                node.record[i].end < end)
+                end > node.record[i].end)
             {   // Update end time
                 node.record[i].end = end;
                 write_node(node);

@@ -3,6 +3,7 @@
 TESTPROD_HOST += UnitTest
 
 UnitTest_SRCS += DataFileTest.cpp
+UnitTest_SRCS += DataWriterTest.cpp
 UnitTest_SRCS += FileAllocatorTest.cpp
 UnitTest_SRCS += HashTableTest.cpp
 UnitTest_SRCS += NameHashTest.cpp

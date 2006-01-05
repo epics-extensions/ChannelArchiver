@@ -39,6 +39,11 @@ public:
                size_t num_samples);
 
     /// Destructor.
+    ///
+    /// <b>Note:</b> Since one might use another DataWriter
+    ///              to add to the same set of data files,
+    ///              the DataWriter does not clear the DataFile cache.
+    ///              Call DataFile::close_all() when done!
     ~DataWriter();
 
     static void setDataFileNameBase(const char *base = "data");
@@ -51,16 +56,13 @@ public:
     /// there's nothing in the archive, yet.
     epicsTime getLastStamp();
 
-    /// DataWriter::add result.
-    enum DWA
-    {
-        DWA_Yes,  ///< Added new sample
-        DWA_Back, ///< New sample is back-in-time. Skipped it.
-        DWA_Error ///< Error, couldn't add value.
-    };
-    
     /// Add a value.
-    DWA add(const RawValue::Data *data);
+    ///
+    /// @return Returns true if the sample was added,
+    ///         false if the sample goes back-in-time
+    ///         and is thus ignored.
+    /// @exception GenericException on error.
+    bool add(const RawValue::Data *data);
 
     /// Data file size limit.
     static FileOffset file_size_limit;

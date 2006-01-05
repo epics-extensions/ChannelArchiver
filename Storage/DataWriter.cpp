@@ -25,77 +25,56 @@ DataWriter::DataWriter(IndexFile &index,
     dbr_type(dbr_type),
     dbr_count(dbr_count),
     period(period),
-    raw_value_size(RawValue::getSize(dbr_type, dbr_count),
+    raw_value_size(RawValue::getSize(dbr_type, dbr_count)),
     next_buffer_size(0),
     available(0)
 {
     DataFile *datafile = 0;
-
-    // Size of next buffer should at least hold num_samples
-    calc_next_buffer_size(num_samples);
-
-    // Find or add appropriate data buffer
-    tree = index.addChannel(channel_name, directory);
-    RTree::Datablock block;
-    RTree::Node node(tree->getM(), true);
-    int idx;
-    if (tree->getLastDatablock(node, idx, block))        
-    {   // - There is a data file and buffer
-        if (! (datafile =
-               DataFile::reference(directory, block.data_filename, true)))
-        {
-            LOG_MSG("DataWriter(%s) cannot open data file %s\n",
-                    channel_name.c_str(), block.data_filename.c_str());
-            return;
-        } 
-        header = datafile->getHeader(block.data_offset);
-        datafile->release(); // now ref'ed by header
-        if (!header)
-        {
-            LOG_MSG("DataWriter(%s): cannot get header %s @ 0x%lX\n",
-                    channel_name.c_str(),
-                    block.data_filename.c_str(),
-                    (unsigned long)block.data_offset);
-            return;
-        }
-        // See if anything has changed
-        CtrlInfo prev_ctrl_info;
-        if (!prev_ctrl_info.read(header->datafile,
-                                 header->data.ctrl_info_offset))
-        {
-            LOG_MSG("DataWriter(%s): header in %s @ 0x%lX"
-                    " has bad CtrlInfo\n",
-                    channel_name.c_str(),
-                    header->datafile->getBasename().c_str(),
-                    (unsigned long)header->offset);
-            delete header;
-            header = 0;
-            return;            
-        }
-        if (prev_ctrl_info != ctrl_info)
-        {   // Add new header because info has changed
-            if (!addNewHeader(true))
-                return;
-        }
-        else if (header->data.dbr_type != dbr_type  ||
-                 header->data.dbr_count != dbr_count)
-        {   // Add new header because type has changed
-            if (!addNewHeader(false))
-                return;
-        }
-        else
-        {   // All fine, just check if we're already in bigger league
-            size_t capacity = header->capacity();
-            if (capacity > num_samples)
-                calc_next_buffer_size(capacity);
-        }
-    }   
-    else
+    try
     {
-        if (!addNewHeader(true))
-            return;
+        // Size of next buffer should at least hold num_samples
+        calc_next_buffer_size(num_samples);
+
+        // Find or add appropriate data buffer
+        tree = index.addChannel(channel_name, directory);
+        RTree::Datablock block;
+        RTree::Node node(tree->getM(), true);
+        int idx;
+        if (tree->getLastDatablock(node, idx, block))        
+        {   // - There is a data file and buffer
+            datafile = DataFile::reference(directory, block.data_filename, true);
+            header = datafile->getHeader(block.data_offset);
+            datafile->release(); // now ref'ed by header
+            datafile = 0;
+            // See if anything has changed
+            CtrlInfo prev_ctrl_info;
+            prev_ctrl_info.read(header->datafile,
+                                header->data.ctrl_info_offset);
+            if (prev_ctrl_info != ctrl_info)
+                // Add new header and new ctrl_info
+                addNewHeader(true);
+            else if (header->data.dbr_type != dbr_type  ||
+                     header->data.dbr_count != dbr_count)
+                // Add new header, use existing ctrl_info
+                addNewHeader(false);
+            else
+            {   // All fine, just check if we're already in bigger league
+                size_t capacity = header->capacity();
+                if (capacity > num_samples)
+                    calc_next_buffer_size(capacity);
+            }
+        }
+        else // New data file, add the initial header
+            addNewHeader(true);
+        available = header->available();
     }
-    available = header->available();
+    catch (GenericException &e)
+    {
+        tree = 0;
+        if (datafile)
+            datafile->release();
+        throw e;
+    }
 }
     
 DataWriter::~DataWriter()
@@ -120,10 +99,15 @@ DataWriter::~DataWriter()
             header = 0;
         }
     }
-    catch (...)
+    catch (GenericException &e)
     {
         LOG_MSG("Exception in %s (%zu):\n%s\n",
                 __FILE__, __LINE__, e.what());
+    }
+    catch (...)
+    {
+        LOG_MSG("Unknown Exception in %s (%zu)\n\n",
+                __FILE__, __LINE__);
     }
 }
 
@@ -134,17 +118,15 @@ epicsTime DataWriter::getLastStamp()
     return nullTime;
 }
 
-DataWriter::DWA DataWriter::add(const RawValue::Data *data)
+bool DataWriter::add(const RawValue::Data *data)
 {
-    if (!header) // In here, we should always have a header
-        return DWA_Error;
+    LOG_ASSERT(header);
     epicsTime data_stamp = RawValue::getTime(data);
     if (data_stamp < header->data.end_time)
-        return DWA_Back;
+        return false;
     if (available <= 0) // though it might be full
     {
-        if (!addNewHeader(false))
-            return DWA_Error;
+        addNewHeader(false);
         available = header->available();
     }
     // Add the value
@@ -165,7 +147,7 @@ DataWriter::DWA DataWriter::add(const RawValue::Data *data)
     header->data.end_time = data_stamp;
     // Note: we didn't write the header nor update the index,
     // that'll happen when we close the DataWriter!
-    return DWA_Yes;
+    return true;
 }
 
 void DataWriter::setDataFileNameBase(const char *base)
@@ -175,6 +157,7 @@ void DataWriter::setDataFileNameBase(const char *base)
 
 void DataWriter::makeDataFileName(int serial, stdString &name)
 {
+    int  len;
     char buffer[30];    
 
     if (data_file_name_base.length() > 0)
@@ -182,8 +165,10 @@ void DataWriter::makeDataFileName(int serial, stdString &name)
 	name = data_file_name_base;
         if (serial > 0)
         {
-            sprintf(buffer, "-%d", serial);
-            name.append(buffer, strlen(buffer));
+            len = snprintf(buffer, sizeof(buffer), "-%d", serial);
+            if (len >= (int)sizeof(buffer))
+                len = sizeof(buffer)-1;
+            name.append(buffer, len);
         }
         return;
     }
@@ -193,10 +178,14 @@ void DataWriter::makeDataFileName(int serial, stdString &name)
     epicsTime now = epicsTime::getCurrent();    
     epicsTime2vals(now, year, month, day, hour, min, sec, nano);
     if (serial > 0)
-        sprintf(buffer, "%04d%02d%02d-%d", year, month, day, serial);
+        len = snprintf(buffer, sizeof(buffer),
+                       "%04d%02d%02d-%d", year, month, day, serial);
     else
-        sprintf(buffer, "%04d%02d%02d", year, month, day);
-    name = buffer;
+        len = snprintf(buffer,sizeof(buffer),
+                       "%04d%02d%02d", year, month, day);
+    if (len >= (int)sizeof(buffer))
+        len = sizeof(buffer)-1;
+    name.assign(buffer, len);
 }
 
 // Create new DataFile that's below file_size_limit in size.
@@ -279,7 +268,7 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
             new_datafile = true;            // Yes, because there's none.
         else
         {   // Check how big the current data file would get
-            FileOffset file_size = header->datafile->getSize(file_size);
+            FileOffset file_size = header->datafile->getSize();
             headroom = header->datafile->getHeaderSize(channel_name,
                                                        dbr_type, dbr_count,
                                                        next_buffer_size);
@@ -303,7 +292,7 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
         new_header = datafile->addHeader(channel_name, dbr_type, dbr_count,
                                          period, next_buffer_size);
     }
-    catch (GenericExpression &e)
+    catch (GenericException &e)
     {
         if (datafile && new_datafile)
             datafile->release(); // now ref'ed by new_header
@@ -332,4 +321,4 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
     calc_next_buffer_size(next_buffer_size);
     // new header will be added to index when it's closed
 }
-    
+ 

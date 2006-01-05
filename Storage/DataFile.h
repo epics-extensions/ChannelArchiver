@@ -99,9 +99,6 @@ public:
     ///            referenced.
     static void close_all();
 
-    /// Check if any data files are still open (e.g. at end of program)
-    static bool any_still_open();
-
     /// Get full name of data file.
     const stdString &getFilename() {   return filename; }
 

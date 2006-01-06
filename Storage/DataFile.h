@@ -55,6 +55,10 @@ public:
     /// Add reference to current DataFile.
     DataFile *reference();
 
+    /// Get reference count.
+    size_t refCount() const
+    {    return ref_count; }
+
     /// Indicates if this file was newly created.
     bool is_new_file;
 

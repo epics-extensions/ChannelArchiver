@@ -8,7 +8,7 @@
 #include "DataFile.h"
 #include "DataWriter.h"
 
-#define DEBUG_DATA_WRITER
+// #define DEBUG_DATA_WRITER
 
 FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
 
@@ -18,7 +18,8 @@ DataWriter::DataWriter(IndexFile &index,
                        DbrType dbr_type,
                        DbrCount dbr_count,
                        double period,
-                       size_t num_samples)
+                       size_t num_samples,
+                       const char *date_base_name)
   : index(index),
     channel_name(channel_name),
     ctrl_info(ctrl_info),
@@ -30,6 +31,8 @@ DataWriter::DataWriter(IndexFile &index,
     available(0)
 {
     DataFile *datafile = 0;
+    if (date_base_name)
+        data_file_name_base = date_base_name;
     try
     {
         // Size of next buffer should at least hold num_samples
@@ -150,10 +153,6 @@ bool DataWriter::add(const RawValue::Data *data)
     return true;
 }
 
-void DataWriter::setDataFileNameBase(const char *base)
-{
-    data_file_name_base = base;
-}
 
 void DataWriter::makeDataFileName(int serial, stdString &name)
 {
@@ -285,19 +284,19 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
             }
             if (new_datafile)
             {
-    #           ifdef DEBUG_DATA_WRITER
+#               ifdef DEBUG_DATA_WRITER
                 LOG_MSG("DataWriter::addNewHeader: New Datafile\n");
-    #           endif
+#               endif
                 datafile = createNewDataFile(headroom);
                 new_ctrl_info = true;
             }
             else
             {
-    #           ifdef DEBUG_DATA_WRITER
+#               ifdef DEBUG_DATA_WRITER
                 LOG_MSG("DataWriter::addNewHeader: adding to '%s'\n",
                         header->datafile->getFilename().c_str());
-    #           endif
-                datafile = header->datafile;
+#               endif
+                datafile = header->datafile->reference();
             }
             if (new_ctrl_info)
                 datafile->addCtrlInfo(ctrl_info, ctrl_info_offset);
@@ -318,23 +317,23 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
     LOG_ASSERT(new_header);
     new_header->data.ctrl_info_offset = ctrl_info_offset;
     if (header)
-    {   // Link old header to new one
+    {   // Link old header to new one.
         header->set_next(new_header->datafile->getBasename(),
                          new_header->offset);
         header->write();
-        // back from new to old
+        // back from new to old.
         new_header->set_prev(header->datafile->getBasename(),
                              header->offset);        
-        // Update index entry for the old header
+        // Update index entry for the old header.
         if (tree)
             tree->updateLastDatablock(
                     header->data.begin_time, header->data.end_time,
                     header->offset, header->datafile->getBasename());
     }
-    // Switch to new header.
+    // Switch to new_header (AutoPtr, might del. current header).
     header = new_header;
-    // Calc buffer size for the following header (not the current one)
+    // Calc buffer size for the following header (not the current one).
     calc_next_buffer_size(next_buffer_size);
-    // new header will be added to index when it's closed
+    // new header will be added to index when it's closed.
 }
  

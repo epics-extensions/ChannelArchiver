@@ -36,7 +36,8 @@ public:
                DbrType dbr_type,
                DbrCount dbr_count,
                double period,
-               size_t num_samples);
+               size_t num_samples,
+               const char *date_base_name = 0);
 
     /// Destructor.
     ///
@@ -46,10 +47,8 @@ public:
     ///              Call DataFile::close_all() when done!
     ~DataWriter();
 
-    void setDataFileNameBase(const char *base = "data");
-
     /// Returns the last time stamp in the archive.
-
+    ///
     /// This allows you to avoid the back-in-time error
     /// by checking before adding.
     /// The result is a null time stamp in case

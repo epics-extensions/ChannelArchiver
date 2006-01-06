@@ -31,8 +31,7 @@ TEST_CASE data_writer_test()
         AutoPtr<DataWriter> writer(new DataWriter(index,
                                                   channel_name, info,
                                                   dbr_type, dbr_count, 2.0,
-                                                  samples));
-        writer->setDataFileNameBase("data_writer.data");
+                                                  samples, "data_writer.data"));
         RawValueAutoPtr data(RawValue::allocate(dbr_type, dbr_count, 1));
         RawValue::setStatus(data, 0, 0);
         size_t i;

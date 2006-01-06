@@ -21,7 +21,7 @@
 
 // TODO: Convert to BinIO?
 
-//#define LOG_DATAFILE
+#define LOG_DATAFILE
 
 // List of all DataFiles currently open
 // We assume that there aren't that many open,
@@ -127,6 +127,10 @@ DataFile *DataFile::reference()
 // Call instead of delete:
 void DataFile::release()
 {
+    if (ref_count <= 0)
+        throw GenericException(__FILE__, __LINE__,
+                               "DataFile(%s): over-released",
+                               filename.c_str());
     --ref_count;
     // You might expect
     //   delete this;

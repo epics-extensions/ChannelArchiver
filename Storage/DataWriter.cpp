@@ -8,9 +8,9 @@
 #include "DataFile.h"
 #include "DataWriter.h"
 
-FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
+#define DEBUG_DATA_WRITER
 
-stdString DataWriter::data_file_name_base;
+FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
 
 DataWriter::DataWriter(IndexFile &index,
                        const stdString &channel_name,
@@ -233,18 +233,24 @@ void DataWriter::calc_next_buffer_size(size_t start)
 {
     if (start < 64)
         next_buffer_size = 64;
-    else if (start > 4096)
+    else if (start >= 4096)
         next_buffer_size = 4096;
     else
     {   // We want the next power of 2:
         int log2 = 0;
-        while (start > 0)
+        size_t req = start;
+        while (req > 0)
         {
-            start >>= 1;
+            req >>= 1;
             ++log2;
         }
         next_buffer_size = 1 << log2;
     }
+
+#ifdef DEBUG_DATA_WRITER
+    LOG_MSG("calc_next_buffer_size: %10zu  -> %10zu\n",
+            start, next_buffer_size);
+#endif
 }
 
 // Add a new header because
@@ -256,49 +262,59 @@ void DataWriter::calc_next_buffer_size(size_t start)
 // otherwise the new header tries to point to the existing ctrl_info.
 void DataWriter::addNewHeader(bool new_ctrl_info)
 {
-    DataFile  *datafile = 0;
-    bool       new_datafile = false;    // Need to use new DataFile?
     FileOffset ctrl_info_offset;
     AutoPtr<DataHeader> new_header;
-    size_t     headroom = 0;
-
-    try
     {
-        if (!header)
-            new_datafile = true;            // Yes, because there's none.
-        else
-        {   // Check how big the current data file would get
-            FileOffset file_size = header->datafile->getSize();
-            headroom = header->datafile->getHeaderSize(channel_name,
-                                                       dbr_type, dbr_count,
-                                                       next_buffer_size);
-            if (new_ctrl_info)
-                headroom += ctrl_info.getSize();
-            if (file_size+headroom > file_size_limit) // Yes: reached max. size.
-                new_datafile = true;
-        }
-        if (new_datafile)
+        bool       new_datafile = false;    // Need to use new DataFile?
+        DataFile  *datafile = 0;
+        size_t     headroom = 0;
+        try
         {
-            datafile = createNewDataFile(headroom);
-            new_ctrl_info = true;
+            if (!header)
+                new_datafile = true;            // Yes, because there's none.
+            else
+            {   // Check how big the current data file would get
+                FileOffset file_size = header->datafile->getSize();
+                headroom = header->datafile->getHeaderSize(channel_name,
+                                                           dbr_type, dbr_count,
+                                                           next_buffer_size);
+                if (new_ctrl_info)
+                    headroom += ctrl_info.getSize();
+                if (file_size+headroom > file_size_limit) // Yes: reached max. size.
+                    new_datafile = true;
+            }
+            if (new_datafile)
+            {
+    #           ifdef DEBUG_DATA_WRITER
+                LOG_MSG("DataWriter::addNewHeader: New Datafile\n");
+    #           endif
+                datafile = createNewDataFile(headroom);
+                new_ctrl_info = true;
+            }
+            else
+            {
+    #           ifdef DEBUG_DATA_WRITER
+                LOG_MSG("DataWriter::addNewHeader: adding to '%s'\n",
+                        header->datafile->getFilename().c_str());
+    #           endif
+                datafile = header->datafile;
+            }
+            if (new_ctrl_info)
+                datafile->addCtrlInfo(ctrl_info, ctrl_info_offset);
+            else // use existing one
+                ctrl_info_offset = header->data.ctrl_info_offset;
+            LOG_ASSERT(datafile);
+            new_header = datafile->addHeader(channel_name, dbr_type, dbr_count,
+                                             period, next_buffer_size);
         }
-        else
-            datafile = header->datafile;
-        if (new_ctrl_info)
-            datafile->addCtrlInfo(ctrl_info, ctrl_info_offset);
-        else // use existing one
-            ctrl_info_offset = header->data.ctrl_info_offset;
-        LOG_ASSERT(datafile);
-        new_header = datafile->addHeader(channel_name, dbr_type, dbr_count,
-                                         period, next_buffer_size);
+        catch (GenericException &e)
+        {
+            if (datafile && new_datafile)
+                datafile->release();
+            throw e;
+        }
+        datafile->release(); // now ref'ed by new_header
     }
-    catch (GenericException &e)
-    {
-        if (datafile && new_datafile)
-            datafile->release(); // now ref'ed by new_header
-        throw e;
-    }
-    
     LOG_ASSERT(new_header);
     new_header->data.ctrl_info_offset = ctrl_info_offset;
     if (header)
@@ -315,9 +331,9 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
                     header->data.begin_time, header->data.end_time,
                     header->offset, header->datafile->getBasename());
     }
-    // Switch to new header
+    // Switch to new header.
     header = new_header;
-    // Upp the buffer size
+    // Calc buffer size for the following header (not the current one)
     calc_next_buffer_size(next_buffer_size);
     // new header will be added to index when it's closed
 }

@@ -46,7 +46,7 @@ public:
     ///              Call DataFile::close_all() when done!
     ~DataWriter();
 
-    static void setDataFileNameBase(const char *base = "data");
+    void setDataFileNameBase(const char *base = "data");
 
     /// Returns the last time stamp in the archive.
 
@@ -78,7 +78,7 @@ private:
     double period;
     size_t raw_value_size;
 
-    static stdString data_file_name_base;
+    stdString data_file_name_base;
     void makeDataFileName(int serial, stdString &name);
     DataFile *createNewDataFile(size_t headroom);
 

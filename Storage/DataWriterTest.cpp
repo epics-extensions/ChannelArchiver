@@ -7,10 +7,14 @@
 
 TEST_CASE data_writer_test()
 {
-    stdString index_name = "test/data_writer_test";
+    stdString index_name = "test/data_writer.index";
+
+    TEST_DELETE_FILE(index_name.c_str());
+    TEST_DELETE_FILE("test/data_writer.data");
+
     stdString channel_name = "fred";
     size_t samples = 10000;
-    
+
     try
     {
         IndexFile index(50);
@@ -28,6 +32,7 @@ TEST_CASE data_writer_test()
                                                   channel_name, info,
                                                   dbr_type, dbr_count, 2.0,
                                                   samples));
+        writer->setDataFileNameBase("data_writer.data");
         RawValueAutoPtr data(RawValue::allocate(dbr_type, dbr_count, 1));
         RawValue::setStatus(data, 0, 0);
         size_t i;
@@ -42,6 +47,7 @@ TEST_CASE data_writer_test()
                 break;
             }   
         }
+        writer = 0;
         DataFile::close_all();
         index.close();
     }

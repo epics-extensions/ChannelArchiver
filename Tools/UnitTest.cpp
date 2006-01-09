@@ -33,6 +33,7 @@ extern TEST_CASE Filename_Test();
 // Unit GenericExceptionTest:
 extern TEST_CASE how_new_fails();
 extern TEST_CASE various_exception_tests();
+extern TEST_CASE double_throw();
 // Unit GuardTest:
 extern TEST_CASE guard_test();
 // Unit IndexConfigTest:
@@ -214,6 +215,12 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\nvarious_exception_tests:\n");
         if (various_exception_tests())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("\ndouble_throw:\n");
+        if (double_throw())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

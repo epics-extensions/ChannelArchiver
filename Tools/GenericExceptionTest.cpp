@@ -144,4 +144,35 @@ TEST_CASE various_exception_tests()
     TEST_OK;
 }
 
+class ThrowInDescructor
+{
+public:
+    ~ThrowInDescructor()
+    {
+        if (std::uncaught_exception())
+            printf("ThrowInDescructor doesn't throw because of uncaught_exception\n");
+        else
+            throw  GenericException(__FILE__, __LINE__, "I throw in my destructor");
+    }
+    int dummy;
+};
 
+TEST_CASE double_throw()
+{
+    try
+    {
+        ThrowInDescructor tid;
+        tid.dummy = 1;
+        TEST_MSG(tid.dummy, "Created ThrowInDescructor test class");
+        // This exception causes tid to be destructed,
+        // so then an exception is throws while
+        // there is already an active exception...
+        throw  GenericException(__FILE__, __LINE__, "Test");
+        FAIL("Should not get here");
+    }
+    catch (GenericException &e)
+    {
+        TEST(e.getDetail() == "Test");
+    }
+    TEST_OK;
+}

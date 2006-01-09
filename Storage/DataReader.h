@@ -56,6 +56,7 @@ public:
     /// @pre find()
     ///
     /// @return Returns next value or 0.
+    ///         The caller must neither mofify nor delete the data!
     ///
     /// @exception GenericException on error: File access,
     ///            called after reaching the end of data.
@@ -64,6 +65,12 @@ public:
     /// Name of the channel, i.e. the one passed to find()
     stdString channel_name;
     
+    /// Current value.
+    ///
+    /// Same as the last find() or next() result.
+    /// Undefined when find() or next() returned 0.
+    virtual const RawValue::Data *get() const = 0;
+
     /// The dbr_time_xxx type
     virtual DbrType getType() const = 0;
     
@@ -73,15 +80,24 @@ public:
     /// The meta information for the channel
     virtual const CtrlInfo &getInfo() const = 0;
 
-    /// next() updates this if dbr_type/count changed.
+    /// Convert current value to string.
+    ///
+    /// Formatted as "<time><tab><value><tab>status"
+    /// or just "<time><tab><value>" if the status is empty.
+    ///
+    /// Undefined behavior if there is no current value,
+    /// i.e. find() or next() returned 0.
+    void toString(stdString &text) const;
 
+    /// next() updates this if dbr_type/count changed.
+    ///
     /// Returns whether the type changed or not AND!!
     /// resets the flag!!
     ///
     virtual bool changedType() = 0;
 
     /// next() updates this if ctrl_info changed.
-
+    ///
     /// Returns whether the ctrl_info  changed or not
     /// AND(!) resets the flag!!
     ///

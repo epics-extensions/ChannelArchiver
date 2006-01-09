@@ -8,6 +8,8 @@
 // Tools
 #include <UnitTest.h>
 
+// Unit AverageReaderTest:
+extern TEST_CASE AverageReaderTest();
 // Unit DataFileTest:
 extern TEST_CASE test_data_file();
 // Unit DataWriterTest:
@@ -38,6 +40,19 @@ int main(int argc, const char *argv[])
     if (argc == 2)
         single_test = argv[1];
 
+    if (single_test==0  ||  strcmp(single_test, "AverageReaderTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit AverageReaderTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("\nAverageReaderTest:\n");
+        if (AverageReaderTest())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
     if (single_test==0  ||  strcmp(single_test, "DataFileTest")==0)
     {
         printf("======================================================================\n");

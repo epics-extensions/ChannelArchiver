@@ -168,6 +168,9 @@ const RawValue::Data *RawDataReader::next()
     return data;
 }
 
+const RawValue::Data *RawDataReader::get() const
+{   return data; }
+
 DbrType RawDataReader::getType() const
 {   return dbr_type; }
     

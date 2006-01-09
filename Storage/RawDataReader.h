@@ -21,6 +21,7 @@ public:
     virtual const RawValue::Data *find(const stdString &channel_name,
                                        const epicsTime *start);
     virtual const RawValue::Data *next();
+    virtual const RawValue::Data *get() const;
     virtual DbrType getType() const;
     virtual DbrCount getCount() const;
     virtual const CtrlInfo &getInfo() const;

@@ -2,25 +2,16 @@
 #include <stdio.h>
 // Tools
 #include <UnitTest.h>
+#include <MsgLogger.h>
 // Storage
 #include "IndexFile.h"
 #include "DataFile.h"
 #include "RawDataReader.h"
 
-static void dump(const DataReader &reader, const RawValue::Data *value, const char *prefix="")
-{
-    stdString t, s, v;
-    epicsTime2string(RawValue::getTime(value), t);
-    RawValue::getStatus(value, s);
-    RawValue::getValueString(
-        v, reader.getType(), reader.getCount(), value);
-    printf("        %s%s\t%s\t%s\n",
-           prefix, t.c_str(), v.c_str(), s.c_str());
-}
-
 static size_t read_test(const stdString &index_name, const stdString &channel_name,
                         const epicsTime *start = 0, const epicsTime *end = 0)
 {
+    stdString text;
     size_t num = 0;
     try
     {
@@ -32,7 +23,9 @@ static size_t read_test(const stdString &index_name, const stdString &channel_na
                (end==0  ||  RawValue::getTime(value) < *end))
         {
             ++num;
-            dump(reader, value);
+            LOG_ASSERT(value == reader.get());
+            reader.toString(text);
+            printf("    %s\n", text.c_str());
             value = reader.next();
         }
         index.close();
@@ -64,6 +57,7 @@ TEST_CASE RawDataReaderTest()
 static size_t dual_read_test(const stdString &index_name, const stdString &channel_name,
                              const epicsTime *start = 0, const epicsTime *end = 0)
 {
+    stdString text;
     size_t num = 0;
     try
     {
@@ -82,13 +76,17 @@ static size_t dual_read_test(const stdString &index_name, const stdString &chann
             if (value1 && (end==0  ||  RawValue::getTime(value1) < *end))
             {
                 ++num;
-                dump(reader1, value1, "1) ");
+                LOG_ASSERT(value1 == reader1.get());
+                reader1.toString(text);
+                printf("1) %s\n", text.c_str());
                 value1 = reader1.next();
             }
             if (value2 && (end==0  ||  RawValue::getTime(value2) < *end))
             {
                 ++num;
-                dump(reader2, value2, "2) ");
+                LOG_ASSERT(value2 == reader2.get());
+                reader2.toString(text);
+                printf("2) %s\n", text.c_str());
                 value2 = reader2.next();
             }
         }

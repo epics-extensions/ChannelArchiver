@@ -19,7 +19,7 @@ include $(TOP)/configure/RULES_DIRS
 
 stats:
 	@echo -n "Lines of Code (C, C++, Perl) :"
-	@wc -l */*.h */*.cpp */*.cpp | fgrep total
+	@wc -l */*.h */*.cpp | fgrep total
 	@echo -n "Lines of Documentation Source:"
 	@wc -l manual/*.tex | fgrep total
 

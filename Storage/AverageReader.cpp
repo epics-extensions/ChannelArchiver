@@ -102,7 +102,7 @@ const RawValue::Data *AverageReader::next()
             {
                 reader_data = reader.next();
 #ifdef DEBUG_AVGREAD
-                printf("Skipping: ");
+                printf("Moving forward to: ");
                 RawValue::show(stdout, reader.getType(), reader.getCount(),
                                reader_data, &reader.getInfo());
 #endif

@@ -7,6 +7,7 @@ UnitTest_SRCS += DataFileTest.cpp
 UnitTest_SRCS += DataWriterTest.cpp
 UnitTest_SRCS += FileAllocatorTest.cpp
 UnitTest_SRCS += HashTableTest.cpp
+UnitTest_SRCS += LinearReaderTest.cpp
 UnitTest_SRCS += NameHashTest.cpp
 UnitTest_SRCS += RTreeTest.cpp
 UnitTest_SRCS += RawDataReaderTest.cpp

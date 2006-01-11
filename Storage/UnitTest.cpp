@@ -19,6 +19,8 @@ extern TEST_CASE file_allocator_create_new_file();
 extern TEST_CASE file_allocator_open_existing();
 // Unit HashTableTest:
 extern TEST_CASE hash_table_test();
+// Unit LinearReaderTest:
+extern TEST_CASE LinearReaderTest();
 // Unit NameHashTest:
 extern TEST_CASE name_hash_test();
 // Unit RTreeTest:
@@ -107,6 +109,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\nhash_table_test:\n");
         if (hash_table_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "LinearReaderTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit LinearReaderTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("\nLinearReaderTest:\n");
+        if (LinearReaderTest())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

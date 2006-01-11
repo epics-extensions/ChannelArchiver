@@ -3,7 +3,7 @@
 // Storage
 #include "LinearReader.h"
 
-#undef DEBUG_LINREAD
+#define DEBUG_LINREAD
 
 LinearReader::LinearReader(Index &index, double delta)
         : AverageReader(index, delta)
@@ -11,11 +11,10 @@ LinearReader::LinearReader(Index &index, double delta)
 }
 
 const RawValue::Data *LinearReader::find(
-    const stdString &channel_name, const epicsTime *start,
-    ErrorInfo &error_info)
+    const stdString &channel_name, const epicsTime *start)
 {
     this->channel_name = channel_name;
-    reader_data = reader.find(channel_name, start, error_info);
+    reader_data = reader.find(channel_name, start);
     if (!reader_data)
         return 0;
     if (start)
@@ -23,10 +22,10 @@ const RawValue::Data *LinearReader::find(
     else
         end_of_bin =
             roundTimeUp(RawValue::getTime(reader_data), delta);
-    return next(error_info);
+    return next();
 }
 
-const RawValue::Data *LinearReader::next(ErrorInfo &error_info)
+const RawValue::Data *LinearReader::next()
 {
     if (!reader_data)
         return 0;
@@ -61,23 +60,14 @@ const RawValue::Data *LinearReader::next(ErrorInfo &error_info)
         }        
         if (data==0 || type!=reader.getType() || count!=reader.getCount())
         {
-            if (data)
-                RawValue::free(data);
-            type_changed = true;
             type = reader.getType();
             count = reader.getCount();
-            if (!(data = RawValue::allocate(type, count, 1)))
-            {
-                error_info.set("LinearReader: Cannot allocate data %d/%d\n",
-                               type, count);
-                LOG_MSG(error_info.info.c_str());
-                return 0;
-            }
+            data = RawValue::allocate(type, count, 1);
+            type_changed = true;
         }
         RawValue::copy(type, count, data, reader_data);
-        reader_data = reader.next(error_info);
-        if (!reader_data && error_info.error)
-            return 0;
+        // Advance reader.
+        reader_data = reader.next();
         if (count==1  &&  !RawValue::isInfo(data) &&
             RawValue::getDouble(type, count, data, d0))
         {
@@ -112,6 +102,6 @@ const RawValue::Data *LinearReader::next(ErrorInfo &error_info)
     end_of_bin += delta;
     if (anything)
         return data;
-    return next(error_info);
+    return next();
 }
 

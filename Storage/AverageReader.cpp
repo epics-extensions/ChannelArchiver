@@ -3,7 +3,7 @@
 // Storage
 #include "AverageReader.h"
 
-#define DEBUG_AVGREAD
+//#define DEBUG_AVGREAD
 
 AverageReader::AverageReader(Index &index, double delta)
   : reader(index),

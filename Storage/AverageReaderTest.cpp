@@ -41,7 +41,7 @@ static size_t read_test(const stdString &index_name, const stdString &channel_na
 
 TEST_CASE AverageReaderTest()
 {
-    TEST(read_test("../DemoData/index", "fred", 10.0) == 19);
+    TEST(read_test("../DemoData/index", "fred", 10.0) == 18);
 
     epicsTime start;
     TEST(string2epicsTime("03/23/2004 10:50:00", start));
@@ -49,7 +49,7 @@ TEST_CASE AverageReaderTest()
 
     epicsTime end(start);
     end += 15;
-    TEST(read_test("../DemoData/index", "fred", 5.0, &start, &end) > 0);
+    TEST(read_test("../DemoData/index", "fred", 5.0, &start, &end) == 3);
 
     TEST(DataFile::clear_cache() == 0);
 

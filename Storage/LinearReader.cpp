@@ -3,7 +3,7 @@
 // Storage
 #include "LinearReader.h"
 
-#define DEBUG_LINREAD
+// #define DEBUG_LINREAD
 
 LinearReader::LinearReader(Index &index, double delta)
         : AverageReader(index, delta)

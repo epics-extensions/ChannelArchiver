@@ -41,15 +41,15 @@ static size_t read_test(const stdString &index_name, const stdString &channel_na
 
 TEST_CASE LinearReaderTest()
 {
-    TEST(read_test("../DemoData/index", "fred", 10.0) > 0);
+    TEST(read_test("../DemoData/index", "fred", 10.0) == 21);
 
     epicsTime start;
     TEST(string2epicsTime("03/23/2004 10:50:00", start));
-    TEST(read_test("../DemoData/index", "fred", 10.0, &start) > 0);
+    TEST(read_test("../DemoData/index", "fred", 10.0, &start) == 7);
 
     epicsTime end(start);
     end += 15;
-    TEST(read_test("../DemoData/index", "fred", 5.0, &start, &end) > 0);
+    TEST(read_test("../DemoData/index", "fred", 5.0, &start, &end) == 2);
 
     TEST(DataFile::clear_cache() == 0);
 

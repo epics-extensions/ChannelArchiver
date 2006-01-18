@@ -34,7 +34,6 @@ public:
     ///
     /// @param channel_name: Name of the channel
     /// @param start: start time or 0 for first value
-    /// @param error_info: may be set to error information
     ///
     /// @return Returns pointer to first value, or 0 if the channel
     ///         was found but there was no data.
@@ -91,16 +90,14 @@ public:
 
     /// next() updates this if dbr_type/count changed.
     ///
-    /// Returns whether the type changed or not AND!!
-    /// resets the flag!!
-    ///
+    /// @return Returns whether the type changed or not AND!!
+    ///         resets the flag!!
     virtual bool changedType() = 0;
 
     /// next() updates this if ctrl_info changed.
     ///
-    /// Returns whether the ctrl_info  changed or not
-    /// AND(!) resets the flag!!
-    ///
+    /// @return Returns whether the ctrl_info  changed or not
+    ///         AND(!) resets the flag!!
     virtual bool changedInfo() = 0;
 };
 

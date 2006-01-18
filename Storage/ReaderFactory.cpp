@@ -29,15 +29,22 @@ const char *ReaderFactory::toString(How how, double delta)
 
 DataReader *ReaderFactory::create(Index &index, How how, double delta)
 {
-    if (how == Raw  ||  delta <= 0.0)
-        return new RawDataReader(index);
-    else if (how == Plotbin)
-        return new PlotReader(index, delta);
-    else if (how == Average)
-        return new AverageReader(index, delta);
-    else
-        return new LinearReader(index, delta);
-    return 0;
+    try
+    {
+        if (how == Raw  ||  delta <= 0.0)
+            return new RawDataReader(index);
+        else if (how == Plotbin)
+            return new PlotReader(index, delta);
+        else if (how == Average)
+            return new AverageReader(index, delta);
+        else
+            return new LinearReader(index, delta);
+    }
+    catch (...)
+    {
+        throw new GenericException(__FILE__, __LINE__, "Cannot create reader for %s",
+                                   toString(how, delta));
+    }
 }
 
 

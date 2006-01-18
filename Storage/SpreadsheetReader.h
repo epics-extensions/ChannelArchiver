@@ -1,11 +1,11 @@
 // -*- c++ -*-
 
 // Tools
-#include "ToolsConfig.h"
+#include <ToolsConfig.h>
 // Storage
-#include "DataReader.h"
+#include <ReaderFactory.h>
 // Index
-#include "Index.h"
+#include <Index.h>
 
 /// \addtogroup Storage
 /// @{
@@ -27,14 +27,18 @@ class SpreadsheetReader
 
     virtual ~SpreadsheetReader();
     
+    /// Locate initial values.
+    ///
     /// Position the reader on-or-before start time
     /// for all channels.
-    /// Returns true if values are valid.
-    /// It's a severe error to invoke any of the following
-    /// after find() returns false.
+    /// @param channel_names: List of channel names.
+    /// @param start: start time or 0 for first value
+    /// @return Returns true if values are valid.
+    ///         It's a severe error to invoke any of the following
+    ///         after find() returns false.
+    /// @exception GenericException on internal errors.
     virtual bool find(const stdVector<stdString> &channel_names,
-                      const epicsTime *start,
-                      ErrorInfo &error_info);
+                      const epicsTime *start);
 
     /// Time stamp for the current slice of data
     virtual const epicsTime &getTime() const;
@@ -50,23 +54,25 @@ class SpreadsheetReader
     virtual const stdString &getName(size_t i) const;
 
     /// Returns value of channel i=0...getNum()-1.
-
+    ///
     /// The result might be 0 in case a channel
     /// does not have a valid value for the current
     /// time slice.
-    virtual const RawValue::Data *getValue(size_t i) const;
+    virtual const RawValue::Data *get(size_t i) const;
 
-    /// The dbr_time_xxx type
+    /// The dbr_time_xxx type.
     virtual DbrType getType(size_t i) const;
     
-    /// array size
+    /// array size.
     virtual DbrCount getCount(size_t i) const;
     
-    /// The meta information for the channel
-    virtual const CtrlInfo &getCtrlInfo(size_t i) const;
+    /// The meta information for the channel.
+    virtual const CtrlInfo &getInfo(size_t i) const;
     
-    /// Get the next time slice
-    bool next(ErrorInfo &error_info);  
+    /// Get the next time slice.
+    ///
+    /// @return Returns true if any of the values are valid.
+    bool next();  
   
 protected:
     Index              &index;
@@ -77,25 +83,25 @@ protected:
     size_t num;
 
     // One reader per channel (also has a copy of the channel names)
-    DataReader **reader;
+    AutoArrayPtr< AutoPtr<DataReader> > reader;
 
     // Current data for each reader.
     // This often already points at the 'next' value.
-    const RawValue::Data **read_data;
+    AutoArrayPtr< const RawValue::Data *> read_data;
     
     // The current time slice
     epicsTime time;
 
     // Copies of the current control infos
-    CtrlInfo **info;
+    AutoArrayPtr< AutoPtr<CtrlInfo> > info;
 
     // Type/count for following value
-    DbrType *type;
-    DbrCount *count;
+    AutoArrayPtr<DbrType> type;
+    AutoArrayPtr<DbrCount> count;
     
     // The current values, i.e. copy of the reader's value
     // for the current time slice, or 0.
-    RawValue::Data **value;
+    AutoArrayPtr<RawValueAutoPtr> value;
 };
 
 inline const epicsTime &SpreadsheetReader::getTime() const
@@ -107,16 +113,16 @@ inline size_t SpreadsheetReader::getNum() const
 inline const stdString &SpreadsheetReader::getName(size_t i) const
 {   return reader[i]->channel_name; }
 
-inline const RawValue::Data *SpreadsheetReader::getValue(size_t i) const
+inline const RawValue::Data *SpreadsheetReader::get(size_t i) const
 {   return value[i]; }
 
 inline DbrType SpreadsheetReader::getType(size_t i) const
-{   return reader[i]->getType(); }
+{   return type[i]; }
     
 inline DbrCount SpreadsheetReader::getCount(size_t i) const
-{   return reader[i]->getCount(); }
+{   return count[i]; }
 
-inline const CtrlInfo &SpreadsheetReader::getCtrlInfo(size_t i) const
-{   return reader[i]->getInfo(); }
+inline const CtrlInfo &SpreadsheetReader::getInfo(size_t i) const
+{   return *info[i]; }
 
 

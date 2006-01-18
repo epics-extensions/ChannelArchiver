@@ -6,96 +6,63 @@
 
 SpreadsheetReader::SpreadsheetReader(Index &index,
                                      ReaderFactory::How how, double delta)
-        : index(index), how(how), delta(delta)
+  : index(index),
+    how(how),
+    delta(delta),
+    num(0)
 {
-    num = 0;
-    reader = 0;
-    read_data = 0;
-    info = 0;
-    type = 0;
-    count = 0;
-    value = 0;
 }
 
 SpreadsheetReader::~SpreadsheetReader()
 {
-    size_t i;
-    if (value)
-    {
-        for (i=0; i<num; ++i)
-            if (value[i])
-                RawValue::free(value[i]);
-        free(value);
-    }
-    free(count);
-    free(type); 
-    if (info)
-    {
-        for (i=0; i<num; ++i)
-            if (info[i])
-                delete info[i];
-        free(info);
-    }
-    free(read_data);
-    if (reader)
-    {
-        for (i=0; i<num; ++i)
-            if (reader[i])
-                delete reader[i];
-        free(reader);
-    }
     DataFile::clear_cache();
 }
 
 bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
-                             const epicsTime *start,
-                             ErrorInfo &error_info)
+                             const epicsTime *start)
 {
-    size_t i;
-    num = channel_names.size();
-    reader = (DataReader **)calloc(num, sizeof(DataReader *));
-    read_data = (const RawValue::Data **)calloc(num, sizeof(RawValue::Data *));
-    info = (CtrlInfo **)calloc(num, sizeof(CtrlInfo *));
-    type =  (DbrType *)calloc(num, sizeof(DbrType));
-    count =  (DbrCount *)calloc(num, sizeof(DbrCount));
-    value = (RawValue::Data **)calloc(num, sizeof(RawValue::Data *));
-    if (!(reader && read_data && info && type && count && value))
+    try
     {
-        error_info.set("SpreadsheetReader::find cannot allocate mem\n");
-        LOG_MSG(error_info.info.c_str());
-        return false;
+        num       = channel_names.size();
+        reader    = new AutoPtr<DataReader>[num];
+        read_data = new (const RawValue::Data *)[num];
+        info      = new AutoPtr<CtrlInfo>[num];
+        type      = new DbrType[num];
+        count     = new DbrCount[num];
+        value     = new RawValueAutoPtr[num];
     }
+    catch (...)
+    {
+        throw new GenericException(__FILE__, __LINE__,
+                                   "SpreadsheetReader::find cannot allocate mem");
+    }
+    size_t i;
     for (i=0; i<num; ++i)
     {
-        if (!(reader[i] = ReaderFactory::create(index, how, delta)))
-        {
-            error_info.set("SpreadsheetReader::find cannot allocate reader %d\n", i);
-            LOG_MSG(error_info.info.c_str());
-            return false;
-        }
-        read_data[i] = reader[i]->find(channel_names[i], start, error_info);
-        if (read_data[i])
+        reader[i]    = ReaderFactory::create(index, how, delta);
+        read_data[i] = reader[i]->find(channel_names[i], start);
+        if (!read_data[i]) // Channel has no data
+            continue;
+        try
         {
             info[i] = new CtrlInfo(reader[i]->getInfo());
-            if (!info[i])
-            {
-                error_info.set("SpreadsheetReader::find cannot allocate info %d\n",i);
-                LOG_MSG(error_info.info.c_str());
-                return false;
-            }
         }
-        else if (error_info.error)
-            return false;
+        catch (...)
+        {
+            throw new GenericException(__FILE__, __LINE__,
+                                       "SpreadsheetReader::find cannot "
+                                       "allocate info %d\n",i);
+        }
     }
-    return next(error_info);
+    return next();
 }
 
-bool SpreadsheetReader::next(ErrorInfo &error_info)
+bool SpreadsheetReader::next()
 {
     bool have_any = false;
     epicsTime stamp;
     size_t i;
-    // compute oldest time stamp
+    // Compute oldest time stamp.
     for (i=0; i<num; ++i)
     {
         if (! read_data[i])
@@ -109,37 +76,35 @@ bool SpreadsheetReader::next(ErrorInfo &error_info)
     }
     if (!have_any)
         return false;
-    // extrapolate current data onto time
+    // Extrapolate current data onto time.
     for (i=0; i<num; ++i)
     {
-        if (read_data[i])
-        {
-            if (RawValue::getTime(read_data[i]) <= time)
-            {
-                if (reader[i]->changedInfo())
-                    *info[i] = reader[i]->getInfo();
-                if (value[i]==0 ||
-                    type[i] != reader[i]->getType() ||
-                    count[i] != reader[i]->getCount())
-                {
-                    RawValue::free(value[i]);
-                    type[i] = reader[i]->getType();
-                    count[i] = reader[i]->getCount();
-                    value[i] = RawValue::allocate(type[i], count[i], 1);
-                    if (!value[i])
-                    {
-                        error_info.set("SpreadsheetReader cannot allocate value\n");
-                        LOG_MSG(error_info.info.c_str());
-                        return false;
-                    }
-                }
-                RawValue::copy(type[i], count[i], value[i], read_data[i]);
-                read_data[i] = reader[i]->next(error_info); // advance reader
-                if (read_data[i] == 0  &&  error_info.error)
-                    return false;
+        if (!read_data[i])
+        {   // No (more) values for this channel.
+            if (value[i])
+            {   // Invalidate all the info.
+                value[i].release();
+                type[i] = 0;
+                count[i] = 0;
             }
-            // else leave value[i] as is, which initially means: 0
+            continue;
         }
+        if (RawValue::getTime(read_data[i]) <= time)
+        {
+            if (reader[i]->changedInfo())
+                *info[i] = reader[i]->getInfo();
+            if (! value[i] ||
+                type[i]  != reader[i]->getType() ||
+                count[i] != reader[i]->getCount())
+            {
+                type[i]  = reader[i]->getType();
+                count[i] = reader[i]->getCount();
+                value[i] = RawValue::allocate(type[i], count[i], 1);
+            }
+            RawValue::copy(type[i], count[i], value[i], read_data[i]);
+            read_data[i] = reader[i]->next(); // advance reader.
+        }
+        // else leave value[i] as is, which initially means: 0
     }    
     return have_any;
 }

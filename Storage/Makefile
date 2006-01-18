@@ -50,7 +50,7 @@ LIB_SRCS += ReaderFactory.cpp
 LIB_SRCS += AverageReader.cpp
 LIB_SRCS += LinearReader.cpp
 LIB_SRCS += PlotReader.cpp
-#LIB_SRCS += SpreadsheetReader.cpp
+LIB_SRCS += SpreadsheetReader.cpp
 LIBRARY_HOST := Storage
 
 # Tools to build but not install

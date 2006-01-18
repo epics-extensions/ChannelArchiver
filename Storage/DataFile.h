@@ -90,6 +90,13 @@ public:
     /// Close as many data files as possible.
     ///
     /// Closes all data files that are fully released.
+    /// For example, the SpreadsheetReader will invoke this
+    /// in its destructor.
+    /// Since there might be other readers still open,
+    /// only the application can decide when to close
+    /// <i>all</i> files, which it should do via close_all.
+    ///
+    /// @sa close_all
     ///
     /// @return Returns the number of files which are
     ///         left open because there is still
@@ -98,9 +105,14 @@ public:
 
     /// Close all data files.
     ///
+    /// The application should invoke this at times
+    /// where it assumes that all readers/writers
+    /// are done to check consistency and prevent
+    /// files left dangling open.
+    ///
     /// @sa clear_cache
     /// @exception GenericException if data files are
-    ///            referenced.
+    ///            referenced (because there's still a reader?).
     static void close_all();
 
     /// Get full name of data file.

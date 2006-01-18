@@ -273,7 +273,6 @@ TEST_CASE update_test()
         }
         tree->makeDot("test/update_data.dot");
         TEST_MSG(tree->selfTest(nodes, records), "Final Self Test");
-        index.close();
         TEST_FILEDIFF("test/update_data.dot", "test/update_data.dot.OK");
     }
     catch (GenericException &e)

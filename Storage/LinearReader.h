@@ -18,7 +18,7 @@ class LinearReader : public AverageReader
 public:
     /// Create a reader for an index.
     ///
-    /// @parm delta The interpolation time interval in seconds.
+    /// @param delta The interpolation time interval in seconds.
     LinearReader(Index &index, double delta);
     const RawValue::Data *find(const stdString &channel_name,
                                const epicsTime *start);

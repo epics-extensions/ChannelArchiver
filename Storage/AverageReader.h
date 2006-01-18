@@ -27,7 +27,7 @@ class AverageReader : public DataReader
 public:
     /// Create a reader for an index.
     ///
-    /// @parm delta The averaging time interval in seconds.
+    /// @param delta The averaging time interval in seconds.
     AverageReader(Index &index, double delta);
 
     const RawValue::Data *find(const stdString &channel_name,

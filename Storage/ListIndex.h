@@ -3,6 +3,8 @@
 #ifndef __LIST_INDEX_H__
 #define __LIST_INDEX_H__
 
+// Tools
+#include <AutoPtr.h>
 // Storage
 #include <IndexFile.h>
 #include <IndexConfig.h>
@@ -10,8 +12,8 @@
 /// \addtogroup Storage
 /// @{
 
-/// Support list of sub-archives.
-
+/// Index based on list of sub-archives.
+///
 /// Ideally, an index configuration conforming to indexfile.dtd
 /// is used to create a master index via the ArchiveIndexTool.
 /// Alternatively, that list of sub-archives can be used with
@@ -49,10 +51,15 @@
 class ListIndex : public Index
 {
 public:
-    ListIndex();
+    ~ListIndex();
 
-    virtual bool open(const stdString &filename, bool readonly,
-                      ErrorInfo &error_info);
+    /// Open the index.
+    ///
+    /// @param filename: Name of a file that lists sub-archives.
+    /// @param readonly: Must be 'true', because ListIndex doesn't
+    ///                  support writing.
+    /// @exception GenericException On error, including readonly==false.
+    virtual void open(const stdString &filename, bool readonly=true);
 
     virtual void close();
     
@@ -60,8 +67,7 @@ public:
                                     stdString &directory);
 
     virtual class RTree *getTree(const stdString &channel,
-                                 stdString &directory,
-                                 ErrorInfo &error_info);
+                                 stdString &directory);
 
     virtual bool getFirstChannel(NameIterator &iter);
 
@@ -76,11 +82,17 @@ private:
     // NOTE: If this ever changes, those indices which
     // returned an RTree * must be kept open until this
     // ListIndex is removed.
-    typedef struct
+    // Tried AutoPtr<IndexFile>, but the SubArchInfo is used
+    // in a stdList, which requires several copy constructor
+    // calls of SubArchInfo, and maintaining the index * myself
+    // seemed easier.
+    class SubArchInfo
     {
+    public:
+        SubArchInfo(stdString name) : name(name), index(0) {}
         stdString name;
         IndexFile *index;
-    } SubArchInfo;
+    };
     stdList<SubArchInfo> sub_archs;
     // List of all names w/ iterator
     stdList<stdString> names;

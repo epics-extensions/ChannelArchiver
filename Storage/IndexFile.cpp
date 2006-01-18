@@ -17,6 +17,11 @@ uint32_t IndexFile::ht_size = 1009;
 IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
 {}
 
+IndexFile::~IndexFile()
+{
+    close();
+}
+
 void IndexFile::open(const stdString &filename, bool readonly)
 {
     stdString linked_filename;

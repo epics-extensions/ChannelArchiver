@@ -7,47 +7,35 @@
 
 #undef DEBUG_LISTINDEX
 
-ListIndex::ListIndex()
+ListIndex::~ListIndex()
 {
-#ifdef DEBUG_LISTINDEX
-    printf("new ListIndex\n");
-#endif
+    close();
 }
 
-bool ListIndex::open(const stdString &filename, bool readonly, ErrorInfo &error_info)
+void ListIndex::open(const stdString &filename, bool readonly)
 {
     if (!readonly)
-    {
-        error_info.set("ListIndex '%s' Writing is not supported!\n",
-                       filename.c_str());
-        return false;
-    }
+        throw new GenericException(__FILE__, __LINE__,
+                                   "ListIndex '%s' Writing is not supported!\n",
+                                   filename.c_str());
     IndexConfig config;
-    SubArchInfo info;
     stdList<stdString>::const_iterator subs;
-    info.index = 0;
-
     try
     {
         if (config.parse(filename))
         {
             for (subs  = config.subarchives.begin();
                  subs != config.subarchives.end();    ++subs)
-            {
-                info.name = *subs;
-                sub_archs.push_back(info);
-            }
+                sub_archs.push_back(SubArchInfo(*subs));
         }
-        else
-        {   // Assume a single index, no list of indices.
-            info.name = filename;
-            sub_archs.push_back(info);
-        }
+        else // Assume a single index, no list of indices.
+            sub_archs.push_back(SubArchInfo(filename));
     }
     catch (GenericException &e)
     {
-        error_info.set("ListIndex cannot access '%s'\n", filename.c_str());
-        return false;
+        throw new GenericException(__FILE__, __LINE__,
+            "ListIndex error processing '%s':\n%s",
+            filename.c_str(), e.what());
     }
 #ifdef DEBUG_LISTINDEX
     printf("ListIndex::open(%s)\n", filename.c_str());
@@ -59,7 +47,6 @@ bool ListIndex::open(const stdString &filename, bool readonly, ErrorInfo &error_
     }    
 #endif
     this->filename = filename;
-    return true;
 }
 
 // Close what's open. OK to call if nothing's open.
@@ -71,7 +58,6 @@ void ListIndex::close()
     {
         if (archs->index)
         {
-            archs->index->close();
             delete archs->index;
             archs->index = 0;
 #ifdef DEBUG_LISTINDEX
@@ -79,6 +65,7 @@ void ListIndex::close()
 #endif
         }
     }
+    sub_archs.clear();
 #ifdef DEBUG_LISTINDEX
     printf("Closed ListIndex %s\n", filename.c_str());
 #endif
@@ -88,41 +75,51 @@ void ListIndex::close()
 class RTree *ListIndex::addChannel(const stdString &channel,
                                    stdString &directory)
 {
-    LOG_MSG("ListIndex: Tried to add '%s'\n", channel.c_str());
-    return 0;
+    throw new GenericException(__FILE__, __LINE__,
+                               "ListIndex: Tried to add '%s'",
+                               channel.c_str());
 }
 
 class RTree *ListIndex::getTree(const stdString &channel,
-                                stdString &directory,
-                                ErrorInfo &error_info)
+                                stdString &directory)
 {
-    RTree *tree;
+    AutoPtr<RTree> tree;
     stdList<SubArchInfo>::iterator archs = sub_archs.begin();
     while (archs != sub_archs.end())
     {
-        if (archs->index == 0)
-        {   // Open individual index file
-            if (!(archs->index = new IndexFile(50)))
-            {                
-                LOG_MSG("ListIndex::getTree out of mem\n");
-                return 0;
+        if (! archs->index)
+        {   
+            // Open individual index file
+            try
+            {
+                archs->index = new IndexFile(50);
             }
-            if (!archs->index->open(archs->name, true, error_info))
+            catch (...)
+            {
+                throw new GenericException(__FILE__, __LINE__,
+                    "ListIndex: No mem for '%s'", archs->name.c_str());
+            }
+            try
+            {
+                archs->index->open(archs->name, true);
+            }
+            catch (GenericException &e)
             {   // can't open this one; ignore error, drop it from list
-                delete archs->index;
+                LOG_MSG("Listindex '%s': Error opening '%s':\n%s",
+                    filename.c_str(), archs->name.c_str(), e.what());
+                archs->index = 0;
                 archs = sub_archs.erase(archs);
                 continue;
             }
         }
-        if ((tree = archs->index->getTree(channel, directory, error_info)))
-        {   // In case there was one index->open error, reset
-            // because we did find something after all:
-            error_info.error = false;
+        tree = archs->index->getTree(channel, directory);
+        if (tree)
+        {
 #ifdef DEBUG_LISTINDEX
             printf("Found '%s' in '%s'\n",
                    channel.c_str(), archs->name.c_str());
 #endif
-            return tree;
+            return tree.release();
         }
 #ifdef DEBUG_LISTINDEX
         printf("Didn't find '%s' in '%s'\n",
@@ -170,17 +167,26 @@ bool ListIndex::getFirstChannel(NameIterator &iter)
         stdList<SubArchInfo>::iterator archs = sub_archs.begin();
         while (archs != sub_archs.end())
         {
-            if (archs->index == 0)
+            if (!archs->index)
             {   // Open individual index file
-                if (!(archs->index = new IndexFile(50)))
-                {                
-                    LOG_MSG("ListIndex::getFirstChannel out of mem\n");
-                    return 0;
+                try
+                {
+                    archs->index = new IndexFile(50);
                 }
-                ErrorInfo error_info;
-                if (!archs->index->open(archs->name, true, error_info))
-                {   // can't open this one; drop it from list
+                catch (...)
+                {                
+                    throw new GenericException(__FILE__, __LINE__, "No mem");
+                }
+                try
+                {
+                    archs->index->open(archs->name, true);
+                }
+                catch (GenericException &e)
+                {   // can't open this one; ignore error, drop it from list
+                    LOG_MSG("Listindex '%s': Error opening '%s':\n%s",
+                         filename.c_str(), archs->name.c_str(), e.what());
                     delete archs->index;
+                    archs->index = 0;
                     archs = sub_archs.erase(archs);
                     continue;
                 }

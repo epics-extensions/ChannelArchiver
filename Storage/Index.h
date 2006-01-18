@@ -15,9 +15,8 @@
 class Index
 {
 public:
-    /// Destructor.
-    virtual ~Index();
-    
+    virtual ~Index() {}
+
     /// Open an index.
     ///
     /// @exception GenericException on error

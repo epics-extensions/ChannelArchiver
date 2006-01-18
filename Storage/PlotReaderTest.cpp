@@ -29,7 +29,6 @@ static size_t read_test(const stdString &index_name, const stdString &channel_na
             printf("    %s\n", text.c_str());
             value = reader.next();
         }
-        index.close();
     }
     catch (GenericException &e)
     {

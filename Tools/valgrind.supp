@@ -17,3 +17,21 @@
    fun:once
 }
 
+{
+   init_threadInfo_leak
+   Memcheck:Leak
+   fun:malloc
+   fun:mallocMustSucceed
+   fun:epicsStrDup
+   fun:init_threadInfo
+}
+
+{
+   ipAddrToAsciiAsynchronous_init_leak
+   Memcheck:Leak
+   fun:calloc
+   fun:epicsMutexOsiCreate
+   fun:_ZN10epicsMutexC1Ev
+   fun:_Z41__static_initialization_and_destruction_0ii
+}
+

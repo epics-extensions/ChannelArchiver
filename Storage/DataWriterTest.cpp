@@ -48,7 +48,6 @@ TEST_CASE data_writer_test()
         }
         writer = 0;
         DataFile::close_all();
-        index.close();
     }
     catch (GenericException &e)
     {

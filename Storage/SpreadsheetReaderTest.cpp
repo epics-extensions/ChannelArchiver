@@ -48,7 +48,6 @@ TEST_CASE spreadsheet_test()
             found_any = sheet.next();
         }
     }
-    index.close();
     TEST(DataFile::clear_cache() == 0);
     TEST_OK;
 }

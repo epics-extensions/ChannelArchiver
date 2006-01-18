@@ -5,6 +5,7 @@
 #include <MsgLogger.h>
 // Storage
 #include "IndexFile.h"
+#include "ListIndex.h"
 #include "DataFile.h"
 #include "RawDataReader.h"
 
@@ -28,7 +29,6 @@ static size_t read_test(const stdString &index_name, const stdString &channel_na
             printf("    %s\n", text.c_str());
             value = reader.next();
         }
-        index.close();
     }
     catch (GenericException &e)
     {
@@ -38,6 +38,36 @@ static size_t read_test(const stdString &index_name, const stdString &channel_na
     return num;
 }
 
+static size_t list_read_test(const stdString &index_name, const stdString &channel_name,
+                        const epicsTime *start = 0, const epicsTime *end = 0)
+{
+    stdString text;
+    size_t num = 0;
+    try
+    {
+        ListIndex index;
+        index.open(index_name);
+        RawDataReader reader(index);
+        const RawValue::Data *value = reader.find(channel_name, start);
+        while (value &&
+               (end==0  ||  RawValue::getTime(value) < *end))
+        {
+            ++num;
+            LOG_ASSERT(value == reader.get());
+            reader.toString(text);
+            printf("    %s\n", text.c_str());
+            value = reader.next();
+        }
+    }
+    catch (GenericException &e)
+    {
+        printf("Exception:\n%s\n", e.what());
+        return 0;
+    }
+    return num;
+}
+
+
 TEST_CASE RawDataReaderTest()
 {
     TEST(read_test("../DemoData/index", "fred") == 87);
@@ -45,10 +75,14 @@ TEST_CASE RawDataReaderTest()
     epicsTime start;
     TEST(string2epicsTime("03/23/2004 10:50:42.400561000", start));
     TEST(read_test("../DemoData/index", "fred", &start) == 10);
+    TEST(list_read_test("../DemoData/index", "fred", &start) == 10);
+    TEST(list_read_test("list_index.xml", "fred", &start) == 10);
 
     epicsTime end(start);
     end += 5;
     TEST(read_test("../DemoData/index", "fred", &start, &end) == 3);
+    TEST(list_read_test("../DemoData/index", "fred", &start, &end) == 3);
+    TEST(list_read_test("list_index.xml", "fred", &start, &end) == 3);
 
     TEST(DataFile::clear_cache() == 0);
     TEST_OK;
@@ -90,8 +124,6 @@ static size_t dual_read_test(const stdString &index_name, const stdString &chann
                 value2 = reader2.next();
             }
         }
-        index1.close();
-        index2.close();
     }
     catch (GenericException &e)
     {

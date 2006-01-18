@@ -31,6 +31,8 @@ public:
 
     IndexFile(int RTreeM = 50);
 
+    ~IndexFile();
+
     /// The hash table size used for new channel name tables.
     static uint32_t ht_size;
     

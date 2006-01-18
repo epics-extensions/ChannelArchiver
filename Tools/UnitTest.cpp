@@ -17,6 +17,7 @@ extern TEST_CASE bogus_auto_file_ptr();
 extern TEST_CASE auto_file_ptr();
 // Unit AutoPtrTest:
 extern TEST_CASE test_autoptr();
+extern TEST_CASE test_autoarrayptr();
 // Unit BinIOTest:
 extern TEST_CASE bin_io_write();
 extern TEST_CASE bin_io_read();
@@ -112,6 +113,12 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\ntest_autoptr:\n");
         if (test_autoptr())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("\ntest_autoarrayptr:\n");
+        if (test_autoarrayptr())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

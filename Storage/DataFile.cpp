@@ -491,8 +491,8 @@ void DataHeader::show(FILE *f, bool full_detail)
         fprintf(f, "DbrType : %d, %d elements (%lu bytes/sample)\n",
                 data.dbr_type, data.dbr_count,
                 (unsigned long) val_size);
-        fprintf(f, "Samples : %ld used out of %d\n",
-                (long)data.num_samples, maxcount);
+        fprintf(f, "Samples : %lu used out of %lu\n",
+                (unsigned long)data.num_samples, (unsigned long)maxcount);
         fprintf(f, "Size    : %ld bytes, free: %ld bytes"
                 " (header: %zu bytes)\n",
                 (long)data.buf_size, (long)data.buf_free,
@@ -507,7 +507,8 @@ void DataHeader::show(FILE *f, bool full_detail)
     {
         fprintf(f, "'%s' @ 0x%lX ",
                 datafile->basename.c_str(), (unsigned long)offset);
-        fprintf(f, "%ld/%d samples from ", (long)data.num_samples, maxcount);
+        fprintf(f, "%lu/%lu samples from ",
+                (unsigned long)data.num_samples, (unsigned long)maxcount);
         epicsTime2string(data.begin_time, t);
         fprintf(f, " %s - ", t.c_str());
         epicsTime2string(data.end_time, t);

@@ -25,7 +25,8 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
     {
         num       = channel_names.size();
         reader    = new AutoPtr<DataReader>[num];
-        read_data = new (const RawValue::Data *)[num];
+        typedef const RawValue::Data * constRawValueData;
+        read_data = new constRawValueData[num];
         info      = new AutoPtr<CtrlInfo>[num];
         type      = new DbrType[num];
         count     = new DbrCount[num];
@@ -51,7 +52,7 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
         {
             throw new GenericException(__FILE__, __LINE__,
                                        "SpreadsheetReader::find cannot "
-                                       "allocate info %d\n",i);
+                                       "allocate info %zu\n",i);
         }
     }
     return next();

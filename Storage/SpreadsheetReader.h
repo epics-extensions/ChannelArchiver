@@ -2,6 +2,7 @@
 
 // Tools
 #include <ToolsConfig.h>
+#include <AutoPtr.h>
 // Storage
 #include <ReaderFactory.h>
 // Index
@@ -38,7 +39,7 @@ class SpreadsheetReader
     ///         after find() returns false.
     /// @exception GenericException on internal errors.
     virtual bool find(const stdVector<stdString> &channel_names,
-                      const epicsTime *start);
+                      const epicsTime *start = 0);
 
     /// Time stamp for the current slice of data
     virtual const epicsTime &getTime() const;

@@ -408,14 +408,14 @@ size_t RawValue::formatDouble(double value, NumberFormat format, int prec,
     return 0;
 }
 
-void RawValue::getValueString(stdString &txt,
+void RawValue::getValueString(stdString &text,
                               DbrType type, DbrCount count, const Data *value,
                               const class CtrlInfo *info,
                               NumberFormat format,
                               int prec)
 {
     int i;
-    txt.assign(0,0);
+    text.assign(0,0);
     if (isInfo(value)) // done    
         return;
     char line[100];
@@ -424,21 +424,21 @@ void RawValue::getValueString(stdString &txt,
     switch (type)
     {
     case DBR_TIME_STRING:
-        txt = ((dbr_time_string *)value)->value;
+        text = ((dbr_time_string *)value)->value;
         return;
     case DBR_TIME_ENUM:
         i = ((dbr_time_enum *)value)->value;
         if (info)
-            info->getState(i, txt);
+            info->getState(i, text);
         else
         {
             sprintf(line, "%d", i);
-            txt = line;
+            text = line;
         }
         return;
     case DBR_TIME_CHAR:
         {
-            txt.reserve(4*count);
+            text.reserve(4*count);
             dbr_char_t *val = &((dbr_time_char *)value)->value;
             for (i=0; i<count; ++i)
             {
@@ -446,14 +446,14 @@ void RawValue::getValueString(stdString &txt,
                     sprintf(line, "%d", (int)*val);
                 else
                     sprintf(line, "\t%d", (int)*val);
-                txt += line;
+                text += line;
                 ++val;
             }
             return;
         }
     case DBR_TIME_SHORT:
         {
-            txt.reserve(6*count);
+            text.reserve(6*count);
             dbr_short_t *val = &((dbr_time_short *)value)->value;
             for (i=0; i<count; ++i)
             {
@@ -461,14 +461,14 @@ void RawValue::getValueString(stdString &txt,
                     sprintf(line, "%d", (int)*val);
                 else
                     sprintf(line, "\t%d", (int)*val);
-                txt += line;
+                text += line;
                 ++val;
             }
             return;
         }
     case DBR_TIME_LONG:
         {
-            txt.reserve(8*count);
+            text.reserve(8*count);
             dbr_long_t *val = &((dbr_time_long *)value)->value;
             for (i=0; i<count; ++i)
             {
@@ -476,14 +476,14 @@ void RawValue::getValueString(stdString &txt,
                     sprintf(line, "%ld", (long)*val);
                 else
                     sprintf(line, "\t%ld", (long)*val);
-                txt += line;
+                text += line;
                 ++val;
             }
             return;
         }
     case DBR_TIME_FLOAT:
         {
-            txt.reserve((7+prec)*count);
+            text.reserve((7+prec)*count);
             dbr_float_t *val = &((dbr_time_float *)value)->value;
             for (i=0; i<count; ++i)
             {
@@ -494,14 +494,14 @@ void RawValue::getValueString(stdString &txt,
                     line[0] = '\t';
                     formatDouble(*val, format, prec, &line[1], sizeof(line)-1);
                 }
-                txt += line;
+                text += line;
                 ++val;
             }            
             return;
         }
     case DBR_TIME_DOUBLE:
         {
-            txt.reserve((7+prec)*count);
+            text.reserve((7+prec)*count);
             dbr_double_t *val = &((dbr_time_double *)value)->value;
             for (i=0; i<count; ++i)
             {
@@ -512,13 +512,37 @@ void RawValue::getValueString(stdString &txt,
                     line[0] = '\t';
                     formatDouble(*val, format, prec, &line[1], sizeof(line)-1);
                 }
-                txt += line;
+                text += line;
                 ++val;
             }
             return;
         }
     }
-    txt = "<cannot decode>";
+    text = "<cannot decode>";
+}
+
+void RawValue::toString(stdString &text, DbrType type, DbrCount count, const Data *value,
+                               const class CtrlInfo *info)
+{
+    stdString t, s, v;
+    epicsTime2string(getTime(value), t);
+    getStatus(value, s);
+    getValueString(v, type, count, value, info);
+
+    text.reserve(t.length() + v.length() + s.length() + 2);
+    text = t;
+    if (isInfo(value))
+        text += "\t#N/A";
+    else
+    {
+        text += '\t';
+        text += v;
+    }
+    if (s.length() > 0)
+    {
+        text += '\t';
+        text += s;
+    }
 }
 
 void RawValue::show(FILE *file,

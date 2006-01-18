@@ -138,16 +138,24 @@ public:
                                char *buffer, size_t max_len);
     
     /// Convert value to txt, using CtrlInfo if available.
-
+    ///
     /// This gives only the value. Use getTime() and getStatus()
     /// for time and status.
     /// format picks the format,
     /// prec < 0 means: Use precision from CtrlInfo.
-    static void getValueString(stdString &txt,
+    static void getValueString(stdString &text,
                                DbrType type, DbrCount count, const Data *value,
                                const class CtrlInfo *info=0,
                                NumberFormat format = DECIMAL,
                                int prec = -1);
+
+    /// Convert current value to string.
+    ///
+    /// Formatted as "<time><tab><value><tab>status"
+    /// or just "<time><tab><value>" if the status is empty.
+    static void toString(stdString &text, DbrType type, DbrCount count,
+                         const Data *value, const class CtrlInfo *info=0);
+
 
     /// Display value, using CtrlInfo if available.
     static void show(FILE *file,

@@ -13,4 +13,5 @@ UnitTest_SRCS += PlotReaderTest.cpp
 UnitTest_SRCS += RTreeTest.cpp
 UnitTest_SRCS += RawDataReaderTest.cpp
 UnitTest_SRCS += RawValueTest.cpp
+UnitTest_SRCS += SpreadsheetReaderTest.cpp
 UnitTest_SRCS += UnitTest.cpp

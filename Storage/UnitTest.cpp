@@ -23,6 +23,8 @@ extern TEST_CASE hash_table_test();
 extern TEST_CASE LinearReaderTest();
 // Unit NameHashTest:
 extern TEST_CASE name_hash_test();
+// Unit PlotReaderTest:
+extern TEST_CASE PlotReaderTest();
 // Unit RTreeTest:
 extern TEST_CASE fill_tests();
 extern TEST_CASE dump_blocks();
@@ -135,6 +137,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\nname_hash_test:\n");
         if (name_hash_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "PlotReaderTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit PlotReaderTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("\nPlotReaderTest:\n");
+        if (PlotReaderTest())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

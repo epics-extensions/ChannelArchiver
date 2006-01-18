@@ -5,34 +5,34 @@
 // Storage
 #include "PlotReader.h"
 
-#undef DEBUG_PLOTREAD
+#define DEBUG_PLOTREAD
 
 PlotReader::PlotReader(Index &index, double delta)
-        : reader(index), delta(delta)
+  : reader(index),
+    delta(delta),
+    reader_data(0),
+    N(0),
+    type(0),
+    count(0),
+    type_changed(false),
+    ctrl_info_changed(false),
+    have_initial_final(false),
+    current(0),
+    have_mini_maxi(false),
+    mini(0.0),
+    maxi(0.0),
+    state(s_dunno)
 {
-    type = 0;
-    count = 0;
-    type_changed = ctrl_info_changed = false;
-    have_initial_final = have_mini_maxi = false;
-    initial = final = 0;
-    state = s_dunno;
 #ifdef DEBUG_PLOTREAD
     printf("Plot Reader, delta %g (%g h)\n", delta, delta/60.0/60.0);
 #endif
 }
 
-PlotReader::~PlotReader()
-{
-    RawValue::free(final);
-    RawValue::free(initial);
-}
-
 const RawValue::Data *PlotReader::find(const stdString &channel_name,
-                                       const epicsTime *start,
-                                       ErrorInfo &error_info)
+                                       const epicsTime *start)
 {
     this->channel_name = channel_name;
-    reader_data = reader.find(channel_name, start, error_info);
+    reader_data = reader.find(channel_name, start);
     if (!reader_data)
         return 0;
     if (delta <= 0.0)
@@ -42,23 +42,29 @@ const RawValue::Data *PlotReader::find(const stdString &channel_name,
         end_of_bin = *start + delta;
         while (RawValue::getTime(reader_data) < *start)
         {
-            reader_data = reader.next(error_info);
-            if (!reader_data)
+            reader_data = reader.next();
+            if (!reader_data) // There is no data >= *start.
+            {
+                current = 0;
                 return 0;
+            }
         }
     }
     else
         end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
-    return fill_bin(error_info);
+    return fill_bin();
 }
 
-const RawValue::Data *PlotReader::fill_bin(ErrorInfo &error_info)
+const RawValue::Data *PlotReader::fill_bin()
 {
     double d;
     N = 0;
     have_initial_final = have_mini_maxi = false;
     if (!reader_data)
+    {
+        current = 0;
         return 0;
+    }
 #ifdef DEBUG_PLOTREAD
     stdString txt;
     printf("End of bin: %s\n", epicsTimeTxt(end_of_bin, txt));
@@ -77,16 +83,15 @@ const RawValue::Data *PlotReader::fill_bin(ErrorInfo &error_info)
         RawValue::show(stdout, reader.getType(), reader.getCount(),
                        reader_data, &reader.getInfo());
 #endif
+        // Check for changing info, type, count...
         if (reader.changedInfo())
         {
             info = reader.getInfo();
             ctrl_info_changed = true;
         }        
-        if (initial == 0 ||
+        if (!initial ||
             type != reader.getType() || count != reader.getCount())
         {
-            RawValue::free(final);
-            RawValue::free(initial);
             type    = reader.getType();
             count   = reader.getCount();
             initial = RawValue::allocate(type, count, 1);
@@ -95,24 +100,18 @@ const RawValue::Data *PlotReader::fill_bin(ErrorInfo &error_info)
             // If this happens within a bin: Tough - we start over.
             N = 0;
             have_initial_final = have_mini_maxi = false;
-            if (!(initial && final))
-            {
-                error_info.set("PlotReader: Cannot allocate data %d/%d\n",
-                               type, count);
-                LOG_MSG(error_info.info.c_str());
-                return 0;
-            }
         }
+        // The 'current' value is always copied into 'final'.
         RawValue::copy(type, count, final, reader_data);
         ++N;
         if (!have_initial_final)
-        {
+        {   // Remember the initial value.
             RawValue::copy(type, count, initial, reader_data);
             have_initial_final = true;
         }
         if (RawValue::isInfo(final)==false  &&
             RawValue::getDouble(type, count, final, d))
-        {
+        {   // Determine the minimum and maximum.
             if (have_mini_maxi)
             {
                 if (mini > d)
@@ -126,12 +125,7 @@ const RawValue::Data *PlotReader::fill_bin(ErrorInfo &error_info)
                 have_mini_maxi = true;
             }
         }   
-        reader_data = reader.next(error_info);
-    }
-    if (error_info.error)
-    {
-        state = s_dunno;
-        return 0;
+        reader_data = reader.next();
     }
     // Options at this point:
     // 1) Found absolutely nothing (!have_initial_final)
@@ -146,15 +140,20 @@ const RawValue::Data *PlotReader::fill_bin(ErrorInfo &error_info)
         state = s_gotit;
     else
         state = s_dunno;  // case 1: Give up
-    return next(error_info);
+    return next();
 }
 
-const RawValue::Data *PlotReader::next(ErrorInfo &error_info)
+const RawValue::Data *PlotReader::next()
 {
     if (delta <= 0.0)
-        return reader.next(error_info);
+    {
+        current = reader.next();
+        return current;
+    }
     if (state != s_dunno)
     {   // Anything in current bin?
+        // Should hav copy of initial and final value.
+        // For numerics, also mini & maxi.
         LOG_ASSERT(have_initial_final && initial && final);
         double span;
         switch (state)
@@ -166,7 +165,8 @@ const RawValue::Data *PlotReader::next(ErrorInfo &error_info)
                                initial, &reader.getInfo());
 #endif
                 state = s_ini;
-                return initial;
+                current = initial;
+                return current;
             case s_ini:
                 if (N <= 1)
                     break; // only have initial value
@@ -185,7 +185,8 @@ const RawValue::Data *PlotReader::next(ErrorInfo &error_info)
                                    initial, &reader.getInfo());
 #endif
                     state = s_min;
-                    return initial;
+                    current = initial;
+                    return current;
                 }
                 // fall through
             case s_min:
@@ -202,7 +203,8 @@ const RawValue::Data *PlotReader::next(ErrorInfo &error_info)
                                    initial, &reader.getInfo());
 #endif
                     state = s_max;
-                    return initial;
+                    current = initial;
+                    return current;
                 }
                 // fall through
             case s_max:
@@ -212,15 +214,19 @@ const RawValue::Data *PlotReader::next(ErrorInfo &error_info)
                                final, &reader.getInfo());
 #endif
                 state = s_fin;
-                return final;
+                current = final;
+                return current;
             default:
                 break;
         }
     }
     // Check next bin
     end_of_bin += delta;
-    return fill_bin(error_info);
+    return fill_bin();
 }
+
+const RawValue::Data *PlotReader::get() const
+{   return current; }
 
 DbrType PlotReader::getType() const
 {   return (delta <= 0.0) ? reader.getType() : type; }
@@ -248,3 +254,4 @@ bool PlotReader::changedInfo()
     ctrl_info_changed = false;
     return changed;
 } 
+

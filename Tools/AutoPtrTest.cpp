@@ -87,3 +87,33 @@ TEST_CASE test_autoarrayptr()
     TEST_OK;
 }
 
+// Combined test: Array of Auto-Ptr.
+TEST_CASE test_autoarray_autoptr()
+{
+    X::deletes = 0;
+    {
+        AutoArrayPtr< AutoPtr<X> > copy;
+        int i;
+        {
+            AutoArrayPtr< AutoPtr<X> > array_of_X_ptr(new AutoPtr<X>[5]);
+            for (i=0; i<5; ++i)
+            {
+                array_of_X_ptr[i] = new X;
+                array_of_X_ptr[i]->val = i;
+            }
+            for (i=0; i<5; ++i)
+            {
+                TEST(array_of_X_ptr[i]->val == i);
+            }
+            copy = array_of_X_ptr;
+        }
+        for (i=0; i<5; ++i)
+        {
+            TEST(copy[i]->val == i);
+        }
+    }
+
+    TEST_MSG(X::deletes == 5, "All classes were auto-deleted");
+    TEST_OK;
+}
+

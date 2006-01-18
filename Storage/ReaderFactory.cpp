@@ -1,16 +1,10 @@
-// DataReader.cpp
+// ReaderFactory.cpp
 
-// Tools
-#include "MsgLogger.h"
-#include "Filename.h"
 // Storage
-#include "DataFile.h"
-#include "DataReader.h"
-#include "AverageReader.h"
+#include "ReaderFactory.h"
 #include "PlotReader.h"
+#include "AverageReader.h"
 #include "LinearReader.h"
-
-#undef DEBUG_DATAREADER
 
 const char *ReaderFactory::toString(How how, double delta)
 {

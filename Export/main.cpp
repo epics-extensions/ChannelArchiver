@@ -284,7 +284,7 @@ void dump_spreadsheet(Index &index,
         fprintf(f, "\tsecs");
     for (i=0; i<sheet.getNum(); ++i)
     {
-        if (sheet.get(i))
+        if (sheet.found(i))
             fprintf(f, "\t%s [%s]",
                     sheet.getName(i).c_str(),
                     sheet.getInfo(i).getUnits());
@@ -490,7 +490,7 @@ int main(int argc, const char *argv[])
     }
     catch (GenericException &e)
     {
-        fprintf(stderr, "Error: %s\n", e.what());
+        fprintf(stderr, "Error:\n%s\n", e.what());
         return -1;
     } 
     return 0;

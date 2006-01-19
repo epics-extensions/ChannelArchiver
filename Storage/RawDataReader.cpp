@@ -201,56 +201,67 @@ void RawDataReader::getHeader(const stdString &dirname,
                               FileOffset offset)
 {
     if (!Filename::isValid(basename))
-        throw GenericException(__FILE__, __LINE__, "Invalid basename");
-    AutoPtr<DataHeader>   new_header;
-    {   // Read new header
-        DataFile *datafile;
-        if (basename[0] == '/') // Index gave us the data file with the full path
-            datafile = DataFile::reference("", basename, false);
-        else // Look relative to the index's directory
-            datafile = DataFile::reference(dirname, basename, false);
-
-        try
-        {
-            new_header = datafile->getHeader(offset);
-        }
-        catch (GenericException &e)
-        {   // Something is wrong with datafile, can't read header.
-            // Release the file, then send the error upwards.
+        throw GenericException(__FILE__, __LINE__, "'%s': Invalid basename",
+                               channel_name.c_str());
+    try
+    {
+        AutoPtr<DataHeader>  new_header;
+        {   // Read new header
+            DataFile *datafile;
+            if (basename[0] == '/') // Index gave us the data file with the full path
+                datafile = DataFile::reference("", basename, false);
+            else // Look relative to the index's directory
+                datafile = DataFile::reference(dirname, basename, false);
+    
+            try
+            {
+                new_header = datafile->getHeader(offset);
+            }
+            catch (GenericException &e)
+            {   // Something is wrong with datafile, can't read header.
+                // Release the file, then send the error upwards.
+                datafile->release();
+                throw e;
+            }
+            // DataFile now ref'ed by new_header.
             datafile->release();
-            throw e;
         }
-        // DataFile now ref'ed by new_header.
-        datafile->release();
-    }
-    // Need to read CtrlInfo because we don't have any or it changed?
-    if (!header                                                              ||
-        new_header->data.ctrl_info_offset   != header->data.ctrl_info_offset ||
-        new_header->datafile->getFilename() != header->datafile->getFilename())
-    {
-        CtrlInfo new_ctrl_info;
-        new_ctrl_info.read(new_header->datafile,
-                           new_header->data.ctrl_info_offset);
-        // When we switch files, we read a new CtrlInfo,
-        // but it might contain the same values, so compare:
-        if (header == 0  ||  new_ctrl_info != ctrl_info)
+        // Need to read CtrlInfo because we don't have any or it changed?
+        if (!header                                                              ||
+            new_header->data.ctrl_info_offset   != header->data.ctrl_info_offset ||
+            new_header->datafile->getFilename() != header->datafile->getFilename())
         {
-            ctrl_info = new_ctrl_info;
-            ctrl_info_changed = true;
+            CtrlInfo new_ctrl_info;
+            new_ctrl_info.read(new_header->datafile,
+                               new_header->data.ctrl_info_offset);
+            // When we switch files, we read a new CtrlInfo,
+            // but it might contain the same values, so compare:
+            if (header == 0  ||  new_ctrl_info != ctrl_info)
+            {
+                ctrl_info = new_ctrl_info;
+                ctrl_info_changed = true;
+            }
+        }
+        // Switch to new header. AutoPtr will release previous header.
+        header = new_header;
+        // If we never allocated a RawValue, or the type changed...
+        if (!data ||
+            header->data.dbr_type  != dbr_type  ||
+            header->data.dbr_count != dbr_count)
+        {
+            dbr_type  = header->data.dbr_type;
+            dbr_count = header->data.dbr_count;
+            raw_value_size = RawValue::getSize(dbr_type, dbr_count);
+            data = RawValue::allocate(dbr_type, dbr_count, 1);
+            type_changed = true;
         }
     }
-    // Switch to new header. AutoPtr will release previous header.
-    header = new_header;
-    // If we never allocated a RawValue, or the type changed...
-    if (!data ||
-        header->data.dbr_type  != dbr_type  ||
-        header->data.dbr_count != dbr_count)
+    catch (GenericException &e)
     {
-        dbr_type  = header->data.dbr_type;
-        dbr_count = header->data.dbr_count;
-        raw_value_size = RawValue::getSize(dbr_type, dbr_count);
-        data = RawValue::allocate(dbr_type, dbr_count, 1);
-        type_changed = true;
+        throw GenericException(__FILE__, __LINE__,
+                               "Error in data header '%s', '%s' @ 0x%08lX for channel '%s'.\n%s",
+                               dirname.c_str(), basename.c_str(),
+                               (unsigned long) offset, channel_name.c_str(), e.what());
     }
 }
 

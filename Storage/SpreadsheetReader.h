@@ -34,12 +34,23 @@ class SpreadsheetReader
     /// for all channels.
     /// @param channel_names: List of channel names.
     /// @param start: start time or 0 for first value
-    /// @return Returns true if values are valid.
+    /// @return Returns true if <i>any</i> of the channels was found.
     ///         It's a severe error to invoke any of the following
     ///         after find() returns false.
     /// @exception GenericException on internal errors.
+    /// @see found()
     virtual bool find(const stdVector<stdString> &channel_names,
                       const epicsTime *start = 0);
+
+    /// Was this channel found?
+    ///
+    /// Only valid immediately after find().
+    /// @return Returns true if this channel was found.
+    /// @see find().
+    bool found(size_t i) const
+    {
+        return info[i];
+    }
 
     /// Time stamp for the current slice of data
     virtual const epicsTime &getTime() const;
@@ -72,8 +83,8 @@ class SpreadsheetReader
     virtual DbrCount getCount(size_t i) const;
     
     /// The meta information for the channel.
-    /// @exception GenericException when channel has no data.
-    /// @see get()
+    /// @exception GenericException when channel was not found.
+    /// @see found()
     virtual const CtrlInfo &getInfo(size_t i) const;
     
     /// Get the next time slice.

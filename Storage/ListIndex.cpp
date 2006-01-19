@@ -34,8 +34,7 @@ void ListIndex::open(const stdString &filename, bool readonly)
     catch (GenericException &e)
     {
         throw GenericException(__FILE__, __LINE__,
-            "ListIndex error processing '%s':\n%s",
-            filename.c_str(), e.what());
+                               "'%s': %s", filename.c_str(), e.what());
     }
 #ifdef DEBUG_LISTINDEX
     printf("ListIndex::open(%s)\n", filename.c_str());

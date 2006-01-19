@@ -90,10 +90,6 @@ DbrCount SpreadsheetReader::getCount(size_t i) const
 
 const CtrlInfo &SpreadsheetReader::getInfo(size_t i) const
 {
-    if (!value[i])
-        throw GenericException(__FILE__, __LINE__,
-                               "getInfo(%zu) called for channel without value",
-                               i);
     return *info[i];
 }
 

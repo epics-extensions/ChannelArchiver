@@ -34,8 +34,8 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
     }
     catch (...)
     {
-        throw new GenericException(__FILE__, __LINE__,
-                                   "SpreadsheetReader::find cannot allocate mem");
+        throw GenericException(__FILE__, __LINE__,
+                               "SpreadsheetReader::find cannot allocate mem");
     }
     size_t i;
     for (i=0; i<num; ++i)
@@ -50,12 +50,51 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
         }
         catch (...)
         {
-            throw new GenericException(__FILE__, __LINE__,
-                                       "SpreadsheetReader::find cannot "
-                                       "allocate info %zu\n",i);
+            throw GenericException(__FILE__, __LINE__,
+                                   "SpreadsheetReader::find cannot "
+                                   "allocate info %zu\n",i);
         }
     }
     return next();
+}
+
+const epicsTime &SpreadsheetReader::getTime() const
+{    return time; }
+
+size_t SpreadsheetReader::getNum() const
+{   return num; }
+
+const stdString &SpreadsheetReader::getName(size_t i) const
+{   return reader[i]->channel_name; }
+
+const RawValue::Data *SpreadsheetReader::get(size_t i) const
+{   return value[i]; }
+
+DbrType SpreadsheetReader::getType(size_t i) const
+{
+    if (!value[i])
+        throw GenericException(__FILE__, __LINE__,
+                               "getType(%zu) called for channel without value",
+                               i);
+    return type[i];
+}
+
+DbrCount SpreadsheetReader::getCount(size_t i) const
+{
+    if (!value[i])
+        throw GenericException(__FILE__, __LINE__,
+                               "getCount(%zu) called for channel without value",
+                               i);
+    return count[i];
+}
+
+const CtrlInfo &SpreadsheetReader::getInfo(size_t i) const
+{
+    if (!value[i])
+        throw GenericException(__FILE__, __LINE__,
+                               "getInfo(%zu) called for channel without value",
+                               i);
+    return *info[i];
 }
 
 bool SpreadsheetReader::next()

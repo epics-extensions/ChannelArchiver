@@ -62,12 +62,18 @@ class SpreadsheetReader
     virtual const RawValue::Data *get(size_t i) const;
 
     /// The dbr_time_xxx type.
+    /// @exception GenericException when channel has no data.
+    /// @see get()
     virtual DbrType getType(size_t i) const;
     
     /// array size.
+    /// @exception GenericException when channel has no data.
+    /// @see get()
     virtual DbrCount getCount(size_t i) const;
     
     /// The meta information for the channel.
+    /// @exception GenericException when channel has no data.
+    /// @see get()
     virtual const CtrlInfo &getInfo(size_t i) const;
     
     /// Get the next time slice.
@@ -105,25 +111,5 @@ protected:
     AutoArrayPtr<RawValueAutoPtr> value;
 };
 
-inline const epicsTime &SpreadsheetReader::getTime() const
-{    return time; }
-
-inline size_t SpreadsheetReader::getNum() const
-{   return num; }
-
-inline const stdString &SpreadsheetReader::getName(size_t i) const
-{   return reader[i]->channel_name; }
-
-inline const RawValue::Data *SpreadsheetReader::get(size_t i) const
-{   return value[i]; }
-
-inline DbrType SpreadsheetReader::getType(size_t i) const
-{   return type[i]; }
-    
-inline DbrCount SpreadsheetReader::getCount(size_t i) const
-{   return count[i]; }
-
-inline const CtrlInfo &SpreadsheetReader::getInfo(size_t i) const
-{   return *info[i]; }
-
+/// @}
 

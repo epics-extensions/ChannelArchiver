@@ -15,9 +15,9 @@ ListIndex::~ListIndex()
 void ListIndex::open(const stdString &filename, bool readonly)
 {
     if (!readonly)
-        throw new GenericException(__FILE__, __LINE__,
-                                   "ListIndex '%s' Writing is not supported!\n",
-                                   filename.c_str());
+        throw GenericException(__FILE__, __LINE__,
+                               "ListIndex '%s' Writing is not supported!\n",
+                               filename.c_str());
     IndexConfig config;
     stdList<stdString>::const_iterator subs;
     try
@@ -33,7 +33,7 @@ void ListIndex::open(const stdString &filename, bool readonly)
     }
     catch (GenericException &e)
     {
-        throw new GenericException(__FILE__, __LINE__,
+        throw GenericException(__FILE__, __LINE__,
             "ListIndex error processing '%s':\n%s",
             filename.c_str(), e.what());
     }
@@ -75,9 +75,9 @@ void ListIndex::close()
 class RTree *ListIndex::addChannel(const stdString &channel,
                                    stdString &directory)
 {
-    throw new GenericException(__FILE__, __LINE__,
-                               "ListIndex: Tried to add '%s'",
-                               channel.c_str());
+    throw GenericException(__FILE__, __LINE__,
+                           "ListIndex: Tried to add '%s'",
+                           channel.c_str());
 }
 
 class RTree *ListIndex::getTree(const stdString &channel,
@@ -96,7 +96,7 @@ class RTree *ListIndex::getTree(const stdString &channel,
             }
             catch (...)
             {
-                throw new GenericException(__FILE__, __LINE__,
+                throw GenericException(__FILE__, __LINE__,
                     "ListIndex: No mem for '%s'", archs->name.c_str());
             }
             try
@@ -175,7 +175,7 @@ bool ListIndex::getFirstChannel(NameIterator &iter)
                 }
                 catch (...)
                 {                
-                    throw new GenericException(__FILE__, __LINE__, "No mem");
+                    throw GenericException(__FILE__, __LINE__, "No mem");
                 }
                 try
                 {

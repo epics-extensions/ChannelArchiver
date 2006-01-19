@@ -13,8 +13,9 @@
 /// Generic Exception: Base class for exceptions
 ///
 /// An exception that provided info text with sourcefile & line information.
-///
-/// All exceptions should be caught by reference
+/// 
+/// All exceptions should be thrown as an object/reference, not pointer,
+/// and also caught by reference,
 /// to avoid unnecessary copies and assert de-allocation:
 /// <PRE>
 ///  try
@@ -23,7 +24,7 @@
 ///  }
 ///  catch (GenericException &e)
 ///  {
-///      fprintf(stderr, "Exception:\n%s\n", e.what);
+///      ... somehow print  e.what() ...
 ///  }
 /// </PRE>
 /// (According to Scott Meyers "More Effective C++",

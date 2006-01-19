@@ -2,8 +2,9 @@
 #include <unistd.h>
 
 // Tools
-#include "FUX.h"
+#include "AutoPtr.h"
 #include "GenericException.h"
+#include "FUX.h"
 
 // XML library
 #ifdef FUX_XERCES
@@ -282,9 +283,8 @@ FUX::Element *FUX::parse(const char *file_name)
         //FUXEntityResolver entity_resolver;
         FUXContentHandler content_handler(this);
         FUXErrorHandler   error_handler(this);
-        SAX2XMLReader *parser = XMLReaderFactory::createXMLReader();
-        if (!parser)
-            throw GenericException(__FILE__, __LINE__, "Couldn't allocate parser");
+        AutoPtr<SAX2XMLReader> parser(XMLReaderFactory::createXMLReader());
+
         // Very strange notation, but these XMLUni constants
         // are simply the XMLCh strings shown in the following comments.
         // Those URLs matche the SAX2XMLReader documentation,
@@ -325,32 +325,39 @@ FUX::Element *FUX::parse(const char *file_name)
             strncat(path, file_name, sizeof(path)-1);
             parser->parse(path);
         }
-        delete parser;
+        parser = 0;
         XMLPlatformUtils::Terminate();
     }
     catch (GenericException &e)
     {
+        clear();
+        XMLPlatformUtils::Terminate();
         throw GenericException(__FILE__, __LINE__,
                                "Error parsing '%s'\n%s", file_name, e.what());
     }
     catch (const XMLException &toCatch)
     {
+        clear();
         char* message = XMLString::transcode(toCatch.getMessage());
         GenericException e(__FILE__, __LINE__,
                            "Xerces exception: %s", message);
         XMLString::release(&message);
+        XMLPlatformUtils::Terminate();
         throw e;
     }
     catch (const SAXParseException &toCatch)
     {
+        clear();
         char* message = XMLString::transcode(toCatch.getMessage());
         GenericException e(__FILE__, __LINE__,
                            "Xerces exception: %s", message);
         XMLString::release(&message);
+        XMLPlatformUtils::Terminate();
         throw e;
     }
     catch (...)
     {
+        clear();
         throw GenericException(__FILE__, __LINE__, "Unkown Xerces error");
     }  
     return root;

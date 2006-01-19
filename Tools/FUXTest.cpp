@@ -6,7 +6,7 @@
 TEST_CASE test_fux()
 {
     FUX fux;
-    FUX::Element *xml_doc;
+    FUX::Element *xml_doc = 0;
 
     try
     {
@@ -42,6 +42,7 @@ TEST_CASE test_fux()
 
     try
     {
+        xml_doc = 0;
         xml_doc = fux.parse("damaged.xml");
         xml_doc = (FUX::Element *)2;
     }

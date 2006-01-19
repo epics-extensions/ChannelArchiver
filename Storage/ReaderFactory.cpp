@@ -42,8 +42,8 @@ DataReader *ReaderFactory::create(Index &index, How how, double delta)
     }
     catch (...)
     {
-        throw new GenericException(__FILE__, __LINE__, "Cannot create reader for %s",
-                                   toString(how, delta));
+        throw GenericException(__FILE__, __LINE__, "Cannot create reader for %s",
+                               toString(how, delta));
     }
 }
 

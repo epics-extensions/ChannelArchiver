@@ -34,6 +34,10 @@ $EXPORT $INDEX -i >test/info
 check info "Channel info."
 DEL="$DEL info"
 
+$EXPORT $INDEX -i  -m '(fre)|(ja)' >test/pattern
+check pattern "Channel info with match pattern."
+DEL="$DEL pattern"
+
 $EXPORT $INDEX fred >test/fred
 check fred "Full single channel dump."
 DEL="$DEL fred"

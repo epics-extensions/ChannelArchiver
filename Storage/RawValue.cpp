@@ -590,14 +590,14 @@ void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
     case DBR_TIME_STRING:
         break;
 
-        // The following might generate 'unused variable dbr_...'
-        // warnings on systems where no byte swapping is required
-#define FROM_DISK(DBR, TYP, TIMETYP, MACRO)                             \
-    case DBR:                                                           \
-        {                                                               \
-            TYP *data = & ((TIMETYP *)value)->value;                    \
-            for (size_t i=0; i<count; ++i)  MACRO(data[i]);             \
-        }                                                               \
+        // The following might generate "unused variable 'data'"
+        // warnings on systems where no byte swapping is required.
+#define FROM_DISK(DBR, TYP, TIMETYP, MACRO)                                  \
+    case DBR:                                                                \
+        {                                                                    \
+            TYP *data __attribute__ ((unused)) = & ((TIMETYP *)value)->value;\
+            for (size_t i=0; i<count; ++i)  MACRO(data[i]);                  \
+        }                                                                    \
         break;
         FROM_DISK(DBR_TIME_DOUBLE,dbr_double_t,dbr_time_double, DoubleFromDisk)
         FROM_DISK(DBR_TIME_FLOAT, dbr_float_t, dbr_time_float,  FloatFromDisk)
@@ -629,12 +629,12 @@ void RawValue::write(DbrType type, DbrCount count, size_t size,
 
     switch (type)
     {
-#define TO_DISK(DBR, TYP, TIMETYP, CVT_MACRO)                           \
-    case DBR:                                                           \
-        {                                                               \
-            TYP *data = & ((TIMETYP *)buffer)->value;                   \
-            for (size_t i=0; i<count; ++i)  CVT_MACRO (data[i]);        \
-        }                                                               \
+#define TO_DISK(DBR, TYP, TIMETYP, CVT_MACRO)                                 \
+    case DBR:                                                                 \
+        {                                                                     \
+            TYP *data __attribute__ ((unused)) = & ((TIMETYP *)buffer)->value;\
+            for (size_t i=0; i<count; ++i)  CVT_MACRO (data[i]);              \
+        }                                                                     \
         break;
 
     case DBR_TIME_CHAR:

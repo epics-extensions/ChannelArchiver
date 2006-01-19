@@ -41,7 +41,7 @@ TEST_CASE data_writer_test()
             RawValue::setTime(data, epicsTime::getCurrent());
             if (!writer->add(data))
             {
-                fprintf(stderr, "Write error with value %d/%d\n",
+                fprintf(stderr, "Write error with value %zu/%zu\n",
                         i, samples);
                 break;
             }   

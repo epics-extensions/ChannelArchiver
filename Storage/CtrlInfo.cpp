@@ -240,7 +240,7 @@ bool CtrlInfo::parseState(const char *text,
         state_text = getState(i, len);
         if (! state_text)
         {
-            LOG_MSG("CtrlInfo::parseState: missing state %d", i);
+            LOG_MSG("CtrlInfo::parseState: missing state %zu", i);
             return false;
         }
         if (!strncmp(text, state_text, len))
@@ -348,7 +348,7 @@ void CtrlInfo::read(DataFile *datafile, FileOffset offset)
             throw GenericException(__FILE__, __LINE__,
                                    "Datafile %s: "
                                    "CtrlInfo @ 0x%lX has invalid  type %d, "
-                                   "size %zu\n",
+                                   "size %d\n",
                                    datafile->getBasename().c_str(),
                                    (unsigned long)offset, info->type,
                                    info->size);

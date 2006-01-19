@@ -90,7 +90,9 @@ typedef int socklen_t;
 
 // We use the GCC __attribute__((format....)
 // to have the compiler check printf-type
-// format strings.
+// format strings,
+// and to mark variables as unused:
+//    __attribute__ ((unused))
 // Define this one to disable when your compiler
 // fails to understand __attribute__
 #ifndef __GNUC__

@@ -135,7 +135,7 @@ TEST_CASE fill_tests()
                 if (!tree->insertDatablock(start, end,
                                            test_config[test].data[i].offset, filename))
                 {
-                    printf("Insert %s..%s: %d failed\n",
+                    printf("Insert %s..%s: %zu failed\n",
                            test_config[test].data[i].start,
                            test_config[test].data[i].end, i);
                     FAIL("insertDatablock (1)");
@@ -144,7 +144,7 @@ TEST_CASE fill_tests()
                 if (tree->insertDatablock(start, end,
                                           test_config[test].data[i].offset, filename))
                 {
-                    printf("Re-Insert %s..%s: %d failed\n",
+                    printf("Re-Insert %s..%s: %zu failed\n",
                            test_config[test].data[i].start,
                            test_config[test].data[i].end, i);
                     FAIL("insertDatablock (2)");

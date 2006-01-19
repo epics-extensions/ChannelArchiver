@@ -256,6 +256,7 @@ void dump_spreadsheet(Index &index,
                       stdVector<stdString> names,
                       epicsTime *start, epicsTime *end,
                       bool raw_time,
+                      bool millisecs,
                       bool status_text,
                       ReaderFactory::How how, double delta,
                       stdString output_name)
@@ -299,7 +300,19 @@ void dump_spreadsheet(Index &index,
     {
         if (end && sheet.getTime() >= *end)
             break;
-        fprintf(f, "%s", epicsTimeTxt(sheet.getTime(), time));
+        // '03/23/2004 10:48:48.032899334'
+        if (millisecs)
+        {
+            epicsTimeStamp stamp = sheet.getTime();
+            stamp.nsec = ((stamp.nsec + 500000) / 1000000) * 1000000;
+            epicsTime2string(epicsTime(stamp), time);
+            fprintf(f, "%s", time.substr(0, 23).c_str());
+        }
+        else
+        {
+            epicsTime2string( sheet.getTime(), time);
+            fprintf(f, "%s", time.c_str());
+        }
         if (raw_time)
         {
             epicsTimeStamp stamp = sheet.getTime();
@@ -382,6 +395,8 @@ int main(int argc, const char *argv[])
                                  "Gnuplot", "Generate GNUPlot output for Image");
         CmdArgFlag   raw_time   (parser, "raw_time",
                                  "Include columns for EPICS time stamp");
+        CmdArgFlag   millisecs  (parser, "millisecs",
+                                 "Truncate time to millisecs in spreadsheet dump.");
         // defaults
         prec.set(-1);
         if (! parser.parse())
@@ -483,7 +498,7 @@ int main(int argc, const char *argv[])
                              how, delta, output, image);
             else
                 dump_spreadsheet(index, names, start, end,
-                                 raw_time, !no_status_text, how, delta,
+                                 raw_time, millisecs, !no_status_text, how, delta,
                                  output);
         }
         index.close();
@@ -495,4 +510,4 @@ int main(int argc, const char *argv[])
     } 
     return 0;
 }
-    
+

@@ -87,5 +87,5 @@ gnuplot test/plotbin.plt
 echo "View these for plot output: /tmp/combined.png /tmp/plotbin.png"
 
 cd test
-rm $DEL
+#rm $DEL
 

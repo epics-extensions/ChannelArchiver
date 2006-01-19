@@ -16,8 +16,9 @@ set y2tics
 # Convert by hand into seconds with 'using ...' directive:
 plot 'test/raw' index 0 using ($4*3600.0+$5*60+$6-38860):7 "%lf/%lf/%lf %lf:%lf:%lf %lf" title 'fred [furlong]' with lines, 'test/lin' index 0 using ($4*3600.0+$5*60+$6-38860):7 "%lf/%lf/%lf %lf:%lf:%lf %lf" title 'linear' with points, 'test/avg' index 0 using ($4*3600.0+$5*60+$6-38860):7 "%lf/%lf/%lf %lf:%lf:%lf %lf" title 'average' with points, 'test/raw' index 1 using ($4*3600.0+$5*60+$6-38860):7 "%lf/%lf/%lf %lf:%lf:%lf %lf" axes x1y2 title 'janet [furlong]' with lines, 'test/lin' index 1 using ($4*3600.0+$5*60+$6-38860):7 "%lf/%lf/%lf %lf:%lf:%lf %lf" axes x1y2 title 'linear' with points, 'test/avg' index 1 using ($4*3600.0+$5*60+$6-38860):7 "%lf/%lf/%lf %lf:%lf:%lf %lf" axes x1y2 title 'average' with points
 
-set output '/tmp/combined.png'
-set terminal png
-replot
+#set output '/tmp/combined.png'
+#set terminal png
+#replot
 
+pause 5
 

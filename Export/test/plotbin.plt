@@ -8,7 +8,8 @@ set mxtics 2
 set pointsize 0.4
 plot 'test/dtl' index 0 using 1:3 title 'DTL_HPRF:Tnk1:T [F]' with lines, 'test/dtl_pb' index 0 using 1:3 title 'plot-binned' with points, 'test/dtl' index 1 using 1:3 title 'DTL_HPRF:Tnk2:T [F]' with lines, 'test/dtl_pb' index 1 using 1:3 title 'plot-binned' with points
 
-set output '/tmp/plotbin.png'
-set terminal png
-replot
+pause 5
+#set output '/tmp/plotbin.png'
+#set terminal png
+#replot
 

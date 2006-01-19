@@ -16,9 +16,24 @@
 
 // Globals that are set from the command-line,
 // see initial section of main().
-int precision;
-RawValue::NumberFormat format = RawValue::DEFAULT;
-bool verbose;
+static int precision;
+static RawValue::NumberFormat format = RawValue::DEFAULT;
+static bool verbose;
+static bool only_millisecs;
+
+static void format_time(const epicsTime &time, stdString &text)
+{
+    if (only_millisecs)
+    {
+        epicsTimeStamp stamp = time;
+        stamp.nsec = ((stamp.nsec + 500000) / 1000000) * 1000000;
+        epicsTime2string(epicsTime(stamp), text);
+        text = text.substr(0, 23);
+        return;
+    }
+    epicsTime2string(time, text);
+}
+
 
 // Visitor for BinaryTree of channel names;
 // see get_names_for_pattern().
@@ -144,7 +159,7 @@ void dump_gnuplot(Index &index,
         {
             if (end && RawValue::getTime(value) >= *end)
                 break;
-            epicsTime2string(RawValue::getTime(value), time);
+            format_time(RawValue::getTime(value), time);
             RawValue::getStatus(value, stat);            
             if (RawValue::isInfo(value))
             {   // Add one(!) empty line for break in data
@@ -256,7 +271,6 @@ void dump_spreadsheet(Index &index,
                       stdVector<stdString> names,
                       epicsTime *start, epicsTime *end,
                       bool raw_time,
-                      bool millisecs,
                       bool status_text,
                       ReaderFactory::How how, double delta,
                       stdString output_name)
@@ -301,18 +315,8 @@ void dump_spreadsheet(Index &index,
         if (end && sheet.getTime() >= *end)
             break;
         // '03/23/2004 10:48:48.032899334'
-        if (millisecs)
-        {
-            epicsTimeStamp stamp = sheet.getTime();
-            stamp.nsec = ((stamp.nsec + 500000) / 1000000) * 1000000;
-            epicsTime2string(epicsTime(stamp), time);
-            fprintf(f, "%s", time.substr(0, 23).c_str());
-        }
-        else
-        {
-            epicsTime2string( sheet.getTime(), time);
-            fprintf(f, "%s", time.c_str());
-        }
+        format_time(sheet.getTime(), time);
+        fprintf(f, "%s", time.c_str());
         if (raw_time)
         {
             epicsTimeStamp stamp = sheet.getTime();
@@ -419,6 +423,7 @@ int main(int argc, const char *argv[])
             return -1;
         }   
         verbose = be_verbose;
+        only_millisecs = millisecs;
         // Start/end time
         AutoPtr<epicsTime> start, end;
         stdString txt;
@@ -498,7 +503,7 @@ int main(int argc, const char *argv[])
                              how, delta, output, image);
             else
                 dump_spreadsheet(index, names, start, end,
-                                 raw_time, millisecs, !no_status_text, how, delta,
+                                 raw_time, !no_status_text, how, delta,
                                  output);
         }
         index.close();

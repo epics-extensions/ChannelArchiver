@@ -44,9 +44,20 @@ check lin "GNUPlot data file for 'linear'."
 $EXPORT $INDEX -o test/avg -gnuplot fred janet -average 5.0
 check avg "GNUPlot data file for 'average'."
 
+$EXPORT $INDEX -o test/pb -gnuplot fred janet -plotbin 5.0
+check avg "GNUPlot data file for 'plotbin'."
+
 gnuplot test/combined.plt
 
+$EXPORT $INDEX DTL_HPRF:Tnk1:T DTL_HPRF:Tnk2:T -o test/dtl    -gnuplot 
+check dtl "GNUPlot data file for DTL data."
+$EXPORT $INDEX DTL_HPRF:Tnk1:T DTL_HPRF:Tnk2:T -o test/dtl_pb -gnuplot -plotbin 3600
+check dtl_pb "GNUPlot data file for DTL data 'plotbin'."
+
+gnuplot test/plotbin.plt
+
+echo "View these for plot output: /tmp/combined.png /tmp/plotbin.png"
 
 cd test
-#rm fred fred_janet fred_janet_piece raw raw.plt lin lin.plt avg avg.plt
+rm fred fred_janet fred_janet_piece raw raw.plt lin lin.plt avg avg.plt pb pb.plt dtl dtl.plt dtl_pb dtl_pb.plt
 

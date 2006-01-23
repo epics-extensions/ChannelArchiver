@@ -1,5 +1,9 @@
 // LockFile.cpp: implementation of the LockFile class.
 
+// System
+#include <sys/types.h>
+#include <unistd.h>
+
 // Tools
 #include "Lockfile.h"
 #include "AutoFilePtr.h"
@@ -31,8 +35,9 @@ Lockfile::Lockfile(const char *filename, const char *program)
     stdString t;
     epicsTime2string(epicsTime::getCurrent(), t);
     fprintf(f, "%s started on %s\n\n", program, t.c_str());
-    fprintf(f, "If you can read this, the program is still running "
-            "or exited ungracefully...\n");
+    fprintf(f, "If you can read this, the program is still running\n");
+    fprintf(f, "or was forced to exit without being able to clean all resources.\n\n");
+    fprintf(f, "The original process ID was %lu\n", (unsigned long) getpid());
 }
 
 Lockfile::~Lockfile()

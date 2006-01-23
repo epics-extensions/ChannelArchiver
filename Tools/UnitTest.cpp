@@ -41,6 +41,8 @@ extern TEST_CASE double_throw();
 extern TEST_CASE guard_test();
 // Unit IndexConfigTest:
 extern TEST_CASE index_config_test();
+// Unit LockfileTest:
+extern TEST_CASE test_lockfile();
 // Unit MsgLoggerTest:
 extern TEST_CASE test_log();
 // Unit ThreadTest:
@@ -268,6 +270,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\nindex_config_test:\n");
         if (index_config_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "LockfileTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit LockfileTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("\ntest_lockfile:\n");
+        if (test_lockfile())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

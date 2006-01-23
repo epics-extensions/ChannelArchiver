@@ -19,6 +19,9 @@ typedef bool TEST_CASE;
            return false;                \
        }
 
+#define PASS(msg)                       \
+           printf("  OK  : %s\n", msg);
+
 #define TEST(t)                        \
        if (t)                          \
            printf("  OK  : %s\n", #t); \
@@ -61,7 +64,6 @@ bool test_filediff(const char *filename1, const char *filename2);
            printf("  FAIL: diff %s %s\n", file1, file2);          \
            return false;                                          \
        }
-
 
 #define TEST_OK   return true
 

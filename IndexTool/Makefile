@@ -21,3 +21,8 @@ Tools_DIR = $(INSTALL_LIB)
 ToolsObj_DIR = $(INSTALL_LIB)
 
 include $(TOP)/configure/RULES
+
+test:
+	sh test.sh
+
+.PHONY: test

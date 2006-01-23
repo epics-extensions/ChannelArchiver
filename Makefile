@@ -6,14 +6,13 @@ include $(TOP)/configure/CONFIG
 DIRS += Tools
 DIRS += LibIO
 DIRS += Storage
-DIRS += Engine
-DIRS += DataTool
 DIRS += IndexTool
+DIRS += Export
 DIRS += ArchiveDaemon
 DIRS += XMLRPCServer
-
+DIRS += Engine
+DIRS += DataTool
 DIRS += Manager
-DIRS += Export
 
 include $(TOP)/configure/RULES_DIRS
 
@@ -24,8 +23,10 @@ stats:
 	@wc -l manual/*.tex | fgrep total
 
 tests:
-	#cd Tools; $(MAKE) test
-	cd Storage; sh test.sh
-	cd DemoData; sh test.sh
-	cd XMLRPCServer; sh test.sh
-	cd Engine; sh test.sh
+	cd Tools; $(MAKE) test
+	cd Storage; $(MAKE) test
+	cd Export; $(MAKE) test
+	cd XMLRPCServer; $(MAKE) test
+	cd IndexTool; $(MAKE) test
+	#cd DemoData; sh test.sh
+	#cd Engine; sh test.sh

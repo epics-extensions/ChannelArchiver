@@ -26,7 +26,7 @@ static void signal_handler(int sig)
     fprintf(stderr, "Exiting on signal %d\n", sig);
 }
 
-bool add_tree_to_master(const stdString &index_name,
+void add_tree_to_master(const stdString &index_name,
                         const stdString &dirname,
                         const stdString &channel,
                         const RTree *subtree,
@@ -38,16 +38,15 @@ bool add_tree_to_master(const stdString &index_name,
     bool ok;
     stdString datafile, start, end;
     // Xfer data blocks from the end on, going back to the start.
-    // Stop when find a block that was already in the master index.
+    // Stop when finding a block that was already in the master index.
     for (ok = subtree->getLastDatablock(node, idx, block);
          ok && run;
          ok = subtree->getPrevDatablock(node, idx, block))
     {
-        // Data files in master need a full path
-        // or are written relative to the dir. of the index file
+        // Data files in master need a full path ....
         if (Filename::containsFullPath(block.data_filename))
             datafile = block.data_filename;
-        else
+        else // or are written relative to the dir. of the index file
             Filename::build(dirname, block.data_filename, datafile);
         if (verbose > 3)
             printf("Inserting '%s' as '%s'\n",
@@ -60,26 +59,26 @@ bool add_tree_to_master(const stdString &index_name,
                    epicsTimeTxt(node.record[idx].end, end));
         // Note that there's no inner loop over the 'chained'
         // blocks, we only handle the main blocks of each sub-tree.
-        switch (index->updateLastDatablock(node.record[idx].start,
-                                           node.record[idx].end,
-                                           block.data_offset, datafile))
+        try
         {
-            case RTree::YNE_Error:
-                fprintf(stderr,
-                        "Error inserting datablock for '%s' into '%s'\n",
-                        channel.c_str(), index_name.c_str());
-                return false;
-            case RTree::YNE_No:
+            if (!index->updateLastDatablock(node.record[idx].start,
+                                            node.record[idx].end,
+                                            block.data_offset, datafile))
+            {
                 if (verbose > 2)
-                    printf("Block already existed, skipping the rest\n");
-                return true;
-            case RTree::YNE_Yes:
-                continue; // insert more blocks
+                     printf("Block already existed, skipping the rest\n");
+                return;
+            }
+        }
+        catch (GenericException &e)
+        {
+            fprintf(stderr,
+                    "Error inserting datablock for '%s' into '%s':\n%s\n",
+                    channel.c_str(), index_name.c_str(), e.what());
+            return;
         }
     }
-    return true;
 }
-
 
 void create_masterindex(int RTreeM,
                         const stdString &config_name,
@@ -92,17 +91,13 @@ void create_masterindex(int RTreeM,
     else
         if (!config.parse(config_name))
             throw GenericException(__FILE__, __LINE__,
-                               "File '%s' is no XML indexconfig",
-                               config_name.c_str());
+                                   "File '%s' is no XML indexconfig",
+                                   config_name.c_str());
     IndexFile::NameIterator names;
     stdString index_directory, sub_directory;
-    ErrorInfo error_info;
     IndexFile index(RTreeM), subindex(RTreeM);
     bool ok;
-    if (!index.open(index_name, false, error_info))
-        throw GenericException(__FILE__, __LINE__,
-                               "Cannot create master index file '%s'\n%s",
-                               index_name.c_str(), error_info.info.c_str());
+    index.open(index_name, false);
     if (verbose)
         printf("Opened master index '%s'.\n", index_name.c_str());
     stdList<stdString>::const_iterator subs;
@@ -110,43 +105,44 @@ void create_masterindex(int RTreeM,
          subs != config.subarchives.end(); ++subs)
     {
         const stdString &sub_name = *subs;
-        if (!subindex.open(sub_name, false, error_info))
+        try
         {
-            fprintf(stderr, "Cannot open sub-index '%s'\n%s\n",
-                    sub_name.c_str(),  error_info.info.c_str());
-            continue;
+            subindex.open(sub_name, false);
+            if (verbose)
+                printf("Adding sub-index '%s'\n", sub_name.c_str());
+            for (ok = subindex.getFirstChannel(names);
+                 ok && run;
+                 ok = subindex.getNextChannel(names))
+            {
+                const stdString &channel = names.getName();
+                if (verbose > 1)
+                    printf("'%s'\n", channel.c_str());
+                AutoPtr<RTree> subtree(subindex.getTree(channel, sub_directory));
+                if (!subtree)
+                {
+                    fprintf(stderr, "Cannot get tree for '%s' from '%s'\n",
+                            channel.c_str(), sub_name.c_str());
+                    continue;
+                }
+                AutoPtr<RTree> tree(index.addChannel(channel, index_directory));
+                if (!tree)
+                {
+                    fprintf(stderr, "Cannot add '%s' to '%s'\n",
+                            channel.c_str(), index_name.c_str());
+                    continue;
+                }
+                add_tree_to_master(index_name, sub_directory,
+                                   channel, subtree, tree);
+            }
+            subindex.close();
+            if (verbose > 2)
+                index.showStats(stdout);
         }
-        if (verbose)
-            printf("Adding sub-index '%s'\n", sub_name.c_str());
-        for (ok = subindex.getFirstChannel(names);
-             ok && run;
-             ok = subindex.getNextChannel(names))
+        catch (GenericException &e)
         {
-            const stdString &channel = names.getName();
-            if (verbose > 1)
-                printf("'%s'\n", channel.c_str());
-            AutoPtr<RTree> subtree(subindex.getTree(channel, sub_directory,
-                                   error_info));
-            if (!subtree)
-            {
-                fprintf(stderr, "Cannot get tree for '%s' from '%s'\n%s",
-                        channel.c_str(), sub_name.c_str(),
-                        error_info.info.c_str());
-                continue;
-            }
-            AutoPtr<RTree> tree(index.addChannel(channel, index_directory));
-            if (!tree)
-            {
-                fprintf(stderr, "Cannot add '%s' to '%s'\n",
-                        channel.c_str(), index_name.c_str());
-                continue;
-            }
-            add_tree_to_master(index_name, sub_directory,
-                               channel, subtree, tree);
+            fprintf(stderr, "Error while processing sub-index '%s':\n%s\n",
+                    sub_name.c_str(), e.what());
         }
-        subindex.close();
-        if (verbose > 2)
-            index.showStats(stdout);
     }
     index.close();
     if (verbose)
@@ -172,6 +168,16 @@ int main(int argc, const char *argv[])
     if (! parser.parse())
         return -1;
     verbose = verbose_flag;
+    stdString old_index_name = parser.getArgument(0);
+    stdString new_index_name = parser.getArgument(1);
+    if (Filename::containsPath(new_index_name))
+    {
+        fprintf(stderr, "The new index file name, '%s',"
+                " must not contain any path information,\n",
+                new_index_name.c_str());
+        fprintf(stderr, "it has to refer to a file in the current directory.\n");
+        return -1;
+    }
     if (parser.getArguments().size() != 2  ||  help)
     {
         parser.usage();
@@ -182,7 +188,7 @@ int main(int argc, const char *argv[])
         printf("With the -reindex flag, it creates a new index ");
         printf("from an existing index\n");
         printf("(shortcut for creating a list file that contains only ");
-        printf(" that one old index).\n");
+        printf(" a single old index).\n");
         return -1;
     }
 
@@ -190,25 +196,16 @@ int main(int argc, const char *argv[])
     {
         Lockfile lock_file("indextool_active.lck", argv[0]);
         BenchTimer timer;
-        create_masterindex(RTreeM, parser.getArgument(0),
-                           parser.getArgument(1), reindex);
+        create_masterindex(RTreeM, old_index_name, new_index_name, reindex);
+        timer.stop();
         if (verbose > 0)
-        {
-            timer.stop();
             printf("Time: %s\n", timer.toString().c_str());
-        }
     }
     catch (GenericException &e)
     {
-        printf("Error:\n%s", e.what());
+        printf("Error:\n%s\n", e.what());
         return -1;
     }
-    
     return 0;
 }
-
-
-
-
-
 

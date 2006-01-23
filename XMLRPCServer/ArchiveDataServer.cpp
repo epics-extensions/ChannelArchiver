@@ -190,9 +190,22 @@ static xmlrpc_value *encode_ctrl_info(xmlrpc_env *env, const CtrlInfo *info)
             "prec", (xmlrpc_int32)info->getPrecision(),
             "units", info->getUnits());
     }
+    return xmlrpc_build_value(
+            env, "{s:i,s:d,s:d,s:d,s:d,s:d,s:d,s:i,s:s}",
+            "type", (xmlrpc_int32)META_TYPE_NUMERIC,
+            "disp_high",  10.0,
+            "disp_low",   0.0,
+            "alarm_high", 0.0,
+            "warn_high",  0.0,
+            "warn_low",   0.0,
+            "alarm_low",  0.0,
+            "prec", (xmlrpc_int32) 1,
+            "units", "<NO DATA>");
+    /*
     return  xmlrpc_build_value(env, "{s:i,s:(s)}",
                                "type", (xmlrpc_int32)META_TYPE_ENUM,
                                "states", "<NO DATA>");
+    */
 }
 
 void dbr_type_to_xml_type(DbrType dbr_type, DbrCount dbr_count,

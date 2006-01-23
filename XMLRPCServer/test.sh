@@ -63,6 +63,12 @@ compare archives "archiver.archives command"
 sh cgitest.sh request.names | grep -v "^Content-type:" >test/names
 compare names "archiver.names command"
 
+sh cgitest.sh request.names_wrong_key | grep -v "^Content-type:" >test/names_wrong_key
+compare names_wrong_key "archiver.names with wrong key"
+
+sh cgitest.sh request.names_key_for_missing_index | grep -v "^Content-type:" >test/names_key_for_missing_index
+compare names_key_for_missing_index "archiver.names with missing index"
+
 # The 'binning' rounds the time stamps, and that results
 # in a one-nanosecond difference on different architectures?!
 sh cgitest.sh request.data | grep -v "^Content-type:" |
@@ -71,4 +77,10 @@ sh cgitest.sh request.data | grep -v "^Content-type:" |
  grep -v '<value><i4>721164666</i4></value></member>' |
  grep -v '<value><i4>721164667</i4></value></member>' >test/data
 compare data "archiver.data command"
+
+sh cgitest.sh request.data_wrong_method | grep -v "^Content-type:" >test/data_wrong_method
+compare data_wrong_method "archiver.data with wrong method"
+
+sh cgitest.sh request.data_wrong_channel | grep -v "^Content-type:" >test/data_wrong_channel
+compare data_wrong_channel "archiver.data with wrong channel"
 

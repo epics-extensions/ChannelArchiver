@@ -24,6 +24,6 @@
 <!-- count -->
 <param><value><i4>10</i4></value></param>
 <!-- how -->
-<param><value><i4>3</i4></value></param>
+<param><value><i4>99</i4></value></param>
 </params>
 </methodCall>

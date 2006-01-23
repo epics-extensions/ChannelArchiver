@@ -1,7 +1,4 @@
 <?xml version="1.0"?>
 <methodCall>
 <methodName>archiver.info</methodName>
-<params>
-<param><value><i4>41</i4></value></param>
-</params>
 </methodCall>

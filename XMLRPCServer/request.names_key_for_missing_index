@@ -3,7 +3,7 @@
 <methodName>archiver.names</methodName>
 <params>
 <!-- key -->
-<param><value><i4>1</i4></value></param>
+<param><value><i4>2</i4></value></param>
 <!-- name pattern -->
 <param><value><string></string></value></param>
 </params>

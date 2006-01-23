@@ -86,7 +86,11 @@ int main(int argc, char *argv[])
     }
     catch (GenericException &e)
     {
-	fprintf(stderr, "Error: %s", e.what());
+	fprintf(stderr, "Error:\n%s\n", e.what());
+    }
+    catch (...)
+    {
+	fprintf(stderr, "Unknown Error\n");
     }
     return 0;
 }

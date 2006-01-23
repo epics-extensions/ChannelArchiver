@@ -15,7 +15,7 @@ function check()
         echo "OK : $info"
     else
         echo "FAILED : $info. Check diff $output $previous"
-#        exit 1
+        exit 1
     fi
 }
 

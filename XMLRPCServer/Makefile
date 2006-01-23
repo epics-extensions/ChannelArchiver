@@ -56,3 +56,8 @@ cgiinstall:
 	cp O.$(EPICS_HOST_ARCH)/DummyDataServer /var/www/html/archive/cgi/DummyDataServer.cgi
 	cp O.$(EPICS_HOST_ARCH)/ArchiveDataServer /var/www/html/archive/cgi/ArchiveDataServer.cgi
 
+
+test:
+	sh test.sh
+	
+.PHONY: cgiinstall test

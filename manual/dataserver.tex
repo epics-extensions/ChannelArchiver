@@ -214,12 +214,13 @@ have a program ``ArchiveDataServerStandalone''.
 \begin{enumerate}
 \item For starters, you can test in the ``ChannelArchiver/DemoData''
       directory, but typically you would copy all ``abys*'' files and
-      directories from there into the directory to where you intend to
+      directories from there into the directory where you intend to
       run the standalone data server.
 \item Edit ``abyss.conf'' to suit your needs. Most users might only
-      have to adjust the ``Port'' option, which defaults to 8080.
+      have to adjust the ``Port'' option, which defaults to 8080,
+      and the ``ServerRoot'' variable.
 \item Run the data server with the abys config file and the path of
-  the archive's index. When inside DemoData, this would be an example:
+      the archive's index. When inside DemoData, this would be an example:
 \begin{lstlisting}[keywordstyle=\sffamily]
 > ArchiveDataServerStandalone abyss.conf index 
  ArchiveDataServerStandalone Running

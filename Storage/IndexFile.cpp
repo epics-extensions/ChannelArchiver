@@ -43,8 +43,9 @@ void IndexFile::open(const stdString &filename, bool readonly)
     }
     if (!f)
         throw GenericException(__FILE__, __LINE__,
-                               "IndexFile::open(%s) cannot %s file.",
-                               filename.c_str(), (new_file ? "create" : "open"));
+                               "Cannot %s file '%s'",
+                               (new_file ? "create" : "open"),
+                               filename.c_str());
     // TODO: Tune these two. All 0 seems best?!
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;

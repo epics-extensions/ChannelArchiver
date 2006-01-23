@@ -3,22 +3,21 @@
 #include <AutoPtr.h>
 // Storage
 #include <DataWriter.h>
+#include <RawDataReader.h>
 #include <DataFile.h>
+
+static const char *index_name = "test/data_writer.index";
+static const char *channel_name = "fred";
+static const size_t samples = 10000;
 
 TEST_CASE data_writer_test()
 {
-    stdString index_name = "test/data_writer.index";
-
-    TEST_DELETE_FILE(index_name.c_str());
+    TEST_DELETE_FILE(index_name);
     TEST_DELETE_FILE("test/data_writer.data");
-
-    stdString channel_name = "fred";
-    size_t samples = 10000;
-
     try
     {
         IndexFile index(50);
-        index.open(index_name.c_str(), false);
+        index.open(index_name, false);
     
         CtrlInfo info;
         info.setNumeric (2, "socks",
@@ -58,30 +57,33 @@ TEST_CASE data_writer_test()
     TEST_OK;
 }
 
-#if 0
+TEST_CASE data_writer_readback()
 {
-    ErrorInfo error_info;
-    IndexFile index(50);
+    size_t samples_read = 0;
+    try
+    {
+        IndexFile index(50);
+        index.open(index_name, true);
+        AutoPtr<DataReader> reader(new RawDataReader(index));
+        const RawValue::Data *data =
+            reader->find(channel_name, 0);
+        while (data)
+        {
+            ++samples_read;
+            data = reader->next();    
+        }
+        reader = 0;
+        DataFile::close_all();
+        index.close();
+    }
+    catch (GenericException &e)
+    {
+        printf("Exception:\n%s\n", e.what());
+        FAIL("DataWriter test failed");
+    }
+    TEST(samples_read == samples);
+    TEST_OK;
 
-    if (!index.open(index_name.c_str(), true, error_info))
-    {
-        fprintf(stderr, "%s\n", error_info.info.c_str());
-        return 0;
-    }
-    size_t samples = 0;
-    DataReader *reader = new RawDataReader(index);
-    const RawValue::Data *data =
-        reader->find(channel_name, 0, error_info);
-    while (data)
-    {
-        ++samples;
-        data = reader->next(error_info);    
-    }
-    delete reader;
-    DataFile::close_all();
-    index.close();
-    return samples;
 }
 
-#endif
 

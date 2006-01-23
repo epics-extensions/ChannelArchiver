@@ -14,6 +14,7 @@ extern TEST_CASE AverageReaderTest();
 extern TEST_CASE test_data_file();
 // Unit DataWriterTest:
 extern TEST_CASE data_writer_test();
+extern TEST_CASE data_writer_readback();
 // Unit FileAllocatorTest:
 extern TEST_CASE file_allocator_create_new_file();
 extern TEST_CASE file_allocator_open_existing();
@@ -81,6 +82,12 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\ndata_writer_test:\n");
         if (data_writer_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("\ndata_writer_readback:\n");
+        if (data_writer_readback())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

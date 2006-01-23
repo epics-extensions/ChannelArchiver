@@ -1,12 +1,12 @@
 // -*- c++ -*-
 
 // Tools
-#include "stdString.h"
+#include <stdString.h>
 // Storage
-#include "CtrlInfo.h"
-#include "RawValue.h"
+#include <CtrlInfo.h>
+#include <RawValue.h>
 // Index
-#include "IndexFile.h"
+#include <IndexFile.h>
 
 /// \addtogroup Storage
 /// @{

@@ -16,6 +16,8 @@
 ///
 /// For arrays that need to be removed via delete[],
 /// see AutoArrayPtr.
+///
+/// @see AutoArrayPtr
 template<class T>class AutoPtr
 {
 public:
@@ -97,9 +99,16 @@ private:
     T *ptr;
 };
 
+/// An auto-pointer for arrays.
+///
+/// The data must be allocates with new[],
+/// and it will be released via delete [].
+///
+/// @see AutoPtr
 template<class T>class AutoArrayPtr
 {
 public:
+    /// Create emptry AutoArrayPtr.
     AutoArrayPtr() : arr(0) {};
 
     /// Assign pointer to AutoArrayPtr.
@@ -124,12 +133,14 @@ public:
         return *this;
     }
 
+    /// Assign new pointer, delete the pointer currently held.
     AutoArrayPtr & operator = (T *p)
     {
         assign(p);
         return *this;
     }
     
+    /// @return Returns true if pointer is valid.
     operator bool () const
     {
         return arr != 0;

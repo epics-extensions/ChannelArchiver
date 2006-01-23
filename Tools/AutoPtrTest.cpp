@@ -117,3 +117,26 @@ TEST_CASE test_autoarray_autoptr()
     TEST_OK;
 }
 
+// Combined test: Array of ordinary pointers.
+// The ordinary pointers are of course not managed.
+TEST_CASE test_autoarray_ordptr()
+{
+    X::deletes = 0;
+    {
+        AutoArrayPtr< X * > array(new X * [5]);
+        int i;
+        for (i=0; i<5; ++i)
+        {
+            array[i] = new X;
+            array[i]->val = i;
+        }
+        for (i=0; i<5; ++i)
+        {
+           TEST(array[i]->val == i);
+           delete array[i];
+        }
+    }
+    TEST_MSG(X::deletes == 5, "All classes were auto-deleted");
+    TEST_OK;
+}
+

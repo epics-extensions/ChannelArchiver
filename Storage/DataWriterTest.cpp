@@ -69,8 +69,10 @@ TEST_CASE data_writer_readback()
             reader->find(channel_name, 0);
         while (data)
         {
-            ++samples_read;
+            if (samples_read != ((const dbr_time_double *)data)->value)
+                 FAIL("Value read back doesn't contain expected number");
             data = reader->next();    
+            ++samples_read;
         }
         reader = 0;
         DataFile::close_all();

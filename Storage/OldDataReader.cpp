@@ -8,16 +8,12 @@
 #include "OldDataReader.h"
 
 OldDataReader::OldDataReader(OldDirectoryFile &index)
-        : index(index), data(0), header(0)
+  : index(index)
 {
 }
 
 OldDataReader::~OldDataReader()
 {
-    if (data)
-        RawValue::free(data);
-    if (header)
-        delete header;
     DataFile::clear_cache();
 }
 
@@ -52,7 +48,6 @@ const RawValue::Data *OldDataReader::find(
         {
             if (!header->read_prev())
             {
-                delete header;
                 header = 0;
                 LOG_MSG("OldDataReader: No data for '%s'\n",
                         channel_name.c_str());
@@ -60,7 +55,6 @@ const RawValue::Data *OldDataReader::find(
             }
             epicsTime2string(epicsTime(header->data.begin_time), txt);
             printf("header: %s\n", txt.c_str());
-
         }
         // Have header <= *start
     }
@@ -78,28 +72,10 @@ const RawValue::Data *OldDataReader::find(
     }
     dbr_type = header->data.dbr_type;
     dbr_count = header->data.dbr_count;
-    if (!ctrl_info.read(header->datafile,
-                        header->data.ctrl_info_offset))
-    {
-        LOG_MSG("OldDataReader(%s): header in %s @ 0x%lX"
-                " has bad CtrlInfo\n",
-                channel_name.c_str(),
-                header->datafile->getBasename().c_str(),
-                (unsigned long)header->offset);
-        delete header;
-        header = 0;
-        return 0;     
-    }
+    ctrl_info.read(header->datafile,
+                   header->data.ctrl_info_offset);
     raw_value_size = RawValue::getSize(dbr_type, dbr_count);
     data = RawValue::allocate(dbr_type, dbr_count, 1);
-    if (!data)
-    {
-        LOG_MSG("OldDataReader: Cannot alloc data for '%s'\n",
-                channel_name.c_str());
-        delete header;
-        header = 0;
-        return 0;
-    }
     val_idx = 0;
     type_changed = false;
     ctrl_info_changed = false;
@@ -125,14 +101,9 @@ const RawValue::Data *OldDataReader::find(
             val_idx /= 2;
             
             offset = offset0 + val_idx * raw_value_size;
-            if (! RawValue::read(this->dbr_type, this->dbr_count,
-                                 raw_value_size, data,
-                                 header->datafile, offset))
-            {
-                delete header;
-                header = 0;
-                return 0;
-            }
+            RawValue::read(this->dbr_type, this->dbr_count,
+                           raw_value_size, data,
+                           header->datafile, offset);
             stamp = RawValue::getTime(data);
             ///
             stdString stamp_txt;
@@ -177,12 +148,6 @@ const RawValue::Data *OldDataReader::next()
             getHeader(header->datafile->getDirname(),
                       header->data.next_file,
                       header->data.next_offset);
-        if (!new_header)
-        {
-            delete header;
-            header = 0;
-            return 0;
-        }
         // See if CtrlInfo has changed
         if (new_header->data.ctrl_info_offset !=
             header->data.ctrl_info_offset          ||
@@ -190,20 +155,8 @@ const RawValue::Data *OldDataReader::next()
             header->datafile->getFilename())
         {
             CtrlInfo new_ctrl_info;
-            if (!new_ctrl_info.read(
-                    new_header->datafile,
-                    new_header->data.ctrl_info_offset))
-            {
-                LOG_MSG("OldDataReader(%s): header in %s @ 0x%lX"
-                        " has bad CtrlInfo\n",
-                        channel_name.c_str(),
-                        new_header->datafile->getBasename().c_str(),
-                        (unsigned long)new_header->offset);
-                delete new_header;
-                delete header;
-                header = 0;
-                return 0;
-            }
+            new_ctrl_info.read(new_header->datafile,
+                               new_header->data.ctrl_info_offset);
             // When we switch files, we read a new CtrlInfo,
             // but it might contain the same values, so compare:
             if (new_ctrl_info != ctrl_info)
@@ -213,7 +166,6 @@ const RawValue::Data *OldDataReader::next()
             }
         }
         // Switch to new header
-        delete header;
         header = new_header;
         // Check for type change
         if (header->data.dbr_type != dbr_type  ||
@@ -221,17 +173,8 @@ const RawValue::Data *OldDataReader::next()
         {
             dbr_type = header->data.dbr_type;
             dbr_count = header->data.dbr_count;
-            RawValue::free(data);
             raw_value_size = RawValue::getSize(dbr_type, dbr_count);
             data = RawValue::allocate(dbr_type, dbr_count, 1);
-            if (!data)
-            {
-                LOG_MSG("OldDataReader: Cannot alloc data for '%s'\n",
-                        channel_name.c_str());
-                delete header;
-                header = 0;
-                return 0;
-            }
             type_changed = true;
         }
     }
@@ -240,14 +183,9 @@ const RawValue::Data *OldDataReader::next()
         header->offset
         + sizeof(DataHeader::DataHeaderData)
         + val_idx * raw_value_size;
-    if (! RawValue::read(this->dbr_type, this->dbr_count,
-                         raw_value_size, data,
-                         header->datafile, offset))
-    {
-        delete header;
-        header = 0;
-        return 0;
-    }
+    RawValue::read(this->dbr_type, this->dbr_count,
+                   raw_value_size, data,
+                   header->datafile, offset);
     ++val_idx;
     return data;
 }
@@ -262,21 +200,8 @@ DataHeader *OldDataReader::getHeader(const stdString &dirname,
         return 0;
     DataFile *datafile =
         DataFile::reference(dirname, basename, false);
-    if (!datafile)
-    {
-        LOG_MSG("OldDataReader(%s) cannot open data file %s\n",
-                channel_name.c_str(), basename.c_str());
-        return 0;
-    }
     DataHeader *new_header = datafile->getHeader(offset);
     datafile->release(); // now ref'ed by header
-    if (!new_header)
-    {
-        LOG_MSG("OldDataReader(%s): cannot get header %s @ 0x%lX\n",
-                channel_name.c_str(),
-                basename.c_str(), (unsigned long)offset);
-        return 0;
-    }
     return new_header;
 }
 

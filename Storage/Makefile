@@ -31,8 +31,8 @@ INC += SpreadsheetReader.h
 # Old
 LIB_SRCS += HashTable.cpp
 LIB_SRCS += OldDirectoryFile.cpp
-#LIB_SRCS += OldDataWriter.cpp
-#LIB_SRCS += OldDataReader.cpp
+LIB_SRCS += OldDataWriter.cpp
+LIB_SRCS += OldDataReader.cpp
 # Current
 LIB_SRCS += CtrlInfo.cpp
 LIB_SRCS += RawValue.cpp

@@ -53,10 +53,10 @@ private:
     size_t next_buffer_size;
 
     OldDirectoryFileIterator dfi;
-    class DataHeader *header;
+    AutoPtr<class DataHeader> header;
     size_t available;
     MemoryBuffer<dbr_time_string> cvt_buffer;
 
-    bool addNewHeader(bool new_ctrl_info);
+    void addNewHeader(bool new_ctrl_info);
 };
 /// @}

@@ -62,9 +62,9 @@ private:
     OldDirectoryFile &index;
     DataFile *datafile;
     stdString channel_name;
-    RawValue::Data *data;
+    RawValueAutoPtr data;
     size_t raw_value_size;
-    class DataHeader *header;
+    AutoPtr<class DataHeader> header;
     size_t val_idx; // current index in data buffer
 
     DataHeader *getHeader(const stdString &dirname,

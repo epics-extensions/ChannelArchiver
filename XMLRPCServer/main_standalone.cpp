@@ -5,6 +5,7 @@
 #include <sys/time.h>
 // Tools
 #include <MsgLogger.h>
+#include <AutoPtr.h>
 // XML-RPC
 #include <xmlrpc.h>
 #include <xmlrpc_abyss.h>
@@ -28,27 +29,25 @@ bool get_config(xmlrpc_env *env, ServerConfig &config)
 // Return open index for given key or 0
 IndexFile *open_index(xmlrpc_env *env, int key)
 {
-    stdString index_name;
-    if (!the_config.find(key, index_name))
+    try
     {
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
-                                       "Invalid key %d", key);
-        return 0;
-    } 
-    LOG_MSG("Open index, key %d = '%s'\n", key, index_name.c_str());
-    IndexFile *index = new IndexFile(50);
-    if (!index)
-    {
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
-                                       "Cannot allocate index");
-        return 0;
+        stdString index_name;
+        if (!the_config.find(key, index_name))
+        {
+            xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
+                                           "Invalid key %d", key);
+            return 0;
+        } 
+        LOG_MSG("Open index, key %d = '%s'\n", key, index_name.c_str());
+        AutoPtr<IndexFile> index(new IndexFile(50));
+        index->open(index_name, true);
+        return index.release();
     }
-    ErrorInfo error_info;
-    if (index->open(index_name, true, error_info))
-        return index;
-    delete index;
-    xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
-                                   "%s", error_info.info.c_str());
+    catch (GenericException &e)
+    {
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
+                                       "%s", e.what());
+    }
     return 0;
 }
 

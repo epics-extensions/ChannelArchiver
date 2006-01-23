@@ -145,6 +145,12 @@ public:
     {
         return arr != 0;
     }
+
+    /// @return Returns the current value.
+    T * get() const
+    {
+        return arr;
+    }
     
     /// Access one array element.
     T & operator [] (size_t i) const

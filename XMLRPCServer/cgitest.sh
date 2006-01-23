@@ -16,7 +16,12 @@ export CONTENT_TYPE=text/xml
 export CONTENT_LENGTH=`wc -c <$REQUEST`
 export SERVERCONFIG=`pwd`/test_config.xml
 # echo "Length: $CONTENT_LENGTH"
-cat $REQUEST | O.${EPICS_HOST_ARCH}/ArchiveDataServer
+if [ x$VALGRIND = x ]
+then
+	cat $REQUEST | O.${EPICS_HOST_ARCH}/ArchiveDataServer
+else
+	cat $REQUEST | valgrind  --leak-check=yes --show-reachable=yes --num-callers=10 --suppressions=../Tools/valgrind.supp O.${EPICS_HOST_ARCH}/ArchiveDataServer
+fi
 
 #cat /tmp/archserver.log
 #rm /tmp/archserver.log

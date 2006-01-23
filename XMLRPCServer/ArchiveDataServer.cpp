@@ -22,37 +22,86 @@
 
 #define LOGFILE
 
+/// Auto-Ptr for XmlRpcValue.
+///
+/// Will remove the reference to the value (DECREF)
+/// unless the pointer is 'released' from the AutoXmlRpcValue.
 class AutoXmlRpcValue
 {
 public:
+    /// Constructor initializes with given pointer.
     AutoXmlRpcValue(xmlrpc_value *val = 0) 
             : val(val) 
-    {}
+    {
+#ifdef DEBUG_AUTOXMLRPCVALUE
+        LOG_MSG("AutoXmlRpcValue 0x%lX\n", (unsigned long)val);
+#endif
+    }
 
+    /// Desctructor decrements the refererence.
     ~AutoXmlRpcValue()
     {
         set(0);
     }
 
+    /// Set to (different) pointer.
+    ///
+    /// Will decrement reference to current one.
     void set(xmlrpc_value *nval)
     {
         if (val)
+        {
+#ifdef DEBUG_AUTOXMLRPCVALUE
+            LOG_MSG("AutoXmlRpcValue 0x%lX released\n", (unsigned long)val);
+#endif
             xmlrpc_DECREF(val);
+        }
         val = nval;
+#ifdef DEBUG_AUTOXMLRPCVALUE
+        LOG_MSG("AutoXmlRpcValue 0x%lX\n", (unsigned long)val);
+#endif
     }       
 
-    operator bool () const
+    /// @see set
+    AutoXmlRpcValue & operator = (xmlrpc_value *nval)
     {
+        set(nval);
+        return *this;
+    }
+
+    /// @return True if current pointer is valid.
+    operator bool () const
+    { 
         return val != 0;
     }
-    
+
+    /// @return Return the current pointer.
     operator xmlrpc_value * () const
     {
         return val;
     }
 
+    /// @return Return the current pointer.
+    xmlrpc_value * get() const
+    {
+        return val;
+    }
+
+    /// Release the pointer so that it will <u>not</u> be auto-decremented.
+    ///
+    /// After this call, the AutoXmlRpcValue is empty (0, invalid).
+    ///
+    /// @return Return the current pointer.    
+    xmlrpc_value * release()
+    {
+        xmlrpc_value *copy = val;
+        val = 0;
+        return copy;
+    }
+    
 private:
     xmlrpc_value *val;
+    AutoXmlRpcValue & operator = (AutoXmlRpcValue &rhs);
 };
 
 // Some compilers have "finite()",
@@ -99,8 +148,9 @@ public:
                                     "name", info.name.c_str(),
                                     "start_sec", ss, "start_nano", sn,
                                     "end_sec", es,   "end_nano", en));
-        if (channel)
-            xmlrpc_array_append_item(user_arg->env, user_arg->result, channel);
+        if (user_arg->env->fault_occurred)
+            return;
+        xmlrpc_array_append_item(user_arg->env, user_arg->result, channel);
     }
 };
 
@@ -278,8 +328,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
                                long count,
                                ReaderFactory::How how, double delta)
 {
-    ErrorInfo error_info;
-    xmlrpc_value   *results = 0;
+    AutoXmlRpcValue results;
 #ifdef LOGFILE
     stdString txt;
     LOG_MSG("get_channel_data\n");
@@ -287,103 +336,76 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
     LOG_MSG("End  :  %s\n", epicsTimeTxt(end, txt));
     LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
 #endif
-    AutoPtr<IndexFile> index(open_index(env, key));
-    if (env->fault_occurred)
-        return 0;
-    AutoPtr<DataReader> reader(ReaderFactory::create(*index, how, delta));
-    if (!reader)
+    try
     {
-#ifdef LOGFILE
-        LOG_MSG("Cannot create reader\n");
-#endif
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
-                                       "Cannot create reader");
-        goto exit_get_channel_data;
-    }
-    results = xmlrpc_build_value(env, "()");
-    if (env->fault_occurred)
-        goto exit_get_channel_data;
-    const RawValue::Data *data;
-    xmlrpc_value *result, *meta, *values;
-    xmlrpc_int32 xml_type, xml_count;
-    long i, num_vals, name_count;
-    name_count = names.size();
-    for (i=0; i<name_count; ++i)
-    {
-#ifdef LOGFILE
-        LOG_MSG("Handling '%s'\n", names[i].c_str());
-#endif
-        num_vals = 0;
-        values = xmlrpc_build_value(env, "()");
+        AutoPtr<IndexFile> index(open_index(env, key));
         if (env->fault_occurred)
-            goto exit_get_channel_data;
-        data = reader->find(names[i], &start, error_info);
-        if (data == 0)
+            return 0;
+        AutoPtr<DataReader> reader(ReaderFactory::create(*index, how, delta));
+        results = xmlrpc_build_value(env, "()");
+        if (env->fault_occurred)
+            return 0;
+        long i, name_count = names.size();
+        for (i=0; i<name_count; ++i)
         {
-            if (error_info.error)
-            {
 #ifdef LOGFILE
-                LOG_MSG("Error: %s\n", error_info.info.c_str());
+            LOG_MSG("Handling '%s'\n", names[i].c_str());
 #endif
-                xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
-                                               "%s", error_info.info.c_str());
-                goto exit_get_channel_data;
+            long num_vals = 0;            
+            AutoXmlRpcValue values(xmlrpc_build_value(env, "()"));
+            if (env->fault_occurred)
+                return 0;
+            const RawValue::Data *data = reader->find(names[i], &start);
+            AutoXmlRpcValue meta;
+            xmlrpc_int32 xml_type, xml_count;
+            if (data == 0)
+            {   // No exception from file error etc., just no data.
+                meta = encode_ctrl_info(env, 0);
+                xml_type = XML_ENUM;
+                xml_count = 1;
             }
-            /* else: No file error etc., just no data */
-            meta = encode_ctrl_info(env, 0);
-            xml_type = XML_ENUM;
-            xml_count = 1;
-        }
-        else
-        {
-            // Fix meta/type/count based on first value
-            meta = encode_ctrl_info(env, &reader->getInfo());
-            dbr_type_to_xml_type(reader->getType(), reader->getCount(),
-                                 xml_type, xml_count);
-            while (num_vals < count
-                   && data
-                   && RawValue::getTime(data) < end)
+            else
             {
-                encode_value(env, reader->getType(), reader->getCount(),
-                             RawValue::getTime(data), data,
-                             xml_type, xml_count, values);
-                 ++num_vals;
-                 data = reader->next(error_info);
-                 if (error_info.error)
-                 {
-#ifdef LOGFILE
-                     LOG_MSG("Error: %s\n", error_info.info.c_str());
-#endif
-                     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
-                                                    "%s", error_info.info.c_str());
-                     goto exit_get_channel_data;
-                 }
+                // Fix meta/type/count based on first value
+                meta = encode_ctrl_info(env, &reader->getInfo());
+                dbr_type_to_xml_type(reader->getType(), reader->getCount(),
+                                     xml_type, xml_count);
+                while (num_vals < count
+                       && data
+                       && RawValue::getTime(data) < end)
+                {
+                    encode_value(env, reader->getType(), reader->getCount(),
+                                 RawValue::getTime(data), data,
+                                 xml_type, xml_count, values);
+                    ++num_vals;
+                    data = reader->next();
+                }
             }
-        }
-        // Assemble result = { name, meta, type, count, values }
-        result = xmlrpc_build_value(env, "{s:s,s:V,s:i,s:i,s:V}",
-                                    "name",   names[i].c_str(),
-                                    "meta",   meta,
-                                    "type",   xml_type,
-                                    "count",  xml_count,
-                                    "values", values);
-        xmlrpc_DECREF(meta);
-        xmlrpc_DECREF(values);
-        // Add to result array
-        xmlrpc_array_append_item(env, results, result);
-        xmlrpc_DECREF(result);
+            // Assemble result = { name, meta, type, count, values }
+            AutoXmlRpcValue result(xmlrpc_build_value(
+                                       env, "{s:s,s:V,s:i,s:i,s:V}",
+                                       "name",   names[i].c_str(),
+                                       "meta",   (xmlrpc_value *)meta,
+                                       "type",   xml_type,
+                                       "count",  xml_count,
+                                       "values", (xmlrpc_value *)values));
+            // Add to result array
+            xmlrpc_array_append_item(env, results, result);
 #ifdef LOGFILE
-        LOG_MSG("%ld values\n", num_vals);
+            LOG_MSG("%ld values\n", num_vals);
 #endif
+        } // for ( .. name .. )
     }
-  exit_get_channel_data:
-    index->close();
-    if (env->fault_occurred  &&  results)
+    catch (GenericException &e)
     {
-        xmlrpc_DECREF(results);
-        results = 0;
+#ifdef LOGFILE
+        LOG_MSG("Error:\n%s\n", e.what());
+#endif
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
+                                       "%s", e.what());
+        return 0;
     }
-    return results;
+    return results.release();
 }
 
 // Return the data for all the names[], start .. end etc.
@@ -398,130 +420,96 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
                              long count,
                              ReaderFactory::How how, double delta)
 {
-    ErrorInfo error_info;
-    xmlrpc_value *results = 0, **meta = 0, **values = 0;
-    xmlrpc_int32 *xml_type = 0, *xml_count = 0;
-    long i, num_vals = 0, name_count = names.size();
-    bool ok = false;
-#ifdef LOGFILE
-    stdString txt;
-    LOG_MSG("get_sheet_data\n");
-    LOG_MSG("Start : %s\n", epicsTimeTxt(start, txt));
-    LOG_MSG("End   : %s\n", epicsTimeTxt(end, txt));
-    LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
-#endif
-    AutoPtr<IndexFile> index(open_index(env, key));
-    if (env->fault_occurred)
-        return 0;
-    AutoPtr<SpreadsheetReader> sheet(new SpreadsheetReader(*index, how, delta));
-    if (!sheet)
+    try
     {
 #ifdef LOGFILE
-        LOG_MSG("Cannot create SpreadsheetReader\n");
-#endif
-        goto exit_get_sheet_data;
-    }
-    results = xmlrpc_build_value(env, "()");
-    if (env->fault_occurred)
-        goto exit_get_sheet_data;
-    meta     = (xmlrpc_value **) calloc(name_count, sizeof(xmlrpc_value *));
-    values   = (xmlrpc_value **) calloc(name_count, sizeof(xmlrpc_value *));
-    xml_type  = (xmlrpc_int32 *) calloc(name_count, sizeof(xmlrpc_int32));
-    xml_count = (xmlrpc_int32 *) calloc(name_count, sizeof(xmlrpc_int32));
-    if (! (results && meta && values && xml_type && xml_count))
-        goto exit_get_sheet_data;
-    ok = sheet->find(names, &start, error_info);
-    if (error_info.error)
-    {
-#ifdef LOGFILE
-        LOG_MSG("Error: %s\n", error_info.info.c_str());
-#endif
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
-                                       "%s", error_info.info.c_str());
-        goto exit_get_sheet_data;
-    }
-    for (i=0; i<name_count; ++i)
-    {
-#ifdef LOGFILE
-        LOG_MSG("Handling '%s'\n", names[i].c_str());
-#endif
-        values[i] = xmlrpc_build_value(env, "()");            
+        stdString txt;
+        LOG_MSG("get_sheet_data\n");
+        LOG_MSG("Start : %s\n", epicsTimeTxt(start, txt));
+        LOG_MSG("End   : %s\n", epicsTimeTxt(end, txt));
+        LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
+ #endif
+        AutoPtr<IndexFile> index(open_index(env, key));
         if (env->fault_occurred)
-            goto exit_get_sheet_data;
-        if (ok)
-        {   // Fix meta/type/count based on first value
-            meta[i] = encode_ctrl_info(env, &sheet->getCtrlInfo(i));
-            dbr_type_to_xml_type(sheet->getType(i), sheet->getCount(i),
-                                 xml_type[i], xml_count[i]);
-        }
-        else
-        {   // Channel exists, but has no data
-            meta[i] = encode_ctrl_info(env, 0);
-            xml_type[i] = XML_ENUM;
-            xml_count[i] = 1;
-        }
-    }
-    while (ok && num_vals < count && sheet->getTime() < end)
-    {
+            return 0;
+
+        AutoPtr<SpreadsheetReader> sheet(new SpreadsheetReader(*index, how, delta));
+    
+        AutoXmlRpcValue results(xmlrpc_build_value(env, "()"));
+        if (env->fault_occurred)
+            return 0;    
+
+        long name_count = names.size();
+        AutoArrayPtr<AutoXmlRpcValue> meta     (new AutoXmlRpcValue[name_count]);
+        AutoArrayPtr<AutoXmlRpcValue> values   (new AutoXmlRpcValue[name_count]);
+        AutoArrayPtr<xmlrpc_int32>    xml_type (new xmlrpc_int32[name_count]);
+        AutoArrayPtr<xmlrpc_int32>    xml_count(new xmlrpc_int32[name_count]);
+        bool ok = sheet->find(names, &start);
+        long i;
+        // Per-channel meta-info.
         for (i=0; i<name_count; ++i)
         {
-            encode_value(env,
-                         sheet->getType(i), sheet->getCount(i),
-                         sheet->getTime(), sheet->getValue(i),
-                         xml_type[i], xml_count[i], values[i]);
-            
+#ifdef LOGFILE
+            LOG_MSG("Handling '%s'\n", names[i].c_str());
+#endif
+            values[i] = xmlrpc_build_value(env, "()");            
+            if (env->fault_occurred)
+                return 0;
+            if (ok)
+            {   // Fix meta/type/count based on first value
+                meta[i] = encode_ctrl_info(env, &sheet->getInfo(i));
+                dbr_type_to_xml_type(sheet->getType(i), sheet->getCount(i),
+                                     xml_type[i], xml_count[i]);
+            }
+            else
+            {   // Channel exists, but has no data
+                meta[i] = encode_ctrl_info(env, 0);
+                xml_type[i] = XML_ENUM;
+                xml_count[i] = 1;
+            }
         }
-        ++num_vals;
-        ok = sheet->next(error_info);
-        if (error_info.error)
+        // Collect values
+        long num_vals = 0;
+        while (ok && num_vals < count && sheet->getTime() < end)
         {
-#ifdef LOGFILE
-            LOG_MSG("Error: %s\n", error_info.info.c_str());
-#endif
-            xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
-                                           "%s", error_info.info.c_str());
-            goto exit_get_sheet_data;
+            for (i=0; i<name_count; ++i)
+            {
+                encode_value(env,
+                             sheet->getType(i), sheet->getCount(i),
+                             sheet->getTime(), sheet->get(i),
+                             xml_type[i], xml_count[i], values[i]);
+                
+            }
+            ++num_vals;
+            ok = sheet->next();
         }
-    }
-    for (i=0; i<name_count; ++i)
-    {   // Assemble result = { name, meta, type, count, values }
-        xmlrpc_value *result =
-            xmlrpc_build_value(env, "{s:s,s:V,s:i,s:i,s:V}",
-                               "name",   names[i].c_str(),
-                               "meta",   meta[i],
-                               "type",   xml_type[i],
-                               "count",  xml_count[i],
-                               "values", values[i]);    
-        // Add to result array
-        xmlrpc_array_append_item(env, results, result);
-        xmlrpc_DECREF(result);
-    }
+        // Assemble result = { name, meta, type, count, values }
+        for (i=0; i<name_count; ++i)
+        {
+            AutoXmlRpcValue result(
+                xmlrpc_build_value(env, "{s:s,s:V,s:i,s:i,s:V}",
+                                   "name",   names[i].c_str(),
+                                   "meta",   meta[i].get(),
+                                   "type",   xml_type[i],
+                                   "count",  xml_count[i],
+                                   "values", values[i].get()));    
+            // Add to result array
+            xmlrpc_array_append_item(env, results, result);
+        }
 #ifdef LOGFILE
-    LOG_MSG("%ld values total\n", num_vals);
+        LOG_MSG("%ld values total\n", num_vals);
 #endif
-  exit_get_sheet_data:
-    index->close();
-    for (i=0; i<name_count; ++i)
-    {
-        if (meta && meta[i])
-            xmlrpc_DECREF(meta[i]);
-        if (values && values[i])
-            xmlrpc_DECREF(values[i]);
+        return results.release();
     }
-    if (xml_count)
-        free(xml_count);
-    if (xml_type)
-        free(xml_type);
-    if (values)
-        free(values);
-    if (meta)
-        free(meta);
-    if (env->fault_occurred && results)
+    catch (GenericException &e)
     {
-        xmlrpc_DECREF(results);
-        results = 0;
+#ifdef LOGFILE
+        LOG_MSG("Error:\n%s\n", e.what());
+#endif
+        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_DATA_ERROR,
+                                       "%s", e.what());
     }
-    return results;
+    return 0;
 }
 
 // ---------------------------------------------------------------------
@@ -537,39 +525,41 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
     LOG_MSG("archiver.info\n");
 #endif
     int i;
-    char txt[500];
     const char *config = get_config_name(env);
     if (!config)
         return 0;
 #ifdef LOGFILE
     LOG_MSG("config: '%s'\n", config);
 #endif
-    sprintf(txt,
+    char description[500];
+    sprintf(description,
             "Channel Archiver Data Server V%d,\n"
             "built " __DATE__ ", " __TIME__ "\n"
             "from sources for version " ARCH_VERSION_TXT "\n"
             "Config: '%s'\n",
             ARCH_VER, config);
-    xmlrpc_value *how = xmlrpc_build_value(env, "(sssss)",
+    AutoXmlRpcValue how(xmlrpc_build_value(env, "(sssss)",
                                            "raw",
                                            "spreadsheet",
                                            "average",
                                            "plot-binning",
-                                           "linear");
-    if (!how)
-    {
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
-                                       "Cannot create how");
+                                           "linear"));
+    if (env->fault_occurred)
         return 0;
-    }
-    xmlrpc_value *element, *status = xmlrpc_build_value(env, "()");
+    // 'status': array of all status string.
+    AutoXmlRpcValue element;
+    AutoXmlRpcValue status(xmlrpc_build_value(env, "()"));
+    if (env->fault_occurred)
+        return 0;
     for (i=0; i<=lastEpicsAlarmCond; ++i)
     {
         element = xmlrpc_build_value(env, "s", alarmStatusString[i]);
         xmlrpc_array_append_item(env, status, element);
-        xmlrpc_DECREF(element);
+        if (env->fault_occurred)
+            return 0;
     }
-    xmlrpc_value *severity = xmlrpc_build_value(env, "()");
+    // 'severity': array of all severity strings.
+    AutoXmlRpcValue severity(xmlrpc_build_value(env, "()"));
     for (i=0; i<=lastEpicsAlarmSev; ++i)
     {
         element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
@@ -578,53 +568,47 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
                                      "has_value", (xmlrpc_bool) 1,
                                      "txt_stat", (xmlrpc_bool) 1);
         xmlrpc_array_append_item(env, severity, element);
-        xmlrpc_DECREF(element);
+        if (env->fault_occurred)
+            return 0;
     }
+    // ... including the archive-specific ones.
     element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
                                  "num", (xmlrpc_int32)ARCH_EST_REPEAT,
                                  "sevr", "Est_Repeat",
                                  "has_value", (xmlrpc_bool) 1,
                                  "txt_stat", (xmlrpc_bool) 0);
     xmlrpc_array_append_item(env, severity, element);
-    xmlrpc_DECREF(element);
     element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
                                  "num", (xmlrpc_int32)ARCH_REPEAT,
                                  "sevr", "Repeat",
                                  "has_value", (xmlrpc_bool) 1,
                                  "txt_stat", (xmlrpc_bool) 0);
     xmlrpc_array_append_item(env, severity, element);
-    xmlrpc_DECREF(element);
     element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
                                  "num", (xmlrpc_int32)ARCH_DISCONNECT,
                                  "sevr", "Disconnected",
                                  "has_value", (xmlrpc_bool) 0,
                                  "txt_stat", (xmlrpc_bool) 1);
     xmlrpc_array_append_item(env, severity, element);
-    xmlrpc_DECREF(element);
     element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
                                  "num", (xmlrpc_int32)ARCH_STOPPED,
                                  "sevr", "Archive_Off",
                                  "has_value", (xmlrpc_bool) 0,
                                  "txt_stat", (xmlrpc_bool) 1);
     xmlrpc_array_append_item(env, severity, element);
-    xmlrpc_DECREF(element);
     element = xmlrpc_build_value(env, "{s:i,s:s,s:b,s:b}",
                                  "num", (xmlrpc_int32)ARCH_DISABLED,
                                  "sevr", "Archive_Disabled",
                                  "has_value", (xmlrpc_bool) 0,
                                  "txt_stat", (xmlrpc_bool) 1);
     xmlrpc_array_append_item(env, severity, element);
-    xmlrpc_DECREF(element);
-    xmlrpc_value *result = xmlrpc_build_value(env, "{s:i,s:s,s:V,s:V,s:V}",
-                                              "ver", ARCH_VER,
-                                              "desc", txt,
-                                              "how", how,
-                                              "stat", status,
-                                              "sevr", severity);
-    xmlrpc_DECREF(severity);
-    xmlrpc_DECREF(status);
-    xmlrpc_DECREF(how);
-    return result;
+    // Overall result.
+    return xmlrpc_build_value(env, "{s:i,s:s,s:V,s:V,s:V}",
+                              "ver", ARCH_VER,
+                              "desc", description,
+                              "how", how.get(),
+                              "stat", status.get(),
+                              "sevr", severity.get());
 }
 
 // {int32 key, string name, string path}[] = archiver.archives()
@@ -638,25 +622,20 @@ xmlrpc_value *get_archives(xmlrpc_env *env, xmlrpc_value *args, void *user)
     if (!get_config(env, config))
         return 0;
     // Create result
-    xmlrpc_value *result = xmlrpc_build_value(env, "()");
-    if (!result)
-    {
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
-                                       "Cannot create result");
+    AutoXmlRpcValue result(xmlrpc_build_value(env, "()"));
+    if (env->fault_occurred)
         return 0;
-    }
     stdList<ServerConfig::Entry>::const_iterator i;
     for (i=config.config.begin(); i!=config.config.end(); ++i)
     {
-        xmlrpc_value *archive =
+        AutoXmlRpcValue archive(
             xmlrpc_build_value(env, "{s:i,s:s,s:s}",
                                "key",  i->key,
                                "name", i->name.c_str(),
-                               "path", i->path.c_str());
+                               "path", i->path.c_str()));
         xmlrpc_array_append_item(env, result, archive);
-        xmlrpc_DECREF(archive);
     }
-    return result;
+    return result.release();
 }
 
 // {string name, int32 start_sec, int32 start_nano,
@@ -670,19 +649,15 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
     // Get args, maybe setup pattern
     AutoPtr<RegularExpression> regex;
     xmlrpc_int32 key;
-    char *pattern;
-    size_t pattern_len; 
+    char *pattern = 0;
+    size_t pattern_len = 0; 
     xmlrpc_parse_value(env, args, "(is#)", &key, &pattern, &pattern_len);
     if (env->fault_occurred)
         return 0;
     // Create result
-    xmlrpc_value *result = xmlrpc_build_value(env, "()");
-    if (!result)
-    {
-        xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
-                                       "Cannot create result");
+    AutoXmlRpcValue result(xmlrpc_build_value(env, "()"));
+    if (env->fault_occurred)
         return 0;
-    }
     try
     {
         if (pattern_len > 0)
@@ -703,8 +678,7 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
             if (regex && !regex->doesMatch(ni.getName()))
                 continue; // skip what doesn't match regex
             info.name = ni.getName();
-            ErrorInfo error_info;
-            AutoPtr<RTree> tree(index->getTree(info.name, directory, error_info));
+            AutoPtr<RTree> tree(index->getTree(info.name, directory));
             if (tree)
                 tree->getInterval(info.start, info.end);
             else // Is this an error?
@@ -728,10 +702,9 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
     {
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_SERV_FAULT,
                                        (char *) e.what());
-        xmlrpc_DECREF(result);
-        result = 0;
+        return 0;
     }
-    return result;
+    return result.release();
 }
 
 // very_complex_array = archiver.values(key, names[], start, end, ...)

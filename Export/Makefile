@@ -25,5 +25,8 @@ include $(TOP)/configure/RULES
 test:
 	sh test.sh
 
-.PHONY: test
+valgrind:
+	IN_VALGRIND=1 valgrind $(VALGRIND_FLAGS) O.$(EPICS_HOST_ARCH)/ArchiveExport ../DemoData/index fred janet
+
+.PHONY: test valgrind
 

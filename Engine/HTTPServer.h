@@ -17,6 +17,7 @@
 #include <ToolsConfig.h>
 #include <NetTools.h>
 #include <Guard.h>
+#include <AutoPtr.h>
 // Engine
 #include "HTMLPage.h"
 
@@ -26,7 +27,7 @@
 //     3: Connect & cleanup
 //     4: Requests
 //     5: whatever
-#define HTTPD_DEBUG 3
+#define HTTPD_DEBUG 5
 
 // Maximum number of clients that we accept.
 // This includes connections that are "done"
@@ -82,13 +83,6 @@ public:
     bool isShuttingDown() const
     {   return go == false; }    
 
-    void UpdateClientDuration(double runtime)
-    {
-        client_list_mutex.lock();
-        client_duration = 0.99*client_duration + 0.01*runtime;
-        client_list_mutex.unlock();
-    }
-    
 private:
     HTTPServer(SOCKET socket);
     epicsThread                           thread;
@@ -97,9 +91,13 @@ private:
     size_t                                total_clients;
     double                                client_duration; // seconds; averaged
     epicsMutex                            client_list_mutex;
-    stdList<class HTTPClientConnection *> clients;
+    AutoArrayPtr< AutoPtr<class HTTPClientConnection> > clients;
+
+    // Create a new HTTPClientConnection, add to 'clients'.
+    void start_client(SOCKET peer);
+
     // returns # of clients that are still active
-    size_t cleanup();
+    size_t client_cleanup();
 };
 
 typedef void (*PathHandler) (class HTTPClientConnection *connection,

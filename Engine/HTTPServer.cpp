@@ -42,7 +42,7 @@
 // 
 // Therefore HTTPClientConnection::run() marks itself
 // as "done" and returns, leaving it to the HTTPServer
-// to delete the HTTPClientConnection (See cleanup()).
+// to delete the HTTPClientConnection (See client_cleanup()).
 // 
 // Similarly, HTTPServer cannot delete itself but
 // depends on the Engine class to delete the HTTPServer.
@@ -55,7 +55,8 @@ HTTPServer::HTTPServer(SOCKET socket)
     go(true),
     socket(socket),
     total_clients(0),
-    client_duration(0.0)
+    client_duration(0.0),
+    clients(new AutoPtr<HTTPClientConnection> [MAX_NUM_CLIENTS])
 {}
 
 HTTPServer::~HTTPServer()
@@ -64,7 +65,7 @@ HTTPServer::~HTTPServer()
     go = false;
     // Wait for clients to quit
     int waited = 0;
-    while (cleanup() > 0)
+    while (client_cleanup() > 0)
     {
         if (waited > 10)
         {
@@ -77,8 +78,6 @@ HTTPServer::~HTTPServer()
     // Wait for server to quit
     if (! thread.exitWait(5.0))
         LOG_MSG("HTTPServer: server thread does not exit\n");
-    clients.clear();
-    printf("client list size: %zu\n", clients.size());
     epicsSocketDestroy(socket);
 #ifdef HTTPD_DEBUG
     LOG_MSG("HTTPServer::~HTTPServer\n");
@@ -122,7 +121,7 @@ void HTTPServer::run()
     bool overloaded = false;
     while (go)
     {
-        size_t num_clients = cleanup();
+        size_t num_clients = client_cleanup();
         if (num_clients >= MAX_NUM_CLIENTS)
         {
             if (! overloaded)
@@ -159,13 +158,10 @@ void HTTPServer::run()
                 (unsigned long)epicsThreadGetIdSelf(),
                 local_info.c_str(), peer_info.c_str());
 #endif
-        HTTPClientConnection *client;
-        {
-            Guard guard(client_list_mutex);
-            client = new HTTPClientConnection(this, peer, ++total_clients);
-            clients.push_back(client);
-        }
-        client->start();
+        start_client(peer);
+        // Allow a little runtime, so that it might already be done
+        // when we perform the next client_cleanup()
+        epicsThreadSleep(HTTPD_TIMEOUT);
     }
 #ifdef HTTPD_DEBUG
     LOG_MSG("HTTPServer thread 0x%08lX exiting\n",
@@ -173,39 +169,54 @@ void HTTPServer::run()
 #endif
 }
 
-size_t HTTPServer::cleanup()
+void HTTPServer::start_client(SOCKET peer)
 {
-    size_t num_clients = 0;
     Guard guard(client_list_mutex);
-    stdList<HTTPClientConnection *>::iterator ci = clients.begin();
-    while (ci != clients.end())
+    size_t i;
+    for (i = 0; i < MAX_NUM_CLIENTS; ++i)
     {
-        HTTPClientConnection *client = *ci;
-        if (client->isDone())
+        if (clients[i])
+            continue;
+        clients[i] = new HTTPClientConnection(this, peer, ++total_clients);
+        clients[i]->start();
+        return;
+    }
+    LOG_MSG("HTTPServer client list is full\n");
+}
+
+size_t HTTPServer::client_cleanup()
+{
+    size_t i, num_clients = 0;
+    Guard guard(client_list_mutex);
+
+    for (i = 0; i < MAX_NUM_CLIENTS; ++i)
+    {
+        if (! clients[i])
+            continue;
+        if (clients[i]->isDone())
         {
             // Update runtime statistics
-            client_duration = 0.99*client_duration + 0.01*client->getRuntime();
+            client_duration = 0.99*client_duration + 0.01*clients[i]->getRuntime();
             // valgrind complains about access to undefined mem.
             // What?? Format string? num?
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
-            size_t num = client->getNum();
+            size_t num = clients[i]->getNum();
             LOG_MSG("HTTPClientConnection %zu is done.\n", num);
 #           endif
-            ci = clients.erase(ci);
-            delete client;
+            clients[i] = 0;
         }
         else
         {
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
-            size_t num = client->getNum();
+            size_t num = clients[i]->getNum();
             LOG_MSG("HTTPClientConnection %zu is active\n", num);
 #           endif
             ++num_clients;
-            ++ci;
         }
     }
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
-    LOG_MSG("%zu clients left.\n", num_clients);
+    if (num_clients > 0)
+        LOG_MSG("%zu clients left.\n", num_clients);
 #   endif
     return num_clients;
 }
@@ -213,21 +224,23 @@ size_t HTTPServer::cleanup()
 void HTTPServer::serverinfo(SOCKET socket)
 {
     HTMLPage page(socket, "Server Info");    
-    HTTPClientConnection *  client;
-    stdList<HTTPClientConnection *>::iterator ci;
     char line[100];
     
     page.openTable(1, "Client Number", 1, "Status", 1, "Age [secs]", 0);
     char num[20], age[50];
     const char *status;
-    Guard guard(client_list_mutex);
-    for (ci = clients.begin(); ci != clients.end(); ++ci)
     {
-        client = *ci;
-        sprintf(num, "%zu", client->getNum());
-        status = (client->isDone() ? "done" : "running");
-        sprintf(age, "%.6f", client->getRuntime());
-        page.tableLine(num, status, age, 0);
+        Guard guard(client_list_mutex);
+        size_t i;
+        for (i = 0; i < MAX_NUM_CLIENTS; ++i)
+        {
+            if (! clients[i])
+                continue;
+            sprintf(num, "%zu", clients[i]->getNum());
+            status = (clients[i]->isDone() ? "done" : "running");
+            sprintf(age, "%.6f", clients[i]->getRuntime());
+            page.tableLine(num, status, age, 0);
+        }
     }
     page.closeTable();
     sprintf(line, "Average client runtime: %.6f seconds",
@@ -258,12 +271,12 @@ HTTPClientConnection::~HTTPClientConnection()
 {
     if (! done)
     {
-        LOG_MSG("HTTPClientConnection: Forced Shutdown of %d", num);
+        LOG_MSG("~HTTPClientConnection: Forced Shutdown of %d", num);
         epicsSocketDestroy(socket);
     }
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     else
-        LOG_MSG("HTTPClientConnection: Graceful end of %d\n", num);
+        LOG_MSG("~HTTPClientConnection: Graceful end of %d\n", num);
 #   endif
 }
 
@@ -415,7 +428,9 @@ bool HTTPClientConnection::analyzeInput()
     }
 #   endif
     stdString path = input_line[0].substr(4, pos-5);
-    stdString protocol = input_line[0].substr(pos+5);
+    //stdString protocol = input_line[0].substr(pos+5);
+    input_line.clear();
+
     // Linear search ?!
     // Hash or map lookup isn't straightforward
     // because path has to be cut for parameters first...

@@ -55,19 +55,23 @@ void MsgLogger::log(const char *format, va_list ap)
         fflush(stderr);
 }
 
+void MsgLogger::createDefaultLogger()
+{
+    try
+    {
+        MsgLogger::TheMsgLogger = new MsgLogger();
+    }
+    catch (...)
+    {
+        MsgLogger::TheMsgLogger = 0;
+    }
+}
+
 void LOG_MSG(const char *format, ...)
 {
     if (MsgLogger::TheMsgLogger == 0)
-    {   // Initialize when first used
-        try
-        {
-            MsgLogger::TheMsgLogger = new MsgLogger();
-        }
-        catch (...)
-        {
-            MsgLogger::TheMsgLogger = 0;
-        }
-    }
+        // Initialize when first used
+        MsgLogger::createDefaultLogger();
     if (! MsgLogger::TheMsgLogger)
     {   // Error
         fprintf(stderr, "LOG_MSG: No message logger!\n");

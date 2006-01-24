@@ -54,6 +54,9 @@ protected:
     /// The current MsgLogger.
     static MsgLogger *TheMsgLogger;
 
+    /// Used in case the user has not provided any.
+    static void createDefaultLogger();
+
     /// Each MsgLogger keeps track of the previous
     /// logger so that it can be restored when
     /// this logger is closed.

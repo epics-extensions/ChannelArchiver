@@ -30,7 +30,7 @@
 // 
 // The first idea was then: Client cleans itself up,
 // HTTPClientConnection::run() ends like this
-// - removes itself from server's list of clients
+// - remove itself from server's list of clients
 // - delete this
 // - return
 // 
@@ -49,10 +49,13 @@
 
 // HTTPServer ----------------------------------------------
 HTTPServer::HTTPServer(SOCKET socket)
-        : thread(*this, "HTTPD",
-                 epicsThreadGetStackSize(epicsThreadStackBig),
-                 epicsThreadPriorityMedium),
-          go(true), socket(socket), total_clients(0), client_duration(0.0)
+  : thread(*this, "HTTPD",
+           epicsThreadGetStackSize(epicsThreadStackBig),
+           epicsThreadPriorityMedium),
+    go(true),
+    socket(socket),
+    total_clients(0),
+    client_duration(0.0)
 {}
 
 HTTPServer::~HTTPServer()
@@ -96,10 +99,9 @@ HTTPServer *HTTPServer::create(short port)
                    (const char *)&val, sizeof(val)))
         LOG_MSG("setsockopt(SO_REUSEADDR) failed for HTTPServer::create\n");
     if (bind(s, (const struct sockaddr *)&local, sizeof local) != 0)
-    {
-        LOG_MSG("bind failed for HTTPServer::create\n");
-        return 0;
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "HTTPServer cannot bind to port %d",
+                               (int) port);
     listen(s, 3);
     return new HTTPServer(s);
 }
@@ -111,56 +113,57 @@ void HTTPServer::start()
 
 void HTTPServer::run()
 {
-    fd_set fds;
-    struct timeval timeout;
-    struct sockaddr_in  peername;
-    socklen_t  len;
 #ifdef HTTPD_DEBUG
     LOG_MSG("HTTPServer thread 0x%08lX running\n",
             (unsigned long)epicsThreadGetIdSelf());
 #endif
+    bool overloaded = false;
     while (go)
     {
-        cleanup();
+        size_t num_clients = cleanup();
+        if (num_clients >= MAX_NUM_CLIENTS)
+        {
+            if (! overloaded)
+            {
+                LOG_MSG("HTTPServer reached %zu concurrent clients\n",
+                        num_clients);
+                overloaded = true;
+            }
+            epicsThreadSleep(HTTPD_TIMEOUT);
+	    continue;
+        }
+        overloaded = false;
         // Don't hang in accept() but use select() so that
         // we have a chance to react to the main program
-        // setting _go == false
+        // setting go == false
+        fd_set fds;
         FD_ZERO(&fds);
         FD_SET(socket, &fds);
+        struct timeval timeout;
         timeout.tv_sec = HTTPD_TIMEOUT;
         timeout.tv_usec = 0;
-        if (select(socket+1, &fds, 0, 0, &timeout)==1 &&
-            FD_ISSET(socket, &fds))
-        {
-            len = sizeof peername;
-            SOCKET peer = accept(socket, (struct sockaddr *)&peername, &len);
-            if (peer != INVALID_SOCKET)
-            {
-#if             defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
-                stdString local_info, peer_info;
-                GetSocketInfo(peer, local_info, peer_info);
-                LOG_MSG("HTTPServer thread 0x%08lX accepted %s/%s\n",
-                        (unsigned long)epicsThreadGetIdSelf(),
-                        local_info.c_str(), peer_info.c_str());
+        if (select(socket+1, &fds, 0, 0, &timeout)!=1 ||
+            !FD_ISSET(socket, &fds))
+            continue;
+        struct sockaddr_in peername;
+        socklen_t len = sizeof peername;
+        SOCKET peer = accept(socket, (struct sockaddr *)&peername, &len);
+        if (peer == INVALID_SOCKET)
+            continue;
+#if     defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
+        stdString local_info, peer_info;
+        GetSocketInfo(peer, local_info, peer_info);
+        LOG_MSG("HTTPServer thread 0x%08lX accepted %s/%s\n",
+                (unsigned long)epicsThreadGetIdSelf(),
+                local_info.c_str(), peer_info.c_str());
 #endif
-                client_list_mutex.lock();
-                if (clients.size() < MAX_NUM_CLIENTS)
-                {
-                    HTTPClientConnection *client =
-                        new HTTPClientConnection(this, peer, ++total_clients);
-                    clients.push_back(client);
-                    client_list_mutex.unlock();
-                    client->start();
-                }
-                else
-                {
-                    client_list_mutex.unlock();
-                    epicsSocketDestroy(peer);
-                    LOG_MSG("HTTPServer reached %d concurrent clients\n",
-                            MAX_NUM_CLIENTS);
-                }
-            }
+        HTTPClientConnection *client;
+        {
+            Guard guard(client_list_mutex);
+            client = new HTTPClientConnection(this, peer, ++total_clients);
+            clients.push_back(client);
         }
+        client->start();
     }
 #ifdef HTTPD_DEBUG
     LOG_MSG("HTTPServer thread 0x%08lX exiting\n",
@@ -168,21 +171,23 @@ void HTTPServer::run()
 #endif
 }
 
-int HTTPServer::cleanup()
+size_t HTTPServer::cleanup()
 {
-    int num_clients = 0;
-    client_list_mutex.lock();
+    size_t num_clients = 0;
+    Guard guard(client_list_mutex);
     stdList<HTTPClientConnection *>::iterator ci = clients.begin();
     while (ci != clients.end())
     {
         HTTPClientConnection *client = *ci;
         if (client->isDone())
         {
+            // Update runtime statistics
+            client_duration = 0.99*client_duration + 0.01*client->getRuntime();
             // valgrind complains about access to undefined mem.
             // What?? Format string? num?
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
-            //int num = client->getNum();
-            //LOG_MSG("HTTPClientConnection %d is done.\n", num);
+            size_t num = client->getNum();
+            LOG_MSG("HTTPClientConnection %zu is done.\n", num);
 #           endif
             ci = clients.erase(ci);
             delete client;
@@ -190,16 +195,15 @@ int HTTPServer::cleanup()
         else
         {
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
-            //int num = client->getNum();
-            //LOG_MSG("HTTPClientConnection %d is active\n", num);
+            size_t num = client->getNum();
+            LOG_MSG("HTTPClientConnection %zu is active\n", num);
 #           endif
             ++num_clients;
             ++ci;
         }
     }
-    client_list_mutex.unlock();
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
-    LOG_MSG("%d clients left.\n", num_clients);
+    LOG_MSG("%zu clients left.\n", num_clients);
 #   endif
     return num_clients;
 }
@@ -214,14 +218,13 @@ void HTTPServer::serverinfo(SOCKET socket)
     page.openTable(1, "Client Number", 1, "Status", 1, "Age [secs]", 0);
     char num[20], age[50];
     const char *status;
-    epicsTime now = epicsTime::getCurrent();
     Guard guard(client_list_mutex);
     for (ci = clients.begin(); ci != clients.end(); ++ci)
     {
         client = *ci;
-        sprintf(num, "%d", client->getNum());
+        sprintf(num, "%zu", client->getNum());
         status = (client->isDone() ? "done" : "running");
-        sprintf(age, "%.6f", now - client->getBirthTime());
+        sprintf(age, "%.6f", client->getRuntime());
         page.tableLine(num, status, age, 0);
     }
     page.closeTable();
@@ -237,15 +240,16 @@ PathHandlerList *HTTPClientConnection::handlers;
 
 HTTPClientConnection::HTTPClientConnection(HTTPServer *server,
                                            SOCKET socket, int num)
-        : thread(*this, "HTTPClientConnection",
-                 epicsThreadGetStackSize(epicsThreadStackBig),
-                 epicsThreadPriorityLow),
-          server(server),
-          birthtime(epicsTime::getCurrent()),
-          num(num),
-          done(false),
-          socket(socket),
-          dest(0)
+  : thread(*this, "HTTPClientConnection",
+           epicsThreadGetStackSize(epicsThreadStackBig),
+           epicsThreadPriorityLow),
+    server(server),
+    birthtime(epicsTime::getCurrent()),
+    num(num),
+    done(false),
+    socket(socket),
+    dest(0),
+    runtime(0.0)
 {}
 
 HTTPClientConnection::~HTTPClientConnection()
@@ -263,12 +267,11 @@ HTTPClientConnection::~HTTPClientConnection()
 
 void HTTPClientConnection::run()
 {
-    double runtime;
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     stdString local_info, peer_info;
     GetSocketInfo(socket, local_info, peer_info);
-    LOG_MSG("HTTPClientConnection %d thread 0x%08X, handles %s/%s\n",
-            num, epicsThreadGetIdSelf(),
+    LOG_MSG("HTTPClientConnection %zu thread 0x%08lX, handles %s/%s\n",
+            num, (unsigned long) epicsThreadGetIdSelf(),
             local_info.c_str(), peer_info.c_str());
 #   endif
 #ifdef MOZILLA_HACK
@@ -309,7 +312,6 @@ void HTTPClientConnection::run()
     shutdown(socket, 2);
     epicsSocketDestroy(socket);
     runtime = epicsTime::getCurrent() - birthtime;
-    server->UpdateClientDuration(runtime);
 #if HTTPD_DEBUG >= 3
     printf("Closed client #%d, socket %d after %.3f seconds\n",
            num, socket, runtime);
@@ -399,6 +401,9 @@ bool HTTPClientConnection::analyzeInput()
     // full requests ends with empty line:
     if (input_line.back().length() > 0)
         return false;
+    // We have a full request.
+    // Signal that we won't _read_ any more from this socket:
+    shutdown(socket, 0);
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
     LOG_MSG("HTTPClientConnection::analyzeInput\n");
     for (size_t i=0; i<input_line.size(); ++i)
@@ -451,3 +456,4 @@ void HTTPClientConnection::pathError (const stdString &path)
 {
     error("The path <I>'" + path + "'</I> does not exist.");
 }
+

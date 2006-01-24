@@ -26,7 +26,7 @@
 //     3: Connect & cleanup
 //     4: Requests
 //     5: whatever
-#define HTTPD_DEBUG 2
+#define HTTPD_DEBUG 3
 
 // Maximum number of clients that we accept.
 // This includes connections that are "done"
@@ -50,28 +50,35 @@
 /// @{
 
 /// An in-memory web server.
-
-/// Creates a HTTPClientConnection
+///
+/// Waits for connections on the given TCP port,
+/// creates an HTTPClientConnection
 /// for each incoming, well, client.
 ///
 /// The HTTPClientConnection then needs to handle
 /// the incoming requests and produce appropriate
-/// and hopefully strikingly beatiful HTML pages.
+/// and hopefully strikingly beautiful HTML pages.
 class HTTPServer : public epicsThreadRunable
 {
 public:
     /// Create a HTTPServer.
+    /// @parm port The TCP port number wher the server listens.
+    /// @return New HTTPServer, needs to be 'start()'ed.
+    /// @exception GenericException when port unavailable.
     static HTTPServer *create(short port);
     
     virtual ~HTTPServer();
 
-    /// Start accepting connections (launch thread)
+    /// Start accepting connections (launch thread).
     void start();
 
+    /// Part of the epicsThreadRunable interface. Do not call directly!
     void run();
 
+    /// Dump HTML page with server info to socket.
     void serverinfo(SOCKET socket);
 
+    /// @return Returns true if the server wants to shut down.
     bool isShuttingDown() const
     {   return go == false; }    
 
@@ -92,7 +99,7 @@ private:
     epicsMutex                            client_list_mutex;
     stdList<class HTTPClientConnection *> clients;
     // returns # of clients that are still active
-    int cleanup();
+    size_t cleanup();
 };
 
 typedef void (*PathHandler) (class HTTPClientConnection *connection,
@@ -129,7 +136,7 @@ public:
     SOCKET getSocket()
     {   return socket; }
             
-    int getNum()
+    size_t getNum()
     {   return num; }
     
     bool isDone()
@@ -147,16 +154,21 @@ public:
     const epicsTime &getBirthTime()
     {   return birthtime; }
 
+    /// @returns The runtime in seconds.
+    double getRuntime() const
+    {   return runtime; }
+
 private:
     epicsThread              thread; // .. that handles this connection
     HTTPServer              *server;
     epicsTime                birthtime;
-    int                      num;    // unique sequence number of this conn.
+    size_t                   num;    // unique sequence number of this conn.
     bool                     done;   // has run() finished running?
     SOCKET                   socket;
     stdVector<stdString>     input_line;
     char                     line[2048];
     unsigned int             dest;  // index of next unused char in _line
+    double                   runtime;
 
     // Result: done, i.e. connection can be closed?
     bool handleInput();

@@ -14,7 +14,6 @@ class CircularBuffer
 {
 public:
     CircularBuffer();
-    ~CircularBuffer();
  
     /// Allocate buffer for num*(type,count) values.
     void allocate(DbrType type, DbrCount count, size_t num);
@@ -67,16 +66,16 @@ private:
     CircularBuffer(const CircularBuffer &); // not impl.
     CircularBuffer & operator = (const CircularBuffer &); // not impl.
 
-    RawValue::Data *getElement(size_t i) const;
+    RawValue::Data    *getElement(size_t i) const;
 
-    DbrType         type;        // dbr_time_xx
-    DbrCount        count;       // array size of type
-    RawValue::Data  *buffer;     // the buffer
-    size_t          element_size;// == RawValue::getSize (_type, _count)
-    size_t          max_index;   // max. number of elements in buffer
-    size_t          head;        // index of current element
-    size_t          tail;        // before(!) last element, _tail==_head: empty
-    size_t          overwrites;  // # of elements we had to drop
+    DbrType            type;        // dbr_time_xx
+    DbrCount           count;       // array size of type
+    MemoryBuffer<char> buffer;     // the buffer
+    size_t             element_size;// == RawValue::getSize (_type, _count)
+    size_t             max_index;   // max. number of elements in buffer
+    size_t             head;        // index of current element
+    size_t             tail;        // before(!) last element, _tail==_head: empty
+    size_t             overwrites;  // # of elements we had to drop
 };
 
 #endif //__CIRCULARBUFFER_H__

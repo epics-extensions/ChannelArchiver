@@ -10,18 +10,22 @@
 
 #undef DEBUG_CHANNEL
 
+static const unsigned long magic_marker = 0xac00face;
+
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
+  : marker(magic_marker),
+    name(name),
+    period(period),
+    mechanism(0),
+    chid_valid(false),
+    chid(0),
+    connected(false),
+    nelements(0),
+    dbr_size(0),
+    pending_value_set(false),
+    disabled_count(0),
+    currently_disabling(false)
 {
-    this->name = name;
-    this->period = period;
-    this->mechanism = 0;
-    chid_valid = false;
-    connected = false;
-    nelements = 0;
-    pending_value_set = false;
-    pending_value = 0;
-    disabled_count = 0;
-    currently_disabling = false;
 }
 
 ArchiveChannel::~ArchiveChannel()
@@ -30,13 +34,11 @@ ArchiveChannel::~ArchiveChannel()
     {
         LOG_MSG("ArchiveChannel '%s' was deleted without prior "
                 "setMechanism(0) and stopCA()\n", name.c_str());
+        // leak mechanism...
     }
-    if (pending_value)
-    {
-        RawValue::free(pending_value);
-        pending_value_set = false;
-        pending_value = 0;
-    }
+    pending_value = 0;
+    pending_value_set = false;
+    marker = 0;
 }
 
 void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
@@ -44,26 +46,27 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
                                   const epicsTime &now)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(marker == magic_marker);
     // We treat it like a disconnect/connect,
     // so that both the old and (maybe) new mechanism
     // can properly stop/start subscriptions etc. 
     bool was_connected = connected;
-    if (this->mechanism)
+    if (mechanism)
     {
         if (was_connected)
         {
             connected = false;
-            this->connection_time = now;
-            this->mechanism->handleConnectionChange(engine_guard, guard);
+            connection_time = now;
+            mechanism->handleConnectionChange(engine_guard, guard);
         }
-        this->mechanism->destroy(engine_guard, guard);
+        mechanism->destroy(engine_guard, guard);
     }
-    this->mechanism = new_mechanism;
+    mechanism = new_mechanism;
     if (was_connected && new_mechanism)
     {
         connected = true;
-        this->connection_time = now;
-        this->mechanism->handleConnectionChange(engine_guard, guard);
+        connection_time = now;
+        mechanism->handleConnectionChange(engine_guard, guard);
     }
 }
 
@@ -100,6 +103,7 @@ void ArchiveChannel::addToGroup(Guard &guard, GroupInfo *group, bool disabling)
 void ArchiveChannel::startCA(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(marker == magic_marker);
     if (chid_valid)
         return;
 #ifdef DEBUG_CHANNEL
@@ -131,6 +135,7 @@ void ArchiveChannel::startCA(Guard &guard)
 void ArchiveChannel::stopCA(Guard &engine_guard, Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(marker == magic_marker);
     if (!chid_valid)
         return;
 #ifdef DEBUG_CHANNEL
@@ -296,6 +301,7 @@ unsigned long ArchiveChannel::write(Guard &guard, IndexFile &index)
 void ArchiveChannel::connection_handler(struct connection_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
+    LOG_ASSERT(me->marker == magic_marker);
     if (ca_state(arg.chid) == cs_conn)
     {
         // Get control information for this channel.
@@ -416,6 +422,7 @@ bool ArchiveChannel::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
 void ArchiveChannel::control_callback(struct event_handler_args arg)
 {
     ArchiveChannel *me = (ArchiveChannel *) ca_puser(arg.chid);
+    LOG_ASSERT(me->marker == magic_marker);
     Guard engine_guard(theEngine->mutex);
     Guard guard(me->mutex);
     if (arg.status != ECA_NORMAL)
@@ -439,6 +446,7 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
 void ArchiveChannel::value_callback(struct event_handler_args args)
 {
     ArchiveChannel *me = (ArchiveChannel *) args.usr;
+    LOG_ASSERT(me->marker == magic_marker);
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
     if (args.status != ECA_NORMAL  ||  value == 0)
     {

@@ -15,37 +15,25 @@
 // tail+1, tail+2 .... head
 
 CircularBuffer::CircularBuffer()
-{
-	type = 0;
-	count = 0;
-	buffer = 0;
-	element_size = 0;
-	max_index = 0;
-	head = 0;
-	tail = 0;
-	overwrites = 0;
-}
+  : type(0),
+    count(0),
+    element_size(0),
+    max_index(0),
+    head(0),
+    tail(0),
+    overwrites(0)
+{}
 
-CircularBuffer::~CircularBuffer()
+void CircularBuffer::allocate(DbrType new_type, DbrCount new_count, size_t num)
 {
-    RawValue::free(buffer);
-}
-
-void CircularBuffer::allocate(DbrType type, DbrCount count, size_t num)
-{
-    if (buffer && this->type==type && this->count==count && max_index > num)
-        return; // can hold that already
-    reset();
+    element_size = RawValue::getSize(new_type, new_count);
+    type = new_type;
+    count = new_count;
     // Since head == tail indicates empty, we can only
     // hold max_index-1 elements. Inc num by one to account for that:
-    ++num;
-	if (buffer)
-		RawValue::free(buffer);
-	buffer = RawValue::allocate(type, count, num);
-	element_size = RawValue::getSize(type, count);
-	this->type = type;
-	this->count = count;
-	max_index = num;
+    max_index = num+1;
+    buffer.reserve(element_size * max_index);
+    reset();
 }
 
 size_t CircularBuffer::getCount() const
@@ -144,72 +132,6 @@ void CircularBuffer::dump() const
 
 RawValue::Data *CircularBuffer::getElement(size_t i) const
 {
-    return (RawValue::Data *) (((char *)buffer) + i * element_size);
+    return (RawValue::Data *) (buffer.mem() + i * element_size);
 }
 
-#ifdef CIRCBUF_TEST
-
-/* For standalone test, compile like this:
-
-g++ -g -D CIRCBUF_TEST -o CircularBuffer CircularBuffer.cpp \
-    -I ../Tools -I ../Storage \
-    -I $EPICS_BASE_RELEASE/include \
-    -I $EPICS_BASE_RELEASE/include/os/$HOST_ARCH \
-    ../Storage/O.$EPICS_HOST_ARCH/libStorage.a \
-    ../Tools/O.$EPICS_HOST_ARCH/libTools.a \
-    -L $EPICS_BASE_RELEASE/lib/$EPICS_HOST_ARCH \
-    -l db -l ca -l Com
-*/
-
-int main()
-{
-    DbrType type = DBR_TIME_DOUBLE;
-    DbrCount count = 1;
-    CircularBuffer buffer;
-    long N, i;
-
-    buffer.allocate(type, count, 8);
-    puts("--- Empty");
-    printf("Capacity: %d\n", buffer.getCapacity());
-    printf("Count   : %d\n", buffer.getCount());
-
-    RawValue::Data *data = RawValue::allocate(type, count, 1);
-    RawValue::setStatus(data, 0, 0);
-
-    N = 2;
-    printf("Adding %d values\n", N);
-    for (i=0; i<N; ++i)
-    {
-        RawValue::setTime(data, epicsTime::getCurrent());
-        data->value = 3.14 + i;
-        buffer.addRawValue(data);
-    }
-    printf("Capacity: %d\n", buffer.getCapacity());
-    printf("Count   : %d\n", buffer.getCount());
-
-    const RawValue::Data *p;
-    while (p=buffer.removeRawValue())
-        RawValue::show(stdout, type, count, p);
-    
-    N = 20;
-    printf("Adding %d values\n", N);
-    for (i=0; i<N; ++i)
-    {
-        RawValue::setTime(data, epicsTime::getCurrent());
-        data->value = 3.14 + i;
-        buffer.addRawValue(data);
-    }
-    puts("--- Peeking the values out");
-    for (i=0; i<buffer.getCount(); ++i)
-        RawValue::show(stdout, type, count, buffer.getRawValue(i));
-    
-    puts("--- Removing the values");
-    while (p=buffer.removeRawValue())
-        RawValue::show(stdout, type, count, p);
-
-    RawValue::free(data);
-    
-    return 0;
-}
-
-#endif

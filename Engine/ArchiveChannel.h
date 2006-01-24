@@ -18,6 +18,7 @@
 #include "Guard.h"
 // Storage
 #include "CtrlInfo.h"
+// Engine
 #include "CircularBuffer.h"
 #include "SampleMechanism.h"
 
@@ -137,6 +138,7 @@ private:
     friend class SampleMechanismGet;
     friend class SampleMechanismMonitoredGet;
     
+    unsigned long marker; // To detect memory issues.
     stdString   name;
     double      period; // Sample period, max period, ..(see SampleMechanism)
     SampleMechanism *mechanism;
@@ -169,7 +171,7 @@ private:
     // In case we are enabled, SampleMechanism::handleValue()
     // might use this for temporary tweaks.
     bool            pending_value_set;
-    RawValue::Data *pending_value;
+    RawValueAutoPtr pending_value;
     // ---    
     
     // The mechanism: This or another channel of one of the groups

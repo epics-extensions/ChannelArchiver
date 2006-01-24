@@ -2,6 +2,7 @@
 
 // Tools
 #include <stdString.h>
+#include <AutoPtr.h>
 // Storage
 #include <CtrlInfo.h>
 #include <RawValue.h>

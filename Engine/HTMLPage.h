@@ -23,26 +23,26 @@
 class HTMLPage
 {
 public:
-	HTMLPage (SOCKET socket, const char *title, int refresh=0);
+    HTMLPage (SOCKET socket, const char *title, int refresh=0);
 
-	virtual ~HTMLPage ();
+    virtual ~HTMLPage ();
 
-	void line (const char *line);
-	void line (const stdString &line);
+    void line (const char *line);
+    void line (const stdString &line);
 
-	void out (const char *line);
-	void out (const char *line, size_t length);
-	void out (const stdString &line);
+    void out (const char *line);
+    void out (const char *line, size_t length);
+    void out (const stdString &line);
 
-	// Last column name must be 0
-	void openTable (size_t colspan, const char *column, ...);
-	void tableLine (const char *item, ...);
-	void closeTable ();
+    // Last column name must be 0
+    void openTable (size_t colspan, const char *column, ...);
+    void tableLine (const char *item, ...);
+    void closeTable ();
 
-        static bool _nocfg;
+    static bool with_config;
 protected:
-	SOCKET _socket;
-	int _refresh;
+    SOCKET socket;
+    int    refresh;
 };
 
 #endif //__HTMLPAGE_H__

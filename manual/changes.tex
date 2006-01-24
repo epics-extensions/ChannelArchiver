@@ -6,6 +6,18 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 01/30/2006? --- Version 2.8.0:\\
+Like a pendulum swinging back, I've overcome my initial
+disappointment with C++ exceptions and added them back
+in, because as long as the compiler supports them,
+their use eases the error handling:
+Detect and describe errors at the low level in the code
+where they happen, and pass them up to the high level
+code in the form of an exception.
+
+In this concersion process, many unit-tests have been added
+and checked under valgrind.
+
 \item 12/13/2005 --- Version 2.7.0:\\
 Error reporting: When a command-line tool failed,
 one could see a rather specific error message

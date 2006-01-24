@@ -13,7 +13,7 @@
 FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
 
 DataWriter::DataWriter(IndexFile &index,
-                       const stdString &channel_name,
+                       const char *channel_name,
                        const CtrlInfo &ctrl_info,
                        DbrType dbr_type,
                        DbrCount dbr_count,

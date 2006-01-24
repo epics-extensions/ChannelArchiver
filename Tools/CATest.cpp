@@ -81,7 +81,9 @@ TEST_CASE test_ca()
     TEST(state == got_data);
     printf("Received %zd monitored values\n",
            num_monitors);
-    TEST(abs(num_monitors - 50) < 10);
+    // Result depends on machine load.
+    // Hope to get 50% of the values:
+    TEST(abs(num_monitors - 50) < 25);
     TEST_OK;
 }
 

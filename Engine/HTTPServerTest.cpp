@@ -29,7 +29,7 @@ TEST_CASE test_http_server()
         server->start();
         printf("Server is running, try\n");
         printf("  lynx -dump http://localhost:4812\n");
-        epicsThreadSleep(20.0);
+        epicsThreadSleep(10.0);
     }
     catch (GenericException &e)
     {

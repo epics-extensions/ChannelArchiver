@@ -112,6 +112,9 @@ protected:
 
 TEST_CASE test_timer()
 {
+    printf("------------------------------------------\n");
+    printf("The timer tests don't work very well under valgrind!\n");
+    printf("------------------------------------------\n");
     epicsTimerQueueActive &act_queue = epicsTimerQueueActive::allocate(true);
     {
         timer_test_start = epicsTime::getCurrent();

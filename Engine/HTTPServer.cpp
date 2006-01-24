@@ -77,6 +77,8 @@ HTTPServer::~HTTPServer()
     // Wait for server to quit
     if (! thread.exitWait(5.0))
         LOG_MSG("HTTPServer: server thread does not exit\n");
+    clients.clear();
+    printf("client list size: %zu\n", clients.size());
     epicsSocketDestroy(socket);
 #ifdef HTTPD_DEBUG
     LOG_MSG("HTTPServer::~HTTPServer\n");

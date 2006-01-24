@@ -7,6 +7,9 @@ USR_CXXFLAGS += -I ../../Index
 
 LIB_SRCS += CircularBuffer.cpp
 LIB_SRCS += HTMLPage.cpp
+
+#   Handle SIGPIPE !!!!
+
 LIB_SRCS += HTTPServer.cpp
 #LIB_SRCS += ArchiveChannel.cpp
 #LIB_SRCS += SampleMechanism.cpp

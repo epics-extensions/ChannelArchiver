@@ -32,7 +32,7 @@ public:
     ///
     /// @exception GenericException on error.
     DataWriter(IndexFile &index,
-               const stdString &channel_name,
+               const char *channel_name,
                const CtrlInfo &ctrl_info,
                DbrType dbr_type,
                DbrCount dbr_count,
@@ -71,7 +71,7 @@ private:
     IndexFile &index;
     stdString directory;
     AutoPtr<RTree> tree;
-    const stdString &channel_name;
+    const stdString channel_name;
     const CtrlInfo &ctrl_info;
     DbrType dbr_type;
     DbrCount dbr_count;

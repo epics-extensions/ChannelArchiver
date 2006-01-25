@@ -62,5 +62,6 @@ test:
 	O.$(EPICS_HOST_ARCH)/UnitTest
 
 valgrind:
+	xterm -e 'while true; do lynx -dump http://localhost:4812/server; done' &
 	IN_VALGRIND=1 valgrind $(VALGRIND_FLAGS) O.$(EPICS_HOST_ARCH)/UnitTest
 

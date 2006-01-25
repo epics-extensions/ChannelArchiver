@@ -27,7 +27,7 @@
 //     3: Connect & cleanup
 //     4: Requests
 //     5: whatever
-#define HTTPD_DEBUG 5
+#define HTTPD_DEBUG 2
 
 // Maximum number of clients that we accept.
 // This includes connections that are "done"

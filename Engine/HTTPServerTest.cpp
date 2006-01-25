@@ -4,7 +4,17 @@
 // Engine
 #include "HTTPServer.h"
 
-static void echo(HTTPClientConnection *connection, const stdString &path)
+static void close_test(HTTPClientConnection *connection, const stdString &path)
+{
+    close(connection->getSocket());
+    HTMLPage page(connection->getSocket(), "Close");
+    page.line("<H3>Echo</H3>");
+    page.line("<PRE>");
+    page.line(path);
+    page.line("</PRE>");
+}
+
+static void echo_test(HTTPClientConnection *connection, const stdString &path)
 {
     HTMLPage page(connection->getSocket(), "Echo");
     page.line("<H3>Echo</H3>");
@@ -16,7 +26,8 @@ static void echo(HTTPClientConnection *connection, const stdString &path)
 static PathHandlerList  handlers[] =
 {
     //  URL, substring length?, handler. The order matters!
-    { "/",  0, echo },
+    { "/close",  6, close_test },
+    { "/",  0, echo_test },
     { 0,    0,  },
 };
 

@@ -12,6 +12,8 @@
 #pragma warning (disable: 4786)
 #endif
 
+// System
+#include <signal.h>
 // Tools
 #include <MsgLogger.h>
 #include <ToolsConfig.h>
@@ -63,6 +65,10 @@ HTTPServer::~HTTPServer()
 {
     // Tell server and clients to stop.
     go = false;
+#if defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
+    LOG_MSG("~HTTPServer\n");
+    epicsThreadSleep(1.0);
+#endif
     // Wait for clients to quit
     int waited = 0;
     while (client_cleanup() > 0)
@@ -80,7 +86,7 @@ HTTPServer::~HTTPServer()
         LOG_MSG("HTTPServer: server thread does not exit\n");
     epicsSocketDestroy(socket);
 #ifdef HTTPD_DEBUG
-    LOG_MSG("HTTPServer::~HTTPServer\n");
+    LOG_MSG("~HTTPServer done.\n");
 #endif
 }
 
@@ -118,6 +124,17 @@ void HTTPServer::run()
     LOG_MSG("HTTPServer thread 0x%08lX running\n",
             (unsigned long)epicsThreadGetIdSelf());
 #endif
+
+    // Ignore SIGPIPE.
+    struct sigaction action;
+    memset(&action, 0, sizeof(struct sigaction));
+    action.sa_handler = SIG_IGN;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    if (sigaction(SIGPIPE, &action, 0))
+        LOG_MSG("Error setting SIGPIPE handler\n");
+
+    // Wait for HTTP clients & spawn client handlers.
     bool overloaded = false;
     while (go)
     {
@@ -146,6 +163,8 @@ void HTTPServer::run()
         if (select(socket+1, &fds, 0, 0, &timeout)!=1 ||
             !FD_ISSET(socket, &fds))
             continue;
+        if (!go) // might have stopped while in select()
+            break;
         struct sockaddr_in peername;
         socklen_t len = sizeof peername;
         SOCKET peer = accept(socket, (struct sockaddr *)&peername, &len);
@@ -161,7 +180,7 @@ void HTTPServer::run()
         start_client(peer);
         // Allow a little runtime, so that it might already be done
         // when we perform the next client_cleanup()
-        epicsThreadSleep(HTTPD_TIMEOUT);
+        // epicsThreadSleep(HTTPD_TIMEOUT);
     }
 #ifdef HTTPD_DEBUG
     LOG_MSG("HTTPServer thread 0x%08lX exiting\n",
@@ -199,7 +218,7 @@ size_t HTTPServer::client_cleanup()
             client_duration = 0.99*client_duration + 0.01*clients[i]->getRuntime();
             // valgrind complains about access to undefined mem.
             // What?? Format string? num?
-#           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
+#           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
             size_t num = clients[i]->getNum();
             LOG_MSG("HTTPClientConnection %zu is done.\n", num);
 #           endif
@@ -207,7 +226,7 @@ size_t HTTPServer::client_cleanup()
         }
         else
         {
-#           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 1
+#           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
             size_t num = clients[i]->getNum();
             LOG_MSG("HTTPClientConnection %zu is active\n", num);
 #           endif
@@ -304,6 +323,10 @@ void HTTPClientConnection::run()
     setsockopt(socket, SOL_SOCKET, SO_LINGER,
                (const char *)&linger, sizeof(linger));
 #endif
+    // This line seems to make the differenc between valgrind seeing
+    // a memory leak in the first input_line.push_back() and no
+    // memory leak:
+    input_line.reserve(20);
     while (!handleInput())
     {
         if (server->isShuttingDown())
@@ -429,7 +452,6 @@ bool HTTPClientConnection::analyzeInput()
 #   endif
     stdString path = input_line[0].substr(4, pos-5);
     //stdString protocol = input_line[0].substr(pos+5);
-    input_line.clear();
 
     // Linear search ?!
     // Hash or map lookup isn't straightforward

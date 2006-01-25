@@ -61,7 +61,16 @@ test:
 	$(MAKE)
 	O.$(EPICS_HOST_ARCH)/UnitTest
 
-valgrind:
+# Example for hammering the HTTPd
+test_client:
 	xterm -e 'while true; do lynx -dump http://localhost:4812/server; done' &
+
+# Other things to try, base on netcat/nc:
+# nc localhost 4812 < request.ok
+# nc localhost 4812 < request.partial
+# nc localhost 4812    .. and wait for timeout
+
+valgrind:
 	IN_VALGRIND=1 valgrind $(VALGRIND_FLAGS) O.$(EPICS_HOST_ARCH)/UnitTest
+
 

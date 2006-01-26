@@ -37,8 +37,7 @@ public:
                DbrType dbr_type,
                DbrCount dbr_count,
                double period,
-               size_t num_samples,
-               const char *date_base_name = 0);
+               size_t num_samples);
 
     /// Destructor.
     ///
@@ -66,6 +65,10 @@ public:
 
     /// Data file size limit.
     static FileOffset file_size_limit;
+
+    /// Base name of data files.
+    /// If not set, the date and time is used.
+    static stdString data_file_name_base;
     
 private:
     IndexFile &index;
@@ -78,7 +81,6 @@ private:
     double period;
     size_t raw_value_size;
 
-    stdString data_file_name_base;
     void makeDataFileName(int serial, stdString &name);
     DataFile *createNewDataFile(size_t headroom);
 

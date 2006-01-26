@@ -352,8 +352,8 @@ void HTTPClientConnection::run()
     epicsSocketDestroy(socket);
     runtime = epicsTime::getCurrent() - birthtime;
 #if HTTPD_DEBUG >= 3
-    printf("Closed client #%d, socket %d after %.3f seconds\n",
-           num, socket, runtime);
+    LOG_MSG("Closed client #%d, socket %d after %.3f seconds\n",
+            num, socket, runtime);
 #endif
     done = true;
 }

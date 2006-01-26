@@ -252,10 +252,8 @@ void ArchiveChannel::init(Guard &engine_guard, Guard &guard,
     this->dbr_size =  RawValue::getSize(dbr_time_type, nelements);
     buffer.allocate(dbr_time_type, nelements,
                     theEngine->suggestedBufferSize(engine_guard, period));
-    if (pending_value)
-        RawValue::free(pending_value);
-    pending_value = RawValue::allocate(dbr_time_type, nelements, 1);
     pending_value_set = false;
+    pending_value = RawValue::allocate(dbr_time_type, nelements, 1);
     if (ctrl_info)
         this->ctrl_info = *ctrl_info;
     if (last_stamp)

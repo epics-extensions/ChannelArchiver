@@ -7,10 +7,8 @@
 class EngineServer
 {
 public:
-	EngineServer(class Engine *engine);
+	EngineServer(short port, class Engine *engine);
 	~EngineServer();
-
-	static short _port;
 private:
         class Engine *engine;
 	AutoPtr<class HTTPServer> server;

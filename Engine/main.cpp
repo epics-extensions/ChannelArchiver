@@ -64,20 +64,18 @@ int main(int argc, const char *argv[])
     parser.setHeader ("ArchiveEngine Version " ARCH_VERSION_TXT ", "
                       EPICS_VERSION_STRING
                       ", built " __DATE__ ", " __TIME__ "\n\n");
-    port.set (EngineServer::_port); // default
+    port.set(4812); // default
     if (!parser.parse()    ||   parser.getArguments ().size() != 2)
     {
         parser.usage ();
         return -1;
     }
-    EngineServer::_port = (int)port;
-    EngineServer::_nocfg = (bool)nocfg;
-    HTMLPage::_nocfg = (bool)nocfg;
+    HTMLPage::with_config = ! (bool)nocfg;
     const stdString &config_name = parser.getArgument (0);
     stdString index_name = parser.getArgument (1);
     // Base name
     if (basename.get().length() > 0)
-        DataWriter::setDataFileNameBase(basename.get().c_str());
+        DataWriter::data_file_name_base = basename.get();
 
     try
     {
@@ -86,7 +84,7 @@ int main(int argc, const char *argv[])
             Lockfile lock_file("archive_active.lck", argv[0]);
             LOG_MSG("Starting Engine with configuration file %s, index %s\n",
                     config_name.c_str(), index_name.c_str());
-            Engine::create(index_name);
+            Engine::create(index_name, (int) port);
             {
                 Guard guard(theEngine->mutex);
                 if (! description.get().empty())
@@ -111,13 +109,13 @@ int main(int argc, const char *argv[])
             LOG_MSG("\n----------------------------------------------------\n"
                     "Engine Running. Stop via http://localhost:%d/stop\n"
                     "----------------------------------------------------\n",
-                    EngineServer::_port);
+                    (int)port);
             while (run_main_loop)
                 theEngine->process();
             // If engine is not shut down properly (ca_task_exit !),
             // the MS VC debugger will freak out
             LOG_MSG ("Shutting down Engine\n");
-            theEngine->shutdown ();    
+            delete theEngine;
             LOG_MSG ("Removing Lockfile\n");
         }
         LOG_MSG ("Done.\n");

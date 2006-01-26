@@ -12,14 +12,15 @@
 
 FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
 
+stdString DataWriter::data_file_name_base;
+
 DataWriter::DataWriter(IndexFile &index,
                        const char *channel_name,
                        const CtrlInfo &ctrl_info,
                        DbrType dbr_type,
                        DbrCount dbr_count,
                        double period,
-                       size_t num_samples,
-                       const char *date_base_name)
+                       size_t num_samples)
   : index(index),
     channel_name(channel_name),
     ctrl_info(ctrl_info),
@@ -31,8 +32,6 @@ DataWriter::DataWriter(IndexFile &index,
     available(0)
 {
     DataFile *datafile = 0;
-    if (date_base_name)
-        data_file_name_base = date_base_name;
     try
     {
         // Size of next buffer should at least hold num_samples

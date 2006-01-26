@@ -20,7 +20,7 @@ LIBRARY_HOST := Engine
 # Display overwrites
 
 ArchiveEngine_SRCS += main.cpp
-#PROD_HOST := ArchiveEngine
+PROD_HOST := ArchiveEngine
 PROD_LIBS_DEFAULT := Engine Storage    Tools    $(EPICS_BASE_IOC_LIBS)
 PROD_LIBS_WIN32   := EngineObj StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
 SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32

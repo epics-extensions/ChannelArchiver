@@ -27,10 +27,11 @@ TEST_CASE data_writer_test()
         DbrType dbr_type = DBR_TIME_DOUBLE;
         DbrCount dbr_count = 1;
         DataWriter::file_size_limit = 10*1024*1024;
+        DataWriter::data_file_name_base = "data_writer.data";
         AutoPtr<DataWriter> writer(new DataWriter(index,
                                                   channel_name, info,
                                                   dbr_type, dbr_count, 2.0,
-                                                  samples, "data_writer.data"));
+                                                  samples));
         RawValueAutoPtr data(RawValue::allocate(dbr_type, dbr_count, 1));
         RawValue::setStatus(data, 0, 0);
         size_t i;

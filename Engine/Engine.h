@@ -117,7 +117,7 @@ public:
     /// The Engine is a Singleton,
     /// createable only by calling this method
     /// and from then on accessible via global Engine *theEngine
-    static void create(const stdString &index_name);
+    static void create(const stdString &index_name, short port);
 
 #ifdef USE_PASSWD
     /// Check if user/password are valid
@@ -228,7 +228,8 @@ public:
     {   info_dump_file = name; }
 
 private:
-    Engine(const stdString &index_name); // use create
+    /// @see create()
+    Engine(const stdString &index_name, short port);
 
     AutoPtr<class EngineServer> engine_server;
     unsigned long writeArchive(Guard &engine_guard);

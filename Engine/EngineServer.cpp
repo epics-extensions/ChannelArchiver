@@ -674,14 +674,11 @@ static PathHandlerList  handlers[] =
     { 0,    0,  },
 };
 
-// static member:
-short EngineServer::_port = 4812;
-
-EngineServer::EngineServer(Engine *engine)
+EngineServer::EngineServer(short port, Engine *engine)
   : engine(engine)
 {
     HTTPClientConnection::handlers = handlers;
-    server = HTTPServer::create(_port, engine);
+    server = HTTPServer::create(port, engine);
     if (!server)
         return;
 #ifdef HTTPD_DEBUG

@@ -48,7 +48,7 @@ static void caException(struct exception_handler_args args)
 // Engine
 // --------------------------------------------------------------------------
 
-Engine::Engine(const stdString &index_name)
+Engine::Engine(const stdString &index_name, short port)
   : num_connected(0),
     ca_context(0),
     start_time(epicsTime::getCurrent()),
@@ -78,7 +78,7 @@ Engine::Engine(const stdString &index_name)
         throw GenericException(__FILE__, __LINE__,
                                "CA client initialization failed.");
     ca_context = ca_current_context();
-    engine_server = new EngineServer(this);
+    engine_server = new EngineServer(port, this);
 }
 
 Engine::~Engine()
@@ -152,12 +152,12 @@ Engine::~Engine()
     LOG_MSG("Engine shut down.\n");
 }
 
-void Engine::create(const stdString &index_name)
+void Engine::create(const stdString &index_name, short port)
 {
     if (theEngine)
         throw GenericException(__FILE__, __LINE__,
                                "Attempted to create multiple engines.");
-    theEngine = new Engine(index_name);
+    theEngine = new Engine(index_name, port);
 }
 
 bool Engine::attachToCAContext(Guard &engine_guard)

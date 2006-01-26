@@ -15,7 +15,7 @@ FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
 stdString DataWriter::data_file_name_base;
 
 DataWriter::DataWriter(IndexFile &index,
-                       const char *channel_name,
+                       const stdString &channel_name,
                        const CtrlInfo &ctrl_info,
                        DbrType dbr_type,
                        DbrCount dbr_count,
@@ -75,7 +75,10 @@ DataWriter::DataWriter(IndexFile &index,
         tree = 0;
         if (datafile)
             datafile->release();
-        throw e;
+        throw GenericException(__FILE__, __LINE__,
+                               "Channel '%s':\n%s",
+                               channel_name.c_str(),
+                               e.what());
     }
 }
     
@@ -222,8 +225,13 @@ DataFile *DataWriter::createNewDataFile(size_t headroom)
     catch (GenericException &e)
     {
         if (datafile)
+        {
             datafile->release();
-        throw e;
+            datafile = 0;
+        }
+        throw GenericException(__FILE__, __LINE__,
+                               "Reference new datafile '%s':\n%s",
+                               data_file_name.c_str(), e.what());
     }
 }
 
@@ -301,17 +309,21 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
                 datafile->addCtrlInfo(ctrl_info, ctrl_info_offset);
             else // use existing one
                 ctrl_info_offset = header->data.ctrl_info_offset;
-            LOG_ASSERT(datafile);
             new_header = datafile->addHeader(channel_name, dbr_type, dbr_count,
                                              period, next_buffer_size);
+            datafile->release(); // now ref'ed by new_header
         }
         catch (GenericException &e)
         {
-            if (datafile && new_datafile)
+            if (datafile)
+            {
                 datafile->release();
-            throw e;
+                datafile = 0;
+            }
+            throw GenericException(__FILE__, __LINE__,
+                               "Channel '%s':\n%s",
+                               channel_name.c_str(), e.what());
         }
-        datafile->release(); // now ref'ed by new_header
     }
     LOG_ASSERT(new_header);
     new_header->data.ctrl_info_offset = ctrl_info_offset;

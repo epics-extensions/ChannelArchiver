@@ -266,7 +266,7 @@ unsigned long ArchiveChannel::write(Guard &guard, IndexFile &index)
     size_t i, num_samples = buffer.getCount();
     if (num_samples <= 0)
         return 0;
-    DataWriter writer(index, name.c_str(), ctrl_info, dbr_time_type, nelements,
+    DataWriter writer(index, name, ctrl_info, dbr_time_type, nelements,
                       period, num_samples);
     const RawValue::Data *value;
     unsigned long count = 0;

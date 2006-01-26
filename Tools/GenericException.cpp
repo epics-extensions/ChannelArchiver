@@ -23,10 +23,10 @@ const char *GenericException::what() const throw ()
         return error_info.c_str();   
     if (detail.empty())
         return sprintf(error_info,
-                       "%s (%zd): GenericException\n",
+                       "%s (%zd): GenericException",
                        sourcefile, line);
     return sprintf(error_info,
-                   "%s (%zd): %s\n",
+                   "%s (%zd): %s",
                    sourcefile, line, detail.c_str());
 }
 

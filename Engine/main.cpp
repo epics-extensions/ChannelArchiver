@@ -84,14 +84,6 @@ int main(int argc, const char *argv[])
             Lockfile lock_file("archive_active.lck", argv[0]);
             LOG_MSG("Starting Engine with configuration file %s, index %s\n",
                     config_name.c_str(), index_name.c_str());
-            Engine::create(index_name, (int) port);
-            {
-                Guard guard(theEngine->mutex);
-                if (! description.get().empty())
-                    theEngine->setDescription(guard, description);
-                EngineConfig config;
-                run_main_loop = config.read(guard, theEngine, config_name);
-            }
 #ifdef HAVE_SIGACTION
             struct sigaction action;
             memset(&action, 0, sizeof(struct sigaction));
@@ -105,6 +97,14 @@ int main(int argc, const char *argv[])
             signal(SIGINT, signal_handler);
             signal(SIGTERM, signal_handler);
 #endif
+            Engine::create(index_name, (int) port);
+            {
+                Guard guard(theEngine->mutex);
+                if (! description.get().empty())
+                    theEngine->setDescription(guard, description);
+                EngineConfig config;
+                run_main_loop = config.read(guard, theEngine, config_name);
+            }
             // Main loop
             LOG_MSG("\n----------------------------------------------------\n"
                     "Engine Running. Stop via http://localhost:%d/stop\n"

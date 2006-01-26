@@ -56,7 +56,7 @@ DataFile::~DataFile ()
 DataFile *DataFile::reference(const stdString &req_dirname,
                               const stdString &req_basename, bool for_write)
 {
-    DataFile *datafile;
+    DataFile *datafile = 0;
     stdString dirname, basename, filename;
 
     Filename::build(req_dirname, req_basename, filename);
@@ -94,23 +94,17 @@ DataFile *DataFile::reference(const stdString &req_dirname,
     try
     {
         datafile = new DataFile(dirname, basename, filename, for_write);
+        datafile->reopen();
+        open_data_files.push_back(datafile);
+        return datafile;
     }
     catch (...)
     {
+        if (datafile)
+            delete datafile;
         throw GenericException(__FILE__, __LINE__, "Cannot reference '%s'",
                                filename.c_str());
     }
-    try
-    {
-        datafile->reopen();
-    }
-    catch (GenericException &e)
-    {
-        delete datafile;
-        throw;
-    }
-    open_data_files.push_back(datafile);
-    return datafile;
 }
 
 // Add reference to current DataFile
@@ -239,15 +233,23 @@ DataHeader *DataFile::getHeader(FileOffset offset)
 {
     AutoPtr<DataHeader> header;
     try
-    {
+    {   // Header ref's the datafile.
         header = new DataHeader(this);
     }
     catch (...)
     {
         throw GenericException(__FILE__, __LINE__, "Cannot allocate DataHeader");
     }
-    header->read(offset);
-    return header.release();
+    try
+    {
+        header->read(offset);
+        return header.release();
+    }
+    catch (GenericException &e)
+    {
+        throw GenericException(__FILE__, __LINE__,
+                               "Datafile::getHeader:\n%s", e.what());
+    }
 }
 
 size_t DataFile::getHeaderSize(const stdString &name,
@@ -374,7 +376,7 @@ void DataHeader::read(FileOffset offset)
     {
         clear();
         throw GenericException(__FILE__, __LINE__,
-                               "Read error '%s' @ 0x%08lX",
+                               "Data header read error '%s' @ 0x%08lX",
                                datafile->getFilename().c_str(),
                                (unsigned long) offset);
     }
@@ -417,7 +419,7 @@ void DataHeader::write() const
           (FileOffset) ftell(datafile->file) == offset  &&
           fwrite(&copy, sizeof(struct DataHeaderData), 1, datafile->file) == 1))
         throw GenericException(__FILE__, __LINE__,
-                               "Write error '%s' @ 0x%08lX",
+                               "Data header write error '%s' @ 0x%08lX",
                                datafile->getFilename().c_str(),
                                (unsigned long) offset);
 

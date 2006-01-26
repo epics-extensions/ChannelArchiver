@@ -50,17 +50,36 @@
 // depends on the Engine class to delete the HTTPServer.
 
 // HTTPServer ----------------------------------------------
-HTTPServer::HTTPServer(SOCKET socket, void *user_arg)
+HTTPServer::HTTPServer(short port, void *user_arg)
   : thread(*this, "HTTPD",
            epicsThreadGetStackSize(epicsThreadStackBig),
            epicsThreadPriorityMedium),
     go(true),
-    socket(socket),
+    socket(0),
     user_arg(user_arg),
     total_clients(0),
     client_duration(0.0),
     clients(new AutoPtr<HTTPClientConnection> [MAX_NUM_CLIENTS])
-{}
+{
+    socket = epicsSocketCreate(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in  local;
+    local.sin_family = AF_INET;
+    local.sin_port = htons (port);
+#   ifdef WIN32
+    local.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+#   else
+    local.sin_addr.s_addr = htonl(INADDR_ANY);
+#   endif
+    int val = 1;
+    if (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR,
+                   (const char *)&val, sizeof(val)))
+        LOG_MSG("setsockopt(SO_REUSEADDR) failed for HTTPServer::create\n");
+    if (bind(socket, (const struct sockaddr *)&local, sizeof local) != 0)
+        throw GenericException(__FILE__, __LINE__,
+                               "HTTPServer cannot bind to port %d",
+                               (int) port);
+    listen(socket, 3);
+}
 
 HTTPServer::~HTTPServer()
 {
@@ -89,29 +108,6 @@ HTTPServer::~HTTPServer()
 #ifdef HTTPD_DEBUG
     LOG_MSG("~HTTPServer done.\n");
 #endif
-}
-
-HTTPServer *HTTPServer::create(short port, void *user_arg)
-{
-    SOCKET s = epicsSocketCreate(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in  local;
-    local.sin_family = AF_INET;
-    local.sin_port = htons (port);
-#   ifdef WIN32
-    local.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-#   else
-    local.sin_addr.s_addr = htonl(INADDR_ANY);
-#   endif
-    int val = 1;
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-                   (const char *)&val, sizeof(val)))
-        LOG_MSG("setsockopt(SO_REUSEADDR) failed for HTTPServer::create\n");
-    if (bind(s, (const struct sockaddr *)&local, sizeof local) != 0)
-        throw GenericException(__FILE__, __LINE__,
-                               "HTTPServer cannot bind to port %d",
-                               (int) port);
-    listen(s, 3);
-    return new HTTPServer(s, user_arg);
 }
 
 void HTTPServer::start()

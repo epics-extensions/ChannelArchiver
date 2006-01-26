@@ -71,6 +71,7 @@ Engine::Engine(const stdString &index_name, short port)
     pass(DEFAULT_PASS)
 #endif   
 {
+    engine_server = new EngineServer(port, this);
     // Initialize CA library for multi-treaded use and
     // add exception handler to avoid aborts from CA
     if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL ||
@@ -78,7 +79,6 @@ Engine::Engine(const stdString &index_name, short port)
         throw GenericException(__FILE__, __LINE__,
                                "CA client initialization failed.");
     ca_context = ca_current_context();
-    engine_server = new EngineServer(port, this);
 }
 
 Engine::~Engine()
@@ -110,7 +110,7 @@ Engine::~Engine()
     {
         Guard engine_guard(mutex);
         IndexFile index(RTreeM);
-        index.open(index_name.c_str(), false);
+        index.open(index_name, false);
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
@@ -119,11 +119,18 @@ Engine::~Engine()
             c->addEvent(guard, 0, ARCH_STOPPED, now);
             c->write(guard, index);
         }
-        DataFile::close_all();
     }
     catch (GenericException &e)
     {
         LOG_MSG("Error while writing:\n%s\n", e.what());
+    }
+    try
+    {
+        DataFile::close_all();
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("Error after writing:\n%s\n", e.what());
     }
     LOG_MSG("Removing memory for channels and groups\n");
     try
@@ -257,10 +264,11 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
     channel->setMechanism(engine_guard, guard, mechanism, now);
     group->addChannel(engine_guard, guard, channel);
     channel->addToGroup(guard, group, disabling);
+    DataFile *datafile = 0;
     try
     {
         IndexFile index(RTreeM);
-        index.open(index_name.c_str(), false);
+        index.open(index_name, false);
         // Is channel already in Archive?
         stdString directory;
         AutoPtr<RTree> tree(index.getTree(channel_name, directory));
@@ -271,52 +279,46 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
             int idx;
             if (tree->getLastDatablock(node, idx, block))
             {   // extract previous knowledge from Archive
-                DataFile *datafile =
+                datafile =
                     DataFile::reference(directory,
                                         block.data_filename, false);
-                if (datafile)
-                {
-                    {
-                        AutoPtr<DataHeader> header(
-                            datafile->getHeader(block.data_offset));
-                        if (header)
-                        {
-                            epicsTime last_stamp(header->data.end_time);
-                            CtrlInfo ctrlinfo;
-                            ctrlinfo.read(datafile,
-                                          header->data.ctrl_info_offset);
-                            channel->init(engine_guard, guard,
-                                          header->data.dbr_type,
-                                          header->data.dbr_count,
-                                          &ctrlinfo,
-                                          &last_stamp);
-                            stdString stamp_txt;
-                            epicsTime2string(last_stamp, stamp_txt);
-                            /*
-                              LOG_MSG("'%s' initialized from storage.\n"
-                              "Data file '%s' @ 0x%lX\n"
-                              "Last Stamp: %s\n",
-                              channel_name.c_str(),
-                              block.data_filename.c_str(),
-                              block.data_offset,
-                              stamp_txt.c_str());
-                            */
-                            // As long as we don't have a new value,
-                            // log as disconnected
-                            channel->addEvent(guard, 0, ARCH_DISCONNECT, now);
-                        }
-                    }
-                    datafile->release();
-                    DataFile::close_all();
-                }
+                AutoPtr<DataHeader> header(
+                    datafile->getHeader(block.data_offset));
+                datafile->release(); // now ref'ed by header
+                datafile = 0;
+                epicsTime last_stamp(header->data.end_time);
+                CtrlInfo ctrlinfo;
+                ctrlinfo.read(datafile,
+                              header->data.ctrl_info_offset);
+                channel->init(engine_guard, guard,
+                              header->data.dbr_type,
+                              header->data.dbr_count,
+                              &ctrlinfo,
+                              &last_stamp);
+                stdString stamp_txt;
+                epicsTime2string(last_stamp, stamp_txt);
+                /*
+                  LOG_MSG("'%s' initialized from storage.\n"
+                  "Data file '%s' @ 0x%lX\n"
+                  "Last Stamp: %s\n",
+                  channel_name.c_str(),
+                  block.data_filename.c_str(),
+                  block.data_offset,
+                  stamp_txt.c_str());
+                */
+                // As long as we don't have a new value,
+                // log as disconnected
+                channel->addEvent(guard, 0, ARCH_DISCONNECT, now);
+                // No DataFile::close_all(), leave to next write period...
             }
         }
         // else ignore that we can't read data for the channel
-        index.close();
     }
     catch (GenericException &e)
     {
-        LOG_MSG("No previus archive data for '%s':\n%s\n",
+        if (datafile)
+            datafile->release();
+        LOG_MSG("No previous archive data for '%s':\n%s\n",
                 channel_name.c_str(), e.what());
     }
     // else: Ignore that we can't read existing data
@@ -387,7 +389,7 @@ unsigned long Engine::writeArchive(Guard &engine_guard)
     }
     catch (GenericException &e)
     {
-        LOG_MSG("Engine write error:\n%s\n", e.what());
+        LOG_MSG("Error while writing:\n%s\n", e.what());
     }
     try
     {
@@ -395,7 +397,7 @@ unsigned long Engine::writeArchive(Guard &engine_guard)
     }
     catch (GenericException &e)
     {
-        LOG_MSG("Engine write error:\n%s\n", e.what());
+        LOG_MSG("Error while closing data files:\n%s\n", e.what());
     }
     is_writing = false;
     //LOG_MSG("Engine: writing done.\n");

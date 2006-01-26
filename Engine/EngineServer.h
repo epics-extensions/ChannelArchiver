@@ -1,17 +1,18 @@
 #ifndef __ENGINESERVER_H__
 #define __ENGINESERVER_H__
 
-// Tools
-#include <AutoPtr.h>
+// Engine
+#include <HTTPServer.h>
 
-class EngineServer
+class EngineServer : public HTTPServer
 {
 public:
+        // Constructor creates and starts the HTTPServer
+        // for given engine.
 	EngineServer(short port, class Engine *engine);
+
+        // Stop and delete the HTTPServer.
 	~EngineServer();
-private:
-        class Engine *engine;
-	AutoPtr<class HTTPServer> server;
 };
 
 #endif //__ENGINESERVER_H__

@@ -27,7 +27,7 @@
 //     3: Connect & cleanup
 //     4: Requests
 //     5: whatever
-#define HTTPD_DEBUG 5
+#define HTTPD_DEBUG 2
 
 // Maximum number of clients that we accept.
 // This includes connections that are "done"
@@ -63,10 +63,11 @@ class HTTPServer : public epicsThreadRunable
 {
 public:
     /// Create a HTTPServer.
-    /// @parm port The TCP port number wher the server listens.
-    /// @return New HTTPServer, needs to be 'start()'ed.
+    /// 
+    /// @parm port The TCP port number where the server listens.
     /// @exception GenericException when port unavailable.
-    static HTTPServer *create(short port, void *user_arg);
+    /// @see start()
+    HTTPServer(short port, void *user_arg);
     
     virtual ~HTTPServer();
 
@@ -87,7 +88,6 @@ public:
     {   return go == false; }    
 
 private:
-    HTTPServer(SOCKET socket, void *user_arg);
     epicsThread                           thread;
     bool                                  go;
     SOCKET                                socket;

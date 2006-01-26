@@ -38,7 +38,7 @@ TEST_CASE test_http_server()
     HTTPClientConnection::handlers = handlers;
     try
     {
-        AutoPtr<HTTPServer> server(HTTPServer::create(4812, 0));
+        AutoPtr<HTTPServer> server(new HTTPServer(4812, 0));
         server->start();
         printf("Server is running, try\n");
         printf("  lynx -dump http://localhost:4812\n");

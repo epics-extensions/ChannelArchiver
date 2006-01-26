@@ -675,22 +675,18 @@ static PathHandlerList  handlers[] =
 };
 
 EngineServer::EngineServer(short port, Engine *engine)
-  : engine(engine)
+  : HTTPServer(port, engine)
 {
     HTTPClientConnection::handlers = handlers;
-    server = HTTPServer::create(port, engine);
-    if (!server)
-        return;
 #ifdef HTTPD_DEBUG
-    LOG_MSG("EngineServer starting HTTPServer 0x%lX\n",
-            (unsigned long)server);
+    LOG_MSG("Starting EngineServer\n");
 #endif
-    server->start();
+    start();
 }
 
 EngineServer::~EngineServer()
 {
-    server = 0;
+    HTTPClientConnection::handlers = 0;
 #ifdef HTTPD_DEBUG
     LOG_MSG("EngineServer deleted\n");
 #endif

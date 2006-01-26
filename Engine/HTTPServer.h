@@ -66,7 +66,7 @@ public:
     /// @parm port The TCP port number wher the server listens.
     /// @return New HTTPServer, needs to be 'start()'ed.
     /// @exception GenericException when port unavailable.
-    static HTTPServer *create(short port);
+    static HTTPServer *create(short port, void *user_arg);
     
     virtual ~HTTPServer();
 
@@ -79,15 +79,19 @@ public:
     /// Dump HTML page with server info to socket.
     void serverinfo(SOCKET socket);
 
+    void *getUserArg() const
+    {   return user_arg; }
+
     /// @return Returns true if the server wants to shut down.
     bool isShuttingDown() const
     {   return go == false; }    
 
 private:
-    HTTPServer(SOCKET socket);
+    HTTPServer(SOCKET socket, void *user_arg);
     epicsThread                           thread;
     bool                                  go;
     SOCKET                                socket;
+    void                                  *user_arg;
     size_t                                total_clients;
     double                                client_duration; // seconds; averaged
     epicsMutex                            client_list_mutex;
@@ -100,23 +104,22 @@ private:
     size_t client_cleanup();
 };
 
-typedef void (*PathHandler) (class HTTPClientConnection *connection,
-                             const stdString &full_path);
 
 /// Used by HTTPClientConnection to dispatch client requests
-
+///
 /// Terminator: entry with path = 0.
-///
-///
 typedef struct
 {
+    typedef void (*PathHandler) (class HTTPClientConnection *connection,
+                                 const stdString &full_path,
+                                 void *user_arg);
     const char  *path;      // Path for this handler
     size_t      path_len;   // _Relevant_ portion of path to check (if > 0)
     PathHandler handler;    // Handler to call
 }   PathHandlerList;
 
 /// Handler for a HTTPServer's client.
-
+///
 /// Handles input and dispatches
 /// to a PathHandler from PathList.
 /// It's deleted when the connection is closed.

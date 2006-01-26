@@ -32,10 +32,6 @@ public:
     size_t getOverwrites() const
     {   return overwrites; }
 
-    /// Doesn't change buffer at all, just reset the overwrite count
-    void resetOverwrites()
-    {   overwrites = 0; }
-
     /// Advance pointer to the next element and return it.
 
     /// This allows you to fiddle with that element yourself,

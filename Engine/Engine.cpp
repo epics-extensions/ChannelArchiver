@@ -26,7 +26,6 @@
 #include "Engine.h"
 #include "EngineServer.h"
 
-static EngineServer *engine_server = 0;
 Engine *theEngine = 0;
 
 static void caException(struct exception_handler_args args)
@@ -50,47 +49,115 @@ static void caException(struct exception_handler_args args)
 // --------------------------------------------------------------------------
 
 Engine::Engine(const stdString &index_name)
+  : num_connected(0),
+    ca_context(0),
+    start_time(epicsTime::getCurrent()),
+    RTreeM(50),
+    index_name(index_name),
+    description("EPICS Channel Archiver Engine"),
+    is_writing(false),
+    get_threshhold(20.0),
+    disconnect_on_disable(false),
+    write_period(30),
+    buffer_reserve(3),
+    process_delay_avg(0.0),
+    write_duration(0.0),
+    write_count(0),
+    next_write_time(roundTimeUp(start_time, write_period)),
+    future_secs(6*60*60)
+#ifdef USE_PASSWD
+    , 
+    user(DEFAULT_USER),
+    pass(DEFAULT_PASS)
+#endif   
 {
-    static bool the_one_and_only = true;
-
-    LOG_ASSERT(the_one_and_only);
-    start_time = epicsTime::getCurrent();
-    RTreeM = 50;
-    num_connected = 0;
-    this->index_name = index_name;
-    is_writing = false;
-    description = "EPICS Channel Archiver Engine";
-    the_one_and_only = false;
-
-    get_threshhold = 20.0;
-    disconnect_on_disable = false;
-    write_period = 30;
-    buffer_reserve = 3;
-    process_delay_avg = 0.0;
-    write_duration = 0.0;
-    write_count = 0;
-    next_write_time = roundTimeUp(epicsTime::getCurrent(), write_period);
-    future_secs = 6*60*60;
-
     // Initialize CA library for multi-treaded use and
     // add exception handler to avoid aborts from CA
     if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL ||
         ca_add_exception_event(caException, 0) != ECA_NORMAL)
-    {
-        LOG_MSG("CA client initialization failed\n");
-        LOG_ASSERT(0);
-    }
+        throw GenericException(__FILE__, __LINE__,
+                               "CA client initialization failed.");
     ca_context = ca_current_context();
-#ifdef USE_PASSWD
-    _user = DEFAULT_USER;
-    _pass = DEFAULT_PASS;
-#endif   
+    engine_server = new EngineServer(this);
+}
+
+Engine::~Engine()
+{
+    LOG_MSG("Shutdown:\n");
+    if (this != theEngine)
+        LOG_MSG("CORRUPTION: Not theEngine\n");
+    engine_server = 0;
+    epicsTime now(epicsTime::getCurrent());
+    LOG_MSG("Disconnecting Channels...\n");
+    try
+    {
+        Guard engine_guard(mutex);
+        stdList<ArchiveChannel *>::iterator ch;
+        for (ch = channels.begin(); ch != channels.end(); ++ch)
+        {
+            ArchiveChannel *c = *ch;
+            Guard guard(c->mutex);
+            c->setMechanism(engine_guard, guard, 0, now);
+            c->stopCA(engine_guard, guard);
+        }
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("Error while disconnecting:\n%s\n", e.what());
+    }
+    LOG_MSG("Adding 'Archive_Off' events...\n");
+    try
+    {
+        Guard engine_guard(mutex);
+        IndexFile index(RTreeM);
+        index.open(index_name.c_str(), false);
+        stdList<ArchiveChannel *>::iterator ch;
+        for (ch = channels.begin(); ch != channels.end(); ++ch)
+        {
+            ArchiveChannel *c = *ch;
+            Guard guard(c->mutex);
+            c->addEvent(guard, 0, ARCH_STOPPED, now);
+            c->write(guard, index);
+        }
+        DataFile::close_all();
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("Error while writing:\n%s\n", e.what());
+    }
+    LOG_MSG("Removing memory for channels and groups\n");
+    try
+    {
+        Guard engine_guard(mutex);
+        while (! channels.empty())
+        {
+            ArchiveChannel *c = channels.back();
+            channels.pop_back();
+            delete c;
+        }
+        while (! groups.empty())
+        {
+            delete groups.back();
+            groups.pop_back();
+        }
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("Error while deleting channels:\n%s\n", e.what());
+    }
+    // engine unlocked
+    LOG_MSG("Stopping ChannelAccess:\n");
+    ca_context_destroy();
+    theEngine = 0;
+    LOG_MSG("Engine shut down.\n");
 }
 
 void Engine::create(const stdString &index_name)
 {
+    if (theEngine)
+        throw GenericException(__FILE__, __LINE__,
+                               "Attempted to create multiple engines.");
     theEngine = new Engine(index_name);
-    engine_server = new EngineServer();
 }
 
 bool Engine::attachToCAContext(Guard &engine_guard)
@@ -104,61 +171,6 @@ bool Engine::attachToCAContext(Guard &engine_guard)
         return false;
     }
     return true;
-}
-
-void Engine::shutdown()
-{
-    ErrorInfo error_info;
-    LOG_MSG("Shutdown:\n");
-    LOG_ASSERT(this == theEngine);
-    delete engine_server;
-    engine_server = 0;
-    LOG_MSG("Adding 'Archive_Off' events...\n");
-    epicsTime now = epicsTime::getCurrent();
-    {
-        Guard engine_guard(mutex);
-        IndexFile index(RTreeM);
-        if (index.open(index_name.c_str(), false, error_info))
-        {
-            stdList<ArchiveChannel *>::iterator ch;
-            for (ch = channels.begin(); ch != channels.end(); ++ch)
-            {
-                ArchiveChannel *c = *ch;
-                Guard guard(c->mutex);
-                c->setMechanism(engine_guard, guard, 0, now);
-                c->addEvent(guard, 0, ARCH_STOPPED, now);
-                c->write(guard, index);
-            }
-            DataFile::close_all();
-            index.close();
-        }
-        else
-            LOG_MSG("Engine::shutdown error, %s\n",
-                    error_info.info.c_str());
-        LOG_MSG("Removing memory for channels and groups\n");
-        while (! channels.empty())
-        {
-            ArchiveChannel *c = channels.back();
-            channels.pop_back();
-            {
-                Guard guard(c->mutex);
-                c->setMechanism(engine_guard, guard, 0, now);
-                c->stopCA(engine_guard, guard);
-            }
-            delete c;
-        }
-        while (! groups.empty())
-        {
-            delete groups.back();
-            groups.pop_back();
-        }
-        theEngine = 0;
-    }
-    // engine unlocked
-    LOG_MSG("Stopping ChannelAccess:\n");
-    ca_context_destroy();
-    delete this;
-    LOG_MSG("Engine shut down.\n");
 }
 
 #ifdef USE_PASSWD
@@ -241,16 +253,17 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
         mechanism = new SampleMechanismMonitoredGet(channel);
     if (channel->getPeriod(guard) > period)
         channel->setPeriod(engine_guard, guard, period);
-    epicsTime now  = epicsTime::getCurrent();
+    epicsTime now(epicsTime::getCurrent());
     channel->setMechanism(engine_guard, guard, mechanism, now);
     group->addChannel(engine_guard, guard, channel);
     channel->addToGroup(guard, group, disabling);
-    ErrorInfo error_info;
-    IndexFile index(RTreeM);
-    if (index.open(index_name.c_str(), false, error_info))
-    {   // Is channel already in Archive?
+    try
+    {
+        IndexFile index(RTreeM);
+        index.open(index_name.c_str(), false);
+        // Is channel already in Archive?
         stdString directory;
-        AutoPtr<RTree> tree(index.getTree(channel_name, directory, error_info));
+        AutoPtr<RTree> tree(index.getTree(channel_name, directory));
         if (tree)
         {
             RTree::Datablock block;
@@ -290,8 +303,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                             */
                             // As long as we don't have a new value,
                             // log as disconnected
-                            channel->addEvent(guard, 0, ARCH_DISCONNECT,
-                                              epicsTime::getCurrent());
+                            channel->addEvent(guard, 0, ARCH_DISCONNECT, now);
                         }
                     }
                     datafile->release();
@@ -301,6 +313,11 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
         }
         // else ignore that we can't read data for the channel
         index.close();
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("No previus archive data for '%s':\n%s\n",
+                channel_name.c_str(), e.what());
     }
     // else: Ignore that we can't read existing data
     channel->startCA(guard);
@@ -357,24 +374,29 @@ unsigned long Engine::writeArchive(Guard &engine_guard)
     unsigned long count = 0;
     //LOG_MSG("Engine: writing\n");
     is_writing = true;
-    ErrorInfo error_info;
-    IndexFile index(RTreeM);
-    if (index.open(index_name.c_str(), false, error_info))
+    try
     {
+        IndexFile index(RTreeM);
+        index.open(index_name, false);
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
             Guard guard((*ch)->mutex);
             count += (*ch)->write(guard, index);
         }
-        index.close();
     }
-    else
+    catch (GenericException &e)
     {
-        LOG_MSG("Engine::writeArchive error, %s\n",
-                error_info.info.c_str());
+        LOG_MSG("Engine write error:\n%s\n", e.what());
     }
-    DataFile::close_all();
+    try
+    {
+        DataFile::close_all();
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("Engine write error:\n%s\n", e.what());
+    }
     is_writing = false;
     //LOG_MSG("Engine: writing done.\n");
     return count;

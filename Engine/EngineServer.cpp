@@ -35,8 +35,10 @@
 #endif
 #endif
 
-static void engineinfo(HTTPClientConnection *connection, const stdString &path)
+static void engineinfo(HTTPClientConnection *connection, const stdString &path,
+                       void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Archive Engine");
     stdString s;
     char line[100];
@@ -44,81 +46,76 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path)
     page.openTable(2, "Archive Engine Info", 0);
     page.tableLine("Version", ARCH_VERSION_TXT
                    ", built " __DATE__ ", " __TIME__, 0);
-    if (theEngine)
+    const char *desc, *index;
+    size_t num_channels, num_connected;
+    epicsTime startTime, nextWrite;
+    double proc_dly, write_duration, write_period, get_threshhold;
+    unsigned long write_count;
+    bool is_writing, disconn;
     {
-        const char *desc, *index;
-        size_t num_channels, num_connected;
-        epicsTime startTime, nextWrite;
-        double proc_dly, write_duration, write_period, get_threshhold;
-        unsigned long write_count;
-        bool is_writing, disconn;
-        {
-            
-            Guard engine_guard(theEngine->mutex);
-            desc = theEngine->getDescription().c_str();
-            startTime = theEngine->getStartTime();
-            index = theEngine->getIndexName().c_str();
-            num_channels = theEngine->getChannels(engine_guard).size();
-            num_connected = theEngine->getNumConnected(engine_guard);
-            proc_dly = theEngine->getProcessDelayAvg(engine_guard);
-            write_count = theEngine->getWriteCount(engine_guard);
-            write_duration = theEngine->getWriteDuration(engine_guard);
-            nextWrite = theEngine->getNextWriteTime(engine_guard);
-            is_writing = theEngine->isWriting();
-            write_period = theEngine->getWritePeriod();
-            get_threshhold = theEngine->getGetThreshold();
-            disconn = theEngine->disconnectOnDisable(engine_guard);
-        }
         
-        page.tableLine("Description", desc, 0);
+        Guard engine_guard(engine->mutex);
+        desc = engine->getDescription().c_str();
+        startTime = engine->getStartTime();
+        index = engine->getIndexName().c_str();
+        num_channels = engine->getChannels(engine_guard).size();
+        num_connected = engine->getNumConnected(engine_guard);
+        proc_dly = engine->getProcessDelayAvg(engine_guard);
+        write_count = engine->getWriteCount(engine_guard);
+        write_duration = engine->getWriteDuration(engine_guard);
+        nextWrite = engine->getNextWriteTime(engine_guard);
+        is_writing = engine->isWriting();
+        write_period = engine->getWritePeriod();
+        get_threshhold = engine->getGetThreshold();
+        disconn = engine->disconnectOnDisable(engine_guard);
+    }
         
-        epicsTime2string(startTime, s);
-        page.tableLine("Started", s.c_str(), 0);
+    page.tableLine("Description", desc, 0);
         
-        page.tableLine("Archive Index", index, 0);
+    epicsTime2string(startTime, s);
+    page.tableLine("Started", s.c_str(), 0);
+        
+    page.tableLine("Archive Index", index, 0);
 
-        cvtUlongToString(num_channels, line);
-        page.tableLine("Channels", line, 0);
+    cvtUlongToString(num_channels, line);
+    page.tableLine("Channels", line, 0);
 
-        if (num_channels != num_connected)
-            sprintf(line,"<FONT COLOR=#FF0000>%d</FONT>",(int)num_connected);
-        else
-            cvtUlongToString(num_connected, line);
+    if (num_channels != num_connected)
+        sprintf(line,"<FONT COLOR=#FF0000>%d</FONT>",(int)num_connected);
+    else
+        cvtUlongToString(num_connected, line);
         page.tableLine("Connected", line, 0);
         
 #ifdef SHOW_DIR
-        getcwd(dir, sizeof line);                 
-        page.tableLine("Directory ", line, 0);
+    getcwd(dir, sizeof line);                 
+    page.tableLine("Directory ", line, 0);
 #endif
-        sprintf(line, "%.3f sec", proc_dly);
-        page.tableLine("Avg. Proc. Delay", line, 0);
+    sprintf(line, "%.3f sec", proc_dly);
+    page.tableLine("Avg. Proc. Delay", line, 0);
 
-        sprintf(line, "%lu", write_count);
-        page.tableLine("Write Count", line, 0);
+    sprintf(line, "%lu", write_count);
+    page.tableLine("Write Count", line, 0);
 
-        sprintf(line, "%.3f sec", write_duration);
-        page.tableLine("Write Duration", line, 0);
+    sprintf(line, "%.3f sec", write_duration);
+    page.tableLine("Write Duration", line, 0);
 
-        epicsTime2string(nextWrite, s);
-        page.tableLine("Next write time", s.c_str(), 0);
+    epicsTime2string(nextWrite, s);
+    page.tableLine("Next write time", s.c_str(), 0);
         
-        page.tableLine("Currently writing",
-                       (const char *) (is_writing ? "Yes" : "No"), 0);
+    page.tableLine("Currently writing",
+                   (const char *) (is_writing ? "Yes" : "No"), 0);
         
-        sprintf(line, "%.1f sec", write_period);
-        page.tableLine("Write Period", line, 0);
+    sprintf(line, "%.1f sec", write_period);
+    page.tableLine("Write Period", line, 0);
 
-        sprintf(line, "%lu MB",
-                (unsigned long)DataWriter::file_size_limit/1024/1024);
-        page.tableLine("File Size Limit", line, 0);
+    sprintf(line, "%lu MB",
+            (unsigned long)DataWriter::file_size_limit/1024/1024);
+    page.tableLine("File Size Limit", line, 0);
         
-        sprintf(line, "%.1f sec", get_threshhold);
-        page.tableLine("Get Threshold", line, 0);
+    sprintf(line, "%.1f sec", get_threshhold);
+    page.tableLine("Get Threshold", line, 0);
 
-        page.tableLine("Disconn. on disable", (disconn ? "Yes" : "No"), 0);
-    }
-    else
-        page.tableLine("No Engine runnig!?", 0);
+    page.tableLine("Disconn. on disable", (disconn ? "Yes" : "No"), 0);
     page.closeTable();
 }
 
@@ -139,7 +136,8 @@ static void showStopForm(HTMLPage &page)
 }
 #endif
 
-static void stop(HTTPClientConnection *connection, const stdString &path)
+static void stop(HTTPClientConnection *connection, const stdString &path,
+                 void *user_arg)
 {
     SOCKET s = connection->getSocket();
     HTMLPage page(s, "Archive Engine Stop");
@@ -152,23 +150,20 @@ static void stop(HTTPClientConnection *connection, const stdString &path)
         line += "\n";
         LOG_MSG(line.c_str());
 #ifdef USE_PASSWD
-        if (theEngine)
+        CGIDemangler args;
+        args.parse(path.substr(6).c_str());
+        stdString user = args.find("USER");
+        stdString pass = args.find("PASS");
+        if (! engine->checkUser(user, pass))
         {
-            CGIDemangler args;
-            args.parse(path.substr(6).c_str());
-            stdString user = args.find("USER");
-            stdString pass = args.find("PASS");
-            if (! theEngine->checkUser(user, pass))
-            {
-                page.line("<H3><FONT COLOR=#FF0000>"
-                          "Wrong user/password</FONT></H3>");
-                LOG_MSG("USER: '%s', PASS: '%s' - wrong user/password\n",
-                        user.c_str(), pass.c_str());
-                showStopForm(page);
-                return;
-            }
-            LOG_MSG("user/password accepted\n");
+            page.line("<H3><FONT COLOR=#FF0000>"
+                      "Wrong user/password</FONT></H3>");
+            LOG_MSG("USER: '%s', PASS: '%s' - wrong user/password\n",
+                    user.c_str(), pass.c_str());
+            showStopForm(page);
+            return;
         }
+        LOG_MSG("user/password accepted\n");
 #endif
         page.line("<H3>Engine Stopped</H3>");
         page.line(line);
@@ -176,8 +171,8 @@ static void stop(HTTPClientConnection *connection, const stdString &path)
         page.line("Engine will quit as soon as possible...");
         page.line("<P>");
         page.line("Therefore the web interface stops responding now.");
-        extern bool run;
-        run = false;
+        extern bool run_main_loop;
+        run_main_loop = false;
     }
     catch (GenericException &e)
     {
@@ -188,10 +183,12 @@ static void stop(HTTPClientConnection *connection, const stdString &path)
     }
 }
 
-static void config(HTTPClientConnection *connection, const stdString &path)
+static void config(HTTPClientConnection *connection, const stdString &path,
+                   void *user_arg)
 {
     HTMLPage page(connection->getSocket(), "Archive Engine Config.");
-    if(HTMLPage::_nocfg) {
+    if (HTMLPage::with_config == false)
+    {
         page.line("Online Config is disabled for this ArchiveEngine!");
         return;
     }
@@ -246,17 +243,17 @@ static void config(HTTPClientConnection *connection, const stdString &path)
 #   endif
 }
 
-static void channels(HTTPClientConnection *connection, const stdString &path)
+static void channels(HTTPClientConnection *connection, const stdString &path,
+                     void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Channels");
     page.openTable(1, "Name", 1, "Status", 0);
     stdList<ArchiveChannel *>::const_iterator channel;
     stdString link;
     link.reserve(80);
-    if (!theEngine)
-        return;
-    Guard engine_guard(theEngine->mutex);
-    stdList<ArchiveChannel *> &channels = theEngine->getChannels(engine_guard);
+    Guard engine_guard(engine->mutex);
+    stdList<ArchiveChannel *> &channels = engine->getChannels(engine_guard);
     for (channel = channels.begin(); channel != channels.end(); ++channel)
     {
         link = "<A HREF=\"channel/";
@@ -329,14 +326,13 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
 }
 
 static void channelInfo(HTTPClientConnection *connection,
-                        const stdString &path)
+                        const stdString &path, void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     stdString channel_name = path.substr(9);
-    if (!theEngine)
-        return;
-    Guard engine_guard(theEngine->mutex);
+    Guard engine_guard(engine->mutex);
     ArchiveChannel *channel
-        = theEngine->findChannel(engine_guard, channel_name);
+        = engine->findChannel(engine_guard, channel_name);
     if (! channel)
     {
         connection->error("No such channel: " + channel_name);
@@ -350,13 +346,13 @@ static void channelInfo(HTTPClientConnection *connection,
     page.closeTable();
 }
 
-void groups(HTTPClientConnection *connection, const stdString &path)
+void groups(HTTPClientConnection *connection, const stdString &path,
+            void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Groups");
-    if (!theEngine)
-        return;
-    Guard engine_guard(theEngine->mutex);
-    stdList<GroupInfo *> &groups = theEngine->getGroups(engine_guard);
+    Guard engine_guard(engine->mutex);
+    stdList<GroupInfo *> &groups = engine->getGroups(engine_guard);
     if (groups.empty())
     {
         page.line("<I>no groups</I>");
@@ -404,17 +400,17 @@ void groups(HTTPClientConnection *connection, const stdString &path)
     page.closeTable();
 }
 
-static void groupInfo(HTTPClientConnection *connection, const stdString &path)
+static void groupInfo(HTTPClientConnection *connection, const stdString &path,
+                      void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Group Info");
     try
     {
         stdString group_name = path.substr(7);
         CGIDemangler::unescape(group_name);
-        if (!theEngine)
-            throw GenericException(__FILE__, __LINE__, "No Engine");
-        Guard engine_guard(theEngine->mutex);
-        const GroupInfo *group = theEngine->findGroup(engine_guard, group_name);
+        Guard engine_guard(engine->mutex);
+        const GroupInfo *group = engine->findGroup(engine_guard, group_name);
         if (! group)
         {
             page.line("No such group: ");
@@ -427,7 +423,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
         page.tableLine("Name", group_name.c_str(), 0);
         page.tableLine("ID", id, 0);
         page.closeTable();
-        if (theEngine->getChannels(engine_guard).empty())
+        if (engine->getChannels(engine_guard).empty())
         {
             page.line("no channels");
             return;
@@ -452,8 +448,9 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path)
 }
 
 static void addChannel(HTTPClientConnection *connection,
-                       const stdString &path)
+                       const stdString &path, void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Add Channel");
     try
     {
@@ -466,10 +463,8 @@ static void addChannel(HTTPClientConnection *connection,
             page.line("Channel and group names must not be empty");
             return;
         }
-        if (!theEngine)
-            throw GenericException(__FILE__, __LINE__, "No Engine");
-        Guard engine_guard(theEngine->mutex);
-        GroupInfo *group = theEngine->findGroup(engine_guard, group_name);
+        Guard engine_guard(engine->mutex);
+        GroupInfo *group = engine->findGroup(engine_guard, group_name);
         if (!group)
         {
             stdString msg = "Cannot find group " + group_name;
@@ -487,13 +482,13 @@ static void addChannel(HTTPClientConnection *connection,
             disabling = true;
         page.out("Channel <I>");
         page.out(channel_name);
-        theEngine->attachToCAContext(engine_guard);
-        if (theEngine->addChannel(engine_guard, group, channel_name, period,
+        engine->attachToCAContext(engine_guard);
+        if (engine->addChannel(engine_guard, group, channel_name, period,
                                   disabling, monitored))
         {
             page.line("</I> was added");
             EngineConfig config;
-            config.write(engine_guard, theEngine);
+            config.write(engine_guard, engine);
         }
         else
             page.line("</I> could not be added");
@@ -510,8 +505,10 @@ static void addChannel(HTTPClientConnection *connection,
     }
 }
 
-static void addGroup(HTTPClientConnection *connection, const stdString &path)
+static void addGroup(HTTPClientConnection *connection, const stdString &path,
+                     void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
     try
     {
@@ -523,17 +520,15 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
             page.line("Group name must not be empty");
             return;
         }
-        if (!theEngine)
-            throw GenericException(__FILE__, __LINE__, "No Engine");
         page.line("<H1>Groups</H1>");
         page.out("Group <I>");
         page.out(group_name);
-        Guard engine_guard(theEngine->mutex);
-        if (theEngine->addGroup(engine_guard, group_name))
+        Guard engine_guard(engine->mutex);
+        if (engine->addGroup(engine_guard, group_name))
         {
             page.line("</I> was added to the engine.");
             EngineConfig config;
-            config.write(engine_guard, theEngine);
+            config.write(engine_guard, engine);
         }
         else
             page.line("</I> could not be added to the engine.");
@@ -549,8 +544,9 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path)
 
     
 static void parseConfig(HTTPClientConnection *connection,
-                        const stdString &path)
+                        const stdString &path, void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
     try
     {
@@ -562,19 +558,17 @@ static void parseConfig(HTTPClientConnection *connection,
             page.line("Config. name must not be empty");
             return;
         }
-        if (!theEngine)
-            throw GenericException(__FILE__, __LINE__, "No Engine");
         page.line("<H1>Configuration</H1>");
         page.out("Configuration <I>");
         page.out(config_name);
-        Guard engine_guard(theEngine->mutex);
-        theEngine->attachToCAContext(engine_guard);
+        Guard engine_guard(engine->mutex);
+        engine->attachToCAContext(engine_guard);
         EngineConfig config;
-        if (config.read(engine_guard, theEngine, config_name))
+        if (config.read(engine_guard, engine, config_name))
         {
             page.line("</I> was loaded.");
             EngineConfig config;
-            config.write(engine_guard, theEngine);
+            config.write(engine_guard, engine);
         }
         else
             page.line("</I> could not be loaded.<P>");
@@ -589,19 +583,18 @@ static void parseConfig(HTTPClientConnection *connection,
 }
 
 static void channelGroups(HTTPClientConnection *connection,
-                          const stdString &path)
+                          const stdString &path, void *user_arg)
 {
+    Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
     try
     {
         CGIDemangler args;
         args.parse(path.substr(15).c_str());
         stdString channel_name = args.find("CHANNEL");
-        if (!theEngine)
-            throw GenericException(__FILE__, __LINE__, "No Engine");
-        Guard engine_guard(theEngine->mutex);
+        Guard engine_guard(engine->mutex);
         ArchiveChannel *channel =
-            theEngine->findChannel(engine_guard, channel_name);
+            engine->findChannel(engine_guard, channel_name);
         if (! channel)
         {
             page.line("No such channel: " + channel_name);
@@ -646,10 +639,9 @@ static void channelGroups(HTTPClientConnection *connection,
 }
     
 static void caStatus(HTTPClientConnection *connection,
-                     const stdString &path)
+                     const stdString &path, void *user_arg)
 {   //   "castatus?name
-    if (!theEngine)
-        return;
+    Engine *engine = (Engine *)user_arg;
     stdString name = path.substr(10);
 
     HTMLPage page(connection->getSocket(), "Archiver Engine");
@@ -657,7 +649,7 @@ static void caStatus(HTTPClientConnection *connection,
     page.out("Will create ");
     page.out(name.c_str());
     page.out(" at next write cycle.\n");
-    theEngine->setInfoDumpFile(name);
+    engine->setInfoDumpFile(name);
 }
 
 static PathHandlerList  handlers[] =
@@ -684,27 +676,24 @@ static PathHandlerList  handlers[] =
 
 // static member:
 short EngineServer::_port = 4812;
-bool EngineServer::_nocfg = false;
 
-EngineServer::EngineServer()
+EngineServer::EngineServer(Engine *engine)
+  : engine(engine)
 {
     HTTPClientConnection::handlers = handlers;
-    _server = HTTPServer::create(_port);
-    if (!_server)
-    {
-        LOG_MSG("Cannot create EngineServer on port %d\n", _port);
+    server = HTTPServer::create(_port, engine);
+    if (!server)
         return;
-    }
 #ifdef HTTPD_DEBUG
     LOG_MSG("EngineServer starting HTTPServer 0x%lX\n",
-            (unsigned long)_server);
+            (unsigned long)server);
 #endif
-    _server->start();
+    server->start();
 }
 
 EngineServer::~EngineServer()
 {
-    delete _server;
+    server = 0;
 #ifdef HTTPD_DEBUG
     LOG_MSG("EngineServer deleted\n");
 #endif

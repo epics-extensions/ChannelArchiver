@@ -1,16 +1,19 @@
 #ifndef __ENGINESERVER_H__
 #define __ENGINESERVER_H__
 
+// Tools
+#include <AutoPtr.h>
+
 class EngineServer
 {
 public:
-	EngineServer();
+	EngineServer(class Engine *engine);
 	~EngineServer();
 
 	static short _port;
-    static bool _nocfg;
 private:
-	class HTTPServer *_server;
+        class Engine *engine;
+	AutoPtr<class HTTPServer> server;
 };
 
 #endif //__ENGINESERVER_H__

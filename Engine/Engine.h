@@ -13,6 +13,7 @@
 
 // Tools
 #include <ToolsConfig.h>
+#include <AutoPtr.h>
 // Engine
 #include "GroupInfo.h"
 #include "ScanList.h"
@@ -109,14 +110,14 @@
 class Engine
 {
 public:
+    // Ask engine to stop & delete itself.
+    // Will take the engine's mutex.
+    ~Engine();
+
     /// The Engine is a Singleton,
     /// createable only by calling this method
     /// and from then on accessible via global Engine *theEngine
     static void create(const stdString &index_name);
-
-    // Ask engine to stop & delete itself.
-    // shutdown() will take the engine's mutex.
-    void shutdown();
 
 #ifdef USE_PASSWD
     /// Check if user/password are valid
@@ -228,7 +229,8 @@ public:
 
 private:
     Engine(const stdString &index_name); // use create
-    ~Engine() {} // Use shutdown
+
+    AutoPtr<class EngineServer> engine_server;
     unsigned long writeArchive(Guard &engine_guard);
 
     stdList<ArchiveChannel *> channels;// all the channels

@@ -4,7 +4,8 @@
 // Engine
 #include "HTTPServer.h"
 
-static void close_test(HTTPClientConnection *connection, const stdString &path)
+static void close_test(HTTPClientConnection *connection,
+                       const stdString &path, void *user_arg)
 {
     close(connection->getSocket());
     HTMLPage page(connection->getSocket(), "Close");
@@ -14,7 +15,8 @@ static void close_test(HTTPClientConnection *connection, const stdString &path)
     page.line("</PRE>");
 }
 
-static void echo_test(HTTPClientConnection *connection, const stdString &path)
+static void echo_test(HTTPClientConnection *connection,
+                      const stdString &path, void *user_arg)
 {
     HTMLPage page(connection->getSocket(), "Echo");
     page.line("<H3>Echo</H3>");
@@ -36,7 +38,7 @@ TEST_CASE test_http_server()
     HTTPClientConnection::handlers = handlers;
     try
     {
-        AutoPtr<HTTPServer> server(HTTPServer::create(4812));
+        AutoPtr<HTTPServer> server(HTTPServer::create(4812, 0));
         server->start();
         printf("Server is running, try\n");
         printf("  lynx -dump http://localhost:4812\n");

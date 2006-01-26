@@ -7,18 +7,17 @@ USR_CXXFLAGS += -I ../../Index
 
 LIB_SRCS += CircularBuffer.cpp
 LIB_SRCS += HTMLPage.cpp
-
-#   Handle SIGPIPE !!!!
-
 LIB_SRCS += HTTPServer.cpp
-#LIB_SRCS += ArchiveChannel.cpp
-#LIB_SRCS += SampleMechanism.cpp
-#LIB_SRCS += ScanList.cpp
-#LIB_SRCS += GroupInfo.cpp
-#LIB_SRCS += EngineConfig.cpp
-#LIB_SRCS += EngineServer.cpp
-#LIB_SRCS += Engine.cpp
+LIB_SRCS += ArchiveChannel.cpp
+LIB_SRCS += SampleMechanism.cpp
+LIB_SRCS += ScanList.cpp
+LIB_SRCS += GroupInfo.cpp
+LIB_SRCS += EngineConfig.cpp
+LIB_SRCS += EngineServer.cpp
+LIB_SRCS += Engine.cpp
 LIBRARY_HOST := Engine
+
+# Display overwrites
 
 ArchiveEngine_SRCS += main.cpp
 #PROD_HOST := ArchiveEngine

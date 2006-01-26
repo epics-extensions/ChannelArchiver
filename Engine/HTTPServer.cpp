@@ -50,12 +50,13 @@
 // depends on the Engine class to delete the HTTPServer.
 
 // HTTPServer ----------------------------------------------
-HTTPServer::HTTPServer(SOCKET socket)
+HTTPServer::HTTPServer(SOCKET socket, void *user_arg)
   : thread(*this, "HTTPD",
            epicsThreadGetStackSize(epicsThreadStackBig),
            epicsThreadPriorityMedium),
     go(true),
     socket(socket),
+    user_arg(user_arg),
     total_clients(0),
     client_duration(0.0),
     clients(new AutoPtr<HTTPClientConnection> [MAX_NUM_CLIENTS])
@@ -90,7 +91,7 @@ HTTPServer::~HTTPServer()
 #endif
 }
 
-HTTPServer *HTTPServer::create(short port)
+HTTPServer *HTTPServer::create(short port, void *user_arg)
 {
     SOCKET s = epicsSocketCreate(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in  local;
@@ -110,7 +111,7 @@ HTTPServer *HTTPServer::create(short port)
                                "HTTPServer cannot bind to port %d",
                                (int) port);
     listen(s, 3);
-    return new HTTPServer(s);
+    return new HTTPServer(s, user_arg);
 }
 
 void HTTPServer::start()
@@ -474,7 +475,7 @@ bool HTTPClientConnection::analyzeInput()
             GetSocketPeer(socket, peer);
             LOG_MSG("HTTP get '%s' from %s\n", path.c_str(), peer.c_str());
 #           endif
-            h->handler(this, path);
+            h->handler(this, path, server->getUserArg());
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 4
             LOG_MSG("HTTP invoked handler for '%s'\n", path.c_str());
 #           endif

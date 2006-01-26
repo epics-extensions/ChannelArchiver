@@ -35,9 +35,6 @@ public:
     /// Create an ArchiveChannel.
     ArchiveChannel(const stdString &name, double period);
 
-    /// Destructor. Call only after prepareToDie().
-
-    /// For prepareToDie(), a Guard for the channel is required.
     /// For the destructor, the channel must not be locked
     /// since we want to delete the channel's mutex.
     ~ArchiveChannel();

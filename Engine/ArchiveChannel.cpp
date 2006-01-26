@@ -18,7 +18,6 @@ ArchiveChannel::ArchiveChannel(const stdString &name, double period)
     period(period),
     mechanism(0),
     chid_valid(false),
-    chid(0),
     connected(false),
     nelements(0),
     dbr_size(0),
@@ -36,8 +35,8 @@ ArchiveChannel::~ArchiveChannel()
                 "setMechanism(0) and stopCA()\n", name.c_str());
         // leak mechanism...
     }
-    pending_value = 0;
     pending_value_set = false;
+    pending_value = 0;
     marker = 0;
 }
 
@@ -51,14 +50,12 @@ void ArchiveChannel::setMechanism(Guard &engine_guard, Guard &guard,
     // so that both the old and (maybe) new mechanism
     // can properly stop/start subscriptions etc. 
     bool was_connected = connected;
+    connected = false;
+    connection_time = now;
     if (mechanism)
     {
         if (was_connected)
-        {
-            connected = false;
-            connection_time = now;
             mechanism->handleConnectionChange(engine_guard, guard);
-        }
         mechanism->destroy(engine_guard, guard);
     }
     mechanism = new_mechanism;
@@ -267,14 +264,14 @@ void ArchiveChannel::init(Guard &engine_guard, Guard &guard,
 
 unsigned long ArchiveChannel::write(Guard &guard, IndexFile &index)
 {
-    unsigned long count = 0;
     guard.check(__FILE__, __LINE__, mutex);
     size_t i, num_samples = buffer.getCount();
     if (num_samples <= 0)
-        return count;
-    DataWriter writer(index, name, ctrl_info, dbr_time_type, nelements,
+        return 0;
+    DataWriter writer(index, name.c_str(), ctrl_info, dbr_time_type, nelements,
                       period, num_samples);
     const RawValue::Data *value;
+    unsigned long count = 0;
     for (i=0; i<num_samples; ++i)
     {
         if (!(value = buffer.removeRawValue()))
@@ -283,17 +280,14 @@ unsigned long ArchiveChannel::write(Guard &guard, IndexFile &index)
                     name.c_str());
             break;
         }
-        DataWriter::DWA add_result = writer.add(value);
-        if (add_result == DataWriter::DWA_Error)
+        if (! writer.add(value))
         {
-            LOG_MSG("'%s': Couldn't write value\n", name.c_str());
+            LOG_MSG("'%s': back-in-time write value\n", name.c_str());
             break;
         }
-        else if (add_result == DataWriter::DWA_Back)
-            LOG_MSG("'%s': back-in-time write value\n", name.c_str());
         ++count;
     }
-    buffer.resetOverwrites();
+    buffer.reset();
     return count;
 }
 
@@ -477,7 +471,7 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
 void ArchiveChannel::handleConnectionChange(Guard &engine_guard,
                                             Guard &guard,
                                             bool now_connected)
-{        
+{
     bool was_connected = connected;
     stdList<GroupInfo *>::iterator g;
     connected = now_connected;

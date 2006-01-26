@@ -35,7 +35,8 @@
 #endif
 
 // For communication sigint_handler -> main loop
-bool run = true;
+// and EngineServer -> main loop.
+bool run_main_loop = true;
 
 // signals are process-, not thread-bound.
 static void signal_handler(int sig)
@@ -43,7 +44,7 @@ static void signal_handler(int sig)
 #ifndef HAVE_SIGACTION
     signal(sig, SIG_IGN);
 #endif
-    run = false;
+    run_main_loop = false;
 }
 
 int main(int argc, const char *argv[])
@@ -91,7 +92,7 @@ int main(int argc, const char *argv[])
                 if (! description.get().empty())
                     theEngine->setDescription(guard, description);
                 EngineConfig config;
-                run = config.read(guard, theEngine, config_name);
+                run_main_loop = config.read(guard, theEngine, config_name);
             }
 #ifdef HAVE_SIGACTION
             struct sigaction action;
@@ -111,7 +112,7 @@ int main(int argc, const char *argv[])
                     "Engine Running. Stop via http://localhost:%d/stop\n"
                     "----------------------------------------------------\n",
                     EngineServer::_port);
-            while (run)
+            while (run_main_loop)
                 theEngine->process();
             // If engine is not shut down properly (ca_task_exit !),
             // the MS VC debugger will freak out

@@ -6,10 +6,11 @@
 #include <epicsTime.h>
 // Tools
 #include <ToolsConfig.h>
+#include <Guard.h>
 
 /// \ingroup Tools
 ///
-/// Timer for throttling messages.
+/// Timer for throttling messages, thread safe.
 /// 
 /// In order to avoid hundreds of similar messages,
 /// use the Throttle to check if it's OK to print
@@ -24,6 +25,7 @@ public:
     /// @return Returns true when it's OK to print another message.
     bool isPermitted(const epicsTime &when)
     {
+        Guard guard(mutex);
         double time_passed = when - last;
         if (time_passed < seconds)
             return false;
@@ -39,6 +41,7 @@ public:
     }
     
 private:
+    epicsMutex mutex;
     double seconds;
     epicsTime last;
 };

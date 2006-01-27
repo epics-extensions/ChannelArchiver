@@ -12,7 +12,7 @@
 // Storage
 #include <OldDirectoryFile.h>
 #include <DataFile.h>
-#include <DataReader.h>
+#include <RawDataReader.h>
 #include <DataWriter.h>
 
 int verbose;
@@ -24,43 +24,25 @@ bool do_enforce_off = false;
 
 void show_hash_info(const stdString &index_name)
 {
-    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name, true, error_info))
-    {
-        fprintf(stderr, "Cannot open index '%s'\n",
-                index_name.c_str());
-        return;
-    }
+    index.open(index_name, true);
     index.showStats(stdout);
-    index.close();
 }
 
 void list_names(const stdString &index_name, bool channel_detail)
 {
-    ErrorInfo error_info;
     IndexFile index(3);
     IndexFile::NameIterator names;
     epicsTime stime, etime, t0, t1;
     stdString directory, start, end;
     bool ok;
     size_t count = 0;
-    if (!index.open(index_name, true, error_info))
-    {
-        fprintf(stderr, "Cannot open index '%s'\n",
-                index_name.c_str());
-        return;
-    }
+    index.open(index_name, true);
     for (ok = index.getFirstChannel(names);
          ok;
          ok = index.getNextChannel(names))
     {
-        AutoPtr<RTree> tree(index.getTree(names.getName(), directory, error_info));
-        if (!tree)
-        {
-            fprintf(stderr, "%s\n", error_info.info.c_str());
-            continue;
-        }
+        AutoPtr<RTree> tree(index.getTree(names.getName(), directory));
         tree->getInterval(stime, etime);
 	if (channel_detail)
             printf("Channel '%s' (M=%d): %s - %s\n",
@@ -82,7 +64,6 @@ void list_names(const stdString &index_name, bool channel_detail)
         }
         ++count;
     }
-    index.close();
     printf("%u channels, %s - %s\n",
            (unsigned int)count,
            epicsTimeTxt(t0, start), epicsTimeTxt(t1, end));
@@ -105,14 +86,13 @@ void determine_period_and_samples(IndexFile &index,
                                   const stdString &channel,
                                   double &period, size_t &num_samples)
 {
-    ErrorInfo error_info;
     period      = 1.0; // initial guess
     num_samples = 10;
     // Whatever fails only means that there is no data,
     // so the initial guess remains OK.
     // Otherwise we peek into the last datablock.
     stdString directory;
-    AutoPtr<RTree> tree(index.getTree(channel, directory, error_info));
+    AutoPtr<RTree> tree(index.getTree(channel, directory));
     if (!tree)
         return;
     RTree::Node node(tree->getM(), false);
@@ -138,10 +118,9 @@ void copy_channel(const stdString &channel_name,
                   IndexFile &new_index,
                   size_t &channel_count, size_t &value_count, size_t &back_count)
 {
-    ErrorInfo       error_info;
     double          period = 1.0;
     size_t          num_samples = 4096;    
-    DataWriter     *writer = 0;
+    AutoPtr<DataWriter> writer;
     RawValue::Data *last_value = 0;
     bool            last_value_set = false;
     size_t          count = 0, back = 0;
@@ -153,20 +132,19 @@ void copy_channel(const stdString &channel_name,
         fflush(stdout);
     }
     determine_period_and_samples(index, channel_name, period, num_samples);
-    const RawValue::Data *value = reader.find(channel_name, start, error_info);
+    const RawValue::Data *value = reader.find(channel_name, start);
     while (value && start && RawValue::getTime(value) < *start)
     {   // Correct for "before-or-at" idea of find()
         if (verbose > 2)
             printf("Skipping sample before start time\n");
-        value = reader.next(error_info);
+        value = reader.next();
     }
-    for (/**/; value; value = reader.next(error_info))
+    for (/**/; value; value = reader.next())
     {
         if (end  &&  RawValue::getTime(value) >= *end)
             break; // Reached or exceeded end time
         if (!writer || reader.changedType() || reader.changedInfo())
         {   // Need new or different writer
-            delete writer;
             writer = new DataWriter(
                 new_index, channel_name,
                 reader.getInfo(), reader.getType(), reader.getCount(),
@@ -189,15 +167,9 @@ void copy_channel(const stdString &channel_name,
                        (unsigned long) back);
             continue;
         }
-        DataWriter::DWA add_status = writer->add(value);
-        if (add_status == DataWriter::DWA_Error)
+        if (! writer->add(value))
         {
-            printf("DataWriter::add failed\n");
-            break;
-        }
-        else if (add_status == DataWriter::DWA_Back)
-        {
-            printf("DataWriter::add still claims back-in-time\n");
+            printf("DataWriter::add claims back-in-time\n");
             continue;
         }
         // Keep track of last time stamp and status (not value!)
@@ -217,7 +189,7 @@ void copy_channel(const stdString &channel_name,
         RawValue::setStatus(last_value, 0, ARCH_STOPPED);
         writer->add(last_value);        
     }
-    delete writer;
+    writer = 0;
     if (verbose > 1)
     {
         if (back)
@@ -226,10 +198,6 @@ void copy_channel(const stdString &channel_name,
         else
             printf("%lu values                                         \n",
                    (unsigned long) count);
-    }
-    if (error_info.error)
-    {
-        printf("Read error: %s\n", error_info.info.c_str());
     }
     ++channel_count;
     value_count += count;
@@ -243,7 +211,6 @@ void copy(const stdString &index_name, const stdString &copy_name,
           int RTreeM, const epicsTime *start, const epicsTime *end,
           const stdString &single_name)
 {
-    ErrorInfo error_info;
     IndexFile               index(RTreeM), new_index(RTreeM);
     IndexFile::NameIterator names;
     size_t                  channel_count = 0, value_count = 0, back_count = 0;
@@ -258,13 +225,8 @@ void copy(const stdString &index_name, const stdString &copy_name,
                "(%s)\n", copy_name.c_str(), index_name.c_str());
         return;
     }
-    if (! index.open(index_name, true, error_info))
-        return;
-    if (! new_index.open(copy_name, false, error_info))
-    {
-        index.close();
-        return;
-    }
+    index.open(index_name, true);
+    new_index.open(copy_name, false);
     if (verbose)
         printf("Copying values from '%s' to '%s'\n",
                index_name.c_str(), copy_name.c_str());
@@ -303,13 +265,11 @@ void convert_dir_index(int RTreeM,
         return;
     
     OldDirectoryFileIterator channels = dir.findFirst();
-    ErrorInfo error_info;
     IndexFile index(RTreeM);
     stdString index_directory;
     if (verbose)
         printf("Opened directory file '%s'\n", dir_name.c_str());
-    if (!index.open(index_name, false, error_info))
-        return;
+    index.open(index_name, false);
     if (verbose)
         printf("Created index '%s'\n", index_name.c_str());
     for (/**/;  channels.isValid();  channels.next())
@@ -360,13 +320,11 @@ void convert_dir_index(int RTreeM,
         }
     }
     DataFile::close_all();
-    index.close();
 }
 
 
 void convert_index_dir(const stdString &index_name, const stdString &dir_name)
 {
-    ErrorInfo error_info;
     IndexFile::NameIterator names;
     IndexFile index(50);
     stdString index_directory;
@@ -375,8 +333,7 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
     FileOffset start_offset, end_offset;
     epicsTime start_time, end_time;
     bool ok;
-    if (!index.open(index_name.c_str(), true, error_info))
-        return;
+    index.open(index_name.c_str(), true);
     OldDirectoryFile dir;
     if (!dir.open(dir_name, true))
     {
@@ -388,13 +345,7 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
         if (verbose)
             printf("Channel '%s':\n", names.getName().c_str());
         AutoPtr<const RTree> tree(index.getTree(names.getName(),
-                                                index_directory,
-                                                error_info));
-        if (!tree)
-        {
-            printf("%s\n", error_info.info.c_str());
-            continue;
-        }
+                                                index_directory));
         RTree::Node node(tree->getM(), false);
         int i;
         if (!tree->getFirstDatablock(node, i, block))
@@ -415,18 +366,16 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
         end_offset = block.data_offset;
         // Check by reading first+last buffer & getting times
         bool times_ok = false;
-        DataHeader *header;
-        header = get_dataheader(index_directory,
-                                start_file, start_offset);
+        AutoPtr<DataHeader> header(
+            get_dataheader(index_directory, start_file, start_offset));
         if (header)
         {
             start_time = header->data.begin_time;
-            delete header;
             header = get_dataheader(index_directory, end_file, end_offset);
             if (header)
             {
                 end_time = header->data.end_time;
-                delete header;
+                header = 0;
                 times_ok = true;
             }
         }
@@ -449,7 +398,6 @@ void convert_index_dir(const stdString &index_name, const stdString &dir_name)
             dfi.save();
         }
     }
-    index.close();
 }
 
 unsigned long dump_datablocks_for_channel(IndexFile &index,
@@ -457,12 +405,11 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
                                           unsigned long &direct_count,
                                           unsigned long &chained_count)
 {
-    ErrorInfo error_info;
     DataFile *datafile;
-    DataHeader *header;
+    AutoPtr<DataHeader> header;
     direct_count = chained_count = 0;
     stdString directory;
-    AutoPtr<RTree> tree(index.getTree(channel_name, directory, error_info));
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
     if (! tree)
         return 0;
     RTree::Datablock block;
@@ -491,20 +438,15 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
             datafile = DataFile::reference(directory,
                                            block.data_filename,
                                            false);
-            if (datafile)
+            header = datafile->getHeader(block.data_offset);
+            datafile->release();
+            if (header)
             {
-                header = datafile->getHeader(block.data_offset);
-                if (header)
-                {
-                    header->show(stdout, true);
-                    delete header;
-                }
-                else
-                    printf("Cannot read header in data file.\n");
-                datafile->release();
+                header->show(stdout, true);
+                header = 0;
             }
             else
-                printf("Cannot access data file\n");
+                printf("Cannot read header in data file.\n");
         }
         bool first_hidden_block = true;
         while (tree->getNextChainedBlock(block))
@@ -525,20 +467,15 @@ unsigned long dump_datablocks_for_channel(IndexFile &index,
                     datafile = DataFile::reference(directory,
                                                    block.data_filename,
                                                    false);
-                    if (datafile)
+                    header = datafile->getHeader(block.data_offset);
+                    if (header)
                     {
-                        header = datafile->getHeader(block.data_offset);
-                        if (header)
-                        {
-                            header->show(stdout, false);
-                            delete header;
-                        }
-                        else
-                            printf("Cannot read header in data file.\n");
-                        datafile->release();
+                        header->show(stdout, false);
+                        header = 0;
                     }
                     else
-                        printf("Cannot access data file\n");
+                        printf("Cannot read header in data file.\n");
+                    datafile->release();
                 }   
             }
         }
@@ -551,13 +488,10 @@ unsigned long dump_datablocks(const stdString &index_name,
                               const stdString &channel_name)
 {
     unsigned long direct_count, chained_count;
-    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name, true, error_info))
-        return 0;
+    index.open(index_name, true);
     dump_datablocks_for_channel(index, channel_name,
                                 direct_count, chained_count);
-    index.close();
     printf("%ld data blocks, %ld hidden blocks, %ld total\n",
            direct_count, chained_count,
            direct_count + chained_count);
@@ -567,11 +501,9 @@ unsigned long dump_datablocks(const stdString &index_name,
 unsigned long dump_all_datablocks(const stdString &index_name)
 {
     unsigned long total = 0, direct = 0, chained = 0, channels = 0;
-    ErrorInfo error_info;
     IndexFile index(3);
     bool ok;
-    if (!index.open(index_name, true, error_info))
-        return 0;
+    index.open(index_name, true);
     IndexFile::NameIterator names;
     for (ok = index.getFirstChannel(names);
          ok;  ok = index.getNextChannel(names))
@@ -583,7 +515,6 @@ unsigned long dump_all_datablocks(const stdString &index_name)
         direct += direct_count;
         chained += chained_count;
     }
-    index.close();
     printf("Total: %ld channels, %ld datablocks\n", channels, total);
     printf("       %ld visible datablocks, %ld hidden\n", direct, chained);
     return total;
@@ -592,25 +523,17 @@ unsigned long dump_all_datablocks(const stdString &index_name)
 void dot_index(const stdString &index_name, const stdString channel_name,
                const stdString &dot_name)
 {
-    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name, true, error_info))
-    {
-        fprintf(stderr, "Cannot open index '%s'\n",
-                index_name.c_str());
-        return;
-    }
+    index.open(index_name, true);
     stdString directory;
-    AutoPtr<RTree> tree(index.getTree(channel_name, directory, error_info));
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
     if (!tree)
     {
-        fprintf(stderr, "Cannot find '%s' in index '%s'.\n%s\n",
-                channel_name.c_str(), index_name.c_str(),
-                error_info.info.c_str());
+        fprintf(stderr, "Cannot find '%s' in index '%s'.\n",
+                channel_name.c_str(), index_name.c_str());
         return;
     }
     tree->makeDot(dot_name.c_str());
-    index.close();
 }
 
 bool seek_time(const stdString &index_name,
@@ -624,12 +547,10 @@ bool seek_time(const stdString &index_name,
                 start_txt.c_str());
         return false;
     }
-    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name, true, error_info))
-        return false;
+    index.open(index_name, true);
     stdString directory;
-    AutoPtr<RTree> tree(index.getTree(channel_name, directory, error_info));
+    AutoPtr<RTree> tree(index.getTree(channel_name, directory));
     if (tree)
     {
         RTree::Datablock block;
@@ -647,19 +568,14 @@ bool seek_time(const stdString &index_name,
     }
     else
         fprintf(stderr, "Cannot find channel '%s'\n", channel_name.c_str());
-    index.close();
     return true;
 }
 
 bool check (const stdString &index_name)
 {
-    ErrorInfo error_info;
     IndexFile index(3);
-    if (!index.open(index_name, true, error_info))
-        return false;
-    bool ok = index.check(verbose);
-    index.close();
-    return ok;
+    index.open(index_name, true);
+    return index.check(verbose);
 }
 
 int main(int argc, const char *argv[])
@@ -696,105 +612,114 @@ int main(int argc, const char *argv[])
     CmdArgFlag hashinfo      (parser, "hashinfo", "Show Hash table info");
     CmdArgString seek_test   (parser, "seek", "<time>", "Perform seek test");
     CmdArgFlag test          (parser, "test", "Perform some consistency tests");
-    // Defaults
-    RTreeM.set(50);
-    file_limit.set(100.0);
-    // Get Arguments
-    if (! parser.parse())
-        return -1;
-    if (help   ||   parser.getArguments().size() != 1)
+
+    try
     {
-        parser.usage();
-        return -1;
+        // Defaults
+        RTreeM.set(50);
+        file_limit.set(100.0);
+        // Get Arguments
+        if (! parser.parse())
+            return -1;
+        if (help   ||   parser.getArguments().size() != 1)
+        {
+            parser.usage();
+            return -1;
+        }
+        // Consistency checks
+        if ((dump_blocks ||
+             dotindex.get().length() > 0  ||
+             seek_test.get().length() > 0)
+            && channel_name.get().length() <= 0)
+        {
+            fprintf(stderr,
+                    "Options 'blocks' and 'dotindex' require 'channel'.\n");
+            return -1;
+        }
+        verbose = verbosity;
+        stdString index_name = parser.getArgument(0);
+        DataWriter::file_size_limit = (unsigned long)(file_limit*1024*1024);
+        if (file_limit < 10.0)
+            fprintf(stderr, "file_limit values under 10.0 MB are not useful\n");
+        // Start/end time
+        epicsTime *start = 0, *end = 0;
+        stdString txt;
+        if (start_time.get().length() > 0)
+        {
+            start = new epicsTime;
+            string2epicsTime(start_time.get(), *start);
+            if (verbose > 1)
+                printf("Using start time %s\n", epicsTimeTxt(*start, txt));
+        }
+        if (end_time.get().length() > 0)
+        {
+            end = new epicsTime();
+            string2epicsTime(end_time.get(), *end);
+            if (verbose > 1)
+                printf("Using end time   %s\n", epicsTimeTxt(*end, txt));
+        }
+        // Base name
+        if (basename.get().length() > 0)
+    	    DataWriter::data_file_name_base = basename.get();
+        if (enforce_off)
+    	    do_enforce_off = true;
+        // What's requested?
+        if (info)
+    	    list_names(index_name, false);
+        else if (list_index)
+            list_names(index_name, true);
+        else if (copy_index.get().length() > 0)
+        {
+            copy(index_name, copy_index, RTreeM, start, end, channel_name);
+            return 0;
+        }
+        else if (hashinfo)
+            show_hash_info(index_name);
+        else if (dir2index.get().length() > 0)
+        {
+            convert_dir_index(RTreeM, dir2index, index_name);
+            return 0;
+        }
+        else if (index2dir.get().length() > 0)
+        {
+            convert_index_dir(index_name, index2dir);
+            return 0;
+        }
+        else if (all_blocks)
+        {
+            dump_all_datablocks(index_name);
+            return 0;
+        }
+        else if (dump_blocks)
+        {
+            dump_datablocks(index_name, channel_name);
+            return 0;
+        }
+        else if (dotindex.get().length() > 0)
+        {
+            dot_index(index_name, channel_name, dotindex);
+            return 0;
+        }
+        else if (seek_test.get().length() > 0)
+        {
+            seek_time(index_name, channel_name, seek_test);
+            return 0;
+        }
+        else if (test)
+        {
+            return check(index_name) ? 0 : -1;
+        }
+        else
+        {
+            parser.usage();
+            return -1;
+        }
     }
-    // Consistency checks
-    if ((dump_blocks ||
-         dotindex.get().length() > 0  ||
-         seek_test.get().length() > 0)
-        && channel_name.get().length() <= 0)
+    catch (GenericException &e)
     {
-        fprintf(stderr,
-                "Options 'blocks' and 'dotindex' require 'channel'.\n");
-        return -1;
+        fprintf(stderr, "Error:\n%s\n", e.what());
     }
-    verbose = verbosity;
-    stdString index_name = parser.getArgument(0);
-    DataWriter::file_size_limit = (unsigned long)(file_limit*1024*1024);
-    if (file_limit < 10.0)
-        fprintf(stderr, "file_limit values under 10.0 MB are not useful\n");
-    // Start/end time
-    epicsTime *start = 0, *end = 0;
-    stdString txt;
-    if (start_time.get().length() > 0)
-    {
-        start = new epicsTime;
-        string2epicsTime(start_time.get(), *start);
-        if (verbose > 1)
-            printf("Using start time %s\n", epicsTimeTxt(*start, txt));
-    }
-    if (end_time.get().length() > 0)
-    {
-        end = new epicsTime();
-        string2epicsTime(end_time.get(), *end);
-        if (verbose > 1)
-            printf("Using end time   %s\n", epicsTimeTxt(*end, txt));
-    }
-    // Base name
-    if (basename.get().length() > 0)
-	DataWriter::setDataFileNameBase(basename.get().c_str());
-    if (enforce_off)
-	do_enforce_off = true;
-    // What's requested?
-    if (info)
-	list_names(index_name, false);
-    else if (list_index)
-        list_names(index_name, true);
-    else if (copy_index.get().length() > 0)
-    {
-        copy(index_name, copy_index, RTreeM, start, end, channel_name);
-        return 0;
-    }
-    else if (hashinfo)
-        show_hash_info(index_name);
-    else if (dir2index.get().length() > 0)
-    {
-        convert_dir_index(RTreeM, dir2index, index_name);
-        return 0;
-    }
-    else if (index2dir.get().length() > 0)
-    {
-        convert_index_dir(index_name, index2dir);
-        return 0;
-    }
-    else if (all_blocks)
-    {
-        dump_all_datablocks(index_name);
-        return 0;
-    }
-    else if (dump_blocks)
-    {
-        dump_datablocks(index_name, channel_name);
-        return 0;
-    }
-    else if (dotindex.get().length() > 0)
-    {
-        dot_index(index_name, channel_name, dotindex);
-        return 0;
-    }
-    else if (seek_test.get().length() > 0)
-    {
-        seek_time(index_name, channel_name, seek_test);
-        return 0;
-    }
-    else if (test)
-    {
-        return check(index_name) ? 0 : -1;
-    }
-    else
-    {
-        parser.usage();
-        return -1;
-    }
-    
+        
     return 0;
 }
+

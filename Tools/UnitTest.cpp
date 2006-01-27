@@ -48,6 +48,8 @@ extern TEST_CASE test_log();
 // Unit ThreadTest:
 extern TEST_CASE worker_thread();
 extern TEST_CASE test_threads();
+// Unit ThrottleTest:
+extern TEST_CASE test_throttle();
 // Unit TimerTest:
 extern TEST_CASE test_timer();
 // Unit epicsTimeHelperTest:
@@ -315,6 +317,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\ntest_threads:\n");
         if (test_threads())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "ThrottleTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit ThrottleTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("\ntest_throttle:\n");
+        if (test_throttle())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

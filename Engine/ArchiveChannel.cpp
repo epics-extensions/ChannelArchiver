@@ -2,6 +2,7 @@
 #include "epicsTimeHelper.h"
 #include "MsgLogger.h"
 #include "ArchiveException.h"
+#include "Throttle.h"
 // Storage
 #include "DataWriter.h"
 //Engine
@@ -11,6 +12,12 @@
 #undef DEBUG_CHANNEL
 
 static const unsigned long magic_marker = 0xac00face;
+
+// Used to throttle various messages down.
+static Throttle invalid_time_throttle;
+static Throttle futuristic_time_throttle;
+static Throttle back_in_time_throttle;
+
 
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
   : marker(magic_marker),
@@ -571,19 +578,25 @@ bool ArchiveChannel::isGoodTimestamp(const epicsTime &stamp,
 {
     if (! isValidTime(stamp))
     {
-        stdString t;
-        epicsTime2string(stamp, t);
-        LOG_MSG("'%s': Invalid/null time stamp %s\n",
-                getName().c_str(), t.c_str());
+        if (invalid_time_throttle.isPermitted())
+        {
+            stdString t;
+            epicsTime2string(stamp, t);
+            LOG_MSG("'%s': Invalid/null time stamp %s\n",
+                    getName().c_str(), t.c_str());
+        }
         return false;
     }
     double future = stamp - now;
     if (future > theEngine->getIgnoredFutureSecs())
     {
-        stdString t;
-        epicsTime2string(stamp, t);
-        LOG_MSG("'%s': Ignoring futuristic time stamp %s\n",
-                getName().c_str(), t.c_str());
+        if (futuristic_time_throttle.isPermitted())
+        {
+            stdString t;
+            epicsTime2string(stamp, t);
+            LOG_MSG("'%s': Ignoring futuristic time stamp %s\n",
+                    getName().c_str(), t.c_str());
+        }
         return false;
     }
     return true;
@@ -594,10 +607,13 @@ bool ArchiveChannel::isBackInTime(const epicsTime &stamp) const
     if (isValidTime(last_stamp_in_archive) &&
         stamp < last_stamp_in_archive)
     {
-        stdString stamp_txt;
-        epicsTime2string(stamp, stamp_txt);
-        LOG_MSG("'%s': received back-in-time stamp %s\n",
-                getName().c_str(), stamp_txt.c_str());
+        if (back_in_time_throttle.isPermitted())
+        {
+            stdString stamp_txt;
+            epicsTime2string(stamp, stamp_txt);
+            LOG_MSG("'%s': received back-in-time stamp %s\n",
+                    getName().c_str(), stamp_txt.c_str());
+        }
         return true;
     }
     return false;

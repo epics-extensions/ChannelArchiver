@@ -83,12 +83,11 @@ Engine::Engine(const stdString &index_name, short port)
 
 Engine::~Engine()
 {
-    LOG_MSG("Shutdown:\n");
     if (this != theEngine)
-        LOG_MSG("CORRUPTION: Not theEngine\n");
+        LOG_MSG("CORRUPTION: Wrong theEngine in Engine destructor.\n");
     engine_server = 0;
     epicsTime now(epicsTime::getCurrent());
-    LOG_MSG("Disconnecting Channels...\n");
+    LOG_MSG("Disconnecting Channels.\n");
     try
     {
         Guard engine_guard(mutex);
@@ -105,7 +104,7 @@ Engine::~Engine()
     {
         LOG_MSG("Error while disconnecting:\n%s\n", e.what());
     }
-    LOG_MSG("Adding 'Archive_Off' events...\n");
+    LOG_MSG("Adding 'Archive_Off' events.\n");
     try
     {
         Guard engine_guard(mutex);
@@ -132,7 +131,7 @@ Engine::~Engine()
     {
         LOG_MSG("Error after writing:\n%s\n", e.what());
     }
-    LOG_MSG("Removing memory for channels and groups\n");
+    LOG_MSG("Removing memory for channels and groups.\n");
     try
     {
         Guard engine_guard(mutex);
@@ -153,7 +152,7 @@ Engine::~Engine()
         LOG_MSG("Error while deleting channels:\n%s\n", e.what());
     }
     // engine unlocked
-    LOG_MSG("Stopping ChannelAccess:\n");
+    LOG_MSG("Stopping ChannelAccess.\n");
     ca_context_destroy();
     theEngine = 0;
     LOG_MSG("Engine shut down.\n");
@@ -288,7 +287,7 @@ ArchiveChannel *Engine::addChannel(Guard &engine_guard,
                 datafile = 0;
                 epicsTime last_stamp(header->data.end_time);
                 CtrlInfo ctrlinfo;
-                ctrlinfo.read(datafile,
+                ctrlinfo.read(header->datafile,
                               header->data.ctrl_info_offset);
                 channel->init(engine_guard, guard,
                               header->data.dbr_type,

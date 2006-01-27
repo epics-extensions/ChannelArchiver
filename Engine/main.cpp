@@ -81,7 +81,9 @@ int main(int argc, const char *argv[])
     {
         MsgLogger logger(log.get().c_str());
         {
-            Lockfile lock_file("archive_active.lck", argv[0]);
+            stdString lockfile_info = "ArchiveEngine -d " + description.get()
+                + " " + index_name + "\n";
+            Lockfile lock_file("archive_active.lck", lockfile_info.c_str());
             LOG_MSG("Starting Engine with configuration file %s, index %s\n",
                     config_name.c_str(), index_name.c_str());
 #ifdef HAVE_SIGACTION
@@ -114,9 +116,9 @@ int main(int argc, const char *argv[])
                 theEngine->process();
             // If engine is not shut down properly (ca_task_exit !),
             // the MS VC debugger will freak out
-            LOG_MSG ("Shutting down Engine\n");
+            LOG_MSG ("Process loop ended.\n");
             delete theEngine;
-            LOG_MSG ("Removing Lockfile\n");
+            LOG_MSG ("Removing Lockfile.\n");
         }
         LOG_MSG ("Done.\n");
     }

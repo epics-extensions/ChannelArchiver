@@ -688,7 +688,7 @@ EngineServer::~EngineServer()
 {
     HTTPClientConnection::handlers = 0;
 #ifdef HTTPD_DEBUG
-    LOG_MSG("EngineServer deleted\n");
+    LOG_MSG("EngineServer deleted.\n");
 #endif
 }
 

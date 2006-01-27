@@ -85,17 +85,13 @@ HTTPServer::~HTTPServer()
 {
     // Tell server and clients to stop.
     go = false;
-#if defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
-    LOG_MSG("~HTTPServer\n");
-    epicsThreadSleep(1.0);
-#endif
     // Wait for clients to quit
     int waited = 0;
     while (client_cleanup() > 0)
     {
         if (waited > 10)
         {
-            LOG_MSG("HTTPServer doesn't see the clients quit\n");
+            LOG_MSG("HTTPServer doesn't see the clients quit.\n");
             break;
         }
         epicsThreadSleep(1.0);
@@ -103,10 +99,10 @@ HTTPServer::~HTTPServer()
     }
     // Wait for server to quit
     if (! thread.exitWait(5.0))
-        LOG_MSG("HTTPServer: server thread does not exit\n");
+        LOG_MSG("HTTPServer: server thread does not exit.\n");
     epicsSocketDestroy(socket);
 #ifdef HTTPD_DEBUG
-    LOG_MSG("~HTTPServer done.\n");
+    LOG_MSG("HTTPServer done.\n");
 #endif
 }
 
@@ -118,7 +114,7 @@ void HTTPServer::start()
 void HTTPServer::run()
 {
 #ifdef HTTPD_DEBUG
-    LOG_MSG("HTTPServer thread 0x%08lX running\n",
+    LOG_MSG("HTTPServer thread 0x%08lX running.\n",
             (unsigned long)epicsThreadGetIdSelf());
 #endif
 
@@ -140,7 +136,7 @@ void HTTPServer::run()
         {
             if (! overloaded)
             {
-                LOG_MSG("HTTPServer reached %zu concurrent clients\n",
+                LOG_MSG("HTTPServer reached %zu concurrent clients.\n",
                         num_clients);
                 overloaded = true;
             }
@@ -170,7 +166,7 @@ void HTTPServer::run()
 #if     defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
         stdString local_info, peer_info;
         GetSocketInfo(peer, local_info, peer_info);
-        LOG_MSG("HTTPServer thread 0x%08lX accepted %s/%s\n",
+        LOG_MSG("HTTPServer thread 0x%08lX accepted %s/%s.\n",
                 (unsigned long)epicsThreadGetIdSelf(),
                 local_info.c_str(), peer_info.c_str());
 #endif
@@ -180,7 +176,7 @@ void HTTPServer::run()
         // epicsThreadSleep(HTTPD_TIMEOUT);
     }
 #ifdef HTTPD_DEBUG
-    LOG_MSG("HTTPServer thread 0x%08lX exiting\n",
+    LOG_MSG("HTTPServer thread 0x%08lX exiting.\n",
             (unsigned long)epicsThreadGetIdSelf());
 #endif
 }

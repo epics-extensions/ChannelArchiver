@@ -20,7 +20,7 @@ gopher0, 2x333Mhz, RAID5          8600
 #include <ArgParser.h>
 // Storage
 #include <DataWriter.h>
-#include <DataReader.h>
+#include <RawDataReader.h>
 #include <OldDataWriter.h>
 #include <OldDataReader.h>
 #include <DataFile.h>
@@ -29,27 +29,22 @@ bool write_samples(const stdString &index_name,
                    const stdString &channel_name,
                    size_t samples)
 {
-    ErrorInfo error_info;
     IndexFile index(50);
     CtrlInfo info;
 
-    if (!index.open(index_name.c_str(), false, error_info))
-    {
-        fprintf(stderr, "%s\n", error_info.info.c_str());
-        return false;
-    }
+    index.open(index_name.c_str(), false);
     info.setNumeric (2, "socks",
                      0.0, 10.0,
                      0.0, 1.0, 9.0, 10.0);
     DbrType dbr_type = DBR_TIME_DOUBLE;
     DbrCount dbr_count = 1;
     DataWriter::file_size_limit = 10*1024*1024;
-    DataWriter * writer =
+    AutoPtr<DataWriter> writer(
         new DataWriter(index,
                        channel_name, info,
                        dbr_type, dbr_count, 2.0,
-                       samples);
-    dbr_time_double *data =  RawValue::allocate(dbr_type, dbr_count, 1);
+                       samples));
+    RawValueAutoPtr data(RawValue::allocate(dbr_type, dbr_count, 1));
     data->status = 0;
     data->severity = 0;
     size_t i;
@@ -57,17 +52,15 @@ bool write_samples(const stdString &index_name,
     {
         data->value = (double) i;
         RawValue::setTime(data, epicsTime::getCurrent());
-        if (writer->add(data) != DataWriter::DWA_Yes)
+        if (!writer->add(data))
         {
             fprintf(stderr, "Write error with value %d/%d\n",
                     i, samples);
             break;
         }   
     }
-    RawValue::free(data);
-    delete writer;
+    writer = 0;
     DataFile::close_all();
-    index.close();
     return true;
 }
 
@@ -118,26 +111,20 @@ bool old_write_samples(const stdString &index_name,
 size_t read_samples(const stdString &index_name,
                     const stdString &channel_name)
 {
-    ErrorInfo error_info;
     IndexFile index(50);
 
-    if (!index.open(index_name.c_str(), true, error_info))
-    {
-        fprintf(stderr, "%s\n", error_info.info.c_str());
-        return 0;
-    }
+    index.open(index_name.c_str(), true);
     size_t samples = 0;
-    DataReader *reader = new RawDataReader(index);
+    AutoPtr<DataReader> reader(new RawDataReader(index));
     const RawValue::Data *data =
-        reader->find(channel_name, 0, error_info);
+        reader->find(channel_name, 0);
     while (data)
     {
         ++samples;
-        data = reader->next(error_info);    
+        data = reader->next();    
     }
-    delete reader;
+    reader = 0;
     DataFile::close_all();
-    index.close();
     return samples;
 }
 
@@ -192,30 +179,36 @@ int main (int argc, const char *argv[])
     stdString index_name = parser.getArgument(0);
     size_t count;
     epicsTime start, stop;
-    if (do_read)
+    try
     {
-        start = epicsTime::getCurrent ();
-        if (old)
-            count = old_read_samples(index_name, channel_name.get());
+        if (do_read)
+        {
+            start = epicsTime::getCurrent ();
+            if (old)
+                count = old_read_samples(index_name, channel_name.get());
+            else
+                count = read_samples(index_name, channel_name.get());
+            stop = epicsTime::getCurrent ();
+        }
         else
-            count = read_samples(index_name, channel_name.get());
-        stop = epicsTime::getCurrent ();
+        {
+            count = samples.get();
+            start = epicsTime::getCurrent ();
+            if (old)
+                old_write_samples(index_name, channel_name.get(), count);
+            else
+                write_samples(index_name, channel_name.get(), count);
+            stop = epicsTime::getCurrent ();
+        }
+        double secs = stop - start;
+        printf("%zd values in %g seconds: %g vals/sec\n",
+               count, secs,
+               (double)count / secs);
     }
-    else
+    catch (GenericException &e)
     {
-        count = samples.get();
-        start = epicsTime::getCurrent ();
-        if (old)
-            old_write_samples(index_name, channel_name.get(), count);
-        else
-            write_samples(index_name, channel_name.get(), count);
-        stop = epicsTime::getCurrent ();
+        fprintf(stderr, "Error:\n%s\n", e.what());
     }
-    
-    double secs = stop - start;
-    printf("%zd values in %g seconds: %g vals/sec\n",
-           count, secs,
-           (double)count / secs);
     return 0;
 }
 

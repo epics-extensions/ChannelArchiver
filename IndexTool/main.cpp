@@ -165,8 +165,11 @@ int main(int argc, const char *argv[])
     CmdArgFlag reindex(parser, "reindex", "Build new index from old index (no list file)");
     CmdArgInt  verbose_flag (parser, "verbose", "<level>", "Show more info");
     RTreeM.set(50);
-    if (! parser.parse())
+    if (!(parser.parse()  &&  parser.getArguments().size() == 2))
+    {
+        parser.usage();
         return -1;
+    }
     verbose = verbose_flag;
     stdString old_index_name = parser.getArgument(0);
     stdString new_index_name = parser.getArgument(1);

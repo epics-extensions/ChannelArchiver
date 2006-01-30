@@ -81,9 +81,12 @@ int main(int argc, const char *argv[])
     {
         MsgLogger logger(log.get().c_str());
         {
-            stdString lockfile_info = "ArchiveEngine -d " + description.get()
-                + " " + index_name + "\n";
-            Lockfile lock_file("archive_active.lck", lockfile_info.c_str());
+	    char lockfile_info[300];
+            snprintf(lockfile_info, sizeof(lockfile_info),
+                     "ArchiveEngine -d '%s' -p %d %s %s\n",
+                     description.get().c_str(), (int)port,
+                     config_name.c_str(), index_name.c_str());
+            Lockfile lock_file("archive_active.lck", lockfile_info);
             LOG_MSG("Starting Engine with configuration file %s, index %s\n",
                     config_name.c_str(), index_name.c_str());
 #ifdef HAVE_SIGACTION

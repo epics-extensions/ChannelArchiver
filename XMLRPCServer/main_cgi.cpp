@@ -6,6 +6,8 @@
 // Tools
 #include <MsgLogger.h>
 #include <AutoPtr.h>
+// Storage
+#include <ListIndex.h>
 // XML-RPC
 #include <xmlrpc.h>
 #include <xmlrpc_cgi.h>
@@ -48,7 +50,7 @@ bool get_config(xmlrpc_env *env, ServerConfig &config)
 }
 
 // Return open index for given key or 0
-IndexFile *open_index(xmlrpc_env *env, int key)
+Index *open_index(xmlrpc_env *env, int key)
 {
     try
     {
@@ -63,7 +65,7 @@ IndexFile *open_index(xmlrpc_env *env, int key)
             return 0;
         } 
         LOG_MSG("Open index, key %d = '%s'\n", key, index_name.c_str());
-        AutoPtr<IndexFile> index(new IndexFile(50));
+        AutoPtr<Index> index(new ListIndex());
         if (!index)
         {
             xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,

@@ -7,7 +7,7 @@
 // EPICS Base
 #include <epicsTime.h>
 // Storage
-#include <IndexFile.h>
+#include <Index.h>
 // XMPRPCServer
 #include "ServerConfig.h"
 
@@ -58,7 +58,7 @@ void pieces2epicsTime(xmlrpc_int32 secs, xmlrpc_int32 nano, epicsTime &t);
 const char *get_config_name(xmlrpc_env *env);
 bool get_config(xmlrpc_env *env, ServerConfig &config);
 // Return open index for given key or 0
-IndexFile *open_index(xmlrpc_env *env, int key);
+Index *open_index(xmlrpc_env *env, int key);
 // ---------------------------------------------
 
 // { int32  ver, string desc } = archiver.info()

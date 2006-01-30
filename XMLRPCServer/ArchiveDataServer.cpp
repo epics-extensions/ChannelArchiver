@@ -351,7 +351,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
 #endif
     try
     {
-        AutoPtr<IndexFile> index(open_index(env, key));
+        AutoPtr<Index> index(open_index(env, key));
         if (env->fault_occurred)
             return 0;
         AutoPtr<DataReader> reader(ReaderFactory::create(*index, how, delta));
@@ -442,7 +442,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         LOG_MSG("End   : %s\n", epicsTimeTxt(end, txt));
         LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
  #endif
-        AutoPtr<IndexFile> index(open_index(env, key));
+        AutoPtr<Index> index(open_index(env, key));
         if (env->fault_occurred)
             return 0;
 
@@ -677,11 +677,11 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
             regex.assign(new RegularExpression(pattern));
         // Open Index
         stdString directory;
-        AutoPtr<IndexFile> index(open_index(env, key));
+        AutoPtr<Index> index(open_index(env, key));
         if (env->fault_occurred)
             return 0;
         // Put all names in binary tree
-        IndexFile::NameIterator ni;
+        Index::NameIterator ni;
         BinaryTree<ChannelInfo> channels;
         ChannelInfo info;
         bool ok;

@@ -44,7 +44,7 @@ class SpreadsheetReader
 
     /// Was this channel found?
     ///
-    /// Only valid immediately after find().
+    /// Only valid after find().
     /// @return Returns true if this channel was found.
     /// @see find().
     bool found(size_t i) const
@@ -73,13 +73,13 @@ class SpreadsheetReader
     virtual const RawValue::Data *get(size_t i) const;
 
     /// The dbr_time_xxx type.
-    /// @exception GenericException when channel has no data.
-    /// @see get()
+    /// @exception GenericException when channel was not found.
+    /// @see found()
     virtual DbrType getType(size_t i) const;
     
     /// array size.
-    /// @exception GenericException when channel has no data.
-    /// @see get()
+    /// @exception GenericException when channel was not found.
+    /// @see found()
     virtual DbrCount getCount(size_t i) const;
     
     /// The meta information for the channel.

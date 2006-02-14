@@ -72,18 +72,18 @@ const RawValue::Data *SpreadsheetReader::get(size_t i) const
 
 DbrType SpreadsheetReader::getType(size_t i) const
 {
-    if (!value[i])
+    if (!found(i))
         throw GenericException(__FILE__, __LINE__,
-                               "getType(%zu) called for channel without value",
+                               "getType(%zu) called for unknown channel",
                                i);
     return type[i];
 }
 
 DbrCount SpreadsheetReader::getCount(size_t i) const
 {
-    if (!value[i])
+    if (!found(i))
         throw GenericException(__FILE__, __LINE__,
-                               "getCount(%zu) called for channel without value",
+                               "getCount(%zu) called for unknown channel",
                                i);
     return count[i];
 }

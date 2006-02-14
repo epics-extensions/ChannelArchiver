@@ -37,7 +37,8 @@ extern TEST_CASE DualRawDataReaderTest();
 extern TEST_CASE RawValue_format();
 extern TEST_CASE RawValue_auto_ptr();
 // Unit SpreadsheetReaderTest:
-extern TEST_CASE spreadsheet_test();
+extern TEST_CASE spreadsheet_dump();
+extern TEST_CASE spreadsheet_values();
 
 int main(int argc, const char *argv[])
 {
@@ -233,8 +234,14 @@ int main(int argc, const char *argv[])
         printf("----------------------------------------------------------------------\n");
         ++units;
         ++run;
-        printf("\nspreadsheet_test:\n");
-        if (spreadsheet_test())
+        printf("\nspreadsheet_dump:\n");
+        if (spreadsheet_dump())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("\nspreadsheet_values:\n");
+        if (spreadsheet_values())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

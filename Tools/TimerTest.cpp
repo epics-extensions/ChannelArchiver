@@ -1,9 +1,15 @@
+// System
 #include <math.h>
+
+// Base
 #include <epicsTimer.h>
 
-#include "MsgLogger.cpp"
-#include "GenericException.cpp"
+// Tools
+#include "MsgLogger.h"
+#include "GenericException.h"
 #include "UnitTest.h"
+
+static double accuracy = 0.2;
 
 static epicsTime  timer_test_start;
 
@@ -32,7 +38,7 @@ public:
         double time = epicsTime::getCurrent() - timer_test_start;
         LOG_MSG("OneShotTimer expires in thread 0x%08lX after %g secs\n",
                 (unsigned long)epicsThreadGetIdSelf(), time);
-        if (fabs(time - delay) > 0.2)
+        if (fabs(time - delay) > accuracy)
         {
             printf("Timer expired after %.1f instead of %.1f secs\n",
                    time, delay);
@@ -72,7 +78,7 @@ public:
         double time = epicsTime::getCurrent() - period_start;
         LOG_MSG("PeriodTimer expires in thread 0x%08lX after %g secs\n",
                 (unsigned long)epicsThreadGetIdSelf(), time);
-        if ( fabs(time - period) > 0.2 )
+        if (fabs(time - period) > accuracy)
         {
             printf("Timer expired after %.1f instead of %.1f secs\n",
                    time, period);
@@ -112,8 +118,14 @@ protected:
 
 TEST_CASE test_timer()
 {
+    if (getenv("IN_VALGRIND"))
+    {
+        printf("The timer tests don't work very well under valgrind!\n");
+        accuracy = accuracy * 10;
+    }
+
     printf("------------------------------------------\n");
-    printf("The timer tests don't work very well under valgrind!\n");
+    printf("Timer Test\n");
     printf("------------------------------------------\n");
     epicsTimerQueueActive &act_queue = epicsTimerQueueActive::allocate(true);
     {
@@ -124,15 +136,21 @@ TEST_CASE test_timer()
         period.start();
         epicsThreadSleep(5.0);
         double test_duration = epicsTime::getCurrent() - timer_test_start;
-        TEST( fabs(test_duration - 5.0) < 0.1 );
-        TEST( once.ok );
-        TEST( period.ok );
+        if (getenv("IN_VALGRIND"))
+            printf("Ignoring the results under valgrind.\n");
+        else
+        {
+            TEST( fabs(test_duration - 5.0) < accuracy);
+            TEST( once.ok );
+            TEST( period.ok );
+        }
     }
     act_queue.release();
 
     printf("\nThread Tests (single threaded)\n");
     printf("------------------------------------------\n");
-    PassiveHandler *passive_handler = new PassiveHandler;
+    // No way to delete the passive_handler...
+    PassiveHandler* passive_handler(new PassiveHandler);
     epicsTimerQueuePassive &passive_queue =
         epicsTimerQueuePassive::create(*passive_handler);
     {

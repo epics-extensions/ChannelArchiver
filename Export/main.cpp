@@ -348,7 +348,7 @@ void dump_spreadsheet(Index &index,
             {
                 fprintf(f, "\t#N/A");
                 if (status_text)
-                    fprintf(f, "\t");
+                    fprintf(f, "\t<no data>");
             }
         }
         fprintf(f, "\n");
@@ -441,6 +441,13 @@ int main(int argc, const char *argv[])
             if (verbose)
                 printf("Using end time   %s\n", epicsTimeTxt(*end, txt));
         }
+        if (start && end && *start > *end)
+        {   // Could simply swap start and end, but assume the user is
+            // confused and should rethink the request.
+            fprintf(stderr, "start time is greater than end time.\n");
+            return -1;
+        }
+  
         // Index name
         stdString index_name = parser.getArgument(0);
         // Channel names

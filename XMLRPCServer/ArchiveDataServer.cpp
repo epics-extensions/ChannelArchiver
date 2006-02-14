@@ -345,9 +345,9 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
 #ifdef LOGFILE
     stdString txt;
     LOG_MSG("get_channel_data\n");
+    LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
     LOG_MSG("Start:  %s\n", epicsTimeTxt(start, txt));
     LOG_MSG("End  :  %s\n", epicsTimeTxt(end, txt));
-    LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
 #endif
     try
     {
@@ -468,7 +468,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
             values[i] = xmlrpc_build_value(env, "()");            
             if (env->fault_occurred)
                 return 0;
-            if (ok)
+            if (sheet->found(i))
             {   // Fix meta/type/count based on first value
                 meta[i] = encode_ctrl_info(env, &sheet->getInfo(i));
                 dbr_type_to_xml_type(sheet->getType(i), sheet->getCount(i),
@@ -487,10 +487,14 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         {
             for (i=0; i<name_count; ++i)
             {
-                encode_value(env,
-                             sheet->getType(i), sheet->getCount(i),
-                             sheet->getTime(), sheet->get(i),
-                             xml_type[i], xml_count[i], values[i]);
+                if (sheet->get(i))
+                    encode_value(env,
+                                 sheet->getType(i), sheet->getCount(i),
+                                 sheet->getTime(), sheet->get(i),
+                                 xml_type[i], xml_count[i], values[i]);
+                else
+                    encode_value(env, 0, 0, sheet->getTime(), 0,
+                                 xml_type[i], xml_count[i], values[i]);
                 
             }
             ++num_vals;

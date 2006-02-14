@@ -15,6 +15,8 @@ GenericException::GenericException(const char *sourcefile,
     va_start(ap, format);
     sprintf(detail, format, ap);
     va_end(ap);
+    if (getenv("CORE_ON_GENERIC_EXCEPTION"))
+        abort();
 }
 
 const char *GenericException::what() const throw ()

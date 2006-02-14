@@ -16,7 +16,6 @@
 
 static ServerConfig the_config;
 
-
 const char *get_config_name(xmlrpc_env *env)
 {
     return "<Command Line>";
@@ -69,7 +68,6 @@ int main(int argc, char *argv[])
     entry.clear();
 
     xmlrpc_server_abyss_init(XMLRPC_SERVER_ABYSS_NO_FLAGS, argv[1]);
-
     fprintf(stderr, "ArchiveDataServerStandalone Running\n");
     fprintf(stderr, "Unless your '%s' selects a different port number,\n", argv[1]);
     fprintf(stderr, "the data should now be available via the XML-RPC URL\n");

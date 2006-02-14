@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
         struct timeval t0, t1;
         gettimeofday(&t0, 0);
         MsgLogger logger(LOGFILE);
-        LOG_MSG("---- ArchiveServer Started ----\n");
+        LOG_MSG("---- ArchiveServer " ARCH_VERSION_TXT " Started ----\n");
 #endif
         xmlrpc_cgi_init(XMLRPC_CGI_NO_FLAGS);
         xmlrpc_cgi_add_method_w_doc("archiver.info",     &get_info,     0, "S:", "Get info");

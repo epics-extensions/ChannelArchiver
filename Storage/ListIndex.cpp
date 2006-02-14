@@ -20,22 +20,14 @@ void ListIndex::open(const stdString &filename, bool readonly)
                                filename.c_str());
     IndexConfig config;
     stdList<stdString>::const_iterator subs;
-    try
+    if (config.parse(filename))
     {
-        if (config.parse(filename))
-        {
-            for (subs  = config.subarchives.begin();
-                 subs != config.subarchives.end();    ++subs)
-                sub_archs.push_back(SubArchInfo(*subs));
-        }
-        else // Assume a single index, no list of indices.
-            sub_archs.push_back(SubArchInfo(filename));
+        for (subs  = config.subarchives.begin();
+             subs != config.subarchives.end();    ++subs)
+            sub_archs.push_back(SubArchInfo(*subs));
     }
-    catch (GenericException &e)
-    {
-        throw GenericException(__FILE__, __LINE__,
-                               "'%s': %s", filename.c_str(), e.what());
-    }
+    else // Assume a single index, no list of indices.
+        sub_archs.push_back(SubArchInfo(filename));
 #ifdef DEBUG_LISTINDEX
     printf("ListIndex::open(%s)\n", filename.c_str());
     stdList<SubArchInfo>::const_iterator archs;

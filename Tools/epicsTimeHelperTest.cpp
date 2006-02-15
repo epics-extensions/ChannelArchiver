@@ -5,8 +5,6 @@
 
 TEST_CASE test_time()
 {
-    initEpicsTimeHelper();
-
     struct local_tm_nano_sec tm;
     tm.ansi_tm.tm_year = 2003 - 1900;
     tm.ansi_tm.tm_mon  = 4 - 1;

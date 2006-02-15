@@ -631,8 +631,6 @@ void experiment(const stdString &archive_name,
 
 int main(int argc, const char *argv[])
 {
-    initEpicsTimeHelper();
-
     CmdArgParser parser(argc, argv);
     parser.setHeader("Archive Manager version " VERSION_TXT ", "
                      EPICS_VERSION_STRING

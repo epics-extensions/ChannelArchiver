@@ -342,15 +342,15 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
                                ReaderFactory::How how, double delta)
 {
     AutoXmlRpcValue results;
-#ifdef LOGFILE
-    stdString txt;
-    LOG_MSG("get_channel_data\n");
-    LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
-    LOG_MSG("Start:  %s\n", epicsTimeTxt(start, txt));
-    LOG_MSG("End  :  %s\n", epicsTimeTxt(end, txt));
-#endif
     try
     {
+#ifdef LOGFILE
+        stdString txt;
+        LOG_MSG("get_channel_data\n");
+        LOG_MSG("Method: %s\n", ReaderFactory::toString(how, delta));
+        LOG_MSG("Start:  %s\n", epicsTimeTxt(start, txt));
+        LOG_MSG("End  :  %s\n", epicsTimeTxt(end, txt));
+#endif
         AutoPtr<Index> index(open_index(env, key));
         if (env->fault_occurred)
             return 0;

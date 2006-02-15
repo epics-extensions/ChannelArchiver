@@ -580,8 +580,6 @@ bool check (const stdString &index_name)
 
 int main(int argc, const char *argv[])
 {
-    initEpicsTimeHelper();
-
     CmdArgParser parser(argc, argv);
     parser.setHeader("Archive Data Tool version " ARCH_VERSION_TXT ", "
                      EPICS_VERSION_STRING

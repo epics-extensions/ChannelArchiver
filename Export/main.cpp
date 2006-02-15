@@ -360,7 +360,6 @@ int main(int argc, const char *argv[])
 {
     try
     {
-        initEpicsTimeHelper();
         CmdArgParser parser(argc, argv);
         parser.setHeader("Archive Export version " ARCH_VERSION_TXT ", "
                          EPICS_VERSION_STRING

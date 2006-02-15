@@ -49,8 +49,6 @@ static void signal_handler(int sig)
 
 int main(int argc, const char *argv[])
 {
-    initEpicsTimeHelper();    
-
     CmdArgParser parser (argc, argv);
     parser.setArgumentsInfo  ("<config-file> <index-file>");
     CmdArgInt port           (parser, "port", "<port>",

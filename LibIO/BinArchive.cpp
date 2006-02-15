@@ -8,7 +8,6 @@
 
 BinArchive::BinArchive(const stdString &archive_name, bool for_write)
 {
-    initEpicsTimeHelper();
     _dir = new DirectoryFile(archive_name, for_write);
     _secs_per_file = SECS_PER_MONTH;
 }

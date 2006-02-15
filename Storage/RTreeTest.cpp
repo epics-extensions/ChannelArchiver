@@ -96,7 +96,6 @@ static TestConfig test_config[] =
 TEST_CASE fill_tests()
 {
     size_t test = 0, i=0;
-    initEpicsTimeHelper();
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
     try

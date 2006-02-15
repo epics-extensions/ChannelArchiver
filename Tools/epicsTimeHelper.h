@@ -9,9 +9,6 @@
 /// \ingroup Tools
 /// \@{
 
-/// Needs to be called for initialization.
-void initEpicsTimeHelper();
-
 /// uninitialized (=0) class epicsTime.
 extern const epicsTime nullTime;
 
@@ -37,8 +34,7 @@ bool string2epicsTime(const stdString &txt, epicsTime &time);
 bool epicsTime2string(const epicsTime &time, stdString &txt);
 
 /// Similar to epicsTime2string().
-inline const char *epicsTimeTxt(const epicsTime &time, stdString &txt)
-{   return epicsTime2string(time, txt) ? txt.c_str() : "<invalid>"; }
+const char *epicsTimeTxt(const epicsTime &time, stdString &txt);
 
 /// Assemble/disassemble pieces.
 

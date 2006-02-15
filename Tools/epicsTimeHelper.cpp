@@ -13,13 +13,17 @@ const epicsTime nullTime; // uninitialized (=0) class epicsTime
 static epicsTime nullStamp;      // epicsTime with epicsTimeStamp 0, 0
 
 // Needs to be called for initialization
-void initEpicsTimeHelper()
+class initEpicsTimeHelper
 {
-    epicsTimeStamp  stamp;
-    stamp.secPastEpoch = 0;
-    stamp.nsec = 0;
-    nullStamp = stamp;
-}
+public:
+    initEpicsTimeHelper()
+    {
+        epicsTimeStamp  stamp;
+        stamp.secPastEpoch = 0;
+        stamp.nsec = 0;
+        nullStamp = stamp;
+    }
+};
 
 // Check if time is non-zero, whatever that could be
 bool isValidTime(const epicsTime &t)
@@ -118,6 +122,15 @@ bool epicsTime2string (const epicsTime &time, stdString &txt)
     txt = buffer;
     return true;
 }
+
+const char *epicsTimeTxt(const epicsTime &time, stdString &txt)
+{
+        epicsTimeStamp  stamp = time;
+LOG_MSG("epicsTimeTxt seconds: %lu\n", (unsigned long)stamp.secPastEpoch);
+LOG_MSG("epicsTimeTxt nsecs  : %lu\n", (unsigned long)stamp.nsec);
+    return epicsTime2string(time, txt) ? txt.c_str() : "invalid";
+}
+
 
 void epicsTime2vals(const epicsTime &time,
                     int &year, int &month, int &day,

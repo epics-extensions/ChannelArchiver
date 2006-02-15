@@ -151,7 +151,6 @@ void create_masterindex(int RTreeM,
 
 int main(int argc, const char *argv[])
 {
-    initEpicsTimeHelper();
     signal(SIGINT,  signal_handler);
     signal(SIGTERM, signal_handler);
     CmdArgParser parser(argc, argv);

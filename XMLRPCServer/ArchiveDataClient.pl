@@ -203,7 +203,8 @@ if (!getopts('vu:iak:lm:h:s:e:c:') or
     usage();
 }
 
-if (($opt_l or $opt_m) and length($opt_k) <= 0)
+# All but -a and -i require -k:
+if ((length($opt_k) <= 0) and not ($opt_a or $opt_i))
 {
     print("You need to specify an archive key (-k option)\n");
     exit(-1);

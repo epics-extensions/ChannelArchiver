@@ -125,12 +125,8 @@ bool epicsTime2string (const epicsTime &time, stdString &txt)
 
 const char *epicsTimeTxt(const epicsTime &time, stdString &txt)
 {
-        epicsTimeStamp  stamp = time;
-LOG_MSG("epicsTimeTxt seconds: %lu\n", (unsigned long)stamp.secPastEpoch);
-LOG_MSG("epicsTimeTxt nsecs  : %lu\n", (unsigned long)stamp.nsec);
     return epicsTime2string(time, txt) ? txt.c_str() : "invalid";
 }
-
 
 void epicsTime2vals(const epicsTime &time,
                     int &year, int &month, int &day,

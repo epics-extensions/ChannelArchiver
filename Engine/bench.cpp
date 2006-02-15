@@ -54,7 +54,7 @@ bool write_samples(const stdString &index_name,
         RawValue::setTime(data, epicsTime::getCurrent());
         if (!writer->add(data))
         {
-            fprintf(stderr, "Write error with value %d/%d\n",
+            fprintf(stderr, "Write error with value %zu/%zu\n",
                     i, samples);
             break;
         }   
@@ -97,7 +97,7 @@ bool old_write_samples(const stdString &index_name,
         RawValue::setTime(data, epicsTime::getCurrent());
         if (!writer->add(data))
         {
-            fprintf(stderr, "Write error with value %d/%d\n",
+            fprintf(stderr, "Write error with value %zu/%zu\n",
                     i, samples);
             break;
         }   

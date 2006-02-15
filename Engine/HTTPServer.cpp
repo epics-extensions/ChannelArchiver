@@ -283,12 +283,12 @@ HTTPClientConnection::~HTTPClientConnection()
 {
     if (! done)
     {
-        LOG_MSG("~HTTPClientConnection: Forced Shutdown of %d", num);
+        LOG_MSG("~HTTPClientConnection: Forced Shutdown of %zu", num);
         epicsSocketDestroy(socket);
     }
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     else
-        LOG_MSG("~HTTPClientConnection: Graceful end of %d\n", num);
+        LOG_MSG("~HTTPClientConnection: Graceful end of %zu\n", num);
 #   endif
 }
 
@@ -324,13 +324,13 @@ void HTTPClientConnection::run()
     {
         if (server->isShuttingDown())
         {
-            LOG_MSG("HTTPClientConnection %d stopped; server's ending\n",num);
+            LOG_MSG("HTTPClientConnection %zu stopped; server's ending\n",num);
             break;
         }
         runtime = epicsTime::getCurrent() - birthtime;
         if (runtime > HTTPD_CLIENT_TIMEOUT)
         {
-            LOG_MSG("HTTPClientConnection %d timing out\n", num);
+            LOG_MSG("HTTPClientConnection %zu timing out\n", num);
             break;
         }
     }

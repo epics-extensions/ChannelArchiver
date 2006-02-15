@@ -107,12 +107,12 @@ DataWriter::~DataWriter()
     catch (GenericException &e)
     {
         LOG_MSG("Exception in %s (%zu):\n%s\n",
-                __FILE__, __LINE__, e.what());
+                __FILE__, (size_t) __LINE__, e.what());
     }
     catch (...)
     {
         LOG_MSG("Unknown Exception in %s (%zu)\n\n",
-                __FILE__, __LINE__);
+                __FILE__, (size_t) __LINE__);
     }
 }
 
@@ -211,7 +211,7 @@ DataFile *DataWriter::createNewDataFile(size_t headroom)
             {
                 LOG_MSG ("Warning: %s: "
                          "Cannot create a new data file within file size limit\n"
-                         "type %d, count %d, %d samples, file limit: %d bytes.\n",
+                         "type %d, count %d, %zu samples, file limit: %d bytes.\n",
                          channel_name.c_str(),
                          dbr_type, dbr_count, next_buffer_size, file_size_limit);
                 return datafile; // Use anyway
@@ -233,6 +233,9 @@ DataFile *DataWriter::createNewDataFile(size_t headroom)
                                "Reference new datafile '%s':\n%s",
                                data_file_name.c_str(), e.what());
     }
+    throw GenericException(__FILE__, __LINE__,
+                           "createNewDataFile(%zu) failed", headroom);
+    return 0;
 }
 
 void DataWriter::calc_next_buffer_size(size_t start)

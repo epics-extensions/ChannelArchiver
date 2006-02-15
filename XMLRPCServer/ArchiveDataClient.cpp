@@ -354,7 +354,7 @@ bool ArchiveDataClient::decode_data(const char *name,
             return false;
         if (v_num != (size_t)count)
         {
-            LOG_MSG("value size discrepancy, %d != %d\n", v_num, count);
+            LOG_MSG("value size discrepancy, %zu != %zu\n", v_num, (size_t)count);
             return false;
         }
         for (v=0; v<v_num; ++v)

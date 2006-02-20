@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 # make_archive_infofile.pl
 
-use lib '/arch/scripts';
+#use lib '/arch/scripts';
+
 use English;
 use strict;
 use vars qw($opt_d $opt_h $opt_c $opt_o $opt_e);
@@ -42,7 +43,7 @@ sub time_as_text($)
 sub write_info($$)
 {
     my ($filename, $only_errors) = @ARG;
-    my ($daemon, $engine, $ok, $out);
+    my ($daemon, $engine, $ok, $out, $disconnected);
 
     # Check if anything's missing
     if ($only_errors)
@@ -82,14 +83,22 @@ sub write_info($$)
 	}
 	foreach $engine ( @{ $daemon->{engines} } )
 	{
-	    if ($engine->{status} eq "running")
-	    {
-		print $out "Engine '$engine->{name}: $engine->{connected} of $engine->{channels} channels connected.\n";
-	    }
-	    else
-	    {
-		print $out "Engine '$engine->{name}: $engine->{status}\n";
-	    }  
+            if ($engine->{status} eq "running")
+            {
+                $disconnected = $engine->{channels} - $engine->{connected};
+                if ($disconnected == 0)
+                {
+                    print $out "Engine '$engine->{name}': $engine->{channels} channels.\n";
+                }
+                else
+                {
+                    print $out "Engine '$engine->{name}': $engine->{channels} channels,  $disconnected disconnected.\n";
+                }
+            }
+            else
+            {
+                print $out "Engine '$engine->{name}': $engine->{status}\n";
+            }  
 	}
 	print $out "\n";
     }

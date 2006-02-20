@@ -67,40 +67,39 @@ sub parse_config_file($$)
     print("Reading $filename\n") if ($opt_d);
     while (<$in>)
     {
-	chomp;                          # Chop CR/LF
-	next if ($ARG =~ '\A#');        # Skip comments
-	next if ($ARG =~ '\A[ \t]*\Z'); # ... and empty lines
-	($type,$name,$port,$desc,$restart,$time) = split(/\t/, $ARG); # Get columns
-	$desc = $name unless (length($desc) > 0); # Desc defaults to name
-	if ($type eq "DAEMON")
-	{
-	    print("$NR: Daemon '$name', Port $port, Desc '$desc'\n")
-		if ($opt_d);
-	    $di = $#daemons + 1;
-	    $daemons[$di]->{name} = $name;
-	    $daemons[$di]->{desc} = $desc;
-	    $daemons[$di]->{port} = $port;
-	    $daemons[$di]->{running} = 0;
-	    $daemons[$di]->{disabled} = 0;
-	    $daemons[$di]->{channels} = 0;
-	    $daemons[$di]->{connected} = 0;
-	    $ei = 0;
-	}
-	elsif ($type eq "ENGINE")
-	{
-	    print("$NR: Engine '$name', Port $port, Desc '$desc', Time '$time', Restart '$restart'\n")
-		if ($opt_d);
-	    $daemons[$di]->{engines}[$ei]->{name} = $name;
-	    $daemons[$di]->{engines}[$ei]->{desc} = $desc;
-	    $daemons[$di]->{engines}[$ei]->{port} = $port;
-	    $daemons[$di]->{engines}[$ei]->{time} = $time;
-	    $daemons[$di]->{engines}[$ei]->{restart} = $restart;
-	    ++ $ei;
-	}
-	else
-	{
-	    die("File '$filename', line $NR: Cannot handle type '$type'\n");
-	}
+        chomp;                          # Chop CR/LF
+        next if ($ARG =~ '\A#');        # Skip comments
+        next if ($ARG =~ '\A[ \t]*\Z'); # ... and empty lines
+        ($type,$name,$port,$desc,$restart,$time) = split(/\t/, $ARG); # Get columns
+        $desc = $name unless (length($desc) > 0); # Desc defaults to name
+        if ($type eq "DAEMON")
+        {
+            print("$NR: Daemon '$name', Port $port, Desc '$desc'\n")
+            if ($opt_d);
+            $di = $#daemons + 1;
+            $daemons[$di]->{name} = $name;
+            $daemons[$di]->{desc} = $desc;
+            $daemons[$di]->{port} = $port;
+            $daemons[$di]->{running} = 0;
+            $daemons[$di]->{disabled} = 0;
+            $daemons[$di]->{channels} = 0;
+            $daemons[$di]->{connected} = 0;
+            $ei = 0;
+        }
+        elsif ($type eq "ENGINE")
+        {
+            print("$NR: Engine '$name', Port $port, Desc '$desc', Time '$time', Restart '$restart'\n") if ($opt_d);
+            $daemons[$di]->{engines}[$ei]->{name} = $name;
+            $daemons[$di]->{engines}[$ei]->{desc} = $desc;
+            $daemons[$di]->{engines}[$ei]->{port} = $port;
+            $daemons[$di]->{engines}[$ei]->{time} = $time;
+            $daemons[$di]->{engines}[$ei]->{restart} = $restart;
+            ++ $ei;
+        }
+        else
+        {
+            die("File '$filename', line $NR: Cannot handle type '$type'\n");
+        }
     }
     close $in;
     print("Read $filename\n\n") if ($opt_d);
@@ -115,16 +114,16 @@ sub dump_config($)
     print("Configuration Dump:\n");
     foreach $daemon ( @{ $daemons } )
     {
-	printf("Daemon '%s': Port %d, description '%s'\n",
-	       $daemon->{name},  $daemon->{port},
-	       $daemon->{desc});
-	foreach $engine ( @{ $daemon->{engines} } )
-	{
-	    printf("    Engine '%s', port %d, description '%s'\n",
-		  $engine->{name}, $engine->{port}, $engine->{desc});
-	    printf("     restart %s %s\n",
-		   $engine->{time}, $engine->{restart});
-	}
+        printf("Daemon '%s': Port %d, description '%s'\n",
+               $daemon->{name},  $daemon->{port},
+               $daemon->{desc});
+        foreach $engine ( @{ $daemon->{engines} } )
+        {
+            printf("    Engine '%s', port %d, description '%s'\n",
+              $engine->{name}, $engine->{port}, $engine->{desc});
+            printf("     restart %s %s\n",
+               $engine->{time}, $engine->{restart});
+        }
     }
     print("\n");
 }
@@ -133,7 +132,7 @@ sub dump_config($)
 # returning the raw document.
 sub read_URL($$$)
 {
-    my ($host, $port, $URL) = @ARG;
+    my ($host, $port, $url) = @ARG;
     my ($content, @doc);
     $content = get("http://$host:$port/$url");
     @doc = split /[\r\n]+/, $content;
@@ -147,32 +146,43 @@ sub update_status($$)
     my (@html, $line, $daemon, $engine);
     foreach $daemon ( @{ $daemons } )
     {
-	# Assume the worst until we learn more
-	$daemon->{running} = 0;
-	foreach $engine ( @{ $daemon->{engines} } )
-	{
-	    $engine->{status} = "down";
-	    $engine->{connected} = 0;
-	    $engine->{channels} = 0;
-	}
-	@html = read_URL($localhost, $daemon->{port}, "/status");
-	print "Response from $daemon->{desc}:\n" if ($opt_d);
-	print @html if ($opt_d);
-	foreach $line ( @html )
-	{
-	    if ($line =~ m"\AENGINE ([^|]*)\|([0-9]+)\|([^|]+)\|([0-9]+)\|([0-9]+)")
-	    {
-		$daemon->{running} = 1;
-		foreach $engine ( @{ $daemon->{engines} } )
-		{
-		    next if ($engine->{port} != $2);
-		    $engine->{status} = $3;
-		    $engine->{connected} = $4;
-		    $engine->{channels} = $5;
-		    last;
-		}
-	    }
-	}
+        # Assume the worst until we learn more
+        $daemon->{running} = 0;
+        foreach $engine ( @{ $daemon->{engines} } )
+        {
+            $engine->{status} = "unknown";
+            $engine->{connected} = 0;
+            $engine->{channels} = 0;
+        }
+        @html = read_URL($localhost, $daemon->{port}, "status");
+        if ($opt_d)
+        {
+            print "Response from $daemon->{desc}:\n";
+            foreach $line ( @html )
+            {   print "    '$line'\n"; }
+        }
+        foreach $line ( @html )
+        {
+            if ($line =~ m"\AENGINE ([^|]*)\|([0-9]+)\|([^|]+)\|([0-9]+)\|([0-9]+)")
+            {
+                my ($port, $status, $connected, $channels) = ($2, $3, $4, $5);
+                if ($opt_d)
+                {
+                    print("Engine: port $port, status $status, $connected/$channels connected\n");
+                }
+                $daemon->{running} = 1;
+                foreach $engine ( @{ $daemon->{engines} } )
+                {
+                    if ($engine->{port} == $port)
+                    {
+                        $engine->{status} = $status;
+                        $engine->{connected} = $connected;
+                        $engine->{channels} = $channels;
+                        last;
+                    }
+                }
+            }
+        }
     }
 }
 

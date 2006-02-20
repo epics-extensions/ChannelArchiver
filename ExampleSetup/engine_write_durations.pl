@@ -3,7 +3,7 @@
 #
 # Query all engines for their "Write Duration"
 
-use lib '/arch/scripts';
+#use lib '/arch/scripts';
 use English;
 use strict;
 use vars qw($opt_d $opt_h $opt_c $opt_o);

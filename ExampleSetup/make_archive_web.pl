@@ -5,7 +5,7 @@
 # (daemons, engines, ...)
 # from tab-delimited configuration file.
 
-use lib '/arch/scripts';
+#use lib '/arch/scripts';
 use English;
 use strict;
 use vars qw($opt_d $opt_h $opt_c $opt_o);
@@ -37,9 +37,9 @@ sub time_as_text($)
 {
     my ($seconds) = @ARG;
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
-	= localtime($seconds);
+        = localtime($seconds);
     return sprintf("%04d/%02d/%02d %02d:%02d:%02d",
-		   1900+$year, 1+$mon, $mday, $hour, $min, $sec);
+           1900+$year, 1+$mon, $mday, $hour, $min, $sec);
 }
 
 sub write_html($)
@@ -47,16 +47,16 @@ sub write_html($)
     my ($filename) = @ARG;
     my $TITLE = "ARCHIVER HEALTH STATUS";
     my ($daemon, $engine);
-    my ($out);
+    my ($out, $disconnected);
     open($out, ">$filename") or die "Cannot open '$filename'\n";
 
     print $out <<"XML";
- <html>
- <head></head>
+<html>
+<head></head>
 
- <body BGCOLOR=#A7ADC6 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>
+<body BGCOLOR=#A7ADC6 LINK=#0000FF VLINK=#0000FF ALINK=#0000FF>
 
- <H1 align=center>$TITLE</H1>
+<H1 align=center>$TITLE</H1>
 
 <table border="1" cellpadding="1" cellspacing="1" style'"border-collapse: collapse" bordercolor="#111111" bgcolor="#CCCCFF" width="100%"'>
 
@@ -78,38 +78,44 @@ XML
         print $out "     <td width=\"10%\">&nbsp;</td>\n";
         print $out "     <td width=\"5%\">$daemon->{port}</td>\n";
         print $out "     <td width=\"20%\">$daemon->{desc}</td>\n";
-	if ($daemon->{running})
-	{
-	    print $out "     <td width=\"35%\">Running</td>\n";
-	}
-	else
-	{
-	    print $out "     <td width=\"35%\"><FONT color=#FF0000>Down</FONT></td>\n";
-	}
-	print $out "	 <td width=\"5%\">&nbsp;</td>\n";
-	print $out "	 <td width=\"10%\">&nbsp;</td>\n";
+        if ($daemon->{running})
+        {
+            print $out "     <td width=\"35%\">Running</td>\n";
+        }
+        else
+        {
+            print $out "     <td width=\"35%\"><FONT color=#FF0000>Down</FONT></td>\n";
+        }
+        print $out "     <td width=\"5%\">&nbsp;</td>\n";
+        print $out "     <td width=\"10%\">&nbsp;</td>\n";
         print $out "  </tr>\n";
-	foreach $engine ( @{ $daemon->{engines} } )
-	{
+        foreach $engine ( @{ $daemon->{engines} } )
+        {
             print $out "  <tr>\n";
             print $out "     <td width=\"15%\">&nbsp;</td>\n";
             print $out "     <td width=\"10%\"><A HREF=\"http://$localhost:$engine->{port}\">$engine->{name}</A></td>\n";
             print $out "     <td width=\"5%\">$engine->{port}</td>\n";
             print $out "     <td width=\"20%\">$engine->{desc}</td>\n";
-	    if ($engine->{status} eq "running")
-	    {
-		print $out "     <td width=\"35%\">$engine->{connected} of $engine->{channels} connected.</td>\n";
-	    }
-	    else
-	    {
-		print $out "     <td width=\"35%\"><FONT color=#FF0000>$engine->{status}</FONT></td>\n";
-	    }
-
-
+            if ($engine->{status} eq "running")
+            {
+                $disconnected = $engine->{channels} - $engine->{connected};
+                if ($disconnected == 0)
+                {
+                    print $out "     <td width=\"35%\">$engine->{channels} channels connected.</td>\n";
+                }
+                else
+                {
+                    print $out "     <td width=\"35%\">$engine->{channels} channels, <FONT color=#FF0000>$disconnected disconnected</FONT>.</td>\n";
+                }
+            }
+            else
+            {
+                print $out "     <td width=\"35%\"><FONT color=#FF0000>$engine->{status}</FONT></td>\n";
+            }
             print $out "     <td width=\"10%\">$engine->{restart}</td>\n";
             print $out "     <td width=\"5%\">$engine->{time}</td>\n";
             print $out "  </tr>\n";
-	}
+        }
     }
     print $out "<hr><p>\n";
     print $out "Last Update: ", time_as_text(time), "<p>\n";

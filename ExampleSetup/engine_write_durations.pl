@@ -60,9 +60,10 @@ foreach $daemon ( @daemons )
 	$count = "<unknown>";
 	$time = "<unknown>";
 	$period= "<unknown>";
-	@html = read_URL($localhost, $engine->{port}, "/");
+	@html = read_URL($localhost, $engine->{port}, "");
 	foreach $line ( @html )
 	{
+            print "    '$line'\n" if ($opt_d);
 	    if ($line =~ m"Channels.*>([0-9.]+)<")
 	    {
 		$channels = $1;

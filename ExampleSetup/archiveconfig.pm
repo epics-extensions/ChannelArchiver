@@ -2,20 +2,6 @@ package archiveconfig;
 # Perl module to read the file which lists all the daemons and engines
 # that we indent to handle.
 #
-# The file is supposed to be a TAB-delimited table of the following
-# columns:
-#
-# Type, Name, Port, Description, Time, Frequency
-# ----------------------------------------------
-# Type:        'DAEMON' or 'ENGINE'
-# Name:        Name of daemon or engine subdir
-# Port:        TCP port used by daemon or engine
-# Description: Any text. Defaults to name it left empty.
-# Time:        Time in HH:MM format for the engine restarts
-# Frequency:   'daily' or 'weekly' or ...
-#
-# See daemon config for details of Time & frequency.
-#
 # parse_config_file creates an array of daemons to run,
 # their info, and their engines, similar to this:
 # 
@@ -48,6 +34,7 @@ use Sys::Hostname;
 use Data::Dumper;
 # Linux and MacOSX seem to include this one per default:
 use LWP::Simple;
+use XML::Simple;
 
 # Timeout used when reading a HTTP client or ArchiveEngine.
 # 10 seconds is reasonable.
@@ -55,14 +42,30 @@ my ($read_timeout) = 30;
 
 my ($localhost) = hostname();
 
+# Parse the old-style tab separated file format.
+#
+# The file is supposed to be a TAB-delimited table of the following
+# columns:
+#
+# Type, Name, Port, Description, Time, Frequency
+# ----------------------------------------------
+# Type:        'DAEMON' or 'ENGINE'
+# Name:        Name of daemon or engine subdir
+# Port:        TCP port used by daemon or engine
+# Description: Any text. Defaults to name it left empty.
+# Time:        Time in HH:MM format for the engine restarts
+# Frequency:   'daily' or 'weekly' or ...
+#
 # Returns @daemons
-sub parse_config_file($$)
+sub parse_tabbed_file($$)
 {
     my ($filename, $opt_d) = @ARG;
     my (@daemons);
     my ($in);
     my ($type, $name, $port, $desc, $time, $restart);
     my ($di, $ei); # Index of current daemon and engine
+
+    print("Parsing '$filename' as tabbed file.\n") if ($opt_d);
     open($in, $filename) or die "Cannot open '$filename'\n";
     print("Reading $filename\n") if ($opt_d);
     while (<$in>)
@@ -106,6 +109,46 @@ sub parse_config_file($$)
     return @daemons;
 }
 
+sub parse_config_file($$)
+{
+    my ($filename, $opt_d) = @ARG;
+
+    print("Parsing '$filename'\n") if ($opt_d);
+    return parse_tabbed_file($filename, $opt_d) if ($filename =~ m".csv\Z");
+
+    my ($config) = XMLin($filename, ForceArray => [ 'daemon', 'engine' ], KeyAttr => "directory");
+    # print Dumper($config);
+
+    my (@daemons);
+    my ($d_dir, $e_dir);
+    my ($di, $ei); # Index of current daemon and engine
+    foreach $d_dir ( sort keys %{ $config->{daemon} } )
+    {
+            $di = $#daemons + 1;
+            $daemons[$di]->{name} = $d_dir;
+            $daemons[$di]->{desc} = $config->{daemon}{$d_dir}{description};
+            $daemons[$di]->{port} = $config->{daemon}{$d_dir}{port};
+            $daemons[$di]->{running} = 0;
+            $daemons[$di]->{disabled} = 0;
+            $daemons[$di]->{channels} = 0;
+            $daemons[$di]->{connected} = 0;
+            print("Daemon '$daemons[$di]->{name}', Port $daemons[$di]->{port}, Desc '$daemons[$di]->{desc}'\n")
+                if ($opt_d);
+            $ei = 0;
+            foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
+            {
+                $daemons[$di]->{engines}[$ei]->{name} = $e_dir;
+                $daemons[$di]->{engines}[$ei]->{desc} = $config->{daemon}{$d_dir}{engine}{$e_dir}{description};
+                $daemons[$di]->{engines}[$ei]->{port} = $config->{daemon}{$d_dir}{engine}{$e_dir}{port};
+                $daemons[$di]->{engines}[$ei]->{restart} = $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type};
+                $daemons[$di]->{engines}[$ei]->{time} = $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content};
+                print("-- Engine '$daemons[$di]->{engines}[$ei]->{name}', Port $daemons[$di]->{engines}[$ei]->{port}, Desc '$daemons[$di]->{engines}[$ei]->{desc}', Time '$daemons[$di]->{engines}[$ei]->{time}$daemons[$di]->{engines}[$ei]->{time}', Restart '$daemons[$di]->{engines}[$ei]->{restart}'\n") if ($opt_d);
+                ++ $ei;
+            }
+    }
+    return @daemons;
+}
+
 # Input: Reference to @daemons
 sub dump_config($)
 {
@@ -119,9 +162,9 @@ sub dump_config($)
                $daemon->{desc});
         foreach $engine ( @{ $daemon->{engines} } )
         {
-            printf("    Engine '%s', port %d, description '%s'\n",
+            printf("    Engine '%s', port %d, description '%s', ",
               $engine->{name}, $engine->{port}, $engine->{desc});
-            printf("     restart %s %s\n",
+            printf("restart %s %s\n",
                $engine->{time}, $engine->{restart});
         }
     }

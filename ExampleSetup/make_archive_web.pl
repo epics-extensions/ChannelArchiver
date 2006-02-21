@@ -5,7 +5,7 @@
 # (daemons, engines, ...)
 # from tab-delimited configuration file.
 
-#use lib '/arch/scripts';
+use lib '/arch/scripts';
 use English;
 use strict;
 use vars qw($opt_d $opt_h $opt_c $opt_o);
@@ -15,7 +15,7 @@ use Sys::Hostname;
 use archiveconfig;
 
 # Globals, Defaults
-my ($config_name) = "archiveconfig.csv";
+my ($config_name) = "archiveconfig.xml";
 my ($output_name) = "archive_status.html";
 my ($localhost) = hostname();
 

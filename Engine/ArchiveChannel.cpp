@@ -303,6 +303,9 @@ void ArchiveChannel::connection_handler(struct connection_handler_args arg)
     LOG_ASSERT(me->marker == magic_marker);
     if (ca_state(arg.chid) == cs_conn)
     {
+#ifdef  DEBUG_CHANNEL
+        LOG_MSG("%s: CA connected\n", me->name.c_str());
+#endif
         // Get control information for this channel.
         // Gets only 1 array element because of R3.13 CA limitation.
         // TODO: This is only requested on connect

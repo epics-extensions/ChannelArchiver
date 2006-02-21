@@ -1166,7 +1166,7 @@ sub start_engines($)
 	}
 	$index_changed += start_engine($now, $engine);
     }
-    if ($index_changed > 0)
+    if ($index_update_minper > 0  and  $index_changed > 0)
     {
 	run_indextool(time());
     }
@@ -1183,7 +1183,9 @@ sub usage()
     print("\t-p <port>    : TCP port number for HTTPD\n");
     print("\t-f <file>    : config. file\n");
     print("\t-i <URL>     : path or URL to indexconfig.dtd\n");
-    print("\t-u <minutes> : Update period for master index\n");
+    print("\t-u <minutes> : Update period for master index.\n");
+    print("\t               Default: $index_update_minper\n");
+    print("\t               0 = Never run the index tool.\n");
     print("\t-d           : debug mode (stay in foreground etc.)\n");
     print("\n");
     print("This tool automatically starts, monitors and restarts\n");
@@ -1216,7 +1218,7 @@ if (length($index_config) > 0  and -f $index_config)
     read_indexconfig($index_config);
 }  
 $master_index_dtd = $opt_i if (defined($opt_i) and length($opt_i) > 0);
-$index_update_minper = $opt_u if (defined($opt_u) and $opt_u > 0);
+$index_update_minper = $opt_u if (defined($opt_u));
 add_message("Started");
 print("Read $config_file. Check status via\n");
 print("          http://$localhost:$http_port\n");
@@ -1256,7 +1258,7 @@ while (1)
 	    $last_check = time;
 	}
     }
-    if (($now - $last_index_update) > ($index_update_minper*60))
+    if ($index_update_minper > 0  and  ($now - $last_index_update) > ($index_update_minper*60))
     {
 	write_indexconfig(0);
 	run_indextool($now);

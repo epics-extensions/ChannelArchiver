@@ -22,7 +22,7 @@ Lockfile::Lockfile(const char *filename, const char *program)
             line[0] = '\0';
             fgets(line, sizeof (line), f);
             throw GenericException(__FILE__, __LINE__,
-                                   "Found an existing lock file '%s':\n%s\n",
+                                   "Found an existing lock file '%s' starting with\n\"%s ...\n",
                                    this->filename.c_str(), line);
         }
     }

@@ -78,6 +78,8 @@ int main(int argc, const char *argv[])
     try
     {
         MsgLogger logger(log.get().c_str());
+        // From now on log goes to log file (if specified).
+        try
         {
 	    char lockfile_info[300];
             snprintf(lockfile_info, sizeof(lockfile_info),
@@ -121,12 +123,16 @@ int main(int argc, const char *argv[])
             delete theEngine;
             LOG_MSG ("Removing Lockfile.\n");
         }
+        catch (GenericException &e)
+        {
+            LOG_MSG ("Engine main routine:\n%s", e.what());
+        }
         LOG_MSG ("Done.\n");
     }
+    // Log back to stdout.
     catch (GenericException &e)
     {
-        
-        LOG_MSG ("Exception in Engine's main routine:\n%s", e.what());
+        LOG_MSG ("Engine log problem:\n%s", e.what());
     }
     return 0;
 }

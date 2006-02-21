@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # make_archive_infofile.pl
 
-#use lib '/arch/scripts';
+use lib '/arch/scripts';
 
 use English;
 use strict;
@@ -43,7 +43,7 @@ sub time_as_text($)
 sub write_info($$)
 {
     my ($filename, $only_errors) = @ARG;
-    my ($daemon, $engine, $ok, $out, $disconnected);
+    my ($daemon, $engine, $ok, $old_out, $out, $disconnected);
 
     # Check if anything's missing
     if ($only_errors)
@@ -68,18 +68,22 @@ sub write_info($$)
 	}
 	return if ($ok);
     }
-    open($out, ">>$filename") or die "Cannot open '$filename'\n";
-    print $out "Archive Status as of ", time_as_text(time), "\n";
-    print $out "\n";
+    if ($filename ne "-")
+    {
+        open($out, ">>$filename") or die "Cannot open '$filename'\n";
+        $old_out = select($out);
+    }
+    print "Archive Status as of ", time_as_text(time), "\n";
+    print "\n";
     foreach $daemon ( @daemons )
     {
 	if ($daemon->{running})
 	{
-	    print $out "Daemon '$daemon->{name}': running\n"
+	    print "Daemon '$daemon->{name}': running\n"
 	}
 	else
 	{
-	    print $out "Daemon '$daemon->{name}': NOT RUNNING\n"
+	    print "Daemon '$daemon->{name}': NOT RUNNING\n"
 	}
 	foreach $engine ( @{ $daemon->{engines} } )
 	{
@@ -88,21 +92,25 @@ sub write_info($$)
                 $disconnected = $engine->{channels} - $engine->{connected};
                 if ($disconnected == 0)
                 {
-                    print $out "Engine '$engine->{name}': $engine->{channels} channels.\n";
+                    print "Engine '$engine->{name}': $engine->{channels} channels.\n";
                 }
                 else
                 {
-                    print $out "Engine '$engine->{name}': $engine->{channels} channels,  $disconnected disconnected.\n";
+                    print "Engine '$engine->{name}': $engine->{channels} channels,  $disconnected disconnected.\n";
                 }
             }
             else
             {
-                print $out "Engine '$engine->{name}': $engine->{status}\n";
+                print "Engine '$engine->{name}': $engine->{status}\n";
             }  
 	}
-	print $out "\n";
+	print "\n";
     }
-    close $out;
+    if ($filename ne "-")
+    {
+        select($old_out);
+        close $out;
+    }
 }
 
 # The main code ==============================================

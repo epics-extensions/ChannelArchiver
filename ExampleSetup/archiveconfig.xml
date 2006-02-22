@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE archiveconfig SYSTEM "archiveconfig.dtd">
+
+<!-- Archive Configuration
+
+     There is no DTD (yet),
+     so try to avoid errors when editing this file.
+
+  -->
+
+<archiveconfig>
+
+    <daemon directory='RF'>
+        <desc>RF</desc>
+        <port>4900</port>
+        <engine directory='llrf'>
+            <desc>LLRF</desc>
+            <port>4901</port>
+            <restart type='weekly'>We 10:20</restart>
+        </engine>
+        <engine directory='hprf'>
+            <desc>HPRF</desc>
+            <port>4902</port>
+            <restart type='weekly'>We 10:30</restart>
+        </engine>
+    </daemon>
+
+    <daemon directory='Test'>
+        <desc>Test</desc>
+        <port>4950</port>
+        <engine directory='Test'>
+            <desc>Test</desc>
+            <port>4951</port>
+            <restart type='daily'>08:00</restart>
+        </engine>
+    </daemon>
+</archiveconfig>

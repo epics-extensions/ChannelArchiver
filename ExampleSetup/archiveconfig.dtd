@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DTD for the archiveconfig -->
+<!ELEMENT archiveconfig (daemon*)>
+
+<!ELEMENT daemon (desc?,port,engine*)>
+<!ATTLIST daemon directory CDATA #REQUIRED>
+
+<!ELEMENT engine (desc?,port,restart?)>
+<!ATTLIST engine directory CDATA #REQUIRED>
+
+<!ELEMENT desc (#PCDATA)>
+<!ELEMENT port (#PCDATA)>
+
+<!ELEMENT restart (#PCDATA)>
+<!ATTLIST restart type CDATA #REQUIRED>

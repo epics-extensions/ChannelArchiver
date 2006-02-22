@@ -174,7 +174,7 @@ bool ListIndex::getFirstChannel(NameIterator &iter)
                 }
                 catch (GenericException &e)
                 {   // can't open this one; ignore error, drop it from list
-                    LOG_MSG("Listindex '%s': Error opening '%s':\n%s",
+                    LOG_MSG("Listindex '%s':\n- Error opening '%s',\n  %s\n",
                          filename.c_str(), archs->name.c_str(), e.what());
                     delete archs->index;
                     archs->index = 0;

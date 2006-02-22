@@ -77,6 +77,7 @@ Index *open_index(xmlrpc_env *env, int key)
     }
     catch (GenericException &e)
     {
+        LOG_MSG("Error: %s\n", e.what());
         xmlrpc_env_set_fault_formatted(env, ARCH_DAT_NO_INDEX,
                                        "%s", e.what());
     }

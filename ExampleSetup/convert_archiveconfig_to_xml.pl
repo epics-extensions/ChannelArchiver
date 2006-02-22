@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # make_archive_infofile.pl
 
-use lib '/arch/scripts';
+BEGIN { push(@INC, '/arch/scripts'); }
 
 use English;
 use strict;

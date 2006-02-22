@@ -3,7 +3,8 @@
 #
 # kasemirk@ornl.gov
 
-use lib '/arch/scripts';
+BEGIN { push(@INC, '/arch/scripts'); }
+
 use English;
 use strict;
 use vars qw($opt_d $opt_h $opt_c);
@@ -42,7 +43,7 @@ sub format_bytes($)
     $kilo = int($bytes/1024.0);
     $bytes -= $kilo*1024;
 
-    return sprintf("%4lu GB, %3lu MB, %3lu kB", $giga, $mega, $kilo);
+    return sprintf("%4lu GB, %4lu MB, %4lu kB", $giga, $mega, $kilo);
 }
 
 sub show_sizes()

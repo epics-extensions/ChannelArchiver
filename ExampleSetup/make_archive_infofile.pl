@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # make_archive_infofile.pl
 
-use lib '/arch/scripts';
+BEGIN { push(@INC, '/arch/scripts'); }
 
 use English;
 use strict;
@@ -17,7 +17,7 @@ my ($output_name) = "errors";
 my ($localhost) = hostname();
 
 # Configuration info filled by parse_config_file
-my (@daemons);
+my ($config);
 
 sub usage()
 {
@@ -28,7 +28,6 @@ sub usage()
     print(" -c <config> : Use given config file instead of $config_name\n");
     print(" -o <html>   : Generate given output file instead of $output_name\n");
     print(" -d          : debug\n");
-    print(" -e          : Append to file only if there are errors.\n");
 }
 
 sub time_as_text($)
@@ -40,34 +39,11 @@ sub time_as_text($)
 		   1900+$year, 1+$mon, $mday, $hour, $min, $sec);
 }
 
-sub write_info($$)
+sub write_info($)
 {
-    my ($filename, $only_errors) = @ARG;
-    my ($daemon, $engine, $ok, $old_out, $out, $disconnected);
+    my ($filename) = @ARG;
+    my ($d_dir, $e_dir, $ok, $old_out, $out, $disconnected);
 
-    # Check if anything's missing
-    if ($only_errors)
-    {
-	$ok = 1;
-      CHECK_DAEMONS:
-	foreach $daemon ( @daemons )
-	{
-	    if (not $daemon->{running})
-	    {
-		$ok = 0;
-		last CHECK_DAEMONS;
-	    }
-	    foreach $engine ( @{ $daemon->{engines} } )
-	    {
-		if ($engine->{status} ne "running")
-		{
-		    $ok = 0;
-		    last CHECK_DAEMONS;
-		}
-	    }
-	}
-	return if ($ok);
-    }
     if ($filename ne "-")
     {
         open($out, ">>$filename") or die "Cannot open '$filename'\n";
@@ -75,33 +51,29 @@ sub write_info($$)
     }
     print "Archive Status as of ", time_as_text(time), "\n";
     print "\n";
-    foreach $daemon ( @daemons )
+    foreach $d_dir ( keys %{ $config->{daemon} } )
     {
-	if ($daemon->{running})
+        next if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true');
+	print "Daemon '$d_dir': $config->{daemon}{$d_dir}{status}\n";
+	foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
-	    print "Daemon '$daemon->{name}': running\n"
-	}
-	else
-	{
-	    print "Daemon '$daemon->{name}': NOT RUNNING\n"
-	}
-	foreach $engine ( @{ $daemon->{engines} } )
-	{
-            if ($engine->{status} eq "running")
+            next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'disable-check'} eq 'true');
+            if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} eq "running")
             {
-                $disconnected = $engine->{channels} - $engine->{connected};
+                $disconnected = $config->{daemon}{$d_dir}{engine}{$e_dir}{channels}
+                     - $config->{daemon}{$d_dir}{engine}{$e_dir}{connected};
                 if ($disconnected == 0)
                 {
-                    print "Engine '$engine->{name}': $engine->{channels} channels.\n";
+                    print "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels.\n";
                 }
                 else
                 {
-                    print "Engine '$engine->{name}': $engine->{channels} channels,  $disconnected disconnected.\n";
+                    print "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels,  $disconnected disconnected.\n";
                 }
             }
             else
             {
-                print "Engine '$engine->{name}': $engine->{status}\n";
+                print "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{status}\n";
             }  
 	}
 	print "\n";
@@ -116,7 +88,7 @@ sub write_info($$)
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("dhc:o:e") ||  $opt_h)
+if (!getopts("dhc:o:") ||  $opt_h)
 {
     usage();
     exit(0);
@@ -124,6 +96,6 @@ if (!getopts("dhc:o:e") ||  $opt_h)
 $config_name = $opt_c  if (length($opt_c) > 0);
 $output_name = $opt_o  if (length($opt_o) > 0);
 
-@daemons = parse_config_file($config_name, $opt_d);
-update_status(\@daemons, $opt_d);
-write_info($output_name, $opt_e);
+$config = parse_config_file($config_name, $opt_d);
+update_status($config, $opt_d);
+write_info($output_name);

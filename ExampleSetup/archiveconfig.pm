@@ -1,26 +1,17 @@
 package archiveconfig;
-# Perl module to read the file which lists all the daemons and engines
-# that we indent to handle.
+# Perl module to help with the archiveconfig.xml file.
 #
-# parse_config_file creates an array of daemons to run,
-# their info, and their engines, similar to this:
-# 
-# $daemons[0]->{name} = "demosys";     # Daemon name (directory)
-# $daemons[0]->{desc} = "Test daemon"; # .. description
-# $daemons[0]->{port} = 4000;          # .. port
-# .. and the engines under this daemon w/ their name, desc, port, ...
-# $daemons[0]->{engines}[0]->{name} = "engine1";
-# $daemons[0]->{engines}[0]->{desc} = "Test Engine 1";
-# $daemons[0]->{engines}[0]->{port} = 4001;
-# $daemons[0]->{engines}[0]->{restart} = "daily";
-# $daemons[0]->{engines}[0]->{time} = "08:00";
+# Reads the data as XML::Simple reads the XML file:
+# $config->{daemon}{$d_dir}{port}
+# $config->{daemon}{$d_dir}{description}
+# $config->{daemon}{$d_dir}{engine}{$e_dir}{port}
+# $config->{daemon}{$d_dir}{engine}{$e_dir}{description}
+# $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type}
+# $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content}
 #
-# update_status adds the following info:
-# $daemons[0]->{running} = true/false;
-# $daemons[0]->{engines}[0]->{status} = "running", "disabled", "down";
-# $daemons[0]->{engines}[0]->{channels} = 0...
-# $daemons[0]->{engines}[0]->{connected} = 0...
-# kasemirk@ornl.gov
+# and adds some info in update_status:
+# $config->{daemon}{$d_dir}{status}
+# $config->{daemon}{$d_dir}{engine}{$e_dir}{status}
 
 require Exporter;
 @ISA = qw(Exporter);
@@ -56,13 +47,13 @@ my ($localhost) = hostname();
 # Time:        Time in HH:MM format for the engine restarts
 # Frequency:   'daily' or 'weekly' or ...
 #
-# Returns @daemons
+# Returns $config
 sub parse_tabbed_file($$)
 {
     my ($filename, $opt_d) = @ARG;
-    my (@daemons);
+    my ($config);
     my ($in);
-    my ($type, $name, $port, $desc, $time, $restart);
+    my ($type, $name, $d_dir, $e_dir, $port, $desc, $time, $restart);
     my ($di, $ei); # Index of current daemon and engine
 
     print("Parsing '$filename' as tabbed file.\n") if ($opt_d);
@@ -74,30 +65,23 @@ sub parse_tabbed_file($$)
         next if ($ARG =~ '\A#');        # Skip comments
         next if ($ARG =~ '\A[ \t]*\Z'); # ... and empty lines
         ($type,$name,$port,$desc,$restart,$time) = split(/\t/, $ARG); # Get columns
-        $desc = $name unless (length($desc) > 0); # Desc defaults to name
         if ($type eq "DAEMON")
         {
-            print("$NR: Daemon '$name', Port $port, Desc '$desc'\n")
-            if ($opt_d);
-            $di = $#daemons + 1;
-            $daemons[$di]->{name} = $name;
-            $daemons[$di]->{desc} = $desc;
-            $daemons[$di]->{port} = $port;
-            $daemons[$di]->{running} = 0;
-            $daemons[$di]->{disabled} = 0;
-            $daemons[$di]->{channels} = 0;
-            $daemons[$di]->{connected} = 0;
-            $ei = 0;
+            $d_dir = $name;
+            $desc = "$d_dir Daemon" unless (length($desc) > 0); # Desc default.
+            print("$NR: Daemon '$d_dir', Port $port, Desc '$desc'\n") if ($opt_d);
+            $config->{daemon}{$d_dir}{description} = $desc;
+            $config->{daemon}{$d_dir}{port} = $port;
         }
         elsif ($type eq "ENGINE")
         {
-            print("$NR: Engine '$name', Port $port, Desc '$desc', Time '$time', Restart '$restart'\n") if ($opt_d);
-            $daemons[$di]->{engines}[$ei]->{name} = $name;
-            $daemons[$di]->{engines}[$ei]->{desc} = $desc;
-            $daemons[$di]->{engines}[$ei]->{port} = $port;
-            $daemons[$di]->{engines}[$ei]->{time} = $time;
-            $daemons[$di]->{engines}[$ei]->{restart} = $restart;
-            ++ $ei;
+            $e_dir = $name;
+            $desc = "$e_dir Engine" unless (length($desc) > 0); # Desc default.
+            print("$NR: Engine '$e_dir', Port $port, Desc '$desc', Time '$time', Restart '$restart'\n") if ($opt_d);
+            $config->{daemon}{$d_dir}{engine}{$e_dir}{description} = $desc;
+            $config->{daemon}{$d_dir}{engine}{$e_dir}{port} = $port;
+            $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type} = $restart;
+            $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content} = $time;
         }
         else
         {
@@ -105,67 +89,55 @@ sub parse_tabbed_file($$)
         }
     }
     close $in;
-    print("Read $filename\n\n") if ($opt_d);
-    return @daemons;
+    return $config;
 }
 
+# Parse XML or old-style tab separated file format.
+#
+# Returns $config
 sub parse_config_file($$)
 {
     my ($filename, $opt_d) = @ARG;
+    my ($config);
 
     print("Parsing '$filename'\n") if ($opt_d);
-    return parse_tabbed_file($filename, $opt_d) if ($filename =~ m".csv\Z");
-
-    my ($config) = XMLin($filename, ForceArray => [ 'daemon', 'engine' ], KeyAttr => "directory");
-    # print Dumper($config);
-
-    my (@daemons);
-    my ($d_dir, $e_dir);
-    my ($di, $ei); # Index of current daemon and engine
-    foreach $d_dir ( sort keys %{ $config->{daemon} } )
+    if ($filename =~ m".csv\Z")
     {
-            $di = $#daemons + 1;
-            $daemons[$di]->{name} = $d_dir;
-            $daemons[$di]->{desc} = $config->{daemon}{$d_dir}{description};
-            $daemons[$di]->{port} = $config->{daemon}{$d_dir}{port};
-            $daemons[$di]->{running} = 0;
-            $daemons[$di]->{disabled} = 0;
-            $daemons[$di]->{channels} = 0;
-            $daemons[$di]->{connected} = 0;
-            print("Daemon '$daemons[$di]->{name}', Port $daemons[$di]->{port}, Desc '$daemons[$di]->{desc}'\n")
-                if ($opt_d);
-            $ei = 0;
-            foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
-            {
-                $daemons[$di]->{engines}[$ei]->{name} = $e_dir;
-                $daemons[$di]->{engines}[$ei]->{desc} = $config->{daemon}{$d_dir}{engine}{$e_dir}{description};
-                $daemons[$di]->{engines}[$ei]->{port} = $config->{daemon}{$d_dir}{engine}{$e_dir}{port};
-                $daemons[$di]->{engines}[$ei]->{restart} = $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type};
-                $daemons[$di]->{engines}[$ei]->{time} = $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content};
-                print("-- Engine '$daemons[$di]->{engines}[$ei]->{name}', Port $daemons[$di]->{engines}[$ei]->{port}, Desc '$daemons[$di]->{engines}[$ei]->{desc}', Time '$daemons[$di]->{engines}[$ei]->{time}$daemons[$di]->{engines}[$ei]->{time}', Restart '$daemons[$di]->{engines}[$ei]->{restart}'\n") if ($opt_d);
-                ++ $ei;
-            }
+        $config = parse_tabbed_file($filename, $opt_d)
     }
-    return @daemons;
+    else
+    {
+        $config = XMLin($filename, ForceArray => [ 'daemon', 'engine' ], KeyAttr => "directory");
+    }
+    if ($opt_d)
+    {
+        print Dumper($config);
+        dump_config($config);
+    }
+    return $config;
 }
 
-# Input: Reference to @daemons
+# Input: $config
 sub dump_config($)
 {
-    my ($daemons) = @ARG;
-    my ($daemon, $engine);
+    my ($config) = @ARG;
+    my ($d_dir, $e_dir);
     print("Configuration Dump:\n");
-    foreach $daemon ( @{ $daemons } )
+    foreach $d_dir ( keys %{ $config->{daemon} } )
     {
         printf("Daemon '%s': Port %d, description '%s'\n",
-               $daemon->{name},  $daemon->{port},
-               $daemon->{desc});
-        foreach $engine ( @{ $daemon->{engines} } )
+               $d_dir,
+               $config->{daemon}{$d_dir}{port},
+               $config->{daemon}{$d_dir}{description});
+        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
             printf("    Engine '%s', port %d, description '%s', ",
-              $engine->{name}, $engine->{port}, $engine->{desc});
+                   $e_dir,
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{description});
             printf("restart %s %s\n",
-               $engine->{time}, $engine->{restart});
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type},
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content});
         }
     }
     print("\n");
@@ -182,25 +154,32 @@ sub read_URL($$$)
     return @doc;
 }
 
-# Input: Reference to @daemons, $debug
+# Input: $config, $debug
 sub update_status($$)
 {
-    my ($daemons, $opt_d) = @ARG;
-    my (@html, $line, $daemon, $engine);
-    foreach $daemon ( @{ $daemons } )
+    my ($config, $opt_d) = @ARG;
+    my (@html, $line, $d_dir, $e_dir);
+    foreach $d_dir ( keys %{ $config->{daemon} } )
     {
         # Assume the worst until we learn more
-        $daemon->{running} = 0;
-        foreach $engine ( @{ $daemon->{engines} } )
+        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
-            $engine->{status} = "unknown";
-            $engine->{connected} = 0;
-            $engine->{channels} = 0;
+            $config->{daemon}{$d_dir}{engine}{$e_dir}{status} = "unknown";
+            $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} = 0;
+            $config->{daemon}{$d_dir}{engine}{$e_dir}{connected} = 0;
         }
-        @html = read_URL($localhost, $daemon->{port}, "status");
+        # Skip daemon if checking is disabled
+        if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true')
+        {
+            $config->{daemon}{$d_dir}{status} = "not checked";
+            next;
+        }
+        $config->{daemon}{$d_dir}{status} = "no response";
+        print "Checking $d_dir daemon on port $config->{daemon}{$d_dir}{port}:\n" if ($opt_d);
+        @html = read_URL($localhost, $config->{daemon}{$d_dir}{port}, "status");
         if ($opt_d)
         {
-            print "Response from $daemon->{desc}:\n";
+            print "Response from $config->{daemon}{$d_dir}{description}:\n";
             foreach $line ( @html )
             {   print "    '$line'\n"; }
         }
@@ -213,14 +192,14 @@ sub update_status($$)
                 {
                     print("Engine: port $port, status $status, $connected/$channels connected\n");
                 }
-                $daemon->{running} = 1;
-                foreach $engine ( @{ $daemon->{engines} } )
+                $config->{daemon}{$d_dir}{status} = "running";
+                foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
                 {
-                    if ($engine->{port} == $port)
+                    if ($config->{daemon}{$d_dir}{engine}{$e_dir}{port} == $port)
                     {
-                        $engine->{status} = $status;
-                        $engine->{connected} = $connected;
-                        $engine->{channels} = $channels;
+                        $config->{daemon}{$d_dir}{engine}{$e_dir}{status} = $status;
+                        $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} = $channels;
+                        $config->{daemon}{$d_dir}{engine}{$e_dir}{connected} = $connected;
                         last;
                     }
                 }

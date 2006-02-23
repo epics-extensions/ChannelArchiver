@@ -18,7 +18,7 @@ my ($config_name) = "archiveconfig.xml";
 my ($localhost) = hostname();
 
 # Configuration info filled by parse_config_file
-my (@daemons);
+my ($config);
 
 sub usage()
 {
@@ -40,9 +40,9 @@ if (!getopts("dhc:o:") ||  $opt_h)
 }
 $config_name = $opt_c  if (length($opt_c) > 0);
 
-@daemons = parse_config_file($config_name, $opt_d);
+$config = parse_config_file($config_name, $opt_d);
 
-my ($daemon, $engine, @html, $line, $channels, $count, $time, $vps, $period);
+my ($d_dir, $e_dir, @html, $line, $channels, $count, $time, $vps, $period);
 my ($total_channels, $total_count, $total_time, $total_vps);
 printf "ArchiveEngine 'write' Statistics\n\n";
 printf "Engine              Port      Channels  Val.Count Wr.Period Val/sec   Write Duration\n";
@@ -51,17 +51,21 @@ $total_channels = 0;
 $total_count = 0;
 $total_time = 0;
 $total_vps = 0;
-foreach $daemon ( @daemons )
+foreach $d_dir ( keys %{ $config->{daemon} } )
 {
-    foreach $engine ( @{ $daemon->{engines} } )
+    next if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true');
+    foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
     {
+        next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'disable-check'} eq 'true');
 	printf("    Engine '%s', %s:%d, description '%s'\n",
-	       $engine->{name}, $localhost, $engine->{port}, $engine->{desc}) if ($opt_d);
+	       $e_dir, $localhost,
+               $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
+               $config->{daemon}{$d_dir}{engine}{$e_dir}{description}) if ($opt_d);
 	$channels = "<unknown>";
 	$count = "<unknown>";
 	$time = "<unknown>";
 	$period= "<unknown>";
-	@html = read_URL($localhost, $engine->{port}, "");
+	@html = read_URL($localhost, $config->{daemon}{$d_dir}{engine}{$e_dir}{port}, "");
 	foreach $line ( @html )
 	{
             print "    '$line'\n" if ($opt_d);
@@ -92,7 +96,8 @@ foreach $daemon ( @daemons )
 	    $vps = 0;
         }
 	printf "%-20s%-10d%-10s%-10s%-10s%8.3f  %s\n",
-               $engine->{name}, $engine->{port}, $channels, $count, $period, $vps, $time;
+               $e_dir, $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
+               $channels, $count, $period, $vps, $time;
 	$total_channels += $channels if ($channels > 0);
 	$total_count += $count if ($count > 0);
 	$total_vps += $vps if ($vps > 0);

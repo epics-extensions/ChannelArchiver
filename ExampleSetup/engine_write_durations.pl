@@ -51,14 +51,14 @@ $total_channels = 0;
 $total_count = 0;
 $total_time = 0;
 $total_vps = 0;
-foreach $d_dir ( keys %{ $config->{daemon} } )
+foreach $d_dir ( sort keys %{ $config->{daemon} } )
 {
     next if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true');
-    foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+    foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
     {
         next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'disable-check'} eq 'true');
-	printf("    Engine '%s', %s:%d, description '%s'\n",
-	       $e_dir, $localhost,
+	printf("    Engine '%s/%s', %s:%d, description '%s'\n",
+	       $d_dir, $e_dir, $localhost,
                $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
                $config->{daemon}{$d_dir}{engine}{$e_dir}{description}) if ($opt_d);
 	$channels = "<unknown>";
@@ -96,7 +96,7 @@ foreach $d_dir ( keys %{ $config->{daemon} } )
 	    $vps = 0;
         }
 	printf "%-20s%-10d%-10s%-10s%-10s%8.3f  %s\n",
-               $e_dir, $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
+               $d_dir . "/" . $e_dir, $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
                $channels, $count, $period, $vps, $time;
 	$total_channels += $channels if ($channels > 0);
 	$total_count += $count if ($count > 0);

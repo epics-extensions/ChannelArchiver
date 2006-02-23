@@ -7,7 +7,7 @@ BEGIN { push(@INC, '/arch/scripts'); }
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c);
+use vars qw($opt_d $opt_h $opt_c $opt_r);
 use Getopt::Std;
 use Data::Dumper;
 use Sys::Hostname;
@@ -15,9 +15,10 @@ use archiveconfig;
 
 # Globals, Defaults
 my ($config_name) = "archiveconfig.xml";
+my ($root) = "/arch";
 
 # Configuration info filled by parse_config_file
-my (@daemons);
+my ($config);
 
 sub usage()
 {
@@ -26,6 +27,7 @@ sub usage()
     print("Options:\n");
     print(" -h          : help\n");
     print(" -c <config> : Use given config file instead of $config_name\n");
+    print(" -r <dir>    : Use given root instead of $root\n");
     print(" -d          : debug\n");
 }
 
@@ -48,19 +50,22 @@ sub format_bytes($)
 
 sub show_sizes()
 {
-    my ($daemon, $engine, $dir, $info, %bytes);
-    foreach $daemon ( @daemons )
+    my ($d_dir, $e_dir, $dir, $info, %bytes);
+    print("Data sizes for the engine directories:\n");
+    foreach $d_dir ( keys %{ $config->{daemon} } )
     {
-	foreach $engine ( @{ $daemon->{engines} } )
+	foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
-            $dir = "$daemon->{name}/$engine->{name}";
+            $dir = "$root/$d_dir/$e_dir";
+	    print("du -bs $dir ...\n") if ($opt_d);
 	    open(DU, "du -bs $dir |") or die "Cannot run 'du'\n";
             $info = <DU>;
 	    close DU;
             chomp($info);
             if ($info =~ m"([0-9]+)\s+(\S+)")
             {
-                $bytes{$2} = $1;
+                $bytes{$dir} = $1;
+                printf("%-20s%s\n", $dir, format_bytes($bytes{$dir}));
             }
             else
             {
@@ -68,23 +73,19 @@ sub show_sizes()
             }
 	}
     }
-    print("Data sizes for the engine directories:\n");
-    foreach $engine ( keys %bytes )
-    {
-        printf("%-20s%s\n", $engine, format_bytes($bytes{$engine}));
-    }
 }
 
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("dhc:") ||  $opt_h)
+if (!getopts("dhc:r:") ||  $opt_h)
 {
     usage();
     exit(0);
 }
 $config_name = $opt_c  if (length($opt_c) > 0);
+$root = $opt_r  if (length($opt_r) > 0);
 
-@daemons = parse_config_file($config_name, $opt_d);
+$config = parse_config_file($config_name, $opt_d);
 show_sizes();
 

@@ -81,7 +81,7 @@ XML
                    . "<A HREF=\"http://$localhost:$config->{daemon}{$d_dir}{port}\">$d_dir</A></td>\n";
         print $out "     <td width=\"10%\">&nbsp;</td>\n";
         print $out "     <td width=\"5%\">$config->{daemon}{$d_dir}{port}</td>\n";
-        print $out "     <td width=\"20%\">$config->{daemon}{$d_dir}{description}</td>\n";
+        print $out "     <td width=\"20%\">$config->{daemon}{$d_dir}{desc}</td>\n";
         if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} eq "running")
         {
             print $out "     <td width=\"35%\">Running</td>\n";
@@ -102,7 +102,7 @@ XML
             print $out "     <td width=\"10%\">" .
                        "<A HREF=\"http://$localhost:$config->{daemon}{$d_dir}{engine}{$e_dir}{port}\">$e_dir</A></td>\n";
             print $out "     <td width=\"5%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{port}</td>\n";
-            print $out "     <td width=\"20%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{description}</td>\n";
+            print $out "     <td width=\"20%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{desc}</td>\n";
             if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} eq "running")
             {
                 $disconnected =  $config->{daemon}{$d_dir}{engine}{$e_dir}{channels}

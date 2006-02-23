@@ -60,7 +60,7 @@ foreach $d_dir ( sort keys %{ $config->{daemon} } )
 	printf("    Engine '%s/%s', %s:%d, description '%s'\n",
 	       $d_dir, $e_dir, $localhost,
                $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
-               $config->{daemon}{$d_dir}{engine}{$e_dir}{description}) if ($opt_d);
+               $config->{daemon}{$d_dir}{engine}{$e_dir}{desc}) if ($opt_d);
 	$channels = "<unknown>";
 	$count = "<unknown>";
 	$time = "<unknown>";

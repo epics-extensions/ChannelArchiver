@@ -2,10 +2,6 @@
 <!DOCTYPE archiveconfig SYSTEM "archiveconfig.dtd">
 
 <!-- Archive Configuration
-
-     There is no DTD (yet),
-     so try to avoid errors when editing this file.
-
   -->
 
 <archiveconfig>

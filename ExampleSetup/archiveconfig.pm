@@ -3,9 +3,9 @@ package archiveconfig;
 #
 # Reads the data as XML::Simple reads the XML file:
 # $config->{daemon}{$d_dir}{port}
-# $config->{daemon}{$d_dir}{description}
+# $config->{daemon}{$d_dir}{desc}
 # $config->{daemon}{$d_dir}{engine}{$e_dir}{port}
-# $config->{daemon}{$d_dir}{engine}{$e_dir}{description}
+# $config->{daemon}{$d_dir}{engine}{$e_dir}{desc}
 # $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type}
 # $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content}
 #
@@ -70,7 +70,7 @@ sub parse_tabbed_file($$)
             $d_dir = $name;
             $desc = "$d_dir Daemon" unless (length($desc) > 0); # Desc default.
             print("$NR: Daemon '$d_dir', Port $port, Desc '$desc'\n") if ($opt_d);
-            $config->{daemon}{$d_dir}{description} = $desc;
+            $config->{daemon}{$d_dir}{desc} = $desc;
             $config->{daemon}{$d_dir}{port} = $port;
         }
         elsif ($type eq "ENGINE")
@@ -78,7 +78,7 @@ sub parse_tabbed_file($$)
             $e_dir = $name;
             $desc = "$e_dir Engine" unless (length($desc) > 0); # Desc default.
             print("$NR: Engine '$e_dir', Port $port, Desc '$desc', Time '$time', Restart '$restart'\n") if ($opt_d);
-            $config->{daemon}{$d_dir}{engine}{$e_dir}{description} = $desc;
+            $config->{daemon}{$d_dir}{engine}{$e_dir}{desc} = $desc;
             $config->{daemon}{$d_dir}{engine}{$e_dir}{port} = $port;
             $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type} = $restart;
             $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content} = $time;
@@ -128,13 +128,13 @@ sub dump_config($)
         printf("Daemon '%s': Port %d, description '%s'\n",
                $d_dir,
                $config->{daemon}{$d_dir}{port},
-               $config->{daemon}{$d_dir}{description});
+               $config->{daemon}{$d_dir}{desc});
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
             printf("    Engine '%s', port %d, description '%s', ",
                    $e_dir,
                    $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
-                   $config->{daemon}{$d_dir}{engine}{$e_dir}{description});
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
             printf("restart %s %s\n",
                    $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type},
                    $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content});
@@ -179,7 +179,7 @@ sub update_status($$)
         @html = read_URL($localhost, $config->{daemon}{$d_dir}{port}, "status");
         if ($opt_d)
         {
-            print "Response from $config->{daemon}{$d_dir}{description}:\n";
+            print "Response from $config->{daemon}{$d_dir}{desc}:\n";
             foreach $line ( @html )
             {   print "    '$line'\n"; }
         }

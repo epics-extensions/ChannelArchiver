@@ -13,7 +13,7 @@ use archiveconfig;
 
 # Globals, Defaults
 my ($config_name) = "archiveconfig.xml";
-my ($output_name) = "errors";
+my ($output_name) = "-";
 my ($localhost) = hostname();
 
 # Configuration info filled by parse_config_file

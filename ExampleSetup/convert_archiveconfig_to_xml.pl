@@ -44,7 +44,7 @@ sub dump_config_as_xml($)
         printf("\n    <daemon directory='%s'>\n", $d_dir);
         printf("        <run>true</run>\n");
         printf("        <desc>%s</desc>\n",
-               $config->{daemon}{$d_dir}{description});
+               $config->{daemon}{$d_dir}{desc});
         printf("        <port>%s</port>\n",
                $config->{daemon}{$d_dir}{port});
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
@@ -52,7 +52,7 @@ sub dump_config_as_xml($)
             printf("        <engine directory='%s'>\n", $e_dir);
             printf("            <run>true</run>\n");
             printf("            <desc>%s</desc>\n",
-                   $config->{daemon}{$d_dir}{engine}{$e_dir}{description});
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
             printf("            <port>%s</port>\n",
                    $config->{daemon}{$d_dir}{engine}{$e_dir}{port});
             printf("            <restart type='%s'>%s</restart>\n",

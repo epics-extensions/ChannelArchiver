@@ -44,11 +44,8 @@ sub write_info($)
     my ($filename) = @ARG;
     my ($d_dir, $e_dir, $ok, $old_out, $out, $disconnected);
 
-    if ($filename ne "-")
-    {
-        open($out, ">>$filename") or die "Cannot open '$filename'\n";
-        $old_out = select($out);
-    }
+    open($out, ">>$filename") or die "Cannot open '$filename'\n";
+    $old_out = select($out);
     print "Archive Status as of ", time_as_text(time), "\n";
     print "\n";
     foreach $d_dir ( keys %{ $config->{daemon} } )
@@ -78,11 +75,8 @@ sub write_info($)
 	}
 	print "\n";
     }
-    if ($filename ne "-")
-    {
-        select($old_out);
-        close $out;
-    }
+    select($old_out);
+    close $out;
 }
 
 # The main code ==============================================

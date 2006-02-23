@@ -21,7 +21,7 @@ my ($output_name) = "archive_status.html";
 my ($localhost) = hostname();
 
 # Configuration info filled by parse_config_file
-my (@daemons);
+my ($config);
 
 sub usage()
 {
@@ -47,7 +47,7 @@ sub write_html($)
 {
     my ($filename) = @ARG;
     my $TITLE = "ARCHIVER HEALTH STATUS";
-    my ($daemon, $engine);
+    my ($d_dir, $e_dir);
     my ($out, $disconnected);
     open($out, ">$filename") or die "Cannot open '$filename'\n";
 
@@ -59,7 +59,8 @@ sub write_html($)
 
 <H1 align=center>$TITLE</H1>
 
-<table border="1" cellpadding="1" cellspacing="1" style'"border-collapse: collapse" bordercolor="#111111" bgcolor="#CCCCFF" width="100%"'>
+<table border="1" cellpadding="1" cellspacing="1" style'"border-collapse: collapse"
+ bordercolor="#111111" bgcolor="#CCCCFF" width="100%"'>
 
   <tr>
      <td width="15%" align="center"><b>DAEMON</b></td>
@@ -72,49 +73,55 @@ sub write_html($)
   </tr>
 XML
 
-    foreach $daemon ( @daemons )
+    foreach $d_dir ( keys %{ $config->{daemon} } )
     {
+        next if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true');
         print $out "  <tr>\n";
-        print $out "     <td width=\"15%\"><A HREF=\"http://$localhost:$daemon->{port}\">$daemon->{name}</A></td>\n";
+        print $out "     <td width=\"15%\">"
+                   . "<A HREF=\"http://$localhost:$config->{daemon}{$d_dir}{port}\">$d_dir</A></td>\n";
         print $out "     <td width=\"10%\">&nbsp;</td>\n";
-        print $out "     <td width=\"5%\">$daemon->{port}</td>\n";
-        print $out "     <td width=\"20%\">$daemon->{desc}</td>\n";
-        if ($daemon->{running})
+        print $out "     <td width=\"5%\">$config->{daemon}{$d_dir}{port}</td>\n";
+        print $out "     <td width=\"20%\">$config->{daemon}{$d_dir}{description}</td>\n";
+        if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} eq "running")
         {
             print $out "     <td width=\"35%\">Running</td>\n";
         }
         else
         {
-            print $out "     <td width=\"35%\"><FONT color=#FF0000>Down</FONT></td>\n";
+            print $out "     <td width=\"35%\">" .
+                      "<FONT color=#FF0000>$config->{daemon}{$d_dir}{engine}{$e_dir}{status}</FONT></td>\n";
         }
         print $out "     <td width=\"5%\">&nbsp;</td>\n";
         print $out "     <td width=\"10%\">&nbsp;</td>\n";
         print $out "  </tr>\n";
-        foreach $engine ( @{ $daemon->{engines} } )
+        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
+            next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'disable-check'} eq 'true');
             print $out "  <tr>\n";
             print $out "     <td width=\"15%\">&nbsp;</td>\n";
-            print $out "     <td width=\"10%\"><A HREF=\"http://$localhost:$engine->{port}\">$engine->{name}</A></td>\n";
-            print $out "     <td width=\"5%\">$engine->{port}</td>\n";
-            print $out "     <td width=\"20%\">$engine->{desc}</td>\n";
-            if ($engine->{status} eq "running")
+            print $out "     <td width=\"10%\">" .
+                       "<A HREF=\"http://$localhost:$config->{daemon}{$d_dir}{engine}{$e_dir}{port}\">$e_dir</A></td>\n";
+            print $out "     <td width=\"5%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{port}</td>\n";
+            print $out "     <td width=\"20%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{description}</td>\n";
+            if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} eq "running")
             {
-                $disconnected = $engine->{channels} - $engine->{connected};
+                $disconnected =  $config->{daemon}{$d_dir}{engine}{$e_dir}{channels}
+                     - $config->{daemon}{$d_dir}{engine}{$e_dir}{connected};
                 if ($disconnected == 0)
                 {
-                    print $out "     <td width=\"35%\">$engine->{channels} channels connected.</td>\n";
+                    print $out "     <td width=\"35%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels connected.</td>\n";
                 }
                 else
                 {
-                    print $out "     <td width=\"35%\">$engine->{channels} channels, <FONT color=#FF0000>$disconnected disconnected</FONT>.</td>\n";
+                    print $out "     <td width=\"35%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels, <FONT color=#FF0000>$disconnected disconnected</FONT>.</td>\n";
                 }
             }
             else
             {
-                print $out "     <td width=\"35%\"><FONT color=#FF0000>$engine->{status}</FONT></td>\n";
+                print $out "     <td width=\"35%\"><FONT color=#FF0000>$config->{daemon}{$d_dir}{engine}{$e_dir}{status}</FONT></td>\n";
             }
-            print $out "     <td width=\"10%\">$engine->{restart}</td>\n";
-            print $out "     <td width=\"5%\">$engine->{time}</td>\n";
+            print $out "     <td width=\"10%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type}</td>\n";
+            print $out "     <td width=\"5%\">$config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content}</td>\n";
             print $out "  </tr>\n";
         }
     }
@@ -138,7 +145,6 @@ if (!getopts("dhc:o:") ||  $opt_h)
 $config_name = $opt_c  if (length($opt_c) > 0);
 $output_name = $opt_o  if (length($opt_o) > 0);
 
-@daemons = parse_config_file($config_name, $opt_d);
-update_status(\@daemons, $opt_d);
-dump_config(\@daemons) if ($opt_d);
+$config = parse_config_file($config_name, $opt_d);
+update_status($config, $opt_d);
 write_html($output_name);

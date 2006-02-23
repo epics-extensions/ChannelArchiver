@@ -171,15 +171,27 @@ void dump_gnuplot(Index &index,
             else
             {
                 if (reader->getCount() <= 1)
-                {
-                    RawValue::getValueString(
-                        val, reader->getType(), reader->getCount(),
-                        value, &reader->getInfo(), format, precision); 
-                    fprintf(f, "%s\t%s\t%s\n",
-                            time.c_str(), val.c_str(), stat.c_str());
+                {   // Scalar
+                    if (reader->getType() == DBR_TIME_ENUM)
+                    {   // Enum: Show number, not the string, for plotting
+                        long l;
+                        RawValue::getLong(reader->getType(),
+                                          reader->getCount(),
+                                          value, l, 0);
+                        fprintf(f, "%s\t%ld\t%s\n",
+                                time.c_str(), l, stat.c_str());
+                    }
+                    else
+                    {
+                        RawValue::getValueString(
+                            val, reader->getType(), reader->getCount(),
+                            value, &reader->getInfo(), format, precision); 
+                        fprintf(f, "%s\t%s\t%s\n",
+                                time.c_str(), val.c_str(), stat.c_str());
+                    }   
                 }
                 else
-                {
+                {   // Array
                     double dbl;
                     for (e=0; e<reader->getCount(); ++e)
                     {

@@ -15,7 +15,7 @@ use archiveconfig;
 my ($config_name) = "archiveconfig.csv";
 
 # Configuration info filled by parse_config_file
-my (@daemons);
+my ($config);
 
 sub usage()
 {
@@ -30,49 +30,50 @@ sub usage()
 # Input: Reference to @daemons
 sub dump_config_as_xml($)
 {
-    my ($daemons) = @ARG;
-    my ($daemon, $engine);
-    print("<!-- Archive Configuration\n");
+    my ($config) = @ARG;
+    my ($d_dir, $e_dir);
+    print("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
+    print("<!DOCTYPE archiveconfig SYSTEM \"archiveconfig.dtd\">\n");
     print("\n");
-    print("     There is no DTD (yet),\n");
-    print("     so try to avoid errors when editing this file.\n");
+    print("<!-- Archive Configuration\n");
     print("\n");
     print("  -->\n");
     print("<archive_config>\n");
-    foreach $daemon ( @{ $daemons } )
+    foreach $d_dir ( keys %{ $config->{daemon} } )
     {
-        printf("\n    <daemon directory='%s'>\n",
-               $daemon->{name});
+        printf("\n    <daemon directory='%s'>\n", $d_dir);
+        printf("        <run>true</run>\n");
         printf("        <desc>%s</desc>\n",
-               $daemon->{desc});
+               $config->{daemon}{$d_dir}{description});
         printf("        <port>%s</port>\n",
-               $daemon->{port});
-        foreach $engine ( @{ $daemon->{engines} } )
+               $config->{daemon}{$d_dir}{port});
+        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
-            printf("        <engine directory='%s'>\n",
-              $engine->{name});
+            printf("        <engine directory='%s'>\n", $e_dir);
+            printf("            <run>true</run>\n");
             printf("            <desc>%s</desc>\n",
-                   $engine->{desc});
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{description});
             printf("            <port>%s</port>\n",
-                   $engine->{port});
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{port});
             printf("            <restart type='%s'>%s</restart>\n",
-               $engine->{restart}, $engine->{time});
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type},
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content});
             printf("        </engine>\n");
         }
         printf("    </daemon>\n");
     }
-    print("</archive_config>\n");
+    print("\n</archive_config>\n");
 }
 
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("hc:") ||  $opt_h)
+if (!getopts("hdc:") ||  $opt_h)
 {
     usage();
     exit(0);
 }
 $config_name = $opt_c  if (length($opt_c) > 0);
 
-@daemons = parse_config_file($config_name, $opt_d);
-dump_config_as_xml(\@daemons);
+$config = parse_config_file($config_name, $opt_d);
+dump_config_as_xml($config);

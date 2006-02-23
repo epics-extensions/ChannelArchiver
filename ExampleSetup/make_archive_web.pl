@@ -75,7 +75,7 @@ XML
 
     foreach $d_dir ( keys %{ $config->{daemon} } )
     {
-        next if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true');
+        next if ($config->{daemon}{$d_dir}{'run'} eq 'false');
         print $out "  <tr>\n";
         print $out "     <td width=\"15%\">"
                    . "<A HREF=\"http://$localhost:$config->{daemon}{$d_dir}{port}\">$d_dir</A></td>\n";
@@ -96,7 +96,7 @@ XML
         print $out "  </tr>\n";
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
-            next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'disable-check'} eq 'true');
+            next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'} eq 'false');
             print $out "  <tr>\n";
             print $out "     <td width=\"15%\">&nbsp;</td>\n";
             print $out "     <td width=\"10%\">" .

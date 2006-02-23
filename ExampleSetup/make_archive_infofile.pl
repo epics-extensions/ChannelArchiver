@@ -50,11 +50,11 @@ sub write_info($)
     print "\n";
     foreach $d_dir ( keys %{ $config->{daemon} } )
     {
-        next if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true');
+        next if ($config->{daemon}{$d_dir}{'run'} eq 'false');
 	print "Daemon '$d_dir': $config->{daemon}{$d_dir}{status}\n";
 	foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
-            next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'disable-check'} eq 'true');
+            next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'} eq 'false');
             if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} eq "running")
             {
                 $disconnected = $config->{daemon}{$d_dir}{engine}{$e_dir}{channels}

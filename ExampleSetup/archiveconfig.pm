@@ -168,8 +168,8 @@ sub update_status($$)
             $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} = 0;
             $config->{daemon}{$d_dir}{engine}{$e_dir}{connected} = 0;
         }
-        # Skip daemon if checking is disabled
-        if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true')
+        # Skip daemon if not supposed to run
+        if ($config->{daemon}{$d_dir}{'run'} eq 'false')
         {
             $config->{daemon}{$d_dir}{status} = "not checked";
             next;

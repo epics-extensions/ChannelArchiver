@@ -53,10 +53,10 @@ $total_time = 0;
 $total_vps = 0;
 foreach $d_dir ( sort keys %{ $config->{daemon} } )
 {
-    next if ($config->{daemon}{$d_dir}{'disable-check'} eq 'true');
+    next if ($config->{daemon}{$d_dir}{'run'} eq 'false');
     foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
     {
-        next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'disable-check'} eq 'true');
+        next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'} eq 'false');
 	printf("    Engine '%s/%s', %s:%d, description '%s'\n",
 	       $d_dir, $e_dir, $localhost,
                $config->{daemon}{$d_dir}{engine}{$e_dir}{port},

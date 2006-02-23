@@ -2,13 +2,13 @@
 <!-- DTD for the archiveconfig -->
 <!ELEMENT archiveconfig (daemon*)>
 
-<!ELEMENT daemon (disable-check?,desc?,port,engine*)>
+<!ELEMENT daemon (run?,desc?,port,engine*)>
 <!ATTLIST daemon directory CDATA #REQUIRED>
 
-<!ELEMENT engine (disable-check?,desc?,port,restart?)>
+<!ELEMENT engine (run?,desc?,port,restart?)>
 <!ATTLIST engine directory CDATA #REQUIRED>
 
-<!ELEMENT disable-check (#PCDATA)> <!-- true|false -->
+<!ELEMENT run (#PCDATA)> <!-- true|false. Default: true -->
 <!ELEMENT desc (#PCDATA)>
 <!ELEMENT port (#PCDATA)>
 

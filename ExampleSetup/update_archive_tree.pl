@@ -24,7 +24,7 @@ my ($path) = cwd();
 
 sub usage()
 {
-    print("USAGE: make_archive_dirs [options]\n");
+    print("USAGE: update_archive_tree [options]\n");
     print("\n");
     print("Creates or updates archive directory tree,\n");
     print("creates config files for daemons, engines, index tools,\n");
@@ -224,47 +224,6 @@ sub create_daemon_files($)
     close OUT;
 }
 
-# Given a list of index files,
-# dump the indexconfig.xml to stdout.
-sub create_indexconfig(@)
-{
-    my (@indices) = @ARG;
-    my ($index);
-    my ($name) = "index.xml";
-    open(OUT, ">$name") or die "Cannot create " . cwd() . "/$name";
-    my ($old_fd) = select OUT;
-
-    print "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n";
-    print "<!DOCTYPE indexconfig SYSTEM \"$index_dtd\">\n";
-    print "<!--\n";
-    print "     Auto-created. Do not edit!\n";
-    print "  -->\n";
-    print "<indexconfig>\n";
-    foreach $index ( @indices )
-    {
-        print "  <archive>\n";
-        print "    <index>$index</index>\n";
-        print "  </archive>\n";
-    }
-    print "</indexconfig>\n";
-
-    select $old_fd;
-    close OUT;
-}
-
-# Create the index.xml for the given engine directory
-sub make_engine_index($)
-{
-    my ($dir) = @ARG;
-    chdir($dir);
-    my (@indices) = <*/*/index>;
-    if ($#indices >= 0)
-    {
-        create_indexconfig(@indices);
-    }
-    chdir($path);
-}
-
 # Create the daemon and engine directories
 sub create_stuff()
 {
@@ -284,7 +243,6 @@ sub create_stuff()
 	    # Engine and ASCII-config dir
 	    mkpath("$d_dir/$e_dir/ASCIIConfig", 1);    
 	    create_engine_files($d_dir, $e_dir);
-            make_engine_index("$d_dir/$e_dir");
 	}
     }
 }

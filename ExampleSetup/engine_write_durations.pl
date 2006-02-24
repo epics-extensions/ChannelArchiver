@@ -3,7 +3,11 @@
 #
 # Query all engines for their "Write Duration"
 
-BEGIN { push(@INC, '/arch/scripts'); }
+BEGIN
+{
+    push(@INC, 'scripts' );
+    push(@INC, '/arch/scripts' );
+}
 
 use English;
 use strict;

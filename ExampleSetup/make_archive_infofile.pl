@@ -1,7 +1,11 @@
 #!/usr/bin/perl
 # make_archive_infofile.pl
 
-BEGIN { push(@INC, '/arch/scripts'); }
+BEGIN
+{
+    push(@INC, 'scripts' );
+    push(@INC, '/arch/scripts' );
+}
 
 use English;
 use strict;

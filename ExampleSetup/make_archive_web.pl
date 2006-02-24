@@ -5,7 +5,11 @@
 # (daemons, engines, ...)
 # from tab-delimited configuration file.
 
-BEGIN { push(@INC, '/arch/scripts'); }
+BEGIN
+{
+    push(@INC, 'scripts' );
+    push(@INC, '/arch/scripts' );
+}
 
 use English;
 use strict;

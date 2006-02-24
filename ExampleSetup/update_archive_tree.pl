@@ -230,9 +230,12 @@ sub create_indexconfig(@)
 {
     my (@indices) = @ARG;
     my ($index);
+    my ($name) = "index.xml";
+    open(OUT, ">$name") or die "Cannot create " . cwd() . "/$name";
+    my ($old_fd) = select OUT;
 
     print "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n";
-    print "<!DOCTYPE indexconfig SYSTEM \"$opt_d\">\n";
+    print "<!DOCTYPE indexconfig SYSTEM \"$index_dtd\">\n";
     print "<!--\n";
     print "     Auto-created. Do not edit!\n";
     print "  -->\n";
@@ -244,20 +247,21 @@ sub create_indexconfig(@)
         print "  </archive>\n";
     }
     print "</indexconfig>\n";
+
+    select $old_fd;
+    close OUT;
 }
 
 # Create the index.xml for the given engine directory
 sub make_engine_index($)
 {
     my ($dir) = @ARG;
-    my ($name) = "index.xml";
-    my ($old_fd);
     chdir($dir);
-    open(OUT, ">$name") or die "Cannot create $dir/$name";
-    $old_fd = select OUT;
-    create_indexconfig(<*/*/index>);
-    select $old_fd;
-    close OUT;
+    my (@indices) = <*/*/index>;
+    if ($#indices >= 0)
+    {
+        create_indexconfig(@indices);
+    }
     chdir($path);
 }
 

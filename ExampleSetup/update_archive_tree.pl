@@ -59,7 +59,7 @@ sub check_filename($)
 }
 
 # Create scripts for engine
-sub create_engine_stuff($$)
+sub create_engine_files($$)
 {
     my ($d_dir, $e_dir) = @ARG;
     my ($filename, $daemonfile, $daemon, $engine, $old_fd);
@@ -111,7 +111,7 @@ sub create_engine_stuff($$)
 }
 
 # Create scripts for daemon
-sub create_daemon_stuff($)
+sub create_daemon_files($)
 {
     my ($d_dir) = @ARG;
     my ($filename, $daemonfile, $e_dir, $old_fd);
@@ -224,6 +224,43 @@ sub create_daemon_stuff($)
     close OUT;
 }
 
+# Given a list of index files,
+# dump the indexconfig.xml to stdout.
+sub create_indexconfig(@)
+{
+    my (@indices) = @ARG;
+    my ($index);
+
+    print "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n";
+    print "<!DOCTYPE indexconfig SYSTEM \"$opt_d\">\n";
+    print "<!--\n";
+    print "     Auto-created. Do not edit!\n";
+    print "  -->\n";
+    print "<indexconfig>\n";
+    foreach $index ( @indices )
+    {
+        print "  <archive>\n";
+        print "    <index>$index</index>\n";
+        print "  </archive>\n";
+    }
+    print "</indexconfig>\n";
+}
+
+# Create the index.xml for the given engine directory
+sub make_engine_index($)
+{
+    my ($dir) = @ARG;
+    my ($name) = "index.xml";
+    my ($old_fd);
+    chdir($dir);
+    open(OUT, ">$name") or die "Cannot create $dir/$name";
+    $old_fd = select OUT;
+    create_indexconfig(<*/*/index>);
+    select $old_fd;
+    close OUT;
+    chdir($path);
+}
+
 # Create the daemon and engine directories
 sub create_stuff()
 {
@@ -236,13 +273,14 @@ sub create_stuff()
 	print("Daemon $d_dir\n");
 	# Daemon Directory
 	mkpath($d_dir, 1);
-	create_daemon_stuff($d_dir);
+	create_daemon_files($d_dir);
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
 	    print(" - Engine $e_dir\n");
 	    # Engine and ASCII-config dir
 	    mkpath("$d_dir/$e_dir/ASCIIConfig", 1);    
-	    create_engine_stuff($d_dir, $e_dir);
+	    create_engine_files($d_dir, $e_dir);
+            make_engine_index("$d_dir/$e_dir");
 	}
     }
 }

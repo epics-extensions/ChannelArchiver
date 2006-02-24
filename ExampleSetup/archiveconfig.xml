@@ -6,7 +6,7 @@
 
 <archiveconfig>
 
-    <daemon directory='RF'>
+    <daemon directory='RadioFreq'>
         <desc>RF</desc>
         <port>4900</port>
         <engine directory='llrf'>

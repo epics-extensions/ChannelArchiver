@@ -44,7 +44,7 @@ $config = parse_config_file($config_name, $opt_d);
 my ($d_dir, $cmd);
 foreach $d_dir ( sort keys %{ $config->{daemon} } )
 {
-     next if ($config->{daemon}{$d_dir}{'run'} eq 'false');
+     next unless is_localhost($config->{daemon}{$d_dir}{'run'});
      $cmd = "cd $root/$d_dir;sh run-daemon.sh\n";
      printf("$cmd\n");
      system($cmd);

@@ -11,6 +11,8 @@ use Data::Dumper;
 use Sys::Hostname;
 use archiveconfig;
 
+my ($localhost) = hostname();
+
 # Globals, Defaults
 my ($config_name) = "archiveconfig.csv";
 
@@ -42,7 +44,7 @@ sub dump_config_as_xml($)
     foreach $d_dir ( keys %{ $config->{daemon} } )
     {
         printf("\n    <daemon directory='%s'>\n", $d_dir);
-        printf("        <run>true</run>\n");
+        printf("        <run>$localhost</run>\n");
         printf("        <desc>%s</desc>\n",
                $config->{daemon}{$d_dir}{desc});
         printf("        <port>%s</port>\n",
@@ -50,7 +52,7 @@ sub dump_config_as_xml($)
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
             printf("        <engine directory='%s'>\n", $e_dir);
-            printf("            <run>true</run>\n");
+            printf("            <run>$localhost</run>\n");
             printf("            <desc>%s</desc>\n",
                    $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
             printf("            <port>%s</port>\n",

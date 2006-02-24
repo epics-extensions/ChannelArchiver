@@ -8,7 +8,7 @@
 <!ELEMENT engine (run?,desc?,port,restart?)>
 <!ATTLIST engine directory CDATA #REQUIRED>
 
-<!ELEMENT run (#PCDATA)> <!-- true|false. Default: true -->
+<!ELEMENT run (#PCDATA)> <!-- hostname where daemon or engine should run. 'false' for: don't run at all -->
 <!ELEMENT desc (#PCDATA)>
 <!ELEMENT port (#PCDATA)>
 

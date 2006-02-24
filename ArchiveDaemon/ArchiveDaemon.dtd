@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- DTD for the ArchiveDaemon Configuration -->
-<!ELEMENT engines (engine+)>
+<!ELEMENT engines (engine*)>
 <!ELEMENT engine (desc,port,config,
                   (weekly|daily|hourly|timed)+)>
 <!ELEMENT desc   (#PCDATA)> <!-- Text               -->

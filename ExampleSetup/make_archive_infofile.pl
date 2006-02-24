@@ -48,13 +48,14 @@ sub write_info($)
     $old_out = select($out);
     print "Archive Status as of ", time_as_text(time), "\n";
     print "\n";
-    foreach $d_dir ( keys %{ $config->{daemon} } )
+    foreach $d_dir ( sort keys %{ $config->{daemon} } )
     {
-        next if ($config->{daemon}{$d_dir}{'run'} eq 'false');
+        next unless is_localhost($config->{daemon}{$d_dir}{'run'});
 	print "Daemon '$d_dir': $config->{daemon}{$d_dir}{status}\n";
-	foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+	foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
-            next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'} eq 'false');
+            next unless
+                 is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'});
             if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} eq "running")
             {
                 $disconnected = $config->{daemon}{$d_dir}{engine}{$e_dir}{channels}

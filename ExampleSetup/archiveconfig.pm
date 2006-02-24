@@ -15,7 +15,7 @@ package archiveconfig;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(parse_config_file dump_config read_URL update_status);
+@EXPORT = qw(parse_config_file dump_config is_localhost read_URL update_status);
 
 use English;
 use strict;
@@ -28,9 +28,7 @@ use LWP::Simple;
 use XML::Simple;
 
 # Timeout used when reading a HTTP client or ArchiveEngine.
-# 10 seconds is reasonable.
 my ($read_timeout) = 30;
-
 my ($localhost) = hostname();
 
 # Parse the old-style tab separated file format.
@@ -141,6 +139,21 @@ sub dump_config($)
         }
     }
     print("\n");
+}
+
+# For checking <run>host-where-to-run or 'false'</run>
+# Returns 1 if daemon or engine or ...
+# should run on this computer because
+# e.g. ics-srv-archive1 matched the <run>archive1</run>
+# (so note: sub-matches are OK, too).
+#
+# And empty/missing <run></run> means: Run everywhere.
+sub is_localhost($)
+{
+    my ($host) = @ARG;
+    return 0 if ($host eq 'false');
+    return 1 if (length($host) <= 0);
+    return ($localhost =~ m/$host/); 
 }
 
 # Connects to HTTPD at host/port and reads a URL,

@@ -73,16 +73,16 @@ sub write_html($)
   </tr>
 XML
 
-    foreach $d_dir ( keys %{ $config->{daemon} } )
+    foreach $d_dir ( sort keys %{ $config->{daemon} } )
     {
-        next if ($config->{daemon}{$d_dir}{'run'} eq 'false');
+        next unless is_localhost($config->{daemon}{$d_dir}{'run'});
         print $out "  <tr>\n";
         print $out "     <td width=\"15%\">"
                    . "<A HREF=\"http://$localhost:$config->{daemon}{$d_dir}{port}\">$d_dir</A></td>\n";
         print $out "     <td width=\"10%\">&nbsp;</td>\n";
         print $out "     <td width=\"5%\">$config->{daemon}{$d_dir}{port}</td>\n";
         print $out "     <td width=\"20%\">$config->{daemon}{$d_dir}{desc}</td>\n";
-        if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} eq "running")
+        if ($config->{daemon}{$d_dir}{status} eq "running")
         {
             print $out "     <td width=\"35%\">Running</td>\n";
         }
@@ -94,9 +94,10 @@ XML
         print $out "     <td width=\"5%\">&nbsp;</td>\n";
         print $out "     <td width=\"10%\">&nbsp;</td>\n";
         print $out "  </tr>\n";
-        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+        foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
-            next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'} eq 'false');
+            next unless
+                 is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'});
             print $out "  <tr>\n";
             print $out "     <td width=\"15%\">&nbsp;</td>\n";
             print $out "     <td width=\"10%\">" .

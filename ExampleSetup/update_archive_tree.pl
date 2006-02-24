@@ -64,26 +64,6 @@ sub create_engine_stuff($$)
     my ($d_dir, $e_dir) = @ARG;
     my ($filename, $daemonfile, $daemon, $engine, $old_fd);
 
-    # Engine Start Script
-    $filename = "$d_dir/$e_dir/run-engine.sh";
-    open OUT, ">$filename" or die "Cannot open $filename\n";
-    $old_fd = select OUT;
-    printf("#!/bin/sh\n");
-    printf("#\n");
-    printf("echo \"You should not start the %s engine (%s) directly.\"\n",
-           $e_dir,
-           $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
-    printf("echo \"Instead, the %s daemon (%s) should start it automatically.\"\n",
-           $d_dir,
-           $config->{daemon}{$d_dir}{desc});
-    printf("echo \"See for example\"\n");
-    printf("echo \"  lynx http://%s:%d\"\n",
-           $hostname, 
-           $config->{daemon}{$d_dir}{port});
-    printf("echo \"for the current status of that daemon.\"\n");
-    select $old_fd;
-    close OUT;
-
     # Engine Stop Script
     $filename = "$d_dir/$e_dir/stop-engine.sh";
     open OUT, ">$filename" or die "Cannot open $filename\n";
@@ -156,31 +136,46 @@ sub create_daemon_stuff($)
     printf("  -->\n");
     printf("\n");
     printf("<engines>\n");
-    foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+    if (is_localhost($config->{daemon}{$d_dir}{run}))
     {
-	if ($config->{daemon}{$d_dir}{engine}{$e_dir}{run} eq 'false')
-	{
-	    printf(" <!-- not running\n");
-	}
-	printf("  <engine>\n");
-	printf("    <desc>%s</desc>\n",
-	       $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
-	printf("    <port>%d</port>\n",
-	       $config->{daemon}{$d_dir}{engine}{$e_dir}{port}); 
-	printf("    <config>%s/%s/%s/%s-group.xml</config>\n",
-	       $path, $d_dir, $e_dir, $e_dir);
-	if (length($config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type}) > 0)
-	{
-	    printf("    <%s>%s</%s>\n",
-		   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type},
-		   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content},
-		   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type});
-	}
-	printf("  </engine>\n");
-	if ($config->{daemon}{$d_dir}{engine}{$e_dir}{run} eq 'false')
-	{
-	    printf("  :: not running -->\n");
-	}
+        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+        {
+	    if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
+	    {
+	        printf(" <!-- not running\n");
+	    }
+	    printf("  <engine>\n");
+	    printf("    <desc>%s</desc>\n",
+	           $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
+	    printf("    <port>%d</port>\n",
+	           $config->{daemon}{$d_dir}{engine}{$e_dir}{port}); 
+	    printf("    <config>%s/%s/%s/%s-group.xml</config>\n",
+	           $path, $d_dir, $e_dir, $e_dir);
+	    if (length($config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type}) > 0)
+	    {
+	        printf("    <%s>%s</%s>\n",
+		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type},
+		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content},
+		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type});
+	    }
+	    printf("  </engine>\n");
+	    if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
+	    {
+	        printf("  :: not running -->\n");
+	    }
+        }
+    }
+    else
+    {
+	printf("<!-- not running on this computer:\n");
+        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+        {
+            printf("  engine '%s' (%s) on port %d\n",
+                   $e_dir,
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{desc},
+                   $config->{daemon}{$d_dir}{engine}{$e_dir}{port});
+        }
+	printf("  -->\n");
     }
     printf("</engines>\n");
     select $old_fd;
@@ -192,13 +187,23 @@ sub create_daemon_stuff($)
     $old_fd = select OUT;
     printf("#!/bin/sh\n");
     printf("#\n");
-    printf("# Launch the %s daemon (%s)\n",
-	   $d_dir,
-	   $config->{daemon}{$d_dir}{desc});
-    printf("\n");
-    printf("ArchiveDaemon.pl -p %d -i %s -u 0 -f %s/%s/%s\n",   
-	   $config->{daemon}{$d_dir}{port},
-	   $index_dtd, $path, $d_dir, $daemonfile);
+    if (is_localhost($config->{daemon}{$d_dir}{run}))
+    {
+	printf("# Launch the %s daemon (%s)\n",
+	       $d_dir,
+	       $config->{daemon}{$d_dir}{desc});
+	printf("\n");
+	printf("ArchiveDaemon.pl -p %d -i %s -u 0 -f %s/%s/%s\n",   
+	       $config->{daemon}{$d_dir}{port},
+	       $index_dtd, $path, $d_dir, $daemonfile);
+    }
+    else
+    {
+	printf("echo \"The %s daemon (%s) does not run on this computer.\"\n",
+	       $d_dir,
+	       $config->{daemon}{$d_dir}{desc});
+	printf("\n");
+    }
     select $old_fd;
     close OUT;
 

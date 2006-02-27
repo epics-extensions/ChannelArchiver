@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- DTD for the ArchiveDaemon Configuration -->
-<!ELEMENT engines (engine*)>
-<!ELEMENT engine (desc,port,config,
-                  (weekly|daily|hourly|timed)+)>
-<!ELEMENT desc   (#PCDATA)> <!-- Text               -->
+<!ELEMENT daemon (copy_message_directory,port,engine*)>
+
+<!ELEMENT copy_message_directory (#PCDATA)> <!-- /path               -->
 <!ELEMENT port   (#PCDATA)> <!-- TCP port number    -->
+
+<!ELEMENT engine (desc,port,config,restart,dataserver)>
+<!ATTLIST engine directory CDATA #REQUIRED>
+
+<!ELEMENT desc   (#PCDATA)> <!-- Text               -->
 <!ELEMENT config (#PCDATA)> <!-- path               -->
-<!ELEMENT weekly (#PCDATA)> <!-- Mo|Tu|...|Su HH:MM -->
-<!ELEMENT daily  (#PCDATA)> <!-- HH:MM              -->
-<!ELEMENT hourly (#PCDATA)> <!-- (double) hours     -->
-<!ELEMENT timed  (#PCDATA)> <!-- HH:MM/HH:MM        -->
-                            <!-- (start/duration)   -->
+
+<!ELEMENT restart (#PCDATA)> <!-- path               -->
+<!ATTLIST restart type (weekly|daily|hourly|timed) #REQUIRED>
+<!-- weekly  Mo|Tu|...|Su HH:MM
+     daily   HH:MM
+     hourly  (double) hours
+     timed   HH:MM/HH:MM  
+             (start/duration)
+  -->
+
+<!ELEMENT dataserver (host?)>
+<!ELEMENT host (#PCDATA)>
+

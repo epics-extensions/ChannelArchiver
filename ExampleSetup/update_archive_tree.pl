@@ -122,7 +122,7 @@ sub create_daemon_files($)
     open OUT, ">$filename" or die "Cannot open $filename\n";
     $old_fd = select OUT;
     printf("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
-    printf("<!DOCTYPE engines SYSTEM \"%s\">\n",
+    printf("<!DOCTYPE daemon SYSTEM \"%s\">\n",
 	   $daemon_dtd);
     printf("\n");
     printf("<!-- \n");
@@ -134,7 +134,8 @@ sub create_daemon_files($)
     printf("  update_archive_tree.pl\n");
     printf("  -->\n");
     printf("\n");
-    printf("<engines>\n");
+    printf("<daemon>\n");
+        printf("    <port>$config->{daemon}{$d_dir}{port}</port>\n");
     if (is_localhost($config->{daemon}{$d_dir}{run}))
     {
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
@@ -143,21 +144,25 @@ sub create_daemon_files($)
 	    {
 	        printf(" <!-- not running\n");
 	    }
-	    printf("  <engine>\n");
-	    printf("    <desc>%s</desc>\n",
+	    printf("    <engine directory='$e_dir'>\n");
+	    printf("        <desc>%s</desc>\n",
 	           $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
-	    printf("    <port>%d</port>\n",
+	    printf("        <port>%d</port>\n",
 	           $config->{daemon}{$d_dir}{engine}{$e_dir}{port}); 
-	    printf("    <config>%s/%s/%s/%s-group.xml</config>\n",
-	           $path, $d_dir, $e_dir, $e_dir);
+	    printf("        <config>%s-group.xml</config>\n",
+	           $e_dir);
 	    if (length($config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type}) > 0)
 	    {
-	        printf("    <%s>%s</%s>\n",
+	        printf("        <restart type='%s'>%s</restart>\n",
 		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type},
-		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content},
-		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type});
+		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content});
 	    }
-	    printf("  </engine>\n");
+            if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host}))
+            {
+	        printf("        <dataserver><host>%s</host></dataserver>\n",
+                       $config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host});
+            }
+	    printf("    </engine>\n");
 	    if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
 	    {
 	        printf("  :: not running -->\n");
@@ -176,7 +181,7 @@ sub create_daemon_files($)
         }
 	printf("  -->\n");
     }
-    printf("</engines>\n");
+    printf("</daemon>\n");
     select $old_fd;
     close OUT;
 
@@ -255,10 +260,11 @@ if (!getopts("dhc:s:") ||  $opt_h)
     exit(0);
 }
 $config_name = $opt_c if (length($opt_c) > 0);
-$root    = $config->{root};
-$index_dtd   = "$root/indexconfig.dtd";
-$daemon_dtd  = "$root/ArchiveDaemon.dtd";
-$engine_dtd  = "$root/engineconfig.dtd";
-
 $config = parse_config_file($config_name, $opt_d);
+
+$root       = $config->{root};
+$index_dtd  = "$root/indexconfig.dtd";
+$daemon_dtd = "$root/ArchiveDaemon.dtd";
+$engine_dtd = "$root/engineconfig.dtd";
+
 create_stuff();

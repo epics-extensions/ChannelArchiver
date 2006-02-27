@@ -4,12 +4,13 @@
    <engine>
       <desc>Demo</desc>
       <port>4813</port>
-      <config>/data/arch1/engineconfig.xml</config>
+      <config>/arch/RF/llrf/llrf.xml</config>
    </engine>
    <engine>
       <desc>Demo 2</desc>
       <port>4814</port>
-      <config>/data/arch2/engineconfig.xml</config>
+      <config>/arch/RF/hprf/hprf.xml</config>
       <daily>02:00</daily>
+      <copy>dataserver:/arch/RF/hprf</copy>
    </engine>
 </engines>

@@ -46,16 +46,17 @@ sub time_as_text($)
 sub write_info($)
 {
     my ($filename) = @ARG;
-    my ($d_dir, $e_dir, $ok, $old_out, $out, $disconnected);
+    my ($d_dir, $e_dir, $ok, $out, $disconnected);
+    my ($issues, $status);
 
-    open($out, ">>$filename") or die "Cannot open '$filename'\n";
-    $old_out = select($out);
-    print "Archive Status as of ", time_as_text(time), "\n";
-    print "\n";
+    $status = "Archive Status as of " . time_as_text(time) . "\n"
+         . "--------------------------------------------------\n";
     foreach $d_dir ( sort keys %{ $config->{daemon} } )
     {
         next unless is_localhost($config->{daemon}{$d_dir}{'run'});
-	print "Daemon '$d_dir': $config->{daemon}{$d_dir}{status}\n";
+	$status = $status . "Daemon '$d_dir': $config->{daemon}{$d_dir}{status}\n";
+	$issues = $issues . "Daemon '$d_dir': $config->{daemon}{$d_dir}{status}\n"
+            if ($config->{daemon}{$d_dir}{status} ne "running");
 	foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
             next unless
@@ -66,21 +67,31 @@ sub write_info($)
                      - $config->{daemon}{$d_dir}{engine}{$e_dir}{connected};
                 if ($disconnected == 0)
                 {
-                    print "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels.\n";
+                    $status = $status . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels.\n";
                 }
                 else
                 {
-                    print "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels,  $disconnected disconnected.\n";
+                    $status = $status . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels,  $disconnected disconnected.\n";
+                    $issues = $issues . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels,  $disconnected disconnected.\n";
                 }
             }
             else
             {
-                print "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{status}\n";
+                $status = $status . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{status}\n";
+                $issues = $issues . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{status}\n";
             }  
 	}
-	print "\n";
+	$status = $status . "\n";
     }
-    select($old_out);
+
+    open($out, ">>$filename") or die "Cannot open '$filename'\n";
+    if (length($issues) > 0)
+    {
+        print $out "Possible Issues\n";
+        print $out "--------------------------------------------------\n";
+        print $out "$issues\n\nComplete ";
+    }
+    print $out $status;
     close $out;
 }
 

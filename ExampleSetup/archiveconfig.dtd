@@ -1,11 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- DTD for the archiveconfig -->
-<!ELEMENT archiveconfig (daemon*)>
+<!ELEMENT archiveconfig (root,serverconfig,copy_message_directory,daemon*)>
 
-<!ELEMENT daemon (run?,desc?,port,engine*)>
+<!ELEMENT root (#PCDATA)>
+<!ELEMENT serverconfig (#PCDATA)>
+<!ELEMENT copy_message_directory (#PCDATA)>
+
+<!ELEMENT daemon (run?,desc?,port,dataserver?,engine*)>
 <!ATTLIST daemon directory CDATA #REQUIRED>
 
-<!ELEMENT engine (run?,desc?,port,restart?)>
+<!ELEMENT dataserver (current_index?,index?,host?,root?)>
+<!ELEMENT current_index (#PCDATA)>
+<!ATTLIST current_index key CDATA #REQUIRED>
+<!ATTLIST current_index root CDATA #IMPLIED>
+<!ELEMENT index (#PCDATA)>
+<!ATTLIST index type CDATA #REQUIRED>
+<!ATTLIST index key CDATA #IMPLIED>
+<!ELEMENT host (#PCDATA)>
+
+<!ELEMENT engine (run?,desc?,port,restart?,dataserver?)>
 <!ATTLIST engine directory CDATA #REQUIRED>
 
 <!ELEMENT run (#PCDATA)> <!-- hostname where daemon or engine should run. 'false' for: don't run at all -->

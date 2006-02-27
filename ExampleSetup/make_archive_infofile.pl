@@ -67,18 +67,35 @@ sub write_info($)
                      - $config->{daemon}{$d_dir}{engine}{$e_dir}{connected};
                 if ($disconnected == 0)
                 {
-                    $status = $status . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels.\n";
+                    $status = $status .
+                        sprintf("Engine %-15s: %5d channels.\n",
+                                "'$e_dir'",
+                                $config->{daemon}{$d_dir}{engine}{$e_dir}{channels});
                 }
                 else
                 {
-                    $status = $status . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels,  $disconnected disconnected.\n";
-                    $issues = $issues . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{channels} channels,  $disconnected disconnected.\n";
+                    $status = $status .
+                        sprintf("Engine %-15s: %5d channels,  %5d disconnected.\n",
+                                "'$e_dir'",
+                                $config->{daemon}{$d_dir}{engine}{$e_dir}{channels},
+                                $disconnected);
+                    $issues = $issues .
+                        sprintf("Engine %-15s: %5d channels,  %5d disconnected.\n",
+                                "'$e_dir'",
+                                $config->{daemon}{$d_dir}{engine}{$e_dir}{channels},
+                                $disconnected);
                 }
             }
             else
             {
-                $status = $status . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{status}\n";
-                $issues = $issues . "Engine '$e_dir': $config->{daemon}{$d_dir}{engine}{$e_dir}{status}\n";
+                $status = $status .
+                        sprintf("Engine %-15s: %s\n",
+                                "'$e_dir'",
+                                $config->{daemon}{$d_dir}{engine}{$e_dir}{status});
+                $issues = $issues .
+                        sprintf("Engine %-15s: %s\n",
+                                "'$e_dir'",
+                                $config->{daemon}{$d_dir}{engine}{$e_dir}{status});
             }  
 	}
 	$status = $status . "\n";

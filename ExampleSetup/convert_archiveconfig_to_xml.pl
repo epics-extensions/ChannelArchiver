@@ -10,6 +10,7 @@ BEGIN
 use English;
 use strict;
 use vars qw($opt_h $opt_c $opt_d);
+use Cwd;
 use Getopt::Std;
 use Data::Dumper;
 use Sys::Hostname;
@@ -45,6 +46,8 @@ sub dump_config_as_xml($)
     print("\n");
     print("  -->\n");
     print("<archive_config>\n");
+    my ($root) = cwd();
+    print("<root>$root</root>\n");
     foreach $d_dir ( keys %{ $config->{daemon} } )
     {
         printf("\n    <daemon directory='%s'>\n", $d_dir);

@@ -18,12 +18,9 @@ use archiveconfig;
 
 # Globals, Defaults
 my ($config_name) = "archiveconfig.xml";
-my ($dtd_root)    = "/arch";
-my ($index_dtd);
-my ($daemon_dtd);
-my ($engine_dtd);
 my ($hostname)    = hostname();
 my ($path) = cwd();
+my ($root, $index_dtd);
 
 sub usage()
 {
@@ -34,7 +31,6 @@ sub usage()
     print(" -c <config> : Use given config file instead of $config_name\n");
     print(" -s <system> : Handle only the given system daemon, not all daemons.\n");
     print("               (Regular expression for daemon name)\n");
-    print(" -r <root>   : Use given root for DTD files instead of $dtd_root\n");
     print(" -d          : debug\n");
 }
 
@@ -126,10 +122,8 @@ if (!getopts("dhc:s:r:") ||  $opt_h)
     exit(0);
 }
 $config_name = $opt_c if (length($opt_c) > 0);
-$dtd_root    = $opt_r if (length($opt_r) > 0);
-$index_dtd   = "$dtd_root/indexconfig.dtd";
-$daemon_dtd  = "$dtd_root/ArchiveDaemon.dtd";
-$engine_dtd  = "$dtd_root/engineconfig.dtd";
+$root    = $config->{root};
+$index_dtd   = "$root/indexconfig.dtd";
 
 $config = parse_config_file($config_name, $opt_d);
 create_stuff();

@@ -5,6 +5,7 @@
   -->
 
 <archiveconfig>
+    <root>/arch</root>
 
     <daemon directory='RadioFreq'>
         <desc>RF</desc>

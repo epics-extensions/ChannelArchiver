@@ -8,7 +8,7 @@ BEGIN
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c $opt_s $opt_r);
+use vars qw($opt_d $opt_h $opt_c $opt_s);
 use Cwd;
 use File::Path;
 use Getopt::Std;
@@ -18,19 +18,16 @@ use archiveconfig;
 
 # Globals, Defaults
 my ($config_name) = "archiveconfig.xml";
-my ($dtd_root)    = "/arch";
-my ($index_dtd)   = "/arch/indexconfig.dtd";
-my ($daemon_dtd)  = "/arch/ArchiveDaemon.dtd";
-my ($engine_dtd)  = "/arch/engineconfig.dtd";
 my ($hostname)    = hostname();
 my ($path) = cwd();
+my ($root, $index_dtd, $daemon_dtd, $engine_dtd);
 
 sub usage()
 {
     print("USAGE: update_archive_tree [options]\n");
     print("\n");
     print("Creates or updates archive directory tree,\n");
-    print("creates config files for daemons, engines, index tools,\n");
+    print("creates config files for daemons and engines\n");
     print("based on $config_name.\n");
     print("\n");
     print("Options:\n");
@@ -38,7 +35,6 @@ sub usage()
     print(" -c <config> : Use given config file instead of $config_name\n");
     print(" -s <system> : Handle only the given system daemon, not all daemons.\n");
     print("               (Regular expression for daemon name)\n");
-    print(" -r <root>   : Use given root for DTD files instead of $dtd_root\n");
     print(" -d          : debug\n");
 }
 
@@ -79,7 +75,7 @@ sub create_engine_files($$)
     printf("\n");
     printf("lynx -dump http://%s:%d/stop\n",   
            $hostname,
-	   $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
+	   $config->{daemon}{$d_dir}{engine}{$e_dir}{port});
     select $old_fd;
     close OUT;
 
@@ -253,16 +249,16 @@ sub create_stuff()
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("dhc:s:r:") ||  $opt_h)
+if (!getopts("dhc:s:") ||  $opt_h)
 {
     usage();
     exit(0);
 }
 $config_name = $opt_c if (length($opt_c) > 0);
-$dtd_root    = $opt_r if (length($opt_r) > 0);
-$index_dtd   = "$dtd_root/indexconfig.dtd";
-$daemon_dtd  = "$dtd_root/ArchiveDaemon.dtd";
-$engine_dtd  = "$dtd_root/engineconfig.dtd";
+$root    = $config->{root};
+$index_dtd   = "$root/indexconfig.dtd";
+$daemon_dtd  = "$root/ArchiveDaemon.dtd";
+$engine_dtd  = "$root/engineconfig.dtd";
 
 $config = parse_config_file($config_name, $opt_d);
 create_stuff();

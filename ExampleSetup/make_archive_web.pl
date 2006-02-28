@@ -93,7 +93,7 @@ XML
         else
         {
             print $out "     <td width=\"35%\">" .
-                      "<FONT color=#FF0000>$config->{daemon}{$d_dir}{engine}{$e_dir}{status}</FONT></td>\n";
+                      "<FONT color=#FF0000>$config->{daemon}{$d_dir}{status}</FONT></td>\n";
         }
         print $out "     <td width=\"5%\">&nbsp;</td>\n";
         print $out "     <td width=\"10%\">&nbsp;</td>\n";
@@ -152,4 +152,7 @@ $output_name = $opt_o  if (length($opt_o) > 0);
 
 $config = parse_config_file($config_name, $opt_d);
 update_status($config, $opt_d);
+
+        print "Before:\n", Dumper($config);
 write_html($output_name);
+        print "After:\n", Dumper($config);

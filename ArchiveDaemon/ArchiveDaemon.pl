@@ -33,8 +33,6 @@ use Getopt::Std;
 # Configurables
 # ----------------------------------------------------------------
 
-my ($path) = cwd();
-
 # Compare: manual/changes.tex
 my ($version) = "2.7.0";
 
@@ -109,6 +107,9 @@ my ($daemonization) = 1;
 # 'disabled'   => is there a file 'DISABLED.txt' ?
 # 'lockfile'   => is there a file 'archive_active.lck' ?
 my ($config);
+
+
+my ($daemon_path) = cwd();
 
 my ($config_file) = "";
 
@@ -204,12 +205,12 @@ sub update_schedule($)
     my ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec);
     my ($hour, $minute, $hours, $minutes);
 
-    print " ------ update_schedule  : ", time_as_text($now), "\n";
+    print(" ------ update_schedule  : ", time_as_text($now), "\n") if ($opt_d);
     ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$n_wday,$x,$x) =
 	localtime($now);
     foreach $engine ( keys %{ $config->{engine} } )
     {
-	print " Engine $engine ";
+	print(" Engine $engine ") if ($opt_d);
 	# Get engine_start_secs
 	if (length($config->{engine}{$engine}{started}) > 0)
 	{
@@ -218,12 +219,12 @@ sub update_schedule($)
 	    $engine_start_secs
 		= timelocal($e_sec,$e_min,$e_hour,$e_mday,
 			    $e_mon-1,$e_year-1900);
-	    print "  Started: $config->{engine}{$engine}{started} = ",
-	          time_as_text($engine_start_secs), "\n";
+	    print("  Started: $config->{engine}{$engine}{started} = ",
+	          time_as_text($engine_start_secs), "\n") if ($opt_d);
 	}
 	else
 	{
-	    print "  Not running\n";
+	    print("  Not running\n") if ($opt_d);
 	    $engine_start_secs = 0;
 	}
 	# Determine next_start, next_stop
@@ -312,10 +313,13 @@ sub update_schedule($)
 		$config->{engine}{$engine}{next_start} = $config->{engine}{$engine}{next_stop} = 0;
 	    }
 	}
-	print "   Next start: ", time_as_text($config->{engine}{$engine}{next_start}), "\n"
-	    if ($config->{engine}{$engine}{next_start} > 0);
-	print "   Next stop : ", time_as_text($config->{engine}{$engine}{next_stop}),  "\n"
-	    if ($config->{engine}{$engine}{next_stop} > 0);
+        if ($opt_d)
+        {
+	    print "   Next start: ", time_as_text($config->{engine}{$engine}{next_start}), "\n"
+	        if ($config->{engine}{$engine}{next_start} > 0);
+	    print "   Next stop : ", time_as_text($config->{engine}{$engine}{next_stop}),  "\n"
+	        if ($config->{engine}{$engine}{next_stop} > 0);
+        }
     }
 }
 
@@ -930,13 +934,26 @@ sub start_engine($$)
            if (length($config->{engine}{$engine}{dataserver}{host}) > 0)
            {
                my ($datadir) = dirname($current);
-               print "COPY: $engine/$datadir -> $config->{engine}{$engine}{dataserver}{host}:$path/$datadir\n";
+               my ($cp) = "copy $localhost:$daemon_path/$engine/$datadir "
+                   . "$config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
+
+               if (exists($config->{copy_mailbox}))
+               {
+                   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+                          = localtime($now);
+                   my ($cp_name) = sprintf("%s/%s-%04d_%02d_%02d-%02d_%02d_%02d.txt",
+                                           $config->{copy_mailbox}, $engine, 1900+$year, 1+$mon, $mday, $hour, $min, $sec);
+                   if (open(CP_FILE, ">$cp_name"))
+                   {
+                       print CP_FILE "$cp\n";
+                       close CP_FILE;
+                   }
+               }
+               print"$cp\n";
            }
 	   unlink("$engine/current_index");
         }
-        print("in " . cwd() . ", symlink $index -> $engine/current_index\n");
         symlink("$index", "$engine/current_index");
-        print("Done??\n");
 	return 0;
 }
 

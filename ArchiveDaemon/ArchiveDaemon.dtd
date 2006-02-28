@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- DTD for the ArchiveDaemon Configuration -->
-<!ELEMENT daemon (copy_message_directory,port,engine*)>
+<!ELEMENT daemon (copy_mailbox, port, engine*)>
 
-<!ELEMENT copy_message_directory (#PCDATA)> <!-- /path               -->
+<!ELEMENT copy_mailbox (#PCDATA)> <!-- /path               -->
 <!ELEMENT port   (#PCDATA)> <!-- TCP port number    -->
 
-<!ELEMENT engine (desc,port,config,restart,dataserver)>
+<!ELEMENT engine (desc, port, config, restart, dataserver)>
 <!ATTLIST engine directory CDATA #REQUIRED>
 
 <!ELEMENT desc   (#PCDATA)> <!-- Text               -->

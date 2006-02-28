@@ -54,8 +54,12 @@ sub write_info($)
     foreach $d_dir ( sort keys %{ $config->{daemon} } )
     {
         next unless is_localhost($config->{daemon}{$d_dir}{'run'});
-	$status = $status . "Daemon '$d_dir': $config->{daemon}{$d_dir}{status}\n";
-	$issues = $issues . "Daemon '$d_dir': $config->{daemon}{$d_dir}{status}\n"
+	$status = $status .
+                  sprintf("Daemon %-25s: %s\n",
+                          "'" . $d_dir ."'", $config->{daemon}{$d_dir}{status});
+	$issues = $issues .
+                  sprintf("Daemon %-25s: %s\n",
+                          "'" . $d_dir ."'", $config->{daemon}{$d_dir}{status})
             if ($config->{daemon}{$d_dir}{status} ne "running");
 	foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
@@ -68,20 +72,20 @@ sub write_info($)
                 if ($disconnected == 0)
                 {
                     $status = $status .
-                        sprintf("Engine %-15s: %5d channels.\n",
+                        sprintf("Engine %-25s: %5d channels.\n",
                                 "'$e_dir'",
                                 $config->{daemon}{$d_dir}{engine}{$e_dir}{channels});
                 }
                 else
                 {
                     $status = $status .
-                        sprintf("Engine %-15s: %5d channels,  %5d disconnected.\n",
+                        sprintf("Engine %-25s: %5d channels,  %5d disconnected.\n",
                                 "'$e_dir'",
                                 $config->{daemon}{$d_dir}{engine}{$e_dir}{channels},
                                 $disconnected);
                     $issues = $issues .
-                        sprintf("Engine %-15s: %5d channels,  %5d disconnected.\n",
-                                "'$e_dir'",
+                        sprintf("Engine %-25s: %5d channels,  %5d disconnected.\n",
+                                "'$d_dir/$e_dir'",
                                 $config->{daemon}{$d_dir}{engine}{$e_dir}{channels},
                                 $disconnected);
                 }
@@ -89,12 +93,12 @@ sub write_info($)
             else
             {
                 $status = $status .
-                        sprintf("Engine %-15s: %s\n",
+                        sprintf("Engine %-25s: %s\n",
                                 "'$e_dir'",
                                 $config->{daemon}{$d_dir}{engine}{$e_dir}{status});
                 $issues = $issues .
-                        sprintf("Engine %-15s: %s\n",
-                                "'$e_dir'",
+                        sprintf("Engine %-25s: %s\n",
+                                "'$d_dir/$e_dir'",
                                 $config->{daemon}{$d_dir}{engine}{$e_dir}{status});
             }  
 	}

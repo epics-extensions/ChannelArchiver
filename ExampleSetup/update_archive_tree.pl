@@ -135,14 +135,18 @@ sub create_daemon_files($)
     printf("  -->\n");
     printf("\n");
     printf("<daemon>\n");
-        printf("    <port>$config->{daemon}{$d_dir}{port}</port>\n");
+    printf("    <port>$config->{daemon}{$d_dir}{port}</port>\n");
+    if (exists($config->{copy_mailbox}))
+    {
+        printf("    <copy_mailbox>$config->{copy_mailbox}</copy_mailbox>\n");
+    }
     if (is_localhost($config->{daemon}{$d_dir}{run}))
     {
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
 	    if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
 	    {
-	        printf(" <!-- not running\n");
+	        printf("    <!-- not running\n");
 	    }
 	    printf("    <engine directory='$e_dir'>\n");
 	    printf("        <desc>%s</desc>\n",
@@ -165,7 +169,7 @@ sub create_daemon_files($)
 	    printf("    </engine>\n");
 	    if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
 	    {
-	        printf("  :: not running -->\n");
+	        printf("    :: not running -->\n");
 	    }
         }
     }
@@ -251,6 +255,33 @@ sub create_stuff()
     }
 }
 
+# Look for dirs that are not described
+sub check_dirs()
+{
+    my ($d_dir, $sub, $e_dir);
+
+    foreach $d_dir ( <*> )
+    {
+        next unless -d $d_dir;
+        next if ($d_dir eq "scripts");
+        if (not exists $config->{daemon}{$d_dir})
+        {
+            print("Directory '$d_dir' is not described in the configuration\n");
+            next;
+        }
+        foreach $sub ( <$d_dir/*> )
+        {
+            next unless -d $sub;
+            my ($x, $e_dir) = split('/', $sub);
+            if (not exists $config->{daemon}{$d_dir}{engine}{$e_dir})
+            {
+                print("Directory '$d_dir/$e_dir' is not described in the configuration\n");
+                next;
+            }
+        }
+    }
+}
+
 # The main code ==============================================
 
 # Parse command-line options
@@ -268,3 +299,6 @@ $daemon_dtd = "$root/ArchiveDaemon.dtd";
 $engine_dtd = "$root/engineconfig.dtd";
 
 create_stuff();
+
+check_dirs() if (length($opt_s) <= 0);
+    

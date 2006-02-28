@@ -141,7 +141,9 @@ sub dump_config($)
     print("\n");
 }
 
-# For checking <run>host-where-to-run or 'false'</run>
+# For checking host-where-to-run or 'false'
+# from <run> or <host> tags.
+#
 # Returns 1 if daemon or engine or ...
 # should run on this computer because
 # e.g. ics-srv-archive1 matched the <run>archive1</run>
@@ -192,7 +194,7 @@ sub update_status($$)
         @html = read_URL($localhost, $config->{daemon}{$d_dir}{port}, "status");
         if ($opt_d)
         {
-            print "Response from $config->{daemon}{$d_dir}{desc}:\n";
+            print "Response from $d_dir:\n";
             foreach $line ( @html )
             {   print "    '$line'\n"; }
         }

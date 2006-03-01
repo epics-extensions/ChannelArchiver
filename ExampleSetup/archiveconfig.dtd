@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- DTD for the archiveconfig -->
-<!ELEMENT archiveconfig (root, serverconfig, copy_mailbox, daemon*)>
+<!ELEMENT archiveconfig (root, serverconfig, mailbox, daemon*)>
 
 <!ELEMENT root (#PCDATA)>
 <!ELEMENT serverconfig (#PCDATA)>
-<!ELEMENT copy_mailbox (#PCDATA)>
+<!ELEMENT mailbox (#PCDATA)>
 
 <!ELEMENT daemon (run?, desc?, port, dataserver?, engine*)>
 <!ATTLIST daemon directory CDATA #REQUIRED>

@@ -20,7 +20,7 @@ use archiveconfig;
 my ($config_name) = "archiveconfig.xml";
 my ($hostname)    = hostname();
 my ($path) = cwd();
-my ($root, $index_dtd, $daemon_dtd, $engine_dtd);
+my ($index_dtd, $daemon_dtd, $engine_dtd);
 
 sub usage()
 {
@@ -136,9 +136,9 @@ sub create_daemon_files($)
     printf("\n");
     printf("<daemon>\n");
     printf("    <port>$config->{daemon}{$d_dir}{port}</port>\n");
-    if (exists($config->{copy_mailbox}))
+    if (exists($config->{mailbox}))
     {
-        printf("    <copy_mailbox>$config->{copy_mailbox}</copy_mailbox>\n");
+        printf("    <mailbox>$config->{mailbox}</mailbox>\n");
     }
     if (is_localhost($config->{daemon}{$d_dir}{run}))
     {
@@ -161,7 +161,7 @@ sub create_daemon_files($)
 		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type},
 		       $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content});
 	    }
-            if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host}))
+            if (exists($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host}))
             {
 	        printf("        <dataserver><host>%s</host></dataserver>\n",
                        $config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host});
@@ -201,9 +201,10 @@ sub create_daemon_files($)
 	       $d_dir,
 	       $config->{daemon}{$d_dir}{desc});
 	printf("\n");
-	printf("ArchiveDaemon.pl -p %d -i %s -u 0 -f %s/%s/%s\n",   
-	       $config->{daemon}{$d_dir}{port},
-	       $index_dtd, $path, $d_dir, $daemonfile);
+	printf("cd %s/%s\n",
+	       $config->{root}, $d_dir);
+	printf("%s/scripts/ArchiveDaemon.pl -f %s/%s/%s\n",   
+               $config->{root}, $config->{root}, $d_dir, $daemonfile);
     }
     else
     {
@@ -293,7 +294,8 @@ if (!getopts("dhc:s:") ||  $opt_h)
 $config_name = $opt_c if (length($opt_c) > 0);
 $config = parse_config_file($config_name, $opt_d);
 
-$root       = $config->{root};
+my ($root)  = $config->{root};
+die "Should run in '$root', not '$path'\n" unless ($root eq $path);
 $index_dtd  = "$root/indexconfig.dtd";
 $daemon_dtd = "$root/ArchiveDaemon.dtd";
 $engine_dtd = "$root/engineconfig.dtd";

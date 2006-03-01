@@ -9,12 +9,11 @@
 <!ELEMENT daemon (run?, desc?, port, dataserver?, engine*)>
 <!ATTLIST daemon directory CDATA #REQUIRED>
 
-<!ELEMENT dataserver (current_index?, index?, host?, root?)>
+<!ELEMENT dataserver (current_index?, index?, host?)>
 <!ELEMENT current_index (#PCDATA)>
 <!ATTLIST current_index key CDATA #REQUIRED>
-<!ATTLIST current_index root CDATA #IMPLIED>
 <!ELEMENT index (#PCDATA)>
-<!ATTLIST index type CDATA #REQUIRED>
+<!ATTLIST index type (list|binary) #REQUIRED>
 <!ATTLIST index key CDATA #IMPLIED>
 <!ELEMENT host (#PCDATA)>
 
@@ -26,4 +25,11 @@
 <!ELEMENT port (#PCDATA)>
 
 <!ELEMENT restart (#PCDATA)>
-<!ATTLIST restart type CDATA #REQUIRED>
+<!ATTLIST restart type (weekly|daily|hourly|timed) #REQUIRED>
+<!-- weekly  Mo|Tu|...|Su HH:MM
+     daily   HH:MM
+     hourly  (double) hours
+     timed   HH:MM/HH:MM  
+             (start/duration)
+  -->
+

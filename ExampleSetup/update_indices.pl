@@ -67,6 +67,11 @@ sub create_indexconfig($@)
     {   # Need full update if master doesn't exist, yet.
         $full = 1;
     }
+
+    if ($opt_d)
+    {
+        print($full ? "  full re-index\n" : "  incremental re-index\n");
+    }
     
     open(OUT, ">$indexconfig") or die "Cannot create " . cwd() . "/$indexconfig";
     my ($old_fd) = select OUT;
@@ -95,9 +100,6 @@ sub create_indexconfig($@)
     close OUT;
 }
 
-# Array of index commands to run, filled by make_index* routines
-my (@cmd);
-
 # Create the index.xml for the given engine directory.
 # Looks for all files <year>/<day_or_time>/index.
 sub make_engine_index($$)
@@ -108,7 +110,6 @@ sub make_engine_index($$)
     my ($full) = 0;
     $full = 1 if ($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{index}{type} eq 'list');
     $full = 1 unless $opt_u;
-    print "FULL? $d_dir/$e_dir: '$full' '$config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{index}{type}' '$opt_u'\n";
 
     # Collect all sub-archives
     chdir("$d_dir/$e_dir");
@@ -116,8 +117,10 @@ sub make_engine_index($$)
     # Write
     create_indexconfig($full, @indices);
     chdir($config->{root});
-    push @cmd, 
+    my ($cmd) =
         "(cd $d_dir/$e_dir;(time $ArchiveIndexTool $indexconfig master_index) >$ArchiveIndexLog 2>&1)";
+    print("  $cmd\n");
+    system($cmd) unless ($opt_n);
 }
 
 # Create the index config for the given daemon directory.
@@ -126,8 +129,10 @@ sub make_daemon_index($)
     my ($d_dir) = @ARG;
     my ($e_dir, @indices);
     # A 'binary' index might try update-only.
-    my ($full) = $config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'list'
-                 or not $opt_u;
+    my ($full) = 0;
+    $full = 1 if ($config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'list');
+    $full = 1 unless $opt_u;
+
     foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
     {
 	# Engine indices are currently limited to binary -> master_index.
@@ -141,8 +146,10 @@ sub make_daemon_index($)
     # Need to create binary daemon index?
     if ($config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'binary')
     {
-	push @cmd,
-        "(cd $d_dir; time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1)";
+	my ($cmd) =
+            "(cd $d_dir; time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1)";
+        print("  $cmd\n");
+        system($cmd) unless ($opt_n);
     }
 }
 
@@ -191,8 +198,7 @@ sub print_serverconfig()
 # Create the daemon and engine index files.
 sub create_indices()
 {
-    my ($d_dir, $e_dir, $cmd, $index);
-    undef @cmd;
+    my ($d_dir, $e_dir, $index);
     undef %serverconfig;
 
     foreach $d_dir ( keys %{ $config->{daemon} } )
@@ -200,7 +206,7 @@ sub create_indices()
 	# Skip daemons/systems that don't match the supplied reg.ex.
 	next if (length($opt_s) > 0 and not $d_dir =~ $opt_s);
 
-	print("Daemon $d_dir\n");
+	print("Daemon '$d_dir'\n");
         my ($dc) = $config->{daemon}{$d_dir};
 	my ($need_daemon_index) = 0;
 	# Daemon-level index
@@ -214,8 +220,19 @@ sub create_indices()
             # Build on this host?
             if (is_localhost($dc->{dataserver}{host}))
             {
-                $index = ($dc->{dataserver}{index}{type} eq 'list')
-                         ? "indexconfig.xml" : "master_index";
+                
+                if ($dc->{dataserver}{index}{type} eq 'list')
+                {
+                    $index = "indexconfig.xml";
+                    if (-r "$d_dir/master_index")
+                    {
+                        print("** Warning: found unused '$d_dir/master_index'\n");
+                    }
+                }
+                else
+                {
+                    $index = "master_index";
+                }
                 add_serverconfig($dc->{dataserver}{index}{key},
                                  $dc->{dataserver}{index}{content},
                                  "$config->{root}/$d_dir/$index");
@@ -224,7 +241,7 @@ sub create_indices()
         }
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
-	    print("- Engine $e_dir\n");
+	    print("- Engine '$e_dir'\n");
             my ($ec) = $config->{daemon}{$d_dir}{engine}{$e_dir};
             # Engine-level index
             if (exists($ec->{dataserver}))
@@ -263,18 +280,10 @@ sub create_indices()
 	    make_daemon_index($d_dir);
 	}
     }
-
-    print("\nIndex commands:\n");
-    foreach $cmd ( @cmd )
-    {
-        print("$cmd\n");
-        system($cmd) unless ($opt_n);
-    }
 }
 
 # The main code ==============================================
 
-# TODO: update-only
 # TODO: check list -> list -> list -> binary index
 # TODO: list-index for 'all'
 

@@ -1,6 +1,33 @@
 #!/usr/bin/perl
 #
 # Based on Greg Lawson's relocate_arch_data.pl
+#
+# Reads the mailbox dir, copies new data,
+# and re-indexes.
+#
+# For the copy to work via scp,
+# key pairs need to be configured.
+# Assume this is the data server computer that
+# needs to use scp to pull data off archive computers.
+#
+# Assume the script runs as user 'xfer'
+# and needs to pull data from 'arch1':
+#
+# Once only:
+# ssh-keygen -t dsa
+#
+# Copy public key over:
+# scp ~/.ssh/id_dsa.pub xfer@arch1:~/.ssh/xx
+#
+# Configure public key on arch1:
+# ssh arch1
+# cd .ssh/
+# cat xx >>authorized_keys 
+# rm xx
+# chmod 600 authorized_keys 
+#
+# From now on, you should be able to go to 'arch1'
+# without being queried for a pw.
 
 BEGIN
 {

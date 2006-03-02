@@ -203,7 +203,7 @@ sub create_daemon_files($)
 	printf("\n");
 	printf("cd %s/%s\n",
 	       $config->{root}, $d_dir);
-	printf("%s/scripts/ArchiveDaemon.pl -f %s/%s/%s\n",   
+	printf("perl %s/scripts/ArchiveDaemon.pl -f %s/%s/%s\n",   
                $config->{root}, $config->{root}, $d_dir, $daemonfile);
     }
     else
@@ -227,6 +227,19 @@ sub create_daemon_files($)
 	   $config->{daemon}{$d_dir}{desc});
     printf("\n");
     printf("lynx -dump http://%s:%d/stop\n",
+	   $hostname,
+	   $config->{daemon}{$d_dir}{port});
+    select $old_fd;
+    close OUT;
+
+    # Daemon View Script
+    $filename = "$d_dir/view-daemon.sh";
+    open OUT, ">$filename" or die "Cannot open $filename\n";
+    $old_fd = select OUT;
+    printf("#!/bin/sh\n");
+    printf("#\n");
+    printf("\n");
+    printf("lynx http://%s:%d\n",
 	   $hostname,
 	   $config->{daemon}{$d_dir}{port});
     select $old_fd;

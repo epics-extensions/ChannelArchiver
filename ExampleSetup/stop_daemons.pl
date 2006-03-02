@@ -75,3 +75,7 @@ foreach $d_dir ( keys %{ $config->{daemon} } )
      }
 }
 
+if ($opt_p)
+{
+    print("Check\n  ls -l */*/archive_active.lck\nto see which engines are still 'up'\n");
+}

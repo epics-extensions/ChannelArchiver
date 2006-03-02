@@ -35,6 +35,7 @@ BEGIN
     push(@INC, '/arch/scripts' );
 }
 
+
 use English;
 use strict;
 use vars qw($opt_d $opt_h $opt_c);
@@ -44,6 +45,18 @@ use Getopt::Std;
 use Data::Dumper;
 use Sys::Hostname;
 use archiveconfig;
+
+# Very bad, not sure how to better solve this:
+# At the SNS, the archive computer might consider itself 'ics-srv-archive1',
+# and we are to copy data from 'ics-srv-archive1:/arch/....' to the server.
+# But from the data server machine, it's accessible as 'arch1'.
+# So we need to translate some addresses:
+my (%host_hacks) =
+(
+    'ics-srv-archive1' => 'arch1',
+    'ics-srv-archive2' => 'arch2',
+    'ics-srv-archive3' => 'arch3',
+);
 
 # Globals, Defaults
 my ($config_name) = "archiveconfig.xml";
@@ -91,8 +104,14 @@ sub check_mailbox()
                 ++$updates;
             }
             elsif ($info eq "copy" and defined($dst_host) and is_localhost($dst_host))
-            {   # Copy data here, then update
-                print("mkdir -p $destdir && scp -r $src_host:$src_dir $dst_dir\n");
+            {   # Copy data here, then update.
+                # Careful with 'scp -r':
+                # It will create the target dir, e.g. 2006/03_01.
+                # But, if the target dir already exists,
+                # it will create 2006/03_01/03_01!!
+                # -> don't use -r
+		$src_host = $host_hacks{$src_host} if (defined($host_hacks{$src_host}));
+                print("mkdir -p $dst_dir && scp $src_host:$src_dir/* $dst_dir\n");
                 ++$updates;
             }
         }

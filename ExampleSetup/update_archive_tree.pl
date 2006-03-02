@@ -71,11 +71,11 @@ sub create_engine_files($$)
     printf("#\n");
     printf("# Stop the %s engine (%s)\n",
            $e_dir,
-	   $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
+           $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
     printf("\n");
     printf("lynx -dump http://%s:%d/stop\n",   
            $hostname,
-	   $config->{daemon}{$d_dir}{engine}{$e_dir}{port});
+           $config->{daemon}{$d_dir}{engine}{$e_dir}{port});
     select $old_fd;
     close OUT;
 
@@ -119,29 +119,29 @@ sub create_daemon_files($)
 
     # Daemon config file
     $filename = "$d_dir/$daemonfile";
-    open OUT, ">$filename" or die "Cannot open $filename\n";
-    $old_fd = select OUT;
-    printf("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
-    printf("<!DOCTYPE daemon SYSTEM \"%s\">\n",
-	   $daemon_dtd);
-    printf("\n");
-    printf("<!-- \n");
-    printf("  NOTE:\n");
-    printf("  This file will be OVERWRITTEN\n");
-    printf("  with information from $config_name.\n");
-    printf("\n");
-    printf("  Change $config_name and re-run\n");
-    printf("  update_archive_tree.pl\n");
-    printf("  -->\n");
-    printf("\n");
-    printf("<daemon>\n");
-    printf("    <port>$config->{daemon}{$d_dir}{port}</port>\n");
-    if (exists($config->{mailbox}))
-    {
-        printf("    <mailbox>$config->{mailbox}</mailbox>\n");
-    }
     if (is_localhost($config->{daemon}{$d_dir}{run}))
     {
+        open OUT, ">$filename" or die "Cannot open $filename\n";
+        $old_fd = select OUT;
+        printf("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
+        printf("<!DOCTYPE daemon SYSTEM \"%s\">\n",
+	       $daemon_dtd);
+        printf("\n");
+        printf("<!-- \n");
+        printf("  NOTE:\n");
+        printf("  This file will be OVERWRITTEN\n");
+        printf("  with information from $config_name.\n");
+        printf("\n");
+        printf("  Change $config_name and re-run\n");
+        printf("  update_archive_tree.pl\n");
+        printf("  -->\n");
+        printf("\n");
+        printf("<daemon>\n");
+        printf("    <port>$config->{daemon}{$d_dir}{port}</port>\n");
+        if (exists($config->{mailbox}))
+        {
+            printf("    <mailbox>$config->{mailbox}</mailbox>\n");
+        }
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
 	    if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
@@ -172,31 +172,23 @@ sub create_daemon_files($)
 	        printf("    :: not running -->\n");
 	    }
         }
+        printf("</daemon>\n");
+        select $old_fd;
+        close OUT;
     }
     else
     {
-	printf("<!-- not running on this computer:\n");
-        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
-        {
-            printf("  engine '%s' (%s) on port %d\n",
-                   $e_dir,
-                   $config->{daemon}{$d_dir}{engine}{$e_dir}{desc},
-                   $config->{daemon}{$d_dir}{engine}{$e_dir}{port});
-        }
-	printf("  -->\n");
+	unlink($filename);
     }
-    printf("</daemon>\n");
-    select $old_fd;
-    close OUT;
 
     # Daemon Start Script
     $filename = "$d_dir/run-daemon.sh";
-    open OUT, ">$filename" or die "Cannot open $filename\n";
-    $old_fd = select OUT;
-    printf("#!/bin/sh\n");
-    printf("#\n");
     if (is_localhost($config->{daemon}{$d_dir}{run}))
     {
+        open OUT, ">$filename" or die "Cannot open $filename\n";
+        $old_fd = select OUT;
+        printf("#!/bin/sh\n");
+        printf("#\n");
 	printf("# Launch the %s daemon (%s)\n",
 	       $d_dir,
 	       $config->{daemon}{$d_dir}{desc});
@@ -205,45 +197,56 @@ sub create_daemon_files($)
 	       $config->{root}, $d_dir);
 	printf("perl %s/scripts/ArchiveDaemon.pl -f %s/%s/%s\n",   
                $config->{root}, $config->{root}, $d_dir, $daemonfile);
+        select $old_fd;
+        close OUT;
     }
     else
     {
-	printf("echo \"The %s daemon (%s) does not run on this computer.\"\n",
-	       $d_dir,
-	       $config->{daemon}{$d_dir}{desc});
-	printf("\n");
+	unlink($filename);
     }
-    select $old_fd;
-    close OUT;
 
     # Daemon Stop Script
     $filename = "$d_dir/stop-daemon.sh";
-    open OUT, ">$filename" or die "Cannot open $filename\n";
-    $old_fd = select OUT;
-    printf("#!/bin/sh\n");
-    printf("#\n");
-    printf("# Stop the %s daemon (%s)\n",
-	   $d_dir,
-	   $config->{daemon}{$d_dir}{desc});
-    printf("\n");
-    printf("lynx -dump http://%s:%d/stop\n",
-	   $hostname,
-	   $config->{daemon}{$d_dir}{port});
-    select $old_fd;
-    close OUT;
+    if (is_localhost($config->{daemon}{$d_dir}{run}))
+    {
+        open OUT, ">$filename" or die "Cannot open $filename\n";
+        $old_fd = select OUT;
+        printf("#!/bin/sh\n");
+        printf("#\n");
+        printf("# Stop the %s daemon (%s)\n",
+	       $d_dir,
+	       $config->{daemon}{$d_dir}{desc});
+        printf("\n");
+        printf("lynx -dump http://%s:%d/stop\n",
+	       $hostname,
+	       $config->{daemon}{$d_dir}{port});
+        select $old_fd;
+        close OUT;
+    }
+    else
+    {
+        unlink($filename);
+    }
 
     # Daemon View Script
     $filename = "$d_dir/view-daemon.sh";
-    open OUT, ">$filename" or die "Cannot open $filename\n";
-    $old_fd = select OUT;
-    printf("#!/bin/sh\n");
-    printf("#\n");
-    printf("\n");
-    printf("lynx http://%s:%d\n",
-	   $hostname,
-	   $config->{daemon}{$d_dir}{port});
-    select $old_fd;
-    close OUT;
+    if (is_localhost($config->{daemon}{$d_dir}{run}))
+    {
+        open OUT, ">$filename" or die "Cannot open $filename\n";
+        $old_fd = select OUT;
+        printf("#!/bin/sh\n");
+        printf("#\n");
+        printf("\n");
+        printf("lynx http://%s:%d\n",
+	       $hostname,
+	       $config->{daemon}{$d_dir}{port});
+        select $old_fd;
+        close OUT;
+    }
+    else
+    {
+        unlink($filename);
+    }
 }
 
 # Create the daemon and engine directories
@@ -262,9 +265,13 @@ sub create_stuff()
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
 	    print(" - Engine $e_dir\n");
+	    mkpath("$d_dir/$e_dir", 1);    
 	    # Engine and ASCII-config dir
-	    mkpath("$d_dir/$e_dir/ASCIIConfig", 1);    
-	    create_engine_files($d_dir, $e_dir);
+            if (is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
+            {
+	        mkpath("$d_dir/$e_dir/ASCIIConfig", 1);    
+	        create_engine_files($d_dir, $e_dir);
+            }
 	}
     }
 }

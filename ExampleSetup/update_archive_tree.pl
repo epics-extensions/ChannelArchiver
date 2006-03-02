@@ -265,6 +265,7 @@ sub check_dirs()
     {
         next unless -d $d_dir;
         next if ($d_dir eq "scripts");
+        next if (exists($config->{mailbox}) && ($config->{mailbox} =~ /$d_dir/));
         if (not exists $config->{daemon}{$d_dir})
         {
             print("Directory '$d_dir' is not described in the configuration\n");

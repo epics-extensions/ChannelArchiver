@@ -65,7 +65,7 @@ sub check_mailbox()
             }
             elsif ($info eq "copy" and defined($dst_host) and is_localhost($dst_host))
             {   # Copy data here, then update
-                print("scp -r $src_host:$src_dir $dst_dir\n");
+                print("mkdir -p $destdir && scp -r $src_host:$src_dir $dst_dir\n");
                 ++$updates;
             }
         }

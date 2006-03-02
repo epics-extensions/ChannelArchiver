@@ -8,7 +8,6 @@ DIRS += LibIO
 DIRS += Storage
 DIRS += IndexTool
 DIRS += Export
-DIRS += ArchiveDaemon
 DIRS += XMLRPCServer
 DIRS += Engine
 DIRS += DataTool

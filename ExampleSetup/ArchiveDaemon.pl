@@ -34,7 +34,7 @@ use Getopt::Std;
 # ----------------------------------------------------------------
 
 # Compare: manual/changes.tex
-my ($version) = "2.7.0";
+my ($version) = "2.8.0";
 
 # Setting this to 1 disables(!) caching and might help with debugging.
 # Default: leave it commented-out.
@@ -61,9 +61,11 @@ my ($logfile) = "ArchiveDaemon.log";
 #    In theory, this is the best method.
 #    In practice, it might fail when you have more than one
 #    network card or no DNS.
-#my ($localhost) = 'localhost';
-#my ($localhost) = 'ics-srv-archive1';
-my ($localhost) = hostname();
+#my ($host) = 'localhost';
+#my ($host) = 'ics-srv-archive1';
+my ($host) = hostname();
+
+my ($localhost) = "127.0.0.1";
 
 # What ArchiveEngine to use. Just "ArchiveEngine" works if it's in the path.
 my ($ArchiveEngine) = "ArchiveEngine";
@@ -76,8 +78,8 @@ my ($ArchiveEngine) = "ArchiveEngine";
 # page shows the current state of things.
 my ($engine_check_secper) = 30;
 
-# 1 second gives good response yet daemon uses hardly any CPU.
-my ($http_check_timeout) = 1;
+# A few seconds give good response yet daemon uses hardly any CPU.
+my ($http_check_timeout) = 3;
 
 # Timeout used when reading a HTTP client or ArchiveEngine.
 # 10 seconds should be reasonable. Trying 30sec at SNS because
@@ -401,7 +403,7 @@ sub handle_HTTP_main($)
     {
 	print $client "<TR>";
 	print $client "<TH BGCOLOR=#FFFFFF>" .
-	    "<A HREF=\"http://$localhost:$config->{engine}{$engine}{port}\">" .
+	    "<A HREF=\"http://$host:$config->{engine}{$engine}{port}\">" .
 	    "$config->{engine}{$engine}{desc}</A></TH>";
 	print $client "<TD ALIGN=CENTER>$config->{engine}{$engine}{port}</TD>";
 	if ($config->{engine}{$engine}{started})
@@ -561,9 +563,9 @@ sub handle_HTTP_postal($)
     {
 	next unless ($config->{engine}{$engine}{started});
 	print $client "Stopping " .
-	    "<A HREF=\"http://$localhost:$config->{engine}{$engine}{port}\">" .
+	    "<A HREF=\"http://$host:$config->{engine}{$engine}{port}\">" .
 	    "$config->{engine}{$engine}{desc}</A> on port $config->{engine}{$engine}{port}<br>\n";
-	stop_engine($localhost, $config->{engine}{$engine}{port});
+	stop_engine($config->{engine}{$engine}{port});
     }
     print $client "Quitting<br>\n";
     html_stop($client);
@@ -587,7 +589,7 @@ sub handle_HTTP_disable($$)
 		print DISABLED "\n";
 		close(DISABLED);
 		print $client "Created 'DISABLED.txt' in '$engine'.<p>\n";
-		stop_engine($localhost, $config->{engine}{$engine}{port});
+		stop_engine($config->{engine}{$engine}{port});
 		$config->{engine}{$engine}{disabled} = 1;
 		print $client "Stopped via port $config->{engine}{$engine}{port}.\n";
 		print "Disabled '$config->{engine}{$engine}{desc}, port $config->{engine}{$engine}{port}.\n";
@@ -802,16 +804,16 @@ sub read_URL($$$)
     return @doc;
 }    
 
-# Test if ArchiveEngine runs on host/port,
+# Test if ArchiveEngine runs on port,
 # returning (description, start time, # channels, # connected channels)
-sub check_engine($$)
+sub check_engine($)
 {
-    my ($host, $port) = @ARG;
+    my ($port) = @ARG;
     my ($line, $desc, $started, $channels, $connected);
     $desc = '';
     $started = '';
     $channels = $connected = 0;
-    foreach $line ( read_URL($host, $port, "/") )
+    foreach $line ( read_URL($localhost, $port, "/") )
     {
 	if ($line =~ m'Description</TH>.*>([^>]+)</TD>')
 	{
@@ -844,7 +846,7 @@ sub check_engines($)
 	$config->{engine}{$engine}{disabled} = (-f "$engine/DISABLED.txt");
 	$config->{engine}{$engine}{lockfile} = (-f "$engine/archive_active.lck");
 	($desc, $started, $channels, $connected) =
-	    check_engine($localhost, $config->{engine}{$engine}{port});
+	    check_engine($config->{engine}{$engine}{port});
 	if (length($started) > 0)
 	{
 	    $config->{engine}{$engine}{started} = $started;
@@ -862,20 +864,20 @@ sub check_engines($)
     }
 }
 
-# Stop ArchiveEngine on host/port
-sub stop_engine($$)
+# Stop ArchiveEngine on port
+sub stop_engine($)
 {
-    my ($host, $port) = @ARG;
+    my ($port) = @ARG;
     my (@doc, $line);
-    print("Stopping engine $host:$port");
-    add_message("Stopping engine $host:$port");
-    @doc = read_URL($host, $port, "/stop");
+    print("Stopping engine $localhost:$port\n");
+    add_message("Stopping engine $localhost:$port");
+    @doc = read_URL($localhost, $port, "/stop");
     foreach $line ( @doc )
     {
 	return 1 if ($line =~ m'Engine will quit');
     }
     print(time_as_text(time),
-	  ": Engine $host:$port won't quit.\nResponse : @doc\n");
+	  ": Engine $localhost:$port won't quit.\nResponse : @doc\n");
     return 0;
 }
 
@@ -895,7 +897,7 @@ sub stop_engines($)
 	time_as_text($config->{engine}{$engine}{next_stop}),  "\n"
 	    if ($opt_d);
 
-	stop_engine($localhost, $config->{engine}{$engine}{port});
+	stop_engine($config->{engine}{$engine}{port});
 	$config->{engine}{$engine}{started} = $config->{engine}{$engine}{lockfile} = '';
 	++ $stopped;
     }
@@ -912,7 +914,7 @@ sub start_engine($$)
         # $index = "2006/01_15/index"
 	my ($index) = make_indexname($now, $engine);
 	add_message(
-	   "Starting Engine '$config->{engine}{$engine}{desc}': $localhost:$config->{engine}{$engine}{port}\n");
+	   "Starting Engine '$config->{engine}{$engine}{desc}': $host:$config->{engine}{$engine}{port}\n");
 	my ($new_data_path) = dirname("$engine/$index");
 	if (not -d $new_data_path)
 	{
@@ -937,13 +939,13 @@ sub start_engine($$)
            {
                my ($datadir) = dirname($current);
                my ($info);
-               if ($localhost =~ m/$config->{engine}{$engine}{dataserver}{host}/)
+               if ($host =~ m/$config->{engine}{$engine}{dataserver}{host}/)
                {   # On same host: Just information.
-                   $info = "new $localhost:$daemon_path/$engine/$datadir";
+                   $info = "new $host:$daemon_path/$engine/$datadir";
                }
                else
                {   # On remote host: need source, target info for copy.
-                   $info = "copy $localhost:$daemon_path/$engine/$datadir "
+                   $info = "copy $host:$daemon_path/$engine/$datadir "
                    . "$config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
                }
                if (exists($config->{mailbox}))
@@ -1028,7 +1030,7 @@ read_config($config_file);
 
 add_message("Started");
 print("Read $config_file. Check status via\n");
-print("          http://$localhost:$config->{port}\n");
+print("          http://$host:$config->{port}\n");
 print("You can also monitor the log file:\n");
 print("          $logfile\n");
 # Daemonization, see "perldoc perlipc"
@@ -1066,3 +1068,4 @@ while (1)
     }
     check_HTTPD($httpd);
 }
+

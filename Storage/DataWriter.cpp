@@ -95,7 +95,8 @@ DataWriter::~DataWriter()
                         header->data.begin_time, header->data.end_time,
                         header->offset, header->datafile->getBasename()))
                 {
-                    LOG_MSG("Cannot add %s @ 0x%lX to index\n",
+                    LOG_MSG("Cannot add '%s' %s @ 0x%lX to index\n",
+                            channel_name.c_str(),
                             header->datafile->getBasename().c_str(),
                             (unsigned long)header->offset);
                 }
@@ -339,10 +340,15 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
         new_header->set_prev(header->datafile->getBasename(),
                              header->offset);        
         // Update index entry for the old header.
-        if (tree)
-            tree->updateLastDatablock(
+        if (tree && ! tree->updateLastDatablock(
                     header->data.begin_time, header->data.end_time,
-                    header->offset, header->datafile->getBasename());
+                    header->offset, header->datafile->getBasename()))
+        {
+            LOG_MSG("Cannot add '%s' %s @ 0x%lX to index\n",
+                    channel_name.c_str(),
+                    header->datafile->getBasename().c_str(),
+                    (unsigned long)header->offset);
+        }
     }
     // Switch to new_header (AutoPtr, might del. current header).
     header = new_header;

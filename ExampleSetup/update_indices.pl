@@ -147,7 +147,7 @@ sub make_daemon_index($)
     if ($config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'binary')
     {
 	my ($cmd) =
-            "(cd $d_dir; time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1)";
+            "(cd $d_dir;(time $ArchiveIndexTool $indexconfig master_index) >$ArchiveIndexLog 2>&1)";
         print("  $cmd\n");
         system($cmd) unless ($opt_n);
     }
@@ -244,32 +244,31 @@ sub create_indices()
 	    print("- Engine '$e_dir'\n");
             my ($ec) = $config->{daemon}{$d_dir}{engine}{$e_dir};
             # Engine-level index
-            if (exists($ec->{dataserver}))
-            {
-                if (is_localhost($ec->{dataserver}{host}))
-                {   # current_index
-                    if (exists($ec->{dataserver}{current_index}))
-                    {
-                        add_serverconfig($ec->{dataserver}{current_index}{key},
-                                         $ec->{dataserver}{current_index}{content},
-                                         "$config->{root}/$d_dir/$e_dir/current_index");
-                    }
-		    # Check config.
-                    if (not exists($ec->{dataserver}{index}{key}))
-                    {
-                        die "Incomplete <dataserver> entry for '$d_dir/$e_dir':\n" .
-                            "No <index> with 'key' attribute.\n";
-                    }
+            if (exists($ec->{dataserver}) and is_localhost($ec->{dataserver}{host}))
+            {   # current_index
+                if (exists($ec->{dataserver}{current_index}))
+                {
+                    add_serverconfig($ec->{dataserver}{current_index}{key},
+                                     $ec->{dataserver}{current_index}{content},
+                                     "$config->{root}/$d_dir/$e_dir/current_index");
+                }
+                # Create another index?
+                if (exists($ec->{dataserver}{index}))
+                {
+                    # Check config.
                     if ($ec->{dataserver}{index}{type} ne "binary")
                     {
                         die "Invalid <dataserver> entry for '$d_dir/$e_dir':\n" .
                             "Currently only 'binary' supported on engine level.\n";
                     }
                     # list or binary index for engine data
-                    add_serverconfig($ec->{dataserver}{index}{key},
-                                     $ec->{dataserver}{index}{content},
-                                     "$config->{root}/$d_dir/$e_dir/master_index");
-		    make_engine_index($d_dir, $e_dir);
+                    make_engine_index($d_dir, $e_dir);
+                    if (exists($ec->{dataserver}{index}{key}))
+                    {
+                        add_serverconfig($ec->{dataserver}{index}{key},
+                                         $ec->{dataserver}{index}{content},
+                                         "$config->{root}/$d_dir/$e_dir/master_index");
+                    }
                 }
             }
 	}

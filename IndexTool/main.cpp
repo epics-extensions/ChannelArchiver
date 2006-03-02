@@ -109,7 +109,10 @@ void create_masterindex(int RTreeM,
         {
             subindex.open(sub_name, false);
             if (verbose)
+            {
                 printf("Adding sub-index '%s'\n", sub_name.c_str());
+                fflush(stdout);
+            }
             for (ok = subindex.getFirstChannel(names);
                  ok && run;
                  ok = subindex.getNextChannel(names))

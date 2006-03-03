@@ -38,7 +38,7 @@ BEGIN
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c);
+use vars qw($opt_d $opt_h $opt_c $opt_n);
 use Cwd;
 use File::Path;
 use Getopt::Std;
@@ -75,6 +75,7 @@ sub usage()
     print(" -h          : help\n");
     print(" -c <config> : Use given config file instead of $config_name\n");
     print(" -d          : debug\n");
+    print(" -n          : nop, don't run any commands, just print them\n");
 }
 
 # Configuration info filled by parse_config_file
@@ -111,7 +112,9 @@ sub check_mailbox()
                 # it will create 2006/03_01/03_01!!
                 # -> don't use -r
 		$src_host = $host_hacks{$src_host} if (defined($host_hacks{$src_host}));
-                print("mkdir -p $dst_dir && scp $src_host:$src_dir/* $dst_dir\n");
+                my ($cmd) = "mkdir -p $dst_dir && scp $src_host:$src_dir/* $dst_dir";
+                print("$cmd\n");
+                system($cmd) unless ($opt_n);
                 ++$updates;
             }
         }
@@ -125,7 +128,7 @@ sub check_mailbox()
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("dhc:") ||  $opt_h)
+if (!getopts("dhc:n") ||  $opt_h)
 {
     usage();
     exit(0);
@@ -139,7 +142,9 @@ my ($updates) = check_mailbox();
 chdir($path);
 if ($updates)
 {
-    print("perl scripts/update_indices.pl -u\n");
+    my ($cmd) = "perl scripts/update_indices.pl -u";
+    print("$cmd\n");
+    system($cmd) unless ($opt_n);
 }
 
 

@@ -107,7 +107,7 @@ void create_masterindex(int RTreeM,
         const stdString &sub_name = *subs;
         try
         {
-            subindex.open(sub_name, false);
+            subindex.open(sub_name);
             if (verbose)
             {
                 printf("Adding sub-index '%s'\n", sub_name.c_str());

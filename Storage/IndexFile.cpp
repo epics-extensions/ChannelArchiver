@@ -49,7 +49,7 @@ void IndexFile::open(const stdString &filename, bool readonly)
     // TODO: Tune these two. All 0 seems best?!
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
-    fa.attach(f, 4+NameHash::anchor_size);
+    fa.attach(f, 4+NameHash::anchor_size, !readonly);
     if (new_file)
     {
         if (fseek(f, 0, SEEK_SET))

@@ -15,7 +15,7 @@ TEST_CASE name_hash_test()
     try
     {
         FileAllocator fa;
-        TEST_MSG(fa.attach(f, NameHash::anchor_size) == true, "FileAllocator initialized");
+        TEST_MSG(fa.attach(f, NameHash::anchor_size, true) == true, "FileAllocator initialized");
         NameHash names(fa, 0);
         stdString ID_txt;
         ID_txt = "ID";

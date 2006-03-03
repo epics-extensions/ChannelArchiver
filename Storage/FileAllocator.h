@@ -33,21 +33,25 @@ public:
     
     /// <B>Must be</B> invoked to attach (& initialize) a file.
     ///
-    /// Can be invoked on an empty file,
+    /// Can be invoked on an empty file with init=true,
     /// in thich case the reserved space
     /// and some FileAllocator header will be added
     /// to the file.
-    /// Can also be invoked on an existing file
+    /// Can also be invoked on an existing file (init=false or true)
     /// which was initialized by the FileAllocator,
     /// in which case the reserved_space has to match
     /// the value that was used when initializing the file!
+    ///
+    /// init=true means this file is used for writing,
+    /// and we are allowed to create a new file allocator
+    /// header for an empty file.
     ///
     /// @return true when an empty file was initialized.
     ///         Otherwise, some weak tests are performed
     ///         so see if this file does indeed contain
     ///         a FileAllocator header, and false is returned.
     /// @exception GenericException on error.
-    bool attach(FILE *f, FileOffset reserved_space);
+    bool attach(FILE *f, FileOffset reserved_space, bool init);
 
     /// After attaching to a file, this returns the file
     FILE *getFile() const;

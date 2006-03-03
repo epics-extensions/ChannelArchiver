@@ -41,7 +41,7 @@ int main(int argc, const char *argv[])
     }
     
     FileAllocator fa;
-    if (!fa.attach(f, reserved))
+    if (!fa.attach(f, reserved, true))
     {
         fprintf(stderr, "Cannot attach FileAllocator\n");
         return -1;

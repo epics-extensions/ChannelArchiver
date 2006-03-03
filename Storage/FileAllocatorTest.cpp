@@ -14,7 +14,7 @@ TEST_CASE file_allocator_create_new_file()
 
     FileAllocator fa;
     long o1, o2, o3, o4, o5, o6, o7;
-    TEST_MSG(fa.attach(f, 1000) == true, "attach and initialize");
+    TEST_MSG(fa.attach(f, 1000, true) == true, "attach and initialize");
     TEST_MSG(fa.dump(), "Consistency Check\n");
 
     TEST_MSG((o1=fa.allocate(1000)), "allocate 1000");
@@ -85,7 +85,7 @@ TEST_CASE file_allocator_open_existing()
     TEST_MSG(f, "Re-opened file");
 
     FileAllocator fa;
-    TEST_MSG(fa.attach(f, 1000) == false, "re-attach");
+    TEST_MSG(fa.attach(f, 1000, false) == false, "re-attach");
     TEST_MSG(fa.dump(), "Consistency Check");
 
     puts("-- upping file size increment to 50000 --");

@@ -48,7 +48,7 @@ FileAllocator::~FileAllocator()
 #endif
 }    
 
-bool FileAllocator::attach(FILE *f, FileOffset reserved_space)
+bool FileAllocator::attach(FILE *f, FileOffset reserved_space, bool init)
 {
 #ifdef DEBUG_FA
     printf("FileAllocator::attach()\n");
@@ -65,6 +65,9 @@ bool FileAllocator::attach(FILE *f, FileOffset reserved_space)
     // 0 for new file or at least reserved_space + list headers
     if (file_size == 0)
     {
+        if (init == false)
+            throw GenericException(__FILE__, __LINE__,
+                                   "FileAllocator in read-only mode found empty file");
         // create empty list headers
         memset(&allocated_head, 0, list_node_size);
         memset(&free_head, 0, list_node_size);

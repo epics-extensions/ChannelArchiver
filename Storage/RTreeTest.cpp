@@ -112,7 +112,7 @@ TEST_CASE fill_tests()
             AutoFilePtr f(test_config[test].index_name, "w+b");
             // Attach FileAllocator
             FileAllocator fa;
-            fa.attach(f, RTree::anchor_size);
+            fa.attach(f, RTree::anchor_size, true);
             // Add RTree
             AutoPtr<RTree> tree(new RTree(fa, 0));
             tree->init(3);
@@ -185,7 +185,7 @@ TEST_CASE dump_blocks()
     {
         AutoFilePtr f("test/tree.tst", "rb");
         FileAllocator fa;
-        fa.attach(f, RTree::anchor_size);
+        fa.attach(f, RTree::anchor_size, true);
         RTree tree(fa, 0);
         tree.reattach();
         unsigned long nodes, records;

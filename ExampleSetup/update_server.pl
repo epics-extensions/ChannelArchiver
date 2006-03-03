@@ -142,7 +142,7 @@ my ($updates) = check_mailbox();
 chdir($path);
 if ($updates)
 {
-    my ($cmd) = "perl scripts/update_indices.pl -u";
+    my ($cmd) = "perl scripts/update_indices.pl";
     print("$cmd\n");
     system($cmd) unless ($opt_n);
 }

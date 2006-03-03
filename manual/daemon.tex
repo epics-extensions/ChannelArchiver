@@ -18,10 +18,10 @@ Chapter \ref{ch:examplesetup}, ``Example Setup'', on page
 the ArchiveDaemon. The daemon will attempt to start any ArchiveEngine
 that it does not find running. In addition, the daemon can
 periodically stop and restart ArchiveEngines in order to create
-e.g.\ daily sub-archives.  Furthermore, it adds each sub-archive of
-newly created ArchiveEngines to a configuration file for the
-ArchiveIndexTool and runs the latter periodically, so that all the
-sub-archives can be accessed as if they were one big archive.
+e.g.\ daily sub-archives.  Furthermore, it adds information about
+each sub-archive of newly created ArchiveEngines to a mailbox directory
+so that the index mechanism can create the necessary indices
+and update the data server configuration.
 
 Before using the ArchiveDaemon, one should be familiar
 with the configuration of the ArchiveEngine (sec.\ \ref{sec:engine}),
@@ -35,10 +35,13 @@ configuration file, an example of which can be found in listing
 \ref{lst:daemonconfigex}, needs to follow the DTD from listing
 \ref{lst:daemonconfigdtd}.
 
-\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Archive Daemon Configuration},label=lst:daemonconfigex]{../ArchiveDaemon/ArchiveDaemon.xml}
+In many cases you might not configure the daemon yourself,
+but instead use the mechanism described in chapter \ref{ch:examplesetup}.
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Archive Daemon Configuration},label=lst:daemonconfigex]{../ExampleSetup/ArchiveDaemon.xml}
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for
-    the Archive Daemon Configuration},label=lst:daemonconfigdtd]{../ArchiveDaemon/ArchiveDaemon.dtd}
+    the Archive Daemon Configuration},label=lst:daemonconfigdtd]{../ExampleSetup/ArchiveDaemon.dtd}
 
 \noindent The configuration lists all the
 ArchiveEngines that the daemon should manage on the local

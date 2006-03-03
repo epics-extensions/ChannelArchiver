@@ -3,10 +3,81 @@ The following describes how the archiver toolset is used at the
 \INDEX{Spallation Neutron Source (SNS)}. Other sites might need to
 modify the tools in the ChannelArchiver/ExampleSetup directory for their
 need.
-For the SNS, all the archives are rooted in a directory ``/arch'' on
-the computer ics-srv-archive1.
-In there, a subdirectory ``/arch/scripts'' contains the helper scripts which
-are mentioned in the following.
+
+For the SNS, every computer involved in archiving has a local directory ``/arch''.
+On some computers, for example ics-srv-archive1, that directory
+is used to run engines.
+On another computer, for example ics-srv-web2, that same directory
+contains data copied from archive1 so that the data server
+can serve it.
+The actual data might reside in different partitions,
+which are accessed via soft-links from /arch.
+There might be more than one 'sampling' computer as well as more
+than one 'serving' computer.
+
+We want to be able to move an engine from one computer to another,
+and still keep an overview.
+Therefore a file ``/arch/archiveconfig.xml'' describes the complete
+archive setup: Which engines run where, and how the data gets served.
+The next section descibes archiveconfig.xml in a bit more detail.
+Further sections describe the scripts from ChannelArchiver/ExampleSetup
+which we typically copy into ``/arch/scripts'' on all the involved computers.
+
+\section{archiveconfig.xml}
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={archiveconfig.xml},label=lst:archiveconfig]{../ExampleSetup/archiveconfig.xml}
+
+Each computer needs to have the same copy of /arch/archiveconfig.xml.
+You might generate and distribute that file manually
+or use a relational database.
+People who have used previous releases of the archive toolset might
+remember the archiveconfig.csv file. There is a tool
+convert\_archiveconfig\_to\_xml.pl to convert that file
+into an archiveconfig.xml skeleton.
+
+\clearpage
+
+In any case, archiveconfig.xml describes the complete archive layout,
+using the following elements:
+\begin{itemize}
+\item root: Names the root directory, typically '/arch'.
+      This has to be the same directory name on all computers,
+      since they all use the same archiveconfig.xml.
+\item mailbox: Used to communicate from the ArchiveDaemons to
+      the data server. Has to be an existing directory where
+      all involved computers can read and write, e.g.
+      shared via NFS.
+\end{itemize}
+
+update\_archive\_tree.pl
+
+\section{ArchiveDaemon}
+
+ArchiveDaemon.dtd
+ArchiveDaemon.pl
+ArchiveDaemon.xml
+
+start\_daemons.pl
+stop\_daemons.pl
+
+\subsection{Status Information}
+engine\_write\_durations.pl
+make\_archive\_infofile.pl
+make\_archive\_web.pl
+
+show\_engines.pl
+show\_sizes.pl
+
+\section{Indices}
+update\_indices.pl
+
+\section{Data Server}
+update\_server.pl
+
+
+ALL THE REST NEEDS TO BE REVIEWED!
+
+
+
 A file ``\INDEX{archiveconfig.csv}'' describes the top-level layout:
  
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]

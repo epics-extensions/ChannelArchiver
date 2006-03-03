@@ -12,6 +12,8 @@
 // NameHash::anchor_size anchor;
 // Rest handled by FileAllocator, NameHash and RTree
 
+// #define DEBUG_SOFTLINKS
+
 uint32_t IndexFile::ht_size = 1009;
 
 IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
@@ -24,11 +26,31 @@ IndexFile::~IndexFile()
 
 void IndexFile::open(const stdString &filename, bool readonly)
 {
+    stdString name = filename;
     stdString linked_filename;
-    if (Filename::getLinkedFilename(filename, linked_filename))
-        Filename::getDirname(linked_filename, dirname);
-    else
-        Filename::getDirname(filename, dirname);
+    // Follow links.
+    // The 'final' index file should contain path names
+    // to data files which are valid relative to the index.
+    // But as long as we're only looking at a link to that
+    // final index, the data file paths can be wrong.
+    while (Filename::getLinkedFilename(name, linked_filename))
+    {
+#ifdef DEBUG_SOFTLINKS
+        LOG_MSG("soft link '%s' -> '%s'\n", name.c_str(), linked_filename.c_str());
+#endif
+        if (Filename::containsFullPath(linked_filename))
+            name = linked_filename;
+        else
+        {
+            Filename::getDirname(name, name);
+            name += '/';
+            name += linked_filename;
+        }
+#ifdef DEBUG_SOFTLINKS
+        LOG_MSG("   ==> '%s'\n", name.c_str());
+#endif
+    }
+    Filename::getDirname(name, dirname);
     bool new_file = false;
     if (readonly)
         f.open(filename.c_str(), "rb");

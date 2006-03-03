@@ -48,6 +48,9 @@ public:
     static void getBasename(const stdString &filename, stdString &basename);
 
     /// If filename is a link, get target of link. Else return false.
+    ///
+    /// Implementation detail:
+    /// It is OK for filename and link to refer to the same stdString.
     static bool getLinkedFilename(const stdString &filename, stdString &link);
 };
 

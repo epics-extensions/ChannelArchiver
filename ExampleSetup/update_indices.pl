@@ -10,7 +10,7 @@ BEGIN
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c $opt_s $opt_u $opt_n);
+use vars qw($opt_d $opt_h $opt_c $opt_s $opt_f $opt_n);
 use Cwd;
 use File::Path;
 use Getopt::Std;
@@ -46,13 +46,15 @@ sub usage()
     print(" -h          : help\n");
     print(" -c <config> : Use given config file instead of $config_name\n");
     print(" -s <system> : Handle only the given system daemon, not all daemons.\n");
-    print(" -u          : Update only, no full re-creation, of binary indices.\n");
-    print("               Index files older than the master_index are ignored.\n");
+    print(" -f          : Full re-creation of binary indices, not just update\n");
+    print("               were index files older than the master_index are ignored.\n");
     print(" -n          : 'nop', do not run ArchiveIndexTool, only create the config files.\n");
     print(" -d          : debug.\n");
 }
 
 # Create index.xml in current dir with given @indices.
+# Returns number of valid entries,
+# which might be smaller than $#@ in case of !$opt_f.
 sub create_indexconfig($@)
 {
     my ($full, @indices) = @ARG;
@@ -81,6 +83,7 @@ sub create_indexconfig($@)
     print "     Auto-created. Do not edit!\n";
     print "  -->\n";
     print "<indexconfig>\n";
+    my ($valid) = 0;
     foreach $index ( @indices )
     {
 	if ((not $full) and (-M $index) > $index_age)
@@ -92,12 +95,14 @@ sub create_indexconfig($@)
             print("    <archive>\n");
             print("        <index>$index</index>\n");
             print("    </archive>\n");
+            ++$valid;
         }
     }
     print "</indexconfig>\n";
 
     select $old_fd;
     close OUT;
+    return $valid;
 }
 
 # Create the index.xml for the given engine directory.
@@ -109,18 +114,21 @@ sub make_engine_index($$)
     # A 'binary' index might try update-only.
     my ($full) = 0;
     $full = 1 if ($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{index}{type} eq 'list');
-    $full = 1 unless $opt_u;
+    $full = 1 if ($opt_f);
 
     # Collect all sub-archives
     chdir("$d_dir/$e_dir");
     my (@indices) = <*/*/index>;
     # Write
-    create_indexconfig($full, @indices);
+    my ($valid) = create_indexconfig($full, @indices);
     chdir($config->{root});
-    my ($cmd) =
-        "(cd $d_dir/$e_dir;(time $ArchiveIndexTool $indexconfig master_index) >$ArchiveIndexLog 2>&1)";
-    print("  $cmd\n");
-    system($cmd) unless ($opt_n);
+    if ($valid > 0)
+    {
+        my ($cmd) =
+            "(cd $d_dir/$e_dir;(time $ArchiveIndexTool $indexconfig master_index) >$ArchiveIndexLog 2>&1)";
+        print("  $cmd\n");
+        system($cmd) unless ($opt_n);
+    }
 }
 
 # Create the index config for the given daemon directory.
@@ -131,7 +139,7 @@ sub make_daemon_index($)
     # A 'binary' index might try update-only.
     my ($full) = 0;
     $full = 1 if ($config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'list');
-    $full = 1 unless $opt_u;
+    $full = 1 if ($opt_f);
 
     foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
     {
@@ -140,11 +148,12 @@ sub make_daemon_index($)
     }
     # Write
     chdir($d_dir);
-    create_indexconfig($full, @indices);
+    my ($valid) = create_indexconfig($full, @indices);
     chdir($config->{root});
     
     # Need to create binary daemon index?
-    if ($config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'binary')
+    if ($valid > 0  and
+        $config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'binary')
     {
 	my ($cmd) =
             "(cd $d_dir;(time $ArchiveIndexTool $indexconfig master_index) >$ArchiveIndexLog 2>&1)";
@@ -287,7 +296,7 @@ sub create_indices()
 # TODO: list-index for 'all'
 
 # Parse command-line options
-if (!getopts("dhc:s:un") ||  $opt_h)
+if (!getopts("dhc:s:fn") ||  $opt_h)
 {
     usage();
     exit(0);

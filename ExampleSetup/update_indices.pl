@@ -125,7 +125,7 @@ sub make_engine_index($$)
     if ($valid > 0)
     {
         my ($cmd) =
-            "(cd $d_dir/$e_dir;(time $ArchiveIndexTool $indexconfig master_index) >$ArchiveIndexLog 2>&1)";
+            "(cd $d_dir/$e_dir;time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1)";
         print("  $cmd\n");
         system($cmd) unless ($opt_n);
     }
@@ -156,7 +156,7 @@ sub make_daemon_index($)
         $config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'binary')
     {
 	my ($cmd) =
-            "(cd $d_dir;(time $ArchiveIndexTool $indexconfig master_index) >$ArchiveIndexLog 2>&1)";
+            "(cd $d_dir;time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1)";
         print("  $cmd\n");
         system($cmd) unless ($opt_n);
     }

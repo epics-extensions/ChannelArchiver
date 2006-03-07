@@ -38,7 +38,7 @@ BEGIN
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c $opt_n);
+use vars qw($opt_d $opt_h $opt_c $opt_n $opt_t);
 use Cwd;
 use File::Path;
 use Getopt::Std;
@@ -76,6 +76,7 @@ sub usage()
     print(" -c <config> : Use given config file instead of $config_name\n");
     print(" -d          : debug\n");
     print(" -n          : nop, don't run any commands, just print them\n");
+    print(" -t          : only execute the file transfers, skip the index_update\n");
 }
 
 # Configuration info filled by parse_config_file
@@ -91,7 +92,7 @@ sub check_mailbox()
     foreach $entry ( <*> )
     {
         next if ($entry eq 'done');
-	print("Mailbox file '$entry':\n") if ($opt_d);
+	print("** $entry:\n");
 	open(MB, "$entry") or die "Cannot open '$entry'\n";
 	while (<MB>)
         {
@@ -112,9 +113,31 @@ sub check_mailbox()
                 # it will create 2006/03_01/03_01!!
                 # -> don't use -r
 		$src_host = $host_hacks{$src_host} if (defined($host_hacks{$src_host}));
-                my ($cmd) = "mkdir -p $dst_dir && scp $src_host:$src_dir/* $dst_dir";
+
+                # Compute remote md5sum
+                my ($cmd) = "mkdir -p $dst_dir && ssh $src_host 'md5sum -b $src_dir/*' >$dst_dir/md5";
                 print("$cmd\n");
-                system($cmd) unless ($opt_n);
+                unless ($opt_n)
+                {
+                    die "Error while running command\n" if (system($cmd));
+                }
+           
+                # Copy data. Works only with mkdir -p from previous call!!
+                $cmd = "scp $src_host:$src_dir/* $dst_dir";
+                print("$cmd\n");
+                unless ($opt_n)
+                {
+                    die "Error while running command\n" if (system($cmd));
+                }
+
+                # Compare md5sum output...
+                $cmd = "md5sum --check $dst_dir/md5";
+                print("$cmd\n");
+                unless ($opt_n)
+                {
+                    die "Error while running command\n" if (system($cmd));
+                }
+
                 ++$updates;
             }
         }
@@ -128,7 +151,7 @@ sub check_mailbox()
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("dhc:n") ||  $opt_h)
+if (!getopts("dhc:nt") ||  $opt_h)
 {
     usage();
     exit(0);
@@ -138,13 +161,16 @@ $config = parse_config_file($config_name, $opt_d);
 
 die "Has to run in $config->{root}\n" unless ($path eq $config->{root});
 
+# NOP includes: no index update
+$opt_t = 1 if ($opt_n);
+
 my ($updates) = check_mailbox();
 chdir($path);
 if ($updates)
 {
     my ($cmd) = "perl scripts/update_indices.pl";
     print("$cmd\n");
-    system($cmd) unless ($opt_n);
+    system($cmd) unless ($opt_t);
 }
 
 

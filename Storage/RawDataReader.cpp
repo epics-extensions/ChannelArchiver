@@ -34,6 +34,7 @@ const RawValue::Data *RawDataReader::find(const stdString &channel_name,
 {
     this->channel_name = channel_name;
     // Get tree
+    // TODO: getTree(... , start) for better ListIndex
     tree = index.getTree(channel_name, directory);
     if (! tree)
         return 0; // Channel not found
@@ -106,10 +107,17 @@ const RawValue::Data *RawDataReader::next()
 #           endif
             return next();   
         }
+        // TODO: For better ListIndex functionality,
+        //       ask index again with proper start time,
+        //       which might swich to to another sub-archive
+        // data= find(...., last known end time);
+        // maybe skip one sample < proper time.
+        // remove the re-open stuff.
+
         // else: RTree indicates end of data.
         // In the special case of a master index between updates,
         // the last data file might in fact have more samples
-        // then the RTree thinks there are, so try to read on.
+        // than the RTree thinks there are, so try to read on.
 #       ifdef DEBUG_DATAREADER
         stdString txt;
         printf("- RawDataReader reached end for '%s' in '%s': ",

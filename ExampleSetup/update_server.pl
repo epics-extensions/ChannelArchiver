@@ -38,7 +38,7 @@ BEGIN
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c $opt_n $opt_t);
+use vars qw($opt_d $opt_h $opt_c $opt_n $opt_t $opt_5);
 use Cwd;
 use File::Path;
 use Getopt::Std;
@@ -68,7 +68,7 @@ sub usage()
     print("\n");
     print("Reads $config_name, checks <mailbox> directory\n");
     print("for new data.\n");
-    print("Copied data meant for this server,\n");
+    print("Copies data meant for this server,\n");
     print("then performs an index update.\n");
     print("\n");
     print("Options:\n");
@@ -77,6 +77,7 @@ sub usage()
     print(" -d          : debug\n");
     print(" -n          : nop, don't run any commands, just print them\n");
     print(" -t          : only execute the file transfers, skip the index_update\n");
+    print(" -5          : no 'md5sum' checksum\n");
 }
 
 # Configuration info filled by parse_config_file
@@ -89,13 +90,19 @@ sub check_mailbox()
     return 0 unless exists($config->{mailbox});
     chdir($config->{mailbox});
     mkpath("done");
-    foreach $entry ( <*> )
+    # Loop over files in mailbox directory
+    my (@files) = <*>;
+    my ($num_files) = $#files;
+    my ($current) = 0;
+    foreach $entry ( @files )
     {
-        next if ($entry eq 'done');
-	print("** $entry:\n");
+        # Skip directories like 'done'
+        next unless (-f $entry);
+        ++$current;
+	print("** $entry ($current / $num_files):\n");
 	open(MB, "$entry") or die "Cannot open '$entry'\n";
 	while (<MB>)
-        {
+        {   # Each file should contain 'new ... ' or 'copy ...' info.
             chomp;
             print("$_\n") if ($opt_d);
             my ($info, $src, $dst) = split(/\s+/);
@@ -115,11 +122,21 @@ sub check_mailbox()
 		$src_host = $host_hacks{$src_host} if (defined($host_hacks{$src_host}));
 
                 # Compute remote md5sum
-                my ($cmd) = "mkdir -p $dst_dir && ssh $src_host 'md5sum -b $src_dir/*' >$dst_dir/md5";
+                my ($cmd);
+                $cmd = "mkdir -p $dst_dir";
                 print("$cmd\n");
                 unless ($opt_n)
                 {
                     die "Error while running command\n" if (system($cmd));
+                }
+                unless ($opt_5)
+                {
+                    $cmd = "ssh $src_host 'md5sum -b $src_dir/*' >$dst_dir/md5";
+                    print("$cmd\n");
+                    unless ($opt_n)
+                    {
+                        die "Error while running command\n" if (system($cmd));
+                    }
                 }
            
                 # Copy data. Works only with mkdir -p from previous call!!
@@ -131,11 +148,14 @@ sub check_mailbox()
                 }
 
                 # Compare md5sum output...
-                $cmd = "md5sum --check $dst_dir/md5";
-                print("$cmd\n");
-                unless ($opt_n)
+                unless ($opt_5)
                 {
-                    die "Error while running command\n" if (system($cmd));
+                    $cmd = "md5sum --check $dst_dir/md5";
+                    print("$cmd\n");
+                    unless ($opt_n)
+                    {
+                        die "Error while running command\n" if (system($cmd));
+                    }
                 }
 
                 ++$updates;
@@ -151,7 +171,7 @@ sub check_mailbox()
 # The main code ==============================================
 
 # Parse command-line options
-if (!getopts("dhc:nt") ||  $opt_h)
+if (!getopts("dhc:nt5") ||  $opt_h)
 {
     usage();
     exit(0);

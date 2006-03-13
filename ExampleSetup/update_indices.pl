@@ -213,9 +213,9 @@ sub create_indices()
     foreach $d_dir ( keys %{ $config->{daemon} } )
     {
 	# Skip daemons/systems that don't match the supplied reg.ex.
-	next if (length($opt_s) > 0 and not $d_dir =~ $opt_s);
+	my ($skip) = (length($opt_s) > 0 and not $d_dir =~ $opt_s);
 
-	print("Daemon '$d_dir'\n");
+	print("Daemon '$d_dir'" . ($skip ? " (skipped)\n" : "\n"));
         my ($dc) = $config->{daemon}{$d_dir};
 	my ($need_daemon_index) = 0;
 	# Daemon-level index
@@ -271,7 +271,7 @@ sub create_indices()
                             "Currently only 'binary' supported on engine level.\n";
                     }
                     # list or binary index for engine data
-                    make_engine_index($d_dir, $e_dir);
+                    make_engine_index($d_dir, $e_dir) unless ($skip);
                     if (exists($ec->{dataserver}{index}{key}))
                     {
                         add_serverconfig($ec->{dataserver}{index}{key},
@@ -283,7 +283,7 @@ sub create_indices()
 	}
 	# If daemon index is requested, build it after
 	# engine indices have been updated.
-	if ($need_daemon_index)
+	if ($need_daemon_index and not $skip)
 	{
 	    make_daemon_index($d_dir);
 	}

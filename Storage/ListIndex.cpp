@@ -2,6 +2,7 @@
 
 // Tools
 #include <MsgLogger.h>
+#include <Filename.h>
 // Storage
 #include "ListIndex.h"
 
@@ -22,9 +23,21 @@ void ListIndex::open(const stdString &filename, bool readonly)
     stdList<stdString>::const_iterator subs;
     if (config.parse(filename))
     {
+        stdString path;
+        Filename::getDirname(filename, path);
         for (subs  = config.subarchives.begin();
              subs != config.subarchives.end();    ++subs)
-            sub_archs.push_back(SubArchInfo(*subs));
+        {
+            // Check if we need to resolve sub-index name relative to filename
+            if (path.empty()  ||  Filename::containsFullPath(*subs))
+                sub_archs.push_back(SubArchInfo(*subs));
+            else
+            {
+                stdString subname;
+                Filename::build(path, *subs, subname);
+                sub_archs.push_back(SubArchInfo(subname));
+            }
+        }
     }
     else // Assume a single index, no list of indices.
         sub_archs.push_back(SubArchInfo(filename));

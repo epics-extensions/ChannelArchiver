@@ -5,3 +5,6 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 
 include $(TOP)/configure/RULES
 
+arch:
+	cp *.pm *.pl /arch/scripts
+

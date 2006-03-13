@@ -6,6 +6,7 @@
 // XML-RPC
 #include <xmlrpc.h>
 // EPICS Base
+#include <epicsVersion.h>
 #include <alarm.h>
 #include <epicsMath.h> // math.h + isinf + isnan
 // Tools
@@ -457,7 +458,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         AutoArrayPtr<AutoXmlRpcValue> values   (new AutoXmlRpcValue[name_count]);
         AutoArrayPtr<xmlrpc_int32>    xml_type (new xmlrpc_int32[name_count]);
         AutoArrayPtr<xmlrpc_int32>    xml_count(new xmlrpc_int32[name_count]);
-        AutoArrayPtr<size_t>          count    (new size_t[name_count]);
+        AutoArrayPtr<size_t>          ch_vals  (new size_t[name_count]);
         bool ok = sheet->find(names, &start);
         long i;
         // Per-channel meta-info.
@@ -466,7 +467,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
 #ifdef LOGFILE
             LOG_MSG("Handling '%s'\n", names[i].c_str());
 #endif
-            count[i] = 0;
+            ch_vals[i] = 0;
             values[i] = xmlrpc_build_value(env, "()");            
             if (env->fault_occurred)
                 return 0;
@@ -491,7 +492,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
             {
                 if (sheet->get(i))
                 {
-                    ++count[i];
+                    ++ch_vals[i];
                     encode_value(env,
                                  sheet->getType(i), sheet->getCount(i),
                                  sheet->getTime(), sheet->get(i),
@@ -518,7 +519,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
             // Add to result array
             xmlrpc_array_append_item(env, results, result);
 #ifdef LOGFILE
-            LOG_MSG("Ch %lu: %zu values\n", i, count[i]);
+            LOG_MSG("Ch %lu: %zu values\n", i, ch_vals[i]);
 #endif
         }
 #ifdef LOGFILE
@@ -559,6 +560,7 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
     char description[500];
     sprintf(description,
             "Channel Archiver Data Server V%d,\n"
+            "for " EPICS_VERSION_STRING ",\n"
             "built " __DATE__ ", " __TIME__ "\n"
             "from sources for version " ARCH_VERSION_TXT "\n"
             "Config: '%s'\n",

@@ -66,7 +66,21 @@ static void readEpicsTime(FILE *f, epicsTime &t)
     if (! (readLong(f, (uint32_t *)&stamp.secPastEpoch) &&
            readLong(f, (uint32_t *)&stamp.nsec)))
         throw GenericException(__FILE__, __LINE__, "read error");
+    if (stamp.nsec < 1000000000L)
+    {
+        t = stamp;
+        return;
+    }
+    // This should never happen but obviously does,
+    // and R3.14.8 will abort, so we have to catch it:
+    size_t nsec = (size_t) stamp.nsec;
+    stamp.nsec = 0;
     t = stamp;
+    stdString txt;
+    epicsTime2string(t, txt);
+    throw GenericException(__FILE__, __LINE__,
+        "RTree read invalid time stamp with %zu nsecs: %s",
+        nsec, txt.c_str());
 }
 
 RTree::Record::Record()

@@ -27,40 +27,41 @@ static void signal_handler(int sig)
 }
 
 void add_tree_to_master(const stdString &index_name,
+                        const stdString &sub_name,
                         const stdString &dirname,
                         const stdString &channel,
                         const RTree *subtree,
                         RTree *index)
 {
-    RTree::Datablock block;
-    RTree::Node node(subtree->getM(), true);
-    int idx;
-    bool ok;
-    stdString datafile, start, end;
-    // Xfer data blocks from the end on, going back to the start.
-    // Stop when finding a block that was already in the master index.
-    for (ok = subtree->getLastDatablock(node, idx, block);
-         ok && run;
-         ok = subtree->getPrevDatablock(node, idx, block))
+    try
     {
-        // Data files in master need a full path ....
-        if (Filename::containsFullPath(block.data_filename))
-            datafile = block.data_filename;
-        else // or are written relative to the dir. of the index file
-            Filename::build(dirname, block.data_filename, datafile);
-        if (verbose > 3)
-            printf("Inserting '%s' as '%s'\n",
-                   block.data_filename.c_str(), datafile.c_str());
-        if (verbose > 2)
-            printf("'%s' @ 0x%lX: %s - %s\n",
-                   datafile.c_str(),
-                   (unsigned long)block.data_offset,
-                   epicsTimeTxt(node.record[idx].start, start),
-                   epicsTimeTxt(node.record[idx].end, end));
-        // Note that there's no inner loop over the 'chained'
-        // blocks, we only handle the main blocks of each sub-tree.
-        try
+        RTree::Datablock block;
+        RTree::Node node(subtree->getM(), true);
+        int idx;
+        bool ok;
+        stdString datafile, start, end;
+        // Xfer data blocks from the end on, going back to the start.
+        // Stop when finding a block that was already in the master index.
+        for (ok = subtree->getLastDatablock(node, idx, block);
+             ok && run;
+             ok = subtree->getPrevDatablock(node, idx, block))
         {
+            // Data files in master need a full path ....
+            if (Filename::containsFullPath(block.data_filename))
+                datafile = block.data_filename;
+            else // or are written relative to the dir. of the index file
+                Filename::build(dirname, block.data_filename, datafile);
+            if (verbose > 3)
+                printf("Inserting '%s' as '%s'\n",
+                       block.data_filename.c_str(), datafile.c_str());
+            if (verbose > 2)
+                printf("'%s' @ 0x%lX: %s - %s\n",
+                       datafile.c_str(),
+                       (unsigned long)block.data_offset,
+                       epicsTimeTxt(node.record[idx].start, start),
+                       epicsTimeTxt(node.record[idx].end, end));
+            // Note that there's no inner loop over the 'chained'
+            // blocks, we only handle the main blocks of each sub-tree.
             if (!index->updateLastDatablock(node.record[idx].start,
                                             node.record[idx].end,
                                             block.data_offset, datafile))
@@ -70,13 +71,12 @@ void add_tree_to_master(const stdString &index_name,
                 return;
             }
         }
-        catch (GenericException &e)
-        {
-            fprintf(stderr,
-                    "Error inserting datablock for '%s' into '%s':\n%s\n",
-                    channel.c_str(), index_name.c_str(), e.what());
-            return;
-        }
+    }
+    catch (GenericException &e)
+    {
+        fprintf(stderr,
+                "Error adding channel '%s' from '%s' to '%s':\n%s\n",
+                channel.c_str(), sub_name.c_str(), index_name.c_str(), e.what());
     }
 }
 
@@ -134,7 +134,7 @@ void create_masterindex(int RTreeM,
                             channel.c_str(), index_name.c_str());
                     continue;
                 }
-                add_tree_to_master(index_name, sub_directory,
+                add_tree_to_master(index_name, sub_name, sub_directory,
                                    channel, subtree, tree);
             }
             subindex.close();

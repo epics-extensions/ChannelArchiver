@@ -47,31 +47,39 @@ const RawValue::Data *RawDataReader::find(const stdString &channel_name,
         throw GenericException(__FILE__, __LINE__, "Cannot alloc node for '%s'",
                                channel_name.c_str());
     }
-    // Get 1st data block
-    if (start)
-        valid_datablock = tree->searchDatablock(*start, *node,
-                                                rec_idx, datablock);
-    else
-        valid_datablock = tree->getFirstDatablock(*node, rec_idx, datablock);
-    if (! valid_datablock)  // No values for this time in index
-        return 0;
-#ifdef DEBUG_DATAREADER
+    try
     {
-        stdString s, e;
-        epicsTime2string(node->record[rec_idx].start, s);
-        epicsTime2string(node->record[rec_idx].end, e);
-        printf("- First Block: %s @ 0x%lX: %s - %s\n",
-               datablock.data_filename.c_str(),
-               (unsigned long)datablock.data_offset,
-               s.c_str(), e.c_str());
+        // Get 1st data block
+        if (start)
+            valid_datablock = tree->searchDatablock(*start, *node,
+                                                    rec_idx, datablock);
+        else
+            valid_datablock = tree->getFirstDatablock(*node, rec_idx, datablock);
+        if (! valid_datablock)  // No values for this time in index
+            return 0;
+    #ifdef DEBUG_DATAREADER
+        {
+            stdString s, e;
+            epicsTime2string(node->record[rec_idx].start, s);
+            epicsTime2string(node->record[rec_idx].end, e);
+            printf("- First Block: %s @ 0x%lX: %s - %s\n",
+                   datablock.data_filename.c_str(),
+                   (unsigned long)datablock.data_offset,
+                   s.c_str(), e.c_str());
+        }
+    #endif
+        // Get the buffer for that data block
+        getHeader(directory, datablock.data_filename, datablock.data_offset);
+        if (start)
+            return findSample(*start);
+        else
+            return findSample(node->record[rec_idx].start);
     }
-#endif
-    // Get the buffer for that data block
-    getHeader(directory, datablock.data_filename, datablock.data_offset);
-    if (start)
-        return findSample(*start);
-    else
-        return findSample(node->record[rec_idx].start);
+    catch (GenericException &e)
+    {  // Add channel name to the message
+        throw GenericException(__FILE__, __LINE__, "Channel '%s':\n%s",
+                               channel_name.c_str(), e.what());
+    }
 }
 
 // Read next sample, the one to which val_idx points.

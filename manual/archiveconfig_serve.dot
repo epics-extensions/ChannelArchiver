@@ -28,6 +28,9 @@ digraph ArchiveConfigServe
     update_server -> update_indices;
     update_indices -> copy [ lhead=cluster1 ];
 
+    archiveconfig -> update_server [ style=dotted ];
+    archiveconfig -> update_indices [ style=dotted ];
+
     subgraph cluster2
     {
         label="Web Server (CGI Host)";

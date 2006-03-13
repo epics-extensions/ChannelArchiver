@@ -457,6 +457,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
         AutoArrayPtr<AutoXmlRpcValue> values   (new AutoXmlRpcValue[name_count]);
         AutoArrayPtr<xmlrpc_int32>    xml_type (new xmlrpc_int32[name_count]);
         AutoArrayPtr<xmlrpc_int32>    xml_count(new xmlrpc_int32[name_count]);
+        AutoArrayPtr<size_t>          count    (new size_t[name_count]);
         bool ok = sheet->find(names, &start);
         long i;
         // Per-channel meta-info.
@@ -465,6 +466,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
 #ifdef LOGFILE
             LOG_MSG("Handling '%s'\n", names[i].c_str());
 #endif
+            count[i] = 0;
             values[i] = xmlrpc_build_value(env, "()");            
             if (env->fault_occurred)
                 return 0;
@@ -488,10 +490,13 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
             for (i=0; i<name_count; ++i)
             {
                 if (sheet->get(i))
+                {
+                    ++count[i];
                     encode_value(env,
                                  sheet->getType(i), sheet->getCount(i),
                                  sheet->getTime(), sheet->get(i),
                                  xml_type[i], xml_count[i], values[i]);
+                }
                 else
                     encode_value(env, 0, 0, sheet->getTime(), 0,
                                  xml_type[i], xml_count[i], values[i]);
@@ -512,6 +517,9 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
                                    "values", values[i].get()));    
             // Add to result array
             xmlrpc_array_append_item(env, results, result);
+#ifdef LOGFILE
+            LOG_MSG("Ch %lu: %zu values\n", i, count[i]);
+#endif
         }
 #ifdef LOGFILE
         LOG_MSG("%ld values total\n", num_vals);

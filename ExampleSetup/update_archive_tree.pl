@@ -78,6 +78,7 @@ sub create_engine_files($$)
            $config->{daemon}{$d_dir}{engine}{$e_dir}{port});
     select $old_fd;
     close OUT;
+    chmod(0755, $filename);
 
     # ASCIIConfig/convert_example.sh
     $filename = "$d_dir/$e_dir/ASCIIConfig/convert_example.sh";
@@ -107,6 +108,7 @@ sub create_engine_files($$)
     print("\n");
     select $old_fd;
     close OUT;
+    chmod(0755, $filename);
 }
 
 # Create scripts for daemon
@@ -199,6 +201,7 @@ sub create_daemon_files($)
                $config->{root}, $config->{root}, $d_dir, $daemonfile);
         select $old_fd;
         close OUT;
+        chmod(0755, $filename);
     }
     else
     {
@@ -222,6 +225,7 @@ sub create_daemon_files($)
 	       $config->{daemon}{$d_dir}{port});
         select $old_fd;
         close OUT;
+        chmod(0755, $filename);
     }
     else
     {
@@ -242,6 +246,7 @@ sub create_daemon_files($)
 	       $config->{daemon}{$d_dir}{port});
         select $old_fd;
         close OUT;
+        chmod(0755, $filename);
     }
     else
     {

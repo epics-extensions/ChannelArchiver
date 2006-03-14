@@ -54,6 +54,7 @@ sh cgitest.sh request.info             |
    grep -v "^Content-type:"            |
    grep -v "^built "                   |
    grep -v "^from sources for version" |
+   grep -v "^for EPICS 3.14"           |
    grep -v "^Config: "  >test/info
 compare info "archiver.info command"
 

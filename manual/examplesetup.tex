@@ -1,29 +1,41 @@
+% ======================================================================
 \chapter{Example Setup} \label{ch:examplesetup}
+% ======================================================================
 The following describes how the archiver toolset is used at the
-\INDEX{Spallation Neutron Source (SNS)}. Other sites might need to
-modify the tools in the ChannelArchiver/ExampleSetup directory for their
-need.
+\INDEX{Spallation Neutron Source (SNS)}, and the scripts in
+the ChannelArchiver/ExampleSetup directory assist with the
+setup as described in here.
+We distinguish between two types of computers:
+\begin{itemize}
+\item Sampling Computer:\\
+      A computer that runs ArchiveEngine instances.
+\item Serving Computer:\\
+      A computer that uses the ArchiveIndexTool to create
+      additional binary indices and runs the ArchiveDataServer.
+\end{itemize}
 
-For the SNS, every computer involved in archiving has a local directory ``/arch''.
-On some computers, for example ics-srv-archive1, that directory
-is used to run engines.
-On another computer, for example ics-srv-web2, that same directory
-contains data copied from archive1 so that the data server
-can serve it.
-There might be more than one 'sampling' computer as well as more
+\noindent There might be more than one 'sampling' computer as well as more
 than one 'serving' computer.
+A single machine might perform both functions, but in general
+they can be different computers on the network, and hence
+some tools are required to make the data collected on the
+"sampling" computer available on the "server".
+One could use NFS, but we have decided to use secure copy
+(scp) in order to decouple the computers as best as possible.
 
 We want to be able to move an engine from one computer to another,
 and still keep an overview.
 Therefore a file ``/arch/archiveconfig.xml'' describes the complete
 archive setup: Which engines run where, and how the data gets served.
-The next section descibes archiveconfig.xml in a bit more detail.
-Further sections describe the scripts from ChannelArchiver/ExampleSetup
-which should be accessible in ``/arch/scripts'' on all the involved computers.
+On some computers, for example ics-srv-archive1, further subdirectories of ``/arch''
+are used to run engines.
+On another computer, for example ics-srv-web2, subdirectories
+contain data copied from archive1 so that the data server
+can serve it.
 
+% ======================================================================
 \section{archiveconfig.xml}
-\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={archiveconfig.xml},label=lst:archiveconfig]{../ExampleSetup/archiveconfig.xml}
-
+% ======================================================================
 Each computer needs to have the same copy of /arch/archiveconfig.xml.
 You might generate and distribute that file manually
 or use a relational database.
@@ -32,25 +44,57 @@ remember the archiveconfig.csv file. There is a tool
 convert\_archiveconfig\_to\_xml.pl to convert that file
 into an archiveconfig.xml skeleton.
 
-\clearpage
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={archiveconfig.xml},label=lst:archiveconfig]{../ExampleSetup/archiveconfig.xml}
 
-The archiveconfig.xml file describes the complete archive layout,
+\noindent The archiveconfig.xml file describes the complete archive layout,
 using the following elements:
 \begin{itemize}
 \item root: Names the root directory, typically '/arch'.
       This has to be the same directory name on all computers,
       since they all use the same archiveconfig.xml.
+\item serverconfig: Location of the server configuration to be
+      created. See section \ref{sec:updateServer}.
 \item mailbox: Used to communicate from the ArchiveDaemons to
-      the data server. Has to be an existing directory where
-      all involved computers can read and write, e.g.
-      shared via NFS.
+      the data server.
 \item daemon: Configures an archive daemon and its engines,
-      described in section \ref{sec:daemon}.
+      described in section \ref{sec:daemon},
+      as well as how that data should be indexed and served,
+      see sections \ref{sec:updateServer} and \ref{sec:updateIndices}.
 \end{itemize}
 
-update\_archive\_tree.pl
+% ======================================================================
+\section{"Sampling" Computer}
+% ======================================================================
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=0.9\textwidth}{archiveconfig_sample}
+\end{center}
+\caption{\label{fig:acSample}Tools used on a sampling computer, refer to text.}
+\end{figure}
 
-\section{ArchiveDaemon} \label{sec:daemon}
+\noindent Instead of running just one archive engine, it is often preferred to
+run several, and even restart them weekly. This way, people working on different
+subsystems can each use configure engines for only their systems without interfering
+with each other.
+The periodic restarts, creating different sub-archives for example each week,
+limit the possibility for data loss in case an engine crashes or creates
+corrupt archives.
+
+For each subsystem (examples: Vacuum, Cooling, ...), a "Daemon" program
+manages one or more engines.
+Initially and after every change to the configuration,
+the update\_archive\_tree script is used to create the necessary infrastructure.
+
+% ======================================================================
+\subsection{update\_archive\_tree.pl}
+% ======================================================================
+This script will read archiveconfig.xml and create all the subdirectories,
+daemon config files, and skeleton engine configurations.
+Run it with "-h" to see available options.
+
+% ======================================================================
+\subsection{ArchiveDaemon} \label{sec:daemon}
+% ======================================================================
 ArchiveDaemon.dtd
 ArchiveDaemon.pl
 ArchiveDaemon.xml
@@ -611,5 +655,17 @@ into a monthly 2004/02\_xx, we need to
       them.
 \end{enumerate}
 
-\noindent Again there is no tool available to automate the
-indexconfig.xml update.
+% ======================================================================
+\section{"Serving" Computer}
+% ======================================================================
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=0.9\textwidth}{archiveconfig_serve}
+\end{center}
+\caption{\label{fig:acServe}Tools used on a serving computer, refer to text.}
+\end{figure}
+
+
+\subsection{update\_server.pl} \label{sec:updateServer}.
+
+\subsection{update\_indices.pl} \label{sec:updateIndices}.

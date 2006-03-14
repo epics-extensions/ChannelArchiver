@@ -930,11 +930,12 @@ sub start_engine($$)
 	# Create symlink to the new index ('2005/03_21/index')
 	# from 'current index' in the engine directory.
 	my ($current) = readlink("$engine/current_index");
-        # if link exists, remove it
-	if (defined($current)) 
+	if (defined($current) && ($current ne $index))
 	{
            # Inform index mechanism about the old 'current' sub-archive
-           # that's now complete.
+           # that's now complete, but only if that's really an older one.
+           # In case the new 'current_index' matches the one found,
+           # we should not yet copy/update anything.
            if (exists($config->{engine}{$engine}{dataserver}{host}))
            {
                my ($datadir) = dirname($current);
@@ -967,6 +968,7 @@ sub start_engine($$)
                    print"No <mailbox> for $info\n";
                }
            }
+           # if link exists, remove it
 	   unlink("$engine/current_index");
         }
         symlink("$index", "$engine/current_index");

@@ -456,23 +456,31 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
                 me->name.c_str(), ca_message(args.status));
         return;
     }   
-    epicsTime now = epicsTime::getCurrent();
-    epicsTime stamp = RawValue::getTime(value);
-    Guard guard(me->mutex);
-    if (me->mechanism && me->isGoodTimestamp(stamp, now))
+    try
     {
-        if (me->isDisabled(guard))
+        epicsTime now = epicsTime::getCurrent();
+        epicsTime stamp = RawValue::getTime(value);
+        Guard guard(me->mutex);
+        if (me->mechanism && me->isGoodTimestamp(stamp, now))
         {
-            if (me->pending_value)
-            {   // park the value for write ASAP after being re-enabled
-                RawValue::copy(me->dbr_time_type, me->nelements,
-                               me->pending_value, value);
-                me->pending_value_set = true;
+            if (me->isDisabled(guard))
+            {
+                if (me->pending_value)
+                {   // park the value for write ASAP after being re-enabled
+                    RawValue::copy(me->dbr_time_type, me->nelements,
+                                   me->pending_value, value);
+                    me->pending_value_set = true;
+                }
             }
+            else
+                me->mechanism->handleValue(guard, now, stamp, value);
+            me->handleDisabling(guard, value);
         }
-        else
-            me->mechanism->handleValue(guard, now, stamp, value);
-        me->handleDisabling(guard, value);
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("ArchiveChannel::value_callback(%s) exception:\n%s\n", 
+                me->name.c_str(), e.what());
     }
 }
 
@@ -518,31 +526,38 @@ void ArchiveChannel::handleDisabling(Guard &guard, const RawValue::Data *value)
     bool criteria = RawValue::isAboveZero(dbr_time_type, value);
     if (criteria == currently_disabling)
         return; // No change
-    // Change to/from disabling.
-    // Assert lock order: Engine, then channel
-    guard.unlock();
-    Guard engine_guard(theEngine->mutex);    
-    if (criteria)
-    {   // wasn't disabling -> disabling
-        currently_disabling = true;
+    try
+    {
+        // Change to/from disabling.
+        // Assert lock order: Engine, then channel
+        guard.unlock();
+        Guard engine_guard(theEngine->mutex);    
+        guard.lock();
         stdList<GroupInfo *>::iterator g;
-        for (g=groups.begin(); g!=groups.end(); ++g)
-        {
-            if (groups_to_disable.test((*g)->getID()))
-                (*g)->disable(engine_guard, this, RawValue::getTime(value));
+        if (criteria)
+        {   // wasn't disabling -> disabling
+            currently_disabling = true;
+            for (g=groups.begin(); g!=groups.end(); ++g)
+            {
+                if (groups_to_disable.test((*g)->getID()))
+                    (*g)->disable(engine_guard, this, RawValue::getTime(value));
+            }
+        }
+        else
+        {   // was disabling -> enabling
+            for (g=groups.begin(); g!=groups.end(); ++g)
+            {
+                if (groups_to_disable.test((*g)->getID()))
+                    (*g)->enable(engine_guard, this, RawValue::getTime(value));
+            }
+            currently_disabling = false;
         }
     }
-    else
-    {   // was disabling -> enabling
-        stdList<GroupInfo *>::iterator g;
-        for (g=groups.begin(); g!=groups.end(); ++g)
-        {
-            if (groups_to_disable.test((*g)->getID()))
-                (*g)->enable(engine_guard, this, RawValue::getTime(value));
-        }
-        currently_disabling = false;
+    catch (GenericException &e)
+    {
+        LOG_MSG("handleDisabling(%s) exception:\n%s\n",
+                name.c_str(), e.what());
     }
-    guard.lock();
 }
 
 // Event (value with special status/severity):
@@ -561,19 +576,26 @@ void ArchiveChannel::addEvent(Guard &guard,
 #endif
         return;
     }
-    RawValue::Data *value = buffer.getNextElement();
-    memset(value, 0, RawValue::getSize(dbr_time_type, nelements));
-    RawValue::setStatus(value, status, severity);
-    if (event_time < last_stamp_in_archive)
-        // adjust time, event has to be added to archive
-        RawValue::setTime(value, last_stamp_in_archive);
-    else
+    try
     {
-        last_stamp_in_archive = event_time;
-        RawValue::setTime(value, event_time);
+        RawValue::Data *value = buffer.getNextElement();
+        memset(value, 0, RawValue::getSize(dbr_time_type, nelements));
+        RawValue::setStatus(value, status, severity);
+        if (event_time < last_stamp_in_archive)
+            // adjust time, event has to be added to archive
+            RawValue::setTime(value, last_stamp_in_archive);
+        else
+        {
+            last_stamp_in_archive = event_time;
+            RawValue::setTime(value, event_time);
+        }
+        if (!isValidTime(RawValue::getTime(value)))
+            LOG_MSG("'%s': Added event w/ bad time stamp!\n", name.c_str());
     }
-    if (!isValidTime(RawValue::getTime(value)))
-        LOG_MSG("'%s': Added event w/ bad time stamp!\n", name.c_str());
+    catch (GenericException &e)
+    {
+         LOG_MSG("addEvent('%s') exception:\n%s\n", name.c_str(), e.what());
+    }
 }
 
 bool ArchiveChannel::isGoodTimestamp(const epicsTime &stamp,

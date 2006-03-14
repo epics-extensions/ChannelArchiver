@@ -208,6 +208,10 @@ bool RawValue::parseStatus(const stdString &text, short &stat, short &sevr)
 
 void RawValue::getTime(const Data *value, stdString &time)
 {
+    if (value->stamp.nsec >= 1000000000L)
+        throw  GenericException(__FILE__, __LINE__,
+        "invalid time stamp with %zu secs, %zu nsecs.",
+        value->stamp.secPastEpoch, value->stamp.nsec);
     epicsTime et(value->stamp);
     epicsTime2string(et, time);
 }
@@ -581,6 +585,10 @@ void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
     SHORTFromDisk(value->status);
     SHORTFromDisk(value->severity);
     epicsTimeStampFromDisk(value->stamp);
+    if (value->stamp.nsec >= 1000000000L)
+        throw  GenericException(__FILE__, __LINE__,
+        "invalid time stamp with %zu secs, %zu nsecs.",
+        value->stamp.secPastEpoch, value->stamp.nsec);
 
     // nasty: cannot use inheritance in lightweight RawValue,
     // so we have to switch on the type here:
@@ -625,6 +633,11 @@ void RawValue::write(DbrType type, DbrCount count, size_t size,
     memcpy(buffer, value, size);
     SHORTToDisk(buffer->status);
     SHORTToDisk(buffer->severity);
+
+    if (buffer->stamp.nsec >= 1000000000L)
+        throw  GenericException(__FILE__, __LINE__,
+        "invalid time stamp with %zu secs, %zu nsecs.",
+        buffer->stamp.secPastEpoch, buffer->stamp.nsec);
     epicsTimeStampToDisk(buffer->stamp);
 
     switch (type)

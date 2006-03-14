@@ -18,7 +18,8 @@
 class Throttle
 {
 public:
-    Throttle(double seconds_between_messages = 10.0)
+    /// Default: Limit to once per hour
+    Throttle(double seconds_between_messages = 60.0*60.0)
       : seconds(seconds_between_messages)
     {}
 

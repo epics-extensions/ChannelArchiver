@@ -2,7 +2,7 @@
 \chapter{Example Setup} \label{ch:examplesetup}
 % ======================================================================
 The following describes how the archiver toolset is used at the
-\INDEX{Spallation Neutron Source (SNS)}, and the scripts in
+\INDEX{Spallation Neutron Source (SNS)}, and how the scripts in
 the ChannelArchiver/ExampleSetup directory assist with the
 setup as described in here.
 We distinguish between two types of computers:
@@ -15,34 +15,33 @@ We distinguish between two types of computers:
 \end{itemize}
 
 \noindent There might be more than one 'sampling' computer as well as more
-than one 'serving' computer.
-A single machine might perform both functions, but in general
-they can be different computers on the network, and hence
-some tools are required to make the data collected on the
-"sampling" computer available on the "server".
-One could use NFS, but we have decided to use secure copy
-(scp) in order to decouple the computers as best as possible.
+than one 'serving' computer.  A single machine might perform both
+functions, but in general they can be different computers on the
+network, and hence some tools are required to make the data collected
+on the "sampling" computer available on the "server".  One could use
+NFS, but we have decided to use secure copy (scp) in order to decouple
+the computers as best as possible.
 
-We want to be able to move an engine from one computer to another,
-and still keep an overview.
-Therefore a file ``/arch/archiveconfig.xml'' describes the complete
-archive setup: Which engines run where, and how the data gets served.
-On some computers, for example ics-srv-archive1, further subdirectories of ``/arch''
-are used to run engines.
-On another computer, for example ics-srv-web2, subdirectories
-contain data copied from archive1 so that the data server
-can serve it.
+We want to be able to move an engine from one computer to another, and
+still keep an overview.  Therefore a file ``/arch/archiveconfig.xml''
+describes the complete archive setup: Which engines run where, and how
+the data gets served.  On some computers, for example
+ics-srv-archive1, further subdirectories of ``/arch'' are used to run
+engines.  On another computer, for example ics-srv-web2,
+subdirectories contain data copied from archive1 so that the data
+server can serve it.
 
 % ======================================================================
-\section{archiveconfig.xml}
+\section{Setup, archiveconfig.xml}
 % ======================================================================
-Each computer needs to have the same copy of /arch/archiveconfig.xml.
-You might generate and distribute that file manually
-or use a relational database.
-People who have used previous releases of the archive toolset might
-remember the archiveconfig.csv file. There is a tool
-convert\_archiveconfig\_to\_xml.pl to convert that file
-into an archiveconfig.xml skeleton.
+Each computer needs to have the same copy of /arch/archiveconfig.xml,
+and the scripts from the ExampleSetup directory of the archiver
+sources need to be copied into /arch/scripts.
+You might generate and distribute archiveconfig.xml manually or use a
+relational database.  People who have used previous releases of the
+archive toolset might remember the archiveconfig.csv file. There is a
+tool scripts/convert\_archiveconfig\_to\_xml.pl to convert that file into an
+archiveconfig.xml skeleton.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={archiveconfig.xml},label=lst:archiveconfig]{../ExampleSetup/archiveconfig.xml}
 
@@ -63,7 +62,7 @@ using the following elements:
 \end{itemize}
 
 % ======================================================================
-\section{"Sampling" Computer}
+\section{Sampling Computer}
 % ======================================================================
 \begin{figure}[htb]
 \begin{center}
@@ -73,35 +72,86 @@ using the following elements:
 \end{figure}
 
 \noindent Instead of running just one archive engine, it is often preferred to
-run several, and even restart them weekly. This way, people working on different
-subsystems can each use configure engines for only their systems without interfering
-with each other.
-The periodic restarts, creating different sub-archives for example each week,
-limit the possibility for data loss in case an engine crashes or creates
-corrupt archives.
+run several. This way, there can be separate engines for separtate
+subsystems, possibly maintained by different people.  In addition,
+periodic restarts, for example once a week, create a separate
+\INDEX{Sub-Archive} with each restart, thereby limiting the
+possibility for data loss in case an engine crashes or creates corrupt archives.
 
-For each subsystem (examples: Vacuum, Cooling, ...), a "Daemon" program
-manages one or more engines.
-Initially and after every change to the configuration,
-the update\_archive\_tree script is used to create the necessary infrastructure.
+For each subsystem, an ``ArchiveDaemon'' program manages one or more
+engines, monitors their condition, and performs the periodic restarts.
+For example, we might run one `daemon' for the Integrated Control
+System (ICS) and one for the channels related to Radio Frequency (RF).
+The ICS daemon should maintain one ArchiveEngine for the timing system
+(tim) and one for the machine protection system (mps), while the RF
+daemon has one engine for the low-level and one for the high power RF
+(llrf, hprf).
+
+This separation is somewhat arbitrary. We could have made ``llrf'' and
+``hprf'' channel groups under one and the same engine. In fact all the
+above could reside within one engine, and the result would probably be
+less CPU load compared to the setup with multiple engines.  It is,
+however, advisable to spread the channels over different daemons and
+engines whenever different people deal with the IOCs that host the
+channels, so that the engineers can independently configure their
+archiving.  In addition, you want to keep the amount of data collected
+by each engine within certain bounds, for example: not more than one
+CD ROM per month, one DVD per year, or whatever you plan to do for
+data maintenance. You can of course also follow the approach that most
+sites use in reality: Wait until all disks are full, then panic.
+In which case, another reason is data safety: You can reduce the
+damage caused by crashes of one engine to a certain number of channels
+and the data for the restart period, for example one week.
 
 % ======================================================================
 \subsection{update\_archive\_tree.pl}
 % ======================================================================
-This script will read archiveconfig.xml and create all the subdirectories,
-daemon config files, and skeleton engine configurations.
-Run it with "-h" to see available options.
+Initially and after every change to the configuration,
+the update\_archive\_tree script is used to create the necessary infrastructure.
+This script reads archiveconfig.xml and create all the subdirectories,
+daemon config files, and skeleton engine configurations which are
+meant to run on the local computer.
+Run it with ``-h'' to see available options.
+
+\NOTE In order to determine what daemons should run on the
+\INDEX{local host},
+the \INDEX{host name} in the \INDEX{``run'' tags} is used as a
+regular expression for the host name.
+So when specifying that a certain daemon should run on ``archive1'':
+\begin{lstlisting}[keywordstyle=\sffamily]
+ <daemon ...
+    <run>archive1</run>
+    ...
+\end{lstlisting}
+... that daemon will run on computers called ``ics-srv-archive1'' as well
+as ``archive1.sns.ornl.gov'' etc.
+The same applies to the \INDEX{``host'' tags} which specify where a
+data server should run.
+
+For the example from listing \ref{lst:archiveconfig}, we would get
+these subdirectories:
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+  RF
+  RF/llrf
+  RF/llrf/ASCIIConfig
+\end{lstlisting}
+\noindent Each directory contains configuration files and scripts
+explained in the following. Each engine directory also contains an
+``ASCIIConfig'' subdirectory with a script ``convert\_example.sh''
+that you might use to create the XML configuration file for the
+ArchiveEngine from ASCII configuration files, though the engineer
+responsible for the subsystem is free to use any method of his/her
+choice as long as the result is a configuration file for the engine
+that follows the naming convention
+\begin{center}
+{\it Daemon-Name} / {\it Engine-Name} / {\it Engine-Name}-group.xml~,\\
+\end{center}
+If you want to use the ASCIIConfig directory, check section
+\ref{sec:ASCIIConfig} for the format of the ASCII configuration files.
 
 % ======================================================================
 \subsection{ArchiveDaemon} \label{sec:daemon}
 % ======================================================================
-ArchiveDaemon.dtd
-ArchiveDaemon.pl
-ArchiveDaemon.xml
-
-start\_daemons.pl
-stop\_daemons.pl
-
 \begin{figure}[htb]
 \begin{center}
 \InsertImage{width=0.8\textwidth}{daemon}
@@ -116,9 +166,7 @@ meant to run on a host in the ArchiveDaemon's configuration file, one
 can check the status of all these engines on a single web page as
 shown in Fig.~\ref{fig:daemon}.
 
-Chapter \ref{ch:examplesetup}, ``Example Setup'', on page
-\pageref{ch:examplesetup}, gives more details on the suggested use of
-the ArchiveDaemon. The daemon will attempt to start any ArchiveEngine
+The daemon will attempt to start any ArchiveEngine
 that it does not find running. In addition, the daemon can
 periodically stop and restart ArchiveEngines in order to create
 e.g.\ daily sub-archives.  Furthermore, it adds information about
@@ -127,178 +175,163 @@ so that the index mechanism can create the necessary indices
 and update the data server configuration.
 
 Before using the ArchiveDaemon, one should be familiar
-with the configuration of the ArchiveEngine (sec.\ \ref{sec:engine}),
-and how to start and stop it. Furthermore, one needs to be familiar
-with the ArchiveIndexTool (sec.\ \ref{sec:indextool}).
+with the configuration of a single ArchiveEngine (sec.\ \ref{sec:engine}),
+and how to start and stop it manually.
 
-\subsection{Configuration}
-The ArchiveDaemon expects to find a configuration file called
-``ArchiveDaemon.xml'' in the directory where it is started.  That
-configuration file, an example of which can be found in listing
-\ref{lst:daemonconfigex}, needs to follow the DTD from listing
+\subsubsection{Configuration}
+You will typically \emph{not} directly configure an archive daemon,
+but instead specify its configuration in the ``archiveconfig.xml''
+file. The ``update\_archive\_tree.pl'' script will then generate
+those daemon configurations needed for the local computer, and ignore
+those meant to run on other machines.
+
+Assume the configuration shown in listing \ref{lst:archiveconfig},
+which calls for an ``RF'' daemon to run a ``llrf'' engine on the host
+``archive1''. So on ``archive1'', a subdirectory ``/arch/RF'' will be
+created with the daemon configuration shown in listing 
+\ref{lst:daemonconfigex}, which complies with the DTD from listing
 \ref{lst:daemonconfigdtd}.
-
-In many cases you might not configure the daemon yourself,
-but instead use the mechanism described in chapter \ref{ch:examplesetup}.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Archive Daemon Configuration},label=lst:daemonconfigex]{../ExampleSetup/ArchiveDaemon.xml}
 
-\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for
-    the Archive Daemon Configuration},label=lst:daemonconfigdtd]{../ExampleSetup/ArchiveDaemon.dtd}
+\noindent The following is an explanation of the daemon-related tags in the
+``archiveconfig.xml'' file. Compare with the created daemon
+configuration to see how they get translated.
 
-\noindent The configuration lists all the
-ArchiveEngines that the daemon should manage on the local
-computer. One ``engine'' element per ArchiveEngine specifies the
-configuration of each engines. Specifically, the following tags are
-allowed:
-
-\subsubsection{desc}
-This mandatory element is used for the ``-description'' option of the
-Archive Engine, see section \ref{sec:enginedesc}.
-
-\subsubsection{port}
-This mandatory element determines the port number of the engine's HTTP
-server, see section \ref{sec:engineport}.
-
-\NOTE The ArchiveDaemon itself requires a TCP port number for its HTTP
-server. The port numbers used by the ArchiveDaemon and all the Archive
-Engines need to be different. You cannot use the same port number more
-than once per computer.
-
-\subsubsection{config}
-This mandatory element must contain the path to the configuration
-file of the respective ArchiveEngine, see section \ref{sec:engineconfig}.
-This can be either the full path to the engine configuration file or a path
-beneath the current working directory in which the ArchiveDaemon is running.
-
-\subsubsection{daily}
-This optional element configures the ArchiveDaemon to restart the
-ArchiveEngine periodically. The element must contain a time in the
-format ``HH:MM'' with 24-hour hours HH and minutes MM. One example
-would be ``02:00'' for a restart at 2~am each morning.
-
-\subsubsection{weekly}
-Weekly is similar to daily, but using an element that contains the day
-of the week (Mo, Tu,  We, Th, Fr, Sa, Su) in addition to the time
-on that day in 24-hour format, e.g.\ ``We 08:00''. In this example,
-the daemon will attempt a restart every Wednesday, 8'o clock in the morning.
-
-\subsubsection{timed}
-In this case, the element needs to contain a start/duration time pair
-in the format ``HH:MM/HH:MM''. The first, pre-slash 24-hour time stamp
-indicates the start time, and the second 24-hour time, trailing the
-slash, specifies the runtime. The engine will be launched at the
-requested start time and run for the duration of the runtime. As an
-example, ``08:00/01:00'' requests that the daemon starts the engine at
-08:00 and stops it after one hour, probably around 09:00.
-
-\subsubsection{hourly}
-This optional element configures the ArchiveDaemon to restart the
-ArchiveEngine periodically. The element must contain a number
-specifying hours: A value of 2.0 will cause a restart every 2
-hours. The hourly restart is quite inefficient and primarily meant for testing.
-
-\subsection{Starting and Running}
-The ArchiveDaemon is a perl script that is typically started like this:
-
-\begin{lstlisting}[keywordstyle=\sffamily]
-$ cd whereever_you_placed_ArchiveDaemon.xml
-$ perl ArchiveDaemon.pl -f ArchiveDaemon.xml
-Read ArchiveDaemon.xml, will disassociate from terminal
-and from now on only respond via
-          http://localhost:4610
-You can also monitor the log file:
-          ArchiveDaemon.log
-\end{lstlisting}
-
-\noindent One can use any web browser to connect to the daemon's HTTP server
-under the URL shown in the above status message. Fig.~\ref{fig:daemon}
-shows one example. The ArchiveDaemon offers a command line option for
-selecting a specific TCP port.
-Whenever running more than one ArchiveDaemon per computer, they
-need to be started with different TCP port numbers. Furthermore, each
-ArchiveEngine needs a different TCP port number.
-\begin{lstlisting}[keywordstyle=\sffamily]
-USAGE: ArchiveDaemon [options] 
-Options:
-  -p <port>    : TCP port number for HTTPD
-  -f <file>    : config. file
-  -i <URL>     : path or URL to indexconfig.dtd
-  -u <minutes> : Update period for master index
-  -d           : debug mode (stay in foreground etc.)
-\end{lstlisting}
-
-\noindent The first few lines of the ArchiveDaemon.pl script contain
-numerous configuration variables. They allow fine tuning of e.g.\ how
-often the daemon queries the Archive Engines and other customization
-options. In there you can also change many of the file names from
-their defaults up to the point where none of the following
-applies. With the original settings, the ArchiveDaemon will create or
-use the following files in the directory in which it was started:
 \begin{itemize}
-\item ArchiveDaemon.log\\
-  The log file of the ArchiveDaemon.
-\item indexconfig.xml\\
-  This is a configuration file for the ArchiveIndexTool.  If the file
-  already exists, the ArchiveDaemon will add every new sub-archive
-  that it creates to the file. If the file does not exist, one will be
-  created the next time a new sub-archive is started.
+\item run\\
+      Both the daemon and each engine have this element, which
+      specifies the host name where a daemon and engines should run.
+      The names are regular expressions.
+      In principle, this setupone would think about the following setup:
+\begin{lstlisting}[keywordstyle=\sffamily]
+ <daemon directory='RF'>
+    <run>archive[12]</run>
+    ...
+    <engine directory='llrf'> 
+       <run>archive1</run>
+       ...
+    <engine directory='hprf'> 
+       <run>archive2</run>
+\end{lstlisting}
+      ... where RF/llrf runs on ``archive1'' and RF/hprf runs on
+      ``archive2'', and consequently both of those machine run an ``RF'' daemon.
+      This has not been tested. Typically, a daemon and its engines
+      are all on the same computer.
 
-  Note that the ArchiveDaemon will \emph{not} search for sub archives
-  or index files and automatically add them to indexconfig.xml. It
-  will only add newly created sub-archives. If you already have
-  sub-archives that need to be included in the master index, your
-  initial indexconfig.xml needs to list them.
-  Also note that the ArchiveDaemon reads this file on startup. In
-  order to \emph{remove} indices from indexconfig.xml, it is therefore
-  required to stop the running daemon, since it will otherwise
-  overwrite indexconfig.xml with its in-memory version.
-\item indexupdate.xml\\
-  This file is similar to indexconfig.xml, except that the index files
-  for sub-archives that are older than the master index file are
-  commented out, assuming that the master index already contains all
-  the information from those older sub-archives.
-  Running ArchiveIndexTool with this indexupdate file is naturally faster
-  than using indexconfig.xml. The ArchiveDaemon uses the full index
-  configuration from indexconfig.xml once after startup, and then
-  switches to indexupdate.xml.
-\item ArchiveIndexTool.log\\
-  The log file of the last run of the ArchiveIndexTool.
-\item master\_index\\
-  The ArchiveIndexTool is run with indexconfig.xml to update
-  this master index file.
+      The generated daemon config file only includes the configuration
+      needed for the local computer.  So instead of duplicating
+      $<$run$>$localhost$<$/run$>$, it is omitted in the daemon config file.
+
+\item desc\\
+      A short description.
+\item port\\
+      Both the daemon and each engine have this mandatory element, which
+      determines the port number of the HTTP server. Section
+      \ref{sec:daemonserver} describes the HTTP server of the daemon, while
+      section \ref{sec:engineport} explains the engine HTTPD.
+
+      \NOTE The port numbers used by the ArchiveDaemons and all the Archive
+      Engines need to be different. You cannot use the same port number more
+      than once per computer.
+\item mailbox\\
+      Directory that the daemon uses to communicate with the data server.
+\item engine\\
+      Specifies the sub-directory for each engine under a daemon.
+\item config\\
+      This mandatory element of each engine entry contains the path to the
+      configuration file of the respective ArchiveEngine, see section
+      \ref{sec:engineconfig}.
+\item restart\\
+      When provided, it specifies when the daemon should re-start an engine.
+      \begin{itemize}
+      \item daily\\
+         The element must contain a time in the
+	 format ``HH:MM'' with 24-hour hours HH and minutes MM. One example
+	 would be ``02:00'' for a restart at 2~am each morning.
+      \item weekly\\
+	 Weekly is similar to daily, but using an element that contains the day
+	 of the week (Mo, Tu,  We, Th, Fr, Sa, Su) in addition to the time
+	 on that day in 24-hour format, e.g.\ ``We 08:00''. In this example,
+	 the daemon will attempt a restart every Wednesday,
+         8'o clock in the morning.
+      \item timed\\
+	 In this case, the element needs to contain a start/duration time pair
+	 in the format ``HH:MM/HH:MM''. The first, pre-slash 24-hour time stamp
+	 indicates the start time, and the second 24-hour time, trailing the
+	 slash, specifies the runtime. The engine will be launched at the
+	 requested start time and run for the duration of the runtime. As an
+	 example, ``08:00/01:00'' requests that the daemon starts the engine at
+	 08:00 and stops it after one hour, probably around 09:00.
+      \item hourly\\
+         The element must contain a number specifying hours: A value
+	 of 2.0 will cause a restart every 2 hours. The hourly restart
+	 is quite inefficient and primarily meant for testing.
+      \end{itemize}
+      \NOTE It is advisable to stagger the restart times of your engines
+      such that they don't all restart at the same day and time in order to
+      reduce the CPU and network load for the ChannelAccess re-connects.
+\item dataserver\\
+      Specifies the name of the data server host.
 \end{itemize}
 
-\noindent The ArchiveDaemon configuration file must list the full path
-names to the configuration files for the ArchiveEngines or use a path
-that is below the current working directory of the ArchiveDaemon.
-Within each of those directories, an ArchiveEngine is run and the
-following files will be created:
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for the Archive Daemon Configuration},label=lst:daemonconfigdtd]{../ExampleSetup/ArchiveDaemon.dtd}
+
+\subsubsection{Starting, running, stopping daemons and engines}
+The following scripts, some created by ``update\_archive\_tree.pl'' in
+each daemon and engine subdirectory, are used to control the daemons and engines:
+\begin{itemize}
+\item scripts/start\_daemons.pl\\
+      Starts all daemons meant to run on the local computer.
+\item scripts/stop\_daemons.pl
+      Stops all daemons. See ``-h'' for available options, which
+      includes a method to also stop all engines.
+\item daemon-dir/run-daemon.sh\\
+      Starts the daemon for this subsystem.
+      The daemon will then start all engines which are not already
+      found running.
+\item daemon-dir/stop-daemon.sh\\
+      Stops the daemon for this subsystem.
+
+      \NOTE This does not stop the engines, only the daemon.
+      See below for more on engine operation.
+\item daemon-dir/view-daemon.sh\\
+      Script to run 'lynx' with the URL of the daemon HTTPD.
+\item daemon-dir/engine-dir/stop\_engine.sh \\
+      Stop the engine.
+
+      \NOTE There is no script to start an individual engine, because the
+      daemon will eventually start any engine that's not running.
+      So stopping an engine is just another means of triggering a
+      restart.
+\end{itemize}
+
+\noindent Each engine subdirectory contains
 \begin{itemize}
 \item ArchiveEngine.log\\
-  A log file for the ArchiveEngine running in that directory
+  A log file for the ArchiveEngine running in that directory.
 \item archive\_active.lck\\
-  Lock file of the ArchiveEngine
+  Lock file of the ArchiveEngine, exists while an engine is running.
 \item YYYY/MM\_DD/index \\
   A subdirectory for index and data files of the sub-archive.  If the
   ArchiveDaemon is configured to perform daily restarts, the format
   uses the year, month and day to build the path name.
+\item current\_index \\
+  A soft-link to the currently used index.
 \end{itemize}
 
-\subsection{Daemon's Web Pages}
-The main web page of the ArchiveDaemon's HTTPD looks similar to
-Fig.~\ref{fig:daemon}. You can use any web browser to look at the
-daemon's web pages. The URL follows the format
+\subsubsection{Daemon's Web Pages} \label{sec:daemonserver}
+You can use any web browser to look at the daemon's web pages,
+which look simiar to Fig.~\ref{fig:daemon}.
+The URL follows the format
 \begin{lstlisting}[keywordstyle=\sffamily]
     http://host:port
 \end{lstlisting}
 \noindent where ``host'' is the name of the computer where the
-ArchiveDaemon is running. More often than not you will use
-``localhost''. ``Port'' is the TCP port that was specified as a
-command-line option to the ArchiveDaemon program, otherwise it
-defaults to 4610. So the default URL will be http://localhost:4610.
+ArchiveDaemon is running, and ``Port'' is the TCP port that was
+specifiedin the config file.
 
-The main page lists all the archive engines that this daemon controls
+The main daemon web page lists all the archive engines that this daemon controls
 with their status. The first column also contains links to the
 individual archive engines. The status shows any of the following:
 
@@ -322,6 +355,14 @@ individual archive engines. The status shows any of the following:
       not start? Then check the daemon's log file. It should list the
       exact command used to start the engine. You can try that
       manually to check why it didn't work.
+\item ``Disabled.''\\
+      The web interface of the daemon contains a link for each engine
+      that disables the engine. This places a file
+      ``\INDEX{DISABLED.txt}'' in the engine directory and stops the
+      engine.  As you might have guessed, the daemon will not attempt
+      to start engines as long as the ``DISABLED'' file is found. This
+      is a convenient way for temporarily disabling engines without
+      removing them from the daemon's configuration.
 \item ``Unknown. Found lock file''\\
       This means that the respective ArchiveEngine did not respond
       when we queried it, but there is an ``archive\_active.lck'' lock
@@ -347,82 +388,41 @@ engines did in fact already connect to all channels.
 If you are impatient, you can click on the links to the individual
 engines to get a more up-to-date snapshot of each engine's status.
 
-\subsection{Disabling Engines}
-The web interface of the daemon contains a link for each engine that
-disables the engine. This places a file ``\INDEX{DISABLED.txt}'' in
-the engine directory and stops the engine.
-The daemon will not attempt to start engines as long as the ``DISABLED''
-file is found. This is a convenient way for temporarily disabling
-engines without removing them from the daemon's configuration.
+Instead of using the scripts to stop and ArchiveDaemon, one can
+directly access the ``/stop'' URL of the daemon's HTTPD,
+e.g. ``http://localhost:4610/stop''.  Similar to the ArchiveEngine's
+HTTPD, this URL is not accessible by following links on the HTTPD's
+web pages. You will have to type the URL. This is to prevent web
+robots or a monkey who is sitting in front of the computer and
+clicking on every link from accidentally stopping the daemon.
+Finally, the daemon will respond to the URL ``/postal'' by stopping
+every ArchiveEngine controlled by the daemon, followed by stopping
+itself. ``Postal'' is an abbreviation for ``POstpone STopping the
+daemon until ALl engines quit''. It is not at all related to ``going
+postal''.
 
-\subsection{Stopping and More}
-To stop the ArchiveDaemon, access the ``/stop'' URL of the daemon's
-HTTPD, e.g. ``http://localhost:4610/stop''.  Similar to the
-ArchiveEngine's HTTPD, this URL is not accessible by following links
-on the HTTPD's web pages. You will have to type the URL. This is to
-prevent web robots or a monkey who is sitting in front of the computer
-and clicking on every link from accidentally stopping the daemon.
-Finally, the daemon will respond to the URL ``/postal'' by stopping every
-ArchiveEngine controlled by the daemon, followed by stopping itself.
+\subsubsection{Status Information}
+The following scripts use the HTTPD of the daemon and engine
+as well as generic Unix tools to create some status overviews.
+They can be used in ``cron'' jobs to periodically update
+web pages or send regular status emails.
 
-%----------------------------------------------------
-%----------------------------------------------------
-
-
-\subsection{Status Information}
-engine\_write\_durations.pl
-make\_archive\_infofile.pl
-make\_archive\_web.pl
-
-show\_engines.pl
-show\_sizes.pl
-
-\section{Indices}
-update\_indices.pl
-
-\section{Data Server}
-update\_server.pl
-
-
-ALL THE REST NEEDS TO BE REVIEWED!
-
-We intend to run one ``ArchiveDaemon'' for the Integrated Control
-System (ICS) and one for the channels related to Radio Frequency (RF).
-ArchiveDaemon, described in full detail in chapter \ref{sec:daemon},
-starts archive engines and monitors their operation. The ICS daemon
-should maintain one ArchiveEngine for the timing system (tim) and one
-for the machine protection system (mps), while the RF daemon has one
-engine for the low-level and one for the high power RF (llrf, hprf).
-
-This separation is somewhat arbitrary. We could have made ``llrf'' and
-``hprf'' channel groups under one and the same engine. In fact all the above
-could reside within one engine. It is, however, advisable to spread the channels
-over different daemons and engines whenever different people deal with
-the IOCs that host the channels, so that the engineers can
-independently configure their archiving. 
-In addition, you want to keep the amount of data collected by each
-engine within certain bounds, for example: not more than one CD ROM
-per month, one DVD per year, or whatever you plan to do for data
-maintenance. Another reason is data safety: You can reduce the damage
-caused by crashes of the engine by limiting the number of channels per engine.
-
-\section{Current Archive Status} \label{sec:makearchweb}
-The perl script ``\INDEX{make\_archive\_web.pl}'' creates a web page
-displaying the current status of all the archive daemons and engines
-that are listed in the file ``archiveconfig.csv''
-(you could use other names for the main configuration file, but we
-will stick with ``archiveconfig.csv'' in this manual).
-For the SNS, this script is periodically executed with the result being
-redirected into the web server's document tree, so you can usually
-reach the recent status from this web page:
-\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-    http://ics-srv-archive1/archive
-\end{lstlisting}
-\noindent  Fig.~\ref{fig:archcfgstat} shows one example of that web
-page: A tabular display of what engines are running, how many channels are
-connected, and more.
-
-\medskip
+\begin{itemize}
+\item make\_archive\_infofile.pl \\
+      Creates summary of daemon and engine status,
+      what is running and what is missing,
+      how many channels connected etc.
+      See ``-h'' option for details.
+\item make\_archive\_web.pl \\
+      Similar, but creating a web page.
+\item engine\_write\_durations.pl \\
+      Summary of engine performance: How many channels, average values
+      per seconds.
+\item show\_engines.pl \\
+      Parses output of ``ps'' command for engine related information.
+\item show\_sizes.pl \\
+      Parses output of ``du'' for size of sub-archives.
+\end{itemize}
 
 \begin{figure}[htb]
 \begin{center}
@@ -432,79 +432,38 @@ connected, and more.
   generated by the make\_archive\_web.pl script.}
 \end{figure}
 
-\section{Directory Layout}
-The perl script ``\INDEX{make\_archive\_dirs.pl}'' creates or updates a
-directory tree based on the file ``archiveconfig.csv''. For the preceding
-example, it would create subdirectories ``ICS'' and ``RF'' for the two
-daemons, plus the following engine directories:
-\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-  ICS/tim
-  ICS/mps
-  RF/llrf
-  RF/hprf
-\end{lstlisting}
-\noindent Each daemon directory contains a daemon configuration file
-as well as start/stop scripts. Each engine directory contains a script
-to stop the engine. Note the absence of a script to start the engine:
-You should not manually start engines which are under the control of
-an archive daemon.  Each engine directory also contains an
-``ASCIIConfig'' subdirectory with a script ``convert\_example.sh''
-that you might use to create the XML configuration file for the
-ArchiveEngine from ASCII configuration files, though the engineer
-responsible for the subsystem is free to use any method of his/her
-choice as long as the result is a configuration file for the engine
-that follows the naming convention
-\begin{center}
-{\it Daemon-Name} / {\it Engine-Name} / {\it Engine-Name}-group.xml~,\\
-\end{center}
-resulting in these for our example:
-\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-  ICS/tim/tim-group.xml
-  ICS/mps/mps-group.xml
-  RF/llrf/llrf-group.xml
-  RF/hprf/hprf-group.xml
-\end{lstlisting}
-As long as you end up with engine configuration files of these names,
-you can employ any text editor, a copy of the example script, or a
-sophisticated toolset utilizing a relational database.
-If you want to use the ASCIIConfig directory, check section
-\ref{sec:ASCIIConfig} for the format of the ASCII configuration files.
+\noindent  Fig.~\ref{fig:archcfgstat} shows one example of that web
+page: A tabular display of what engines are running, how many channels are
+connected, and more.
 
+% ======================================================================
 \section{Sub-Archives}
-Based on the configuration from the beginning of this chapter,
+% ======================================================================
+Based on the example configuration used in this chapter,
 the daemon will 
 \begin{enumerate}
 \item Start an ArchiveEngine in ``RF/llrf'' that writes to
       a sub-archive named after the current day,
       e.g.\ ``RF/llrf/2004/02\_11/index''.
-      Same for a second engine in ``RF/hprf''.
 \item Periodically verify if engines that are supposed to run are
       actually running, attempting to start engines which are found missing.
-\item Stop the ArchiveEngines each Wednesday at 10:20 respectively
-      10:30 and restart them in new subdirectories
-      (using the data of the restart for the path to the index file).  
-\item Generate or update ``RF/indexconfig.xml'' whenever a new
-      sub-archive is created for the vacuum or cooling data.
-\item Periodically run ArchiveIndexTool on ``RF/indexconfig.xml'',
-      generating or updating ``RF/master\_index''.
-\item Provide a web page that lists the status of the two archive
-      engines.
+\item Stop the llrf engine each Wednesday at 10:20, and restart it in
+      a new subdirectory, using the date of the restart for the path name to the
+      new index file.
+\item Generate a file in the mailbox directory with information about
+      the ``old'' sub-archive, the one used by the engine that was
+      stopped.
 \end{enumerate}
 
-\noindent As a result, we create separate sub-archives for the LLRF
-and HPRF, a new one once per week, which provides some insurance
+\noindent As a result, we create separate sub-archives for the LLRF,
+a new one once per week, which provides some insurance
 against crashes of an ArchiveEngine. If you are paranoid, you can
-choose daily sub-archives; compare the ICS setup from the beginning of
-chapter \ref{ch:examplesetup}.
+choose daily sub-archives.
 After running for a while, we will have created sub-archives like these:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
   RF/llrf/2004/02_11/index
   RF/llrf/2004/02_18/index
   RF/llrf/2004/02_25/index
-  ...
-  RF/hprf/2004/02_11/index
-  RF/hprf/2004/02_18/index
-  RF/hprf/2004/02_25/index
   ...
 \end{lstlisting}
 \noindent In addition to each index file, there will of course also be
@@ -512,60 +471,63 @@ associated data files, but for retrieval purposes we identify an
 archive solely by its index file: We can invoke e.g.\ ArchiveExport
 with the path to any of the index files. This is, however,
 inconvenient because we will only see data for one week of that one
-subsystem at a time. The periodic invocation of the ArchiveIndexTool
-allows us to view all the RF data as a whole via the RF/master\_index.
+subsystem at a time.
+The ``serving'' computer will therefore use additional index files.
 
-\subsection{ArchiveDaemon Details}
-The ``Restart'' and ``Time'' columns of the ``archiveconfig.csv'' file
-are passed on to the ArchiveDaemon, which is explained in more detail
-in chapter \ref{sec:daemon}. In many cases it might be sufficient to
-know these two options:
-\begin{itemize}
-\item Restart=``daily'', Time set to the time of day in 24-hour
-      format HH:MM, e.g.\ 08:00 for 8'o clock in the morning.
-      The daemon will stop and restart the engine in a new sub-archive
-      each day at the given time.
-\item Restart=``weekly'', Time set to a string that combines the day
-      of the week (Mo, Tu,  We, Th, Fr, Sa, Su) with the time of day in 24-hour
-      format into ``DD HH:MM'', e.g.\ ``We 08:00'' for Wednesdays, 8'o
-      clock in the morning. Similar to the daily setup, but reduced to
-      once a week.
-\end{itemize}
-\noindent It is advisable to stagger the restart times of your engines
-such that they don't all restart at the same day and time in order to
-reduce the CPU and network load for the ChannelAccess re-connects.
+% ======================================================================
+\section{Serving Computer}
+% ======================================================================
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=0.9\textwidth}{archiveconfig_serve}
+\end{center}
+\caption{\label{fig:acServe}Tools used on a serving computer, refer to text.}
+\end{figure}
 
+
+\subsection{update\_server.pl} \label{sec:updateServer}.
+
+\subsection{update\_indices.pl} \label{sec:updateIndices}.
+\section{Indices}
+update\_indices.pl
+
+\section{Data Server}
+update\_server.pl
+
+
+
+
+
+% ======================================================================
 \section{Common Tasks}
-
-\subsection{Check Daemon, Engine, Connected Channels, ...}
-See section \ref{sec:makearchweb}. That web page links to all
-the ArchiveDaemons, which in turn link to all the ArchiveEngines.
-
+% ======================================================================
 \subsection{Modify Engine's Request Files}
-Locate your archive engine on either the main archive status page
-(section  \ref{sec:makearchweb}) or in /arch/archiveconfig.csv.
-According to the example at the beginning of this chapter, the ``High
-Power RF'' engine would be run by the ``RF'' daemon and be called
-``hprf'', so we need to modify /arch/RF/hprf/hprf-group.xml.
-This is often done via a conversion script in
+Locate your archive engine directory and the engine configuiration
+file, for example /arch/RF/llrf/llrf-group.xml for the ``llrf'' engine
+maintained by the ``RF'' daemon.
+Modify or re-create that configuration. This is often done via a conversion script in
 /arch/RF/hprf/ASCIIConfig. If you used another method to create the
 engine configuration, this is a good time to remember what you did.
 
 Then, to actually use that new config file, the engine needs to
 restart. We could simply wait for the next scheduled restart, in our
-example the next Wednesday, 10:30. Alternatively, we can run the
-script /arch/RF/hprf/stop-engine.sh.
-Watch the RF daemon via the link on the main archive status page.
+example the next Wednesday, 10:20. Alternatively, we can run the
+script /arch/RF/llrf/stop-engine.sh.
+Watch the RF daemon, for example via /arch/RF/view-daemon.sh.
 Within a few minutes, it ought to detect that the engine had stopped
 and then restart it.
 
 \subsection{Add Engine or Daemon}
-Add a line to archiveconfig.csv to define the new engine under an
+Edit archiveconfig.xml to define the new engine under an
 existing demon. Or add a line for a new daemon, then add the new
-engine under it. Invoke  make\_archive\_dirs.pl. Per default, it will
+engine under it.
+Use ``xmllint -valid  archiveconfig.xml'' to check if you preserved
+the basic XML well-formedness of the document. If you feel lucky
+today, go right ahead and invoke make\_archive\_dirs.pl. Per default, it will
 re-create all daemon and engine directories, so you might want to use
 the ``-s'' option to limit its operation to the new or modified
 subsystem.
+
 In case the daemon was already running, it won't learn about the new
 engine unless you restart it. So run the ``stop-deamon.sh'' and then
 invoke the ``run-daemon.sh'' script in the daemon directory to start
@@ -582,12 +544,13 @@ engine directory, remove it. Now the daemon should be able to start
 your engine.  
 
 \subsection{I want to stop a Daemon}
-Run stop-daemon.sh in the daemon directory, or check section
-\ref{sec:daemon} for more on the daemon's HTTPD.
+Run stop-daemon.sh.
 
 \subsection{A Daemon isn't running}
 Run start-daemon.sh in the daemon directory. If the daemon keeps quitting,
 check its log file for clues.
+
+THE REST NEEDS REVIEW!
 
 \subsection{Re-building a Master Index}
 Whenever you add or remove a sub-archive, the master index in the
@@ -654,18 +617,3 @@ into a monthly 2004/02\_xx, we need to
       convinced that nobody is still trying to use them, we can delete
       them.
 \end{enumerate}
-
-% ======================================================================
-\section{"Serving" Computer}
-% ======================================================================
-\begin{figure}[htb]
-\begin{center}
-\InsertImage{width=0.9\textwidth}{archiveconfig_serve}
-\end{center}
-\caption{\label{fig:acServe}Tools used on a serving computer, refer to text.}
-\end{figure}
-
-
-\subsection{update\_server.pl} \label{sec:updateServer}.
-
-\subsection{update\_indices.pl} \label{sec:updateIndices}.

@@ -20,9 +20,9 @@ on the height of the tree, which is again logarithmically related to
 $M$ and the number of nodes in the tree.  An RTree with $M$=50 and
 height 5 for example has one root node with 50 pointers to sub-nodes,
 then up to $50^2$ nodes on the second level and so on, resulting in
-access to more than $10^{80}$ records on the fifth level, that is:
+access to more than $10^{8}$ records on the fifth level, that is:
 with only 5 reads requests to the disk.
-% 50^50 = 8.8818e+84
+% 50^5 = 312500000 = 3e8
 In practice, however, there can be a big time difference between 5
 read requests to a file of 10~MB total size compared to 5 read
 requests to a file of 500~MB total size, because the former could be
@@ -39,9 +39,8 @@ slightly better. % That's bogart.ta53.lanl.gov
 
 We also provide some comparison to the previous architecture that used
 the same data file format but instead of the RTree-based index there
-were ``Directory Files''. Instead of being able to combine several sub-archives
-into one index, one utilized an ASCII ``Master File'' that simply listed the
-sub-archives.
+were ``Directory Files'': A channel name hash table with pointers to
+the very first and last data block.
 
 \subsection{Write Performance}
 As a baseline for raw data writing speed, the 'bench' program that can
@@ -150,7 +149,12 @@ Overall this shows that periodic data management, combining individual
 sub-archives into fewer ones, will reduce not only the number of files
 but also file sizes, resulting in better performance.
 
-\subsection{New Index compared to old ``multi archive''}
+\subsection{Binary Index compared to list index}
+The following data was actually taken with the old ``multi archive'',
+which is basically equivalent to the current ``list'' index which
+simply uses a linear list of sub-archives without any further
+optimization.
+
 %  ORNL March 2004 Xmtr archive:
 % dir. files were about 1MB each, 27 of them.
 % 0.9 sec  : ArchiveExport index3 -i -m Tnk.:T$
@@ -237,6 +241,5 @@ Reading the values can then be quite fast and reach more than 30000
 values per second when simply fetching the raw samples.
 Interpolation or binning can internally reach this speed when
 investigating the raw data, 
-
 
 The network data server typically adds about 1 second of overhead.

@@ -104,6 +104,13 @@ damage caused by crashes of one engine to a certain number of channels
 and the data for the restart period, for example one week.
 
 % ======================================================================
+\subsection{Configuration}
+% ======================================================================
+The configuration of the sampling computer is primaririly done
+in the $<$daemon$>$ sections of the archiveconfig.xml.
+See section \ref{sec:daemon} for more on the daemon.
+
+% ======================================================================
 \subsection{update\_archive\_tree.pl}
 % ======================================================================
 Initially and after every change to the configuration,
@@ -178,7 +185,9 @@ Before using the ArchiveDaemon, one should be familiar
 with the configuration of a single ArchiveEngine (sec.\ \ref{sec:engine}),
 and how to start and stop it manually.
 
+% ======================================================================
 \subsubsection{Configuration}
+% ======================================================================
 You will typically \emph{not} directly configure an archive daemon,
 but instead specify its configuration in the ``archiveconfig.xml''
 file. The ``update\_archive\_tree.pl'' script will then generate
@@ -222,7 +231,6 @@ configuration to see how they get translated.
       The generated daemon config file only includes the configuration
       needed for the local computer.  So instead of duplicating
       $<$run$>$localhost$<$/run$>$, it is omitted in the daemon config file.
-
 \item desc\\
       A short description.
 \item port\\
@@ -277,9 +285,12 @@ configuration to see how they get translated.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for the Archive Daemon Configuration},label=lst:daemonconfigdtd]{../ExampleSetup/ArchiveDaemon.dtd}
 
+% ======================================================================
 \subsubsection{Starting, running, stopping daemons and engines}
+% ======================================================================
 The following scripts, some created by ``update\_archive\_tree.pl'' in
-each daemon and engine subdirectory, are used to control the daemons and engines:
+each daemon and engine subdirectory, are used to control the daemons
+and engines:
 \begin{itemize}
 \item scripts/start\_daemons.pl\\
       Starts all daemons meant to run on the local computer.
@@ -320,7 +331,9 @@ each daemon and engine subdirectory, are used to control the daemons and engines
   A soft-link to the currently used index.
 \end{itemize}
 
+% ======================================================================
 \subsubsection{Daemon's Web Pages} \label{sec:daemonserver}
+% ======================================================================
 You can use any web browser to look at the daemon's web pages,
 which look simiar to Fig.~\ref{fig:daemon}.
 The URL follows the format
@@ -401,7 +414,9 @@ itself. ``Postal'' is an abbreviation for ``POstpone STopping the
 daemon until ALl engines quit''. It is not at all related to ``going
 postal''.
 
+% ======================================================================
 \subsubsection{Status Information}
+% ======================================================================
 The following scripts use the HTTPD of the daemon and engine
 as well as generic Unix tools to create some status overviews.
 They can be used in ``cron'' jobs to periodically update
@@ -455,10 +470,9 @@ the daemon will
       stopped.
 \end{enumerate}
 
-\noindent As a result, we create separate sub-archives for the LLRF,
-a new one once per week, which provides some insurance
-against crashes of an ArchiveEngine. If you are paranoid, you can
-choose daily sub-archives.
+\noindent As a result, we create weekly sub-archives for the LLRF,
+which provides some insurance against crashes of an
+ArchiveEngine. If paranoid, you choose daily sub-archives.
 After running for a while, we will have created sub-archives like these:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
   RF/llrf/2004/02_11/index
@@ -484,19 +498,83 @@ The ``serving'' computer will therefore use additional index files.
 \caption{\label{fig:acServe}Tools used on a serving computer, refer to text.}
 \end{figure}
 
+\noindent The serving computer might actually be the same as the
+sampling machine, or it can be a different computer. In any case, all
+computers must have access to the same archiveconfig.xml file and
+mailbox directory.
+The following describes the scenario used at the SNS with 
+different computers and no writable NFS share between the
+affected machines.
+
+% ======================================================================
+\subsection{Configuration}
+% ======================================================================
+Of primary interest to the serving computer are the $<$dataserver$>$
+sections of archiveconfig.xml, which are allowed for each daemon and
+engine entry:
+
+\begin{lstlisting}[frame=none,keywordstyle=\sffamily]
+   <dataserver>
+      <current_index key='4901'>llrf</current_index>
+      <index type='binary' key='4902'>LLRF data</index>
+      <host>web2</host>
+    </dataserver>
+\end{lstlisting}
+
+\begin{itemize}
+\item current\_index\\
+      This option is only allowed for engine data server entries.
+      When provided, the ``current\_index'' link created by the
+      archive daemon for this engine will be served by the
+      data server as its own key and name.
+
+      This of course requires access to the current\_index from the
+      serving computer. At the SNS, we have a read-only NFS mount from
+      archive1 onto web2, and ``/arch/RF/llrf/current\_index'' is a
+      manually created soft-link to the actual current\_index softlink
+      on the NFS share.
+\item index \\
+      Create an index of given type, ``list'' or ``binary''.
+      For an engine, the index covers every data found in the engine
+      directory, typically combining the sub-archives from weekly
+      restarts into one master\_index.
+
+      For a daemon, the index combines the master\_indices of engines
+      under the daemon into one daemon-level master\_index. This
+      requires that there are engine indices!
+
+      If a key is proviced, the index is added to the data server
+      configuration. It might make sense to only provide a key for the
+      daemon-level index, while the engine-level indices are only used
+      as an intermediate steps for constructing the daemon index.            
+\item host \\
+      The host where the data server should run. Entries where
+      the host element, used as a regular expression, does not match the
+      local hostname, are ignored.
+\end{itemize}
+
+\subsection{send\_mailbox.pl}
+In the absence of a writable NFS share for the mailbox directory,
+this script is run by a cron-job to send the contents of the mailbox
+directory to other computers.
+For now, this means: It is periodically invoked on ``sampling''
+computers to send the current mailbox content to the ``serving''
+machine. See command-line help for details.
 
 \subsection{update\_server.pl} \label{sec:updateServer}.
+This script should be invoked periodically by a cron-job.
+It checks the mailbox directory for information about new data on a
+``sampling'' computer. Compares with the archiveconfig.xml information
+to decide which of that data should be served on this machine. Uses
+secure-copy (scp) to pull new sub-archives onto this computer,
+optionally with md5 checksum.  Finally invokes update\_indices.pl.
 
 \subsection{update\_indices.pl} \label{sec:updateIndices}.
-\section{Indices}
-update\_indices.pl
-
-\section{Data Server}
-update\_server.pl
-
-
-
-
+Reads archiveconfig.xml and creates an indexconfig.xml for each
+engine and daemon directory that has a $<$dataserver$>$ $<$host$>$
+entry for the local machine.
+Where binary indices are requested, the ArchiveIndexTool is invoked.
+Finally, the serverconfig.xml is updated.
 
 % ======================================================================
 \section{Common Tasks}
@@ -512,21 +590,20 @@ engine configuration, this is a good time to remember what you did.
 Then, to actually use that new config file, the engine needs to
 restart. We could simply wait for the next scheduled restart, in our
 example the next Wednesday, 10:20. Alternatively, we can run the
-script /arch/RF/llrf/stop-engine.sh.
+llrf/stop-engine.sh script.
 Watch the RF daemon, for example via /arch/RF/view-daemon.sh.
 Within a few minutes, it ought to detect that the engine had stopped
 and then restart it.
 
 \subsection{Add Engine or Daemon}
-Edit archiveconfig.xml to define the new engine under an
-existing demon. Or add a line for a new daemon, then add the new
-engine under it.
-Use ``xmllint -valid  archiveconfig.xml'' to check if you preserved
-the basic XML well-formedness of the document. If you feel lucky
-today, go right ahead and invoke make\_archive\_dirs.pl. Per default, it will
-re-create all daemon and engine directories, so you might want to use
-the ``-s'' option to limit its operation to the new or modified
-subsystem.
+Edit archiveconfig.xml to define the new engine under an existing
+demon. Or add a line for a new daemon, then add the new engine under
+it.  Unless you feel lucky today, use ``xmllint -valid
+archiveconfig.xml'' to check if you preserved the basic XML
+well-formedness of the document. Invoke make\_archive\_dirs.pl. Per
+default, it will re-create all daemon and engine directories, so you
+might want to use the ``-s'' option to limit its operation to the new
+or modified subsystem.
 
 In case the daemon was already running, it won't learn about the new
 engine unless you restart it. So run the ``stop-deamon.sh'' and then
@@ -550,24 +627,23 @@ Run stop-daemon.sh.
 Run start-daemon.sh in the daemon directory. If the daemon keeps quitting,
 check its log file for clues.
 
-THE REST NEEDS REVIEW!
-
 \subsection{Re-building a Master Index}
-Whenever you add or remove a sub-archive, the master index in the
-daemon directory could be obsolete: It might still list data in a
-sub-archive that you removed, or it might not yet include the new
+Whenever you add or remove a sub-archive, the indices for that engine
+and daemon (indexconfig.xml, maybe also binary master\_index)
+become obsolete: They might still list data in a
+sub-archive that you removed, or not yet include the new
 sub-archive. Another szenario: you suspect that the master index is
 broken, because you can retrieve data from the individual sub-archive
 but not via the master index. The recipe:
 \begin{itemize}
-\item Stop the daemon
-\item Check, maybe rebuild indexconfig.xml, either manually or by
-  using the helper script make\_indexconfig.pl
-  (see section  \ref{sec:makeindexconfig}).
-\item Start the daemon, which causes it to invoke the ArchiveIndexTool.
+\item Delete the indexconfig.xml and master\_index
+\item invoke update\_indices.pl, or wait until update\_server.pl
+      does this for you, triggered by a cron job.
 \end{itemize}
 
+% ======================================================================
 \section{Data Management}
+% ======================================================================
 The generation of daily sub-archives reduces the amount of data that
 might be lost in case an ArchiveEngine crashes and cannot be restarted
 by the ArchiveDaemon to one day. In the long run, however, it is
@@ -578,16 +654,18 @@ retrieval times. Depending on your situation, monthly archives might either
 be too big to fit on a CD-ROM or ridiculously small, in which case you
 should try weekly, bi-weekly, quarterly or other types of sub-archives.
 
-In the following example, we assume that it's March 2004 and we want
-to combine the two daily vacuum sub-archives from the previous section
-into one for the month of February 2004:
+In the following example, we assume that it's February 2004 and we want
+to combine daily vacuum sub-archives into one for the month of January 2004:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
 cd vacuum/2004
-mkdir 02_xx
-ArchiveDataTool -copy 02_xx/index 02_19/index \
-    -e "02/20/2004 02:00:00"
-ArchiveDataTool -copy 02_xx/index 02_20/index \
-    -s "02/20/2004 02:00:00" -e "02/21/2004 02:00:00"
+mkdir 01_xx
+ArchiveDataTool -copy 01_xx/index 01_01/index \
+    -e "01/02/2004 02:00:00"
+ArchiveDataTool -copy 01_xx/index 01_02/index \
+    -s "01/02/2004 02:00:00" -e "01/03/2004 02:00:00"
+ArchiveDataTool -copy 01_xx/index 01_03/index \
+    -s "01/03/2004 02:00:00" -e "01/04/2004 02:00:00"
+...
 \end{lstlisting}
 \noindent Note that we assume a daily restart at 02:00 and thus we
 force the ArchiveDataTool to only copy values from the time range
@@ -598,22 +676,6 @@ Channel Access servers with ill-configured clocks.
 There is a perl command \INDEX{make\_compress\_script.pl} that aids in the
 creation of a shell script for the ArchiveDataTool, but you need to
 review it carefully before invokation.
-After successfully combining the daily sub-archives for February 2004
-into a monthly 2004/02\_xx, we need to
-\begin{enumerate}
-\item Stop the ArchiveDaemon because we are about to edit
-      indexconfig.xml.
-      The ArchiveEngines controlled by the daemon can run on.
-\item Edit indexconfig.xml that listed the daily sub-archives for
-      Feb.\ 2004 and replace them with the single 2004/02\_xx/index.
-\item Remove or rename the master index file and re-create it with the new
-      indexconfig.xml. This step is required because the ArchiveIndexTool
-      will only add new data blocks to the master index, it will not
-      remove existing ones. Since we no longer want to refer to the
-      daily sub-archives, we need to recreate the master index.
-\item Start the ArchiveDaemon again, check its online status.
-\item One may now move the daily sub-archives that are no longer
-      required to some temporary location. A month later, when we are
-      convinced that nobody is still trying to use them, we can delete
-      them.
-\end{enumerate}
+After successfully combining the daily sub-archives a monthly one,
+you need move that dayly data out of the way and finally
+rebuild indices that use the data.

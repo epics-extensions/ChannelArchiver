@@ -100,6 +100,7 @@ sub check_mailbox()
         next unless (-f $entry);
         ++$current;
 	print("** $entry ($current / $num_files):\n");
+        my ($handled) = 0;
 	open(MB, "$entry") or die "Cannot open '$entry'\n";
 	while (<MB>)
         {   # Each file should contain 'new ... ' or 'copy ...' info.
@@ -111,6 +112,7 @@ sub check_mailbox()
             if ($info eq "new" and defined($src_host) and is_localhost($src_host))
             {   # Data already here, we need to update
                 ++$updates;
+                $handled = 1;
             }
             elsif ($info eq "copy" and defined($dst_host) and is_localhost($dst_host))
             {   # Copy data here, then update.
@@ -159,11 +161,12 @@ sub check_mailbox()
                 }
 
                 ++$updates;
+                $handled = 1;
             }
         }
         close(MB);
         # rename
-        rename($entry, "done/$entry");
+        rename($entry, "done/$entry") if ($handled);
     } 
     return $updates;
 } 

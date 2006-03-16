@@ -10,7 +10,7 @@ BEGIN
 
 use English;
 use strict;
-use vars qw($opt_d $opt_h $opt_c $opt_s $opt_f $opt_n);
+use vars qw($opt_a $opt_d $opt_h $opt_c $opt_s $opt_f $opt_n);
 use Cwd;
 use File::Path;
 use Getopt::Std;
@@ -49,6 +49,7 @@ sub usage()
     print(" -f          : Full re-creation of binary indices, not just update\n");
     print("               were index files older than the master_index are ignored.\n");
     print(" -n          : 'nop', do not run ArchiveIndexTool, only create the config files.\n");
+    print(" -a          : do not create the files all.xml and current.xml'\n");
     print(" -d          : debug.\n");
 }
 
@@ -241,6 +242,8 @@ sub print_combined_indices()
     }
     print_indexconfig("all.xml", @all);
     print_indexconfig("current.xml", @current);
+    add_serverconfig(1, "- All -", "$config->{root}/all.xml");
+    add_serverconfig(2, "- All - (last restart)", "$config->{root}/current.xml");
 }
 
 # Create the daemon and engine index files.
@@ -281,6 +284,8 @@ sub create_indices()
                 {
                     $index = "master_index";
                 }
+                die("$dc->{dataserver}{index}{content}: Keys < 10 are reserved\n")
+                    if ($dc->{dataserver}{index}{key} < 10);
                 add_serverconfig($dc->{dataserver}{index}{key},
                                  $dc->{dataserver}{index}{content},
                                  "$config->{root}/$d_dir/$index");
@@ -296,6 +301,8 @@ sub create_indices()
             {   # current_index
                 if (exists($ec->{dataserver}{current_index}))
                 {
+                    die("$ec->{dataserver}{current_index}{content}: Keys < 10 are reserved\n")
+                        if ($ec->{dataserver}{current_index}{key} < 10);
                     add_serverconfig($ec->{dataserver}{current_index}{key},
                                      $ec->{dataserver}{current_index}{content},
                                      "$config->{root}/$d_dir/$e_dir/current_index");
@@ -313,6 +320,8 @@ sub create_indices()
                     make_engine_index($d_dir, $e_dir) unless ($skip);
                     if (exists($ec->{dataserver}{index}{key}))
                     {
+                        die("$ec->{dataserver}{index}{content}: Keys < 10 are reserved\n")
+                            if ($ec->{dataserver}{index}{key} < 10);
                         add_serverconfig($ec->{dataserver}{index}{key},
                                          $ec->{dataserver}{index}{content},
                                          "$config->{root}/$d_dir/$e_dir/master_index");
@@ -335,7 +344,7 @@ sub create_indices()
 # TODO: list-index for 'all'
 
 # Parse command-line options
-if (!getopts("dhc:s:fn") ||  $opt_h)
+if (!getopts("adhc:s:fn") ||  $opt_h)
 {
     usage();
     exit(0);
@@ -347,6 +356,6 @@ $index_dtd   = "$config->{root}/indexconfig.dtd";
 die "Should run in '$config->{root}'\n" unless (cwd() eq $config->{root});
 die "Cannot find $index_dtd\n" unless -r $index_dtd;
 create_indices();
-print_combined_indices();
+print_combined_indices() unless ($opt_a);
 print_serverconfig();
 

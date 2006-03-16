@@ -7,7 +7,7 @@
 #include <MsgLogger.h>
 #include <AutoPtr.h>
 // Storage
-#include <ListIndex.h>
+#include <AutoIndex.h>
 // XML-RPC
 #include <xmlrpc.h>
 #include <xmlrpc_abyss.h>
@@ -40,7 +40,7 @@ Index *open_index(xmlrpc_env *env, int key)
             return 0;
         } 
         LOG_MSG("Open index, key %d = '%s'\n", key, index_name.c_str());
-        AutoPtr<Index> index(new ListIndex());
+        AutoPtr<Index> index(new AutoIndex());
         index->open(index_name, true);
         return index.release();
     }

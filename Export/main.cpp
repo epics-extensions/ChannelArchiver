@@ -10,7 +10,7 @@
 #include <ArgParser.h>
 // Storage
 #include <SpreadsheetReader.h>
-#include <ListIndex.h>
+#include <AutoIndex.h>
 
 #undef DEBUG_EXPORT
 
@@ -500,8 +500,7 @@ int main(int argc, const char *argv[])
             delta = double(linear);
         }
         // Open index
-        //IndexFile index(50);
-        ListIndex index;
+        AutoIndex index;
         index.open(index_name.c_str());
         if (verbose)
             printf("Opened index '%s'\n", index_name.c_str());

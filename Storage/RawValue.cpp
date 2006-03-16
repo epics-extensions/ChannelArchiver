@@ -211,7 +211,7 @@ void RawValue::getTime(const Data *value, stdString &time)
     if (value->stamp.nsec >= 1000000000L)
         throw  GenericException(__FILE__, __LINE__,
         "invalid time stamp with %zu secs, %zu nsecs.",
-        (time_t)value->stamp.secPastEpoch, (time_t)value->stamp.nsec);
+        (size_t)value->stamp.secPastEpoch, (size_t)value->stamp.nsec);
     epicsTime et(value->stamp);
     epicsTime2string(et, time);
 }

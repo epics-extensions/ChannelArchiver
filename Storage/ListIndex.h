@@ -6,8 +6,7 @@
 // Tools
 #include <AutoPtr.h>
 // Storage
-#include <IndexFile.h>
-#include <IndexConfig.h>
+#include <Index.h>
 
 /// \addtogroup Storage
 /// @{
@@ -18,7 +17,7 @@
 /// is used to create a master index via the ArchiveIndexTool.
 /// Alternatively, that list of sub-archives can be used with
 /// a ListIndex, which then acts like a master index by simply
-///  querying the sub-archives one by one:
+/// querying the sub-archives one by one:
 /// - Less efficient for retrieval
 /// - Easier to set up and maintain, because
 ///   you only create the config file without need
@@ -91,7 +90,7 @@ private:
     public:
         SubArchInfo(stdString name) : name(name), index(0) {}
         stdString name;
-        IndexFile *index;
+        Index *index;
     };
     stdList<SubArchInfo> sub_archs;
     // List of all names w/ iterator

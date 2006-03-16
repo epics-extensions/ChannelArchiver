@@ -3,8 +3,12 @@
 // Tools
 #include <MsgLogger.h>
 #include <Filename.h>
+#include <IndexConfig.h>
+#include <AVLTree.h>
 // Storage
+#include "RTree.h"
 #include "ListIndex.h"
+#include "AutoIndex.h"
 
 #undef DEBUG_LISTINDEX
 
@@ -21,26 +25,25 @@ void ListIndex::open(const stdString &filename, bool readonly)
                                filename.c_str());
     IndexConfig config;
     stdList<stdString>::const_iterator subs;
-    if (config.parse(filename))
+    if (! config.parse(filename))
+        throw  GenericException(__FILE__, __LINE__,
+                               "ListIndex cannot parse '%s'.\n",
+                               filename.c_str());
+    stdString path;
+    Filename::getDirname(filename, path);
+    for (subs  = config.subarchives.begin();
+         subs != config.subarchives.end();    ++subs)
     {
-        stdString path;
-        Filename::getDirname(filename, path);
-        for (subs  = config.subarchives.begin();
-             subs != config.subarchives.end();    ++subs)
+        // Check if we need to resolve sub-index name relative to filename
+        if (path.empty()  ||  Filename::containsFullPath(*subs))
+            sub_archs.push_back(SubArchInfo(*subs));
+        else
         {
-            // Check if we need to resolve sub-index name relative to filename
-            if (path.empty()  ||  Filename::containsFullPath(*subs))
-                sub_archs.push_back(SubArchInfo(*subs));
-            else
-            {
-                stdString subname;
-                Filename::build(path, *subs, subname);
-                sub_archs.push_back(SubArchInfo(subname));
-            }
+            stdString subname;
+            Filename::build(path, *subs, subname);
+            sub_archs.push_back(SubArchInfo(subname));
         }
     }
-    else // Assume a single index, no list of indices.
-        sub_archs.push_back(SubArchInfo(filename));
 #ifdef DEBUG_LISTINDEX
     printf("ListIndex::open(%s)\n", filename.c_str());
     stdList<SubArchInfo>::const_iterator archs;
@@ -96,7 +99,7 @@ class RTree *ListIndex::getTree(const stdString &channel,
             // Open individual index file
             try
             {
-                archs->index = new IndexFile(50);
+                archs->index = new AutoIndex();
             }
             catch (...)
             {
@@ -111,6 +114,7 @@ class RTree *ListIndex::getTree(const stdString &channel,
             {   // can't open this one; ignore error, drop it from list
                 LOG_MSG("Listindex '%s': Error opening '%s':\n%s",
                     filename.c_str(), archs->name.c_str(), e.what());
+                delete archs->index;
                 archs->index = 0;
                 archs = sub_archs.erase(archs);
                 continue;
@@ -175,7 +179,7 @@ bool ListIndex::getFirstChannel(NameIterator &iter)
             {   // Open individual index file
                 try
                 {
-                    archs->index = new IndexFile(50);
+                    archs->index = new AutoIndex();
                 }
                 catch (...)
                 {                

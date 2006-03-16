@@ -64,6 +64,9 @@ public:
 
     /// Locate NameIterator on first channel.
     ///
+    /// Actually, concurrent iteration is not supported.
+    /// So one can use only one NameIterator at a time.
+    ///
     /// @return true if there was a first entry.
     virtual bool getFirstChannel(NameIterator &iter) = 0;
 

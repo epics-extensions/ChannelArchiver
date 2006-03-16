@@ -125,7 +125,7 @@ sub make_engine_index($$)
     if ($valid > 0)
     {
         my ($cmd) =
-            "(cd $d_dir/$e_dir;time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1)";
+            "(cd $d_dir/$e_dir;time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1;touch master_index)";
         print("  $cmd\n");
         system($cmd) unless ($opt_n);
     }
@@ -156,7 +156,7 @@ sub make_daemon_index($)
         $config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'binary')
     {
 	my ($cmd) =
-            "(cd $d_dir;time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1)";
+            "(cd $d_dir;time $ArchiveIndexTool $indexconfig master_index >$ArchiveIndexLog 2>&1;touch master_index)";
         print("  $cmd\n");
         system($cmd) unless ($opt_n);
     }
@@ -202,6 +202,45 @@ sub print_serverconfig()
     }
     print("</serverconfig>\n");
     select($old_fd);
+}
+
+sub print_indexconfig($@)
+{
+    my ($name, @entries) = @ARG;
+    open(OUT, ">$name") or die "Cannot write to $name\n";
+    my ($old_fd) = select OUT;
+    my ($dtd) = "/arch/indexconfig.dtd";
+    print "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n";
+    print "<!DOCTYPE indexconfig SYSTEM \"$index_dtd\">\n";
+    print "<indexconfig>\n";
+    foreach my $index ( @entries )
+    {
+        print "  <archive>\n";
+        print "    <index>$index</index>\n";
+        print "  </archive>\n";
+    }
+    print "</indexconfig>\n";
+    select($old_fd);
+}
+
+# Print server configuration to $config->{serverconfig},
+# sorted by key.
+sub print_combined_indices()
+{
+    my ($key, @current, @all);
+    foreach $key ( sort { $a <=> $b } keys %serverconfig )
+    {
+        if ($serverconfig{$key}{path} =~ m/current_index\Z/)
+        {
+            push(@current, $serverconfig{$key}{path});
+        }
+        else
+        {
+            push(@all, $serverconfig{$key}{path});
+        }
+    }
+    print_indexconfig("all.xml", @all);
+    print_indexconfig("current.xml", @current);
 }
 
 # Create the daemon and engine index files.
@@ -308,5 +347,6 @@ $index_dtd   = "$config->{root}/indexconfig.dtd";
 die "Should run in '$config->{root}'\n" unless (cwd() eq $config->{root});
 die "Cannot find $index_dtd\n" unless -r $index_dtd;
 create_indices();
+print_combined_indices();
 print_serverconfig();
 

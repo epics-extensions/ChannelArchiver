@@ -48,7 +48,7 @@ $config = parse_config_file($config_name, $opt_d);
 
 my ($d_dir, $e_dir, @html, $line, $channels, $count, $time, $vps, $period);
 my ($total_channels, $total_count, $total_time, $total_vps);
-printf "ArchiveEngine 'write' Statistics\n\n";
+printf ("ArchiveEngine 'write' Statistics as of %s\n\n", time_as_text(time));
 printf "Engine              Port      Channels  Val.Count Wr.Period Val/sec   Write Duration\n";
 printf "------------------------------------------------------------------------------------\n";
 $total_channels = 0;

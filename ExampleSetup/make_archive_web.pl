@@ -38,15 +38,6 @@ sub usage()
     print(" -d          : debug\n");
 }
 
-sub time_as_text($)
-{
-    my ($seconds) = @ARG;
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
-        = localtime($seconds);
-    return sprintf("%04d/%02d/%02d %02d:%02d:%02d",
-           1900+$year, 1+$mon, $mday, $hour, $min, $sec);
-}
-
 sub write_html($)
 {
     my ($filename) = @ARG;

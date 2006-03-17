@@ -565,46 +565,47 @@ engine entry:
       created soft-link to the actual current\_index soft-link on the
       NFS share.
 \item \INDEX{index tag}: \\
-      Create an index of given type, ``list'' or ``binary''.
-      For an engine, the index covers every data found in the engine
-      directory, typically combining the sub-archives from weekly
+      Configures the type of index to create as ``list'' or ``binary''.
+      For an engine, the index covers every data found under the engine
+      directory, typically combining the sub-archives from daily or weekly
       restarts into one master\_index.
 
       For a daemon, the index combines the master\_indices of engines
       under the daemon into one daemon-level master\_index. This
-      requires that there are engine indices!
+      requires that there are such engine indices, which need to be
+      configured for each engine entry.
 
       If a key is provided, the index is added to the data server
       configuration. It might make sense to only provide a key for the
       daemon-level index, while the engine-level indices are only used
-      as an intermediate steps for constructing the daemon index.            
+      as intermediate steps for constructing the daemon index.            
 \item \INDEX{host tag}: \\
-      The host where the data server should run. Entries where
+      The host where the data server should run. Dataserver entries where
       the host element, used as a regular expression, does not match the
       local hostname, are ignored.
 \end{itemize}
 
 \subsection{\INDEX{send\_mailbox.pl}}
 In the absence of a writable NFS share for the mailbox directory,
-this script is run by a cron-job to send the contents of the mailbox
-directory to other computers.
+this script is run by a \INDEX{cron}-job to send the contents of the
+\INDEX{mailbox} directory to other computers.
 For now, this means: It is periodically invoked on ``sampling''
 computers to send the current mailbox content to the ``serving''
 machine. See command-line help for details.
 
-\subsection{\INDEX{update\_server.pl}} \label{sec:updateServer}.
+\subsection{\INDEX{update\_server.pl}} \label{sec:updateServer}
 This script should be invoked periodically by a cron-job.
 It checks the mailbox directory for information about new data on a
 ``sampling'' computer. Compares with the archiveconfig.xml information
 to decide which of that data should be served on this machine. Uses
-secure-copy (scp) to pull new sub-archives onto this computer,
-optionally with md5 checksum.  Finally invokes update\_indices.pl.
+\INDEX{secure-copy (scp)} to pull new sub-archives onto this computer,
+optionally with \INDEX{md5 checksum}.  Finally invokes update\_indices.pl.
 
-\subsection{\INDEX{update\_indices.pl}} \label{sec:updateIndices}.
+\subsection{\INDEX{update\_indices.pl}} \label{sec:updateIndices}
 Reads archiveconfig.xml and creates an indexconfig.xml for each
-engine and daemon directory that has a $<$dataserver$>$ $<$host$>$
+engine and daemon directory that has a $<$dataserver$>$...$<$host$>$
 entry for the local machine.
-Where binary indices are requested, the ArchiveIndexTool is invoked.
+Where binary indices were requested, the ArchiveIndexTool is invoked.
 Finally, the serverconfig.xml is updated.
 
 % ======================================================================
@@ -613,9 +614,9 @@ Finally, the serverconfig.xml is updated.
 \subsection{Modify Engine's Request Files}
 Locate your archive engine directory and the engine configuration
 file, for example /arch/RF/llrf/llrf-group.xml for the ``llrf'' engine
-maintained by the ``RF'' daemon.
-Modify or re-create that configuration. This is often done via a conversion script in
-/arch/RF/hprf/ASCIIConfig. If you used another method to create the
+maintained by the ``RF'' daemon.  Modify or re-create that
+configuration. This is often done via a conversion script in
+/arch/RF/llrf/ASCIIConfig. If you used another method to create the
 engine configuration, this is a good time to remember what you did.
 
 Then, to actually use that new config file, the engine needs to
@@ -630,16 +631,16 @@ and then restart it.
 Edit archiveconfig.xml to define the new engine under an existing
 demon. Or add a line for a new daemon, then add the new engine under
 it.  Unless you feel lucky today, use ``xmllint -valid
-archiveconfig.xml'' to check if you preserved the basic XML
-well-formedness of the document. Invoke make\_archive\_dirs.pl. Per
-default, it will re-create all daemon and engine directories, so you
-might want to use the ``-s'' option to limit its operation to the new
-or modified subsystem.
+archiveconfig.xml'' to check if you preserved the basic
+well-formedness of the XML document. Invoke
+``scripts/make\_archive\_dirs.pl''. Per default, it will re-create all
+daemon and engine directories, so you might want to use the ``-s''
+option to limit its operation to the new or modified subsystem.
 
 In case the daemon was already running, it won't learn about the new
-engine unless you restart it. So run the ``stop-daemon.sh'' and then
-invoke the ``run-daemon.sh'' script in the daemon directory to start
-the daemon (which will then start any missing engines).
+engine unless you restart it. So run ``stop-daemon.sh'' followed by
+``run-daemon.sh'' in the daemon directory to restart
+the daemon, which will then start any newly added engines.
 
 \subsection{An Engine isn't running}
 Check the process list to assert that the engine in question is really not
@@ -661,16 +662,15 @@ check its log file for clues.
 \subsection{\INDEX{Remove Channels, Data}}
 As for removing data from within one sub-archive, see 
 \ref{sec:deleteDataFromArchive}.
-
 You can remove a whole sub-archive, for example a subdirectory
-``daemon/engine/2006/01\_10'', by deleting that directory and rebuilding
-indices.
+``daemon/engine/2006/01\_10'', by deleting that directory and then rebuilding
+all affected indices.
 
 \subsection{\INDEX{Re-build Indices}}
 Whenever you add or remove a sub-archive, the indices for that engine
 and daemon (indexconfig.xml, maybe also binary master\_index)
 become obsolete: They might still list data in a
-sub-archive that you removed, or not yet include the new
+sub-archive that you removed, or not yet include a new
 sub-archive.
 
 In case you know that the only change is \emph{added} data, a run of the

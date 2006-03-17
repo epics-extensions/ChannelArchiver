@@ -47,7 +47,7 @@ up disk space, alright. But the file name ``20051211'' only indicates
 the creation date of that file.  It will contain samples of channels
 from that date on, until data buffers inside the file get filled.  So
 it can contain data up to Christmas 2005 and further.  For other
-channels, data for Dec.\ 11 will actually be in the file ``20051210'',
+channels, data for Dec.\ 11 and 12 will actually be in the file ``20051210'',
 because a data buffer in there was still being filled on Dec.\ 12.
 The only way of knowing what channels and time ranges reside in which
 file is to look at all the data blocks for all the channels
@@ -58,22 +58,20 @@ routines.
 \NOTE The short summary is that one should under no circumstances try
 to directly modify or delete index and associated data files of a sub-archive.
 
-What one can do: Delete the whole set of index and associated data
-files. This is one reason for creating daily or weekly sub-archives,
+What can you do? Delete the whole set of index and associated data
+files! This is one reason for creating daily or weekly sub-archives,
 so you can move, copy and delete them without affecting other
 sub-archives.
 
 One can also use the ``-copy'' option to copy a time range into a
 \emph{new} sub-archive, and then delete the original.
-
 After deleting a sub-archive or replacing it with a copied-out time
-slice, you might have to recreate indices that referred to that sub-archive.
+slice, you have to recreate indices that referred to that sub-archive.
 
 \subsection{\INDEX{Combine Sub-Archives}}
-The generation of daily sub-archives reduces the amount of data that
-might be lost in case an ArchiveEngine crashes and cannot be restarted
-by the ArchiveDaemon to one day. In the long run, however, it is often
-advisable to combine the daily sub-archives into bigger ones, for
+The generation of daily or weekly sub-archives reduces the amount of data
+endangered by ArchiveEngine crashes. In the long run, however, it is often
+advisable to combine the daily or weekly sub-archives into bigger ones, for
 example monthly. The smaller number of sub-archives is easier to
 handle when it comes to backups. Is also provides slightly better
 \INDEX{retrieval times}. 
@@ -120,20 +118,21 @@ mkdir 01_01_copy
 ArchiveDataTool  01_01/index -copy 01_01_copy/index
 \end{lstlisting}
 
-The reason lies in the fact that the data files contain \INDEX{data buffers},
-allocated by the engine without knowing how many samples to expect. So
-initially, a small buffer is allocated. When full, a new buffer of
-twice the original size is allocated and so on, up to a maximum buffer
-size. For engines that run briefly, for example only one day, many of these
-buffers are partially filled when the sub-archive is closed.
-When copied, the archive data tool can count the available samples
-before allocating data buffers for the copy, and thereby reducing the
-number of buffers and also avoiding any unused buffer space.
+\noindent The reason lies in the fact that the data files contain
+\INDEX{data buffers}, allocated by the engine without knowing how many
+samples to expect. So initially, a small buffer is allocated. When
+full, a new buffer of twice the original size is allocated and so on,
+up to a maximum buffer size. For engines that run briefly, for example
+only one day, many of these buffers are partially filled when the
+sub-archive is closed.  When copied, the archive data tool can count
+the available samples before allocating data buffers for the copy, and
+thereby reducing the number of buffers and also avoiding any unused
+buffer space.
 
-In addition, the copy process will skip data errors,
-including samples with time stamps that go backwards in time,
-or data buffers with invalid control information.
-It will not perform any real \INDEX{data file repair} in the sense
+In addition, the copy process will skip data errors, omitting samples
+with time stamps that go backwards in time,
+or data buffers with invalid pointers to control information.
+It will \emph{not} perform any real \INDEX{data file repair} in the sense
 of magically assiging correct time stamps or control information, so
 the affected samples are simply lost, but the resuling copy of the
 original sub-archive should no longer result in any error messages on retrieval.

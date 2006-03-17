@@ -16,13 +16,21 @@ and that way migrate to the new toolset.
 The ArchiveDataTool can also create Directory files from index files, in case you
 need to use an older tool to investigate data in new archives.
 
-\section{ArchiveManager}
+\section{\INDEX{ArchiveManager}}
 The ArchiveManager command line tool for managing archives that use the
 older Directory files is still available.
 It does \emph{not} work with the new index files.
 After migrating the data to the new index format,
 ArchiveDataTool replaces the ArchiverManager. You can use the ArchiveDataTool
 to create index files for existing directory files.
+
+\section{\INDEX{CAManager}, \INDEX{CAbgManager}}
+The ArchiveDaemon offers the basic functionality of the CAbgManager:
+It monitors, starts and restarts ArchiveEngines and offers a web page
+for status information.
+There is no graphical configuration tool comparable to the CAManager,
+you have to create the XML configuration file for the ArchiveDaemon
+by hand.
 
 \section{Archive Engine ASCII Configurations} \label{sec:ASCIIConfig}
 The ChannelArchiver/Engine directory contains ConvertEngineConfig.pl,
@@ -72,11 +80,4 @@ Each ASCII file defines a group of channels.
   its group..
 \end{itemize}
 
-\section{CAManager, CAbgManager}
-The ArchiveDaemon offers the basic functionality of the CAbgManager:
-It monitors, starts and restarts ArchiveEngines and offers a web page
-for status information.
-There is no graphical configuration tool comparable to the CAManager,
-you have to create the XML configuration file for the ArchiveDaemon
-by hand.
 

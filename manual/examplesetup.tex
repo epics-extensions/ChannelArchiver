@@ -2,14 +2,18 @@
 \chapter{Example Setup} \label{ch:examplesetup}
 % ======================================================================
 The following describes how the archiver toolset is used at the
-\INDEX{Spallation Neutron Source (SNS)}, and how the scripts in
-the ChannelArchiver/ExampleSetup directory assist with the
-setup as described in here.
+\INDEX{Spallation Neutron Source (SNS)}. One can of course configure
+individual engines, start and stop them manually, and do the same with
+index tools and network data servers. You \emph{should} in fact do
+that in order to become familiar with the pieces of the toolset.
+Ultimately, however, we try to base as much as possible on a central
+configuration, and automate the rest via the scripts in the
+ChannelArchiver/ExampleSetup directory.
 We distinguish between two types of computers:
 \begin{itemize}
-\item Sampling Computer:\\
+\item Sampling Machine:\\
       A computer that runs ArchiveEngine instances.
-\item Serving Computer:\\
+\item Serving Machine:\\
       A computer that uses the ArchiveIndexTool to create
       additional binary indices and runs the ArchiveDataServer.
 \end{itemize}
@@ -48,7 +52,7 @@ file into an ``archiveconfig.xml'' skeleton.
 \noindent The ``archiveconfig.xml'' file describes the complete archive layout,
 using the following elements:
 \begin{itemize}
-\item \INDEX{root tag}: Names the root directory, typically ``/arch''.
+\item \INDEX{root tag}: Names the root directory, typically ``/INDEX{/arch}''.
       This has to be the same directory name on all computers,
       since they all use the same ``archiveconfig.xml''.
 \item \INDEX{serverconfig tag}: Location of the server configuration to be
@@ -75,7 +79,7 @@ using the following elements:
 run several. This way, there can be separate engines for each
 subsystem, possibly maintained by different people.  In addition,
 periodic restarts, for example once a week, create a separate
-\INDEX{Sub-Archive} with each restart, thereby limiting the
+\INDEX{sub-archive} with each restart, thereby limiting the
 possibility for data loss in case an engine crashes or creates corrupt
 archives.
 
@@ -153,7 +157,7 @@ responsible for the subsystem is free to use any method of his/her
 choice as long as the result is a configuration file for the engine
 that follows the naming convention
 \begin{center}
-{\it Daemon-Directory} / {\it Engine-Dir.} / {\it Engine-Dir.}-group.xml~,\\
+\emph{Daemon-Directory} / \emph{Engine-Dir.} / \emph{Engine-Dir.}-group.xml,\\
 \end{center}
 If you want to use the ASCIIConfig directory, check section
 \ref{sec:ASCIIConfig} for the format of the ASCII configuration files.
@@ -169,11 +173,12 @@ If you want to use the ASCIIConfig directory, check section
 \end{figure}
 
 \noindent The \INDEX{ArchiveDaemon} is a script that automatically starts,
-monitors and restarts ArchiveEngines on the local host. It includes a
-built-in web server, so by listing all the ArchiveEngines that are
-meant to run on a host in the ArchiveDaemon's configuration file, one
-can check the status of all these engines on a single web page as
-shown in Fig.~\ref{fig:daemon}.
+monitors and restarts ArchiveEngines on the local host. It is based on
+ideas by Thomas Birke, who implemented a similar \INDEX{CAManager}
+tool while at LANL. The daemon includes a built-in web server, so by
+listing several ArchiveEngines that are meant to run on a host in the
+ArchiveDaemon's configuration file, one can check the status of all
+these engines on a single web page as shown in Fig.~\ref{fig:daemon}.
 
 The daemon will attempt to start any ArchiveEngine
 that it does not find running. In addition, the daemon can
@@ -318,7 +323,8 @@ and engines:
 
       \NOTE This does not stop the engines, only the daemon.
 \item daemon-dir/\INDEX{view-daemon.sh} \\
-      Script to run 'lynx' with the URL of the daemon HTTPD.
+      Script to run '\INDEX{lynx}', the text-based web browser, with
+      the URL of the daemon HTTPD.
 \item daemon-dir/engine-dir/\INDEX{stop\_engine.sh} \\
       Stop the engine.
 
@@ -340,7 +346,7 @@ and engines:
   A soft-link to the currently used index.
 \end{itemize}
 
-In addition, there are log files like ArchiveDaemon.log and
+\noindent In addition, there are log files like ArchiveDaemon.log and
 ArchiveEngine.log created in the daemon and engine directories which
 log the diagnostics output of the respective programs.
 
@@ -348,7 +354,7 @@ log the diagnostics output of the respective programs.
 \subsubsection{\INDEX{Daemon Web Server}} \label{sec:daemonserver}
 % ======================================================================
 You can use any web browser to look at the daemon's web pages,
-which look simiar to Fig.~\ref{fig:daemon}.
+which look similar to Fig.~\ref{fig:daemon}.
 The URL follows the format
 \begin{lstlisting}[keywordstyle=\sffamily]
     http://host:port
@@ -356,6 +362,13 @@ The URL follows the format
 \noindent where ``host'' is the name of the computer where the
 ArchiveDaemon is running, and ``Port'' is the TCP port that was
 specified in the config file.
+
+\NOTE Instead of using Mozilla, Firefox, or any of the other
+full-blown graphical web browsers, it is often more practical to use
+``\INDEX{lynx}''. This text-mode web browser shows the same
+information, but starts up quicker and uses less CPU
+and memory resources, which can then be used by archive engines and the
+operating system's disk cache.
 
 The main daemon web page lists all the archive engines that this
 daemon controls with their status. The first column also contains
@@ -372,7 +385,7 @@ following:
       missing and why: Is an IOC down on purpose? Is an IOC
       disconnected because of network problems? Does a channel simply
       not exist, i.e.\ the engine's configuration is wrong?
-\item ``Not Runnnig''\\
+\item ``Not Running''\\
       This means that the respective ArchiveEngine did not respond
       when we queried it, and there is no ``archive\_active.lck'' lock
       file. This combination usually means that the engine is really
@@ -436,7 +449,7 @@ during the development of this software.
 % ======================================================================
 The following scripts use the HTTPD of the daemon and engine
 as well as generic Unix tools to create status overviews.
-They can be used in ``cron'' jobs to periodically update
+They can be used in ``\INDEX{cron}'' jobs to periodically update
 web pages or send regular status emails.
 
 \begin{itemize}
@@ -480,14 +493,11 @@ the daemon will
       a new subdirectory, using the date of the restart for the path
       name to the new index file.
 \item Generate a file in the mailbox directory with information about
-      the ``old'' sub-archive, the one used by the engine that was
-      stopped.
+      the ``old'' sub-archive, the one generated by the engine that was
+      just stopped.
 \end{enumerate}
 
-\noindent As a result, we create weekly sub-archives for the LLRF,
-which provides some insurance against crashes of an
-ArchiveEngine. If paranoid, you choose daily sub-archives.
-After running for a while, we will have created sub-archives like these:
+\noindent As a result, we create weekly sub-archives for the LLRF like these:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
   RF/llrf/2004/02_11/index
   RF/llrf/2004/02_18/index
@@ -520,6 +530,11 @@ The following describes the scenario used at the SNS with
 different computers and no writable NFS share between the
 affected machines.
 
+In general, the performance of the serving computer is of course
+affected by its disk system speed. In addition, the disk cashing of
+the operating system is also an important factor, and that requires
+memory, so avoid running other memory hogs.
+
 % ======================================================================
 \subsection{Configuration}
 % ======================================================================
@@ -528,7 +543,7 @@ sections of archiveconfig.xml, which are allowed for each daemon and
 engine entry:
 
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-   <dataserver>
+    <dataserver>
       <current_index key='4901'>llrf</current_index>
       <index type='binary' key='4902'>LLRF data</index>
       <host>web2</host>
@@ -538,15 +553,17 @@ engine entry:
 \begin{itemize}
 \item \INDEX{current\_index tag}:\\
       This option is only allowed for engine data server entries.
-      When provided, the ``current\_index'' link created by the
+      When provided, the ``\INDEX{current\_index}'' link created by the
       archive daemon for this engine will be served by the
       data server as its own key and name.
 
-      This of course requires access to the current\_index from the
-      serving computer. At the SNS, we have a read-only NFS mount from
-      archive1 onto web2, and ``/arch/RF/llrf/current\_index'' is a
-      manually created soft-link to the actual current\_index softlink
-      on the NFS share.
+      This of course requires access to the current\_index, which
+      resides on the ``sampling'' machine, from the ``serving''
+      computer. At the SNS, we have a read-only NFS mount from
+      archive1 onto web2 for this very purpose.
+      ``web2:/arch/RF/llrf/current\_index'' is a manually
+      created soft-link to the actual current\_index soft-link on the
+      NFS share.
 \item \INDEX{index tag}: \\
       Create an index of given type, ``list'' or ``binary''.
       For an engine, the index covers every data found in the engine
@@ -557,7 +574,7 @@ engine entry:
       under the daemon into one daemon-level master\_index. This
       requires that there are engine indices!
 
-      If a key is proviced, the index is added to the data server
+      If a key is provided, the index is added to the data server
       configuration. It might make sense to only provide a key for the
       daemon-level index, while the engine-level indices are only used
       as an intermediate steps for constructing the daemon index.            
@@ -594,7 +611,7 @@ Finally, the serverconfig.xml is updated.
 \section{Common Tasks}
 % ======================================================================
 \subsection{Modify Engine's Request Files}
-Locate your archive engine directory and the engine configuiration
+Locate your archive engine directory and the engine configuration
 file, for example /arch/RF/llrf/llrf-group.xml for the ``llrf'' engine
 maintained by the ``RF'' daemon.
 Modify or re-create that configuration. This is often done via a conversion script in
@@ -620,7 +637,7 @@ might want to use the ``-s'' option to limit its operation to the new
 or modified subsystem.
 
 In case the daemon was already running, it won't learn about the new
-engine unless you restart it. So run the ``stop-deamon.sh'' and then
+engine unless you restart it. So run the ``stop-daemon.sh'' and then
 invoke the ``run-daemon.sh'' script in the daemon directory to start
 the daemon (which will then start any missing engines).
 

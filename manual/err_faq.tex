@@ -19,24 +19,23 @@ the ArchiveEngine? Does it work with the environment settings and user
 ID under which you are trying to run the ArchiveEngine?
 
 \section{Why do I get \#N/A, why are there missing values in my spreadsheet?}
-There are several possible reasons for not having any data:
-There might not have been any data available because the respective channel was
-disconnected or the archive engine was off.
-Consequently there is no \emph{value}, and a spreadsheet might show
+There are several possible reasons for not having any data: There
+might not have been any data available because the respective channel
+was disconnected or the archive engine was off.  Consequently there is
+no \emph{value}, and a spreadsheet might show
 \INDEX{'\#N/A'} in the value column. When you look at the
 \emph{status} of the channel, those cases might reveal themselves by status
-values like ``Disconnected'' or ``Archive Off''.
-(The ArchiveExport tool, Java client and other programs usually have a
-``status'' or ``text'' option that you need to use in order to see the
-status. By default, you might only see the value).
+values like ``Disconnected'' or ``Archive Off''.  (The ArchiveExport
+tool, Java client and other programs usually have a ``status'' or
+``text'' option that you need to use in order to see the status. By
+default, you might only see the value).
  
 The ArchiveEngine might also have crashed, not getting a chance to
 write ``Archive Off''. That would be a likely case if no channel has
-data for your time range of interest.
-The most common reason for missing values, however, simply results
-from the fact that we archive the original time stamps and you are
-trying to look at more than one channel at a time. See the section on
-time stamp correlation on page~\pageref{sec:timestampcorr}.  
+data for your time range of interest.  The most common reason for
+missing values, however, simply results from the fact that we archive
+the original time stamps and you are trying to look at more than one
+channel at a time. See the section on time stamp correlation on page~\pageref{sec:timestampcorr}.  
 
 \section{Why do I not get what I think I should get from the network data server?}
 I do not know a good way to debug the archive data server when it runs
@@ -47,10 +46,10 @@ About the only thing that one can check:
    /tmp/archserver.log
 \end{lstlisting}
 
-Per default, the archive data server will append to the \INDEX{archserver.log} file
-whenever run. As a result of a 'get\_values' request, it will log
-the request and some basic result information:
-
+\noindent Per default, the archive data server will append to the
+\INDEX{archserver.log} file whenever run. As a result of a
+'get\_values' request, it will log the request and some basic result
+information:
 \begin{lstlisting}[keywordstyle=\sffamily]
  ---- ArchiveServer Started ----
  archiver.get_values
@@ -67,12 +66,13 @@ the request and some basic result information:
  ArchiveServer ran 0.00754285 seconds
 \end{lstlisting}
 
-In case of problems, one can check if the data server received the
+\noindent In case of problems, one can check if the data server received the
 correct request. On the machine where the data server is running,
 one can then try to reproduce the request with the command-line
 ArchiveExport tool.
 
-To disable this data server log file, look for 'LOGFILE' in the data server sources.
+To disable this data server log file, look for 'LOGFILE' in the data
+server sources.
 
 \section{Back in time?} \label{sec:back-in-timefaq} 
 The archiver relies on the world going forward in time. When

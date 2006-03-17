@@ -6,28 +6,37 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
-\item 03/30/2006? --- Version 2.8.0:\\
-Like a pendulum swinging back, I've overcome my initial
-disappointment with C++ exceptions and added them back
-in, because as long as the compiler supports them,
-their use eases the error handling:
-Detect and describe errors at the low level in the code
-where they happen, and pass them up to the high level
-code in the form of an exception.
+\item 03/17/2006 --- Version 2.8.0:\\
+The code has been changed back to using C++ exceptions, as it did in
+the versions for EPICS base R3.13.
 
 In this conversion process, many unit-tests have been added
 and checked under valgrind.
 
-Checks of the nanosecond-portion of time stamps have been added
-to avoid the 'assert' aborts found since R3.14.8.
-
-The ExampleSetup is quite different, and described in the manual.
+When compiled with R3.14.8, the more rigorous checking of time stamps
+in EPICS base would result in 'assert'-aborts when the
+nanosecond-portion of time stamps was not normalized.
+This happened quite often at the SNS because of ongoing timing system driver
+development and last not least a bug in the Java data viewer.
+Guards have been added to the archiver code to hopefully avoid all
+such aborts.
 
 The retrieval code used by ArchiveExport and the ArchiveDataServer can
 now follow several soft links. So if /a/link is a soft link to /b/link
 which in turn points to /c/index which refers to data in
-``20060110'', the tools will use the data from 
+``20060110'', the tools will now use the data from 
 ``/c/20060110'' and not ``/a/20060110''.
+
+Possibly most visible on the outside:
+The ExampleSetup is quite different.
+Before, the ``ArchiveDaemon'' would run engines and perform indexing.
+The indexing has been moved into a different collection of scripts,
+meant to run on a ``serving'' computer, while the ``sampling'' machine
+runs only daemons and engines.
+Check the ``Example Setup'' in chapter \ref{ch:examplesetup} for details.
+It is probably not fully done, but has been running at the SNS for
+about one week, recently collecing 4 to 5GB of data per day,
+and serving a total of about 900GB of data for 2005 and 2006.
 
 \item 12/13/2005 --- Version 2.7.0:\\
 Error reporting: When a command-line tool failed,

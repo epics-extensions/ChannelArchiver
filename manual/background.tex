@@ -1,4 +1,4 @@
-\chapter{Background}
+\chapter{Background} \label{ch:background}
 
 \section{What is a Channel?} % -----------------------------------------------
 The Channel Archiver deals with Channels that are served by EPICS
@@ -263,7 +263,7 @@ It is important to remember that the data served by CA Servers is in
 EPICS time, that is based on UTC and \emph{not} your local time.  The
 ArchiveEngine stores that data as received, which is again in EPICS
 time based on UTC.  When the network data server is asked for samples,
-those are also based UTC, albeit with a slight shift from a 1990 epoch
+those are also based UTC, albeit with a slight shift from a 1990 \INDEX{epoch}
 to 1970, simply because this is more convenient to use in most
 programming languages. C, C++, Java and perl all include routines for
 converting 1970-epoch seconds to local time and back.
@@ -276,13 +276,13 @@ specify start and end times for a data request, this is done in local
 time.
 
 An example of possible consequences: Assume you live in San Francisco,
-California (UTC+8), and you receive a CD-ROM with archived data from the SNS
-in Oak Ridge, Tennessee (UTC+5). I you want to investigate what happened
-at noon on 01/01/2004 at the SNS, you will have to query for
+California (UTC-8), and you receive a CD-ROM with archived data from the SNS
+in Oak Ridge, Tennessee (UTC-5). I you want to investigate what happened
+at noon, 12:00:00, on 01/01/2004 at the SNS, you will have to query for
 09:00:00 to adjust for the different time zones.
 
 The EPICS base code also relies on the operating system services for
-\INDEX{daylight saving time} (DST). At least under RedHat Linux 9 this
+\INDEX{daylight saving time} (\INDEX{DST}). At least under RedHat Linux 9 this
 seems to work fine when you are inside the United States.
 Example: In the US, daylight saving time went into effect on
 04/04/2004, 02:00:00, and I archived a "stringin" record which had
@@ -309,7 +309,7 @@ EPICS Seconds & Time     & Value \\
 \medskip
 \noindent The seconds of the raw EPICS time stamp simply continue to count up
 though the transition because UTC is not affected by DST.
-(This test was run in the US Mountain time zone, UTC+7, and the
+(This test was run in the US Mountain time zone, UTC-7, and the
 nanoseconds of the EPICS time stamp are omitted.)
 The Value of the string record, which contains the local time as the
 IOC saw it, jumps from what would have been 02:00:00 to 03:00:00 DST.

@@ -53,16 +53,18 @@ inside.
 \end{table}
 
 \noindent Table~\ref{tab:datafile} shows the basic layout of a data
-file ``X'', with items marked by ``\dag'' only available since version
+file ``X'', with items marked by \dag only available since version
 2-1-1 of the ChannelArchiver toolset. The 'DATA' marker for the Data
 header at offset 0x2000 would start at\\
-~~~~ 0x2000 - 5 - length(channel name),\\
-in order to allow for the string ``DATA'' and the '\\0'-terminated
+\begin{center}
+   0x2000 - 5 - length(channel name),
+\end{center}
+in order to allow for the string ``DATA'' and the null-terminated
 channel name.
 
 Most important, the data file primarily stores data. It does not need
 to know about the channel names to which the data belongs, except for
-the recently added ``\dag'' tags. The index would for example tell us
+the recently added \dag tags. The index would for example tell us
 that the data of interest for channel ``fred'' can be found in data
 file ``X'' at offset 0x2000. In there, the Data Header points to the
 preceding buffer (none in this case) and the following buffer (in this
@@ -104,7 +106,7 @@ Beginning with version 2-1-1 of the ChannelArchiver toolset, the items
 marked with ``\dag'' in Table~\ref{tab:datafile} were added.  A
 4-ASCII character magic ID at the start of the data file identifies
 the new file type. Each CtrlInfo if preceded by 'INFO' and each Data
-Header is preceded by 'DATA' followed by the '\\0'-terminated channel
+Header is preceded by 'DATA' followed by the null-terminated channel
 name.
 
 One could write a rescue program that e.g.\ creates an index for data

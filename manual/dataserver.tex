@@ -1,4 +1,4 @@
-\section{Data Server} \label{sec:dataserver}
+\section{\INDEX{Data Server}} \label{sec:dataserver}
 The archiver toolset includes a network data server.
 By running this data server on a computer that has
 physical access to your archived data, be it because the data resides
@@ -42,18 +42,18 @@ as a generic, interactive data client.
 \subsection{Installation} % ---------------------------------------------
 After successful compilation in ChannelArchiver/XMLRPCServer, you should
 have a program
-``XMLRPCServer/O.\$EPICS\_HOST\_ARCH/ArchiveDataServer''.
+``XMLRPCServer/O.\$EPICS\_HOST\_ARCH/\INDEX{ArchiveDataServer}''.
 You have to install it as a CGI tool under a web server, passing
 an environment variable ``SERVERCONFIG'' to it which points
 to a configuration file. This means
 
 \begin{itemize}
-\item You need a web server like Apache running on a computer
+\item You need a web server like \INDEX{Apache} running on a computer
       with access to the archive data.
 \item You need to know how to start, stop and configure that
       web server.
 \item You need to know how to install, configure and possibly
-      troubleshoot CGI tools under that web server.
+      troubleshoot \INDEX{CGI} tools under that web server.
 \item You need to create a configuration file for the ArchiveDataServer.
 \end{itemize}
 
@@ -158,9 +158,9 @@ ArchiveDataServer that follows the DTD from listing
 installation). Note that the ArchiveDataServer might not verify your
 configuration file, so you are strongly encouraged to use a tool like
 'xmllint' on Linux to check your configuration against the
-DTD. Listing \ref{lst:serverconfigex} shows one example configuration
-which lists two archives to be served. Client programs will internally
-use the respective 'key' to access them.
+DTD. Listing \ref{lst:serverconfigex} shows one example 
+\INDEX{serverconfig.xml} which lists two archives to be served. Client
+programs will internally use the respective 'key' to access them.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={XML DTD for the Data Server Configuration},label=lst:serverconfigdtd]{../XMLRPCServer/serverconfig.dtd}
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example Data Server Configuration},label=lst:serverconfigex]{../XMLRPCServer/serverconfig.xml}

@@ -1,4 +1,4 @@
-\chapter{ArchiveEngine} \label{sec:engine}
+\chapter{\INDEX{ArchiveEngine}} \label{sec:engine}
 
 \begin{figure}[htb]
 \begin{center}
@@ -49,27 +49,28 @@ elements of the configuration file.
 
 \clearpage
 
-\subsection{write\_period}
-This is a \INDEX{Global Option} that needs to precede any group and
+\subsection{\INDEX{write\_period tag}}
+This is a \INDEX{global option} that needs to precede any group and
 channel definitions.  It configures the write period of the Archive
 Engine in seconds. The default value of 30 seconds means that the
 engine will write to Storage every 30 seconds.
 
-\subsection{get\_threshold} \label{sec:getthreshold}
+\subsection{\INDEX{get\_threshold tag}} \label{sec:getthreshold}
 This global option determines when the archive engine switches from
 ``Sampled'' operation to ``Sampled using monitors'' as described in
 section \ref{sec:sampling}. Defaults to 20 seconds.
 
-\subsection{file\_size}
+\subsection{\INDEX{file\_size tag}}
 This global option determines when the archive engine will create a
 new data file. The default of 100 means that the engine will continue
 to write to a data file until that file reaches a size of
 approximately 100~MB, at which point a new data file is created.
 
-\subsection{ignored\_future}
-Defines ``too far in the future'' as ``now $+$ ignored\_future''.
-Samples with time stamps beyond that time are ignored.  Details: For
-strange reasons, the Engine sometimes receives values with invalid
+\subsection{\INDEX{ignored\_future tag}}
+Defines ``too far in the future'' as ``now $+$ ignored\_future''. It
+is specified in hours, and samples with time stamps beyond that time
+are ignored.
+Details: For strange reasons, the Engine sometimes receives values with invalid
 time stamps. The most common example is a ``Zero'' time stamp: After
 an IOC reboots, all records have a zero time stamp until they are
 processed. For passive records, as commonly used for operator input,
@@ -84,15 +85,16 @@ the archiver cannot go back in time, it cannot add further values to
 this channel until the date "1/2/2035" is reached.  Consequently,
 future time stamps have to be ignored. (default: 6h)
 
-\subsection{buffer\_reserve} \label{sec:reserve}
+\subsection{\INDEX{buffer\_reserve tag}} \label{sec:reserve}
 To buffer the samples between writes to the disk, the engine keeps a
-memory buffer for each channel. The size of this buffer is
+memory buffer for each channel. The size of this buffer is rounded up
+to the next integer from
 $$ buffer\_reserve \times \frac{write\_period}{scan\_period}
 $$ Since writes can be delayed by other tasks running on the same
 computer as well as disk activity etc., the buffer is bigger than the
 minimum required: buffer\_reserve defaults to 3.
 
-\subsection{max\_repeat\_count} \label{sec:repeats}
+\subsection{\INDEX{max\_repeat\_count tag}} \label{sec:repeats}
 When sampling in a scanned mode (as opposed to monitored), the engine
 stores only new values. As long as a value matches the preceding
 sample, it is not written to storage. Only after the value changes, a
@@ -109,7 +111,7 @@ the given number of repeats. The default is 120, meaning that a
 channel that is scanned every 30 seconds will be written once an hour
 even if it had not changed. 
 
-\subsection{disconnect} \label{sec:disconnect}
+\subsection{\INDEX{disconnect tag}} \label{sec:disconnect}
 This global option selects how ``disabled'' channels (see
 \ref{sec:disable}) are handled. By default, disabled channels will
 stay connected via ChannelAccess, but no values are archived.
@@ -133,22 +135,22 @@ that are archived via monitors at a high rate but disabled.
 Most likely, though, checking your channels' update rates or using a
 temporary archive engine might be the better solution.
 
-\subsection{group}
+\subsection{\INDEX{group tag}}
 Every channel belongs to a group of channels. The configuration file
 must define at least one group. For organizational or aesthetic
 purposes, you might add more groups. One important use of groups is
 related to the ``disable'' feature, see section \ref{sec:disable}.
 
-\subsubsection{name}
+\subsubsection{\INDEX{name tag}}
 This mandatory sub-element of a group defines its name.
 
-\subsection{channel}
+\subsection{\INDEX{channel tag}}
 This element defines a channel by providing its name and the sampling
 options. A channel can be part of more than one group. To accomplish
 this, simply list the channel as part of all the groups to which it
 should belong.
 
-\subsubsection{name}
+\subsubsection{\INDEX{name tag}}
 This mandatory sub-element of a channel defines its name. Any name
 acceptable for ChannelAccess is allowed. The archive engine does not
 perform any name checking, it simply passes the name on to the CA
@@ -156,7 +158,7 @@ client library, which in turn tries to resolve the name on the
 network.  Ultimately, the configuration of your data servers decides
 what channel names are available.
 
-\subsubsection{period} \label{sec:period}
+\subsubsection{\INDEX{period tag}} \label{sec:period}
 This mandatory sub-element of a channel defines the sampling period.
 In case of periodic sampling, this is the period at which the periodic
 sampling attempts to operate. In case of monitored channels (see next
@@ -171,7 +173,7 @@ every 30 seconds and once as a monitor with an estimated period or one
 second, the channel will in fact be monitored with an estimated period
 of 1 second.
 
-\subsubsection{scan}
+\subsubsection{\INDEX{scan tag}}
 Either ``monitor'' or ``scan'' need to be provided as part of a
 channel configuration to select the sampling method.  
 True to its name, ``scan'' selects scanned operation, where the preceding
@@ -181,7 +183,7 @@ As an example, scanned operation with a period of 60 means: Every 60
 seconds, the engine will write the most recent value of the channel to
 the archive.
 
-\subsubsection{monitor}
+\subsubsection{\INDEX{monitor tag}}
 As an alternative to the ``scan'' tag, ``monitor'' can be used,
 requesting monitored operation, that is: An attempt is made to store
 each change received via ChannelAccess. The ``period'' tag is used to
@@ -191,7 +193,7 @@ tag, the archive engine might drop samples. (See also
 ``buffer\_reserve'', \ref{sec:reserve}).
 
 
-\subsubsection{disable} \label{sec:disable}
+\subsubsection{\INDEX{disable tag}} \label{sec:disable}
 This optional sub-element of a channel turns the channel into a
 ``disabling'' channel for the group. Whenever the value of the channel
 is above zero, sampling of the whole group will be disabled until the
@@ -382,8 +384,8 @@ following URL to stop that engine on the local computer:
 http://localhost:4812
 \end{lstlisting}
 
-% -------------------------------------------------------------------------------
-\section{Web Interface} \label{sec:enginehttp} % --------------------------------
+% ---------------------------------------------------------------------------
+\section{\INDEX{Engine Web Server}} \label{sec:enginehttp} % ----------------
 \begin{figure}[htb]
 \begin{center}
 \InsertImage{width=0.8\textwidth}{engine_main}

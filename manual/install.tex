@@ -1,7 +1,7 @@
 \chapter{Setup, Installation} \label{sec:install}
 In general, the archiver toolset should build on Unix-type operating
 systems that are supported by EPICS base 3.14.
-Specific instructions for Linux (RedHat and Mandrake) as well as the Apple
+Specific instructions for Linux (RedHat and Mandrake) as well as Apple
 Mac OS~X follow.
 
 \section{Compilation}
@@ -24,7 +24,9 @@ already or beyond this manual to explain, in which case we have to
 refer you to the EPICS web site
 \href{http://www.aps.anl.gov/epics}{http://www.aps.anl.gov/epics}. 
 
-{\bf You need to read and maybe adjust Tools/ToolsConfig.h and
+\medskip
+
+\emph{You need to read and maybe adjust Tools/ToolsConfig.h and
 LibIO/ArchiverConfig.h to suit your needs. The most important
 parameter in there is ``CONVERSION\_REQUIRED''. Assert that it is
 correctly configured! If you use the wrong setting for
@@ -34,10 +36,13 @@ operating system; your network data server will only provide garbage
 data to network clients. 
 }
 
-One good thing to do for a sanity check is
-to run the ArchiveExport tool on the data provided in the DemoData
-subdirectory. Try to retrieve the PV ``DoublePV''; you should see
-values in the range of 0...10 with time stamps in recent years:
+One good thing to do for a sanity check is to run the ArchiveExport
+tool on the data provided in the DemoData subdirectory. Try to
+retrieve the PV ``DoublePV''. You should see values in the range of
+0...10 with time stamps in recent years.  You will not see the exact
+time stamps shown in the example, unless you reside in the
+``Eastern'' US time zone (UTC-5), as explained in section
+\ref{sec:GMT}:
 
 \begin{lstlisting}[keywordstyle=\sffamily]
 ArchiveExport DemoData/index DoublePV -text
@@ -88,9 +93,7 @@ additional errors that can be fixed by replacing includes for
 AS and Mandrake 10 needed additional packages, see below.
 
 \NOTE The default serialization code in xmlrpc-c-0.9.9 will serialize
-sufficiently small numbers as zero, which means that e.g.\ many of
-your archived vacuum pressure readings of $1.5 10^{-8}$ end up as $0$
-when accessed via XML-RPC (see also section \ref{sec:xml:tiny}).
+sufficiently small numbers as zero, see details in section \ref{sec:xml:tiny}.
 The ``ThirdParty'' subdirectory contains the sources for xmlrpc-c-0.9.9
 together with a patch files that corrects the ``using namespace std;'' and
 the serialization issue as well as the ``strstream'' problem.
@@ -250,6 +253,18 @@ sudo make install
 \noindent RedHat 6.2 was hopeless because many of the required perl
 packages were missing.
 
+Users who want to experiment with the perl client, but lack the
+privilege to install in /usr/local can install a private copy like
+this:
+\begin{lstlisting}[keywordstyle=\sffamily]
+...
+perl Makefile.PL PREFIX=~
+make install
+export PERL5LIB=~/lib/perl5/site_perl/5.8.0
+\end{lstlisting}
+\noindent You might have to adjust the PERL5LIB settings to reflect
+your perl version.
+
 \section{Installation}
 There are no specific installation procedures for the ArchiveEngine,
 ArchiveExport, and most other Channel Archiver components. The
@@ -260,9 +275,9 @@ require the extensions' lib directory be added to the
 LD\_LIBRARY\_PATH. The same applies to other helper libraries like
 Xerces that might be in the form of shared libraries.
 
-The usage of the ArchiveEngine and other archiver tools might require
+The usage of the ArchiveEngine and other archiver tools migh require
 configuration files, the format of which is described as part of the
-tools section in this manual.
+tool's dedicated section in this manual.
 
 The ArchiveDataServer requires integration with your web server. The
 process is exemplified in the Data Server chapter starting on page

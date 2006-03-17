@@ -1,4 +1,4 @@
-\section{XML-RPC Protocol} \label{sec:xmlprotocol}
+\section{\INDEX{XML-RPC Protocol}} \label{sec:xmlprotocol}
 The following is a description of the calls implemented by the archive
 data server based on the XML-RPC protocol.
 For details on XML-RPC,  including the specifications and examples of
@@ -306,22 +306,22 @@ and the tables \ref{tab:stat}, \ref{tab:sevr} and
 \ref{tab:statsevrexample}.
 
 \subsection{Note about Tiny Numbers and Precision} \label{sec:xml:tiny} % -----------------
-Some systems deal with small numers. Vacuum readings often
-use numbers like $5 10^{-8}$. The XML-RPC specification is unfortunately
-unclear how numbers should get serialized and parsed other than specifically
-prohibiting the exponential notation. The best one could serialize the example
-number would therefore be ``0.00000005''.
+Some systems deal with small numers. Vacuum readings often use numbers
+like $5 \times 10^{-8}$. The XML-RPC specification is unfortunately
+unclear as to how numbers should get serialized and parsed other than
+specifically prohibiting the exponential notation. The best one could
+serialize the example number would therefore be ``0.00000005''.
 
-When the ArchiveDataServer is build with the XML-RPC library for C/C++ as
-described in the installation section, \ref{sec:install}, it will attempt to
-properly serialize small numbers.
-When using another XML-RPC library, and this includes the XML-RPC library that
-your client program uses, small numbers might end up being serialized
-as zero. The Java Archive Client appears to handle small numbers, as does
+When the ArchiveDataServer is build with the XML-RPC library for C/C++
+as described in the installation section, \ref{sec:install}, it will
+attempt to properly serialize small numbers.  When using another
+XML-RPC library, and this includes the XML-RPC library that your
+client program uses, small numbers might end up being serialized as
+zero. The Java Archive Client appears to handle small numbers, as does
 the ``Frontier'' XML-RPC library for perl.
 
-A similar issue applies to the precision of floating point numbers: The
-ArchiveDataServer serializes numbers with a fixed precision that is determined
-by the XML-RPC library for C/C++. You can patch the library to increase the
-precision.
+A similar issue applies to the precision of floating point numbers:
+The ArchiveDataServer serializes numbers with a fixed precision that
+is determined by the XML-RPC library for C/C++. You can patch the
+library to increase the precision.
 

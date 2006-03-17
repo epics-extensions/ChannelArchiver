@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE engines SYSTEM "ArchiveDaemon.dtd">
-<engines>
-   <engine>
-      <desc>Demo</desc>
-      <port>4813</port>
-      <config>/arch/RF/llrf/llrf.xml</config>
-   </engine>
-   <engine>
-      <desc>Demo 2</desc>
-      <port>4814</port>
-      <config>/arch/RF/hprf/hprf.xml</config>
-      <daily>02:00</daily>
-      <copy>dataserver:/arch/RF/hprf</copy>
-   </engine>
-</engines>
+<!DOCTYPE daemon SYSTEM "ArchiveDaemon.dtd">
+<daemon>
+    <port>4900</port>
+    <mailbox>/arch/xfer</mailbox>
+    <engine directory='llrf'>
+        <desc>LLRF</desc>
+        <port>4901</port>
+        <config>llrf-group.xml</config>
+        <restart type='weekly'>We 10:20</restart>
+        <dataserver><host>web2</host></dataserver>
+    </engine>
+    <!-- Typically, more entries follow:
+    <engine directory='hprf'>
+        ...
+    </engine>
+     -->
+</daemon>
+

@@ -17,7 +17,7 @@ static const unsigned long magic_marker = 0xac00face;
 static Throttle invalid_time_throttle;
 static Throttle futuristic_time_throttle;
 static Throttle back_in_time_throttle;
-
+static Throttle nanosecond_throttle(60.0);
 
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
   : marker(magic_marker),
@@ -451,6 +451,26 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
     ArchiveChannel *me = (ArchiveChannel *) args.usr;
     LOG_ASSERT(me->marker == magic_marker);
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
+
+    // Check the nanoseconds of each incoming value. Problems will arise later
+    // unless they are normalized to less than one second.
+    if (value->stamp.nsec >= 1000000000L)
+    {
+        if (nanosecond_throttle.isPermitted())
+        {
+            epicsTimeStamp s = value->stamp;
+            s.nsec = 0;
+            epicsTime t = s;
+            stdString txt;
+            epicsTime2string(t, txt);
+            LOG_MSG("ArchiveChannel::value_callback(%s) with invalid secs/nsecs %zu, %zu: %s\n",
+                    me->name.c_str(),
+                    (size_t) value->stamp.secPastEpoch,
+                    (size_t) value->stamp.nsec,
+                    txt.c_str());
+        }
+        return;
+    }
     if (args.status != ECA_NORMAL  ||  value == 0)
     {
         LOG_MSG("ArchiveChannel::value_callback(%s): No value, CA error %s\n", 

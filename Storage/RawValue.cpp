@@ -586,9 +586,16 @@ void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
     SHORTFromDisk(value->severity);
     epicsTimeStampFromDisk(value->stamp);
     if (value->stamp.nsec >= 1000000000L)
-        throw  GenericException(__FILE__, __LINE__,
-        "invalid time stamp with %zu secs, %zu nsecs.",
-        (size_t)value->stamp.secPastEpoch, (size_t)value->stamp.nsec);
+    {
+        size_t nsec = value->stamp.nsec;
+        value->stamp.nsec = 0;
+        epicsTime t = value->stamp;
+        stdString txt;
+        epicsTime2string(t, txt);
+        LOG_MSG("RawValue::readRawValue::read patching "
+                "time stamp with invalid nsecs %zu: %s\n",
+                nsec, txt.c_str());
+    }
 
     // nasty: cannot use inheritance in lightweight RawValue,
     // so we have to switch on the type here:

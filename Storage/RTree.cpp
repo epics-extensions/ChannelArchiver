@@ -78,8 +78,12 @@ static void readEpicsTime(FILE *f, epicsTime &t)
     t = stamp;
     stdString txt;
     epicsTime2string(t, txt);
+#if 0
     throw GenericException(__FILE__, __LINE__,
-        "Invalid time stamp with %zu nsecs: %s",
+#else
+    LOG_MSG(
+#endif
+        "RTree: Invalid time stamp with %zu nsecs: %s\n",
         nsec, txt.c_str());
 }
 

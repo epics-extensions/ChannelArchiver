@@ -54,6 +54,7 @@ sub show_sizes()
 {
     my ($d_dir, $e_dir, $dir, $info, %bytes);
     my ($root) = $config->{root};
+    my ($total) = 0;
     print("Data sizes for the engine directories:\n");
     foreach $d_dir ( keys %{ $config->{daemon} } )
     {
@@ -68,7 +69,8 @@ sub show_sizes()
             if ($info =~ m"([0-9]+)\s+(\S+)")
             {
                 $bytes{$dir} = $1;
-                printf("%-20s%s\n", $dir, format_bytes($bytes{$dir}));
+                $total += $1;
+                printf("%-30s%s\n", $dir, format_bytes($bytes{$dir}));
             }
             else
             {
@@ -76,6 +78,7 @@ sub show_sizes()
             }
 	}
     }
+    printf("%-30s%s\n", "Total", format_bytes($total));
 }
 
 # The main code ==============================================

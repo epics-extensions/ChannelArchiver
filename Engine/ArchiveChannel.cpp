@@ -233,7 +233,8 @@ void ArchiveChannel::enable(Guard &engine_guard,
     {
         if (pending_value_set)
         {   // Assert we don't go back in time
-            if (when >= last_stamp_in_archive)
+            if (!isValidTime(last_stamp_in_archive)  ||
+                when >= last_stamp_in_archive)
             {
                 //LOG_MSG("'%s': re-enabled, writing the most recent value\n",
                 //        name.c_str());
@@ -581,7 +582,8 @@ void ArchiveChannel::addEvent(Guard &guard,
         RawValue::Data *value = buffer.getNextElement();
         memset(value, 0, RawValue::getSize(dbr_time_type, nelements));
         RawValue::setStatus(value, status, severity);
-        if (event_time < last_stamp_in_archive)
+        if (isValidTime(last_stamp_in_archive) &&
+            event_time < last_stamp_in_archive)
             // adjust time, event has to be added to archive
             RawValue::setTime(value, last_stamp_in_archive);
         else

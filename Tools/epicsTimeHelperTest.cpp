@@ -10,12 +10,46 @@ TEST_CASE test_time()
     tm.ansi_tm.tm_mon  = 4 - 1;
     tm.ansi_tm.tm_mday = 10;
     tm.ansi_tm.tm_hour = 11;
-    tm.ansi_tm.tm_min  = 0;
-    tm.ansi_tm.tm_sec  = 0;
+    tm.ansi_tm.tm_min  = 13;
+    tm.ansi_tm.tm_sec  = 14;
     tm.ansi_tm.tm_isdst   = -1;
-    tm.nSec = 0;
+    tm.nSec = 987000000;
     epicsTime time = tm;
     time.show(10);
+
+    stdString text("04/10/2003 11:13:14.987000000");
+    epicsTime parsed;
+    TEST(string2epicsTime(text, parsed));
+    TEST(parsed == time);
+
+    text = "04/10/2003 11:13:14.987";
+    TEST(string2epicsTime(text, parsed));
+    TEST(parsed == time);
+
+    text = "04/10/2003 11:13:14";
+    TEST(string2epicsTime(text, parsed));
+    TEST(parsed != time);
+
+    tm.nSec = 0;
+    time = tm;
+    TEST(parsed == time);
+
+    text = "04/10/2003 11:13";
+    TEST(string2epicsTime(text, parsed));
+    TEST(parsed != time);
+
+    tm.ansi_tm.tm_sec = 0;
+    time = tm;
+    TEST(parsed == time);
+
+    text = "04/10/2003";
+    TEST(string2epicsTime(text, parsed));
+    TEST(parsed != time);
+
+    tm.ansi_tm.tm_hour = 0;
+    tm.ansi_tm.tm_min  = 0;
+    time = tm;
+    TEST(parsed == time);
 
     // At Wed Apr  9 10:43:37 MDT 2003 (daylight saving on),
     //  Win32 adds 1hour...
@@ -155,3 +189,4 @@ TEST_CASE test_time()
     now = roundTimeUp(now, 900);    printf("%s\n", epicsTimeTxt(now, txt));
     TEST_OK;
 }
+

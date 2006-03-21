@@ -1,5 +1,5 @@
 Status: 200 OK
-Content-length: 340
+Content-length: 343
 
 <?xml version="1.0" encoding="UTF-8"?>
 <methodResponse>
@@ -8,7 +8,7 @@ Content-length: 340
 <member><name>faultCode</name>
 <value><i4>-601</i4></value></member>
 <member><name>faultString</name>
-<value><string>../IndexConfig.cpp (15): Cannot open '/home/data/llrf/index'</string></value></member>
+<value><string>../IndexFile.cpp (67): Cannot open file '/home/data/llrf/index'</string></value></member>
 </struct></value>
 </fault>
 </methodResponse>

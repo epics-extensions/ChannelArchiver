@@ -441,14 +441,28 @@ int main(int argc, const char *argv[])
         if (start_time.get().length() > 0)
         {
             start = new epicsTime;
-            string2epicsTime(start_time.get(), *start);
+            if (!string2epicsTime(start_time.get(), *start))
+            {
+                fprintf(stderr, "Parse error for start time '%s'\n",
+                        start_time.get().c_str());
+                start = 0;
+                parser.usage();
+                return -1;
+            }
             if (verbose)
                 printf("Using start time %s\n", epicsTimeTxt(*start, txt));
         }
         if (end_time.get().length() > 0)
         {
             end = new epicsTime();
-            string2epicsTime(end_time.get(), *end);
+            if (!string2epicsTime(end_time.get(), *end))
+            {
+                fprintf(stderr, "Parse error for end time '%s'\n",
+                        end_time.get().c_str());
+                end = 0;
+                parser.usage();
+                return -1;
+            }
             if (verbose)
                 printf("Using end time   %s\n", epicsTimeTxt(*end, txt));
         }

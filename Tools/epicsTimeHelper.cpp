@@ -60,7 +60,11 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
                          (txt[8]-'0')*10 + (txt[9]-'0') - 1900;
 
     //  0123456789012345
-    // "mm/dd/yyyy 00:00"
+    // "mm/dd/yyyy ..." - check the space after the date.
+    if (tlen > 10 && txt[10] != ' ')
+        return false;
+    //  0123456789012345
+    // "mm/dd/yyyy 00:00" - check the ':' in the time.
     if (tlen >= 16)
     {
         if (txt[13] != ':')
@@ -69,7 +73,7 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
         tm.ansi_tm.tm_min  = (txt[14]-'0')*10 + (txt[15]-'0');
     }
     //  0123456789012345678
-    // "mm/dd/yyyy 00:00:00"
+    // "mm/dd/yyyy 00:00:00" - are there seconds?
     if (tlen >= 19)
     {
         if (txt[16] != ':')
@@ -77,7 +81,14 @@ bool string2epicsTime(const stdString &txt, epicsTime &time)
         tm.ansi_tm.tm_sec  = (txt[17]-'0')*10 + (txt[18]-'0');
     }
     //  01234567890123456789012345678
-    // "mm/dd/yyyy 00:00:00.000000000"
+    // "mm/dd/yyyy 00:00:00.000" - are there milli but not nano seconds?
+    if (tlen == 23 && txt[19] == '.')
+        tm.nSec =
+            (txt[20]-'0')*100000000 +
+            (txt[21]-'0')*10000000 +
+            (txt[22]-'0')*1000000;
+    //  01234567890123456789012345678
+    // "mm/dd/yyyy 00:00:00.000000000" - are there nano seconds?
     if (tlen == 29 && txt[19] == '.')
         tm.nSec =
             (txt[20]-'0')*100000000 +

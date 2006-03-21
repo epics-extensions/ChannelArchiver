@@ -5,7 +5,7 @@
 #include <MsgLogger.h>
 // Storage
 #include "IndexFile.h"
-#include "ListIndex.h"
+#include "AutoIndex.h"
 #include "DataFile.h"
 #include "RawDataReader.h"
 
@@ -38,14 +38,14 @@ static size_t read_test(const stdString &index_name, const stdString &channel_na
     return num;
 }
 
-static size_t list_read_test(const stdString &index_name, const stdString &channel_name,
+static size_t auto_read_test(const stdString &index_name, const stdString &channel_name,
                         const epicsTime *start = 0, const epicsTime *end = 0)
 {
     stdString text;
     size_t num = 0;
     try
     {
-        ListIndex index;
+        AutoIndex index;
         index.open(index_name);
         RawDataReader reader(index);
         const RawValue::Data *value = reader.find(channel_name, start);
@@ -75,14 +75,14 @@ TEST_CASE RawDataReaderTest()
     epicsTime start;
     TEST(string2epicsTime("03/23/2004 10:50:42.400561000", start));
     TEST(read_test("../DemoData/index", "fred", &start) == 10);
-    TEST(list_read_test("../DemoData/index", "fred", &start) == 10);
-    TEST(list_read_test("list_index.xml", "fred", &start) == 10);
+    TEST(auto_read_test("../DemoData/index", "fred", &start) == 10);
+    TEST(auto_read_test("list_index.xml", "fred", &start) == 10);
 
     epicsTime end(start);
     end += 5;
     TEST(read_test("../DemoData/index", "fred", &start, &end) == 3);
-    TEST(list_read_test("../DemoData/index", "fred", &start, &end) == 3);
-    TEST(list_read_test("list_index.xml", "fred", &start, &end) == 3);
+    TEST(auto_read_test("../DemoData/index", "fred", &start, &end) == 3);
+    TEST(auto_read_test("list_index.xml", "fred", &start, &end) == 3);
 
     TEST(DataFile::clear_cache() == 0);
     TEST_OK;

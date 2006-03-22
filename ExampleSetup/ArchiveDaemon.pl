@@ -922,9 +922,10 @@ sub start_engine($$)
 	    mkpath($new_data_path);
 	}
 	my ($EngineLog) = time_as_short_text($now) . ".log";
+	my ($EngineOut) = time_as_short_text($now) . ".out";
 	my ($cmd) = "cd \"$engine\";" .
 	    "$ArchiveEngine -d \"$config->{engine}{$engine}{desc}\" -l $EngineLog " .
-	    "-p $config->{engine}{$engine}{port} $config->{engine}{$engine}{config} $index >$null 2>&1 &";
+	    "-p $config->{engine}{$engine}{port} $config->{engine}{$engine}{config} $index >$EngineOut 2>&1 &";
 	print(time_as_text(time), ": Command: '$cmd'\n");
 	system($cmd);
 	# Create symlink to the new index ('2005/03_21/index')

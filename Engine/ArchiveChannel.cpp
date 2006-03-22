@@ -506,6 +506,16 @@ void ArchiveChannel::value_callback(struct event_handler_args args)
         LOG_MSG("ArchiveChannel::value_callback(%s) exception:\n%s\n", 
                 me->name.c_str(), e.what());
     }
+    catch (std::exception &e)
+    {
+        LOG_MSG("ArchiveChannel::value_callback(%s) std::exception:\n%s\n", 
+                me->name.c_str(), e.what());
+    }
+    catch (...)
+    {
+        LOG_MSG("ArchiveChannel::value_callback(%s) unknown exception\n", 
+                me->name.c_str());
+    }
 }
 
 void ArchiveChannel::handleConnectionChange(Guard &engine_guard,

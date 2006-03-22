@@ -89,19 +89,27 @@ sub check_mailbox()
     my ($entry);
     return 0 unless exists($config->{mailbox});
     chdir($config->{mailbox});
+    # An update run can take some time.
+    # We don't want multiple 'update' scripts handling the same mailbox entry.
+    # So mailbox files are moved into 'active' when being read,
+    # then into 'done' when done.
+    # Some might stay in active because there's a problem.
+    # That needs to be handled manually.
+    mkpath("active");
     mkpath("done");
     # Loop over files in mailbox directory
     my (@files) = <*>;
-    my ($num_files) = $#files;
+    my ($num_files) = $#files - 1;
     my ($current) = 0;
     foreach $entry ( @files )
     {
-        # Skip directories like 'done'
+        # Skip directories like 'active' and 'done'
         next unless (-f $entry);
         ++$current;
 	print("** $entry ($current / $num_files):\n");
         my ($handled) = 0;
-	open(MB, "$entry") or die "Cannot open '$entry'\n";
+        rename($entry, "active/$entry") or die "Cannot move $entry to 'active' subdir: $!\n";
+	open(MB, "active/$entry") or die "Cannot open 'active/$entry'\n";
 	while (<MB>)
         {   # Each file should contain 'new ... ' or 'copy ...' info.
             chomp;
@@ -166,7 +174,7 @@ sub check_mailbox()
         }
         close(MB);
         # rename
-        rename($entry, "done/$entry") if ($handled);
+        rename("active/$entry", "done/$entry") if ($handled);
     } 
     return $updates;
 } 

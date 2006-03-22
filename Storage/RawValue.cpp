@@ -592,6 +592,11 @@ void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
         epicsTime t = value->stamp;
         stdString txt;
         epicsTime2string(t, txt);
+        // Similar to RTree.cpp, it's probably best to live
+        // with the data as is and patch it, because otherwise
+        // the data is lost.
+        // Unfortunately, we can't show a channel name
+        // or more detail at this level:
         LOG_MSG("RawValue::readRawValue::read patching "
                 "time stamp with invalid nsecs %zu: %s\n",
                 nsec, txt.c_str());

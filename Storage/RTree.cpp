@@ -79,8 +79,15 @@ static void readEpicsTime(FILE *f, epicsTime &t)
     stdString txt;
     epicsTime2string(t, txt);
 #if 0
+    // In principle, one should ignore those values,
+    // throw an exception, so we get a good message
+    // which includes the context:
     throw GenericException(__FILE__, __LINE__,
 #else
+    // However, it's often better to patch the nsecs
+    // and show the data. Unfortunalely, we don't know
+    // the channel name etc. at this point, so we can't
+    // provide a good error message.
     LOG_MSG(
 #endif
         "RTree: Invalid time stamp with %zu nsecs: %s\n",

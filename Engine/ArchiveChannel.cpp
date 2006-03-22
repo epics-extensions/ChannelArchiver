@@ -288,7 +288,10 @@ unsigned long ArchiveChannel::write(Guard &guard, IndexFile &index)
         }
         if (! writer.add(value))
         {
-            LOG_MSG("'%s': back-in-time write value\n", name.c_str());
+            stdString txt;
+            epicsTime2string(RawValue::getTime(value), txt);
+            LOG_MSG("'%s': back-in-time write value stamped %s\n",
+                    name.c_str(), txt.c_str());
             break;
         }
         ++count;

@@ -17,10 +17,16 @@
 // Tools
 #include <MsgLogger.h>
 #include <ToolsConfig.h>
+#include <Throttle.h>
 // Engine
 #include "HTTPServer.h"
 
 #undef MOZILLA_HACK
+
+#if defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
+// Throttle the log messages for accepted clients down to once every 10 minutes.
+static Throttle client_IP_log_throttle(10*60);
+#endif
 
 // The HTTPServer launches one HTTPClientConnection per
 // web client, which runs until
@@ -164,11 +170,14 @@ void HTTPServer::run()
         if (peer == INVALID_SOCKET)
             continue;
 #if     defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
-        stdString local_info, peer_info;
-        GetSocketInfo(peer, local_info, peer_info);
-        LOG_MSG("HTTPServer thread 0x%08lX accepted %s/%s.\n",
-                (unsigned long)epicsThreadGetIdSelf(),
-                local_info.c_str(), peer_info.c_str());
+        if (client_IP_log_throttle.isPermitted(epicsTime::getCurrent()))
+        {
+            stdString local_info, peer_info;
+            GetSocketInfo(peer, local_info, peer_info);
+            LOG_MSG("HTTPServer thread 0x%08lX accepted %s/%s.\n",
+                    (unsigned long)epicsThreadGetIdSelf(),
+                    local_info.c_str(), peer_info.c_str());
+        }
 #endif
         start_client(peer);
         // Allow a little runtime, so that it might already be done

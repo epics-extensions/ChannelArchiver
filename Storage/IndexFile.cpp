@@ -43,7 +43,8 @@ void IndexFile::open(const stdString &filename, bool readonly)
         else
         {
             Filename::getDirname(name, name);
-            name += '/';
+            if (name.length() > 0)
+                name += '/';
             name += linked_filename;
         }
 #ifdef DEBUG_SOFTLINKS

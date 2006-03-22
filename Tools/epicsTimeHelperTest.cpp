@@ -51,6 +51,20 @@ TEST_CASE test_time()
     time = tm;
     TEST(parsed == time);
 
+    epicsTimeStamp stamp;
+    stamp.secPastEpoch = 10000;
+    stamp.nsec = 1000000000;
+    try
+    {
+        time = stamp;
+        FAIL("Could assign nsecs > 1e9");
+    }
+    catch (std::exception &e)
+    {
+        printf("  OK  : caught '%s'\n", e.what());
+    }
+
+
     // At Wed Apr  9 10:43:37 MDT 2003 (daylight saving on),
     //  Win32 adds 1hour...
     // Convert 03/18/1990 12:13:44.800000019L back and forth:
@@ -98,7 +112,6 @@ TEST_CASE test_time()
     epicsTime start = t;
     TEST(isValidTime(t) == true);
     
-    epicsTimeStamp stamp;
     memset(&stamp, 0, sizeof(epicsTimeStamp));
     t = stamp;
     TEST(isValidTime(t) == false);

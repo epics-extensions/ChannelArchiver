@@ -33,8 +33,8 @@ you have to create the XML configuration file for the ArchiveDaemon
 by hand.
 
 \section{Archive Engine ASCII Configurations} \label{sec:ASCIIConfig}
-The ChannelArchiver/Engine directory contains ConvertEngineConfig.pl,
-a perl script that attemps to convert old-style ASCII configuration
+The ChannelArchiver/Engine directory contains \INDEX{ConvertEngineConfig.pl},
+a perl script that attempts to convert old-style \INDEX{ASCII configuration}
 files for the previous ArchiveEngine into the new XML files:
 \begin{lstlisting}[keywordstyle=\sffamily]
 USAGE:
@@ -57,16 +57,34 @@ a group.
 \noindent Some sites might actually prefer to use the ASCII
 configuration files and convert them to the XML format with this tool,
 so here is a brief description of the ASCII format.
+
 Each ASCII file defines a group of channels.
 \begin{itemize}
+\item ``\# Comment''\\
+  Lines that start with '\#' are ignored. As are empty lines.
 \item ``!write\_period $<$seconds$>$''\\
   Configures the write\_period parameter. Most of the global engine
   parameters described in section \ref{sec:engineconfig} are allowed
   via the format ``!$<$parameter$>$ $<$value$>$''.
+
+  Note that these are global engine parameters. The XML format makes
+  this fact somewhat obvious by listing them once in the header of the
+  configuration. In the ASCII format, you can specify them on any line
+  in any configuration file that is loaded by the engine. The
+  effective value that will be used by the engine for all channels is
+  the value found last, i.e. subsequent ``!...''  parameters replace
+  previous definitions. 
 \item ``!group $<$file-name$>$''\\
   Read another group file.
-  To use this, you should create one ``main'' configuration file
+  To use this, you could create one ``main'' configuration file
   that contains only ``!group ...'' lines.
+  Unfortunately, it used to be no syntax error to have a ``!group
+  ...'' inside a file which was itself included via ``!group ...''.
+  While that might suggest the possibility of creating nested groups,
+  it does not work that way. Each file creates a group, named after the
+  filename, and the engine maintains only one flat list of groups,
+  no sub-groups.
+
   Preferably, do not use the ``!group ...'' command at all.
   Simply create one ASCII file per group, and list all the group files
   that you want one engine to handle on the ConvertEngineConfig

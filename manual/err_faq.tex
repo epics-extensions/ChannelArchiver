@@ -13,7 +13,7 @@ connected. So if a channel never connected, the debugging needs to
 fall back to a basic CA error search:\\
 Is the data source available?
 Can you read the channel with other CA client tools
-(probe, EDM, cau, caget, ...)?
+(probe, EDM, caget, camonitor, ...)?
 Can you do that from the computer where you are running
 the ArchiveEngine? Does it work with the environment settings and user
 ID under which you are trying to run the ArchiveEngine?
@@ -77,7 +77,7 @@ server sources.
 \section{Back in time?} \label{sec:back-in-timefaq} 
 The archiver relies on the world going forward in time. When
 retrieving samples from an archive, we expect the time stamps to be
-monotonic and non-decreasing. Time stamps going back in time break the
+monotonic and non-decreasing. Time stamps going \INDEX{back in time} break the
 lookup mechanism. Data files with non-monotonic time stamps are
 useless. Unfortunately, the clocks of IOCs or other computers running
 CA servers can be mis-configured. The ArchiveEngine attempts to catch
@@ -114,7 +114,7 @@ solution:
 
   A problem arises especially when the disabling channel is from a
   different IOC. Assume we just received samples for several channels
-  and added them to the archive, and then some splitseconds later the
+  and added them to the archive, and then some split seconds later the
   value of the disabling channel arrives, delayed by the network. That
   disabling time stamp might be a little older than the stamps of the
   values that we already wrote, so the attempt to add a ``Disabled''
@@ -135,7 +135,7 @@ solution:
 \noindent In summary, most back-in-time warnings can be ignored as long as the
 clocks of the hosts and IOCs are reasonably in sync.
 
-\section{Found an existing lock file 'archive\_active.lck'}
+\section{Found an existing lock file '\INDEX{archive\_active.lck}'}
 When the ArchiveEngine is started, it creates a \INDEX{lock file} in
 the current directory. The lock file is an ordinary text file
 that contains the start time when the engine was launched. When
@@ -167,7 +167,7 @@ if not perfect ArchiveEngine or other piece of the ChannelArchiver
 yourself, you might want to see if you can reproduce the crash and
 aid in debugging it.
 
-Under Linux, this usally means: Allow the generation of ``core'' files
+Under Linux, this usually means: Allow the generation of ``core'' files
 and investigate them. With recent Linux distributions, add ``set
 ulimit -c unlimited'' to your login-script. When the ArchiveEngine
 crashes, it should now generate a core dump, often called
@@ -211,7 +211,7 @@ server, therefore we do not know the value type of the channel
 and thus we cannot allocate a data buffer in which to write this
 special event-type of value.
 
-\section{Cannot create a new data file within file size limit}
+\section{Cannot create a new data file within \INDEX{file size limit}}
 You specified a rather small file size limit (file\_size option in the
 ArchiveEngine configuration), and the currently required buffer size
 for a single channel already exceeds that file size limit.
@@ -222,7 +222,7 @@ One example that could cause this: You try to archive array channels,
 where each individual sample is already quite big, and picked a tiny
 file\_size. 
 
-\section{Found an existing 'indextool\_active.lck' lock file}
+\section{Found an existing '\INDEX{indextool\_active.lck}' lock file}
 When an ArchiveIndexTool is started, it creates a lock file
 similar to the ArchiveEngine, in the hope of preventing more than
 one Index Tool from modifying a master index at the same time.

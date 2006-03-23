@@ -137,7 +137,7 @@ temporary archive engine might be the better solution.
 
 \subsection{\INDEX{group tag}}
 Every channel belongs to a group of channels. The configuration file
-must define at least one group. For organizational or aesthetic
+must define at least one group. For organizational or esthetic
 purposes, you might add more groups. One important use of groups is
 related to the ``disable'' feature, see section \ref{sec:disable}.
 
@@ -215,14 +215,15 @@ whenever the flagged channel is above zero.
 If you want it the other way around, you typically add a CALC record
 to handle the inversion.
 
-\section{Example for Sampling}
-Assuming that a channel ``fred'' actually emits monitors at 1~Hz,
-these are examples for sampling it:
+\section{Example for Sampling a Channel}
+Assume that a channel ``fred'' emits monitors at 1~Hz.
+These are some examples for sampling it, and what one can expect to
+find in the archive as a result.
 \begin{itemize}
 \item ``fred 1 Monitor''\\
       Every value sent by fred is archived. Might be a good idea for
       some channels, but don't try to store every value of every PV
-      of your control system indefinetely unless you are prepared to
+      of your control system indefinitely unless you are prepared to
       deal with that amount of data.
 
       Per default, the engine will write every 30 seconds. So it will
@@ -231,23 +232,25 @@ these are examples for sampling it:
       With the default buffer\_reserve of 3, it will actually allocate
       a buffer for 60 values, so we don't loose data when the engine
       should get delayed in writing. On the other hand, when the
-      computer is terribly busy, we might not receive any more values, either.
+      computer is terribly busy, we might not receive any more values,
+      either. In any case, the chances of overflowing the data buffer
+      are slim.
 \item ``fred 1''\\
       The engine will sample once per second, and the channel changes
       once a second, so you might think that you archive every value
-      just as in the previous example.  But think again. The sampling
-      of the engine on the host and the scanning of the channel on the
-      CA server are not synchronized, plus there are additional
+      just as in the previous example.  Well, the sample period of the
+      engine running on the host and the scanning of the channel on
+      the CA server are not synchronized, plus there are additional
       network delays. So you will sometimes miss values whenever more
       than one sample arrived between the engine's sampling, or get
       duplicate values whenever no new value arrived between the
       engine's sampling. Bad idea.
 
       Except: With the default get\_threshold of 20 seconds, the engine
-      will not issue a 'get' every second. It will instead use a
+      will \emph{not} issue a 'get' every second. It will instead use a
       monitor, and ignore all data that arrives faster than one
-      second. So this specific case will probably give the same result
-      as the previous case.
+      second. So this specific case will probably give the exact same result
+      as the previous case!
 \item ``fred 60''\\
       The engine will sample every 60 seconds. This is a very
       reasonable setup: The channel samples at 1 Hz, so you get
@@ -255,22 +258,28 @@ these are examples for sampling it:
       we only care about a sample per minute and save storage space by
       ignoring finer detail.
 
-      With the default get\_threshold, that's it. If you changed the
-      threshold to for example 70 seconds, the engine would use
+      With the default get\_threshold, that's it. If you raised the
+      threshold, for example to 70 seconds, the engine would use
       monitors, so it would receive the 1 Hz data and ignore 59
       samples each minute. That is probably a waste of network
       bandwidth. You might, on the other hand, get more consistent
       time stamps, since the '60 second' period is now based on the
       time stamps which the IOC sends, and not the host clock.
-\item ``fred 10 Monitor''\\
+
+      While this sounds like a neat trick, it might be cleaner to
+      create a channel on the CA server which only updates every 60
+      seconds, then use ``fred 60 Monitor'' to store each such sample.
+\item ``fred 60 Monitor''\\
       Probably an error. The engine is instructed to save every
-      incoming monitor, but you told it to allocate buffers for only
-      one value every 10 seconds, even though we knew that the channel
-      will emit monitors much more often. So you will get ``overrun''
-      errors, the engine will overwrite older samples in its ring
-      buffer with newly arriving samples, and the archive will contain
-      the last few samples that happened to be in the buffer at
-      write-to-disk time.
+      incoming monitor. Expecting one value to arrive about every 60
+      seconds, and assuming a write period of 30 seconds with buffer
+      reserve of 3, the engine will allocate a buffer for 3 values.
+
+      In reality, however, about 30 values arrive in every 30 second
+      write cycle. You will see buffer ``overrun'' errors, because the
+      engine overwrites older samples in its ring buffer with newly
+      arriving samples, and the archive will contain the last 3
+      samples that happened to be in the buffer at write-to-disk time.
 \end{itemize}
 
 \section{Starting and Stopping}

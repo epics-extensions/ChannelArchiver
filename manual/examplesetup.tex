@@ -295,7 +295,9 @@ configuration to see how they get translated.
       \end{itemize}
       \NOTE It is advisable to stagger the restart times of your engines
       such that they don't all restart at the same day and time in order to
-      reduce the CPU and network load for the ChannelAccess re-connects.
+      reduce the CPU and network load for the ChannelAccess
+      re-connects.
+      See also show\_restarts.pl in section \ref{sec:example:statustools}.
 \item \INDEX{dataserver tag}:\\
       Specifies the name of the data server host.
 \end{itemize}
@@ -445,7 +447,7 @@ postal'', and to our best knowledge no \INDEX{USPS} employees have been hurt
 during the development of this software.
 
 % ======================================================================
-\subsubsection{Status Information}
+\subsubsection{Status Information} \label{sec:example:statustools}
 % ======================================================================
 The following scripts use the HTTPD of the daemon and engine
 as well as generic Unix tools to create status overviews.
@@ -464,6 +466,10 @@ web pages or send regular status emails.
 \item \INDEX{engine\_write\_durations.pl} \\
       Summary of engine performance: How many channels, average values
       per seconds.
+\item \INDEX{show\_restarts.pl} \\
+      Creates an overview of restart times, meant as an aid for selecting
+      restart times that either coincide or avoid other restarts based
+      on your preference. 
 \item \INDEX{show\_engines.pl} \\
       Parses output of ``ps'' command for engine related information.
 \item \INDEX{show\_sizes.pl} \\

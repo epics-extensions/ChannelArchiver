@@ -4,8 +4,9 @@
 The following describes how the archiver toolset is used at the
 \INDEX{Spallation Neutron Source (SNS)}. One can of course configure
 individual engines, start and stop them manually, and do the same with
-index tools and network data servers. You \emph{should} in fact do
-that in order to become familiar with the pieces of the toolset.
+index tools and network data servers. You \emph{should} in fact
+initially do exactly that in order to become familiar with the pieces
+of the toolset.
 Ultimately, however, we try to base as much as possible on a central
 configuration, and automate the rest via the scripts in the
 ChannelArchiver/ExampleSetup directory.
@@ -38,7 +39,8 @@ server can serve it.
 % ======================================================================
 \section{Setup, archiveconfig.xml}
 % ======================================================================
-Each computer needs to have the same copy of ``/arch/\INDEX{archiveconfig.xml}'',
+Each computer needs to have the same copy of
+``/arch/\INDEX{archiveconfig.xml}'',
 and the scripts from the ``ExampleSetup'' directory of the archiver
 sources need to be copied into ``\INDEX{/arch/scripts}''.
 You might generate and distribute ``archiveconfig.xml'' manually or use a
@@ -49,10 +51,12 @@ file into an ``archiveconfig.xml'' skeleton.
 
 \lstinputlisting[float=htb,keywordstyle=\sffamily,caption={archiveconfig.xml},label=lst:archiveconfig]{../ExampleSetup/archiveconfig.xml}
 
+\clearpage
+
 \noindent The ``archiveconfig.xml'' file describes the complete archive layout,
 using the following elements:
 \begin{itemize}
-\item \INDEX{root tag}: Names the root directory, typically ``/INDEX{/arch}''.
+\item \INDEX{root tag}: Names the root directory, typically ``\INDEX{/arch}''.
       This has to be the same directory name on all computers,
       since they all use the same ``archiveconfig.xml''.
 \item \INDEX{serverconfig tag}: Location of the server configuration to be
@@ -128,8 +132,8 @@ Run it with ``-h'' to see available options.
 
 \NOTE In order to determine what daemons should run on the
 \INDEX{local host},
-the \INDEX{host name} in the \INDEX{run tags} is used as a
-regular expression for the host name.
+the \INDEX{host name} in the ``\INDEX{run tags}'' is used as a
+\INDEX{regular expression} for the host name.
 So when specifying that a certain daemon should run on ``archive1'':
 \begin{lstlisting}[keywordstyle=\sffamily]
  <daemon ...
@@ -167,7 +171,7 @@ If you want to use the ASCIIConfig directory, check section
 % ======================================================================
 \begin{figure}[htb]
 \begin{center}
-\InsertImage{width=0.8\textwidth}{daemon}
+\InsertImage{width=0.75\textwidth}{daemon}
 \end{center}
 \caption{\label{fig:daemon}Archive Daemon, refer to text.}
 \end{figure}
@@ -184,13 +188,16 @@ The daemon will attempt to start any ArchiveEngine
 that it does not find running. In addition, the daemon can
 periodically stop and restart ArchiveEngines in order to create
 e.g.\ daily sub-archives.  Furthermore, it adds information about
-each sub-archive of newly created ArchiveEngines to a mailbox directory,
+each completed sub-archive to a mailbox directory,
 allowing the indexing mechanism to create the necessary indices
 and update the data server configuration.
 
 Before using the ArchiveDaemon, one should be familiar
 with the configuration of a single ArchiveEngine (sec.\ \ref{sec:engine}),
 and how to start and stop it manually.
+
+\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example
+Archive Daemon configuration for listing \ref{lst:archiveconfig}.},label=lst:daemonconfigex]{../ExampleSetup/ArchiveDaemon.xml}
 
 % ======================================================================
 \subsubsection{Configuration}
@@ -200,6 +207,7 @@ but instead specify its configuration in the ``archiveconfig.xml''
 file. The ``update\_archive\_tree.pl'' script will then generate
 those daemon configurations needed for the local computer, and ignore
 those meant to run on other machines.
+\clearpage
 
 In principle, you can also use the archive daemon by manually creating
 its configuration, just like you can manually start and stop engines
@@ -211,12 +219,10 @@ created with the daemon configuration shown in listing
 \ref{lst:daemonconfigex}, which complies with the DTD from listing
 \ref{lst:daemonconfigdtd}.
 
-\lstinputlisting[float=htb,keywordstyle=\sffamily,caption={Example
-Archive Daemon configuration for listing \ref{lst:archiveconfig}.},label=lst:daemonconfigex]{../ExampleSetup/ArchiveDaemon.xml}
-
-\noindent The following is an explanation of the daemon-related tags in the
+The following is an explanation of the daemon-related tags in the
 ``archiveconfig.xml'' file. Compare with the created daemon
-configuration to see how they get translated.
+configuration to see how they get extracted from the global
+configuration file.
 
 \begin{itemize}
 \item \INDEX{run tag}:\\
@@ -225,7 +231,7 @@ configuration to see how they get translated.
       The names are regular expressions.
       In principle, one could think about a setup where
       RF/llrf runs on ``archive1'' and RF/hprf runs on
-      ``archive2'', so consequently both machines run an
+      ``archive2'', and consequently both machines run an
       ``RF'' daemon:
 \begin{lstlisting}[keywordstyle=\sffamily]
  <daemon directory='RF'>
@@ -355,7 +361,7 @@ log the diagnostics output of the respective programs.
 % ======================================================================
 \subsubsection{\INDEX{Daemon Web Server}} \label{sec:daemonserver}
 % ======================================================================
-You can use any web browser to look at the daemon's web pages,
+You can use any web browser to view the daemon's web pages,
 which look similar to Fig.~\ref{fig:daemon}.
 The URL follows the format
 \begin{lstlisting}[keywordstyle=\sffamily]
@@ -422,8 +428,8 @@ following:
       See Crashes on page \pageref{sec:crash}.
 \end{itemize}
 
-\NOTE The daemon queries only every once in a while and leave the
-engines alone for most of the time.
+\NOTE The daemon queries the engines only every once in a while and
+leaves them undisturbed most of the time.
 Especially after startup, all engines will show up as ``Not Running''
 in the daemon's web page while in fact most of them are already
 running. Then you will see many disconnected channels while the
@@ -435,9 +441,10 @@ Instead of using the scripts to stop and ArchiveDaemon, one can
 directly access the ``/stop'' URL of the daemon's HTTPD,
 e.g. ``http://localhost:4610/stop''.  Similar to the ArchiveEngine's
 HTTPD, this URL is not accessible by following links on the HTTPD's
-web pages. You will have to type the URL. This is to prevent web
+web pages. You will have to type the URL. This is meant to prevent web
 robots or a monkey who is sitting in front of the computer and
-clicking on every link from accidentally stopping the daemon.
+clicking on every link from accidentally stopping the daemon, although
+it has never been tested with an actual monkey.
 
 Finally, the daemon will respond to the URL ``/\INDEX{postal}'' by stopping
 every ArchiveEngine controlled by the daemon, followed by stopping
@@ -447,11 +454,11 @@ postal'', and to our best knowledge no \INDEX{USPS} employees have been hurt
 during the development of this software.
 
 % ======================================================================
-\subsubsection{Status Information} \label{sec:example:statustools}
+\subsection{Status Information} \label{sec:example:statustools}
 % ======================================================================
 The following scripts use the HTTPD of the daemon and engine
 as well as generic Unix tools to create status overviews.
-They can be used in ``\INDEX{cron}'' jobs to periodically update
+Some can be used in ``\INDEX{cron}'' jobs to periodically update
 web pages or send regular status emails.
 
 \begin{itemize}
@@ -536,11 +543,6 @@ The following describes the scenario used at the SNS with
 different computers and no writable NFS share between the
 affected machines.
 
-In general, the performance of the serving computer is of course
-affected by its disk system speed. In addition, the disk cashing of
-the operating system is also an important factor, and that requires
-memory, so avoid running other memory hogs.
-
 % ======================================================================
 \subsection{Configuration}
 % ======================================================================
@@ -563,11 +565,11 @@ engine entry:
       archive daemon for this engine will be served by the
       data server as its own key and name.
 
-      This of course requires access to the current\_index, which
-      resides on the ``sampling'' machine, from the ``serving''
-      computer. At the SNS, we have a read-only NFS mount from
-      archive1 onto web2 for this very purpose.
-      ``web2:/arch/RF/llrf/current\_index'' is a manually
+      This of course requires the ``serving'' computer to have access
+      to the current\_index, which resides on the ``sampling''
+      machine. At the SNS, we have a read-only NFS mount from archive1
+      onto web2 for this very purpose.
+      ``web2:/arch/RF/llrf/current\_index'' for example is a manually
       created soft-link to the actual current\_index soft-link on the
       NFS share.
 \item \INDEX{index tag}: \\
@@ -584,7 +586,7 @@ engine entry:
       If a key is provided, the index is added to the data server
       configuration. It might make sense to only provide a key for the
       daemon-level index, while the engine-level indices are only used
-      as intermediate steps for constructing the daemon index.            
+      as intermediate steps in constructing the daemon index.            
 \item \INDEX{host tag}: \\
       The host where the data server should run. Dataserver entries where
       the host element, used as a regular expression, does not match the
@@ -602,10 +604,11 @@ machine. See command-line help for details.
 \subsection{\INDEX{update\_server.pl}} \label{sec:updateServer}
 This script should be invoked periodically by a cron-job.
 It checks the mailbox directory for information about new data on a
-``sampling'' computer. Compares with the archiveconfig.xml information
-to decide which of that data should be served on this machine. Uses
-\INDEX{secure-copy (scp)} to pull new sub-archives onto this computer,
-optionally with \INDEX{md5 checksum}.  Finally invokes update\_indices.pl.
+``sampling'' computer, compares with the archiveconfig.xml information
+to decide which of that data should be served on this machine.
+
+It uses \INDEX{secure-copy (scp)} to pull new sub-archives onto this computer,
+optionally with \INDEX{md5 checksum}, and finally invokes update\_indices.pl.
 
 \subsection{\INDEX{update\_indices.pl}} \label{sec:updateIndices}
 Reads archiveconfig.xml and creates an indexconfig.xml for each
@@ -637,21 +640,28 @@ and then restart it.
 Edit archiveconfig.xml to define the new engine under an existing
 demon. Or add a line for a new daemon, then add the new engine under
 it.  Unless you feel lucky today, use ``xmllint -valid
-archiveconfig.xml'' to check if you preserved the basic
+archiveconfig.xml'' to assert that you preserved the basic
 well-formedness of the XML document. Invoke
 ``scripts/make\_archive\_dirs.pl''. Per default, it will re-create all
 daemon and engine directories, so you might want to use the ``-s''
 option to limit its operation to the new or modified subsystem.
 
 In case the daemon was already running, it won't learn about the new
-engine unless you restart it. So run ``stop-daemon.sh'' followed by
-``run-daemon.sh'' in the daemon directory to restart
+engine unless you restart it. So run the ``stop-daemon.sh'' script
+followed by ``run-daemon.sh'' in the daemon directory to restart
 the daemon, which will then start any newly added engines.
 
 \subsection{An Engine isn't running}
 Check the process list to assert that the engine in question is really not
 running (on UNIX, try ``ps -aux''). Look again. If the engine is
-actually running but not responding via its HTTPD, remove the process.
+actually running but not responding via its HTTPD, check its CPU usage
+and the dates and sizes of the files in the sub-archive that the
+engine is supposed to write. Is it adding to the data files?
+It might respond again after a few minutes, although
+this of course indicates that your computer is overloaded and you have
+to reevaluate how much you can archive on that machine.
+If all else fails, remove the engine process.
+
 Check the log file of the engine, generated in the engine
 subdirectory, for any clues. If you are convinced that the engine is
 not running, but find an ``archive\_active.lck'' lock file in the

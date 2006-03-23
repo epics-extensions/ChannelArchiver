@@ -14,19 +14,23 @@ used ``as is''. While those try to cover many data retrieval
 requirements, certain requests can only be handled in customized data
 mining programs (which might be e.g.\ perl scripts). For this, the
 archiver offers a network data server. In short, these are your
-options:
+fundamental options:
 
 \begin{itemize}
 \item Java Archive Client\\
       This is meant to be \emph{the} data client. Use it to browse the
       available data, generate plots, export data to spreadsheets,
-      from any computer on the network by accessing the network data server.
+      from any computer on the network, by accessing the data server.
 \item ArchiveExport\\
       A command-line tool. Less convenient to use, requires direct
       access to the data files. Use this when the Java Archive Client
       or network data server are not available.
 \item Archive Data Server\\
-      You can access the Archive Data Server via XML-RPC from most
-      programming languages. Use this method for customized data
+      Serves data to the Java Archive Client. In addition, you can
+      access the documented XML-RPC protocol of the data server from
+      most programming languages. Use this method for customized data
       mining programs.
+\item ``Storage'' Library\\
+      A C++ library for accessing local data files. Use for
+      specialized C++ code.
 \end{itemize}

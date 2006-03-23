@@ -228,3 +228,25 @@ similar to the ArchiveEngine, in the hope of preventing more than
 one Index Tool from modifying a master index at the same time.
 See preceding description of archiver\_active.lck file.
 
+\section{What is a ``\INDEX{regular expression}''?}
+See a book on perl or the manual page for ``grep'' for details.
+The following table compares the regular expression syntax with the simpler
+file name wildcards. Most regular expressions don't have a wildcard equivalent.
+
+\begin{center}
+\begin{tabular}{l|l|l}
+Reg.\ Exp.    &   Wildcard  &   Matches...  \\
+\hline 
+.             &   ?         &   any single character \\
+.*            &   *         &   any string with 0 or more charcters \\
+.+            &             &   any string with 1 or more charcters \\
+\verb!^!      &             &   start of string \\
+\$            &             &   end of string \\
+\verb![aA]!   &             &   'a' or 'A' \\
+\verb![0-9]!  &             &   any single digit \\
+\verb![0-9]+! &             &   '0' or '1234' or ... \\
+\verb!^!abc\$ &   abc       &   'abc' \\
+b             &   *b*       &   'abc' or 'bbb' or 'xby' or ... \\
+\end{tabular}
+\end{center}
+

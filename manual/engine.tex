@@ -288,8 +288,6 @@ The ArchiveEngine is a command-line program that displays usage
 information similar to the following:
 
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-ArchiveEngine Version 2.1.0, EPICS 3.14.4
- 
 USAGE: ArchiveEngine [Options] <config-file> <index-file>
  
 Options:
@@ -313,7 +311,13 @@ that contains the index file.
 
 \subsection{``-log'' Option}
 This option causes the ArchiveEngine to create a log file into which
-all the messages that otherwise only appear on the standard output are copied.
+all the messages that otherwise only appear on the standard output are
+copied.
+
+This, however, only applies to messages which the engine writes
+out. Other code, including the ChannelAccess client library, might
+produce further messages, which still go the the standard output or
+error output streams.
 
 \subsection{``-description'' Option} \label{sec:enginedesc}
 This option allows setting the description string that gets displayed
@@ -336,8 +340,9 @@ This option disables the ``Config'' page of the engine's HTTP server,
 in case you want to prohibit online changes.
 
 \subsection{The ``archive\_active.lck'' File}
-You can only run one ArchiveEngine per directory because it creates
-the index and data files in there.  When running, this lock file is
+You can only run one ArchiveEngine per directory. This is meant to
+prevent duplicate startups of the same engine, potentially damaging
+the index and data files. When running, this lock file is
 created. The ArchiveEngine will refuse to run if this file already
 exists.  After shutdown, the ArchiveEngine will remove this lock file.
 If the ArchiveEngine crashes or is not stopped gracefully by the
@@ -368,9 +373,8 @@ ArchiveEngines are writing to the same archive.
 You can run multiple ArchiveEngines on the same
 computer. But they must
 \begin{enumerate}
-\item be in separate directories. See the preceding discussion of
-      the lock file which is meant to assist in avoiding this
-      problem.
+\item be in separate directories, writing to different archives.
+      See the preceding discussion of the lock file.
 \item use a different TCP port number for the built-in web server
 \end{enumerate}
 In practice this means that you have to create different directories
@@ -383,14 +387,14 @@ or using the equivalent ``kill'' command in Unix, the preferred method is
 via the built-in web server. Use any web browser and point it to
 
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-http://<host where engine is running>:<port>/stop
+    http://<host where engine is running>:<port>/stop
 \end{lstlisting}
 
 \noindent Per default, the engine uses 4812, so you could use the
 following URL to stop that engine on the local computer:
 
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-http://localhost:4812
+    http://localhost:4812/stop
 \end{lstlisting}
 
 % ---------------------------------------------------------------------------
@@ -412,7 +416,7 @@ machine that is running the ArchiveEngine via the network.  You do
 the Internet Information Server for Win32 to use this. The
 ArchiveEngine \emph{itself} acts as a web server.
 
-You \emph{cannot} view archived data with this mechanism.  See the
+You \emph{cannot view archived data} with this mechanism.  See the
 documentation on data retrieval (chapter \ref{chap:retrieval}) for
 that, because the archive engine's HTTPD is meant for access to the
 status and configuration of the running engine, not for accessing the
@@ -425,14 +429,14 @@ The port is configured when you start the ArchiveEngine, it defaults
 to 4812. Then use any web browser and point it to
 
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
- http://<host where engine is running>:<port>
+    http://<host where engine is running>:<port>
 \end{lstlisting}
 
 \noindent Example for an ArchiveEngine running on the local machine with the
 default port number:
 
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]
-http://localhost:4812
+    http://localhost:4812
 \end{lstlisting}
 
 \noindent The start page of the ArchiveEngine web server should look

@@ -142,7 +142,7 @@ So when specifying that a certain daemon should run on ``archive1'':
 \end{lstlisting}
 ... that daemon will run on computers called ``ics-srv-archive1'' as well
 as ``archive1.sns.ornl.gov'' etc.
-The same applies to the \INDEX{host tags} which specify where a
+The same applies to the host tags which specify where a
 data server should run.
 
 For the example from listing \ref{lst:archiveconfig}, we would get
@@ -257,7 +257,7 @@ configuration file.
       \ref{sec:daemonserver} describes the HTTP server of the daemon, while
       section \ref{sec:engineport} explains the engine HTTPD.
 
-      \NOTE The port numbers used by the ArchiveDaemons and all the Archive
+      \NOTE The port numbers used by the Archive Daemons and all the Archive
       Engines need to be different. You cannot use the same port number more
       than once per computer.
 \item \INDEX{mailbox tag}:\\
@@ -593,6 +593,10 @@ engine entry:
       local hostname, are ignored.
 \end{itemize}
 
+\noindent In addition to the indices specified in $<$dataserver$>$
+sections of the archive configuration, two more will
+be created by the update\_indices.pl script.
+
 \subsection{\INDEX{send\_mailbox.pl}}
 In the absence of a writable NFS share for the mailbox directory,
 this script is run by a \INDEX{cron}-job to send the contents of the
@@ -615,7 +619,13 @@ Reads archiveconfig.xml and creates an indexconfig.xml for each
 engine and daemon directory that has a $<$dataserver$>$...$<$host$>$
 entry for the local machine.
 Where binary indices were requested, the ArchiveIndexTool is invoked.
-Finally, the serverconfig.xml is updated.
+
+Next, list indices ``current.xml'' and ``all.xml'' are created, 
+containing all the ``current\_index'' entries from the configuration
+respectively the remaining index entries.
+Finally, the serverconfig.xml is updated, starting with entries for
+``all.xml'' (key1) and ``current.xml'' (key 2), followed by the
+indices listed in archiveconfig.xml.
 
 % ======================================================================
 \section{Common Tasks}

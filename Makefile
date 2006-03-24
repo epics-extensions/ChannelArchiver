@@ -31,5 +31,6 @@ tests:
 	#cd Engine; sh test.sh
 
 tgz:
+	if [ -d /tmp/ChannelArchiver ];then exit 1;fi
 	cd /tmp;cvs -d :ext:@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot get -d ChannelArchiver epics/supTop/extensions/1.1/src/ChannelArchiver
 	cd /tmp;tar vzcf archiver.tgz ChannelArchiver

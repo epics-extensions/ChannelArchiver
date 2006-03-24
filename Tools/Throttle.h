@@ -18,8 +18,8 @@
 class Throttle
 {
 public:
-    /// Default: Limit to once per hour
-    Throttle(double seconds_between_messages = 60.0*60.0)
+    /// Create throttle with the given threshold.
+    Throttle(double seconds_between_messages)
       : seconds(seconds_between_messages)
     {}
 
@@ -39,6 +39,12 @@ public:
     {
         epicsTime now(epicsTime::getCurrent());
         return isPermitted(now);
+    }
+    
+    /// @return Returns the message threshold in seconds.
+    double getThrottleThreshold()
+    {
+        return seconds;
     }
     
 private:

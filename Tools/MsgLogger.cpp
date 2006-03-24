@@ -67,7 +67,7 @@ void MsgLogger::createDefaultLogger()
     }
 }
 
-void LOG_MSG(const char *format, ...)
+void LOG_MSG(const char *format, va_list ap)
 {
     if (MsgLogger::TheMsgLogger == 0)
         // Initialize when first used
@@ -77,9 +77,14 @@ void LOG_MSG(const char *format, ...)
         fprintf(stderr, "LOG_MSG: No message logger!\n");
         return;
     }
+    MsgLogger::TheMsgLogger->log(format, ap);
+}
+
+void LOG_MSG(const char *format, ...)
+{
     va_list ap;
     va_start(ap, format);
-    MsgLogger::TheMsgLogger->log(format, ap);
+    LOG_MSG(format, ap);
     va_end(ap);
 }
 

@@ -17,7 +17,7 @@
 // Tools
 #include <MsgLogger.h>
 #include <ToolsConfig.h>
-#include <Throttle.h>
+#include <ThrottledMsgLogger.h>
 // Engine
 #include "HTTPServer.h"
 
@@ -25,7 +25,7 @@
 
 #if defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
 // Throttle the log messages for accepted clients down to once every 10 minutes.
-static Throttle client_IP_log_throttle(10*60);
+static ThrottledMsgLogger client_IP_log_throttle("HTTP clients", 10*60);
 #endif
 
 // The HTTPServer launches one HTTPClientConnection per
@@ -170,13 +170,13 @@ void HTTPServer::run()
         if (peer == INVALID_SOCKET)
             continue;
 #if     defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
-        if (client_IP_log_throttle.isPermitted(epicsTime::getCurrent()))
         {
             stdString local_info, peer_info;
             GetSocketInfo(peer, local_info, peer_info);
-            LOG_MSG("HTTPServer thread 0x%08lX accepted %s/%s.\n",
-                    (unsigned long)epicsThreadGetIdSelf(),
-                    local_info.c_str(), peer_info.c_str());
+            client_IP_log_throttle.LOG_MSG(
+                "HTTPServer thread 0x%08lX accepted %s/%s.\n",
+                (unsigned long)epicsThreadGetIdSelf(),
+                local_info.c_str(), peer_info.c_str());
         }
 #endif
         start_client(peer);

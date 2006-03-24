@@ -50,6 +50,8 @@ extern TEST_CASE worker_thread();
 extern TEST_CASE test_threads();
 // Unit ThrottleTest:
 extern TEST_CASE test_throttle();
+// Unit ThrottledMsgLoggerTest:
+extern TEST_CASE test_msg_throttle();
 // Unit TimerTest:
 extern TEST_CASE test_timer();
 // Unit epicsTimeHelperTest:
@@ -330,6 +332,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\ntest_throttle:\n");
         if (test_throttle())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "ThrottledMsgLoggerTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit ThrottledMsgLoggerTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("\ntest_msg_throttle:\n");
+        if (test_msg_throttle())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

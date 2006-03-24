@@ -19,6 +19,7 @@ UnitTest_SRCS += LockfileTest.cpp
 UnitTest_SRCS += MsgLoggerTest.cpp
 UnitTest_SRCS += ThreadTest.cpp
 UnitTest_SRCS += ThrottleTest.cpp
+UnitTest_SRCS += ThrottledMsgLoggerTest.cpp
 UnitTest_SRCS += TimerTest.cpp
 UnitTest_SRCS += epicsTimeHelperTest.cpp
 UnitTest_SRCS += stdStringTest.cpp

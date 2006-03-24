@@ -31,6 +31,7 @@ INC += RegularExpression.h
 INC += stdString.h 
 INC += string2cp.h
 INC += Throttle.h
+INC += ThrottledMsgLogger.h
 INC += UnitTest.h
 INC += FUX.h       
 LIB_SRCS += ArchiveException.cpp

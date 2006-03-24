@@ -1,10 +1,9 @@
 // Tools
-#include "epicsTimeHelper.h"
-#include "MsgLogger.h"
-#include "ArchiveException.h"
-#include "Throttle.h"
+#include <epicsTimeHelper.h>
+#include <ArchiveException.h>
+#include <ThrottledMsgLogger.h>
 // Storage
-#include "DataWriter.h"
+#include <DataWriter.h>
 //Engine
 #include "ArchiveChannel.h"
 #include "Engine.h"
@@ -14,10 +13,10 @@
 static const unsigned long magic_marker = 0xac00face;
 
 // Used to throttle various messages down.
-static Throttle invalid_time_throttle;
-static Throttle futuristic_time_throttle;
-static Throttle back_in_time_throttle;
-static Throttle nanosecond_throttle(60.0);
+static ThrottledMsgLogger invalid_time_throttle("Invalid Timestamps", 60.0*60.0);
+static ThrottledMsgLogger futuristic_time_throttle("Future Timestamps", 60.0*60.0);
+static ThrottledMsgLogger back_in_time_throttle("Back-in-time", 60.0*60.0);
+static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 
 ArchiveChannel::ArchiveChannel(const stdString &name, double period)
   : marker(magic_marker),
@@ -638,25 +637,20 @@ bool ArchiveChannel::isGoodTimestamp(const epicsTime &stamp,
 {
     if (! isValidTime(stamp))
     {
-        if (invalid_time_throttle.isPermitted())
-        {
-            stdString t;
-            epicsTime2string(stamp, t);
-            LOG_MSG("'%s': Invalid/null time stamp %s\n",
+        stdString t;
+        epicsTime2string(stamp, t);
+        invalid_time_throttle.LOG_MSG("'%s': Invalid/null time stamp %s\n",
                     getName().c_str(), t.c_str());
-        }
         return false;
     }
     double future = stamp - now;
     if (future > theEngine->getIgnoredFutureSecs())
     {
-        if (futuristic_time_throttle.isPermitted())
-        {
-            stdString t;
-            epicsTime2string(stamp, t);
-            LOG_MSG("'%s': Ignoring futuristic time stamp %s\n",
-                    getName().c_str(), t.c_str());
-        }
+        stdString t;
+        epicsTime2string(stamp, t);
+        futuristic_time_throttle.LOG_MSG(
+            "'%s': Ignoring futuristic time stamp %s\n",
+            getName().c_str(), t.c_str());
         return false;
     }
     return true;
@@ -667,16 +661,13 @@ bool ArchiveChannel::isBackInTime(const epicsTime &stamp) const
     if (isValidTime(last_stamp_in_archive) &&
         stamp < last_stamp_in_archive)
     {
-        if (back_in_time_throttle.isPermitted())
-        {
-            stdString stamp_txt;
-            epicsTime2string(stamp, stamp_txt);
-            LOG_MSG("'%s': received back-in-time stamp %s\n",
-                    getName().c_str(), stamp_txt.c_str());
-        }
+        stdString stamp_txt;
+        epicsTime2string(stamp, stamp_txt);
+        back_in_time_throttle.LOG_MSG(
+            "'%s': received back-in-time stamp %s\n",
+            getName().c_str(), stamp_txt.c_str());
         return true;
     }
     return false;
 }
-
 

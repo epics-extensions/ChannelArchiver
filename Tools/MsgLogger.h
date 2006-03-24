@@ -62,7 +62,8 @@ protected:
     /// this logger is closed.
     MsgLogger *prev_logger;
 
-    friend void ::LOG_MSG(const char *format, ...);
+    // friend void ::LOG_MSG(const char *format, ...);
+    friend void LOG_MSG(const char *format, va_list ap);
 
     /// The file used by print in this logger.
     AutoFilePtr f;
@@ -72,6 +73,8 @@ protected:
     /// custom MsgLogger.
     virtual void print(const char *s);
 };
+
+void LOG_MSG(const char *format, va_list ap);
 
 void LOG_MSG(const char *format, ...)
     __attribute__ ((format (printf, 1, 2)));

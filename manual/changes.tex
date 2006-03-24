@@ -6,7 +6,7 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
-\item 03/23/2006 --- Version 2.8.0:\\
+\item 03/24/2006 --- Version 2.8.0:\\
 Possibly the most visible change is in the ExampleSetup.
 Before, the ``ArchiveDaemon'' would run engines and perform indexing.
 The indexing has been moved into a different collection of scripts,
@@ -38,6 +38,9 @@ now follow several soft links. So if /a/link is a soft link to /b/link
 which in turn points to /c/index which refers to data in
 ``20060110'', the tools will now use the data from 
 ``/c/20060110'' and not ``/a/20060110''.
+
+Some of the messages logged by the engine are now throttled
+to reduce the log file size.
 
 \item 12/13/2005 --- Version 2.7.0:\\
 Error reporting: When a command-line tool failed,

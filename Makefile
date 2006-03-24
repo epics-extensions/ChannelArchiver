@@ -32,4 +32,4 @@ tests:
 
 tgz:
 	cd /tmp;cvs -d :ext:@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot get -d ChannelArchiver epics/supTop/extensions/1.1/src/ChannelArchiver
-	tar vzcf archiver.tgz ChannelArchiver
+	cd /tmp;tar vzcf archiver.tgz ChannelArchiver

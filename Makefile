@@ -29,3 +29,7 @@ tests:
 	cd IndexTool; $(MAKE) test
 	#cd DemoData; sh test.sh
 	#cd Engine; sh test.sh
+
+tgz:
+	cd /tmp;cvs -d :ext:@ics-srv01.sns.ornl.gov:/sns/ADE/cvsroot get -d ChannelArchiver epics/supTop/extensions/1.1/src/ChannelArchiver
+	tar vzcf archiver.tgz ChannelArchiver

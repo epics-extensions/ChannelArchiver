@@ -1,5 +1,6 @@
 #include "ToolsConfig.h"
 #include "Guard.h"
+#include "BenchTimer.h"
 #include "UnitTest.h"
 
 TEST_CASE guard_test()
@@ -22,4 +23,25 @@ TEST_CASE guard_test()
         FAIL("Didn't catch the guard failure");
     }
 }
+
+TEST_CASE guard_performance()
+{
+    epicsMutex mutex;
+    {
+    	BenchTimer timer;
+        Guard guard(mutex);
+        size_t i, N=100000;
+        for (i=0; i<N; ++i)
+        {
+        	guard.unlock();
+        	guard.lock();
+        }
+        timer.stop();
+        double t = timer.runtime();
+        printf("Time for %zu unlock/locks: %g secs, i.e. %g per sec\n",
+               N, t, (double)N/t);
+    }
+    TEST_OK;
+}
+
 

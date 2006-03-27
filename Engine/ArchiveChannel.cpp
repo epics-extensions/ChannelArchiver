@@ -451,34 +451,32 @@ void ArchiveChannel::control_callback(struct event_handler_args arg)
 void ArchiveChannel::value_callback(struct event_handler_args args)
 {
     ArchiveChannel *me = (ArchiveChannel *) args.usr;
+    LOG_ASSERT(me != 0);
     LOG_ASSERT(me->marker == magic_marker);
     const RawValue::Data *value = (const RawValue::Data *)args.dbr;
 
-    // Check the nanoseconds of each incoming value. Problems will arise later
-    // unless they are normalized to less than one second.
-    if (value->stamp.nsec >= 1000000000L)
-    {
-        if (nanosecond_throttle.isPermitted())
-        {
-            epicsTimeStamp s = value->stamp;
-            s.nsec = 0;
-            epicsTime t = s;
-            stdString txt;
-            epicsTime2string(t, txt);
-            LOG_MSG("ArchiveChannel::value_callback(%s) with invalid secs/nsecs %zu, %zu: %s\n",
-                    me->name.c_str(),
-                    (size_t) value->stamp.secPastEpoch,
-                    (size_t) value->stamp.nsec,
-                    txt.c_str());
-        }
-        return;
-    }
     if (args.status != ECA_NORMAL  ||  value == 0)
     {
         LOG_MSG("ArchiveChannel::value_callback(%s): No value, CA error %s\n", 
                 me->name.c_str(), ca_message(args.status));
         return;
     }   
+    // Check the nanoseconds of each incoming value. Problems will arise later
+    // unless they are normalized to less than one second.
+    if (value->stamp.nsec >= 1000000000L)
+    {
+        epicsTimeStamp s = value->stamp;
+        s.nsec = 0;
+        epicsTime t = s;
+        stdString txt;
+        epicsTime2string(t, txt);
+        nanosecond_throttle.LOG_MSG("ArchiveChannel::value_callback(%s) with invalid secs/nsecs %zu, %zu: %s\n",
+                me->name.c_str(),
+                (size_t) value->stamp.secPastEpoch,
+                (size_t) value->stamp.nsec,
+                txt.c_str());
+        return;
+    }
     try
     {
         epicsTime now = epicsTime::getCurrent();

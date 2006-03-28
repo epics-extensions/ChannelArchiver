@@ -39,6 +39,7 @@ extern TEST_CASE various_exception_tests();
 extern TEST_CASE double_throw();
 // Unit GuardTest:
 extern TEST_CASE guard_test();
+extern TEST_CASE release_test();
 extern TEST_CASE guard_performance();
 // Unit IndexConfigTest:
 extern TEST_CASE index_config_test();
@@ -262,6 +263,12 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\nguard_test:\n");
         if (guard_test())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+        ++run;
+        printf("\nrelease_test:\n");
+        if (release_test())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

@@ -10,6 +10,7 @@ TEST_CASE guard_test()
         Guard guard(mutex1);
         guard.check(__FILE__, __LINE__, mutex1);
         TEST("Guard::check is OK");
+        TEST(guard.isLocked());
         try
         {
             guard.check(__FILE__, __LINE__, mutex2);
@@ -22,6 +23,22 @@ TEST_CASE guard_test()
         }
         FAIL("Didn't catch the guard failure");
     }
+}
+
+TEST_CASE release_test()
+{
+    epicsMutex mutex;
+    {
+        Guard guard(mutex);
+        guard.check(__FILE__, __LINE__, mutex);
+        TEST(guard.isLocked());
+        {
+            GuardRelease release(guard);
+            TEST(!guard.isLocked());
+        }
+        TEST(guard.isLocked());
+    }
+    TEST_OK;
 }
 
 TEST_CASE guard_performance()

@@ -16,6 +16,7 @@
 class Guardable
 {
 public:
+    /** @return Returns the mutex for this object. */
     virtual epicsMutex &getMutex() = 0;
 };
 

@@ -9,6 +9,17 @@
 #include <GenericException.h>
 
 /** \ingroup Tools
+ *  Interface for something that can be protexted by a Guard.
+ *
+ *  @see Guard
+ */
+class Guardable
+{
+public:
+    virtual epicsMutex &getMutex() = 0;
+};
+
+/** \ingroup Tools
  *  Guard automatically takes and releases an epicsMutex.
  *
  *  Idea follows Jeff Hill's epicsGuard.
@@ -16,6 +27,13 @@
 class Guard
 {
 public:
+    /** Constructor attaches to mutex and locks. */
+    Guard(Guardable &guardable) : mutex(guardable.getMutex())
+    {
+        mutex.lock();
+        is_locked = true;
+    }
+
     /** Constructor attaches to mutex and locks. */
     Guard(epicsMutex &mutex) : mutex(mutex)
     {

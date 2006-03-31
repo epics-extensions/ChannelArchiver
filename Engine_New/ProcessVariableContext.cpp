@@ -1,0 +1,111 @@
+// Base
+#include <cadef.h>
+// Tools
+#include <GenericException.h>
+#include <MsgLogger.h>
+// Local
+#include "ProcessVariableContext.h"
+
+static void caException(struct exception_handler_args args)
+{
+    const char *pName;
+    
+    if (args.chid)
+        pName = ca_name(args.chid);
+    else
+        pName = "?";
+    printf("CA Exception %s - with request "
+            "chan=%s op=%d type=%s count=%d:\n%s\n", 
+            args.ctx, pName, (int)args.op, dbr_type_to_text(args.type),
+            (int)args.count,
+            ca_message(args.stat));
+}
+
+ProcessVariableContext::ProcessVariableContext()
+    : ca_context(0), refs(0), flush_requested(false)
+{
+	printf("Creating ChannelAccess Context.\n");
+	if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL ||
+        ca_add_exception_event(caException, 0) != ECA_NORMAL)
+        throw GenericException(__FILE__, __LINE__,
+                               "CA client initialization failed.");
+    ca_context = ca_current_context();
+}
+
+ProcessVariableContext::~ProcessVariableContext()
+{
+	if (refs > 0)
+	{
+        printf("ProcessVariableContext has %zu references "
+                "left on destruction\n", refs);
+        return;
+	}
+	printf("Stopping ChannelAccess.\n");
+    ca_context_destroy();
+    ca_context = 0;
+}
+
+epicsMutex &ProcessVariableContext::getMutex()
+{
+    return mutex;
+}
+
+void ProcessVariableContext::attach(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    int result = ca_attach_context(ca_context);
+    if (result == ECA_ISATTACHED)
+    	throw GenericException(__FILE__, __LINE__,
+        	"thread 0x%08lX (%s) tried to attach more than once\n",
+                (unsigned long)epicsThreadGetIdSelf(),
+                epicsThreadGetNameSelf());
+	if (result != ECA_NORMAL)
+    	throw GenericException(__FILE__, __LINE__,
+        	"ca_attach_context failed for thread 0x%08lX (%s)\n",
+                (unsigned long)epicsThreadGetIdSelf(),
+                epicsThreadGetNameSelf());
+}
+
+void ProcessVariableContext::incRef(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+	++refs;
+}
+		
+void ProcessVariableContext::decRef(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+	if (refs <= 0)
+	    throw GenericException(__FILE__, __LINE__,
+	                           "RefCount goes negative");
+	--refs;
+}
+
+size_t ProcessVariableContext::getRefs(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+	return refs;
+}
+
+void ProcessVariableContext::requestFlush(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+	flush_requested = true;
+}
+	
+bool ProcessVariableContext::isFlushRequested(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+	return flush_requested;
+}
+
+void ProcessVariableContext::flush(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    flush_requested = false;
+    {
+        GuardRelease release(guard);
+	    ca_flush_io();
+    }
+}
+

@@ -79,6 +79,13 @@ bool RawValue::hasSameValue(DbrType type, DbrCount count, size_t size,
                   ((const char *)rhs) + offset, size - offset) == 0;
 }
 
+bool RawValue::hasSameValue(DbrType type, DbrCount count,
+                            const Data *lhs, const Data *rhs)
+{
+    size_t size = getSize(type, count);
+    return hasSameValue(type, count, size, lhs, rhs);
+}
+
 void RawValue::getStatus(const Data *value, stdString &result)
 {
     char buf[200];

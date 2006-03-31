@@ -62,6 +62,8 @@ public:
     /// Both lhs, rhs must have the same type.
     static bool hasSameValue(DbrType type, DbrCount count,
                              size_t size, const Data *lhs, const Data *rhs);
+    static bool hasSameValue(DbrType type, DbrCount count,
+                             const Data *lhs, const Data *rhs);
 
     /// Full copy (stat, time, value). Only valid for Values of same type.
     static void copy(DbrType type, DbrCount count, Data *lhs, const Data *rhs);

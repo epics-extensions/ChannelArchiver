@@ -3,7 +3,7 @@
 #include <MsgLogger.h>
 #include <ThrottledMsgLogger.h>
 // Engine
-#include "RepeatFilter.h"
+#include "TimeFilter.h"
 
 // Throttle messages to once per hour
 static ThrottledMsgLogger futuristic_time_throttle("Future Timestamps", 60.0*60.0);
@@ -13,7 +13,7 @@ static ThrottledMsgLogger back_in_time_throttle("Back-in-time", 60.0*60.0);
 
 TimeFilter::TimeFilter(const EngineConfig &config,
                        ProcessVariableListener *listener)
-    : ProcessVariableFilter(listener)
+    : ProcessVariableFilter(listener), config(config)
 {
 }
 

@@ -4,6 +4,8 @@
 // Engine
 #include "SampleMechanismGet.h"
 
+// Data pipe:
+//  pv -> repeat -> time -> this
 SampleMechanismGet::SampleMechanismGet(EngineConfig &config,
                                        ProcessVariableContext &ctx,
                                        ScanList &scan_list,
@@ -11,7 +13,8 @@ SampleMechanismGet::SampleMechanismGet(EngineConfig &config,
                                        double period_estimate)
     : SampleMechanism(config, ctx, name, period_estimate),
       scan_list(scan_list),
-      repeat_filter(config, this)
+      repeat_filter(config, &time_filter),
+      time_filter(config, this)
 {
 }
 

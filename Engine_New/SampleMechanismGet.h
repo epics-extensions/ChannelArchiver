@@ -5,6 +5,7 @@
 #include "SampleMechanism.h"
 #include "ScanList.h"
 #include "RepeatFilter.h"
+#include "TimeFilter.h"
 
 /**\ingroup Engine
  *  Sample Mechanism that performs a periodic 'get'.
@@ -41,6 +42,7 @@ public:
 private:
     ScanList &scan_list;
     RepeatFilter repeat_filter;
+    TimeFilter time_filter;
 };
 
 #endif /*SAMPLEMECHANISMGET_H_*/

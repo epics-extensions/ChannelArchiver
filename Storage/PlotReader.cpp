@@ -5,7 +5,7 @@
 // Storage
 #include "PlotReader.h"
 
-//#define DEBUG_PLOTREAD
+// #define DEBUG_PLOTREAD
 
 PlotReader::PlotReader(Index &index, double delta)
   : reader(index),
@@ -38,17 +38,24 @@ const RawValue::Data *PlotReader::find(const stdString &channel_name,
     if (delta <= 0.0)
         return reader_data;
     if (start)
-    {   // No before-or-at, we want data in the first bin.
+    {
         end_of_bin = *start + delta;
-        while (RawValue::getTime(reader_data) < *start)
+        // reader_data could be the last sample just before 'start'.
+        // If it's a plain value: OK, we'll later shift that onto 'start'.
+        // Otherwise, move on until we're in the first bin.
+        while (RawValue::isInfo(reader_data) &&
+               RawValue::getTime(reader_data) < *start)
         {
+#ifdef DEBUG_PLOTREAD
+            printf("Skipping before-start sample.\n");
+#endif
             reader_data = reader.next();
             if (!reader_data) // There is no data >= *start.
             {
                 current = 0;
                 return 0;
             }
-        }
+        }             
     }
     else
         end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
@@ -107,6 +114,15 @@ const RawValue::Data *PlotReader::fill_bin()
         if (!have_initial_final)
         {   // Remember the initial value.
             RawValue::copy(type, count, initial, reader_data);
+            // The very fist 'reader_data' could be the sample before 'start'.
+            // Map that onto 'start'
+            if (RawValue::getTime(initial) < end_of_bin - delta)
+            {
+#ifdef DEBUG_PLOTREAD
+                printf("Moving time of before-start sample to start\n");
+#endif
+                RawValue::setTime(initial, end_of_bin - delta);
+            }
             have_initial_final = true;
         }
         if (RawValue::isInfo(final)==false  &&
@@ -152,7 +168,7 @@ const RawValue::Data *PlotReader::next()
     }
     if (state != s_dunno)
     {   // Anything in current bin?
-        // Should hav copy of initial and final value.
+        // Should have copy of initial and final value.
         // For numerics, also mini & maxi.
         LOG_ASSERT(have_initial_final && initial && final);
         double span;

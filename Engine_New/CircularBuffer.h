@@ -6,8 +6,8 @@
 #include <RawValue.h>
 
 /** \ingroup Engine In-Memory buffer for values.
- *
  *  Circular buffer.
+ *  <p>
  *  Each SampleMechanism has one to buffer the incoming values
  *  until they are written to the disk.
  */

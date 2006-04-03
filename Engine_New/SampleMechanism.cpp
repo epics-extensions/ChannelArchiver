@@ -10,7 +10,8 @@ static ThrottledMsgLogger back_in_time_throttle("Buffer Back-in-time",
 SampleMechanism::SampleMechanism(const EngineConfig &config,
                                  ProcessVariableContext &ctx,
                                  const char *name, double period)
-    : config(config), pv(ctx, name), period(period), last_stamp_set(false)
+    : config(config), pv(ctx, name), period(period),
+      last_stamp_set(false), have_sample_after_connection(false)
 {
 }
 
@@ -59,6 +60,8 @@ void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
     if (type != buffer.getDbrType()  ||
         count != buffer.getDbrCount())
         buffer.allocate(type, count, config.getSuggestedBufferSpace(period));
+        
+    have_sample_after_connection = false;
 }
     
 void SampleMechanism::pvDisconnected(Guard &guard, ProcessVariable &pv,
@@ -72,6 +75,7 @@ void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
                               const RawValue::Data *data)
 {
     LOG_MSG("SampleMechanism(%s): value\n", pv.getName().c_str());
+    // Last back-in-time check before writing to disk
     epicsTime stamp = RawValue::getTime(data);
     if (last_stamp_set && last_stamp > stamp)
     {
@@ -79,9 +83,26 @@ void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
                                       pv.getName().c_str());
         return;
     }
+    // Add original sample
     buffer.addRawValue(data);
     last_stamp = stamp;
     last_stamp_set = true;
+    // After connection, add another copy with the host time stamp.
+    if (!have_sample_after_connection)
+    {
+        have_sample_after_connection = true;
+        epicsTime now = epicsTime::getCurrent();
+        if (now > stamp)
+        {
+            LOG_MSG("SampleMechanism(%s): adding sample stamped 'now'\n",
+                   pv.getName().c_str());
+            RawValue::Data *value = buffer.getNextElement();
+            RawValue::copy(buffer.getDbrType(), buffer.getDbrCount(),
+                           value, data);
+            RawValue::setTime(value, now);              
+            last_stamp = now;
+        }
+    }
 }
 
 void SampleMechanism::addEvent(Guard &guard, short severity,

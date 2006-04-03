@@ -69,6 +69,11 @@ public:
     /** ProcessVariableListener.
      *  <p>
      *  Base implementation adds data to buffer.
+     *  In addition, the initial value after a new connection
+     *  is also logged with the host time stamp.
+     *  For PVs that never change, this helps because the
+     *  original time stamp might be before the last 'disconnect',
+     *  so this gives us an idea of when the PV connected.
      */
     virtual void pvValue(class Guard &guard,
                          class ProcessVariable &pv,
@@ -77,10 +82,11 @@ public:
 protected:
     const EngineConfig &config;
     ProcessVariable pv;
-    double period; // .. in seconds
-    CircularBuffer buffer;
-    bool last_stamp_set;
-    epicsTime last_stamp;
+    double period;         // .. in seconds
+    CircularBuffer buffer; // Sample storage between disk writes.
+    bool last_stamp_set;   // For catching 'back-in-time' at the
+    epicsTime last_stamp;  // buffer level.
+    bool have_sample_after_connection;
 
     /** Add a special 'event' value with given severity and time.
      *  <p>

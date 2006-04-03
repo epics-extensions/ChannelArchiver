@@ -56,6 +56,7 @@ void TimeFilter::pvValue(Guard &guard, ProcessVariable &pv,
             pv.getName().c_str(), t.c_str());
         return;
     }    
-    // OK, pass to listener.
+    // OK, remember this time stamp and pass value to listener.
+    last_stamp = stamp;
     listener->pvValue(guard, pv, data);
 }

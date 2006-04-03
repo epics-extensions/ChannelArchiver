@@ -14,7 +14,7 @@ SampleMechanismGet::SampleMechanismGet(EngineConfig &config,
     : SampleMechanism(config, ctx, name, period_estimate),
       scan_list(scan_list),
       repeat_filter(config, &time_filter),
-      time_filter(config, this)
+      time_filter(config, this)    
 {
 }
 

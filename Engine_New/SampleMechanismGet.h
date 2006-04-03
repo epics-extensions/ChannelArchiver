@@ -15,7 +15,8 @@
  *  up to a maximum repeat count specified in the EngineConfig.
  */
 class SampleMechanismGet :
-    public SampleMechanism, public Scannable, public ProcessVariableListener
+    public SampleMechanism,
+    public Scannable, public ProcessVariableListener
 {
 public:
     SampleMechanismGet(EngineConfig &config,

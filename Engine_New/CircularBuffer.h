@@ -5,8 +5,8 @@
 // Storage
 #include <RawValue.h>
 
-/** \ingroup Engine In-Memory buffer for values.
- *  Circular buffer.
+/** \ingroup Engine
+ *  In-Memory buffer for values.
  *  <p>
  *  Each SampleMechanism has one to buffer the incoming values
  *  until they are written to the disk.

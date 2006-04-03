@@ -9,7 +9,7 @@
 #include <GenericException.h>
 
 /** \ingroup Tools
- *  Interface for something that can be protexted by a Guard.
+ *  Interface for something that can be protected by a Guard.
  *
  *  @see Guard
  */

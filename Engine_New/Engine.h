@@ -4,7 +4,7 @@
 /** \defgroup Engine Engine
  *  Classes related to the ArchiveEngine
  * 
- *  TODO: add \image
+ *  @image html engine_api.png
  * 
  *  This is the lock order. When locking more than
  *  one object from the following list, they have to be taken

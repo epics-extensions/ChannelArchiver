@@ -203,44 +203,54 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
 {
     ProcessVariable *me = (ProcessVariable *) ca_puser(arg.chid);
     LOG_ASSERT(me != 0);
-    Guard guard(*me);
-    if (arg.op == CA_OP_CONN_DOWN)
-    {   // Connection is down
-        me->state = DISCONNECTED;
-        if (me->listeners.empty())
-        {
-            LOG_MSG("ProcessVariable(%s) is disconnected\n", me->getName().c_str());
-            return;
-        }
-        epicsTime now = epicsTime::getCurrent();
-        stdList<ProcessVariableListener *>::iterator l;
-        for (l = me->listeners.begin(); l != me->listeners.end(); ++l)
-            (*l)->pvDisconnected(guard, *me, now);
-        return;
-    }
-    // else: Connection is 'up'
-#   ifdef DEBUG_PV
-    printf("ProcessVariable(%s) getting control info\n", me->getName().c_str());
-#   endif
-    me->state = GETTING_INFO;
-    // Get control information for this channel.
+    try
     {
-        GuardRelease release(guard);
-        int status = ca_array_get_callback(
-            ca_field_type(me->id)+DBR_CTRL_STRING,
-            1 /* ca_element_count(me->ch_id) */,
-            me->id, control_callback, me);
-        if (status != ECA_NORMAL)
-        {
-            LOG_MSG("ProcessVariable('%s') connection_handler error %s\n",
-                    me->getName().c_str(), ca_message (status));
+        Guard guard(*me);
+        if (arg.op == CA_OP_CONN_DOWN)
+        {   // Connection is down
+            me->state = DISCONNECTED;
+            if (me->listeners.empty())
+            {
+                LOG_MSG("ProcessVariable(%s) is disconnected\n",
+                        me->getName().c_str());
+                return;
+            }
+            epicsTime now = epicsTime::getCurrent();
+            stdList<ProcessVariableListener *>::iterator l;
+            for (l = me->listeners.begin(); l != me->listeners.end(); ++l)
+                (*l)->pvDisconnected(guard, *me, now);
             return;
         }
+        // else: Connection is 'up'
+    #   ifdef DEBUG_PV
+        printf("ProcessVariable(%s) getting control info\n",
+               me->getName().c_str());
+    #   endif
+        me->state = GETTING_INFO;
+        // Get control information for this channel.
         {
-            Guard ctx_guard(me->ctx);
-            me->ctx.requestFlush(ctx_guard);
+            GuardRelease release(guard);
+            int status = ca_array_get_callback(
+                ca_field_type(me->id)+DBR_CTRL_STRING,
+                1 /* ca_element_count(me->ch_id) */,
+                me->id, control_callback, me);
+            if (status != ECA_NORMAL)
+            {
+                LOG_MSG("ProcessVariable('%s') connection_handler error %s\n",
+                        me->getName().c_str(), ca_message (status));
+                return;
+            }
+            {
+                Guard ctx_guard(me->ctx);
+                me->ctx.requestFlush(ctx_guard);
+            }
         }
     }
+    catch (GenericException &e)
+    {
+        LOG_MSG("ProcessVariable(%s) control_callback exception:\n%s\n",
+                me->getName().c_str(), e.what());
+    }    
 }
 
 // Fill crtl_info from raw dbr_ctrl_xx data
@@ -339,31 +349,39 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
                 me->getName().c_str(),  ca_message(arg.status));
         return;
     }
-    // Should be invoked with the control info 'get' data,
-    // requested in the connection handler.
-    Guard guard(*me);    
-    if (me->state != GETTING_INFO)
+    try
     {
-        LOG_MSG("ProcessVariable(%s) received control_callback while %s\n",
-                me->getName().c_str(), me->getStateStr(guard));
-        return;
+        // Should be invoked with the control info 'get' data,
+        // requested in the connection handler.
+        Guard guard(*me);    
+        if (me->state != GETTING_INFO)
+        {
+            LOG_MSG("ProcessVariable(%s) received control_callback while %s\n",
+                    me->getName().c_str(), me->getStateStr(guard));
+            return;
+        }
+        // Setup the PV info.
+        if (!me->setup_ctrl_info(arg.type, arg.dbr))
+            return;
+        me->dbr_type  = ca_field_type(me->id)+DBR_TIME_STRING;
+        me->dbr_count = ca_element_count(me->id);
+        me->state     = CONNECTED;
+        // Notify listeners that PV is now fully connected.
+        if (me->listeners.empty())
+        {
+            LOG_MSG("ProcessVariable(%s) Connected\n", me->getName().c_str());
+            return;
+        }
+        epicsTime now = epicsTime::getCurrent();
+        stdList<ProcessVariableListener *>::iterator l;
+        for (l = me->listeners.begin(); l != me->listeners.end(); ++l)
+            (*l)->pvConnected(guard, *me, now);
     }
-    // Setup the PV info.
-    if (!me->setup_ctrl_info(arg.type, arg.dbr))
-        return;
-    me->dbr_type  = ca_field_type(me->id)+DBR_TIME_STRING;
-    me->dbr_count = ca_element_count(me->id);
-    me->state     = CONNECTED;
-    // Notify listeners that PV is now fully connected.
-    if (me->listeners.empty())
+    catch (GenericException &e)
     {
-        LOG_MSG("ProcessVariable(%s) Connected\n", me->getName().c_str());
-        return;
+        LOG_MSG("ProcessVariable(%s) control_callback exception:\n%s\n",
+                me->getName().c_str(), e.what());
     }
-    epicsTime now = epicsTime::getCurrent();
-    stdList<ProcessVariableListener *>::iterator l;
-    for (l = me->listeners.begin(); l != me->listeners.end(); ++l)
-        (*l)->pvConnected(guard, *me, now);
 }
 
 // Each subscription monitor or 'get' callback goes here:
@@ -404,26 +422,34 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
             txt.c_str());
         return;
     }
-    // Check if we expected a value at all
-    Guard guard(*me);
-    if (me->outstanding_gets <= 0  &&  !me->subscribed)
-        LOG_MSG("ProcessVariable(%s) received unexpected value_callback\n",
-                me->getName().c_str());
-    if (me->outstanding_gets > 0)
-        --me->outstanding_gets;
-    if (me->state != CONNECTED)
+    try
     {
-        LOG_MSG("ProcessVariable(%s) received value_callback while %s\n",
-                me->getName().c_str(), me->getStateStr(guard));
-        return;
+        // Check if we expected a value at all
+        Guard guard(*me);
+        if (me->outstanding_gets <= 0  &&  !me->subscribed)
+            LOG_MSG("ProcessVariable(%s) received unexpected value_callback\n",
+                    me->getName().c_str());
+        if (me->outstanding_gets > 0)
+            --me->outstanding_gets;
+        if (me->state != CONNECTED)
+        {
+            LOG_MSG("ProcessVariable(%s) received value_callback while %s\n",
+                    me->getName().c_str(), me->getStateStr(guard));
+            return;
+        }
+        // Notify listeners of new value
+        if (me->listeners.empty())
+        {
+            LOG_MSG("ProcessVariable(%s) value\n", me->getName().c_str());
+            return;
+        }
+        stdList<ProcessVariableListener *>::iterator l;
+        for (l = me->listeners.begin(); l != me->listeners.end(); ++l)
+            (*l)->pvValue(guard, *me, value);
     }
-    // Notify listeners of new value
-    if (me->listeners.empty())
+    catch (GenericException &e)
     {
-        LOG_MSG("ProcessVariable(%s) value\n", me->getName().c_str());
-        return;
+        LOG_MSG("ProcessVariable(%s) value_callback exception:\n%s\n",
+                me->getName().c_str(), e.what());
     }
-    stdList<ProcessVariableListener *>::iterator l;
-    for (l = me->listeners.begin(); l != me->listeners.end(); ++l)
-        (*l)->pvValue(guard, *me, value);
 }

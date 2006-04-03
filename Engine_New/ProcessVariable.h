@@ -84,6 +84,9 @@ public:
      */
     void subscribe(Guard &guard);
 
+    /** @return Returns 'true' if we are subscribed. */
+    bool isSubscribed(Guard &guard) const;
+
     /** Unsubscribe, no more updates. */
     void unsubscribe(Guard &guard);
     
@@ -122,6 +125,11 @@ inline DbrType ProcessVariable::getDbrType(Guard &guard) const
 inline DbrCount ProcessVariable::getDbrCount(Guard &guard) const
 {
     return dbr_count;
+}
+
+inline bool ProcessVariable::isSubscribed(Guard &guard) const
+{
+    return subscribed;
 }
 
 #endif /*PROCESSVARIABLE_H_*/

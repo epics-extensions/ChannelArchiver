@@ -12,8 +12,7 @@
  *  Requires a period estimate in order to allocate a buffer
  *  for the values until they are written to storage.
  */
-class SampleMechanismMonitored :
-    public SampleMechanism, public ProcessVariableListener
+class SampleMechanismMonitored : public SampleMechanism
 {
 public:
     SampleMechanismMonitored(EngineConfig &config,

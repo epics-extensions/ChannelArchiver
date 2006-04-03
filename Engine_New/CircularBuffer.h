@@ -19,7 +19,18 @@ public:
     /** Allocate buffer for num*(type,count) values. */
     void allocate(DbrType type, DbrCount count, size_t num);
 
-    /** Capacity, that is: max. number of elements */
+    /** @return Returns the data type. */
+    DbrType getDbrType() const
+    { return type; }
+   
+    /** @return Returns the data size. */
+    DbrCount getDbrCount() const
+    { return count; }
+    
+    /** @return Returns the capacity.
+     *  <p>
+     *  That is: max. number of elements.
+     */
     size_t getCapacity() const
     {   return max_index-1; }
 

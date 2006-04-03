@@ -5,7 +5,7 @@
 #include "SampleMechanismGet.h"
 
 // Data pipe:
-//  pv -> repeat -> time -> this
+// pv -> repeat_filter -> time_filter -> this -> base SampleMechanism
 SampleMechanismGet::SampleMechanismGet(EngineConfig &config,
                                        ProcessVariableContext &ctx,
                                        ScanList &scan_list,
@@ -20,8 +20,6 @@ SampleMechanismGet::SampleMechanismGet(EngineConfig &config,
 
 SampleMechanismGet::~SampleMechanismGet()
 {
-    puts("'Gotten' Values:");
-    buffer.dump();
 }
 
 void SampleMechanismGet::start(Guard &guard)
@@ -39,31 +37,29 @@ void SampleMechanismGet::stop(Guard &guard)
     SampleMechanism::stop(guard);
 }
 
+// Invoked by scanner.
 void SampleMechanismGet::scan()
-{
+{   // Trigger a 'get', which should result in pvValue() callback.
     Guard guard(pv);
     pv.getValue(guard);
 }
 
+// TODO: Remove these fall-through PV Listeners
 void SampleMechanismGet::pvConnected(Guard &guard, ProcessVariable &pv,
                                      const epicsTime &when)
 {
-    LOG_MSG("SampleMechanismGet(%s): connected\n", pv.getName().c_str());
-    buffer.allocate(pv.getDbrType(guard), pv.getDbrCount(guard),
-                    config.getSuggestedBufferSpace(period));
+    SampleMechanism::pvConnected(guard, pv, when);
 }
     
 void SampleMechanismGet::pvDisconnected(Guard &guard, ProcessVariable &pv,
                                         const epicsTime &when)
 {
-    LOG_MSG("SampleMechanismGet(%s): disconnected\n", pv.getName().c_str());
+    SampleMechanism::pvDisconnected(guard, pv, when);
 }
 
 void SampleMechanismGet::pvValue(Guard &guard, ProcessVariable &pv,
                                  const RawValue::Data *data)
 {
-    LOG_MSG("SampleMechanismGet(%s): value\n", pv.getName().c_str());
-    // TODO: Add repeat-count filter
-    buffer.addRawValue(data);
+    SampleMechanism::pvValue(guard, pv, data);
 }
 

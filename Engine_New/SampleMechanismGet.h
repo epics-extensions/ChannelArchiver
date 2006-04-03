@@ -14,9 +14,7 @@
  *  Samples that don't change are stored via a 'repeat count',
  *  up to a maximum repeat count specified in the EngineConfig.
  */
-class SampleMechanismGet :
-    public SampleMechanism,
-    public Scannable, public ProcessVariableListener
+class SampleMechanismGet : public SampleMechanism, public Scannable
 {
 public:
     SampleMechanismGet(EngineConfig &config,

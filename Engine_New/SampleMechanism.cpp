@@ -45,9 +45,20 @@ void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
                                   const epicsTime &when)
 {
     LOG_MSG("SampleMechanism(%s): connected\n", pv.getName().c_str());
+    // If necessary, allocate a new circular buffer.
+    // Of course that means that data in there is tossed.
+    // So if you managed to stop an IOC,
+    // then reboot it with new data types _before_
+    // the engine could write, the last few samples before
+    // the reboot are gone.
+    //
+    // TODO: See if this code could toggle a 'write'
+    // to avoid that data loss.
     DbrType type = pv.getDbrType(guard);
     DbrCount count = pv.getDbrCount(guard);
-    buffer.allocate(type, count, config.getSuggestedBufferSpace(period));
+    if (type != buffer.getDbrType()  ||
+        count != buffer.getDbrCount())
+        buffer.allocate(type, count, config.getSuggestedBufferSpace(period));
 }
     
 void SampleMechanism::pvDisconnected(Guard &guard, ProcessVariable &pv,
@@ -76,28 +87,27 @@ void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
 void SampleMechanism::addEvent(Guard &guard, short severity,
                                const epicsTime &when)
 {
-    try
+    if (buffer.getCapacity() < 1)
     {
-        RawValue::Data *value = buffer.getNextElement();
-        size_t size = RawValue::getSize(buffer.getDbrType(),
-                                        buffer.getDbrCount());
-        memset(value, 0, size);
-        RawValue::setStatus(value, 0, severity);
-        
-        if (last_stamp_set  &&  when < last_stamp)
-            // adjust time, event has to be added to archive
-            RawValue::setTime(value, last_stamp);
-        else
-        {
-            RawValue::setTime(value, when);
-            last_stamp = when;
-            last_stamp_set = true;
-        }
+        // Message is strange but matches what's described in the manual.
+        LOG_MSG("'%s': Cannot add event because data type is unknown\n",
+              pv.getName().c_str());
+        return;
     }
-    catch (GenericException &e)
+    RawValue::Data *value = buffer.getNextElement();
+    size_t size = RawValue::getSize(buffer.getDbrType(),
+                                    buffer.getDbrCount());
+    memset(value, 0, size);
+    RawValue::setStatus(value, 0, severity);
+    
+    if (last_stamp_set  &&  when < last_stamp)
+        // adjust time, event has to be added to archive
+        RawValue::setTime(value, last_stamp);
+    else
     {
-         LOG_MSG("addEvent('%s') exception:\n%s\n",
-                  pv.getName().c_str(), e.what());
+        RawValue::setTime(value, when);
+        last_stamp = when;
+        last_stamp_set = true;
     }
 }
 

@@ -77,14 +77,25 @@ printf("\n");
 printf("int main(int argc, const char *argv[])\n");
 printf("{\n");
 printf("    size_t units = 0, run = 0, passed = 0;\n");
-printf("    const char *single_test = 0;\n");
+printf("    const char *single_unit = 0;\n");
+printf("    const char *single_case = 0;\n");
 printf("\n");
-printf("    if (argc == 2)\n");
-printf("        single_test = argv[1];\n");
+printf("    if (argc > 3  || (argc > 1 && argv[1][0]=='-'))\n");
+printf("    {\n");
+printf("        printf(\"USAGE: UnitTest { Unit { case } }\\n\");\n");
+printf("        printf(\"\\n\");\n");
+printf("        printf(\"Per default, all test cases in all units are executed.\\n\");\n");
+printf("        printf(\"\\n\");\n");
+printf("        return -1;\n");
+printf("    }\n");
+printf("    if (argc >= 2)\n");
+printf("        single_unit = argv[1];\n");
+printf("    if (argc == 3)\n");
+printf("        single_case = argv[2];\n");
 printf("\n");
 foreach $test_unit ( sort keys %test_units )
 {
-    printf("    if (single_test==0  ||  strcmp(single_test, \"$test_unit\")==0)\n");
+    printf("    if (single_unit==0  ||  strcmp(single_unit, \"$test_unit\")==0)\n");
     printf("    {\n");
 
     printf("        printf(\"======================================================================\\n\");\n");
@@ -93,12 +104,21 @@ foreach $test_unit ( sort keys %test_units )
     printf("        ++units;\n");
     foreach $test_case ( @{ $test_units{$test_unit}} )
     {
-        print("        ++run;\n");
-        print("        printf(\"\\n$test_case:\\n\");\n");
-        print("        if ($test_case())\n");
-        print("            ++passed;\n");
-        print("        else\n");
-        print("            printf(\"THERE WERE ERRORS!\\n\");\n");
+
+        printf("       if (single_case==0  ||  strcmp(single_case, \"$test_case\")==0)\n");
+        printf("       {\n");
+
+
+        print("            ++run;\n");
+        print("            printf(\"\\n$test_case:\\n\");\n");
+        print("            if ($test_case())\n");
+        print("                ++passed;\n");
+        print("            else\n");
+        print("                printf(\"THERE WERE ERRORS!\\n\");\n");
+        printf("       }\n");
+
+
+
     }
     printf("    }\n");
 }

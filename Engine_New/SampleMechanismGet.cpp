@@ -42,22 +42,3 @@ void SampleMechanismGet::scan()
     pv.getValue(guard);
 }
 
-// TODO: Remove these fall-through PV Listeners
-void SampleMechanismGet::pvConnected(Guard &guard, ProcessVariable &pv,
-                                     const epicsTime &when)
-{
-    SampleMechanism::pvConnected(guard, pv, when);
-}
-    
-void SampleMechanismGet::pvDisconnected(Guard &guard, ProcessVariable &pv,
-                                        const epicsTime &when)
-{
-    SampleMechanism::pvDisconnected(guard, pv, when);
-}
-
-void SampleMechanismGet::pvValue(Guard &guard, ProcessVariable &pv,
-                                 const RawValue::Data *data)
-{
-    SampleMechanism::pvValue(guard, pv, data);
-}
-

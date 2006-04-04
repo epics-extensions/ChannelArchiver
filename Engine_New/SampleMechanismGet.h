@@ -40,13 +40,6 @@ public:
     // Scannable
     void scan();
    
-    // ProcessVariableListener
-    void pvConnected(Guard &guard, ProcessVariable &pv,
-                     const epicsTime &when);
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                        const epicsTime &when);
-    void pvValue(Guard &guard, ProcessVariable &pv,
-                 const RawValue::Data *data);
 private:
     ScanList     &scan_list;
     RepeatFilter repeat_filter;

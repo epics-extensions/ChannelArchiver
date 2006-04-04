@@ -36,11 +36,7 @@ public:
     
     // ProcessVariableListener
     void pvConnected(Guard &guard, ProcessVariable &pv, const epicsTime &when);
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                        const epicsTime &when);
-    void pvValue(Guard &guard, ProcessVariable &pv,
-                 const RawValue::Data *data);
-                 
+
 private:
     TimeFilter time_filter;
 };

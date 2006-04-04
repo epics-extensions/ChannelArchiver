@@ -40,10 +40,7 @@ public:
     // ProcessVariableListener
     void pvConnected(Guard &guard, ProcessVariable &pv,
                      const epicsTime &when);
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                        const epicsTime &when);
-    void pvValue(Guard &guard, ProcessVariable &pv,
-                 const RawValue::Data *data);
+
 private:
     TimeSlotFilter time_slot_filter;
     RepeatFilter   repeat_filter;

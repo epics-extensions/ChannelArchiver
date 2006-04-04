@@ -37,16 +37,4 @@ void SampleMechanismMonitored::pvConnected(Guard &guard, ProcessVariable &pv,
         pv.subscribe(guard);
 }
 
-void SampleMechanismMonitored::pvDisconnected(Guard &guard,
-                                              ProcessVariable &pv,
-                                              const epicsTime &when)
-{
-    SampleMechanism::pvDisconnected(guard, pv, when);
-}
-
-void SampleMechanismMonitored::pvValue(Guard &guard, ProcessVariable &pv,
-                                       const RawValue::Data *data)
-{
-    SampleMechanism::pvValue(guard, pv, data);
-}
 

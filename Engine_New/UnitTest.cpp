@@ -10,6 +10,8 @@
 
 // Unit CircularBufferTest:
 extern TEST_CASE test_circular_buffer();
+// Unit EngineConfigTest:
+extern TEST_CASE engine_config();
 // Unit ProcessVariableTest:
 extern TEST_CASE process_variable();
 // Unit SampleMechanismTest:
@@ -53,6 +55,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\ntest_circular_buffer:\n");
             if (test_circular_buffer())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "EngineConfigTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit EngineConfigTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "engine_config")==0)
+       {
+            ++run;
+            printf("\nengine_config:\n");
+            if (engine_config())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

@@ -12,6 +12,14 @@
  *  <p>
  *  Requires a period estimate in order to allocate a buffer
  *  for the values until they are written to storage.
+ *  <p>
+ *  The data flows as follows:
+ *  <ol>
+ *  <li>ProcessVariable (subscribed)
+ *  <li>TimeFilter
+ *  <li>SampleMechanismMonitored
+ *  <li>base SampleMechanism
+ *  </ol>
  */
 class SampleMechanismMonitored : public SampleMechanism
 {

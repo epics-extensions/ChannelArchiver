@@ -9,10 +9,19 @@
 
 /**\ingroup Engine
  *  Sample Mechanism that performs a periodic 'get'.
- * 
+ *  <p>
  *  New samples are stored.
  *  Samples that don't change are stored via a 'repeat count',
  *  up to a maximum repeat count specified in the EngineConfig.
+ *  <p>
+ *  The data flows as follows:
+ *  <ol>
+ *  <li>ProcessVariable (scanned at requested period)
+ *  <li>RepeatFilter
+ *  <li>TimeFilter
+ *  <li>SampleMechanismGet
+ *  <li>base SampleMechanism
+ *  </ol>
  */
 class SampleMechanismGet : public SampleMechanism, public Scannable
 {
@@ -39,9 +48,9 @@ public:
     void pvValue(Guard &guard, ProcessVariable &pv,
                  const RawValue::Data *data);
 private:
-    ScanList &scan_list;
+    ScanList     &scan_list;
     RepeatFilter repeat_filter;
-    TimeFilter time_filter;
+    TimeFilter   time_filter;
 };
 
 #endif /*SAMPLEMECHANISMGET_H_*/

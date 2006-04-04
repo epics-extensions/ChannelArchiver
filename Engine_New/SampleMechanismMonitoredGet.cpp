@@ -7,27 +7,51 @@
 SampleMechanismMonitoredGet::SampleMechanismMonitoredGet(
     EngineConfig &config, ProcessVariableContext &ctx,
     const char *name, double period)
-    : SampleMechanismMonitored(config, ctx, name, period)
+    : SampleMechanism(config, ctx, name, period),
+      time_slot_filter(period, &repeat_filter),
+      repeat_filter(config, &time_filter),
+      time_filter(config, this)  
 {
 }
 
 SampleMechanismMonitoredGet::~SampleMechanismMonitoredGet()
-{}
-
-void SampleMechanismMonitoredGet::pvConnected(Guard &guard, ProcessVariable &pv)
 {
-    SampleMechanismMonitored::pvConnected(guard, pv);
+}
+
+void SampleMechanismMonitoredGet::start(Guard &guard)
+{
+    pv.addProcessVariableListener(guard, &time_slot_filter);
+    SampleMechanism::start(guard);
+}   
+    
+void SampleMechanismMonitoredGet::stop(Guard &guard)
+{
+    pv.removeProcessVariableListener(guard, &time_slot_filter);
+    repeat_filter.stop(guard, pv);
+    SampleMechanism::stop(guard);
+}
+
+void SampleMechanismMonitoredGet::pvConnected(Guard &guard,
+    ProcessVariable &pv, const epicsTime &when)
+{   
+    LOG_MSG("SampleMechanismMonitoredGet(%s): connected\n",
+            pv.getName().c_str());
+    SampleMechanism::pvConnected(guard, pv, when);
+    if (!pv.isSubscribed(guard))
+        pv.subscribe(guard);
+    
 }
     
-void SampleMechanismMonitoredGet::pvDisconnected(Guard &guard, ProcessVariable &pv)
+// TODO: Remove these fall-through PV Listeners
+void SampleMechanismMonitoredGet::pvDisconnected(Guard &guard,
+    ProcessVariable &pv, const epicsTime &when)
 {
-    SampleMechanismMonitored::pvDisconnected(guard, pv);
+    SampleMechanism::pvDisconnected(guard, pv, when);
 }
 
 void SampleMechanismMonitoredGet::pvValue(Guard &guard, ProcessVariable &pv,
-                                       RawValue::Data *data)
+                                          const RawValue::Data *data)
 {
-    LOG_MSG("SampleMechanismMonitoredGet(%s): value\n", pv.getCName());
-    buffer.addRawValue(data);
+    SampleMechanism::pvValue(guard, pv, data);
 }
 

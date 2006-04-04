@@ -15,6 +15,7 @@ LIB_SRCS += ScanList.cpp
 LIB_SRCS += SampleMechanism.cpp 
 LIB_SRCS += SampleMechanismMonitored.cpp
 LIB_SRCS += SampleMechanismGet.cpp
+LIB_SRCS += SampleMechanismMonitoredGet
 LIBRARY_HOST := Engine_New
 
 #ArchiveEngine_SRCS += main.cpp

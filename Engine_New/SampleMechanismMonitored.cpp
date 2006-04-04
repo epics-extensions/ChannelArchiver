@@ -4,8 +4,6 @@
 // Engine
 #include "SampleMechanismMonitored.h"
 
-// Data pipe:
-// pv -> time_filter -> this -> base SampleMechanism
 SampleMechanismMonitored::SampleMechanismMonitored(
     EngineConfig &config, ProcessVariableContext &ctx,
     const char *name, double period_estimate)

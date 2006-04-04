@@ -2,14 +2,29 @@
 #define SAMPLEMECHANISMMONITOREDGET_H_
 
 // Engine
-#include "SampleMechanismMonitored.h"
+#include "SampleMechanism.h"
+#include "TimeSlotFilter.h"
+#include "RepeatFilter.h"
+#include "TimeFilter.h"
 
 /**\ingroup Engine
  *  Sample Mechanism that stores periodic samples using a 'monitor'.
- * 
- *  For each sample period, the most recent sample is stored.
+ *  <p>
+ *  For each sample period, the first sample is stored.
+ *  Samples that don't change are stored via a 'repeat count',
+ *  up to a maximum repeat count specified in the EngineConfig.
+ *  <p>
+ *  The data flows as follows:
+ *  <ol>
+ *  <li>ProcessVariable (monitored)
+ *  <li>TimeSlotFilter (for requested period)
+ *  <li>RepeatFilter
+ *  <li>TimeFilter
+ *  <li>SampleMechanismMonitoredGet
+ *  <li>base SampleMechanism
+ *  </ol> 
  */
-class SampleMechanismMonitoredGet : public SampleMechanismMonitored
+class SampleMechanismMonitoredGet : public SampleMechanism
 {
 public:
     SampleMechanismMonitoredGet(EngineConfig &config,
@@ -18,10 +33,21 @@ public:
                                 double period);
 	virtual ~SampleMechanismMonitoredGet();
 
+    // SampleMechanism  
+    void start(Guard &guard);    
+    void stop(Guard &guard);
+    
     // ProcessVariableListener
-    void pvConnected(Guard &guard, ProcessVariable &pv);
-    void pvDisconnected(Guard &guard, ProcessVariable &pv);
-    void pvValue(Guard &guard, ProcessVariable &pv, RawValue::Data *data);
+    void pvConnected(Guard &guard, ProcessVariable &pv,
+                     const epicsTime &when);
+    void pvDisconnected(Guard &guard, ProcessVariable &pv,
+                        const epicsTime &when);
+    void pvValue(Guard &guard, ProcessVariable &pv,
+                 const RawValue::Data *data);
+private:
+    TimeSlotFilter time_slot_filter;
+    RepeatFilter   repeat_filter;
+    TimeFilter     time_filter;
 };
 
 #endif /*SAMPLEMECHANISMMONITOREDGET_H_*/

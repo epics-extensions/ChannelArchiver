@@ -16,7 +16,6 @@ TEST_CASE test_sample_get()
     EngineConfig config;
     //config.setMaxRepeatCount(2);
     ProcessVariableContext ctx;
-    //AutoPtr<MyPVListener> pvl(new MyPVListener());
     {
         // Fred updates every ~20 seconds _when_polled_, otherwise 2Hz. 
         AutoPtr<SampleMechanism> sample(
@@ -46,6 +45,12 @@ TEST_CASE test_sample_get()
             Guard guard(*sample);
             sample->stop(guard);
         }
+        // Expect at least initial, initial host-stamped,
+        // a repeat value, another, final 'off'
+        {
+            Guard guard(*sample);
+            TEST(sample->getSampleCount(guard) > 4);
+        }
     }
     TEST_OK;
 }
@@ -55,7 +60,6 @@ TEST_CASE test_sample_monitor()
 {
     EngineConfig config;
     ProcessVariableContext ctx;
-    //AutoPtr<MyPVListener> pvl(new MyPVListener());
     {
         AutoPtr<SampleMechanism> sample(
             new SampleMechanismMonitored(config, ctx, "janet", 1));
@@ -80,6 +84,11 @@ TEST_CASE test_sample_monitor()
         {
             Guard guard(*sample);
             sample->stop(guard);
+        }
+        // Expect at least 10 samples
+        {
+            Guard guard(*sample);
+            TEST(sample->getSampleCount(guard) > 10);
         }
     }
     TEST_OK;

@@ -50,6 +50,9 @@ public:
      */
     virtual void stop(Guard &guard);
     
+    /** @return Returns the number of samples in the circular buffer. */
+    size_t getSampleCount(Guard &guard) const;
+    
     /** ProcessVariableListener.
      *  <p>
      *  Base implementation allocates circular buffer

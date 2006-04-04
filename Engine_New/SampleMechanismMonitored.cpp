@@ -4,10 +4,13 @@
 // Engine
 #include "SampleMechanismMonitored.h"
 
+// Data pipe:
+// pv -> time_filter -> this -> base SampleMechanism
 SampleMechanismMonitored::SampleMechanismMonitored(
     EngineConfig &config, ProcessVariableContext &ctx,
     const char *name, double period_estimate)
-    : SampleMechanism(config, ctx, name, period_estimate)
+    : SampleMechanism(config, ctx, name, period_estimate),
+      time_filter(config, this)
 {
 }
 
@@ -17,7 +20,7 @@ SampleMechanismMonitored::~SampleMechanismMonitored()
 
 void SampleMechanismMonitored::start(Guard &guard)
 {
-    pv.addProcessVariableListener(guard, this);
+    pv.addProcessVariableListener(guard, &time_filter);
     SampleMechanism::start(guard);
 }   
     
@@ -40,6 +43,7 @@ void SampleMechanismMonitored::pvDisconnected(Guard &guard,
                                               ProcessVariable &pv,
                                               const epicsTime &when)
 {
+    SampleMechanism::pvDisconnected(guard, pv, when);
 }
 
 void SampleMechanismMonitored::pvValue(Guard &guard, ProcessVariable &pv,

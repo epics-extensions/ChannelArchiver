@@ -42,6 +42,11 @@ void SampleMechanism::stop(Guard &guard)
     addEvent(guard, ARCH_STOPPED, epicsTime::getCurrent());
 }
 
+size_t SampleMechanism::getSampleCount(Guard &guard) const
+{
+    return buffer.getCount();
+}
+
 void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
                                   const epicsTime &when)
 {

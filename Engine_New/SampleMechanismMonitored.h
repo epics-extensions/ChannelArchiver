@@ -3,6 +3,7 @@
 
 // Engine
 #include "SampleMechanism.h"
+#include "TimeFilter.h"
 
 /**\ingroup Engine
  *  Monitored Sample Mechanism.
@@ -31,6 +32,9 @@ public:
                         const epicsTime &when);
     void pvValue(Guard &guard, ProcessVariable &pv,
                  const RawValue::Data *data);
+                 
+private:
+    TimeFilter time_filter;
 };
 
 #endif /*SAMPLEMECHANISMMONITORED_H_*/

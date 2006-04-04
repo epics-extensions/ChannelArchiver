@@ -1,0 +1,55 @@
+// Tools
+#include <epicsTimeHelper.h>
+#include <MsgLogger.h>
+// Engine
+#include "TimeSlotFilter.h"
+
+#define DEBUG_SLOT_FILT
+
+TimeSlotFilter::TimeSlotFilter(double period, ProcessVariableListener *listener)
+    : ProcessVariableFilter(listener), period(period)
+{
+}
+
+TimeSlotFilter::~TimeSlotFilter()
+{
+}
+
+void TimeSlotFilter::pvConnected(Guard &guard, ProcessVariable &pv,
+                                 const epicsTime &when)
+{
+    listener->pvConnected(guard, pv, when);
+}
+
+void TimeSlotFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
+                                    const epicsTime &when)
+{
+    listener->pvDisconnected(guard, pv, when);
+}
+
+void TimeSlotFilter::pvValue(Guard &guard, ProcessVariable &pv,
+                             const RawValue::Data *data)
+{
+    // next_slot determines if we can use the current
+    // monitor of if we should ignore it.
+    // Data from e.g. a BPM being read at 60 Hz, archived at 10 Hz,
+    // should result in data for all BPMs from the same time slice.
+    // While one cannot pick the time slice
+    // - it's determined by roundTimeUp(stamp, period) -
+    // the engine will store values from the same time slice,
+    // as long as the time stamps of the BPM values match
+    // across BPM channels.
+    epicsTime stamp = RawValue::getTime(data);
+#   ifdef DEBUG_SLOT_FILT
+    stdString txt;
+    LOG_MSG("TimeSlotFilter: %s\n", epicsTimeTxt(next_slot, txt));
+#   endif
+    if (stamp < next_slot) // not due, yet
+        return;
+    // OK, determine next slot and pass value to listener.
+    next_slot = roundTimeUp(stamp, period);
+#   ifdef DEBUG_SLOT_FILT
+    LOG_MSG("next_sample_time=%s\n", epicsTimeTxt(next_slot, txt));
+#   endif
+    listener->pvValue(guard, pv, data);
+}

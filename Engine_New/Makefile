@@ -10,6 +10,7 @@ LIB_SRCS += ProcessVariable.cpp
 LIB_SRCS += ProcessVariableFilter.cpp
 LIB_SRCS += RepeatFilter.cpp
 LIB_SRCS += TimeFilter.cpp
+LIB_SRCS += TimeSlotFilter
 LIB_SRCS += ScanList.cpp
 LIB_SRCS += SampleMechanism.cpp 
 LIB_SRCS += SampleMechanismMonitored.cpp

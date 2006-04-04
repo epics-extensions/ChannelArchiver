@@ -59,7 +59,7 @@ TEST_CASE test_time_slot_filter()
     TEST(pvl.values == 0);
     TEST(pvl.connected == true);
      
-    // Data gets passed.
+    // Initial sample gets passed.
     DbrType type = DBR_TIME_DOUBLE;
     DbrCount count = 1;
     RawValueAutoPtr value(RawValue::allocate(type, count, 1));
@@ -70,16 +70,29 @@ TEST_CASE test_time_slot_filter()
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 1);
-
-    // Same time gets passed.
+    
+    // This is the next time slot, so this value should pass, too.
+    time = roundTimeUp(time, 10.0); 
+    RawValue::setTime(value, time);    
     {
         Guard guard(pv);
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 2);
 
-    // New time gets passed.
-    time += 10;
+    // But not again...
+    int i;
+    for (i=1; i<10; ++i)
+    {
+        RawValue::setTime(value, time + 0.1*i);    
+        {
+            Guard guard(pv);
+            filt.pvValue(guard, pv, value);
+        }
+        TEST(pvl.values == 2);
+    }
+    // ... until the next time slot is reached
+    time += 10.0;
     RawValue::setTime(value, time);    
     {
         Guard guard(pv);
@@ -87,52 +100,26 @@ TEST_CASE test_time_slot_filter()
     }
     TEST(pvl.values == 3);
 
-    // Back-in-time is blocked
-    time -= 20;
-    RawValue::setTime(value, time);    
+    // One more try
+    for (i=1; i<10; ++i)
     {
-        Guard guard(pv);
-        filt.pvValue(guard, pv, value);
+        RawValue::setTime(value, time + 0.1*i);    
+        {
+            Guard guard(pv);
+            filt.pvValue(guard, pv, value);
+        }
+        TEST(pvl.values == 3);
     }
-    TEST(pvl.values == 3);
-
-    // New time gets passed.
-    time += 30;
-    RawValue::setTime(value, time);    
-    {
-        Guard guard(pv);
-        filt.pvValue(guard, pv, value);
-    }
-    TEST(pvl.values == 4);
-
-    // Back-in-time is blocked
-    time -= 10;
+    // ... until the next time slot is reached
+    time += 30.0;
     RawValue::setTime(value, time);    
     {
         Guard guard(pv);
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 4);
-    
-    // New time gets passed.
-    time += 20;
-    RawValue::setTime(value, time);    
-    {
-        Guard guard(pv);
-        filt.pvValue(guard, pv, value);
-    }
-    TEST(pvl.values == 5);
-    
-    // Time is now at 'now + 30'
-    // Toggle 'ignored future' test
-    time = epicsTime::getCurrent() + (config.getIgnoredFutureSecs() + 10);
-    RawValue::setTime(value, time);    
-    {
-        Guard guard(pv);
-        filt.pvValue(guard, pv, value);
-    }
-    TEST(pvl.values == 5);
-    
+
+
     // Disconnect gets passed.
     time = epicsTime::getCurrent();   
     {

@@ -40,16 +40,13 @@ void TimeSlotFilter::pvValue(Guard &guard, ProcessVariable &pv,
     // as long as the time stamps of the BPM values match
     // across BPM channels.
     epicsTime stamp = RawValue::getTime(data);
-#   ifdef DEBUG_SLOT_FILT
-    stdString txt;
-    LOG_MSG("TimeSlotFilter: %s\n", epicsTimeTxt(next_slot, txt));
-#   endif
     if (stamp < next_slot) // not due, yet
         return;
     // OK, determine next slot and pass value to listener.
     next_slot = roundTimeUp(stamp, period);
-#   ifdef DEBUG_SLOT_FILT
-    LOG_MSG("next_sample_time=%s\n", epicsTimeTxt(next_slot, txt));
-#   endif
     listener->pvValue(guard, pv, data);
+#   ifdef DEBUG_SLOT_FILT
+    stdString txt;
+    LOG_MSG("TimeSlotFilter: next slot %s\n", epicsTimeTxt(next_slot, txt));
+#   endif
 }

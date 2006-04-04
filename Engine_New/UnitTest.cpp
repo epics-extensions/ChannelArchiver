@@ -19,6 +19,8 @@ extern TEST_CASE test_sample_monitor();
 extern TEST_CASE test_scan_list();
 // Unit TimeFilterTest:
 extern TEST_CASE test_time_filter();
+// Unit TimeSlotFilterTest:
+extern TEST_CASE test_time_slot_filter();
 
 int main(int argc, const char *argv[])
 {
@@ -95,6 +97,19 @@ int main(int argc, const char *argv[])
         ++run;
         printf("\ntest_time_filter:\n");
         if (test_time_filter())
+            ++passed;
+        else
+            printf("THERE WERE ERRORS!\n");
+    }
+    if (single_test==0  ||  strcmp(single_test, "TimeSlotFilterTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit TimeSlotFilterTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+        ++run;
+        printf("\ntest_time_slot_filter:\n");
+        if (test_time_slot_filter())
             ++passed;
         else
             printf("THERE WERE ERRORS!\n");

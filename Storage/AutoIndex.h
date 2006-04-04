@@ -8,12 +8,13 @@
 // Storage
 #include <Index.h>
 
-/// \addtogroup Storage
-/// @{
-
-/// Index which automatically picks ListIndex or FileIndex
-/// when reading, based on looking at the first few bytes
-/// in the index file.
+/** \ingroup Storage
+ *  General Index for reading.
+ * 
+ *  Index which automatically picks ListIndex or FileIndex
+ *  when reading, based on looking at the first few bytes
+ *  in the index file.
+ */
 class AutoIndex : public Index
 {
 public:

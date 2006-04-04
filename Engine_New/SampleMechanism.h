@@ -23,6 +23,12 @@ class SampleMechanism : public ProcessVariableListener, public Guardable,
     public virtual Named
 {
 public:
+    /** Construct mechanism for given period.
+     *  @param config The global configuration.
+     *  @param ctx    The ProcessVariableContext to use for the pv.
+     *  @param name   The pv name to connect to.
+     *  @param period The sample period. Use differs with derived class.
+     */
     SampleMechanism(const EngineConfig &config,
                     ProcessVariableContext &ctx, const char *name,
                     double period);

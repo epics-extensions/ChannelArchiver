@@ -27,6 +27,7 @@
 class SampleMechanismMonitoredGet : public SampleMechanism
 {
 public:
+    /** Construct mechanism for given sampling period. */
     SampleMechanismMonitoredGet(EngineConfig &config,
                                 ProcessVariableContext &ctx,
                                 const char *name,

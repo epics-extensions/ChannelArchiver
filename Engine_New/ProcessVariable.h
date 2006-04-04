@@ -33,6 +33,7 @@ public:
     /** @see Guardable */
     epicsMutex &getMutex();
     
+    /** Possible states of a ProcessVariable. */
     enum State
     {
         /** Not initialized */

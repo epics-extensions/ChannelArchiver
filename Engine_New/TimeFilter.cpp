@@ -42,7 +42,7 @@ void TimeFilter::pvValue(Guard &guard, ProcessVariable &pv,
     {
         stdString t;
         epicsTime2string(stamp, t);
-        back_in_time_throttle.LOG_MSG(
+        futuristic_time_throttle.LOG_MSG(
             "'%s': Ignoring futuristic time stamp %s\n",
             pv.getName().c_str(), t.c_str());
         return;
@@ -51,7 +51,7 @@ void TimeFilter::pvValue(Guard &guard, ProcessVariable &pv,
     {
         stdString t;
         epicsTime2string(stamp, t);
-        futuristic_time_throttle.LOG_MSG(
+        back_in_time_throttle.LOG_MSG(
             "'%s': Ignoring back-in-time time stamp %s\n",
             pv.getName().c_str(), t.c_str());
         return;

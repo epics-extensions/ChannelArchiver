@@ -17,10 +17,12 @@ LIB_SRCS += SampleMechanismMonitored.cpp
 LIB_SRCS += SampleMechanismGet.cpp
 LIB_SRCS += SampleMechanismMonitoredGet
 LIB_SRCS += EngineConfig.cpp
+LIB_SRCS += Engine.cpp
+LIB_SRCS += main.cpp
 LIBRARY_HOST := Engine_New
 
-#ArchiveEngine_SRCS += main.cpp
-#PROD_HOST := ArchiveEngine
+ArchiveEngine_SRCS += main.cpp
+TESTPROD_HOST := ArchiveEngine
 PROD_LIBS_DEFAULT := Engine_New Storage Tools    $(EPICS_BASE_IOC_LIBS)
 #PROD_LIBS_WIN32   := EngineObj StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
 #SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32

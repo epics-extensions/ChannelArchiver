@@ -1,6 +1,13 @@
 #ifndef ENGINE_H_
 #define ENGINE_H_
 
+// Tools
+#include <Guard.h>
+// Engine
+#include "EngineConfig.h"
+#include "ScanList.h"
+#include "ProcessVariableContext.h"
+
 /** \defgroup Engine Engine
  *  Classes related to the ArchiveEngine.
  *  <p>
@@ -31,11 +38,49 @@
 /** \ingroup Engine
  *  The archive engine.
  */
-class Engine
+class Engine : public Guardable, public EngineConfigListener
 {
+public:
+    /** Create Engine that writes to given index and serves info at port. */
+    Engine(const stdString &index_name, int port);
+    
+    virtual ~Engine();
+    
+    /** Guardable interface. */
+    epicsMutex &getMutex();
+
+    /** Set the description string. */
+    void setDescription(Guard &guard, const stdString &description);
+    
+    /** Read the given config file. */
+    void read_config(Guard &guard, const stdString &file_name);
+    
+    /** EngineConfigListener */
+    void addChannel(const stdString &group_name,
+                    const stdString &channel_name,
+                    double scan_period,
+                    bool disabling, bool monitor);
+    
+    /** Main process routine.
+     *  @return Returns true if we should process again.
+     */
+    bool process();
+                    
 private:
-	stdList<ArchiveChannel *> channels;// all the channels
-    stdList<GroupInfo *>      groups;    // scan-groups of channels
+    epicsMutex              mutex;
+    stdString               description;
+    EngineConfigParser      config;
+    ScanList                scan_list;
+    ProcessVariableContext  pv_context;
+	//stdList<ArchiveChannel *> channels; // all the channels
+    //stdList<GroupInfo *>      groups;   // scan-groups of channels
+    
+    double write_duration;
+    size_t write_count;
+    double process_delay_avg;
+    epicsTime next_write_time;
+    
+    unsigned long writeArchive(Guard &engine_guard);
 };
 
 #endif /*ENGINE_H_*/

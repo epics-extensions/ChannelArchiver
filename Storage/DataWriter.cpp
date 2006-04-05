@@ -7,6 +7,7 @@
 // Storage
 #include "DataFile.h"
 #include "DataWriter.h"
+#include "RTree.h"
 
 // #define DEBUG_DATA_WRITER
 
@@ -14,7 +15,7 @@ FileOffset DataWriter::file_size_limit = 100*1024*1024; // 100MB Default.
 
 stdString DataWriter::data_file_name_base;
 
-DataWriter::DataWriter(IndexFile &index,
+DataWriter::DataWriter(Index &index,
                        const stdString &channel_name,
                        const CtrlInfo &ctrl_info,
                        DbrType dbr_type,

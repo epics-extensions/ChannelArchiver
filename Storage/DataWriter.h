@@ -7,7 +7,7 @@
 #include <CtrlInfo.h>
 #include <RawValue.h>
 // Index
-#include <IndexFile.h>
+#include <Index.h>
 
 /// \addtogroup Storage
 /// @{
@@ -31,7 +31,7 @@ public:
     ///                      (helps w/ buffer allocation)
     ///
     /// @exception GenericException on error.
-    DataWriter(IndexFile &index,
+    DataWriter(Index &index,
                const stdString &channel_name,
                const CtrlInfo &ctrl_info,
                DbrType dbr_type,
@@ -71,7 +71,7 @@ public:
     static stdString data_file_name_base;
     
 private:
-    IndexFile &index;
+    Index &index;
     stdString directory;
     AutoPtr<RTree> tree;
     const stdString channel_name;

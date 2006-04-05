@@ -4,6 +4,7 @@
 // Storage
 #include <DataWriter.h>
 #include <RawDataReader.h>
+#include <IndexFile.h>
 #include <DataFile.h>
 
 static const char *index_name = "test/data_writer.index";

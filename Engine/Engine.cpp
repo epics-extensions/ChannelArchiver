@@ -69,6 +69,14 @@ void Engine::addChannel(const stdString &group_name,
            (monitor ? "monitor" : "scan"),
            (disabling ? ", disabling" : "")); */
     Guard engine_guard(*this);
+    // Get group
+    GroupInfo *group = findGroup(engine_guard, group_name);
+    if (!group)
+    {
+        group = new GroupInfo(group_name);
+        groups.push_back(group);
+    }
+    // Get channel
     ArchiveChannel *channel = findChannel(engine_guard, channel_name);
     if (channel)
         channel->configure(config, pv_context, scan_list,
@@ -79,6 +87,15 @@ void Engine::addChannel(const stdString &group_name,
                                      channel_name.c_str(),
                                      scan_period, monitor);
         channels.push_back(channel);         
+    }
+    // Hook channel into group
+    {   // Lock order: engine, group, channel
+        Guard group_guard(*group);
+        group->addChannel(group_guard, channel);
+        {
+            Guard channel_guard(*channel);
+            channel->addToGroup(group_guard, group, channel_guard, disabling);
+        }
     }
 }
 
@@ -153,6 +170,19 @@ bool Engine::process()
     process_delay_avg = 0.99*process_delay_avg + 0.01*delay;
     epicsThreadSleep(delay);
     return true;
+}
+
+GroupInfo *Engine::findGroup(Guard &engine_guard, const stdString &name)
+{
+    engine_guard.check(__FILE__, __LINE__, mutex);
+    stdList<GroupInfo *>::iterator group = groups.begin();
+    while (group != groups.end())
+    {
+        if ((*group)->getName() == name)
+            return *group;
+        ++group;
+    }
+    return 0;
 }
 
 ArchiveChannel *Engine::findChannel(Guard &engine_guard, const stdString &name)

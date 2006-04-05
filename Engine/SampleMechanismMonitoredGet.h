@@ -32,7 +32,7 @@ public:
                                 ProcessVariableContext &ctx,
                                 const char *name,
                                 double period);
-	virtual ~SampleMechanismMonitoredGet();
+    virtual ~SampleMechanismMonitoredGet();
 
     // SampleMechanism  
     void start(Guard &guard);    

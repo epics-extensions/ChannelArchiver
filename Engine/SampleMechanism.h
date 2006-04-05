@@ -34,7 +34,7 @@ public:
     SampleMechanism(const EngineConfig &config,
                     ProcessVariableContext &ctx, const char *name,
                     double period);
-	virtual ~SampleMechanism();
+    virtual ~SampleMechanism();
     
     /** Gets the ProcessVariable name.
      *  @see NamedAbstractBase
@@ -51,7 +51,11 @@ public:
      */
     virtual void start(Guard &guard);
     
+    /** @return Returns true if start has been invoked until stop(). */
     bool isRunning(Guard &guard);
+    
+    /** @return Returns the state of the ProcessVariable. */
+    ProcessVariable::State getPVState(Guard &guard);
     
     /** Stop sampling.
      *  @see #start()

@@ -2,6 +2,7 @@
 #include <MsgLogger.h>
 // Engine
 #include "ArchiveChannel.h"
+#include "GroupInfo.h"
 #include "SampleMechanismMonitored.h"
 #include "SampleMechanismGet.h"
 #include "SampleMechanismMonitoredGet.h"
@@ -83,8 +84,31 @@ void ArchiveChannel::reconfigure(EngineConfig &config,
     }
 }
 
+void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
+                                Guard &channel_guard, bool disabling)
+{
+    channel_guard.check(__FILE__, __LINE__, getMutex());
+    // Add to the 'disable' groups?
+    if (disabling)
+    {   // Remove & add as quick hack to add only once.
+        disable_groups.remove(group);
+        disable_groups.push_back(group);
+    }
+    // Add to the group list
+    stdList<GroupInfo *>::iterator i;
+    for (i=groups.begin(); i!=groups.end(); ++i)
+        if (*i == group)
+            return; // Already in there
+    groups.push_back(group);
+    // Added to group and already connected?
+    if (isConnected(channel_guard))
+        group->incConnectCount(group_guard);
+}
+
+
 void ArchiveChannel::start(Guard &guard)
 {
+    guard.check(__FILE__, __LINE__, getMutex());
     if (sample_mechanism->isRunning(guard))
         throw GenericException(__FILE__, __LINE__,
                                "Channel '%s' started twice",
@@ -92,8 +116,15 @@ void ArchiveChannel::start(Guard &guard)
     sample_mechanism->start(guard);
 }
       
+bool ArchiveChannel::isConnected(Guard &guard) const
+{
+    return sample_mechanism->getPVState(guard)
+                                 == ProcessVariable::CONNECTED;
+}
+     
 void ArchiveChannel::stop(Guard &guard)
 {
+    guard.check(__FILE__, __LINE__, getMutex());
     if (! sample_mechanism->isRunning(guard))
         throw GenericException(__FILE__, __LINE__,
                                "Channel '%s' stopped while not running",
@@ -103,6 +134,7 @@ void ArchiveChannel::stop(Guard &guard)
 
 unsigned long  ArchiveChannel::write(Guard &guard, Index &index)
 {
+    guard.check(__FILE__, __LINE__, getMutex());
     return sample_mechanism->write(guard, index);
 }
 

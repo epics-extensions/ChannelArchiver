@@ -17,6 +17,7 @@ LIB_SRCS += SampleMechanismMonitored.cpp
 LIB_SRCS += SampleMechanismGet.cpp
 LIB_SRCS += SampleMechanismMonitoredGet.cpp
 LIB_SRCS += ArchiveChannel.cpp
+LIB_SRCS += GroupInfo.cpp
 LIB_SRCS += EngineConfig.cpp
 LIB_SRCS += Engine.cpp
 LIB_SRCS += main.cpp

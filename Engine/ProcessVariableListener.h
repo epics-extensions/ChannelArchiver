@@ -14,12 +14,12 @@ public:
      * 
      *  This means: connected and received control info.
      */
-	virtual void pvConnected(class Guard &guard,
+    virtual void pvConnected(class Guard &guard,
                              class ProcessVariable &pv,
                              const epicsTime &when) = 0;
-	
+    
     /** Invoked when the pv disconnects. */
-	virtual void pvDisconnected(class Guard &guard,
+    virtual void pvDisconnected(class Guard &guard,
                                 class ProcessVariable &pv,
                                 const epicsTime &when) = 0;
 

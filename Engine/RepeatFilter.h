@@ -11,11 +11,11 @@
 class RepeatFilter : public ProcessVariableFilter
 {
 public:
-	RepeatFilter(const EngineConfig &config,
+    RepeatFilter(const EngineConfig &config,
                  ProcessVariableListener *listener);
                  
     /** @see flushRepeats() */
-	virtual ~RepeatFilter();
+    virtual ~RepeatFilter();
         
     /** It's suggested to stop the filter when sampling stops,
      *  since this flushes accumulated repeats.

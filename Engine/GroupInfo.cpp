@@ -7,66 +7,94 @@
 #include "GroupInfo.h"
 #include "ArchiveChannel.h"
 
-size_t GroupInfo::next_ID = 0;
-
-GroupInfo::GroupInfo (const stdString &name)
+GroupInfo::GroupInfo(const stdString &name)
+    : NamedBase(name.c_str()), num_connected(0), disable_count(0)
 {
-    this->name = name;
-    ID = next_ID++;
-    num_connected = 0;
-    disable_count = 0;
 }
 
-void GroupInfo::addChannel(Guard &engine_guard, Guard &channel_guard,
-                           ArchiveChannel *channel)
+epicsMutex &GroupInfo::getMutex()
 {
+    return mutex;
+}
+
+void GroupInfo::addChannel(Guard &group_guard, ArchiveChannel *channel)
+{
+    group_guard.check(__FILE__, __LINE__, mutex);
     // Is Channel already in group?
     stdList<ArchiveChannel *>::iterator i;
-    for (i=members.begin(); i!=members.end(); ++i)
+    for (i=channels.begin(); i!=channels.end(); ++i)
         if (*i == channel)
             return;
-    members.push_back(channel);
+    channels.push_back(channel);
+    /*
     if (disable_count > 0) // disable right away?
         channel->disable(engine_guard, channel_guard,
                          epicsTime::getCurrent());
+    */
+}
+
+const stdList<class ArchiveChannel *> &
+    GroupInfo::getChannels(Guard &group_guard) const
+{
+    group_guard.check(__FILE__, __LINE__, mutex);    
+    return channels;
 }
 
 // called by ArchiveChannel
-void GroupInfo::disable(Guard &engine_guard,
+void GroupInfo::disable(Guard &group_guard,
                         ArchiveChannel *cause, const epicsTime &when)
 {
+    group_guard.check(__FILE__, __LINE__, mutex);
     LOG_MSG("'%s' disables group '%s'\n",
-            cause->getName().c_str(), name.c_str());
+            cause->getName().c_str(), getName().c_str());
     ++disable_count;
     if (disable_count != 1) // Was already disabled?
         return;
+    /* TODO
     stdList<ArchiveChannel *>::iterator c;
-    for (c=members.begin(); c!=members.end(); ++c)
+    for (c=channels.begin(); c!=channels.end(); ++c)
     {
         Guard guard((*c)->mutex);
         (*c)->disable(engine_guard, guard, when);
     }
+    */
 }
 
 // called by ArchiveChannel
-void GroupInfo::enable(Guard &engine_guard,
+void GroupInfo::enable(Guard &group_guard,
                        ArchiveChannel *cause, const epicsTime &when)
 {
+    group_guard.check(__FILE__, __LINE__, mutex);
     LOG_MSG("'%s' enables group '%s'\n",
-            cause->getName().c_str(), name.c_str());
+            cause->getName().c_str(), getName().c_str());
     if (disable_count <= 0)
     {
-        LOG_MSG("Group %s is not disabled, ERROR!\n", name.c_str());
+        LOG_MSG("Group %s is not disabled, ERROR!\n", getName().c_str());
         return;
     }
     --disable_count;
     if (disable_count > 0) // Still disabled?
         return;
+    /* TODO
     stdList<ArchiveChannel *>::iterator c;
-    for (c=members.begin(); c!=members.end(); ++c)
+    for (c=channels.begin(); c!=channels.end(); ++c)
     {
         Guard guard((*c)->mutex);
         (*c)->enable(engine_guard, guard, when);
     }
+    */
 }
 
+void GroupInfo::incConnectCount(Guard &group_guard)
+{
+    ++num_connected;
+}
+
+void GroupInfo::decConnectCount(Guard &group_guard)
+{
+    if (num_connected <= 0)
+        throw GenericException(__FILE__, __LINE__,
+                               "%s: Connect count runs below 0",
+                               getName().c_str());
+    --num_connected;
+}

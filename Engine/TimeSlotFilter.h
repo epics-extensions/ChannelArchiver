@@ -11,9 +11,9 @@
 class TimeSlotFilter : public ProcessVariableFilter
 {
 public:
-	TimeSlotFilter(double period, ProcessVariableListener *listener);
+    TimeSlotFilter(double period, ProcessVariableListener *listener);
                  
-	virtual ~TimeSlotFilter();
+    virtual ~TimeSlotFilter();
                 
     // ProcessVariableListener
     void pvConnected(Guard &guard, ProcessVariable &pv,

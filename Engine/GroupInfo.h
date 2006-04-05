@@ -17,65 +17,74 @@
 /// Tools
 #include <ToolsConfig.h>
 #include <Guard.h>
+// Engine
+#include <Named.h>
 
-/// Each channel, identified by an ArchiveChannel,
-/// belongs to at least one group. GroupInfo handles
-/// one such group.
-/// A channel can disable its group.
-///
-/// This is double-linked:
-/// Each ArchiveChannel indicates membership to several groups
-/// so that a channel can disable its groups.
-/// Each GroupInfo knows all it's members in order
-/// to disable them.
-class GroupInfo
+/** \ingroup Engine
+ *  A Group of channels.
+ *  <p>
+ *  Each channel, identified by an ArchiveChannel,
+ *  belongs to at least one group. GroupInfo handles
+ *  one such group.
+ *  A channel can disable its group.
+ *  <p>
+ *  This is double-linked:
+ *  Each ArchiveChannel indicates membership to several groups
+ *  so that a channel can disable its groups.
+ *  Each GroupInfo knows all it's members in order
+ *  to disable them.
+ */
+class GroupInfo : public NamedBase, public Guardable
 {
 public:
     GroupInfo(const stdString &name);
-
-    /// Name of this group
-    const stdString &getName() const
-    { return name; }
     
-    /// Unique ID (within one ArchiveEngine). 0 ... (#groups-1)
+    /** Guardable interface */
+    epicsMutex &getMutex();
+    
+    /** Add channel to this group. NOP if already group member. */
+    void addChannel(Guard &group_guard, class ArchiveChannel *channel);
 
-    /// ArchiveChannel maintains a bitset of groups that it disabled.
-    /// This ID is used as an index into the bitset.
-    ///
-    size_t getID() const
-    { return ID; }
-
-    /// Add channel to this group. NOP if already group member.
-    void addChannel(Guard &engine_guard, Guard &channel_guard,
-                    class ArchiveChannel *channel);
-
-    /// Return current list of group members
-    const stdList<class ArchiveChannel *>&getChannels () const
-    { return members; }
-
-    /// Disable all channels of this group.
-    void disable(Guard &engine_guard,
+    /** Return current list of group members */
+    const stdList<class ArchiveChannel *>
+        &getChannels(Guard &group_guard) const;
+    
+    /** Disable all channels of this group. */
+    void disable(Guard &group_guard,
                  class ArchiveChannel *cause, const epicsTime &when);
 
-    /// Enable all channels of this group.
-    void enable(Guard &engine_guard,
+    /** Enable all channels of this group. */
+    void enable(Guard &group_guard,
                 class ArchiveChannel *cause, const epicsTime &when);
     
-    bool isEnabled() const
-    { return disable_count <= 0; }
+    bool isEnabled() const;
 
-    /// # of channels in group that are connected
-    size_t num_connected;
+    /** @return Returns # of channels in group that are connected. */
+    size_t getNumConnected(Guard &group_guard) const;
+    
+    void incConnectCount(Guard &group_guard);
 
+    void decConnectCount(Guard &group_guard);
+    
 private:
     GroupInfo(const GroupInfo &); // not impl.
     GroupInfo & operator = (const GroupInfo &); // not impl.
 
-    stdString              name;           // Well, guess what?
-    static size_t          next_ID;        // next unused group ID
-    size_t                 ID;             // ID of this group
-    stdList<class ArchiveChannel *> members; 
-    size_t                 disable_count;  // disabled by how many channels?
+    epicsMutex mutex;   
+
+    stdList<class ArchiveChannel *> channels; 
+    size_t num_connected;
+    size_t disable_count;  // disabled by how many channels?
 };
+
+inline bool GroupInfo::isEnabled() const
+{
+    return disable_count <= 0;
+}
+
+inline size_t GroupInfo::getNumConnected(Guard &group_guard) const
+{
+    return num_connected;
+}    
 
 #endif //__GROUPINFO_H__

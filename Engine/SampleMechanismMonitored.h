@@ -28,7 +28,7 @@ public:
                              ProcessVariableContext &ctx,
                              const char *name,
                              double period_estimate);
-	virtual ~SampleMechanismMonitored();
+    virtual ~SampleMechanismMonitored();
 
     // SampleMechanism  
     void start(Guard &guard);    

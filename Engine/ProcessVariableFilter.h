@@ -19,9 +19,9 @@ public:
     /** Create a PV filter which passes (filtered) events
      *  on to the provided listener.
      */
-	ProcessVariableFilter(ProcessVariableListener *listener);
+    ProcessVariableFilter(ProcessVariableListener *listener);
     
-	virtual ~ProcessVariableFilter();
+    virtual ~ProcessVariableFilter();
     
     /** React to connection, then pass on to listener.
      *  @see ProcessVariableListener

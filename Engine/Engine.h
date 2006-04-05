@@ -7,6 +7,7 @@
 #include "EngineConfig.h"
 #include "ScanList.h"
 #include "ProcessVariableContext.h"
+#include "GroupInfo.h"
 #include "ArchiveChannel.h"
 
 
@@ -83,21 +84,21 @@ public:
      */
     unsigned long write(Guard &guard);
 private:
-    epicsMutex              mutex;
-    stdString               index_name;
-    stdString               description;
-    EngineConfigParser      config;
-    ScanList                scan_list;
-    ProcessVariableContext  pv_context;
+    epicsMutex                mutex;
+    stdString                 index_name;
+    stdString                 description;
+    EngineConfigParser        config;
+    ScanList                  scan_list;
+    ProcessVariableContext    pv_context;
+    stdList<GroupInfo *>      groups;   // scan-groups of channels
 	stdList<ArchiveChannel *> channels; // all the channels
-    //stdList<GroupInfo *>  groups;   // scan-groups of channels
+    bool                      is_writing;
+    double                    write_duration;
+    size_t                    write_count;
+    double                    process_delay_avg;
+    epicsTime                 next_write_time;
     
-    bool is_writing;
-    double write_duration;
-    size_t write_count;
-    double process_delay_avg;
-    epicsTime next_write_time;
-    
+    GroupInfo *findGroup(Guard &engine_guard, const stdString &name);    
     ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);    
 };
 

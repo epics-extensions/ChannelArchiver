@@ -36,17 +36,26 @@ epicsMutex &SampleMechanism::getMutex()
 
 void SampleMechanism::start(Guard &guard)
 {
+    guard.check(__FILE__, __LINE__, getMutex());
     pv.start(guard);
     running = true;
 }   
 
 bool SampleMechanism::isRunning(Guard &guard)
 {
+    guard.check(__FILE__, __LINE__, getMutex());
     return running;
+}
+
+ProcessVariable::State SampleMechanism::getPVState(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, getMutex());
+    return pv.getState(guard);
 }
     
 void SampleMechanism::stop(Guard &guard)
 {
+    guard.check(__FILE__, __LINE__, getMutex());
     running = false;
     pv.stop(guard);
     addEvent(guard, ARCH_STOPPED, epicsTime::getCurrent());
@@ -123,6 +132,7 @@ void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
 void SampleMechanism::addEvent(Guard &guard, short severity,
                                const epicsTime &when)
 {
+    guard.check(__FILE__, __LINE__, getMutex());
     if (buffer.getCapacity() < 1)
     {
         // Message is strange but matches what's described in the manual.
@@ -149,6 +159,7 @@ void SampleMechanism::addEvent(Guard &guard, short severity,
 
 unsigned long SampleMechanism::write(Guard &guard, Index &index)
 {
+    guard.check(__FILE__, __LINE__, getMutex());
     size_t i, num_samples = buffer.getCount();
     if (num_samples <= 0)
         return 0;

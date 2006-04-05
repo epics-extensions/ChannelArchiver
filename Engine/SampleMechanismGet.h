@@ -31,7 +31,7 @@ public:
                        ScanList &scan_list,
                        const char *name,
                        double period);
-	virtual ~SampleMechanismGet();
+    virtual ~SampleMechanismGet();
 
     // SampleMechanism  
     void start(Guard &guard);    

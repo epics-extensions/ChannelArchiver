@@ -17,9 +17,9 @@
 class TimeFilter : public ProcessVariableFilter
 {
 public:
-	TimeFilter(const EngineConfig &config, ProcessVariableListener *listener);
+    TimeFilter(const EngineConfig &config, ProcessVariableListener *listener);
                  
-	virtual ~TimeFilter();
+    virtual ~TimeFilter();
                 
     // ProcessVariableListener
     void pvConnected(Guard &guard, ProcessVariable &pv,

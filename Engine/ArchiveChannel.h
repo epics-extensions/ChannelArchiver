@@ -37,10 +37,17 @@ public:
     void configure(EngineConfig &config, ProcessVariableContext &ctx,
                    ScanList &scan_list,
                    double scan_period, bool monitor);
+                
+    /** Add channel to a group. */
+    void addToGroup(Guard &group_guard, class GroupInfo *group,
+                    Guard &channel_guard, bool disabling);
            
     /** Start the sample mechanism.
      */        
     void start(Guard &guard);
+    
+    /** @return Returns true if started and successfully connected. */
+    bool isConnected(Guard &guard) const;
       
     /** Stop sampling.
      */
@@ -50,9 +57,14 @@ public:
     unsigned long write(Guard &guard, Index &index);
     
 private:
-    AutoPtr<SampleMechanism> sample_mechanism;
     double scan_period;
     bool monitor;
+    AutoPtr<SampleMechanism> sample_mechanism;
+
+    // Groups that this channel disables (might be empty)
+    stdList<class GroupInfo *> disable_groups;
+    // Groups to which this channel belongs (at least one)
+    stdList<class GroupInfo *> groups;
     
     void reconfigure(EngineConfig &config, ProcessVariableContext &ctx,
                      ScanList &scan_list);

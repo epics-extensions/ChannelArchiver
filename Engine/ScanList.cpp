@@ -1,211 +1,217 @@
-// --------------------------------------------------------
-// $Id$
-//
-// Please refer to NOTICE.txt,
-// included as part of this distribution,
-// for legal information.
-//
-// kasemir@lanl.gov
-// --------------------------------------------------------
-
 // System
-#include <float.h>
+#include <math.h>
 // Tools
 #include <epicsTimeHelper.h>
 #include <MsgLogger.h>
 // Engine
 #include "ScanList.h"
 
-#undef DEBUG_SCANLIST
+// #define DEBUG_SCANLIST
+
+/*  List of channels to scan for one period.
+ *  <p>
+ *  Used internally by the ScanList.
+ */
+class SinglePeriodScanList
+{
+public:
+    SinglePeriodScanList(double period);
+    ~SinglePeriodScanList();
+    
+    double getPeriod() const
+    {
+        return period;
+    }
+    
+    epicsTime getNextScantime() const
+    {
+        return next_scan;
+    }
+
+    void add(Scannable *item);
+
+    void remove(Scannable *item);
+    
+    void scan();
+
+    bool empty() const
+    {
+        return items.empty();
+    }
+
+    void dump() const;
+    
+private:
+    double               period;    // Scan period in seconds
+    stdList<Scannable *> items;     // Items to scan every 'period'
+    epicsTime            next_scan; // Next time this list is due
+    
+    void computeNextScantime();
+};
+
 
 SinglePeriodScanList::SinglePeriodScanList(double period)
         : period(period)
 {
-#   ifdef DEBUG_SCANLIST
+#ifdef DEBUG_SCANLIST
     LOG_MSG("new SinglePeriodScanList(%g seconds)\n", period);
-#   endif
+#endif
+    computeNextScantime();
 }
 
 SinglePeriodScanList::~SinglePeriodScanList()
 {
-#   ifdef DEBUG_SCANLIST
+#ifdef DEBUG_SCANLIST
     LOG_MSG("delete SinglePeriodScanList(%g seconds)\n", period);
-#   endif
+#endif
 }
 
-void SinglePeriodScanList::add(ArchiveChannel *channel)
+void SinglePeriodScanList::add(Scannable *item)
 {
-    channels.push_back(channel);
+    stdList<Scannable *>::iterator l;
+    // Avoid duplicate entries.
+    for (l = items.begin(); l != items.end(); ++l)
+        if (*l == item)
+            throw GenericException(__FILE__, __LINE__,
+                "Duplicate item '%s' for %.2f s scan list",
+                item->getName().c_str(), period);
+    items.push_back(item);
 }
 
-void SinglePeriodScanList::remove(ArchiveChannel *channel)
+void SinglePeriodScanList::remove(Scannable *item)
 {
-    stdList<ArchiveChannel *>::iterator ci;
-    for (ci = channels.begin(); ci != channels.end(); ++ci)
-    {
-        if (*ci == channel)
-        {
-#           ifdef DEBUG_SCANLIST
-            LOG_MSG("SinglePeriodScanList(%g s): Removed '%s'\n",
-                    period, channel->getName().c_str());
-#           endif
-            ci = channels.erase(ci);
-        }
-    }
+    items.remove(item);
 }
 
 void SinglePeriodScanList::scan()
 {
-    stdList<ArchiveChannel *>::iterator channel;
-    for (channel = channels.begin(); channel != channels.end(); ++channel)
-    {
-        ArchiveChannel *c = *channel;
-        Guard guard(c->mutex);
-        if (c->isConnected(guard))
-            c->issueCaGet(guard);
-    }
+    stdList<Scannable *>::iterator item;
+    for (item = items.begin(); item != items.end(); ++item)
+        (*item)->scan();
+    computeNextScantime();
 }
 
-void SinglePeriodScanList::dump()
+void SinglePeriodScanList::dump() const
 {
-    stdList<ArchiveChannel *>::iterator ci;
+    stdList<Scannable *>::const_iterator item;
     printf("Scan List %g sec\n", period);
-    for (ci = channels.begin(); ci != channels.end(); ++ci)
-        printf("'%s'\n", (*ci)->getName().c_str());
+    for (item = items.begin(); item != items.end(); ++item)
+        printf("'%s'\n", (*item)->getName().c_str());
 }
+
+void SinglePeriodScanList::computeNextScantime()
+{
+    // Start with simple calculation of next time.
+    next_scan += period;
+    // Use the more elaborate rounding if that time already passed.
+    epicsTime now = epicsTime::getCurrent();
+    if (next_scan < now)
+        next_scan = roundTimeUp(now, period);
+#ifdef DEBUG_SCANLIST
+    stdString time;
+    epicsTime2string(next_scan, time);
+    LOG_MSG("Next due time for %g sec list: %s\n", period, time.c_str());
+#endif
+}
+
+// --------------------------------------
 
 ScanList::ScanList()
 {
     is_due_at_all = false;
     next_list_scan = nullTime;
-#   ifdef DEBUG_SCANLIST
-    LOG_MSG("Created ScanList\n");
-#   endif
 }
 
 ScanList::~ScanList()
 {
-#   ifdef DEBUG_SCANLIST
-    LOG_MSG("Destroying ScanList\n");
-#   endif
-    if (!period_lists.empty())
+    if (!lists.empty())
     {
-        LOG_MSG("Hmmm. At this point, channels should have removed themselves from the scan lists,\n");
-        LOG_MSG("and the scan lists should then have quit.\n");
+        LOG_MSG("ScanList not empty while destructed\n");
     }
-    while (!period_lists.empty())
+    while (!lists.empty())
     {
-        SinglePeriodScanList *sl = period_lists.front();
-        period_lists.pop_front();
-        LOG_MSG("Removing the %g second scan list.\n", sl->period);
+        SinglePeriodScanList *sl = lists.front();
+        lists.pop_front();
+        LOG_MSG("Removing the %g second scan list.\n", sl->getPeriod());
         delete sl;
     }
 }
 
-void ScanList::addChannel(Guard &guard, ArchiveChannel *channel)
+void ScanList::add(Scannable *item, double period)
 {
-    stdList<SinglePeriodScanList *>::iterator li;
-    SinglePeriodScanList *period_list;
-    double period = channel->getPeriod(guard);
     // Check it the channel is already on some
     // list where it needs to be removed
-    removeChannel(channel);
-    // Find a scan list with suitable period
-    for (li = period_lists.begin(); li != period_lists.end(); ++li)
+    remove(item);
+    // Find a scan list with suitable period,
+    // meaning: a scan period that matches the requested
+    // period to some epsilon.
+    stdList<SinglePeriodScanList *>::iterator li;
+    SinglePeriodScanList *list = 0;
+    for (li = lists.begin(); li != lists.end(); ++li)
     {
-        if ((*li)->period == period)
+        if (fabs((*li)->getPeriod() - period) < 0.05)
         {
-            period_list = *li; // found one!
+            list = *li; // found one!
             break;
         }
     }
-    if (li == period_lists.end()) // create new list
+    if (list == 0) // create new list for this period
     {
-        period_list = new SinglePeriodScanList(channel->getPeriod(guard));
-        period_lists.push_back(period_list);
-        // next scan time, rounded to period
-        period_list->next_scan = roundTimeUp(epicsTime::getCurrent(),
-                                             period_list->period);
+        list = new SinglePeriodScanList(period);
+        lists.push_back(list);
     }
-    period_list->add(channel);
-    if (next_list_scan == nullTime || next_list_scan > period_list->next_scan)
-        next_list_scan = period_list->next_scan;
-    is_due_at_all = true;
-#   ifdef DEBUG_SCANLIST
-    char buf[30];    
-    period_list->next_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
-    LOG_MSG("Channel '%s' makes list %g due %s\n",
-            channel->getName().c_str(),
-            period_list->period,
-            buf);
-    next_list_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
-    LOG_MSG("->Whole ScanList due %s\n", buf);
-#   endif
+    list->add(item);
 }
 
-void ScanList::removeChannel(ArchiveChannel *channel)
+void ScanList::remove(Scannable *item)
 {
-    stdList<SinglePeriodScanList *>::iterator li = period_lists.begin();
+    stdList<SinglePeriodScanList *>::iterator li = lists.begin();
     SinglePeriodScanList *l;
-    while (li != period_lists.end())
+    while (li != lists.end())
     {
         l = *li;
-        l->remove(channel);
+        // Remove item from every SinglePeriodScanList
+        // (should really be at most on one)
+        l->remove(item);
+        // In case that shrunk a S.P.S.L to zero, drop that list.
         if (l->empty())
-        {
-            li = period_lists.erase(li);
+        {   // .. which advances the li.
+            li = lists.erase(li);
             delete l;
         }
-        else
+        else // otherwise, advance li as usual:
             ++li;
     }
 }
 
-// Scan all channels that are due at/after deadline
 void ScanList::scan(const epicsTime &deadline)
 {
     stdList<SinglePeriodScanList *>::iterator li;
-    unsigned long rounded_period;
-#   ifdef DEBUG_SCANLIST
-    char buf[30];
-#   endif
-
 #ifdef DEBUG_SCANLIST
     LOG_MSG("ScanList::scan\n");
 #endif
     // Reset: Next time any list is due
     next_list_scan = nullTime;
-    for (li = period_lists.begin(); li != period_lists.end(); ++li)
+    for (li = lists.begin(); li != lists.end(); ++li)
     {
-        if (deadline >= (*li)->next_scan)
-        {   // Determine next scan time,
-            // make sure it's in the future.
-            rounded_period = (unsigned long) (*li)->period;
-            while (deadline > (*li)->next_scan)
-                (*li)->next_scan += rounded_period;
-            // Scan that list
+        if (deadline >= (*li)->getNextScantime())
             (*li)->scan();
-#ifdef DEBUG_SCANLIST
-            (*li)->next_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
-            LOG_MSG("Scanned List %g, next due %s\n",
-                    (*li)->period, buf);
-#endif
-        }
         // Update earliest scan time
         if (next_list_scan == nullTime ||
-            next_list_scan > (*li)->next_scan)
-            next_list_scan = (*li)->next_scan;
+            next_list_scan > (*li)->getNextScantime())
+            next_list_scan = (*li)->getNextScantime();
     }
 #ifdef DEBUG_SCANLIST
-    next_list_scan.strftime(buf, 30, "%Y/%m/%d %H:%M:%S");
-    LOG_MSG("->Whole ScanList due %s\n", buf);
+    stdString time;
+    epicsTime2string(next_list_scan, time);            
+    LOG_MSG("Next due '%s'\n", time.c_str());    
 #endif
 }
 
-void ScanList::dump()
+void ScanList::dump() const
 {
-    stdList<SinglePeriodScanList *>::iterator li;
-    for (li = period_lists.begin(); li != period_lists.end(); ++li)
+    stdList<SinglePeriodScanList *>::const_iterator li;
+    for (li = lists.begin(); li != lists.end(); ++li)
         (*li)->dump();
 }
 

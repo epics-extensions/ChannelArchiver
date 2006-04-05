@@ -1,162 +1,118 @@
-// --------------------- -*- c++ -*- ----------------------
-// $Id$
-//
-// Please refer to NOTICE.txt,
-// included as part of this distribution,
-// for legal information.
-//
-// Kay-Uwe Kasemir, kasemir@lanl.gov
-// --------------------------------------------------------
+#ifndef SAMPLEMECHANISM_H_
+#define SAMPLEMECHANISM_H_
 
-#ifndef __SCAN_MECHANISM_H__
-#define __SCAN_MECHANISM_H__
-
-// System
-#include <cadef.h>
-#include <stdString.h>
-//Tools
-#include <Guard.h>
 // Storage
-#include <RawValue.h>
+#include <Index.h>
+// Local
+#include "Named.h"
+#include "EngineConfig.h"
+#include "ProcessVariable.h"
+#include "CircularBuffer.h"
 
-class ArchiveChannel;
-
-/// \addtogroup Engine
-/// \@{
-
-/// Base class for all sampling mechanisms.
-
-/// SampleMechanism is used by the ArchiveChannel
-/// to handle the actual data sampling.
-/// Subscribe or add to scan list,
-/// handle incoming values, repeat counts, ...
-class SampleMechanism
+/**\ingroup Engine
+ *  Sample Mechanism base.
+ *  <p>
+ *  This base class for all sample mechanisms maintains the
+ *  ProcessVariable start/stop.
+ *  Its ProcessVariableListener implementation logs "Disconnected"
+ *  on pvDisconnected() and otherwise adds every pvValue in the buffer.
+ *  <p>
+ *  Uses 'virtual Named' so we can implement other
+ *  'Named' interfaces in derived SampleMechanisms and still
+ *  only get one 'Named' base.
+ */
+class SampleMechanism : public ProcessVariableListener, public Guardable,
+    public virtual Named
 {
 public:
-    /// Constructor.
-    SampleMechanism(class ArchiveChannel *channel);
-
-    /// The ArchiveChannel might redefine its SampleMechanism,
-    /// so a SampleMechanism must assert that it can be deleted
-    /// (and replaced with a new one) at any time.
-    /// We use destroy instead of a destructor so that we can
-    /// pass the Guard classes.
-    /// Needs to call the super class's destroy!
-    virtual void destroy(Guard &engine_guard, Guard &guard);
+    /** Construct mechanism for given period.
+     *  @param config The global configuration.
+     *  @param ctx    The ProcessVariableContext to use for the pv.
+     *  @param name   The pv name to connect to.
+     *  @param period The sample period. Use differs with derived class.
+     */
+    SampleMechanism(const EngineConfig &config,
+                    ProcessVariableContext &ctx, const char *name,
+                    double period);
+	virtual ~SampleMechanism();
     
-    /// Printable description.
-    virtual stdString getDescription(Guard &guard) const = 0;
-
-    /// Is the mechanism scanning or safe-every-monitor?
-    virtual bool isScanning() const = 0;
+    /** Gets the ProcessVariable name.
+     *  @see NamedAbstractBase
+     */
+    const stdString &getName() const;
     
-    /// Invoked for connection changes.
-    virtual void handleConnectionChange(Guard &engine_guard, Guard &guard) = 0;
+    /** @return Returns the PV mutex.
+     *  @see Guardable */
+    epicsMutex &getMutex();
+    
+    /** Start the sample mechanism.
+     *  <p>
+     *  Base implementation starts the PV.
+     */
+    virtual void start(Guard &guard);
+    
+    bool isRunning(Guard &guard);
+    
+    /** Stop sampling.
+     *  @see #start()
+     *  <p>
+     *  Base implementation stops the PV and adds a 'STOPPED (OFF)' event.
+     */
+    virtual void stop(Guard &guard);
+    
+    /** @return Returns the number of samples in the circular buffer. */
+    size_t getSampleCount(Guard &guard) const;
+    
+    /** ProcessVariableListener.
+     *  <p>
+     *  Base implementation allocates circular buffer
+     */
+    virtual void pvConnected(class Guard &guard,
+                             class ProcessVariable &pv,
+                             const epicsTime &when);
+    
+    /** ProcessVariableListener.
+     *  <p>
+     *  Base implementation adds a "DISCONNECTED" marker.
+     */
+    virtual void pvDisconnected(class Guard &guard,
+                                class ProcessVariable &pv,
+                                const epicsTime &when);
 
-    /// Invoked for new value.
-
-    /// This is called by the ArchiveChannel's value_callback,
-    /// which in turn is either invoked
-    /// - from a CA monitor that the SampleMechanism initiated
-    /// - from a CA callback initiated by the Engine's ScanList
-    ///
-    /// While disabled, values are copied to pending_value.
-    /// Otherwise, handleValue is invoked as long as the
-    /// value's time stamp is good:
-    /// - non-zero,
-    /// - not too far ahead in the future.
-    ///
-    /// The SampleMechanism needs to deal with back-in-time
-    /// issues and update last_stamp_in_archive.
-    virtual void handleValue(Guard &guard,
-                             const epicsTime &now,
-                             const epicsTime &stamp,
-                             const RawValue::Data *value) = 0;
-
+    /** ProcessVariableListener.
+     *  <p>
+     *  Base implementation adds data to buffer.
+     *  In addition, the initial value after a new connection
+     *  is also logged with the host time stamp.
+     *  For PVs that never change, this helps because the
+     *  original time stamp might be before the last 'disconnect',
+     *  so this gives us an idea of when the PV connected.
+     */
+    virtual void pvValue(class Guard &guard,
+                         class ProcessVariable &pv,
+                         const RawValue::Data *data);
+    
+    /** Write current buffer to index.
+     *  @return Returns number of samples written.
+     */                     
+    unsigned long write(Guard &guard, Index &index);
+    
 protected:
-    ArchiveChannel *channel;
-    bool wasWrittenAfterConnect;
+    const EngineConfig &config;
+    ProcessVariable pv;
+    bool running;
+    double period;         // .. in seconds
+    CircularBuffer buffer; // Sample storage between disk writes.
+    bool last_stamp_set;   // For catching 'back-in-time' at the
+    epicsTime last_stamp;  // buffer level.
+    bool have_sample_after_connection;
+
+    /** Add a special 'event' value with given severity and time.
+     *  <p>
+     *  Time might actually be adjusted to be after the most recent
+     *  sample in the archive.
+     */
+    void addEvent(Guard &guard, short severity, const epicsTime &when);
 };
 
-/// A SampleMechanism that stores each CA event (monitor).
-
-/// This implementation of a SampleMechanism subscribes
-/// to a channel (CA monitor) and stores every incoming value.
-/// The period of the channel is used as an estimate for the
-/// time between samples, determining the ring buffer size.
-class SampleMechanismMonitored : public SampleMechanism
-{
-public:
-    SampleMechanismMonitored(class ArchiveChannel *channel);
-    void destroy(Guard &engine_guard, Guard &guard);
-    stdString getDescription(Guard &guard) const;
-    bool isScanning() const;
-    void handleConnectionChange(Guard &engine_guard, Guard &guard);
-    void handleValue(Guard &guard, const epicsTime &now,
-                     const epicsTime &stamp, const RawValue::Data *value);
-private:
-    bool   have_subscribed;
-    evid   ev_id;
-};
-
-/// A SampleMechanism that uses a periodic CA 'get'.
-
-/// This implementation of a SampleMechanism performs
-/// periodic CA 'get' operations and stores the most
-/// recent value that it receives with its original time stamp.
-/// In addition, repeat counts are used:
-/// If the value matches the previous sample, it is not written
-/// again. Only after the value changes, a value that indicates
-/// the repeat count gets written.
-///
-/// The Engine's ScanList is used to trigger the periodic 'get'
-/// requests.
-class SampleMechanismGet : public SampleMechanism
-{
-public:
-    /// Max. counter for repeats.
-
-    /// Even if the value does not change, it is written
-    /// after max_repeat_count iterations. This way we avoid
-    /// the appearance of the ArchiveEngine being dead.
-    static size_t max_repeat_count;
-    SampleMechanismGet(class ArchiveChannel *channel);
-    void destroy(Guard &engine_guard, Guard &guard);
-    stdString getDescription(Guard &guard) const;
-    bool isScanning() const;
-    void handleConnectionChange(Guard &engine_guard, Guard &guard);
-    void handleValue(Guard &guard, const epicsTime &now,
-                     const epicsTime &stamp, const RawValue::Data *value);
-protected:
-    bool is_on_scanlist; // Registered w/ Engine's Scanlist?
-    // Handling of repeats:
-    bool previous_value_set; // previous_value valid?
-    RawValue::Data *previous_value; // the previous value
-    size_t repeat_count; // repeat count for the previous value
-    // Write the previous value because we're disconnected or got a new value
-    void flushPreviousValue(Guard &guard, const epicsTime &stamp);
-};
-
-/// A SampleMechanism that samples based on CA monitors.
-
-/// This implementation of a SampleMechanism behaves similar
-/// to SampleMechanismGet, the periodic sampling, but is
-/// internally using CA monitors instead of 'get' operations.
-class SampleMechanismMonitoredGet : public SampleMechanismGet
-{
-public:
-    SampleMechanismMonitoredGet(class ArchiveChannel *channel);
-    void destroy(Guard &engine_guard, Guard &guard);
-    stdString getDescription(Guard &guard) const;
-    void handleConnectionChange(Guard &engine_guard, Guard &guard);
-    void handleValue(Guard &guard, const epicsTime &now,
-                     const epicsTime &stamp, const RawValue::Data *value);
-private:
-    bool   have_subscribed;
-    evid   ev_id;
-    epicsTime next_sample_time;
-};
-
-/// \@}
-
-#endif
+#endif /*SAMPLEMECHANISM_H_*/

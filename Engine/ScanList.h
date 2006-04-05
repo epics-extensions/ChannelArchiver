@@ -1,80 +1,66 @@
-// ------------------------------------------- -*- c++ -*-
-// $Id$
-//
-// Please refer to NOTICE.txt,
-// included as part of this distribution,
-// for legal information.
-//
-// Kay-Uwe Kasemir, kasemir@lanl.gov
-// --------------------------------------------------------
-
 #ifndef __SCANLIST_H__
 #define __SCANLIST_H__
+
+// Base
 #include <epicsTime.h>
-#include "ArchiveChannel.h"
+// Engine
+#include "Named.h"
 
-/// \addtogroup Engine
-/// \@{
-
-/// List of channels to scan for one period.
-class SinglePeriodScanList
+/**\ingroup Engine
+ *  Interface for something that can be placed on a ScanList.
+ *  <p>
+ *  Uses 'virtual Named' so that the user can implement this
+ *  interface together with other 'Named' interfaces and still
+ *  only get one 'Named' base.
+ * 
+ *  @see ScanList
+ */
+class Scannable : public virtual Named
 {
 public:
-    SinglePeriodScanList(double period);
-    ~SinglePeriodScanList();
-
-    void add(ArchiveChannel *channel);
-    void remove(ArchiveChannel *channel);
-    
-    void scan();
-
-    bool empty()
-    {   return channels.empty(); }
-
-    void dump();
-    
-    double                 period;    // Scan period in seconds
-    epicsTime              next_scan; // Next time this list is due
-private:
-    stdList<class ArchiveChannel *> channels;
+    /** Invoked whenever a scan is due. */
+    virtual void scan() = 0;
 };
 
-/// List of SinglePeriodScanList classes, one per period.
+
+/**\ingroup Engine
+ *  A ScanList keeps track of Scannable items.
+ *  <p>
+ *  It does not spawn new threads, somebody else needs to check
+ *  when the next scan is due and then invoke scan() in time.
+ */
 class ScanList
 {
 public:
     ScanList();
     ~ScanList();
 
-    /// Add a channel to a ScanList.
+    /** Add an item to the scan list.
+     *  @param item The item to scan
+     *  @param period The requested scan period in seconds.
+     */
+    void add(Scannable *item, double period);
 
-    /// channel->getPeriod() must be valid.
-    ///
-    ///
-    void addChannel(Guard &channel_guard, class ArchiveChannel *channel);
+    /** Does the scan list contain anyting? */
+    bool isDueAtAll()
+    {   return ! lists.empty(); }
+    
+    /** When should scan() be called ? */
+    const epicsTime &getDueTime() const
+    {   return next_list_scan; }
 
-    /// Remove channel from ScanList.
-    void removeChannel(class ArchiveChannel *channel);
+    /** Remove an item from the ScanList */
+    void remove(Scannable *item);
 
-    /// Scan all channels that are due at/after deadline
+    /** Scan all channels that are due at/after deadline. */
     void scan(const epicsTime &deadline);
 
-    /// Does the scan list contain anyting?
-    bool isDueAtAll()
-    {   return is_due_at_all; }
-    
-    /// When should scan() be called ?
-    const epicsTime &getDueTime() const
-    {   return  next_list_scan; }
-
-    void dump();
+    void dump() const;
 
 private:
+    stdList<class SinglePeriodScanList *> lists;
     bool is_due_at_all;
-    stdList<SinglePeriodScanList *> period_lists;
-    epicsTime                       next_list_scan;
+    epicsTime next_list_scan;
 };
-
-/// \@}
 
 #endif //__SCANLIST_H__

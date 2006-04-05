@@ -1,38 +1,19 @@
-// --------------------------------------------------------
-// $Id$
-//
-// Please refer to NOTICE.txt,
-// included as part of this distribution,
-// for legal information.
-//
-// Kay-Uwe Kasemir, kasemir@lanl.gov
-// --------------------------------------------------------
-
-#ifdef WIN32
-#pragma warning (disable: 4786)
-#endif
-
 // System
 #include <signal.h>
 // Base
-#include "epicsVersion.h"
+#include <epicsVersion.h>
 // Tools
-#include "Filename.h"
-#include "epicsTimeHelper.h"
-#include "ArgParser.h"
-#include "MsgLogger.h"
-#include "Lockfile.h"
+#include <ToolsConfig.h>
+#include <AutoPtr.h>
+#include <Filename.h>
+#include <epicsTimeHelper.h>
+#include <ArgParser.h>
+#include <MsgLogger.h>
+#include <Lockfile.h>
 // Storage
-#include "DataWriter.h"
+//#include <DataWriter.h>
 // Engine
-#include "Engine.h"
-#include "EngineConfig.h"
-#include "EngineServer.h"
-#include "HTMLPage.h"
-
-#ifdef SAMPLE_TEST
-#include "ArchiveChannel.h"
-#endif
+#include <Engine.h>
 
 // For communication sigint_handler -> main loop
 // and EngineServer -> main loop.
@@ -68,12 +49,12 @@ int main(int argc, const char *argv[])
         parser.usage ();
         return -1;
     }
-    HTMLPage::with_config = ! (bool)nocfg;
+    //HTMLPage::with_config = ! (bool)nocfg;
     const stdString &config_name = parser.getArgument (0);
     stdString index_name = parser.getArgument (1);
     // Base name
-    if (basename.get().length() > 0)
-        DataWriter::data_file_name_base = basename.get();
+    //if (basename.get().length() > 0)
+    //    DataWriter::data_file_name_base = basename.get();
 
     try
     {
@@ -81,7 +62,7 @@ int main(int argc, const char *argv[])
         // From now on log goes to log file (if specified).
         try
         {
-	    char lockfile_info[300];
+            char lockfile_info[300];
             snprintf(lockfile_info, sizeof(lockfile_info),
                      "ArchiveEngine -d '%s' -p %d %s %s\n",
                      description.get().c_str(), (int)port,
@@ -102,37 +83,42 @@ int main(int argc, const char *argv[])
             signal(SIGINT, signal_handler);
             signal(SIGTERM, signal_handler);
 #endif
-            Engine::create(index_name, (int) port);
+            AutoPtr<Engine> engine(new Engine(index_name, (int) port));
             {
-                Guard guard(theEngine->mutex);
+                Guard guard(*engine);
                 if (! description.get().empty())
-                    theEngine->setDescription(guard, description);
-                EngineConfig config;
-                run_main_loop = config.read(guard, theEngine, config_name);
+                    engine->setDescription(guard, description);
+                engine->read_config(guard, config_name);
+                engine->start(guard);
             }
             // Main loop
             LOG_MSG("\n----------------------------------------------------\n"
                     "Engine Running. Stop via http://localhost:%d/stop\n"
                     "----------------------------------------------------\n",
                     (int)port);
-            while (run_main_loop)
-                theEngine->process();
-            // If engine is not shut down properly (ca_task_exit !),
-            // the MS VC debugger will freak out
+            while (run_main_loop && engine->process())
+            {
+                // Processing the main loop
+            }
             LOG_MSG ("Process loop ended.\n");
-            delete theEngine;
+            {
+                LOG_MSG ("Flushing buffers to disk.\n");
+                Guard guard(*engine);
+                engine->stop(guard);
+                engine->write(guard);
+            }
             LOG_MSG ("Removing Lockfile.\n");
         }
         catch (GenericException &e)
         {
-            LOG_MSG ("Engine main routine:\n%s", e.what());
+            LOG_MSG ("Engine main routine:\n%s\n", e.what());
         }
         LOG_MSG ("Done.\n");
     }
     // Log back to stdout.
     catch (GenericException &e)
     {
-        LOG_MSG ("Engine log problem:\n%s", e.what());
+        LOG_MSG ("Engine log problem:\n%s\n", e.what());
     }
     return 0;
 }

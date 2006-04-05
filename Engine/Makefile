@@ -20,14 +20,14 @@ LIB_SRCS += ArchiveChannel.cpp
 LIB_SRCS += EngineConfig.cpp
 LIB_SRCS += Engine.cpp
 LIB_SRCS += main.cpp
-LIBRARY_HOST := Engine_New
+LIBRARY_HOST := Engine
 
 ArchiveEngine_SRCS += main.cpp
-TESTPROD_HOST := ArchiveEngine
-PROD_LIBS_DEFAULT := Engine_New Storage Tools    $(EPICS_BASE_IOC_LIBS)
+PROD_HOST := ArchiveEngine
+PROD_LIBS_DEFAULT := Engine Storage Tools    $(EPICS_BASE_IOC_LIBS)
 #PROD_LIBS_WIN32   := EngineObj StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
 #SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
-Engine_New_DIR     = $(INSTALL_LIB)
+Engine_DIR     = $(INSTALL_LIB)
 #EngineObj_DIR  = $(INSTALL_LIB)
 Storage_DIR    = $(INSTALL_LIB)
 #StorageObj_DIR = $(INSTALL_LIB)
@@ -39,7 +39,7 @@ Tools_DIR      = $(INSTALL_LIB)
 #TESTPROD_HOST := bench hammer
 
 # Install script to convert old request files.
-#SCRIPTS += ConvertEngineConfig.pl
+SCRIPTS += ConvertEngineConfig.pl
 
 # UnitTest Pre-RULES:
 #

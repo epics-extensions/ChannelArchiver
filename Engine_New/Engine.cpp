@@ -103,7 +103,7 @@ void Engine::stop(Guard &engine_guard)
     }
 }
 
-static int test_runs = 5;
+static int test_runs = 10;
 
 bool Engine::process()
 {
@@ -115,7 +115,7 @@ bool Engine::process()
     }
     // scan, write or wait?
     epicsTime now = epicsTime::getCurrent();
-#   define MAX_DELAY 5.0    
+#   define MAX_DELAY 0.5   
     double delay = MAX_DELAY;
     {   // Engine locked
         Guard engine_guard(*this);

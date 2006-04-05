@@ -1,6 +1,9 @@
 // Tools
 #include <MsgLogger.h>
 #include <ThrottledMsgLogger.h>
+#include <epicsTimeHelper.h>
+// Storage
+#include <DataWriter.h>
 // Local
 #include "SampleMechanism.h"
 
@@ -146,15 +149,14 @@ void SampleMechanism::addEvent(Guard &guard, short severity,
 
 unsigned long SampleMechanism::write(Guard &guard, Index &index)
 {
-    guard.check(__FILE__, __LINE__, mutex);
     size_t i, num_samples = buffer.getCount();
     if (num_samples <= 0)
         return 0;
         
-        // This won't work!!
     DataWriter writer(index, getName(),
                       pv.getCtrlInfo(guard),
-                      pv.dbr_time_type, nelements,
+                      pv.getDbrType(guard),
+                      pv.getDbrCount(guard),
                       period, num_samples);
     const RawValue::Data *value;
     unsigned long count = 0;
@@ -163,7 +165,7 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
         if (!(value = buffer.removeRawValue()))
         {
             LOG_MSG("'%s': Circular buffer empty while writing\n",
-                    name.c_str());
+                    getName().c_str());
             break;
         }
         if (! writer.add(value))
@@ -171,7 +173,7 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
             stdString txt;
             epicsTime2string(RawValue::getTime(value), txt);
             LOG_MSG("'%s': back-in-time write value stamped %s\n",
-                    name.c_str(), txt.c_str());
+                    getName().c_str(), txt.c_str());
             break;
         }
         ++count;

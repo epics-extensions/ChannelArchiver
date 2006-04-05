@@ -1,6 +1,8 @@
 #ifndef SAMPLEMECHANISM_H_
 #define SAMPLEMECHANISM_H_
 
+// Storage
+#include <Index.h>
 // Local
 #include "Named.h"
 #include "EngineConfig.h"
@@ -89,6 +91,11 @@ public:
     virtual void pvValue(class Guard &guard,
                          class ProcessVariable &pv,
                          const RawValue::Data *data);
+    
+    /** Write current buffer to index.
+     *  @return Returns number of samples written.
+     */                     
+    unsigned long write(Guard &guard, Index &index);
     
 protected:
     const EngineConfig &config;

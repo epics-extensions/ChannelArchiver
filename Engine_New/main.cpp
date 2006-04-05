@@ -102,8 +102,10 @@ int main(int argc, const char *argv[])
             }
             LOG_MSG ("Process loop ended.\n");
             {
+                LOG_MSG ("Flushing buffers to disk.\n");
                 Guard guard(*engine);
                 engine->stop(guard);
+                engine->write(guard);
             }
             LOG_MSG ("Removing Lockfile.\n");
         }

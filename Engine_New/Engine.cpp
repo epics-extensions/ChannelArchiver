@@ -4,11 +4,16 @@
 // Tools
 #include <epicsTimeHelper.h>
 #include <MsgLogger.h>
+// Storage
+#include <IndexFile.h>
+#include <DataFile.h>
 // Engine
 #include "Engine.h"
 
 Engine::Engine(const stdString &index_name, int port)
-    : description("Archive Engine"),
+    : index_name(index_name),
+      description("Archive Engine"),
+      is_writing(false),
       write_duration(0.0),
       write_count(0),
       process_delay_avg(0.0)
@@ -103,8 +108,6 @@ void Engine::stop(Guard &engine_guard)
     }
 }
 
-static int test_runs = 10;
-
 bool Engine::process()
 {
     // Check if PV context requires a flush
@@ -132,7 +135,7 @@ bool Engine::process()
         double write_delay = next_write_time - now;            
         if (write_delay <= 0.0)
         {
-            unsigned long count = writeArchive(engine_guard);
+            unsigned long count = write(engine_guard);
             epicsTime end = epicsTime::getCurrent();
             double duration = end - now;
             if (duration < 0.0)
@@ -149,9 +152,6 @@ bool Engine::process()
     // No scan, no write needed right now.
     process_delay_avg = 0.99*process_delay_avg + 0.01*delay;
     epicsThreadSleep(delay);
-
-    if (--test_runs < 0)
-        return false;
     return true;
 }
 
@@ -168,11 +168,11 @@ ArchiveChannel *Engine::findChannel(Guard &engine_guard, const stdString &name)
     return 0;
 }
 
-unsigned long Engine::writeArchive(Guard &engine_guard)
+#define RTreeM 50
+unsigned long Engine::write(Guard &engine_guard)
 {
     unsigned long count = 0;
     LOG_MSG("Engine: writing\n");
-#if 0
     is_writing = true;
     try
     {
@@ -181,8 +181,9 @@ unsigned long Engine::writeArchive(Guard &engine_guard)
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
-            Guard guard((*ch)->mutex);
-            count += (*ch)->write(guard, index);
+            ArchiveChannel *c = *ch;
+            Guard guard(*c);
+            count += c->write(guard, index);
         }
     }
     catch (GenericException &e)
@@ -198,7 +199,6 @@ unsigned long Engine::writeArchive(Guard &engine_guard)
         LOG_MSG("Error while closing data files:\n%s\n", e.what());
     }
     is_writing = false;
-#endif
     //LOG_MSG("Engine: writing done.\n");
     return count;
 }

@@ -76,8 +76,15 @@ public:
      */
     bool process();
                     
+    /** Write all current buffers to disk.
+     *  <p>
+     *  Typically done within process(),
+     *  also explicitly invoked when shutting down.
+     */
+    unsigned long write(Guard &guard);
 private:
     epicsMutex              mutex;
+    stdString               index_name;
     stdString               description;
     EngineConfigParser      config;
     ScanList                scan_list;
@@ -85,14 +92,13 @@ private:
 	stdList<ArchiveChannel *> channels; // all the channels
     //stdList<GroupInfo *>  groups;   // scan-groups of channels
     
+    bool is_writing;
     double write_duration;
     size_t write_count;
     double process_delay_avg;
     epicsTime next_write_time;
     
-    ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);
-    
-    unsigned long writeArchive(Guard &engine_guard);
+    ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);    
 };
 
 #endif /*ENGINE_H_*/

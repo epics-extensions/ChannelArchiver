@@ -11,6 +11,7 @@
 #include <epicsTimeHelper.h>
 // Storage
 #include <OldDirectoryFile.h>
+#include <IndexFile.h>
 #include <DataFile.h>
 #include <RawDataReader.h>
 #include <DataWriter.h>

@@ -47,7 +47,9 @@ public:
      *  <p>
      *  Base implementation starts the PV.
      */
-    virtual void start(Guard &guard);    
+    virtual void start(Guard &guard);
+    
+    bool isRunning(Guard &guard);
     
     /** Stop sampling.
      *  @see #start()
@@ -91,6 +93,7 @@ public:
 protected:
     const EngineConfig &config;
     ProcessVariable pv;
+    bool running;
     double period;         // .. in seconds
     CircularBuffer buffer; // Sample storage between disk writes.
     bool last_stamp_set;   // For catching 'back-in-time' at the

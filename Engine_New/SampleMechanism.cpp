@@ -10,7 +10,7 @@ static ThrottledMsgLogger back_in_time_throttle("Buffer Back-in-time",
 SampleMechanism::SampleMechanism(const EngineConfig &config,
                                  ProcessVariableContext &ctx,
                                  const char *name, double period)
-    : config(config), pv(ctx, name), period(period),
+    : config(config), pv(ctx, name), running(false), period(period),
       last_stamp_set(false), have_sample_after_connection(false)
 {
 }
@@ -34,10 +34,17 @@ epicsMutex &SampleMechanism::getMutex()
 void SampleMechanism::start(Guard &guard)
 {
     pv.start(guard);
+    running = true;
 }   
+
+bool SampleMechanism::isRunning(Guard &guard)
+{
+    return running;
+}
     
 void SampleMechanism::stop(Guard &guard)
 {
+    running = false;
     pv.stop(guard);
     addEvent(guard, ARCH_STOPPED, epicsTime::getCurrent());
 }

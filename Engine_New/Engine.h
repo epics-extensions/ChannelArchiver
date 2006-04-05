@@ -7,6 +7,8 @@
 #include "EngineConfig.h"
 #include "ScanList.h"
 #include "ProcessVariableContext.h"
+#include "ArchiveChannel.h"
+
 
 /** \defgroup Engine Engine
  *  Classes related to the ArchiveEngine.
@@ -60,6 +62,14 @@ public:
                     const stdString &channel_name,
                     double scan_period,
                     bool disabling, bool monitor);
+                    
+    /** Start the sample mechanism.
+     */        
+    void start(Guard &guard);
+      
+    /** Stop sampling.
+     */
+    void stop(Guard &guard);
     
     /** Main process routine.
      *  @return Returns true if we should process again.
@@ -72,13 +82,15 @@ private:
     EngineConfigParser      config;
     ScanList                scan_list;
     ProcessVariableContext  pv_context;
-	//stdList<ArchiveChannel *> channels; // all the channels
-    //stdList<GroupInfo *>      groups;   // scan-groups of channels
+	stdList<ArchiveChannel *> channels; // all the channels
+    //stdList<GroupInfo *>  groups;   // scan-groups of channels
     
     double write_duration;
     size_t write_count;
     double process_delay_avg;
     epicsTime next_write_time;
+    
+    ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);
     
     unsigned long writeArchive(Guard &engine_guard);
 };

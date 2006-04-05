@@ -17,6 +17,26 @@ Engine::Engine(const stdString &index_name, int port)
 
 Engine::~Engine()
 {
+    LOG_MSG("Removing memory for channels and groups.\n");
+    try
+    {
+        Guard engine_guard(*this);
+        while (! channels.empty())
+        {
+            ArchiveChannel *c = channels.back();
+            channels.pop_back();
+            delete c;
+        }
+/*        while (! groups.empty())
+        {
+            delete groups.back();
+            groups.pop_back();
+        }
+ */   }
+    catch (GenericException &e)
+    {
+        LOG_MSG("Error while deleting channels:\n%s\n", e.what());
+    } 
 }
 
 epicsMutex &Engine::getMutex()
@@ -43,6 +63,44 @@ void Engine::addChannel(const stdString &group_name,
            group_name.c_str(), channel_name.c_str(), scan_period,
            (monitor ? "monitor" : "scan"),
            (disabling ? ", disabling" : ""));
+    Guard engine_guard(*this);
+    ArchiveChannel *channel = findChannel(engine_guard, channel_name);
+    if (channel)
+        channel->configure(config, pv_context, scan_list,
+                           scan_period, monitor);
+    else
+    {
+        channel = new ArchiveChannel(config, pv_context, scan_list,
+                                     channel_name.c_str(),
+                                     scan_period, monitor);
+        channels.push_back(channel);         
+    }
+}
+
+void Engine::start(Guard &engine_guard)
+{
+    engine_guard.check(__FILE__, __LINE__, mutex);
+    stdList<ArchiveChannel *>::iterator channel = channels.begin();
+    while (channel != channels.end())
+    {
+        ArchiveChannel *c = *channel;
+        Guard guard(*c);
+        c->start(guard);
+        ++channel;
+    }
+}
+      
+void Engine::stop(Guard &engine_guard)
+{
+    engine_guard.check(__FILE__, __LINE__, mutex);
+    stdList<ArchiveChannel *>::iterator channel = channels.begin();
+    while (channel != channels.end())
+    {
+        ArchiveChannel *c = *channel;
+        Guard guard(*c);
+        c->stop(guard);
+        ++channel;
+    }
 }
 
 static int test_runs = 5;
@@ -95,6 +153,19 @@ bool Engine::process()
     if (--test_runs < 0)
         return false;
     return true;
+}
+
+ArchiveChannel *Engine::findChannel(Guard &engine_guard, const stdString &name)
+{
+    engine_guard.check(__FILE__, __LINE__, mutex);
+    stdList<ArchiveChannel *>::iterator channel = channels.begin();
+    while (channel != channels.end())
+    {
+        if ((*channel)->getName() == name)
+            return *channel;
+        ++channel;
+    }
+    return 0;
 }
 
 unsigned long Engine::writeArchive(Guard &engine_guard)

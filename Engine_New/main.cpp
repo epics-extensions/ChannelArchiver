@@ -89,6 +89,7 @@ int main(int argc, const char *argv[])
                 if (! description.get().empty())
                     engine->setDescription(guard, description);
                 engine->read_config(guard, config_name);
+                engine->start(guard);
             }
             // Main loop
             LOG_MSG("\n----------------------------------------------------\n"
@@ -100,18 +101,22 @@ int main(int argc, const char *argv[])
                 // Processing the main loop
             }
             LOG_MSG ("Process loop ended.\n");
+            {
+                Guard guard(*engine);
+                engine->stop(guard);
+            }
             LOG_MSG ("Removing Lockfile.\n");
         }
         catch (GenericException &e)
         {
-            LOG_MSG ("Engine main routine:\n%s", e.what());
+            LOG_MSG ("Engine main routine:\n%s\n", e.what());
         }
         LOG_MSG ("Done.\n");
     }
     // Log back to stdout.
     catch (GenericException &e)
     {
-        LOG_MSG ("Engine log problem:\n%s", e.what());
+        LOG_MSG ("Engine log problem:\n%s\n", e.what());
     }
     return 0;
 }

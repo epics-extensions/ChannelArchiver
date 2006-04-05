@@ -59,10 +59,10 @@ void Engine::addChannel(const stdString &group_name,
                         double scan_period,
                         bool disabling, bool monitor)
 {
-    printf("Group '%s', Channel '%s': period %g, %s%s\n",
+    /*printf("Group '%s', Channel '%s': period %g, %s%s\n",
            group_name.c_str(), channel_name.c_str(), scan_period,
            (monitor ? "monitor" : "scan"),
-           (disabling ? ", disabling" : ""));
+           (disabling ? ", disabling" : "")); */
     Guard engine_guard(*this);
     ArchiveChannel *channel = findChannel(engine_guard, channel_name);
     if (channel)

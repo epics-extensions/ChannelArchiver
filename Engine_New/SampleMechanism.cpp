@@ -144,3 +144,39 @@ void SampleMechanism::addEvent(Guard &guard, short severity,
     }
 }
 
+unsigned long SampleMechanism::write(Guard &guard, Index &index)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    size_t i, num_samples = buffer.getCount();
+    if (num_samples <= 0)
+        return 0;
+        
+        // This won't work!!
+    DataWriter writer(index, getName(),
+                      pv.getCtrlInfo(guard),
+                      pv.dbr_time_type, nelements,
+                      period, num_samples);
+    const RawValue::Data *value;
+    unsigned long count = 0;
+    for (i=0; i<num_samples; ++i)
+    {
+        if (!(value = buffer.removeRawValue()))
+        {
+            LOG_MSG("'%s': Circular buffer empty while writing\n",
+                    name.c_str());
+            break;
+        }
+        if (! writer.add(value))
+        {
+            stdString txt;
+            epicsTime2string(RawValue::getTime(value), txt);
+            LOG_MSG("'%s': back-in-time write value stamped %s\n",
+                    name.c_str(), txt.c_str());
+            break;
+        }
+        ++count;
+    }
+    buffer.reset();
+    return count;        
+}
+

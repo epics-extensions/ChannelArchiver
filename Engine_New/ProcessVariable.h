@@ -63,6 +63,9 @@ public:
      *  Only valid when getState() was CONNECTED
      */
     DbrCount getDbrCount(Guard &guard) const;
+    
+    /** @return Returns the control information. */    
+    const CtrlInfo &getCtrlInfo(Guard &guard) const;
 
     /** Add a ProcessVariableListener. */
     void addProcessVariableListener(Guard &guard, ProcessVariableListener *listener);
@@ -126,6 +129,11 @@ inline DbrType ProcessVariable::getDbrType(Guard &guard) const
 inline DbrCount ProcessVariable::getDbrCount(Guard &guard) const
 {
     return dbr_count;
+}
+
+inline const CtrlInfo &ProcessVariable::getCtrlInfo(Guard &guard) const
+{
+    return ctrl_info;
 }
 
 inline bool ProcessVariable::isSubscribed(Guard &guard) const

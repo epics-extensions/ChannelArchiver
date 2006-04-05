@@ -3,6 +3,8 @@
 
 // Tools
 #include <AutoPtr.h>
+// Storage
+#include <Index.h>
 // Engine
 #include "Named.h"
 #include "SampleMechanism.h"
@@ -43,6 +45,9 @@ public:
     /** Stop sampling.
      */
     void stop(Guard &guard);
+    
+    /** Write samples to index. */
+    unsigned long write(Guard &guard, Index &index);
     
 private:
     AutoPtr<SampleMechanism> sample_mechanism;

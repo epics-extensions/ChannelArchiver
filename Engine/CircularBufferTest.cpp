@@ -10,6 +10,10 @@ TEST_CASE test_circular_buffer()
     CircularBuffer buffer;
     long N, i;
 
+    // Tabula Rasa
+    TEST(buffer.getCapacity() == 0);
+    
+    // Allocated but empty
     buffer.allocate(type, count, 8);
     puts("--- Empty");
     TEST(buffer.getCapacity() == 8);

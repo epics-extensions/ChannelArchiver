@@ -2,7 +2,6 @@
 #include <MsgLogger.h>
 #include <epicsTimeHelper.h>
 // Engine
-#include "Engine.h"
 #include "CircularBuffer.h"
 
 #undef DEBUG_CIRCBUF
@@ -18,7 +17,7 @@ CircularBuffer::CircularBuffer()
   : type(0),
     count(0),
     element_size(0),
-    max_index(0),
+    max_index(1),
     head(0),
     tail(0),
     overwrites(0)

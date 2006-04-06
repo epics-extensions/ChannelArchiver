@@ -47,43 +47,43 @@
 // HTTP clients older than this total timeout are killed
 #define HTTPD_CLIENT_TIMEOUT 10
 
-/// \addtogroup Engine
-/// @{
-
-/// An in-memory web server.
-///
-/// Waits for connections on the given TCP port,
-/// creates an HTTPClientConnection
-/// for each incoming, well, client.
-///
-/// The HTTPClientConnection then needs to handle
-/// the incoming requests and produce appropriate
-/// and hopefully strikingly beautiful HTML pages.
+/**\ingroup Engine
+ * An in-memory web server.
+ *
+ * Waits for connections on the given TCP port,
+ * creates an HTTPClientConnection
+ * for each incoming, well, client.
+ *
+ * The HTTPClientConnection then needs to handle
+ * the incoming requests and produce appropriate
+ * and hopefully strikingly beautiful HTML pages.
+ */
 class HTTPServer : public epicsThreadRunable
 {
 public:
-    /// Create a HTTPServer.
-    /// 
-    /// @parm port The TCP port number where the server listens.
-    /// @exception GenericException when port unavailable.
-    /// @see start()
+    /** Create a HTTPServer.
+      * 
+      * @parm port The TCP port number where the server listens.
+      * @exception GenericException when port unavailable.
+      * @see start()
+      */
     HTTPServer(short port, void *user_arg);
     
     virtual ~HTTPServer();
 
-    /// Start accepting connections (launch thread).
+    /** Start accepting connections (launch thread). */
     void start();
 
-    /// Part of the epicsThreadRunable interface. Do not call directly!
+    /** Part of the epicsThreadRunable interface. Do not call directly! */
     void run();
 
-    /// Dump HTML page with server info to socket.
+    /** Dump HTML page with server info to socket. */
     void serverinfo(SOCKET socket);
 
     void *getUserArg() const
     {   return user_arg; }
 
-    /// @return Returns true if the server wants to shut down.
+    /** @return Returns true if the server wants to shut down. */
     bool isShuttingDown() const
     {   return go == false; }    
 
@@ -105,9 +105,11 @@ private:
 };
 
 
-/// Used by HTTPClientConnection to dispatch client requests
-///
-/// Terminator: entry with path = 0.
+/**\ingroup Engine
+ * Used by HTTPClientConnection to dispatch client requests
+ *
+ * Terminator: entry with path = 0.
+ */
 typedef struct
 {
     typedef void (*PathHandler) (class HTTPClientConnection *connection,
@@ -118,11 +120,13 @@ typedef struct
     PathHandler handler;    // Handler to call
 }   PathHandlerList;
 
-/// Handler for a HTTPServer's client.
-///
-/// Handles input and dispatches
-/// to a PathHandler from PathList.
-/// It's deleted when the connection is closed.
+/**\ingroup Engine
+ * Handler for a HTTPServer's client.
+ *
+ * Handles input and dispatches
+ * to a PathHandler from PathList.
+ * It's deleted when the connection is closed.
+ */
 class HTTPClientConnection : public epicsThreadRunable
 {
 public:
@@ -143,7 +147,7 @@ public:
     bool isDone()
     {   return done; }    
 
-    /// Predefined PathHandlers
+    /** Predefined PathHandlers. */
     void error(const stdString &message);
     void pathError(const stdString &path);
  
@@ -155,7 +159,7 @@ public:
     const epicsTime &getBirthTime()
     {   return birthtime; }
 
-    /// @returns The runtime in seconds.
+    /** @returns The runtime in seconds. */
     double getRuntime() const
     {   return runtime; }
 
@@ -179,7 +183,5 @@ private:
 
     void dumpInput(HTMLPage &page);
 };
-
-/// @}
 
 #endif // !defined(HTTP_SERVER_H_)

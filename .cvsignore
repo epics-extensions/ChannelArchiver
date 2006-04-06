@@ -3,3 +3,5 @@ O.*
 *.opt
 Debug
 Release
+doxy
+llrf

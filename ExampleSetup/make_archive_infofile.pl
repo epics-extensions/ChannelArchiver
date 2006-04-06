@@ -87,10 +87,13 @@ sub write_info($)
                         sprintf("Engine %-25s: %s\n",
                                 "'$e_dir'",
                                 $config->{daemon}{$d_dir}{engine}{$e_dir}{status});
-                $issues = $issues .
+                if ($config->{daemon}{$d_dir}{engine}{$e_dir}{status} ne "disabled")
+                {
+                    $issues = $issues .
                         sprintf("Engine %-25s: %s\n",
                                 "'$d_dir/$e_dir'",
                                 $config->{daemon}{$d_dir}{engine}{$e_dir}{status});
+                }
             }  
 	}
 	$status = $status . "\n";

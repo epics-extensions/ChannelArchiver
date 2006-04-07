@@ -52,6 +52,9 @@ public:
     /** @return Returns the current state. */
     const char *getStateStr(Guard &guard) const;
     
+    /** @return Returns the ChannelAccess state. */
+    const char *getCAStateStr(Guard &guard) const;
+    
     /** Get the DBR_TIME_... type of this PV.
      * 
      *  Only valid when getState() was CONNECTED

@@ -10,7 +10,6 @@
 #include "GroupInfo.h"
 #include "ArchiveChannel.h"
 
-
 /** \defgroup Engine Engine
  *  Classes related to the ArchiveEngine.
  *  <p>
@@ -52,8 +51,44 @@ public:
     /** Guardable interface. */
     epicsMutex &getMutex();
 
+    /** @return Returns the description. */
+    const stdString &getIndexName(Guard &guard) const { return index_name; }
+
     /** Set the description string. */
     void setDescription(Guard &guard, const stdString &description);
+    
+    /** @return Returns the description. */
+    const stdString &getDescription(Guard &guard) const { return description; }
+    
+    /** @return Returns the start time. */
+    const epicsTime &getStartTime(Guard &guard) const   { return start_time; }
+
+    /** @return Returns the next write time. */
+    const epicsTime &getNextWriteTime(Guard &guard) const
+    { return next_write_time; }
+    
+    
+    
+    const stdList<GroupInfo *> &getGroups(Guard &guard) const { return groups; }
+    
+    const stdList<ArchiveChannel *> &getChannels(Guard &guard) const
+    { return channels; }
+
+    size_t  getNumConnected(Guard &guard) const  { return num_connected; }
+
+    ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);    
+
+    GroupInfo *findGroup(Guard &engine_guard, const stdString &name);    
+    
+    bool isWriting(Guard &guard) const { return is_writing; }
+    
+    double getWriteDuration(Guard &guard) const    { return write_duration; }
+    
+    size_t  getWriteCount(Guard &guard) const      { return write_count; }
+  
+    double  getProcessDelayAvg(Guard &guard) const { return process_delay_avg;}
+    
+    const EngineConfig &getConfig(Guard &guard) const { return config; }
     
     /** Read the given config file. */
     void read_config(Guard &guard, const stdString &file_name);
@@ -92,14 +127,14 @@ private:
     ProcessVariableContext    pv_context;
     stdList<GroupInfo *>      groups;   // scan-groups of channels
 	stdList<ArchiveChannel *> channels; // all the channels
+    size_t                    num_connected;
     bool                      is_writing;
     double                    write_duration;
     size_t                    write_count;
     double                    process_delay_avg;
+    epicsTime                 start_time;
     epicsTime                 next_write_time;
     
-    GroupInfo *findGroup(Guard &engine_guard, const stdString &name);    
-    ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);    
 };
 
 #endif /*ENGINE_H_*/

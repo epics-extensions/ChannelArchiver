@@ -71,6 +71,23 @@ const char *ProcessVariable::getStateStr(Guard &guard) const
     }
 }
 
+const char *ProcessVariable::getCAStateStr(Guard &guard) const
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    if (id != 0)
+    {
+        switch (ca_state(id))
+        {
+        case cs_never_conn: return "Never Conn.";
+        case cs_prev_conn:  return "Prev. Conn.";
+        case cs_conn:       return "Connected";
+        case cs_closed:     return "Closed";
+        default:            return "unknown";
+        }
+    }
+    return "Not Initialized";
+}
+
 void ProcessVariable::addProcessVariableListener(
     Guard &guard, ProcessVariableListener *listener)
 {

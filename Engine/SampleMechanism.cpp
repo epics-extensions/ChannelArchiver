@@ -34,6 +34,18 @@ epicsMutex &SampleMechanism::getMutex()
     return pv.getMutex();
 }
 
+stdString SampleMechanism::getInfo(Guard &guard) const
+{
+    stdString info;
+    info.reserve(200);
+    info = "Sample Mechanism";
+    info += "PV: ";
+    info += pv.getStateStr(guard);
+    info += "\nCA: ";
+    info += pv.getCAStateStr(guard);
+    return info;
+}
+
 void SampleMechanism::start(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());

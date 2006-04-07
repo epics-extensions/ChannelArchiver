@@ -13,6 +13,7 @@
 Engine::Engine(const stdString &index_name, int port)
     : index_name(index_name),
       description("Archive Engine"),
+      num_connected(0),
       is_writing(false),
       write_duration(0.0),
       write_count(0),
@@ -86,7 +87,8 @@ void Engine::addChannel(const stdString &group_name,
         channel = new ArchiveChannel(config, pv_context, scan_list,
                                      channel_name.c_str(),
                                      scan_period, monitor);
-        channels.push_back(channel);         
+        channels.push_back(channel);       
+        // TODO: Listen to connect/disconnect  
     }
     // Hook channel into group
     {   // Lock order: engine, group, channel
@@ -102,6 +104,7 @@ void Engine::addChannel(const stdString &group_name,
 void Engine::start(Guard &engine_guard)
 {
     engine_guard.check(__FILE__, __LINE__, mutex);
+    start_time = epicsTime::getCurrent();
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
     {

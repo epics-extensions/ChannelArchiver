@@ -41,21 +41,36 @@ public:
     /** Add channel to a group. */
     void addToGroup(Guard &group_guard, class GroupInfo *group,
                     Guard &channel_guard, bool disabling);
-           
-    /** Start the sample mechanism.
-     */        
+
+
+    /** @return Returns list of groups where this channel is a member. */
+    const stdList<class GroupInfo *> getGroups(Guard &guard) const;
+
+    /** @return Returns list of groups to disable. */
+    const stdList<class GroupInfo *> getGroupsToDisable(Guard &guard) const;
+                      
+    /** Start the sample mechanism. */        
     void start(Guard &guard);
     
     /** @return Returns true if started and successfully connected. */
     bool isConnected(Guard &guard) const;
       
+    /** @return Returns true if currently disabled. */
+    bool isDisabled(Guard &guard) const;
+
+    /** @return Returns string that describes the current sample mechanism
+     *  and its state. */
+    stdString getSampleInfo(Guard &guard);
+
     /** Stop sampling.
      */
     void stop(Guard &guard);
     
-    /** Write samples to index. */
+    /** Write samples to index.
+     *  @return Returns numbe of samples written.
+     */
     unsigned long write(Guard &guard, Index &index);
-    
+
 private:
     double scan_period;
     bool monitor;
@@ -69,5 +84,27 @@ private:
     void reconfigure(EngineConfig &config, ProcessVariableContext &ctx,
                      ScanList &scan_list);
 };
+
+inline const stdList<class GroupInfo *>
+    ArchiveChannel::getGroups(Guard &guard) const
+{
+    return groups;
+}
+
+inline const stdList<class GroupInfo *>
+    ArchiveChannel::getGroupsToDisable(Guard &guard) const
+{
+    return disable_groups;
+}
+    
+inline bool ArchiveChannel::isDisabled(Guard &guard) const
+{
+    return false;
+}
+    
+inline stdString ArchiveChannel::getSampleInfo(Guard &guard)
+{
+    return sample_mechanism->getInfo(guard);
+}
 
 #endif /*ARCHIVECHANNEL_H_*/

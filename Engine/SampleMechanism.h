@@ -44,6 +44,9 @@ public:
     /** @return Returns the PV mutex.
      *  @see Guardable */
     epicsMutex &getMutex();
+
+    /** @return Returns a description of mechanism and current state. */
+    virtual stdString getInfo(Guard &guard) const;
     
     /** Start the sample mechanism.
      *  <p>

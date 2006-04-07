@@ -32,8 +32,9 @@ public:
                        const char *name,
                        double period);
     virtual ~SampleMechanismGet();
-
+    
     // SampleMechanism  
+    stdString getInfo(Guard &guard) const;
     void start(Guard &guard);    
     void stop(Guard &guard);
     

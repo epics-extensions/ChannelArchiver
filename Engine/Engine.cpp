@@ -10,7 +10,7 @@
 // Engine
 #include "Engine.h"
 
-Engine::Engine(const stdString &index_name, int port)
+Engine::Engine(const stdString &index_name)
     : index_name(index_name),
       description("Archive Engine"),
       num_connected(0),

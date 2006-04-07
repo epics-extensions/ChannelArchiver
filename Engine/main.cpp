@@ -13,7 +13,8 @@
 // Storage
 //#include <DataWriter.h>
 // Engine
-#include <Engine.h>
+#include "Engine.h"
+#include "EngineServer.h"
 
 // For communication sigint_handler -> main loop
 // and EngineServer -> main loop.
@@ -83,7 +84,7 @@ int main(int argc, const char *argv[])
             signal(SIGINT, signal_handler);
             signal(SIGTERM, signal_handler);
 #endif
-            AutoPtr<Engine> engine(new Engine(index_name, (int) port));
+            AutoPtr<Engine> engine(new Engine(index_name));
             {
                 Guard guard(*engine);
                 if (! description.get().empty())
@@ -91,14 +92,18 @@ int main(int argc, const char *argv[])
                 engine->read_config(guard, config_name);
                 engine->start(guard);
             }
-            // Main loop
-            LOG_MSG("\n----------------------------------------------------\n"
-                    "Engine Running. Stop via http://localhost:%d/stop\n"
-                    "----------------------------------------------------\n",
-                    (int)port);
-            while (run_main_loop && engine->process())
             {
-                // Processing the main loop
+                AutoPtr<EngineServer> server(
+                    new EngineServer((int) port, engine));
+                // Main loop
+                LOG_MSG("\n----------------------------------------------------\n"
+                        "Engine Running. Stop via http://localhost:%d/stop\n"
+                        "----------------------------------------------------\n",
+                        (int)port);
+                while (run_main_loop && engine->process())
+                {
+                    // Processing the main loop
+                }
             }
             LOG_MSG ("Process loop ended.\n");
             {

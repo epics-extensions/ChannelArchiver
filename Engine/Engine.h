@@ -43,8 +43,8 @@
 class Engine : public Guardable, public EngineConfigListener
 {
 public:
-    /** Create Engine that writes to given index and serves info at port. */
-    Engine(const stdString &index_name, int port);
+    /** Create Engine that writes to given index. */
+    Engine(const stdString &index_name);
     
     virtual ~Engine();
     

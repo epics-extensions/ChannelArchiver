@@ -16,6 +16,7 @@ digraph Engine
  
     ArchiveChannel [ shape=box ];
     Group -> ArchiveChannel [ label="  has many" ];
+    Engine -> ArchiveChannel;
 
     SampleMechanism [ shape=box ];
     ArchiveChannel -> SampleMechanism [ label="  has a" ];

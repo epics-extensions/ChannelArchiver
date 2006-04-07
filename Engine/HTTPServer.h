@@ -48,6 +48,21 @@
 #define HTTPD_CLIENT_TIMEOUT 10
 
 /**\ingroup Engine
+ * Used by HTTPClientConnection to dispatch client requests
+ *
+ * Terminator: entry with path = 0.
+ */
+typedef struct
+{
+    typedef void (*PathHandler) (class HTTPClientConnection *connection,
+                                 const stdString &full_path,
+                                 void *user_arg);
+    const char  *path;      // Path for this handler
+    size_t      path_len;   // _Relevant_ portion of path to check (if > 0)
+    PathHandler handler;    // Handler to call
+}   PathHandlerList;
+
+/**\ingroup Engine
  * An in-memory web server.
  *
  * Waits for connections on the given TCP port,
@@ -67,7 +82,7 @@ public:
       * @exception GenericException when port unavailable.
       * @see start()
       */
-    HTTPServer(short port, void *user_arg);
+    HTTPServer(short port, PathHandlerList *handlers, void *user_arg);
     
     virtual ~HTTPServer();
 
@@ -80,6 +95,11 @@ public:
     /** Dump HTML page with server info to socket. */
     void serverinfo(SOCKET socket);
 
+    /** @return Returns the path handlers for this HTTPServer. */
+    PathHandlerList *getHandlers() const
+    {   return handlers; }
+            
+    /** @return Returns the user arg passed to the constructor. */    
     void *getUserArg() const
     {   return user_arg; }
 
@@ -91,6 +111,7 @@ private:
     epicsThread                           thread;
     bool                                  go;
     SOCKET                                socket;
+    PathHandlerList                       *handlers;
     void                                  *user_arg;
     size_t                                total_clients;
     double                                client_duration; // seconds; averaged
@@ -104,22 +125,6 @@ private:
     size_t client_cleanup();
 };
 
-
-/**\ingroup Engine
- * Used by HTTPClientConnection to dispatch client requests
- *
- * Terminator: entry with path = 0.
- */
-typedef struct
-{
-    typedef void (*PathHandler) (class HTTPClientConnection *connection,
-                                 const stdString &full_path,
-                                 void *user_arg);
-    const char  *path;      // Path for this handler
-    size_t      path_len;   // _Relevant_ portion of path to check (if > 0)
-    PathHandler handler;    // Handler to call
-}   PathHandlerList;
-
 /**\ingroup Engine
  * Handler for a HTTPServer's client.
  *
@@ -130,8 +135,6 @@ typedef struct
 class HTTPClientConnection : public epicsThreadRunable
 {
 public:
-    static PathHandlerList  *handlers;
-
     HTTPClientConnection(HTTPServer *server, SOCKET socket, int num);
     virtual ~HTTPClientConnection();
 
@@ -140,7 +143,7 @@ public:
     
     SOCKET getSocket()
     {   return socket; }
-            
+    
     size_t getNum()
     {   return num; }
     

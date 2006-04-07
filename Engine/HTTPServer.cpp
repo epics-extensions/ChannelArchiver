@@ -56,12 +56,13 @@ static ThrottledMsgLogger client_IP_log_throttle("HTTP clients", 10*60);
 // depends on the Engine class to delete the HTTPServer.
 
 // HTTPServer ----------------------------------------------
-HTTPServer::HTTPServer(short port, void *user_arg)
+HTTPServer::HTTPServer(short port, PathHandlerList *handlers, void *user_arg)
   : thread(*this, "HTTPD",
-           epicsThreadGetStackSize(epicsThreadStackBig),
-           epicsThreadPriorityMedium),
+    epicsThreadGetStackSize(epicsThreadStackBig),
+    epicsThreadPriorityMedium),
     go(true),
     socket(0),
+    handlers(handlers),
     user_arg(user_arg),
     total_clients(0),
     client_duration(0.0),
@@ -271,9 +272,6 @@ void HTTPServer::serverinfo(SOCKET socket)
 
 // HTTPClientConnection -----------------------------------------
 
-// static:
-PathHandlerList *HTTPClientConnection::handlers;
-
 HTTPClientConnection::HTTPClientConnection(HTTPServer *server,
                                            SOCKET socket, int num)
   : thread(*this, "HTTPClientConnection",
@@ -463,8 +461,8 @@ bool HTTPClientConnection::analyzeInput()
         server->serverinfo(socket);
         return true;
     }
-    PathHandlerList *h;
-    for (h = handlers; h && h->path; ++h)
+    PathHandlerList *h = server->getHandlers();
+    for (/* */; h && h->path; ++h)
     {
         if ((h->path_len > 0  &&
              strncmp(path.c_str(), h->path, h->path_len) == 0)

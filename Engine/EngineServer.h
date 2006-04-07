@@ -4,14 +4,16 @@
 // Engine
 #include <HTTPServer.h>
 
+/**\ingroup Engine
+ *  HTTP Server of the Engine.
+ */
 class EngineServer : public HTTPServer
 {
 public:
-        // Constructor creates and starts the HTTPServer
-        // for given engine.
+    /** Constructor creates and starts the HTTPServer for given engine. */
 	EngineServer(short port, class Engine *engine);
 
-        // Stop and delete the HTTPServer.
+    /** Stop and delete the HTTPServer. */
 	~EngineServer();
 };
 

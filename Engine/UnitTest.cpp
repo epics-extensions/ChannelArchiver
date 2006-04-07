@@ -12,6 +12,8 @@
 extern TEST_CASE test_circular_buffer();
 // Unit EngineConfigTest:
 extern TEST_CASE engine_config();
+// Unit HTTPServerTest:
+extern TEST_CASE test_http_server();
 // Unit ProcessVariableTest:
 extern TEST_CASE process_variable();
 // Unit SampleMechanismTest:
@@ -71,6 +73,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\nengine_config:\n");
             if (engine_config())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "HTTPServerTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit HTTPServerTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_http_server")==0)
+       {
+            ++run;
+            printf("\ntest_http_server:\n");
+            if (test_http_server())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

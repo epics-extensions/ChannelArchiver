@@ -10,14 +10,14 @@
 #include "ProcessVariable.h"
 #include "ProcessVariableListener.h"
 
-class MyPVListener : public ProcessVariableListener
+class PVTestPVListener : public ProcessVariableListener
 {
 public:
     int  num;
     bool connected;
     size_t values;
     
-    MyPVListener(int num) : num(num), connected(false), values(0)
+    PVTestPVListener(int num) : num(num), connected(false), values(0)
     {}
     
     void pvConnected(Guard &guard, ProcessVariable &pv,
@@ -53,8 +53,8 @@ public:
 TEST_CASE process_variable()
 {
     AutoPtr<ProcessVariableContext> ctx(new ProcessVariableContext());
-    AutoPtr<MyPVListener> pvl(new MyPVListener(1));
-    AutoPtr<MyPVListener> pvl2(new MyPVListener(2));
+    AutoPtr<PVTestPVListener> pvl(new PVTestPVListener(1));
+    AutoPtr<PVTestPVListener> pvl2(new PVTestPVListener(2));
     {
         AutoPtr<ProcessVariable> pv(new ProcessVariable(*ctx, "janet"));
         AutoPtr<ProcessVariable> pv2(new ProcessVariable(*ctx, "janet"));

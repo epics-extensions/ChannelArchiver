@@ -9,19 +9,19 @@
 
 #include "TimeFilter.h"
 
-class MyPVListener : public ProcessVariableListener
+class TFTPVListener : public ProcessVariableListener
 {
 public:
     bool connected;
     size_t values;
     
-    MyPVListener() : connected(false), values(0)
+    TFTPVListener() : connected(false), values(0)
     {}
     
     void pvConnected(Guard &guard, ProcessVariable &pv,
                      const epicsTime &when)
     {
-        printf("ProcessVariableListener PV: '%s' connected!\n",
+        printf("ProcessVariableListener: '%s' connected.\n",
                pv.getName().c_str());
         connected = true;
     }
@@ -29,12 +29,16 @@ public:
     void pvDisconnected(Guard &guard, ProcessVariable &pv,
                         const epicsTime &when)
     {
+        printf("ProcessVariableListener: '%s' disconnected.\n",
+               pv.getName().c_str());
         connected = false;
     }
     
     void pvValue(class Guard &guard, class ProcessVariable &pv,
                  const RawValue::Data *data)
     {
+        printf("ProcessVariableListener: '%s' has value.\n",
+               pv.getName().c_str());
         ++values;
     }
 };
@@ -46,7 +50,9 @@ TEST_CASE test_time_filter()
     
     ProcessVariableContext ctx;
     ProcessVariable pv(ctx, "test");
-    MyPVListener pvl;
+    // Note: We assume there is no "test" PV, and never even start the pv.
+    // All events from the pv to the filter are fake!
+    TFTPVListener pvl;
     TimeFilter filt(config, &pvl);     
     
     // Connect gets passed.

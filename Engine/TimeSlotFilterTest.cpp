@@ -9,13 +9,13 @@
 
 #include "TimeSlotFilter.h"
 
-class MyPVListener : public ProcessVariableListener
+class TSFTPVListner : public ProcessVariableListener
 {
 public:
     bool connected;
     size_t values;
     
-    MyPVListener() : connected(false), values(0)
+    TSFTPVListner() : connected(false), values(0)
     {}
     
     void pvConnected(Guard &guard, ProcessVariable &pv,
@@ -46,7 +46,7 @@ TEST_CASE test_time_slot_filter()
     
     ProcessVariableContext ctx;
     ProcessVariable pv(ctx, "test");
-    MyPVListener pvl;
+    TSFTPVListner pvl;
     TimeSlotFilter filt(10.0, &pvl);     
     
     // Connect gets passed.

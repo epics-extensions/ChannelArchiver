@@ -17,7 +17,7 @@
  */
 class ArchiveChannel : public NamedBase,
                        public Guardable,
-                       public ProcessVariableStateListener
+                       public ProcessVariableListener
 {
 public:
     /** Create channel with given name. */
@@ -60,7 +60,7 @@ public:
       
     /** @return Returns true if currently disabled. */
     bool isDisabled(Guard &guard) const;
-
+    
     /** @return Returns string that describes the current sample mechanism
      *  and its state. */
     stdString getSampleInfo(Guard &guard);
@@ -81,12 +81,20 @@ public:
     void removeStateListener(Guard &guard,
                              ArchiveChannelStateListener *listener);
                             
-    // ProcessVariableStateListener
+    /** Implements ProcessVariableStateListener by forwrding
+     *  connect/disconnect info to ArchiveChannelStateListeners
+     */
     void pvConnected(Guard &guard, ProcessVariable &pv, const epicsTime &when);
     
-    // ProcessVariableStateListener
+    /** Implements ProcessVariableStateListener by forwrding
+     *  connect/disconnect info to ArchiveChannelStateListeners
+     */
     void pvDisconnected(Guard &guard, ProcessVariable &pv,
                         const epicsTime &when);
+              
+    /** Implements ProcessVariableValueListener for handling enable/disable */     
+    void pvValue(Guard &guard, ProcessVariable &pv,
+                 const RawValue::Data *data);
 
 private:
     double scan_period;

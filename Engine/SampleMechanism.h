@@ -67,6 +67,13 @@ public:
     /** Remove a listener from the underlying PV. */
     void removeStateListener(Guard &guard,
                              ProcessVariableStateListener *listener);
+
+    /** Add a listener to the underlying PV. */
+    void addValueListener(Guard &guard, ProcessVariableValueListener *listener);
+
+    /** Remove a listener from the underlying PV. */
+    void removeValueListener(Guard &guard,
+                             ProcessVariableValueListener *listener);
     
     /** Stop sampling.
      *  @see #start()
@@ -140,6 +147,18 @@ inline void SampleMechanism::removeStateListener(Guard &guard,
                                        ProcessVariableStateListener *listener)
 {
     pv.removeStateListener(guard, listener);
+}
+
+inline void SampleMechanism::addValueListener(Guard &guard,
+                                       ProcessVariableValueListener *listener)
+{
+    pv.addValueListener(guard, listener);
+}
+
+inline void SampleMechanism::removeValueListener(Guard &guard,
+                                       ProcessVariableValueListener *listener)
+{
+    pv.removeValueListener(guard, listener);
 }
 
 #endif /*SAMPLEMECHANISM_H_*/

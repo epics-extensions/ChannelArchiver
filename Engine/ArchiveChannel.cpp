@@ -32,7 +32,9 @@ ArchiveChannel::~ArchiveChannel()
         try
         {
             Guard guard(*this);
-            sample_mechanism->removeStateListener(guard, this);   
+            sample_mechanism->removeStateListener(guard, this);
+            if (!disable_groups.empty())  
+                sample_mechanism->removeValueListener(guard, this);   
         }
         catch (...)
         {
@@ -77,6 +79,8 @@ void ArchiveChannel::reconfigure(EngineConfig &config,
         if (was_running)
             sample_mechanism->stop(guard);
         sample_mechanism->removeStateListener(guard, this);
+        if (!disable_groups.empty())  
+            sample_mechanism->removeValueListener(guard, this);
     }
     else
         was_running = false;
@@ -95,6 +99,8 @@ void ArchiveChannel::reconfigure(EngineConfig &config,
                                                            scan_period);
     Guard guard(*sample_mechanism);
     sample_mechanism->addStateListener(guard, this);
+    if (!disable_groups.empty())  
+        sample_mechanism->addValueListener(guard, this);
     // Possibly, start again
     if (was_running)
         sample_mechanism->start(guard);
@@ -106,7 +112,13 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
     channel_guard.check(__FILE__, __LINE__, getMutex());
     // Add to the 'disable' groups?
     if (disabling)
-    {   // Remove & add as quick hack to add only once.
+    {
+        // Is this the first time we become 'disabling',
+        // i.e. list is so far empty?
+        // --> monitor values!
+        if (disable_groups.empty())
+            sample_mechanism->addValueListener(channel_guard, this);            
+        // Remove & add as quick hack to add only once.
         disable_groups.remove(group);
         disable_groups.push_back(group);
     }
@@ -215,4 +227,11 @@ void ArchiveChannel::pvDisconnected(Guard &guard, ProcessVariable &pv,
         }
     }
 }
+
+void ArchiveChannel::pvValue(Guard &guard, ProcessVariable &pv,
+                             const RawValue::Data *data)
+{
+    LOG_MSG("ArchiveChannel '%s' got value for disable test\n",
+            getName().c_str());
     
+}

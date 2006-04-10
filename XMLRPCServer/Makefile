@@ -52,7 +52,7 @@ PROD_LDLIBS += $($*_ENDFLAGS)
 include $(TOP)/configure/RULES
 
 cgiinstall:
-	-cp /var/www/html/archive/cgi/ArchiveDataServer.cgi /var/www/html/archive/cgi/ArchiveDataServer`date +"%Y-%M-%d-%H:%m"`
+	-cp /var/www/html/archive/cgi/ArchiveDataServer.cgi /var/www/html/archive/cgi/ArchiveDataServer_`date +"%Y-%m-%d-%H:%M"`
 	cp O.$(EPICS_HOST_ARCH)/DummyDataServer /var/www/html/archive/cgi/DummyDataServer.cgi
 	cp O.$(EPICS_HOST_ARCH)/ArchiveDataServer /var/www/html/archive/cgi/ArchiveDataServer.cgi
 

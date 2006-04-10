@@ -19,7 +19,7 @@ Engine::Engine(const stdString &index_name)
       write_count(0),
       process_delay_avg(0.0)
 {
-    LOG_MSG("Engine 0x%lX\n", (unsigned long) this);
+    // LOG_MSG("Engine 0x%lX\n", (unsigned long) this);
 }
 
 Engine::~Engine()
@@ -250,7 +250,7 @@ unsigned long Engine::write(Guard &engine_guard)
 void Engine::acConnected(Guard &guard, ArchiveChannel &c,
                          const epicsTime &when)
 {
-    LOG_MSG("Engine: '%s' connected\n", c.getName().c_str());
+    //LOG_MSG("Engine: '%s' connected\n", c.getName().c_str());
     GuardRelease release(guard); // Lock order: Engine before channel.
     {
         Guard engine_guard(*this);
@@ -261,7 +261,7 @@ void Engine::acConnected(Guard &guard, ArchiveChannel &c,
 void Engine::acDisconnected(Guard &guard, ArchiveChannel &c,
                             const epicsTime &when)
 {
-    LOG_MSG("Engine: '%s' disconnected\n", c.getName().c_str());
+    //LOG_MSG("Engine: '%s' disconnected\n", c.getName().c_str());
     GuardRelease release(guard); // Lock order: Engine before channel.
     {
         Guard engine_guard(*this);

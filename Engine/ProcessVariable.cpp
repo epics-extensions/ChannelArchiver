@@ -11,7 +11,7 @@
 static ThrottledMsgLogger nulltime_throttle("Null-Timestamp", 60.0);
 static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 
-#define DEBUG_PV
+//#define DEBUG_PV
 
 ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
     : NamedBase(name), ctx(ctx), state(INIT),
@@ -113,33 +113,24 @@ void ProcessVariable::addStateListener(
                                    "Duplicate listener for '%s'",
                                    getName().c_str());
     state_listeners.push_back(listener);                              
-    LOG_MSG("PV '%s' adds State listener 0x%lX, total %zu\n",
-            getName().c_str(), (unsigned long)listener,
-            state_listeners.size());
+    //LOG_MSG("PV '%s' adds State listener 0x%lX, total %zu\n",
+    //        getName().c_str(), (unsigned long)listener,
+    //        state_listeners.size());
 }
 
 void ProcessVariable::removeStateListener(
     Guard &guard, ProcessVariableStateListener *listener)
 {
     guard.check(__FILE__, __LINE__, mutex);  
-
-    bool found = false;
-    stdList<ProcessVariableStateListener *>::iterator l;
-    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
-        if (*l == listener)
-        {
-            found = true;
-            break;
-        }
-    if (! found)
+    size_t old = state_listeners.size();
+    state_listeners.remove(listener);                              
+    if (state_listeners.size() + 1  !=  old)
         throw GenericException(__FILE__, __LINE__,
                                "Unknown listener for '%s'",
                                getName().c_str());
-      
-    state_listeners.remove(listener);                              
-    LOG_MSG("PV '%s' removes State listener 0x%lX, total %zu\n",
-            getName().c_str(), (unsigned long)listener,
-            state_listeners.size());
+    //LOG_MSG("PV '%s' removes State listener 0x%lX, total %zu\n",
+    //        getName().c_str(), (unsigned long)listener,
+    //        state_listeners.size());
 }
 
 void ProcessVariable::addValueListener(

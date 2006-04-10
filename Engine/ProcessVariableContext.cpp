@@ -14,7 +14,7 @@ static void caException(struct exception_handler_args args)
         pName = ca_name(args.chid);
     else
         pName = "?";
-    printf("CA Exception %s - with request "
+    LOG_MSG("CA Exception %s - with request "
             "chan=%s op=%d type=%s count=%d:\n%s\n", 
             args.ctx, pName, (int)args.op, dbr_type_to_text(args.type),
             (int)args.count,
@@ -24,7 +24,7 @@ static void caException(struct exception_handler_args args)
 ProcessVariableContext::ProcessVariableContext()
     : ca_context(0), refs(0), flush_requested(false)
 {
-	printf("Creating ChannelAccess Context.\n");
+	LOG_MSG("Creating ChannelAccess Context.\n");
 	if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL ||
         ca_add_exception_event(caException, 0) != ECA_NORMAL)
         throw GenericException(__FILE__, __LINE__,
@@ -36,11 +36,11 @@ ProcessVariableContext::~ProcessVariableContext()
 {
 	if (refs > 0)
 	{
-        printf("ProcessVariableContext has %zu references "
+        LOG_MSG("ProcessVariableContext has %zu references "
                 "left on destruction\n", refs);
         return;
 	}
-	printf("Stopping ChannelAccess.\n");
+	LOG_MSG("Stopping ChannelAccess.\n");
     ca_context_destroy();
     ca_context = 0;
 }

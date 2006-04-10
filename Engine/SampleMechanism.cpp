@@ -7,6 +7,8 @@
 // Local
 #include "SampleMechanism.h"
 
+// #define DEBUG_SAMPLE_MECHANISM
+
 static ThrottledMsgLogger back_in_time_throttle("Buffer Back-in-time",
                                                 60.0*60.0);
 
@@ -20,8 +22,10 @@ SampleMechanism::SampleMechanism(const EngineConfig &config,
 
 SampleMechanism::~SampleMechanism()
 {
+#ifdef DEBUG_SAMPLE_MECHANISM
     puts("Values in sample buffer:");
-    buffer.dump();    
+    buffer.dump(); 
+#endif
 }
 
 const stdString &SampleMechanism::getName() const
@@ -81,7 +85,9 @@ size_t SampleMechanism::getSampleCount(Guard &guard) const
 void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
                                   const epicsTime &when)
 {
+#ifdef DEBUG_SAMPLE_MECHANISM
     LOG_MSG("SampleMechanism(%s): connected\n", pv.getName().c_str());
+#endif
     // If necessary, allocate a new circular buffer.
     // Of course that means that data in there is tossed.
     // So if you managed to stop an IOC,
@@ -103,14 +109,18 @@ void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
 void SampleMechanism::pvDisconnected(Guard &guard, ProcessVariable &pv,
                                      const epicsTime &when)
 {
+#ifdef DEBUG_SAMPLE_MECHANISM
     LOG_MSG("SampleMechanism(%s): disconnected\n", pv.getName().c_str());
+#endif
     addEvent(guard, ARCH_DISCONNECT, when);
 }
 
 void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
                               const RawValue::Data *data)
 {
-    //LOG_MSG("SampleMechanism(%s): value\n", pv.getName().c_str());
+#ifdef DEBUG_SAMPLE_MECHANISM
+    LOG_MSG("SampleMechanism(%s): value\n", pv.getName().c_str());
+#endif
     // Last back-in-time check before writing to disk
     epicsTime stamp = RawValue::getTime(data);
     if (last_stamp_set && last_stamp > stamp)
@@ -130,8 +140,10 @@ void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
         epicsTime now = epicsTime::getCurrent();
         if (now > stamp)
         {
+#ifdef DEBUG_SAMPLE_MECHANISM        
             LOG_MSG("SampleMechanism(%s): adding sample stamped 'now'\n",
                    pv.getName().c_str());
+#endif
             RawValue::Data *value = buffer.getNextElement();
             RawValue::copy(buffer.getDbrType(), buffer.getDbrCount(),
                            value, data);

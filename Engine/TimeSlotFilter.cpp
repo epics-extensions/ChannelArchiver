@@ -4,7 +4,7 @@
 // Engine
 #include "TimeSlotFilter.h"
 
-#define DEBUG_SLOT_FILT
+// #define DEBUG_SLOT_FILT
 
 TimeSlotFilter::TimeSlotFilter(double period, ProcessVariableListener *listener)
     : ProcessVariableFilter(listener), period(period)

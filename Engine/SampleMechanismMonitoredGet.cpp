@@ -49,8 +49,8 @@ void SampleMechanismMonitoredGet::stop(Guard &guard)
 void SampleMechanismMonitoredGet::pvConnected(Guard &guard,
     ProcessVariable &pv, const epicsTime &when)
 {   
-    LOG_MSG("SampleMechanismMonitoredGet(%s): connected\n",
-            pv.getName().c_str());
+    //LOG_MSG("SampleMechanismMonitoredGet(%s): connected\n",
+    //        pv.getName().c_str());
     SampleMechanism::pvConnected(guard, pv, when);
     if (!pv.isSubscribed(guard))
         pv.subscribe(guard);

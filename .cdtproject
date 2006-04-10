@@ -63,7 +63,8 @@
 <target name="all" path="Engine" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments></buildArguments>
-<stopOnError>false</stopOnError>
+<buildTarget>all</buildTarget>
+<stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="test" path="Engine" targetID="org.eclipse.cdt.make.MakeTargetBuilder">

@@ -7,6 +7,8 @@
 #include "SampleMechanismGet.h"
 #include "SampleMechanismMonitoredGet.h"
 
+// #define DEBUG_ARCHIVE_CHANNEL
+
 ArchiveChannel::ArchiveChannel(EngineConfig &config,
                                ProcessVariableContext &ctx,
                                ScanList &scan_list,
@@ -16,8 +18,6 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
       scan_period(scan_period),
       monitor(monitor)
 {
-    LOG_MSG("ArchiveChannel 0x%lX\n", (unsigned long) this);
-    
     reconfigure(config, ctx, scan_list);
     LOG_ASSERT(sample_mechanism);
 }
@@ -173,7 +173,9 @@ void ArchiveChannel::removeStateListener(
 void ArchiveChannel::pvConnected(Guard &guard, ProcessVariable &pv,
                                  const epicsTime &when)
 {
+#ifdef DEBUG_ARCHIVE_CHANNEL
     LOG_MSG("ArchiveChannel '%s' is connected\n", getName().c_str());
+#endif
     stdList<ArchiveChannelStateListener *>::iterator l;
     for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
         (*l)->acConnected(guard, *this, when);    
@@ -182,7 +184,9 @@ void ArchiveChannel::pvConnected(Guard &guard, ProcessVariable &pv,
 void ArchiveChannel::pvDisconnected(Guard &guard, ProcessVariable &pv,
                     const epicsTime &when)
 {
+#ifdef DEBUG_ARCHIVE_CHANNEL
     LOG_MSG("ArchiveChannel '%s' is disconnected\n", getName().c_str());
+#endif
     stdList<ArchiveChannelStateListener *>::iterator l;
     for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
         (*l)->acDisconnected(guard, *this, when);    

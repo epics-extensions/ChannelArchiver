@@ -277,11 +277,10 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
     Guard guard(*channel);
     const stdList<class GroupInfo *> groups = channel->getGroupsToDisable(guard);
     stdList<class GroupInfo *>::const_iterator group;
-    bool at_least_one = false;
     stdString disabling;
     for (group = groups.begin();  group != groups.end();  ++group)
     {
-        if (at_least_one)
+        if (group != groups.begin())
             disabling += ", ";
         disabling += (*group)->getName();
     }

@@ -216,7 +216,7 @@ ArchiveChannel *Engine::findChannel(Guard &engine_guard, const stdString &name)
 unsigned long Engine::write(Guard &engine_guard)
 {
     unsigned long count = 0;
-    LOG_MSG("Engine: writing\n");
+    //LOG_MSG("Engine: writing\n");
     is_writing = true;
     try
     {

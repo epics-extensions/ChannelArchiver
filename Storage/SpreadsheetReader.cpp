@@ -40,10 +40,21 @@ bool SpreadsheetReader::find(const stdVector<stdString> &channel_names,
     size_t i;
     for (i=0; i<num; ++i)
     {
+        read_data[i] = 0;
+        value[i]     = 0;
         reader[i]    = ReaderFactory::create(index, how, delta);
         read_data[i] = reader[i]->find(channel_names[i], start);
-        if (!read_data[i]) // Channel has no data
+        if (read_data[i])
+        {   // Init. type and count info.
+            type[i]  = reader[i]->getType();
+            count[i] = reader[i]->getCount();
+        }
+        else
+        {   // Channel has no data at all.
+            type[i]  = 0;
+            count[i] = 0;
             continue;
+        }
         try
         {
             info[i] = new CtrlInfo(reader[i]->getInfo());

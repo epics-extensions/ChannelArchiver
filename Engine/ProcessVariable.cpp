@@ -497,6 +497,11 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
             --me->outstanding_gets;
         if (me->state != CONNECTED)
         {
+            // After a disconnect, this can happen in the GETTING_INFO state:
+            // The CAC lib already sends us new monitors after the re-connect,
+            // while we wait for the ctrl-info get_callback to finish.
+            if (me->state == GETTING_INFO) // ignore
+                return;
             LOG_MSG("ProcessVariable(%s) received value_callback while %s\n",
                     me->getName().c_str(), me->getStateStr(guard));
             return;

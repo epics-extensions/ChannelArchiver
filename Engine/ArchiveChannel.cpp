@@ -176,9 +176,21 @@ void ArchiveChannel::pvConnected(Guard &guard, ProcessVariable &pv,
 #ifdef DEBUG_ARCHIVE_CHANNEL
     LOG_MSG("ArchiveChannel '%s' is connected\n", getName().c_str());
 #endif
+    // Notify listeners
     stdList<ArchiveChannelStateListener *>::iterator l;
     for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
-        (*l)->acConnected(guard, *this, when);    
+        (*l)->acConnected(guard, *this, when);   
+    // Notify groups
+    stdList<GroupInfo *>::iterator gi;
+    for (gi = groups.begin(); gi != groups.end(); ++gi)
+    {
+        GroupInfo *g = *gi;
+        GuardRelease release(guard);
+        {
+            Guard group_guard(*g);
+            g->incConnected(group_guard, *this);
+        }
+    }
 }
 
 void ArchiveChannel::pvDisconnected(Guard &guard, ProcessVariable &pv,
@@ -187,8 +199,20 @@ void ArchiveChannel::pvDisconnected(Guard &guard, ProcessVariable &pv,
 #ifdef DEBUG_ARCHIVE_CHANNEL
     LOG_MSG("ArchiveChannel '%s' is disconnected\n", getName().c_str());
 #endif
+    // Notify listeners
     stdList<ArchiveChannelStateListener *>::iterator l;
     for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
         (*l)->acDisconnected(guard, *this, when);    
+    // Notify groups
+    stdList<GroupInfo *>::iterator gi;
+    for (gi = groups.begin(); gi != groups.end(); ++gi)
+    {
+        GroupInfo *g = *gi;
+        GuardRelease release(guard);
+        {
+            Guard group_guard(*g);
+            g->decConnected(group_guard, *this);
+        }
+    }
 }
     

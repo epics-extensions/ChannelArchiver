@@ -26,9 +26,9 @@ stdString SampleMechanismMonitoredGet::getInfo(Guard &guard) const
     info.reserve(200);
     info = "Monitored get, ";
     info += per;
-    info += "\nPV: ";
+    info += ", PV ";
     info += pv.getStateStr(guard);
-    info += "\nCA: ";
+    info += ", CA ";
     info += pv.getCAStateStr(guard);
     return info;
 }

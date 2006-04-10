@@ -12,6 +12,10 @@ GroupInfo::GroupInfo(const stdString &name)
 {
 }
 
+GroupInfo::~GroupInfo()
+{
+}
+
 epicsMutex &GroupInfo::getMutex()
 {
     return mutex;
@@ -26,6 +30,7 @@ void GroupInfo::addChannel(Guard &group_guard, ArchiveChannel *channel)
         if (*i == channel)
             return;
     channels.push_back(channel);
+    Guard guard(*channel);
     /*
     if (disable_count > 0) // disable right away?
         channel->disable(engine_guard, channel_guard,
@@ -85,20 +90,21 @@ void GroupInfo::enable(Guard &group_guard,
     */
 }
 
-#if 0
-void GroupInfo::incConnectCount(Guard &group_guard)
+// called by ArchiveChannel
+void GroupInfo::incConnected(Guard &group_guard, ArchiveChannel &pv)
 {
     group_guard.check(__FILE__, __LINE__, mutex);
     ++num_connected;
 }
-
-void GroupInfo::decConnectCount(Guard &group_guard)
+    
+// called by ArchiveChannel    
+void GroupInfo::decConnected(Guard &group_guard, ArchiveChannel &pv)
 {
     group_guard.check(__FILE__, __LINE__, mutex);
     if (num_connected <= 0)
         throw GenericException(__FILE__, __LINE__,
-                               "%s: Connect count runs below 0",
-                               getName().c_str());
-    --num_connected;
+                               "Group %s connect count runs below 0 "
+                               "on decrement from '%s'",
+                               getName().c_str(), pv.getName().c_str());
+     --num_connected;
 }
-#endif

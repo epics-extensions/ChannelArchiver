@@ -42,10 +42,9 @@ stdString SampleMechanism::getInfo(Guard &guard) const
 {
     stdString info;
     info.reserve(200);
-    info = "Sample Mechanism";
-    info += "PV: ";
+    info = "PV ";
     info += pv.getStateStr(guard);
-    info += "\nCA: ";
+    info += ", CA ";
     info += pv.getCAStateStr(guard);
     return info;
 }

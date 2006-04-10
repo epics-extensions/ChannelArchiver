@@ -18,7 +18,7 @@
 #include <ToolsConfig.h>
 #include <Guard.h>
 // Engine
-#include <Named.h>
+#include "Named.h"
 
 /** \ingroup Engine
  *  A Group of channels.
@@ -39,6 +39,8 @@ class GroupInfo : public NamedBase, public Guardable
 public:
     GroupInfo(const stdString &name);
     
+    virtual ~GroupInfo();
+
     /** Guardable interface */
     epicsMutex &getMutex();
     
@@ -61,7 +63,13 @@ public:
 
     /** @return Returns # of channels in group that are connected. */
     size_t getNumConnected(Guard &group_guard) const;
-        
+    
+    /** Invoked by ArchiveChannel to update connection count. */
+    void incConnected(Guard &group_guard, class ArchiveChannel &pv);
+    
+    /** Invoked by ArchiveChannel to update connection count. */
+    void decConnected(Guard &group_guard, class ArchiveChannel &pv);
+
 private:
     GroupInfo(const GroupInfo &); // not impl.
     GroupInfo & operator = (const GroupInfo &); // not impl.

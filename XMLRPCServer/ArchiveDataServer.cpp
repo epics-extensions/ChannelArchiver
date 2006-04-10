@@ -476,6 +476,9 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
                 meta[i] = encode_ctrl_info(env, &sheet->getInfo(i));
                 dbr_type_to_xml_type(sheet->getType(i), sheet->getCount(i),
                                      xml_type[i], xml_count[i]);
+#if 0
+                LOG_MSG("Ch %lu: type, count = %d, %d\n", i, (int)xml_type[i], (int)xml_count[i]);
+#endif
             }
             else
             {   // Channel exists, but has no data
@@ -499,8 +502,11 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
                                  xml_type[i], xml_count[i], values[i]);
                 }
                 else
-                    encode_value(env, 0, 0, sheet->getTime(), 0,
+                {   // Encode as no value, but one of them ;-)
+                    // to avoid confusion w/ viewers that like to see some data in any case.
+                    encode_value(env, 0, 1, sheet->getTime(), 0,
                                  xml_type[i], xml_count[i], values[i]);
+                }
                 
             }
             ++num_vals;

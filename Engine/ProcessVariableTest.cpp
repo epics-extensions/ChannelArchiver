@@ -60,8 +60,8 @@ TEST_CASE process_variable()
         AutoPtr<ProcessVariable> pv2(new ProcessVariable(*ctx, "janet"));
         Guard pv_guard(*pv);
         Guard pv_guard2(*pv2);        
-        pv->addProcessVariableListener(pv_guard, pvl);
-        pv2->addProcessVariableListener(pv_guard2, pvl2);
+        pv->addListener(pv_guard, pvl);
+        pv2->addListener(pv_guard2, pvl2);
         {
             Guard ctx_guard(*ctx);
             TEST(ctx->getRefs(ctx_guard) == 2);
@@ -157,8 +157,8 @@ TEST_CASE process_variable()
         pv->unsubscribe(pv_guard);
         pv->stop(pv_guard);
         pv2->stop(pv_guard2);
-        pv->removeProcessVariableListener(pv_guard, pvl);
-        pv2->removeProcessVariableListener(pv_guard2, pvl2);
+        pv->removeListener(pv_guard, pvl);
+        pv2->removeListener(pv_guard2, pvl2);
     }
     {
         Guard ctx_guard(*ctx);

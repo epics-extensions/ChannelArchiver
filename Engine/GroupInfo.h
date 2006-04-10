@@ -61,11 +61,7 @@ public:
 
     /** @return Returns # of channels in group that are connected. */
     size_t getNumConnected(Guard &group_guard) const;
-    
-    void incConnectCount(Guard &group_guard);
-
-    void decConnectCount(Guard &group_guard);
-    
+        
 private:
     GroupInfo(const GroupInfo &); // not impl.
     GroupInfo & operator = (const GroupInfo &); // not impl.

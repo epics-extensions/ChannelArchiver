@@ -9,6 +9,7 @@
 #include "ProcessVariableContext.h"
 #include "GroupInfo.h"
 #include "ArchiveChannel.h"
+#include "ArchiveChannelStateListener.h"
 
 /** \defgroup Engine Engine
  *  Classes related to the ArchiveEngine.
@@ -40,7 +41,9 @@
 /** \ingroup Engine
  *  The archive engine.
  */
-class Engine : public Guardable, public EngineConfigListener
+class Engine : public Guardable,
+               public EngineConfigListener,
+               public ArchiveChannelStateListener
 {
 public:
     /** Create Engine that writes to given index. */
@@ -118,6 +121,12 @@ public:
      *  also explicitly invoked when shutting down.
      */
     unsigned long write(Guard &guard);
+    
+    // ArchiveChannelStateListener
+    void acConnected(Guard &guard, ArchiveChannel &pv, const epicsTime &when);
+    
+    // ArchiveChannelStateListener
+    void acDisconnected(Guard &guard,ArchiveChannel &pv,const epicsTime &when);
 private:
     epicsMutex                mutex;
     stdString                 index_name;

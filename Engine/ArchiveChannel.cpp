@@ -16,12 +16,28 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
       scan_period(scan_period),
       monitor(monitor)
 {
+    LOG_MSG("ArchiveChannel 0x%lX\n", (unsigned long) this);
+    
     reconfigure(config, ctx, scan_list);
     LOG_ASSERT(sample_mechanism);
 }
 
 ArchiveChannel::~ArchiveChannel()
 {
+    if (! state_listeners.empty())
+        LOG_MSG("ArchiveChannel '%s' has %zu listeners left\n",
+                getName().c_str(), state_listeners.size());
+    if (sample_mechanism)
+    {
+        try
+        {
+            Guard guard(*this);
+            sample_mechanism->removeStateListener(guard, this);   
+        }
+        catch (...)
+        {
+        }
+    } 
     sample_mechanism = 0;
 }
 
@@ -60,6 +76,7 @@ void ArchiveChannel::reconfigure(EngineConfig &config,
         was_running = sample_mechanism->isRunning(guard);
         if (was_running)
             sample_mechanism->stop(guard);
+        sample_mechanism->removeStateListener(guard, this);
     }
     else
         was_running = false;
@@ -76,12 +93,11 @@ void ArchiveChannel::reconfigure(EngineConfig &config,
         sample_mechanism = new SampleMechanismMonitoredGet(config, ctx,
                                                            getName().c_str(),
                                                            scan_period);
+    Guard guard(*sample_mechanism);
+    sample_mechanism->addStateListener(guard, this);
     // Possibly, start again
     if (was_running)
-    {
-        Guard guard(*sample_mechanism);
         sample_mechanism->start(guard);
-    }
 }
 
 void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
@@ -100,11 +116,7 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
         if (*i == group)
             return; // Already in there
     groups.push_back(group);
-    // Added to group and already connected?
-    if (isConnected(channel_guard))
-        group->incConnectCount(group_guard);
 }
-
 
 void ArchiveChannel::start(Guard &guard)
 {
@@ -138,3 +150,41 @@ unsigned long  ArchiveChannel::write(Guard &guard, Index &index)
     return sample_mechanism->write(guard, index);
 }
 
+void ArchiveChannel::addStateListener(
+    Guard &guard, ArchiveChannelStateListener *listener)
+{
+    guard.check(__FILE__, __LINE__, getMutex());
+    stdList<ArchiveChannelStateListener *>::iterator l;
+    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
+        if (*l == listener)
+            throw GenericException(__FILE__, __LINE__,
+                                   "Duplicate listener for '%s'",
+                                   getName().c_str());
+    state_listeners.push_back(listener);                              
+}
+
+void ArchiveChannel::removeStateListener(
+    Guard &guard, ArchiveChannelStateListener *listener)
+{
+    guard.check(__FILE__, __LINE__, getMutex());
+    state_listeners.remove(listener);                              
+}
+
+void ArchiveChannel::pvConnected(Guard &guard, ProcessVariable &pv,
+                                 const epicsTime &when)
+{
+    LOG_MSG("ArchiveChannel '%s' is connected\n", getName().c_str());
+    stdList<ArchiveChannelStateListener *>::iterator l;
+    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
+        (*l)->acConnected(guard, *this, when);    
+}
+
+void ArchiveChannel::pvDisconnected(Guard &guard, ProcessVariable &pv,
+                    const epicsTime &when)
+{
+    LOG_MSG("ArchiveChannel '%s' is disconnected\n", getName().c_str());
+    stdList<ArchiveChannelStateListener *>::iterator l;
+    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
+        (*l)->acDisconnected(guard, *this, when);    
+}
+    

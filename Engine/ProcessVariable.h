@@ -70,11 +70,25 @@ public:
     /** @return Returns the control information. */    
     const CtrlInfo &getCtrlInfo(Guard &guard) const;
 
+    /** Add a ProcessVariableStateListener. */
+    void addStateListener(Guard &guard, ProcessVariableStateListener *listener);
+
+    /** Remove a ProcessVariableStateListener. */
+    void removeStateListener(Guard &guard,
+                             ProcessVariableStateListener *listener);
+
+    /** Add a ProcessVariableValueListener. */
+    void addValueListener(Guard &guard, ProcessVariableValueListener *listener);
+
+    /** Remove a ProcessVariableValueListener. */
+    void removeValueListener(Guard &guard,
+                             ProcessVariableValueListener *listener);
+
     /** Add a ProcessVariableListener. */
-    void addProcessVariableListener(Guard &guard, ProcessVariableListener *listener);
+    void addListener(Guard &guard, ProcessVariableListener *listener);
 
     /** Remove a ProcessVariableListener. */
-    void removeProcessVariableListener(Guard &guard, ProcessVariableListener *listener);
+    void removeListener(Guard &guard, ProcessVariableListener *listener);
 
     /** Start the connection mechanism. */
     void start(Guard &guard);
@@ -106,7 +120,8 @@ private:
     epicsMutex                         mutex;
     ProcessVariableContext             &ctx;
     State                              state;
-    stdList<ProcessVariableListener *> listeners;
+    stdList<ProcessVariableStateListener *> state_listeners;
+    stdList<ProcessVariableValueListener *> value_listeners;
     chid                               id;
     evid                               ev_id;
     DbrType                            dbr_type;
@@ -137,6 +152,20 @@ inline DbrCount ProcessVariable::getDbrCount(Guard &guard) const
 inline const CtrlInfo &ProcessVariable::getCtrlInfo(Guard &guard) const
 {
     return ctrl_info;
+}
+
+inline void ProcessVariable::addListener(Guard &guard,
+                                         ProcessVariableListener *listener)
+{
+    addStateListener(guard, listener);
+    addValueListener(guard, listener);
+}
+
+inline void ProcessVariable::removeListener(Guard &guard,
+                                            ProcessVariableListener *listener)
+{
+    removeValueListener(guard, listener);
+    removeStateListener(guard, listener);
 }
 
 inline bool ProcessVariable::isSubscribed(Guard &guard) const

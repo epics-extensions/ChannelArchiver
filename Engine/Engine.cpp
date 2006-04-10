@@ -19,6 +19,7 @@ Engine::Engine(const stdString &index_name)
       write_count(0),
       process_delay_avg(0.0)
 {
+    LOG_MSG("Engine 0x%lX\n", (unsigned long) this);
 }
 
 Engine::~Engine()
@@ -31,14 +32,22 @@ Engine::~Engine()
         {
             ArchiveChannel *c = channels.back();
             channels.pop_back();
+            try
+            {
+                Guard guard(*c);
+                c->removeStateListener(guard, this);
+            }
+            catch (...)
+            {
+            }
             delete c;
         }
-/*        while (! groups.empty())
+        while (! groups.empty())
         {
             delete groups.back();
             groups.pop_back();
         }
- */   }
+    }
     catch (GenericException &e)
     {
         LOG_MSG("Error while deleting channels:\n%s\n", e.what());
@@ -69,7 +78,7 @@ void Engine::addChannel(const stdString &group_name,
            group_name.c_str(), channel_name.c_str(), scan_period,
            (monitor ? "monitor" : "scan"),
            (disabling ? ", disabling" : "")); */
-    Guard engine_guard(*this);
+    Guard engine_guard(*this); // Lock order: engine
     // Get group
     GroupInfo *group = findGroup(engine_guard, group_name);
     if (!group)
@@ -79,23 +88,25 @@ void Engine::addChannel(const stdString &group_name,
     }
     // Get channel
     ArchiveChannel *channel = findChannel(engine_guard, channel_name);
-    if (channel)
-        channel->configure(config, pv_context, scan_list,
-                           scan_period, monitor);
-    else
+    bool new_channel = (channel == 0);
+    if (new_channel)
     {
         channel = new ArchiveChannel(config, pv_context, scan_list,
                                      channel_name.c_str(),
                                      scan_period, monitor);
         channels.push_back(channel);       
-        // TODO: Listen to connect/disconnect  
     }
+    else
+        channel->configure(config, pv_context, scan_list,
+                           scan_period, monitor);
     // Hook channel into group
-    {   // Lock order: engine, group, channel
+    {   // Lock order: engine, group
         Guard group_guard(*group);
         group->addChannel(group_guard, channel);
-        {
+        {   // Lock order: engine, group, channel
             Guard channel_guard(*channel);
+            if (new_channel) // Listen to connect/disconnect
+                channel->addStateListener(channel_guard, this);
             channel->addToGroup(group_guard, group, channel_guard, disabling);
         }
     }
@@ -235,3 +246,26 @@ unsigned long Engine::write(Guard &engine_guard)
     //LOG_MSG("Engine: writing done.\n");
     return count;
 }
+
+void Engine::acConnected(Guard &guard, ArchiveChannel &c,
+                         const epicsTime &when)
+{
+    LOG_MSG("Engine: '%s' connected\n", c.getName().c_str());
+    GuardRelease release(guard); // Lock order: Engine before channel.
+    {
+        Guard engine_guard(*this);
+        ++num_connected;
+    }
+}
+    
+void Engine::acDisconnected(Guard &guard, ArchiveChannel &c,
+                            const epicsTime &when)
+{
+    LOG_MSG("Engine: '%s' disconnected\n", c.getName().c_str());
+    GuardRelease release(guard); // Lock order: Engine before channel.
+    {
+        Guard engine_guard(*this);
+        --num_connected;
+    }
+}
+

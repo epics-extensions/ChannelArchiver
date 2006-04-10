@@ -37,7 +37,7 @@ stdString SampleMechanismGet::getInfo(Guard &guard) const
 
 void SampleMechanismGet::start(Guard &guard)
 {
-    pv.addProcessVariableListener(guard, &repeat_filter);
+    pv.addListener(guard, &repeat_filter);
     SampleMechanism::start(guard);
     scan_list.add(this, period);
 }   
@@ -45,7 +45,7 @@ void SampleMechanismGet::start(Guard &guard)
 void SampleMechanismGet::stop(Guard &guard)
 {
     scan_list.remove(this);
-    pv.removeProcessVariableListener(guard, &repeat_filter);
+    pv.removeListener(guard, &repeat_filter);
     repeat_filter.stop(guard, pv);
     SampleMechanism::stop(guard);
 }

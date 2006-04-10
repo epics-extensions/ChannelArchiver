@@ -5,9 +5,9 @@
 #include <RawValue.h>
 
 /**\ingroup Engine
- *  Listener for ProcessVariable info
+ *  Listener for ProcessVariable state info.
  */
-class ProcessVariableListener
+class ProcessVariableStateListener
 {
 public:
     /** Invoked when the pv connects.
@@ -22,7 +22,14 @@ public:
     virtual void pvDisconnected(class Guard &guard,
                                 class ProcessVariable &pv,
                                 const epicsTime &when) = 0;
+};
 
+/**\ingroup Engine
+ *  Listener for ProcessVariable info
+ */
+class ProcessVariableValueListener
+{
+public:
     /** Invoked when the pv has a new value.
      *
      *  Can be the result of a 'getValue' or 'subscribe'.
@@ -32,4 +39,13 @@ public:
                          const RawValue::Data *data) = 0;
 };
 
-#endif /*PROCESSVARIABLE_H_*/
+/**\ingroup Engine
+ *  Listener for ProcessVariable info
+ */
+class  ProcessVariableListener
+    : public ProcessVariableStateListener,
+      public ProcessVariableValueListener
+{
+};
+
+#endif /*PROCESSVARIABLESTATELISTENER_H_*/

@@ -110,7 +110,7 @@ void SampleMechanism::pvDisconnected(Guard &guard, ProcessVariable &pv,
 void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
                               const RawValue::Data *data)
 {
-    LOG_MSG("SampleMechanism(%s): value\n", pv.getName().c_str());
+    //LOG_MSG("SampleMechanism(%s): value\n", pv.getName().c_str());
     // Last back-in-time check before writing to disk
     epicsTime stamp = RawValue::getTime(data);
     if (last_stamp_set && last_stamp > stamp)

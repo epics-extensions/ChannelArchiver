@@ -21,8 +21,9 @@
  *  'Named' interfaces in derived SampleMechanisms and still
  *  only get one 'Named' base.
  */
-class SampleMechanism : public ProcessVariableListener, public Guardable,
-    public virtual Named
+class SampleMechanism : public ProcessVariableListener,
+                        public Guardable,
+                        public virtual Named
 {
 public:
     /** Construct mechanism for given period.
@@ -60,6 +61,13 @@ public:
     /** @return Returns the state of the ProcessVariable. */
     ProcessVariable::State getPVState(Guard &guard);
     
+    /** Add a listener to the underlying PV. */
+    void addStateListener(Guard &guard, ProcessVariableStateListener *listener);
+
+    /** Remove a listener from the underlying PV. */
+    void removeStateListener(Guard &guard,
+                             ProcessVariableStateListener *listener);
+    
     /** Stop sampling.
      *  @see #start()
      *  <p>
@@ -70,7 +78,7 @@ public:
     /** @return Returns the number of samples in the circular buffer. */
     size_t getSampleCount(Guard &guard) const;
     
-    /** ProcessVariableListener.
+    /** ProcessVariableStateListener.
      *  <p>
      *  Base implementation allocates circular buffer
      */
@@ -78,7 +86,7 @@ public:
                              class ProcessVariable &pv,
                              const epicsTime &when);
     
-    /** ProcessVariableListener.
+    /** ProcessVariableStateListener.
      *  <p>
      *  Base implementation adds a "DISCONNECTED" marker.
      */
@@ -86,7 +94,7 @@ public:
                                 class ProcessVariable &pv,
                                 const epicsTime &when);
 
-    /** ProcessVariableListener.
+    /** ProcessVariableValueListener.
      *  <p>
      *  Base implementation adds data to buffer.
      *  In addition, the initial value after a new connection
@@ -121,5 +129,17 @@ protected:
      */
     void addEvent(Guard &guard, short severity, const epicsTime &when);
 };
+
+inline void SampleMechanism::addStateListener(Guard &guard,
+                                       ProcessVariableStateListener *listener)
+{
+    pv.addStateListener(guard, listener);
+}
+
+inline void SampleMechanism::removeStateListener(Guard &guard,
+                                       ProcessVariableStateListener *listener)
+{
+    pv.removeStateListener(guard, listener);
+}
 
 #endif /*SAMPLEMECHANISM_H_*/

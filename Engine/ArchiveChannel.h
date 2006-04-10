@@ -10,11 +10,14 @@
 #include "SampleMechanism.h"
 #include "EngineConfig.h"
 #include "ScanList.h"
+#include "ArchiveChannelStateListener.h"
 
 /** \ingroup Engine
  *  One archived channel.
  */
-class ArchiveChannel : public NamedBase, public Guardable
+class ArchiveChannel : public NamedBase,
+                       public Guardable,
+                       public ProcessVariableStateListener
 {
 public:
     /** Create channel with given name. */
@@ -71,6 +74,20 @@ public:
      */
     unsigned long write(Guard &guard, Index &index);
 
+    /** Add a ProcessVariableStateListener. */
+    void addStateListener(Guard &guard, ArchiveChannelStateListener *listener);
+
+    /** Remove a ProcessVariableStateListener. */
+    void removeStateListener(Guard &guard,
+                             ArchiveChannelStateListener *listener);
+                            
+    // ProcessVariableStateListener
+    void pvConnected(Guard &guard, ProcessVariable &pv, const epicsTime &when);
+    
+    // ProcessVariableStateListener
+    void pvDisconnected(Guard &guard, ProcessVariable &pv,
+                        const epicsTime &when);
+
 private:
     double scan_period;
     bool monitor;
@@ -80,6 +97,8 @@ private:
     stdList<class GroupInfo *> disable_groups;
     // Groups to which this channel belongs (at least one)
     stdList<class GroupInfo *> groups;
+    
+    stdList<ArchiveChannelStateListener *> state_listeners;
     
     void reconfigure(EngineConfig &config, ProcessVariableContext &ctx,
                      ScanList &scan_list);

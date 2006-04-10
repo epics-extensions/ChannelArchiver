@@ -35,13 +35,13 @@ stdString SampleMechanismMonitoredGet::getInfo(Guard &guard) const
 
 void SampleMechanismMonitoredGet::start(Guard &guard)
 {
-    pv.addProcessVariableListener(guard, &time_slot_filter);
+    pv.addListener(guard, &time_slot_filter);
     SampleMechanism::start(guard);
 }   
     
 void SampleMechanismMonitoredGet::stop(Guard &guard)
 {
-    pv.removeProcessVariableListener(guard, &time_slot_filter);
+    pv.removeListener(guard, &time_slot_filter);
     repeat_filter.stop(guard, pv);
     SampleMechanism::stop(guard);
 }

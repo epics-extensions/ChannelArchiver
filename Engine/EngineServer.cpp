@@ -371,7 +371,7 @@ void groups(HTTPClientConnection *connection, const stdString &path,
                 (unsigned int)total_connect_count);
     else
         cvtUlongToString((unsigned long) total_connect_count, connected);
-    page.tableLine("Total", " ", " ", channels, connected, 0);
+    page.tableLine("Total", " ", channels, connected, 0);
     page.closeTable();
 }
 

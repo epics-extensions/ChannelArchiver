@@ -85,16 +85,20 @@ void GroupInfo::enable(Guard &group_guard,
     */
 }
 
+#if 0
 void GroupInfo::incConnectCount(Guard &group_guard)
 {
+    group_guard.check(__FILE__, __LINE__, mutex);
     ++num_connected;
 }
 
 void GroupInfo::decConnectCount(Guard &group_guard)
 {
+    group_guard.check(__FILE__, __LINE__, mutex);
     if (num_connected <= 0)
         throw GenericException(__FILE__, __LINE__,
                                "%s: Connect count runs below 0",
                                getName().c_str());
     --num_connected;
 }
+#endif

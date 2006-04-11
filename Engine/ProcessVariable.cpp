@@ -88,6 +88,10 @@ const char *ProcessVariable::getStateStr(Guard &guard) const
 const char *ProcessVariable::getCAStateStr(Guard &guard) const
 {
     guard.check(__FILE__, __LINE__, mutex);
+    {
+        Guard ctx_guard(ctx);
+        LOG_ASSERT(ctx.isAttached(ctx_guard));
+    }
     if (id != 0)
     {
         switch (ca_state(id))
@@ -155,6 +159,10 @@ void ProcessVariable::removeValueListener(
 void ProcessVariable::start(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    {
+        Guard ctx_guard(ctx);
+        LOG_ASSERT(ctx.isAttached(ctx_guard));
+    }
     if (id != 0)
         throw GenericException(__FILE__, __LINE__,
                                "Duplicate start(%s)", getName().c_str());
@@ -181,6 +189,10 @@ void ProcessVariable::start(Guard &guard)
 void ProcessVariable::getValue(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    {
+        Guard ctx_guard(ctx);
+        LOG_ASSERT(ctx.isAttached(ctx_guard));
+    }
     if (state != CONNECTED)
         return; // Can't get
     ++outstanding_gets;
@@ -202,6 +214,10 @@ void ProcessVariable::getValue(Guard &guard)
 void ProcessVariable::subscribe(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    {
+        Guard ctx_guard(ctx);
+        LOG_ASSERT(ctx.isAttached(ctx_guard));
+    }
     if (dbr_type == 0)
         throw GenericException(__FILE__, __LINE__,
                                "Cannot subscribe to %s, never connected",
@@ -230,6 +246,10 @@ void ProcessVariable::subscribe(Guard &guard)
 void ProcessVariable::unsubscribe(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    {
+        Guard ctx_guard(ctx);
+        LOG_ASSERT(ctx.isAttached(ctx_guard));
+    }
     if (subscribed)
     {
         subscribed = false;
@@ -243,6 +263,10 @@ void ProcessVariable::unsubscribe(Guard &guard)
 void ProcessVariable::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    {
+        Guard ctx_guard(ctx);
+        LOG_ASSERT(ctx.isAttached(ctx_guard));
+    }
     if (id == 0)
         throw GenericException(__FILE__, __LINE__,
                                "Stop without start(%s)", getName().c_str());

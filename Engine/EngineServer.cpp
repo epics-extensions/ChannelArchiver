@@ -39,7 +39,7 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
     epicsTime startTime, nextWrite;
     double proc_dly, write_duration, write_period, get_threshhold;
     unsigned long write_count;
-    bool is_writing, disconn;
+    bool disconn;
     {
         
         Guard engine_guard(*engine);
@@ -52,7 +52,6 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
         write_count = engine->getWriteCount(engine_guard);
         write_duration = engine->getWriteDuration(engine_guard);
         nextWrite = engine->getNextWriteTime(engine_guard);
-        is_writing = engine->isWriting(engine_guard);
         write_period = engine->getConfig(engine_guard).getWritePeriod();
         get_threshhold = engine->getConfig(engine_guard).getGetThreshold();
         disconn = engine->getConfig(engine_guard).getDisconnectOnDisable();
@@ -89,9 +88,6 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
 
     epicsTime2string(nextWrite, s);
     page.tableLine("Next write time", s.c_str(), 0);
-        
-    page.tableLine("Currently writing",
-                   (const char *) (is_writing ? "Yes" : "No"), 0);
         
     sprintf(line, "%.1f sec", write_period);
     page.tableLine("Write Period", line, 0);
@@ -237,6 +233,7 @@ static void channels(HTTPClientConnection *connection, const stdString &path,
     stdString link;
     link.reserve(80);
     Guard engine_guard(*engine);
+    engine->attachToProcessVariableContext(engine_guard);    
     const stdList<ArchiveChannel *> &channels = engine->getChannels(engine_guard);
     for (channel = channels.begin(); channel != channels.end(); ++channel)
     {
@@ -307,6 +304,7 @@ static void channelInfo(HTTPClientConnection *connection,
     Engine *engine = (Engine *)user_arg;
     stdString channel_name = path.substr(9);
     Guard engine_guard(*engine);
+    engine->attachToProcessVariableContext(engine_guard);    
     ArchiveChannel *channel
         = engine->findChannel(engine_guard, channel_name);
     if (! channel)
@@ -387,6 +385,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path,
         stdString group_name = path.substr(7);
         CGIDemangler::unescape(group_name);
         Guard engine_guard(*engine);
+        engine->attachToProcessVariableContext(engine_guard);
         GroupInfo *group = engine->findGroup(engine_guard, group_name);
         if (! group)
         {
@@ -430,14 +429,6 @@ static void addChannel(HTTPClientConnection *connection,
 {
     Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Add Channel");
-
-
-         page.line("<H3>Error</H3>");
-         page.line("<PRE>");
-         page.line("Not, yet.");
-         page.line("</PRE>");
-
-#if 0
     try
     {
         CGIDemangler args;
@@ -447,14 +438,6 @@ static void addChannel(HTTPClientConnection *connection,
         if (channel_name.empty() || group_name.empty())
         {
             page.line("Channel and group names must not be empty");
-            return;
-        }
-        Guard engine_guard(engine->mutex);
-        GroupInfo *group = engine->findGroup(engine_guard, group_name);
-        if (!group)
-        {
-            stdString msg = "Cannot find group " + group_name;
-            page.line(msg.c_str());
             return;
         }
         double period = atof(args.find("PERIOD").c_str());
@@ -468,17 +451,15 @@ static void addChannel(HTTPClientConnection *connection,
             disabling = true;
         page.out("Channel <I>");
         page.out(channel_name);
-        engine->attachToCAContext(engine_guard);
-        if (engine->addChannel(engine_guard, group, channel_name, period,
-                                  disabling, monitored))
-        {
-            page.line("</I> was added");
+        Guard engine_guard(*engine);
+        engine->attachToProcessVariableContext(engine_guard);
+        engine->addChannel(group_name, channel_name, period,
+                           disabling, monitored);
+#if 0
             EngineConfig config;
             config.write(engine_guard, engine);
-        }
-        else
-            page.line("</I> could not be added");
-        page.out(" to group <I>");
+#endif
+        page.line("</I> was added to group <I>");
         page.out(group_name);
         page.line("</I>.");
     }
@@ -489,7 +470,6 @@ static void addChannel(HTTPClientConnection *connection,
          page.line(e.what());
          page.line("</PRE>");
     }
-#endif
 }
 
 static void addGroup(HTTPClientConnection *connection, const stdString &path,

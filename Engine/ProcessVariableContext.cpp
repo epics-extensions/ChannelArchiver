@@ -66,15 +66,24 @@ void ProcessVariableContext::attach(Guard &guard)
                 epicsThreadGetNameSelf());
 }
 
+bool ProcessVariableContext::isAttached(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    int result = ca_attach_context(ca_context);
+    return result == ECA_ISATTACHED;
+}
+
 void ProcessVariableContext::incRef(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(isAttached(guard));
 	++refs;
 }
 		
 void ProcessVariableContext::decRef(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(isAttached(guard));
 	if (refs <= 0)
 	    throw GenericException(__FILE__, __LINE__,
 	                           "RefCount goes negative");
@@ -84,24 +93,28 @@ void ProcessVariableContext::decRef(Guard &guard)
 size_t ProcessVariableContext::getRefs(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(isAttached(guard));
 	return refs;
 }
 
 void ProcessVariableContext::requestFlush(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(isAttached(guard));
 	flush_requested = true;
 }
 	
 bool ProcessVariableContext::isFlushRequested(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(isAttached(guard));
 	return flush_requested;
 }
 
 void ProcessVariableContext::flush(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(isAttached(guard));
     flush_requested = false;
     {
         GuardRelease release(guard);

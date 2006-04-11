@@ -14,7 +14,6 @@ Engine::Engine(const stdString &index_name)
     : index_name(index_name),
       description("Archive Engine"),
       num_connected(0),
-      is_writing(false),
       write_duration(0.0),
       write_count(0),
       process_delay_avg(0.0)
@@ -64,6 +63,12 @@ void Engine::setDescription(Guard &guard, const stdString &description)
     this->description = description;
 }
     
+void Engine::attachToProcessVariableContext(Guard &guard)
+{ 
+    Guard ctx_guard(pv_context);
+    pv_context.attach(ctx_guard);
+}
+    
 void Engine::read_config(Guard &guard, const stdString &file_name)
 {
     config.read(file_name.c_str(), this);
@@ -110,6 +115,8 @@ void Engine::addChannel(const stdString &group_name,
             channel->addToGroup(group_guard, group, channel_guard, disabling);
         }
     }
+    
+    // TODO: start channel that's added online
 }
 
 void Engine::start(Guard &engine_guard)
@@ -217,7 +224,6 @@ unsigned long Engine::write(Guard &engine_guard)
 {
     unsigned long count = 0;
     //LOG_MSG("Engine: writing\n");
-    is_writing = true;
     try
     {
         IndexFile index(RTreeM);
@@ -242,7 +248,6 @@ unsigned long Engine::write(Guard &engine_guard)
     {
         LOG_MSG("Error while closing data files:\n%s\n", e.what());
     }
-    is_writing = false;
     //LOG_MSG("Engine: writing done.\n");
     return count;
 }

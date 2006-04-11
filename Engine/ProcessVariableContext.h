@@ -27,7 +27,7 @@ public:
     epicsMutex &getMutex();
     
     /** Attach current thread to this context.
-     * 
+     *  <p>
      *  Except for the thread that created the context,
      *  all other threads that wish to use the context
      *  need to 'attach'.
@@ -36,6 +36,12 @@ public:
      *  @exception GenericException when detecting an error.
      */
     void attach(Guard &guard);
+    
+    /** @return Returns 'true' if the current thread is attached.
+     *  <p>
+     *  @see attach()
+     */
+    bool isAttached(Guard &guard);
     
     /** Add another reference. */
     void incRef(Guard &guard);

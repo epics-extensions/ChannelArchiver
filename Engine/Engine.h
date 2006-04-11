@@ -69,28 +69,45 @@ public:
     /** @return Returns the next write time. */
     const epicsTime &getNextWriteTime(Guard &guard) const
     { return next_write_time; }
+
+    /** Join the engine's ProcessVariableContext.
+     *  <p>
+     *  While the engine supports multithreaded access,
+     *  that's why there are all those Guard arguments,
+     *  threads other than the main thread which end up
+     *  calling ProcessVariable methods must join the
+     *  PV context of the engine. */    
+    void attachToProcessVariableContext(Guard &guard);
     
-    
-    
+    /** @return Returns all groups. */    
     const stdList<GroupInfo *> &getGroups(Guard &guard) const { return groups; }
     
+    /** @return Returns all channels. */    
     const stdList<ArchiveChannel *> &getChannels(Guard &guard) const
     { return channels; }
 
+    /** @return Returns number of connected channels. */    
     size_t  getNumConnected(Guard &guard) const  { return num_connected; }
 
+    /** @return Returns channel with given name or 0. */    
     ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);    
 
+    /** @return Returns group with given name or 0. */    
     GroupInfo *findGroup(Guard &engine_guard, const stdString &name);    
     
-    bool isWriting(Guard &guard) const { return is_writing; }
-    
+    /** @return Returns average write duration in seconds. */    
     double getWriteDuration(Guard &guard) const    { return write_duration; }
     
+    /** @return Returns average write count. */    
     size_t  getWriteCount(Guard &guard) const      { return write_count; }
   
+    /** @return Returns average delay in seconds spent waiting in process().
+     *  <p>
+     *  This could be considered the engine's idle time.
+     */    
     double  getProcessDelayAvg(Guard &guard) const { return process_delay_avg;}
     
+    /** @return Returns the current configuration. */        
     const EngineConfig &getConfig(Guard &guard) const { return config; }
     
     /** Read the given config file. */
@@ -102,12 +119,10 @@ public:
                     double scan_period,
                     bool disabling, bool monitor);
                     
-    /** Start the sample mechanism.
-     */        
+    /** Start the sample mechanism. */        
     void start(Guard &guard);
       
-    /** Stop sampling.
-     */
+    /** Stop sampling. */
     void stop(Guard &guard);
     
     /** Main process routine.
@@ -137,13 +152,11 @@ private:
     stdList<GroupInfo *>      groups;   // scan-groups of channels
 	stdList<ArchiveChannel *> channels; // all the channels
     size_t                    num_connected;
-    bool                      is_writing;
     double                    write_duration;
     size_t                    write_count;
     double                    process_delay_avg;
     epicsTime                 start_time;
     epicsTime                 next_write_time;
-    
 };
 
 #endif /*ENGINE_H_*/

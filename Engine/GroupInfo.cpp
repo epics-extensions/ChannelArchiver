@@ -55,14 +55,14 @@ void GroupInfo::disable(Guard &group_guard,
     ++disable_count;
     if (disable_count != 1) // Was already disabled?
         return;
-    /* TODO
-    stdList<ArchiveChannel *>::iterator c;
-    for (c=channels.begin(); c!=channels.end(); ++c)
+    // Disable all channels in this group
+    stdList<ArchiveChannel *>::iterator ci;
+    for (ci = channels.begin(); ci != channels.end(); ++ci)
     {
-        Guard guard((*c)->mutex);
-        (*c)->disable(engine_guard, guard, when);
+        ArchiveChannel *c = *ci;
+        Guard guard(*c);
+        c->disable(guard, when);
     }
-    */
 }
 
 // called by ArchiveChannel
@@ -80,14 +80,14 @@ void GroupInfo::enable(Guard &group_guard,
     --disable_count;
     if (disable_count > 0) // Still disabled?
         return;
-    /* TODO
-    stdList<ArchiveChannel *>::iterator c;
-    for (c=channels.begin(); c!=channels.end(); ++c)
+    // Enable all channels in this group
+    stdList<ArchiveChannel *>::iterator ci;
+    for (ci = channels.begin(); ci != channels.end(); ++ci)
     {
-        Guard guard((*c)->mutex);
-        (*c)->enable(engine_guard, guard, when);
+        ArchiveChannel *c = *ci;
+        Guard guard(*c);
+        c->enable(guard, when);
     }
-    */
 }
 
 // called by ArchiveChannel

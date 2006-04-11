@@ -96,16 +96,18 @@ int main(int argc, const char *argv[])
                 AutoPtr<EngineServer> server(
                     new EngineServer((int) port, engine));
                 // Main loop
-                LOG_MSG("\n----------------------------------------------------\n"
+                LOG_MSG("\n-------------------------------------------------\n"
                         "Engine Running. Stop via http://localhost:%d/stop\n"
-                        "----------------------------------------------------\n",
+                        "-------------------------------------------------\n",
                         (int)port);
                 while (run_main_loop && engine->process())
                 {
                     // Processing the main loop
                 }
+               LOG_MSG ("\n-------------------------------------------------\n"
+                        "Process loop ended.\n"
+                        "-------------------------------------------------\n");
             }
-            LOG_MSG ("Process loop ended.\n");
             {
                 LOG_MSG ("Flushing buffers to disk.\n");
                 Guard guard(*engine);

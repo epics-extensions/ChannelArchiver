@@ -57,6 +57,14 @@ public:
     
     /** @return Returns true if started and successfully connected. */
     bool isConnected(Guard &guard) const;
+     
+    /** Temporarily disable sampling.
+     *  @see enable()  */
+    void disable(Guard &guard, const epicsTime &when);
+     
+    /** Re-enable sampling.
+     *  @see disable() */
+    void enable(Guard &guard, const epicsTime &when);
       
     /** @return Returns true if currently disabled. */
     bool isDisabled(Guard &guard) const;
@@ -65,8 +73,7 @@ public:
      *  and its state. */
     stdString getSampleInfo(Guard &guard);
 
-    /** Stop sampling.
-     */
+    /** Stop sampling.  */
     void stop(Guard &guard);
     
     /** Write samples to index.
@@ -114,7 +121,11 @@ private:
      */
     bool canDisable() const;
     
-    bool is_disabled;
+    /** Is this channel right now disabling its 'disable_groups'? */
+    bool currently_disabling;
+    
+    /** Count for how often this channel was disabled by its 'groups' */
+    size_t disable_count;
     
     void reconfigure(EngineConfig &config, ProcessVariableContext &ctx,
                      ScanList &scan_list);
@@ -134,7 +145,7 @@ inline const stdList<class GroupInfo *>
     
 inline bool ArchiveChannel::isDisabled(Guard &guard) const
 {
-    return is_disabled;
+    return disable_count > 0;
 }
     
 inline stdString ArchiveChannel::getSampleInfo(Guard &guard)

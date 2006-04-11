@@ -17,7 +17,8 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
     : NamedBase(channel_name), 
       scan_period(scan_period),
       monitor(monitor),
-      is_disabled(false)
+      currently_disabling(false),
+      disable_count(0)
 {
     reconfigure(config, ctx, scan_list);
     LOG_ASSERT(sample_mechanism);
@@ -147,6 +148,52 @@ bool ArchiveChannel::isConnected(Guard &guard) const
                                  == ProcessVariable::CONNECTED;
 }
      
+void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
+{
+    ++disable_count;
+    if (disable_count > groups.size())
+    {
+        LOG_MSG("ERROR: Channel '%s' disabled %zu times?\n",
+                getName().c_str(), disable_count);
+        return;
+    }
+    if (disable_count == 1)
+    {
+        LOG_MSG("Channel '%s' disabled\n", getName().c_str());        
+    }
+#if 0
+    // TODO:
+    // In case we're asked to disconnect _and_ this channel
+    // doesn't need to stay connected because it disables other channels,
+    // stop CA
+    if (theEngine->disconnectOnDisable(engine_guard) && groups_to_disable.empty())
+        stop(engine_guard, guard);
+#endif
+}
+ 
+void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
+{
+    if (disable_count <= 0)
+    {
+        LOG_MSG("ERROR: Channel '%s' enabled while not disabled?\n",
+                getName().c_str());
+        return;
+    }
+    --disable_count;
+    if (disable_count == 0)
+    {
+        LOG_MSG("Channel '%s' enabled\n", getName().c_str());        
+    }
+#if 0
+    // TODO:
+    // In case we're asked to disconnect _and_ this channel
+    // doesn't need to stay connected because it disables other channels,
+    // stop CA
+    if (theEngine->disconnectOnDisable(engine_guard) && groups_to_disable.empty())
+        stop(engine_guard, guard);
+#endif
+}    
+     
 void ArchiveChannel::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
@@ -232,8 +279,6 @@ void ArchiveChannel::pvDisconnected(Guard &guard, ProcessVariable &pv,
 void ArchiveChannel::pvValue(Guard &guard, ProcessVariable &pv,
                              const RawValue::Data *data)
 {
-    LOG_MSG("ArchiveChannel '%s' got value for disable test\n",
-            getName().c_str());
     if (!canDisable())
     {
         LOG_MSG("ArchiveChannel '%s' got value for disable test "
@@ -243,18 +288,46 @@ void ArchiveChannel::pvValue(Guard &guard, ProcessVariable &pv,
     }        
     if (RawValue::isAboveZero(pv.getDbrType(guard), data))
     {
-        if (is_disabled)
+        //LOG_MSG("ArchiveChannel '%s' got disabling value\n",
+        //        getName().c_str());
+        if (currently_disabling)
             return;
         LOG_MSG("ArchiveChannel '%s' disables its groups\n",
                 getName().c_str());
-        is_disabled = true;
+        currently_disabling = true;
+        // Notify groups
+        stdList<GroupInfo *>::iterator gi;
+        epicsTime when = RawValue::getTime(data);
+        for (gi = disable_groups.begin(); gi != disable_groups.end(); ++gi)
+        {
+            GroupInfo *g = *gi;
+            GuardRelease release(guard);
+            {
+                Guard group_guard(*g);
+                g->disable(group_guard, this, when);
+            }
+        }
     }
     else
     {
-        if (! is_disabled)
+        //LOG_MSG("ArchiveChannel '%s' got enabling value\n",
+        //        getName().c_str());
+        if (! currently_disabling)
             return;
         LOG_MSG("ArchiveChannel '%s' enables its groups\n",
                 getName().c_str());
-        is_disabled = false;
+        currently_disabling = false;
+        // Notify groups
+        stdList<GroupInfo *>::iterator gi;
+        epicsTime when = RawValue::getTime(data);
+        for (gi = disable_groups.begin(); gi != disable_groups.end(); ++gi)
+        {
+            GroupInfo *g = *gi;
+            GuardRelease release(guard);
+            {
+                Guard group_guard(*g);
+                g->enable(group_guard, this, when);
+            }
+        }
     }
 }

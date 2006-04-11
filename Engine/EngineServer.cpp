@@ -232,7 +232,7 @@ static void channels(HTTPClientConnection *connection, const stdString &path,
 {
     Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Channels");
-    page.openTable(1, "Name", 1, "Status", 0);
+    page.openTable(1, "Name", 1, "Status", 1, "Enabled", 0);
     stdList<ArchiveChannel *>::const_iterator channel;
     stdString link;
     link.reserve(80);
@@ -250,6 +250,9 @@ static void channels(HTTPClientConnection *connection, const stdString &path,
                        ((*channel)->isConnected(guard) ?
                         "connected" :
                         "<FONT COLOR=#FF0000>disconnected</FONT>"),
+                       ((*channel)->isDisabled(guard) ?
+                        "<FONT COLOR=#FFFF00>disabled</FONT>" :
+                        "enabled"),
                        0);
     }
     page.closeTable();
@@ -359,7 +362,7 @@ void groups(HTTPClientConnection *connection, const stdString &path,
             
             page.tableLine(name.c_str(),
                             ((*group)->isEnabled() ?
-                             "Yes" : "<FONT COLOR=#FF0000>No</FONT>"),
+                             "Yes" : "<FONT COLOR=#FFFF00>No</FONT>"),
                             channels, connected, 0);
         }
     } 

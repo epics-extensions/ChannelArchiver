@@ -12,10 +12,14 @@
 static ThrottledMsgLogger back_in_time_throttle("Buffer Back-in-time",
                                                 60.0*60.0);
 
-SampleMechanism::SampleMechanism(const EngineConfig &config,
-                                 ProcessVariableContext &ctx,
-                                 const char *name, double period)
-    : config(config), pv(ctx, name), running(false), period(period),
+SampleMechanism::SampleMechanism(
+    const EngineConfig &config,
+    ProcessVariableContext &ctx,
+    const char *name, double period,
+    ProcessVariableListener *disable_filt_listener)
+    : config(config), pv(ctx, name),
+      disable_filter(disable_filt_listener),
+      running(false), period(period),
       last_stamp_set(false), have_sample_after_connection(false)
 {
 }
@@ -54,6 +58,7 @@ void SampleMechanism::start(Guard &guard)
     guard.check(__FILE__, __LINE__, getMutex());
     pv.start(guard);
     running = true;
+    pv.addListener(guard, &disable_filter);    
 }   
 
 bool SampleMechanism::isRunning(Guard &guard)
@@ -71,18 +76,19 @@ ProcessVariable::State SampleMechanism::getPVState(Guard &guard)
 void SampleMechanism::disable(Guard &guard, const epicsTime &when)
 {
     addEvent(guard, ARCH_DISABLED, when);
-    // TODO disable_filter.disable(guard, pv);
+    disable_filter.disable(guard);
 }
  
 void SampleMechanism::enable(Guard &guard, const epicsTime &when)
 {
-    // TODO disable_filter.enable(guard, pv, when);
+    disable_filter.enable(guard, pv, when);
 }   
     
 void SampleMechanism::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
     running = false;
+    pv.removeListener(guard, &disable_filter);    
     pv.stop(guard);
     addEvent(guard, ARCH_STOPPED, epicsTime::getCurrent());
 }

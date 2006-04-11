@@ -7,7 +7,7 @@
 SampleMechanismMonitoredGet::SampleMechanismMonitoredGet(
     EngineConfig &config, ProcessVariableContext &ctx,
     const char *name, double period)
-    : SampleMechanism(config, ctx, name, period),
+    : SampleMechanism(config, ctx, name, period, &time_slot_filter),
       time_slot_filter(period, &repeat_filter),
       repeat_filter(config, &time_filter),
       time_filter(config, this)  
@@ -33,15 +33,8 @@ stdString SampleMechanismMonitoredGet::getInfo(Guard &guard) const
     return info;
 }
 
-void SampleMechanismMonitoredGet::start(Guard &guard)
-{
-    pv.addListener(guard, &time_slot_filter);
-    SampleMechanism::start(guard);
-}   
-    
 void SampleMechanismMonitoredGet::stop(Guard &guard)
 {
-    pv.removeListener(guard, &time_slot_filter);
     repeat_filter.stop(guard, pv);
     SampleMechanism::stop(guard);
 }
@@ -53,7 +46,6 @@ void SampleMechanismMonitoredGet::pvConnected(Guard &guard,
     //        pv.getName().c_str());
     SampleMechanism::pvConnected(guard, pv, when);
     if (!pv.isSubscribed(guard))
-        pv.subscribe(guard);
-    
+        pv.subscribe(guard);    
 }
 

@@ -17,6 +17,7 @@
  *  The data flows as follows:
  *  <ol>
  *  <li>ProcessVariable (scanned at requested period)
+ *  <li>DisableFilter
  *  <li>RepeatFilter
  *  <li>TimeFilter
  *  <li>SampleMechanismGet

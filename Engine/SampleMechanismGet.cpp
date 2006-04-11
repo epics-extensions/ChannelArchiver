@@ -9,7 +9,7 @@ SampleMechanismGet::SampleMechanismGet(EngineConfig &config,
                                        ScanList &scan_list,
                                        const char *name,
                                        double period_estimate)
-    : SampleMechanism(config, ctx, name, period_estimate),
+    : SampleMechanism(config, ctx, name, period_estimate, &repeat_filter),
       scan_list(scan_list),
       repeat_filter(config, &time_filter),
       time_filter(config, this)    
@@ -37,7 +37,6 @@ stdString SampleMechanismGet::getInfo(Guard &guard) const
 
 void SampleMechanismGet::start(Guard &guard)
 {
-    pv.addListener(guard, &repeat_filter);
     SampleMechanism::start(guard);
     scan_list.add(this, period);
 }   
@@ -45,7 +44,6 @@ void SampleMechanismGet::start(Guard &guard)
 void SampleMechanismGet::stop(Guard &guard)
 {
     scan_list.remove(this);
-    pv.removeListener(guard, &repeat_filter);
     repeat_filter.stop(guard, pv);
     SampleMechanism::stop(guard);
 }

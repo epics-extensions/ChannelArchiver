@@ -16,6 +16,7 @@
  *  The data flows as follows:
  *  <ol>
  *  <li>ProcessVariable (subscribed)
+ *  <li>DisableFilter
  *  <li>TimeFilter
  *  <li>SampleMechanismMonitored
  *  <li>base SampleMechanism
@@ -32,8 +33,6 @@ public:
 
     // SampleMechanism  
     stdString getInfo(Guard &guard) const;
-    void start(Guard &guard);    
-    void stop(Guard &guard);
     
     // ProcessVariableListener
     void pvConnected(Guard &guard, ProcessVariable &pv, const epicsTime &when);

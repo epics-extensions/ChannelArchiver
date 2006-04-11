@@ -8,14 +8,23 @@
 #include "EngineConfig.h"
 #include "ProcessVariable.h"
 #include "CircularBuffer.h"
+#include "DisableFilter.h"
 
 /**\ingroup Engine
  *  Sample Mechanism base.
  *  <p>
  *  This base class for all sample mechanisms maintains the
  *  ProcessVariable start/stop.
- *  Its ProcessVariableListener implementation logs "Disconnected"
- *  on pvDisconnected() and otherwise adds every pvValue in the buffer.
+ *  <p>
+ *  Data from the PV goes to the DisableFilter, via which
+ *  the enable/disable is implemented.
+ *  Derived sample mechanisms will probably add more filters,
+ *  until finally invoking the ProcessVariableListener interface
+ *  of the base SampleMechanism.
+ *  <p>
+ *  The ProcessVariableListener implementation in the base
+ *  SampleMechanism logs "Disconnected" on pvDisconnected(),
+ *  and otherwise adds every pvValue to the CircularBuffer.
  *  <p>
  *  Uses 'virtual Named' so we can implement other
  *  'Named' interfaces in derived SampleMechanisms and still
@@ -31,10 +40,12 @@ public:
      *  @param ctx    The ProcessVariableContext to use for the pv.
      *  @param name   The pv name to connect to.
      *  @param period The sample period. Use differs with derived class.
+     *  @param disable_filt_listener The next listener after the DisableFilter.
      */
     SampleMechanism(const EngineConfig &config,
                     ProcessVariableContext &ctx, const char *name,
-                    double period);
+                    double period,
+                    ProcessVariableListener *disable_filt_listener);
     virtual ~SampleMechanism();
     
     /** Gets the ProcessVariable name.
@@ -130,6 +141,7 @@ public:
 protected:
     const EngineConfig &config;
     ProcessVariable pv;
+    DisableFilter disable_filter;
     bool running;
     double period;         // .. in seconds
     CircularBuffer buffer; // Sample storage between disk writes.

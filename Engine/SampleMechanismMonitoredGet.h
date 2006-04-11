@@ -17,6 +17,7 @@
  *  The data flows as follows:
  *  <ol>
  *  <li>ProcessVariable (monitored)
+ *  <li>DisableFilter
  *  <li>TimeSlotFilter (for requested period)
  *  <li>RepeatFilter
  *  <li>TimeFilter
@@ -36,7 +37,6 @@ public:
 
     // SampleMechanism  
     stdString getInfo(Guard &guard) const;
-    void start(Guard &guard);    
     void stop(Guard &guard);
     
     // ProcessVariableListener

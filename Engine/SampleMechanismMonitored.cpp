@@ -7,7 +7,7 @@
 SampleMechanismMonitored::SampleMechanismMonitored(
     EngineConfig &config, ProcessVariableContext &ctx,
     const char *name, double period_estimate)
-    : SampleMechanism(config, ctx, name, period_estimate),
+    : SampleMechanism(config, ctx, name, period_estimate, &time_filter),
       time_filter(config, this)
 {
 }
@@ -29,19 +29,6 @@ stdString SampleMechanismMonitored::getInfo(Guard &guard) const
     info += ", CA ";
     info += pv.getCAStateStr(guard);
     return info;
-}
-
-
-void SampleMechanismMonitored::start(Guard &guard)
-{
-    pv.addListener(guard, &time_filter);
-    SampleMechanism::start(guard);
-}   
-    
-void SampleMechanismMonitored::stop(Guard &guard)
-{
-    pv.removeListener(guard, &time_filter);
-    SampleMechanism::stop(guard);
 }
 
 void SampleMechanismMonitored::pvConnected(Guard &guard, ProcessVariable &pv,

@@ -16,7 +16,8 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
                                double scan_period, bool monitor)
     : NamedBase(channel_name), 
       scan_period(scan_period),
-      monitor(monitor)
+      monitor(monitor),
+      is_disabled(false)
 {
     reconfigure(config, ctx, scan_list);
     LOG_ASSERT(sample_mechanism);
@@ -33,7 +34,7 @@ ArchiveChannel::~ArchiveChannel()
         {
             Guard guard(*this);
             sample_mechanism->removeStateListener(guard, this);
-            if (!disable_groups.empty())  
+            if (canDisable())  
                 sample_mechanism->removeValueListener(guard, this);   
         }
         catch (...)
@@ -79,7 +80,7 @@ void ArchiveChannel::reconfigure(EngineConfig &config,
         if (was_running)
             sample_mechanism->stop(guard);
         sample_mechanism->removeStateListener(guard, this);
-        if (!disable_groups.empty())  
+        if (canDisable())  
             sample_mechanism->removeValueListener(guard, this);
     }
     else
@@ -99,7 +100,7 @@ void ArchiveChannel::reconfigure(EngineConfig &config,
                                                            scan_period);
     Guard guard(*sample_mechanism);
     sample_mechanism->addStateListener(guard, this);
-    if (!disable_groups.empty())  
+    if (canDisable())  
         sample_mechanism->addValueListener(guard, this);
     // Possibly, start again
     if (was_running)
@@ -114,9 +115,9 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
     if (disabling)
     {
         // Is this the first time we become 'disabling',
-        // i.e. list is so far empty?
+        // i.e. not diabling, yet?
         // --> monitor values!
-        if (disable_groups.empty())
+        if (! canDisable())
             sample_mechanism->addValueListener(channel_guard, this);            
         // Remove & add as quick hack to add only once.
         disable_groups.remove(group);
@@ -233,5 +234,27 @@ void ArchiveChannel::pvValue(Guard &guard, ProcessVariable &pv,
 {
     LOG_MSG("ArchiveChannel '%s' got value for disable test\n",
             getName().c_str());
-    
+    if (!canDisable())
+    {
+        LOG_MSG("ArchiveChannel '%s' got value for disable test "
+                "but not configured to disable\n",
+                getName().c_str());
+        return;
+    }        
+    if (RawValue::isAboveZero(pv.getDbrType(guard), data))
+    {
+        if (is_disabled)
+            return;
+        LOG_MSG("ArchiveChannel '%s' disables its groups\n",
+                getName().c_str());
+        is_disabled = true;
+    }
+    else
+    {
+        if (! is_disabled)
+            return;
+        LOG_MSG("ArchiveChannel '%s' enables its groups\n",
+                getName().c_str());
+        is_disabled = false;
+    }
 }

@@ -108,6 +108,14 @@ private:
     
     stdList<ArchiveChannelStateListener *> state_listeners;
     
+    /** @return Returns true if channel can disable any groups.
+     *  That does not imply that it currently <b>does</b> disable
+     *  anything.
+     */
+    bool canDisable() const;
+    
+    bool is_disabled;
+    
     void reconfigure(EngineConfig &config, ProcessVariableContext &ctx,
                      ScanList &scan_list);
 };
@@ -126,12 +134,17 @@ inline const stdList<class GroupInfo *>
     
 inline bool ArchiveChannel::isDisabled(Guard &guard) const
 {
-    return false;
+    return is_disabled;
 }
     
 inline stdString ArchiveChannel::getSampleInfo(Guard &guard)
 {
     return sample_mechanism->getInfo(guard);
+}
+
+inline bool ArchiveChannel::canDisable() const
+{
+    return !disable_groups.empty();
 }
 
 #endif /*ARCHIVECHANNEL_H_*/

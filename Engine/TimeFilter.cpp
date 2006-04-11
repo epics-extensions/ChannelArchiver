@@ -21,18 +21,6 @@ TimeFilter::~TimeFilter()
 {
 }
 
-void TimeFilter::pvConnected(Guard &guard, ProcessVariable &pv,
-                             const epicsTime &when)
-{
-    listener->pvConnected(guard, pv, when);
-}
-
-void TimeFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
-                                const epicsTime &when)
-{
-    listener->pvDisconnected(guard, pv, when);
-}
-
 void TimeFilter::pvValue(Guard &guard, ProcessVariable &pv,
                          const RawValue::Data *data)
 {
@@ -58,5 +46,5 @@ void TimeFilter::pvValue(Guard &guard, ProcessVariable &pv,
     }    
     // OK, remember this time stamp and pass value to listener.
     last_stamp = stamp;
-    listener->pvValue(guard, pv, data);
+    ProcessVariableFilter::pvValue(guard, pv, data);
 }

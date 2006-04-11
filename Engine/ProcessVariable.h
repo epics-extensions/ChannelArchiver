@@ -49,6 +49,9 @@ public:
     /** @return Returns the current state. */
     State getState(Guard &guard) const;
 
+    /** @return Returns true if the current state is CONNECTED. */
+    bool isConnected(Guard &guard) const;
+
     /** @return Returns the current state. */
     const char *getStateStr(Guard &guard) const;
     
@@ -138,6 +141,10 @@ private:
     bool setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx);
 };
 
+inline bool ProcessVariable::isConnected(Guard &guard) const
+{
+    return getState(guard) == CONNECTED;
+}
 
 inline DbrType ProcessVariable::getDbrType(Guard &guard) const
 {

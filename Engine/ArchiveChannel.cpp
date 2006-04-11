@@ -159,7 +159,8 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
     }
     if (disable_count == 1)
     {
-        LOG_MSG("Channel '%s' disabled\n", getName().c_str());        
+        LOG_MSG("Channel '%s' disabled\n", getName().c_str());  
+        sample_mechanism->disable(guard, when);
     }
 #if 0
     // TODO:
@@ -183,6 +184,7 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
     if (disable_count == 0)
     {
         LOG_MSG("Channel '%s' enabled\n", getName().c_str());        
+        sample_mechanism->enable(guard, when);
     }
 #if 0
     // TODO:

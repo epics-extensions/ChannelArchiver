@@ -3,6 +3,7 @@
 TESTPROD_HOST += UnitTest
 
 UnitTest_SRCS += CircularBufferTest.cpp
+UnitTest_SRCS += DisableFilterTest.cpp
 UnitTest_SRCS += EngineConfigTest.cpp
 UnitTest_SRCS += HTTPServerTest.cpp
 UnitTest_SRCS += ProcessVariableTest.cpp

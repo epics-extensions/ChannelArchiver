@@ -17,15 +17,12 @@
 class TimeFilter : public ProcessVariableFilter
 {
 public:
+    /** Construct filter, using config to determine what's too futuristic. */
     TimeFilter(const EngineConfig &config, ProcessVariableListener *listener);
                  
     virtual ~TimeFilter();
                 
     // ProcessVariableListener
-    void pvConnected(Guard &guard, ProcessVariable &pv,
-                     const epicsTime &when);
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                        const epicsTime &when);
     void pvValue(Guard &guard, ProcessVariable &pv,
                  const RawValue::Data *data);
     

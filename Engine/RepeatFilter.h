@@ -11,6 +11,7 @@
 class RepeatFilter : public ProcessVariableFilter
 {
 public:
+    /** Create new filter, using config for max. repeat count. */
     RepeatFilter(const EngineConfig &config,
                  ProcessVariableListener *listener);
                  

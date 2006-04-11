@@ -10,6 +10,8 @@
 
 // Unit CircularBufferTest:
 extern TEST_CASE test_circular_buffer();
+// Unit DisableFilterTest:
+extern TEST_CASE test_disable_filter();
 // Unit EngineConfigTest:
 extern TEST_CASE engine_config();
 // Unit HTTPServerTest:
@@ -57,6 +59,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\ntest_circular_buffer:\n");
             if (test_circular_buffer())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "DisableFilterTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit DisableFilterTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_disable_filter")==0)
+       {
+            ++run;
+            printf("\ntest_disable_filter:\n");
+            if (test_disable_filter())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

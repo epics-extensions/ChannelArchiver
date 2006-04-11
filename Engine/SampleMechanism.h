@@ -75,6 +75,14 @@ public:
     void removeValueListener(Guard &guard,
                              ProcessVariableValueListener *listener);
     
+    /** Temporarily disable sampling.
+     *  @see enable()  */
+    void disable(Guard &guard, const epicsTime &when);
+     
+    /** Re-enable sampling.
+     *  @see disable() */
+    void enable(Guard &guard, const epicsTime &when);
+    
     /** Stop sampling.
      *  @see #start()
      *  <p>

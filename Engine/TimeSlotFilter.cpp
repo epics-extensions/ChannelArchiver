@@ -15,18 +15,6 @@ TimeSlotFilter::~TimeSlotFilter()
 {
 }
 
-void TimeSlotFilter::pvConnected(Guard &guard, ProcessVariable &pv,
-                                 const epicsTime &when)
-{
-    listener->pvConnected(guard, pv, when);
-}
-
-void TimeSlotFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
-                                    const epicsTime &when)
-{
-    listener->pvDisconnected(guard, pv, when);
-}
-
 void TimeSlotFilter::pvValue(Guard &guard, ProcessVariable &pv,
                              const RawValue::Data *data)
 {
@@ -44,7 +32,7 @@ void TimeSlotFilter::pvValue(Guard &guard, ProcessVariable &pv,
         return;
     // OK, determine next slot and pass value to listener.
     next_slot = roundTimeUp(stamp, period);
-    listener->pvValue(guard, pv, data);
+    ProcessVariableFilter::pvValue(guard, pv, data);
 #   ifdef DEBUG_SLOT_FILT
     stdString txt;
     LOG_MSG("TimeSlotFilter: next slot %s\n", epicsTimeTxt(next_slot, txt));

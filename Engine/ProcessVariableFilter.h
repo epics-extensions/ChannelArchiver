@@ -43,7 +43,7 @@ public:
     virtual void pvValue(Guard &guard, ProcessVariable &pv,
                          const RawValue::Data *data);
     
-protected:
+private:
     ProcessVariableListener *listener;
 };
 

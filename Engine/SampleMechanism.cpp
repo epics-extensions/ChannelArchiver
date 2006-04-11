@@ -68,6 +68,17 @@ ProcessVariable::State SampleMechanism::getPVState(Guard &guard)
     return pv.getState(guard);
 }
     
+void SampleMechanism::disable(Guard &guard, const epicsTime &when)
+{
+    addEvent(guard, ARCH_DISABLED, when);
+    // TODO disable_filter.disable(guard, pv);
+}
+ 
+void SampleMechanism::enable(Guard &guard, const epicsTime &when)
+{
+    // TODO disable_filter.enable(guard, pv, when);
+}   
+    
 void SampleMechanism::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());

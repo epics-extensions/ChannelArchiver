@@ -29,7 +29,7 @@ void RepeatFilter::pvConnected(Guard &guard, ProcessVariable &pv,
     previous_value = RawValue::allocate(pv.getDbrType(guard),
                                         pv.getDbrCount(guard), 1);
     is_previous_value_valid = false;
-    listener->pvConnected(guard, pv, when);
+    ProcessVariableFilter::pvConnected(guard, pv, when);
 }
 
 void RepeatFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
@@ -39,7 +39,7 @@ void RepeatFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
     // log and clear any accumulated repeats.
     flush(guard, pv, when);
     is_previous_value_valid = false;
-    listener->pvDisconnected(guard, pv, when);
+    ProcessVariableFilter::pvDisconnected(guard, pv, when);
 }
 
 void RepeatFilter::pvValue(Guard &guard, ProcessVariable &pv,
@@ -74,7 +74,7 @@ void RepeatFilter::pvValue(Guard &guard, ProcessVariable &pv,
     is_previous_value_valid = true;
     repeat_count = 0;
     // and pass on to listener.
-    listener->pvValue(guard, pv, data);
+    ProcessVariableFilter::pvValue(guard, pv, data);
 }
 
 // In case we have a repeat value, send to listener and reset.
@@ -94,7 +94,7 @@ void RepeatFilter::flush(Guard &guard, ProcessVariable &pv,
         RawValue::setTime(previous_value, when);
     // Add 'repeat' sample.
     RawValue::setStatus(previous_value, repeat_count, ARCH_REPEAT);
-    listener->pvValue(guard, pv, previous_value);
+    ProcessVariableFilter::pvValue(guard, pv, previous_value);
     repeat_count = 0;
 }
 

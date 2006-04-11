@@ -26,6 +26,15 @@
       </channel>
    </group>
    <group>
+      <name>Test3</name>
+      <channel><name>janet</name>
+               <period>0.1</period><monitor/>
+      </channel>
+      <channel><name>fred</name>
+               <period>5</period><scan/>
+      </channel>
+   </group>
+   <group>
       <name>Bad</name>
       <channel><name>not_there</name>
                <period>1</period><monitor/>

@@ -145,7 +145,10 @@ inline const stdList<class GroupInfo *>
     
 inline bool ArchiveChannel::isDisabled(Guard &guard) const
 {
-    return disable_count > 0;
+    // Disabled when disabled by all its groups.
+    // As long as one group didn't disable the channel,
+    // it has to stay enabled.
+    return disable_count == groups.size();
 }
     
 inline stdString ArchiveChannel::getSampleInfo(Guard &guard)

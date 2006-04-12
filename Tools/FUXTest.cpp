@@ -26,18 +26,18 @@ TEST_CASE test_fux()
     fux.dump(stdout);
     TEST(xml_doc->find("write_period") != 0);
     TEST(xml_doc->find("group") != 0);
-    TEST(xml_doc->find("group")->name == "group");
-    TEST(xml_doc->find("group")->value.empty());
+    TEST(xml_doc->find("group")->getName() == "group");
+    TEST(xml_doc->find("group")->getValue().empty());
     TEST(xml_doc->find("channel") == 0);
 
     FUX::Element *group = xml_doc->find("group");
-    TEST(group->parent == xml_doc);
+    TEST(group->getParent() == xml_doc);
     TEST(group->find("name") != 0);
-    TEST(group->find("name")->value == "Vac");
+    TEST(group->find("name")->getValue() == "Vac");
     TEST(group->find("channel") != 0);
     TEST(group->find("channel")->find("name") != 0);
-    TEST(group->find("channel")->find("name")->value == "vac1");
-    TEST(group->find("channel")->find("period")->value == "1");
+    TEST(group->find("channel")->find("name")->getValue() == "vac1");
+    TEST(group->find("channel")->find("period")->getValue() == "1");
     TEST(group->find("quark") == 0);
 
     try

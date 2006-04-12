@@ -115,6 +115,9 @@ public:
     /** Read the given config file. */
     void read_config(Guard &guard, const stdString &file_name);
     
+    /** Write a new config file. */
+    void write_config(Guard &guard);
+
     /** EngineConfigListener */
     void addChannel(const stdString &group_name,
                     const stdString &channel_name,
@@ -146,6 +149,8 @@ public:
     void acDisconnected(Guard &guard,ArchiveChannel &pv,const epicsTime &when);
 private:
     epicsMutex                mutex;
+    bool                      is_running;
+    epicsTime                 start_time;
     stdString                 index_name;
     stdString                 description;
     EngineConfigParser        config;
@@ -153,12 +158,11 @@ private:
     ProcessVariableContext    pv_context;
     stdList<GroupInfo *>      groups;   // scan-groups of channels
 	stdList<ArchiveChannel *> channels; // all the channels
-    size_t                    num_connected;
-    double                    write_duration;
-    size_t                    write_count;
-    double                    process_delay_avg;
-    epicsTime                 start_time;
-    epicsTime                 next_write_time;
+    size_t                    num_connected; // Updated by ArchiveChannelStateListener
+    double                    write_duration; // Updated by process()
+    size_t                    write_count;    // process()
+    double                    process_delay_avg;// process()
+    epicsTime                 next_write_time;// process()
 };
 
 #endif /*ENGINE_H_*/

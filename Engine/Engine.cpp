@@ -12,7 +12,8 @@
 #include "Engine.h"
 
 Engine::Engine(const stdString &index_name)
-    : index_name(index_name),
+    : is_running(false),
+      index_name(index_name),
       description("Archive Engine"),
       num_connected(0),
       write_duration(0.0),
@@ -76,6 +77,15 @@ void Engine::read_config(Guard &guard, const stdString &file_name)
     DataWriter::file_size_limit = (FileOffset) config.getFileSizeLimit();
 }
 
+void Engine::write_config(Guard &guard)
+{
+    // TODO: config.write("onlineconfig.xml");
+    FUX fux;
+    FUX::Element *e, *doc = new FUX::Element(0, "engineconfig");
+    fux.setDoc(doc);
+    config.addToFUX(doc);
+}
+
 void Engine::addChannel(const stdString &group_name,
                         const stdString &channel_name,
                         double scan_period,
@@ -112,18 +122,22 @@ void Engine::addChannel(const stdString &group_name,
         group->addChannel(group_guard, channel);
         {   // Lock order: engine, group, channel
             Guard channel_guard(*channel);
-            if (new_channel) // Listen to connect/disconnect
-                channel->addStateListener(channel_guard, this);
             channel->addToGroup(group_guard, group, channel_guard, disabling);
+            if (new_channel)
+            {   // Listen to connect/disconnect
+                channel->addStateListener(channel_guard, this);
+                // Start channel that's added online
+                if (is_running)
+                    channel->start(channel_guard);
+            }
         }
     }
-    
-    // TODO: start channel that's added online
 }
 
 void Engine::start(Guard &engine_guard)
 {
     engine_guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(is_running == false);
     start_time = epicsTime::getCurrent();
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
@@ -133,11 +147,13 @@ void Engine::start(Guard &engine_guard)
         c->start(guard);
         ++channel;
     }
+    is_running = true;
 }
       
 void Engine::stop(Guard &engine_guard)
 {
     engine_guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(is_running == true);
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
     {
@@ -146,6 +162,7 @@ void Engine::stop(Guard &engine_guard)
         c->stop(guard);
         ++channel;
     }
+    is_running = false;
 }
 
 bool Engine::process()

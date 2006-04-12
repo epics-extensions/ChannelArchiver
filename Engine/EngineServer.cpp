@@ -461,14 +461,13 @@ static void addChannel(HTTPClientConnection *connection,
             disabling = true;
         page.out("Channel <I>");
         page.out(channel_name);
-        Guard engine_guard(*engine);
-        engine->attachToProcessVariableContext(engine_guard);
-        engine->addChannel(group_name, channel_name, period,
-                           disabling, monitored);
-#if 0
-            EngineConfig config;
-            config.write(engine_guard, engine);
-#endif
+        {
+            Guard engine_guard(*engine);
+            engine->attachToProcessVariableContext(engine_guard);
+            engine->addChannel(group_name, channel_name, period,
+                               disabling, monitored);
+            engine->write_config(engine_guard);
+        }
         page.line("</I> was added to group <I>");
         page.out(group_name);
         page.line("</I>.");

@@ -1,4 +1,5 @@
 // System
+#include <stdarg.h>
 #include <unistd.h>
 
 // Tools
@@ -31,9 +32,27 @@ XERCES_CPP_NAMESPACE_USE
 //       the parser is in a <!DOCTYPE> tag at that point.
 //       Could also be <!ENTITY ...>.
 
+
 FUX::Element::Element(FUX::Element *parent, const stdString &name)
         : parent(parent), name(name)
 {}
+
+FUX::Element::Element(FUX::Element *parent, const stdString &name,
+                      const stdString &value)
+        : parent(parent), name(name), value(value)
+{}
+
+FUX::Element::Element(Element *parent, const char *name,
+                      const char *format, ...)
+        : parent(parent), name(name)
+{
+    char buf[200];
+    va_list ap;
+    va_start(ap, format);
+    vsnprintf(buf, sizeof(buf), format, ap);
+    va_end(ap);
+    value = buf;    
+}
 
 FUX::Element::~Element()
 {    
@@ -79,7 +98,7 @@ void FUX::start_tag(void *data, const char *el, const char **attr)
         else
         {
             me->current = new Element(me->current, el);
-            me->current->parent->add(me->current);
+            me->current->getParent()->add(me->current);
         }
         me->inside_tag = true;
     }
@@ -94,7 +113,7 @@ void FUX::text_handler(void *data, const char *s, int len)
 {
     FUX *me = (FUX *)data;
     if (me->inside_tag)
-        me->current->value.append(s, len);
+        me->current->append(s, len);
 }
 
 void FUX::end_tag(void *data, const char *el)
@@ -102,11 +121,11 @@ void FUX::end_tag(void *data, const char *el)
     FUX *me = (FUX *)data;
     if (!me->current)
         throw GenericException(__FILE__, __LINE__, "FUX: malformed '%s'", el);
-    me->current = me->current->parent;
+    me->current = me->current->getParent();
     me->inside_tag = false;
 }
 
-inline void indent(FILE *f, int depth)
+void FUX::indent(FILE *f, int depth)
 {
     for (int i=0; i<depth; ++i)
         fprintf(f, "\t");
@@ -117,7 +136,7 @@ void FUX::dump(FILE *f)
     fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     if (root && DTD.length() > 0)
         fprintf(f, "<!DOCTYPE %s SYSTEM \"%s\">\n",
-                root->name.c_str(), DTD.c_str());
+                root->getName().c_str(), DTD.c_str());
     dump_element(f, root, 0);
 }
 
@@ -138,26 +157,26 @@ void FUX::dump_element(FILE *f, Element *e, int depth)
     if (!e)
         return;
     indent(f, depth);
-    if (all_white_text(e->value))
+    if (all_white_text(e->getValue()))
     {
-        if (e->children.empty())
+        if (e->getChildren().empty())
         {
-            fprintf(f, "<%s/>\n", e->name.c_str());
+            fprintf(f, "<%s/>\n", e->getName().c_str());
             return;
         }
-        fprintf(f, "<%s>", e->name.c_str());
+        fprintf(f, "<%s>", e->getName().c_str());
     }
     else
-        fprintf(f, "<%s>%s", e->name.c_str(), e->value.c_str());
-    if (!e->children.empty())
+        fprintf(f, "<%s>%s", e->getName().c_str(), e->getValue().c_str());
+    if (!e->getChildren().empty())
     {
         fprintf(f, "\n");
         stdList<Element *>::const_iterator c;
-        for (c=e->children.begin(); c!=e->children.end(); ++c)
+        for (c=e->getChildren().begin(); c!=e->getChildren().end(); ++c)
             dump_element(f, *c, depth+1);
         indent(f, depth);
     }
-    fprintf(f, "</%s>\n", e->name.c_str());    
+    fprintf(f, "</%s>\n", e->getName().c_str());    
 }
 
 #ifdef FUX_XERCES

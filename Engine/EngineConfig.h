@@ -54,8 +54,12 @@ public:
     /** @return Returns the file size limit (Bytes). */
     size_t getFileSizeLimit() const     { return file_size_limit; }
     
-    /** @retrn Returns true if engine disconnects disabled channels. */
-    bool getDisconnectOnDisable() const { return disconnect_on_disable; }    
+    /** @return Returns true if engine disconnects disabled channels. */
+    bool getDisconnectOnDisable() const { return disconnect_on_disable; }
+    
+    /** Append this config to a FUX document. */ 
+    void addToFUX(class FUX::Element *doc);
+    
 protected:
     double write_period;
     size_t buffer_reserve;

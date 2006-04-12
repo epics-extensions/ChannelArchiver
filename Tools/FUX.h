@@ -13,81 +13,118 @@
 // Also check ChannelArchiver/make.cfg for the required link commands
 #define FUX_XERCES
 
-/// \ingroup Tools
-
-/// FUX: the f.u. XML helper class.
-///
-/// "f.u." could stand for
-/// <UL>
-/// <li> fast and lightweight
-/// <li> friendly and utilitarian
-/// <li> frightingly useless
-/// </UL>
-/// or whatever you want.
-///
-/// In any case, FUX implements XML read
-/// and write support.
-/// The 'read' part is based on XML libraries,
-/// there's a choice of using
-/// <UL>
-/// <li> Xerces C++, see http://xml.apache.org/index.html
-/// <li> Expat, see http://www.libexpat.org.
-/// </UL>
-/// Since Xerces handles validation and Expat doesn't,
-/// the former should be preferred.
-/// You pick which one you want to use in the FUX.h header file.
+/** \ingroup Tools
+ * FUX, the f.u. XML helper class.
+ *
+ * "f.u." could stand for
+ * <UL>
+ * <li> fast and lightweight
+ * <li> friendly and utilitarian
+ * <li> frightingly useless
+ * </UL>
+ * or whatever you want.
+ *
+ * In any case, FUX implements XML read
+ * and write support.
+ * The 'read' part is based on XML libraries,
+ * there's a choice of using
+ * <UL>
+ * <li> Xerces C++, see http://xml.apache.org/index.html
+ * <li> Expat, see http://www.libexpat.org.
+ * </UL>
+ * Since Xerces handles validation and Expat doesn't,
+ * the former should be preferred.
+ * You pick which one you want to use in the FUX.h header file.
+ */
 class FUX
 {
 public:
-    /// Constructor.
+    /** Constructor. */
     FUX();
-    /// Destructor.
+    /** Destructor. */
     ~FUX();
 
-    /// One element in the FUX tree.
+    /** One element in the FUX tree. */
     class Element
     {
     public:
-        Element(Element *parent, const stdString &name); ///< Constructor
-        ~Element();      ///< Destructor
+        /** Create new, empty element. */
+        Element(Element *parent, const stdString &name);
+
+        /** Create new element with value. */
+        Element(Element *parent, const stdString &name, const stdString &value);
+        
+        /** Create Element, using printf-style format and args for value. */
+        Element(Element *parent, const char *name, const char *format, ...)
+                __attribute__ ((format (printf, 4, 5)));
+        
+        /** Destructor. */   
+        ~Element();
+
+        /** @return Returns the element name. */
+        const stdString &getName() const
+        {   return name; }
+
+        /** @return Returns the element value. */
+        const stdString &getValue() const
+        {   return value; }
+
+        /** @return Returns the parent element (may be 0). */
+        Element *getParent()
+        {   return parent; }
+        
+        /** @return Returns the list of child elements. */
+        stdList<Element *> &getChildren()
+        {   return children; }
+        
+        /** Append text to value. */
+        void append(const char *text, size_t len)
+        {   value.append(text, len); }
+        
+        /** Add a child to this Element. */
+        void add(Element *child)
+        {   children.push_back(child); }
+
+        /** @return Returns the first child of given name or 0. */
+        Element *find(const char *name);
+        
+    private:
         Element *parent; ///< Parent element or 0.
         stdString name;  ///< Name of this element.
         stdString value; ///< Value of this element.
 
-        /// Add a child to this Element.
-        void add(Element *child)
-        {   children.push_back(child); }
-
-        /// Returns the first child of given name or 0.
-        Element *find(const char *name);
-        
-        /// List of children.
+        /** List of children. */
         stdList<Element *> children;
     };
 
     stdString DTD; ///< The DTD. Set for dump().
 
-    /// Parse the given XML file into the FUX tree.
-    ///
-    /// Returns root of the FUX document.
-    /// @exception GenericException in case of errors.
+    /** Parse the given XML file into the FUX tree.
+     *
+     *  Returns root of the FUX document.
+     *  @exception GenericException in case of errors.
+     */
     Element *parse(const char *file_name);
 
-    /// Clear/delete the current document
+    /** Clear/delete the current document. */
     void clear()
     {
         setDoc(0);
     }
 
-    /// Set the document.
+    /** Set the document. */
     void setDoc(Element *doc);
     
-    /// Dumps the FUX document.
+    /** Add indentation to the file. */
+    static void indent(FILE *f, int depth);
 
-    /// Elements with values that are pure white space are
-    /// printed as empty elements. Tabs are used to indent
-    /// the elements according to their hierarchical location
-    /// in the document.
+    /** Dumps the FUX document.
+     *
+     *  Elements with values that are pure white space are
+     *  printed as empty elements. Tabs are used to indent
+     *  the elements according to their hierarchical location
+     *  in the document.
+     */
     void dump(FILE *f);
 private:
 #ifdef FUX_XERCES

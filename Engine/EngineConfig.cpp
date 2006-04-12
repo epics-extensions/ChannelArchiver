@@ -8,6 +8,21 @@
 // Engine
 #include "EngineConfig.h"
 
+
+void EngineConfig::addToFUX(FUX::Element *doc)
+{
+    doc->add(new FUX::Element(doc, "write_period", "%g", getWritePeriod()));    
+    doc->add(new FUX::Element(doc, "get_threshold", "%g", getGetThreshold()));
+    doc->add(new FUX::Element(doc, "file_size", "%zu", getFileSizeLimit()));
+    doc->add(new FUX::Element(doc, "ignored_future", "%g",
+            getIgnoredFutureSecs()/60.0/60.0));
+    doc->add(new FUX::Element(doc, "buffer_reserve", "%d", getBufferReserve()));
+    doc->add(new FUX::Element(doc, "max_repeat_count", "%zu",
+             getMaxRepeatCount()));
+    if (getDisconnectOnDisable())
+        doc->add(new FUX::Element(doc, "disconnect"));
+}
+
 EngineConfigParser::EngineConfigParser()
     : listener(0)
 {
@@ -29,65 +44,65 @@ void EngineConfigParser::read(const char *filename,
     // The asserts are only the ultimate way out.
     FUX fux;
     FUX::Element *e, *doc = fux.parse(filename);
-    if (!(doc && doc->name == "engineconfig"))
+    if (!(doc && doc->getName() == "engineconfig"))
         throw GenericException(__FILE__, __LINE__,
                                "Cannot parse '%s'\n", filename);
     stdList<FUX::Element *>::const_iterator els;
     double d;
-    for (els=doc->children.begin(); els!=doc->children.end(); ++els)
+    for (els=doc->getChildren().begin(); els!=doc->getChildren().end(); ++els)
     {
         e = *els;
-        if (e->name == "write_period")
+        if (e->getName() == "write_period")
         {
-            if (!parse_double(e->value, d))
+            if (!parse_double(e->getValue(), d))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in write_period\n",
                                        filename);
             setWritePeriod(d < 0 ? 1.0 : d);
         }
-        else if (e->name == "get_threshold")
+        else if (e->getName() == "get_threshold")
         {
-            if (!parse_double(e->value, d))
+            if (!parse_double(e->getValue(), d))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in get_threshold\n",
                                        filename);
             setGetThreshold(d);
         }
-        else if (e->name == "file_size")
+        else if (e->getName() == "file_size")
         {
-            if (!parse_double(e->value, d))
+            if (!parse_double(e->getValue(), d))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in file_size\n",
                                        filename);
             setFileSizeLimit((size_t)(d*1024*1024));
         }
-        else if (e->name == "ignored_future")
+        else if (e->getName() == "ignored_future")
         {
-            if (!parse_double(e->value, d))
+            if (!parse_double(e->getValue(), d))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in ignored_future\n",
                                        filename);
             setIgnoredFutureSecs(d*60*60);
         }
-        else if (e->name == "buffer_reserve")
+        else if (e->getName() == "buffer_reserve")
         {
-            if (!parse_double(e->value, d))
+            if (!parse_double(e->getValue(), d))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in buffer_reserve\n",
                                        filename);
             setBufferReserve((size_t)d);
         }
-        else if (e->name == "max_repeat_count")
+        else if (e->getName() == "max_repeat_count")
         {
-            if (!parse_double(e->value, d))
+            if (!parse_double(e->getValue(), d))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in max_repeat_count\n",
                                        filename);
             setMaxRepeatCount((size_t) d);
         }
-        else if (e->name == "disconnect")
+        else if (e->getName() == "disconnect")
             setDisconnectOnDisable(true);
-        else if (e->name == "group")
+        else if (e->getName() == "group")
             handle_group(e);
     }
 }
@@ -95,13 +110,13 @@ void EngineConfigParser::read(const char *filename,
 void EngineConfigParser::handle_group(FUX::Element *group)
 {
     stdList<FUX::Element *>::const_iterator els;
-    els=group->children.begin();
-    LOG_ASSERT((*els)->name == "name");
-    const stdString &group_name = (*els)->value;
+    els=group->getChildren().begin();
+    LOG_ASSERT((*els)->getName() == "name");
+    const stdString &group_name = (*els)->getValue();
     ++els;
-    while (els!=group->children.end())
+    while (els!=group->getChildren().end())
     {
-        LOG_ASSERT((*els)->name == "channel");
+        LOG_ASSERT((*els)->getName() == "channel");
         handle_channel(group_name, (*els));
         ++els;
     }
@@ -111,23 +126,23 @@ void EngineConfigParser::handle_channel(const stdString &group_name,
                                         FUX::Element *channel)
 {
     stdList<FUX::Element *>::const_iterator els;
-    els = channel->children.begin();
-    LOG_ASSERT((*els)->name == "name");
-    const stdString &channel_name = (*els)->value;
+    els = channel->getChildren().begin();
+    LOG_ASSERT((*els)->getName() == "name");
+    const stdString &channel_name = (*els)->getValue();
     ++els;
-    LOG_ASSERT((*els)->name == "period");
+    LOG_ASSERT((*els)->getName() == "period");
     double period;
-    if (!parse_double((*els)->value, period))
+    if (!parse_double((*els)->getValue(), period))
         throw GenericException(__FILE__, __LINE__,
                                "Group '%s': Error in period for channel '%s'\n",
                                group_name.c_str(), channel_name.c_str());
     ++els;
-    bool monitor = (*els)->name == "monitor";
+    bool monitor = (*els)->getName() == "monitor";
     bool disabling = false;
     ++els;
-    while (els != channel->children.end())
+    while (els != channel->getChildren().end())
     {
-        if ((*els)->name == "disable")
+        if ((*els)->getName() == "disable")
             disabling = true;
         ++els;
     }
@@ -144,8 +159,7 @@ static bool add_channel(Guard &engine_guard, FUX::Element *group,
     char buf[100];
     FUX::Element *channel = new FUX::Element(group, "channel");
     group->add(channel);
-    FUX::Element *e = new FUX::Element(channel, "name");
-    e->value = c->getName();
+    FUX::Element *e = new FUX::Element(channel, "name", c->getName());
     channel->add(e);
     Guard guard(c->mutex);
     e = new FUX::Element(channel, "period");
@@ -182,43 +196,10 @@ bool EngineConfig::write(Guard &engine_guard, class Engine *engine)
 {
     char buf[100];
     FUX fux;
-    FUX::Element *e, *doc = new FUX::Element(0, "engineconfig");
-
+    FUX::Element *doc = new FUX::Element(0, "engineconfig");
     fux.setDoc(doc);
 
-    e = new FUX::Element(doc, "write_period");
-    sprintf(buf, "%g", engine->getWritePeriod());
-    e->value = buf;
-    doc->add(e);
-    
-    e = new FUX::Element(doc, "get_threshold");
-    sprintf(buf, "%g", engine->getGetThreshold());
-    e->value = buf;
-    doc->add(e);
 
-    e = new FUX::Element(doc, "file_size");
-    sprintf(buf, "%lu",
-            (unsigned long)DataWriter::file_size_limit/1024/1024);
-    e->value = buf;
-    doc->add(e);
-
-    e = new FUX::Element(doc, "ignored_future");
-    sprintf(buf, "%g", engine->getIgnoredFutureSecs()/60.0/60.0);
-    e->value = buf;
-    doc->add(e);
-
-    e = new FUX::Element(doc, "buffer_reserve");
-    sprintf(buf, "%d", engine->getBufferReserve());
-    e->value = buf;
-    doc->add(e);
-
-    e = new FUX::Element(doc, "max_repeat_count");
-    sprintf(buf, "%lu", (unsigned long)SampleMechanismGet::max_repeat_count);
-    e->value = buf;
-    doc->add(e);
-
-    if (engine->disconnectOnDisable(engine_guard))
-        doc->add(new FUX::Element(doc, "disconnect"));
 
     const stdList<GroupInfo *> &groups = engine->getGroups(engine_guard);
     stdList<GroupInfo *>::const_iterator gi;

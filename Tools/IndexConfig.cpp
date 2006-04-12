@@ -23,14 +23,14 @@ bool IndexConfig::parse(const stdString &config_name)
     // It is an XML file, so see if it's an indexconfig
     FUX fux;
     FUX::Element *e, *doc = fux.parse(config_name.c_str());
-    if (!(doc && doc->name == "indexconfig"))
+    if (!(doc && doc->getName() == "indexconfig"))
         throw GenericException(__FILE__, __LINE__,
                                "File '%s' is no XML indexconfig",
                                config_name.c_str());
     stdList<FUX::Element *>::const_iterator els;
-    for (els=doc->children.begin(); els!=doc->children.end(); ++els)
+    for (els=doc->getChildren().begin(); els!=doc->getChildren().end(); ++els)
         if ((e = (*els)->find("index")))
-            subarchives.push_back(e->value);
+            subarchives.push_back(e->getValue());
     return true;
 }
 

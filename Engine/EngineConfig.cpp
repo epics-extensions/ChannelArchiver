@@ -59,7 +59,7 @@ void EngineConfigParser::read(const char *filename,
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in file_size\n",
                                        filename);
-            setFileSizeLimit(((size_t)d)*1024*1024);
+            setFileSizeLimit((size_t)(d*1024*1024));
         }
         else if (e->name == "ignored_future")
         {

@@ -39,6 +39,7 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
     epicsTime startTime, nextWrite;
     double proc_dly, write_duration, write_period, get_threshhold;
     unsigned long write_count;
+    size_t file_size;
     bool disconn;
     {   // Engine locked
         Guard engine_guard(*engine);
@@ -53,6 +54,7 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
         nextWrite = engine->getNextWriteTime(engine_guard);
         write_period = engine->getConfig(engine_guard).getWritePeriod();
         get_threshhold = engine->getConfig(engine_guard).getGetThreshold();
+        file_size = engine->getConfig(engine_guard).getFileSizeLimit();
         disconn = engine->getConfig(engine_guard).getDisconnectOnDisable();
     }
         
@@ -99,6 +101,9 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
 
     sprintf(line, "%.1f sec", get_threshhold);
     page.tableLine("Get Threshold", line, 0);
+
+    sprintf(line, "%.1f MB", (double)file_size/1024.0/1024.0);
+    page.tableLine("File Size Limit", line, 0);
 
     page.tableLine("Disconn. on disable", (disconn ? "Yes" : "No"), 0);
     page.closeTable();

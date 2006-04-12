@@ -7,6 +7,7 @@
 // Storage
 #include <IndexFile.h>
 #include <DataFile.h>
+#include <DataWriter.h>
 // Engine
 #include "Engine.h"
 
@@ -72,6 +73,7 @@ void Engine::attachToProcessVariableContext(Guard &guard)
 void Engine::read_config(Guard &guard, const stdString &file_name)
 {
     config.read(file_name.c_str(), this);
+    DataWriter::file_size_limit = (FileOffset) config.getFileSizeLimit();
 }
 
 void Engine::addChannel(const stdString &group_name,

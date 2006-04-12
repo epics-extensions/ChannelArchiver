@@ -156,23 +156,30 @@ bool Engine::process()
     }
     // scan, write or wait?
     epicsTime now = epicsTime::getCurrent();
+    // Never delay longer that this, since otherwise CA flushes 
+    // and response to engine shutdown will suffer.
 #   define MAX_DELAY 0.5   
-    double delay = MAX_DELAY;
+    double delay;
     {   // Engine locked
         Guard engine_guard(*this);
         if (scan_list.isDueAtAll())
-        {
+        {   // Determine delay until next 'scan'.
             delay = scan_list.getDueTime() - now;
             if (delay <= 0.0)
-            {
+            {   // No delay, scan right now.
                 scan_list.scan(now);
                 process_delay_avg = 0.99*process_delay_avg;
                 return true;
             }
+            else if (delay > MAX_DELAY)
+                delay = MAX_DELAY;
         }
+        else
+            delay = MAX_DELAY;
+        // Determine delay until next 'write'.
         double write_delay = next_write_time - now;            
         if (write_delay <= 0.0)
-        {
+        {   // No delay, write right now.
             unsigned long count = write(engine_guard);
             epicsTime end = epicsTime::getCurrent();
             double duration = end - now;

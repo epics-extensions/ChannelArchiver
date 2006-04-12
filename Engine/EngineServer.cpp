@@ -40,8 +40,7 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
     double proc_dly, write_duration, write_period, get_threshhold;
     unsigned long write_count;
     bool disconn;
-    {
-        
+    {   // Engine locked
         Guard engine_guard(*engine);
         desc = engine->getDescription(engine_guard).c_str();
         startTime = engine->getStartTime(engine_guard);
@@ -79,6 +78,12 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
 #endif
     sprintf(line, "%.3f sec", proc_dly);
     page.tableLine("Avg. Proc. Delay", line, 0);
+
+    // Idle time defined as:
+    // How much of the max. delay do we get to use?
+    // Assuming that the rest of the time is 'busy', non-idle time.
+    sprintf(line, "%.1f %%", proc_dly/Engine::MAX_DELAY*100.0);
+    page.tableLine("Idle time", line, 0);
 
     sprintf(line, "%lu", write_count);
     page.tableLine("Write Count", line, 0);

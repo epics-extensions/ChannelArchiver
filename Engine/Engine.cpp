@@ -158,7 +158,6 @@ bool Engine::process()
     epicsTime now = epicsTime::getCurrent();
     // Never delay longer that this, since otherwise CA flushes 
     // and response to engine shutdown will suffer.
-#   define MAX_DELAY 0.5   
     double delay;
     {   // Engine locked
         Guard engine_guard(*this);

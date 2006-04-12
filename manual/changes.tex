@@ -6,6 +6,35 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item ?/?/2006 --- Version 2.9:\\
+Major refactoring of the ArchiveEngine code.
+
+Visible changes:
+\begin{itemize}
+\item Engine HTTPD displays 'Idle Time' on its main page.
+\item ArchiveEngine uses about 2\%-4\% more CPU and memory.
+\end{itemize}
+
+Why? The class layout looked OK from a distance;
+there was an Engine, Group, ArchiveChannel, SampleMechanism,
+the latter derived into SampleMechanismMonitor etc.
+But while the SampleMechanism was supposed to handle
+the scanning, the ArchiveChannel held the Circular buffer
+into which the samples are placed,
+and the Engine handled the ChannelAccess 'flush' required
+for a 'get'. So there were several messy interactions,
+which made it impossible to test and debug for example a SampleMechanism
+as a Unit outside of the complete Engine.
+
+In the rework, more classes were added 'below' the SampleMechanism:
+ProcessVariable, ProcessVariableFilter, ProcessVariableContext,
+and 'Listener' interfaces for these and the existing classes.
+This way, the ProcessVariable can be tested without the Engine,
+the sample mechanisms can be tested with test data,
+and the rather confusing code inside the sample mechanisms
+has mostly been replaced with a 'pipe' of ProcessVariableFilter
+classes, which again can be tested individually.
+
 \item 03/27/2006 --- Version 2.8.1:\\
 Fix: The nanosecond check could cause a crash when receiving
 CA callback for 'disconnected' values.

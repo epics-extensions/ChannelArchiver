@@ -121,6 +121,9 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
         if (! canDisable())
             sample_mechanism->addValueListener(channel_guard, this);            
         // Remove & add as quick hack to add only once.
+        // TODO: Check if the channel is already 'disabling',
+        //       and this is a new group, which we have to
+        //       disable right now.
         disable_groups.remove(group);
         disable_groups.push_back(group);
     }

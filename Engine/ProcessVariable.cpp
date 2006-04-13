@@ -15,7 +15,7 @@ static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 
 ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
     : NamedBase(name), ctx(ctx), state(INIT),
-      id(0), ev_id(0), dbr_type(0), dbr_count(0),
+      id(0), ev_id(0), dbr_type(DBR_TIME_DOUBLE), dbr_count(1),
       outstanding_gets(0), subscribed(false)
 {
 #   ifdef DEBUG_PV
@@ -25,7 +25,13 @@ ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
         Guard ctx_guard(ctx);
         ctx.incRef(ctx_guard);
     }
+    // Set some default t match the default getDbrType/Count
+    ctrl_info.setNumeric(0, "?",
+                         0.0, 0.0,
+                         0.0, 0.0,
+                         0.0, 0.0);
 }
+                      
 
 ProcessVariable::~ProcessVariable()
 {

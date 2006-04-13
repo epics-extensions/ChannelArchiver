@@ -52,7 +52,7 @@ void DisableFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
                                   const epicsTime &when)
 {
     is_connected = false;
-    // When disabled, this means that any
+    // When disabled, this means that any last value becomes invalid.
     if (is_disabled)
         last_value = 0;
     else
@@ -71,6 +71,6 @@ void DisableFilter::pvValue(Guard &guard, ProcessVariable &pv,
         LOG_ASSERT(last_value);
         RawValue::copy(type, count, last_value, data);
     }
-    else // and pass on to listener.
+    else // or pass on to listener.
         ProcessVariableFilter::pvValue(guard, pv, data);
 }

@@ -105,20 +105,35 @@ void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
     LOG_MSG("SampleMechanism(%s): connected\n", pv.getName().c_str());
 #endif
     // If necessary, allocate a new circular buffer.
-    // Of course that means that data in there is tossed.
-    // So if you managed to stop an IOC,
-    // then reboot it with new data types _before_
-    // the engine could write, the last few samples before
-    // the reboot are gone.
-    //
-    // TODO: See if this code could toggle a 'write'
-    // to avoid that data loss.
-    DbrType type = pv.getDbrType(guard);
+    DbrType type   = pv.getDbrType(guard);
     DbrCount count = pv.getDbrCount(guard);
-    if (type != buffer.getDbrType()  ||
-        count != buffer.getDbrCount())
+    if (type != buffer.getDbrType()  ||  count != buffer.getDbrCount())
+    {   // Why there might be values in the buffer on connect:
+        // 1) Channel was disabled before it connected,
+        //    and addEvent(disabled) used 'double' as a guess.
+        // 2) A quick reboot caused a reconnect with new data types
+        //    before the engine could write the data gathered before the reboot.
+        //
+        // Those few _data_ samples are gone, but we don't want to loose
+        // some of the key _events_.
+        CircularBuffer tmp;
+        const RawValue::Data *val;
+        if (buffer.getCount() > 0)
+        {   // Copy all events into tmp.
+            tmp.allocate(buffer.getDbrType(), buffer.getDbrCount(),
+                         buffer.getCount());
+            while ((val = buffer.removeRawValue()) != 0)
+            {
+                if (RawValue::isInfo(val))
+                    tmp.addRawValue(val);
+            }
+        }
+        // Get buffer which matches the current PV type.
         buffer.allocate(type, count, config.getSuggestedBufferSpace(period));
-        
+        // Copy saved data back (usually: nothing)
+        while ((val = tmp.removeRawValue()) != 0)
+            buffer.addRawValue(val);
+    }   
     have_sample_after_connection = false;
 }
     
@@ -131,6 +146,8 @@ void SampleMechanism::pvDisconnected(Guard &guard, ProcessVariable &pv,
     addEvent(guard, ARCH_DISCONNECT, when);
 }
 
+// Last in the chain from PV via filters to the Circular buffer:
+// One more back-in-time check, then add to buffer.
 void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
                               const RawValue::Data *data)
 {
@@ -169,16 +186,17 @@ void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
     }
 }
 
+// Add a special sample: No value, only time stamp and severity matter.
 void SampleMechanism::addEvent(Guard &guard, short severity,
                                const epicsTime &when)
 {
     guard.check(__FILE__, __LINE__, getMutex());
     if (buffer.getCapacity() < 1)
-    {
-        // Message is strange but matches what's described in the manual.
-        LOG_MSG("'%s': Cannot add event because data type is unknown\n",
-              pv.getName().c_str());
-        return;
+    {   // Data type is unknown, but we want to add an event.
+        // PV defaults to DOUBLE, so use that:
+        buffer.allocate(pv.getDbrType(guard),
+                        pv.getDbrCount(guard),
+                        config.getSuggestedBufferSpace(period));
     }
     RawValue::Data *value = buffer.getNextElement();
     size_t size = RawValue::getSize(buffer.getDbrType(),

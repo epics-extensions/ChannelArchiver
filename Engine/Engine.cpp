@@ -79,12 +79,10 @@ void Engine::read_config(Guard &guard, const stdString &file_name)
 
 void Engine::write_config(Guard &guard)
 {
-    // TODO: config.write("onlineconfig.xml");
     FUX fux;
     FUX::Element *doc = new FUX::Element(0, "engineconfig");
     fux.setDoc(doc);
-    config.addToFUX(doc);
-    
+    config.addToFUX(doc);    
     stdList<GroupInfo *>::const_iterator gi;
     for (gi = groups.begin(); gi != groups.end(); ++gi)
     {

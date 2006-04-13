@@ -200,17 +200,6 @@ crashes, it should now generate a core dump, often called
 \noindent Please email the result so that we can try to eliminate the
 problem.
 
-\section{'ChannelName': Cannot add event because data type is unknown}
-The ArchiveEngine tried to write an \INDEX{event} to the data
-file. Examples include a ``Disconnected'' or ``Archiver Off''
-event. Even though this event does not have a value, it only
-indicates a status change or warning, it nevertheless is written
-into the same data buffer where ordinary values are written.
-A problem arises when we never got a connection to the CA
-server, therefore we do not know the value type of the channel
-and thus we cannot allocate a data buffer in which to write this
-special event-type of value.
-
 \section{Cannot create a new data file within \INDEX{file size limit}}
 You specified a rather small file size limit (file\_size option in the
 ArchiveEngine configuration), and the currently required buffer size

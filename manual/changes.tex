@@ -11,7 +11,14 @@ Major refactoring of the ArchiveEngine code.
 
 Visible changes:
 \begin{itemize}
-\item Engine HTTPD displays 'Idle Time' on its main page.
+\item Engine HTTPD displays ``Idle Time'' on its main page.
+\item The warning ``Cannot add event because data type is unknown'' is gone.
+\item The ``disabling'' mechanism now works better right at the start,
+      while all the channels get connected in an unpredictable order.
+      Before, the engine would like to log all disabled channels as DISABLED,
+      but couldn't for those which were not yet connected,
+      resulting in the ``Cannot add event...'' warning and no indication
+      in the data as to why there is no data.
 \item ArchiveEngine uses about 2\%-4\% more CPU and memory.
 \end{itemize}
 
@@ -34,6 +41,7 @@ the sample mechanisms can be tested with test data,
 and the rather confusing code inside the sample mechanisms
 has mostly been replaced with a 'pipe' of ProcessVariableFilter
 classes, which again can be tested individually.
+
 
 \item 03/27/2006 --- Version 2.8.1:\\
 Fix: The nanosecond check could cause a crash when receiving

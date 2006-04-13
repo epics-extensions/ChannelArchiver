@@ -97,6 +97,17 @@ void Engine::write_config(Guard &guard)
     fux.dump(f);
 }
 
+GroupInfo *Engine::addGroup(Guard &guard, const stdString &group_name)
+{
+    GroupInfo *group = findGroup(guard, group_name);
+    if (!group)
+    {
+        group = new GroupInfo(group_name);
+        groups.push_back(group);
+    }
+    return group;
+}
+
 void Engine::addChannel(const stdString &group_name,
                         const stdString &channel_name,
                         double scan_period,
@@ -108,12 +119,7 @@ void Engine::addChannel(const stdString &group_name,
            (disabling ? ", disabling" : "")); */
     Guard engine_guard(*this); // Lock order: engine
     // Get group
-    GroupInfo *group = findGroup(engine_guard, group_name);
-    if (!group)
-    {
-        group = new GroupInfo(group_name);
-        groups.push_back(group);
-    }
+    GroupInfo *group = addGroup(engine_guard, group_name);
     // Get channel
     ArchiveChannel *channel = findChannel(engine_guard, channel_name);
     bool new_channel = (channel == 0);

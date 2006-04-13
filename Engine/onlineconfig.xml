@@ -9,20 +9,15 @@
 	<group>
 		<name>Test</name>
 		<channel>
-			<name>janet</name>
-			<period>0.1</period>
-			<monitor/>
-		</channel>
-		<channel>
 			<name>fred</name>
 			<period>5</period>
 			<scan/>
 			<disable/>
 		</channel>
 		<channel>
-			<name>jane</name>
-			<period>10</period>
-			<scan/>
+			<name>janet</name>
+			<period>0.1</period>
+			<monitor/>
 		</channel>
 	</group>
 	<group>
@@ -37,11 +32,6 @@
 			<period>5</period>
 			<scan/>
 			<disable/>
-		</channel>
-		<channel>
-			<name>alan</name>
-			<period>1</period>
-			<monitor/>
 		</channel>
 	</group>
 	<group>

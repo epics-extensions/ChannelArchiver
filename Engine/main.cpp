@@ -127,5 +127,13 @@ int main(int argc, const char *argv[])
     {
         LOG_MSG ("Engine log problem:\n%s\n", e.what());
     }
+    catch (std::exception &e)
+    {
+        LOG_MSG ("Fatal Problem:\n%s\n", e.what());
+    }
+    catch (...)
+    {
+        LOG_MSG ("Unknown Exception\n");
+    }
     return 0;
 }

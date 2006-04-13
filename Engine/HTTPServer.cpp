@@ -301,59 +301,75 @@ HTTPClientConnection::~HTTPClientConnection()
 
 void HTTPClientConnection::run()
 {
-#   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
-    stdString local_info, peer_info;
-    GetSocketInfo(socket, local_info, peer_info);
-    LOG_MSG("HTTPClientConnection %zu thread 0x%08lX, handles %s/%s\n",
-            num, (unsigned long) epicsThreadGetIdSelf(),
-            local_info.c_str(), peer_info.c_str());
-#   endif
-#ifdef MOZILLA_HACK
-    // Unclear:
-    // The final 'socket_close' call should flush
-    // queued write requests.
-    // But especially with Mozilla, some pages show up
-    // incomplete even though this thread has printed
-    // all the data.
-    // SO_LINGER makes us hang in the close call for 30 seconds.
-    // Seems to help some but doesn't solve the problem 100% of the time.
-    struct linger linger;
-    linger.l_onoff = 1;
-    linger.l_linger = 30;
-    setsockopt(socket, SOL_SOCKET, SO_LINGER,
-               (const char *)&linger, sizeof(linger));
-#endif
-    // This line seems to make the differenc between valgrind seeing
-    // a memory leak in the first input_line.push_back() and no
-    // memory leak:
-    input_line.reserve(20);
-    while (!handleInput())
+    try
     {
-        if (server->isShuttingDown())
+#       if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
+        stdString local_info, peer_info;
+        GetSocketInfo(socket, local_info, peer_info);
+        LOG_MSG("HTTPClientConnection %zu thread 0x%08lX, handles %s/%s\n",
+                num, (unsigned long) epicsThreadGetIdSelf(),
+                local_info.c_str(), peer_info.c_str());
+#       endif
+#       ifdef MOZILLA_HACK
+        // Unclear:
+        // The final 'socket_close' call should flush
+        // queued write requests.
+        // But especially with Mozilla, some pages show up
+        // incomplete even though this thread has printed
+        // all the data.
+        // SO_LINGER makes us hang in the close call for 30 seconds.
+        // Seems to help some but doesn't solve the problem 100% of the time.
+        struct linger linger;
+        linger.l_onoff = 1;
+        linger.l_linger = 30;
+        setsockopt(socket, SOL_SOCKET, SO_LINGER,
+                   (const char *)&linger, sizeof(linger));
+#       endif
+        // This line seems to make the differenc between valgrind seeing
+        // a memory leak in the first input_line.push_back() and no
+        // memory leak:
+        input_line.reserve(20);
+        while (!handleInput())
         {
-            LOG_MSG("HTTPClientConnection %zu stopped; server's ending\n",num);
-            break;
+            if (server->isShuttingDown())
+            {
+                LOG_MSG("HTTPClientConnection %zu stopped; server's ending\n",
+                        num);
+                break;
+            }
+            runtime = epicsTime::getCurrent() - birthtime;
+            if (runtime > HTTPD_CLIENT_TIMEOUT)
+            {
+                LOG_MSG("HTTPClientConnection %zu timing out\n", num);
+                break;
+            }
         }
+#       ifdef MOZILLA_HACK
+        // The delay and shutdown seem to help Mozilla
+        // to read the web page before it stops because
+        // the connection quits.
+        epicsThreadSleep(2.0);
+#       endif
+        shutdown(socket, 2);
+        epicsSocketDestroy(socket);
         runtime = epicsTime::getCurrent() - birthtime;
-        if (runtime > HTTPD_CLIENT_TIMEOUT)
-        {
-            LOG_MSG("HTTPClientConnection %zu timing out\n", num);
-            break;
-        }
+#       if HTTPD_DEBUG >= 3
+        LOG_MSG("Closed client #%d, socket %d after %.3f seconds\n",
+                num, socket, runtime);
+#       endif
     }
-#ifdef MOZILLA_HACK
-    // The delay and shutdown seem to help Mozilla
-    // to read the web page before it stops because
-    // the connection quits.
-    epicsThreadSleep(2.0);
-#endif
-    shutdown(socket, 2);
-    epicsSocketDestroy(socket);
-    runtime = epicsTime::getCurrent() - birthtime;
-#if HTTPD_DEBUG >= 3
-    LOG_MSG("Closed client #%d, socket %d after %.3f seconds\n",
-            num, socket, runtime);
-#endif
+    catch (GenericException &e)
+    {
+        LOG_MSG ("HTTPClient Exception:\n%s\n", e.what());
+    }
+    catch (std::exception &e)
+    {
+        LOG_MSG ("Fatal HTTPClient Problem:\n%s\n", e.what());
+    }
+    catch (...)
+    {
+        LOG_MSG ("Unknown Exception\n");
+    }
     done = true;
 }
 

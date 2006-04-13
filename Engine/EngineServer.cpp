@@ -486,13 +486,6 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path,
 {
     Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
-
-         page.line("<H3>Error</H3>");
-         page.line("<PRE>");
-         page.line("Not, yet.");
-         page.line("</PRE>");
-
-#if 0
     try
     {
         CGIDemangler args;
@@ -506,15 +499,12 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path,
         page.line("<H1>Groups</H1>");
         page.out("Group <I>");
         page.out(group_name);
-        Guard engine_guard(engine->mutex);
-        if (engine->addGroup(engine_guard, group_name))
         {
-            page.line("</I> was added to the engine.");
-            EngineConfig config;
-            config.write(engine_guard, engine);
-        }
-        else
-            page.line("</I> could not be added to the engine.");
+            Guard engine_guard(*engine);
+            engine->addGroup(engine_guard, group_name);
+            engine->write_config(engine_guard);
+        }            
+        page.line("</I> was added to the engine.");
     }
     catch (GenericException &e)
     {
@@ -523,22 +513,14 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path,
          page.line(e.what());
          page.line("</PRE>");
     }
-#endif
 }
-
     
 static void parseConfig(HTTPClientConnection *connection,
                         const stdString &path, void *user_arg)
 {
     Engine *engine = (Engine *)user_arg;
     HTMLPage page(connection->getSocket(), "Archiver Engine");
-
-         page.line("<H3>Error</H3>");
-         page.line("<PRE>");
-         page.line("Not, yet.");
-         page.line("</PRE>");
-#if 0
-   try
+    try
     {
         CGIDemangler args;
         args.parse(path.substr(13).c_str());
@@ -551,17 +533,13 @@ static void parseConfig(HTTPClientConnection *connection,
         page.line("<H1>Configuration</H1>");
         page.out("Configuration <I>");
         page.out(config_name);
-        Guard engine_guard(engine->mutex);
-        engine->attachToCAContext(engine_guard);
-        EngineConfig config;
-        if (config.read(engine_guard, engine, config_name))
         {
-            page.line("</I> was loaded.");
-            EngineConfig config;
-            config.write(engine_guard, engine);
-        }
-        else
-            page.line("</I> could not be loaded.<P>");
+            Guard engine_guard(*engine);
+            engine->attachToProcessVariableContext(engine_guard);
+            engine->read_config(engine_guard, config_name);
+            engine->write_config(engine_guard);        
+        }        
+        page.line("</I> was loaded.");
     }
     catch (GenericException &e)
     {
@@ -570,7 +548,6 @@ static void parseConfig(HTTPClientConnection *connection,
          page.line(e.what());
          page.line("</PRE>");
     }
-#endif
 }
 
 static void channelGroups(HTTPClientConnection *connection,

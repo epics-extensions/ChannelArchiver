@@ -118,7 +118,16 @@ public:
     /** Write a new config file. */
     void write_config(Guard &guard);
 
-    /** EngineConfigListener */
+    /** Add a group.
+     *  <p>
+     *  If the group already exists, that existing group is returned.
+     *  @return Returns the group
+     */
+    GroupInfo *addGroup(Guard &guard, const stdString &group_name);
+
+    /** Add a channel.
+     *  <p>
+     *  Also an EngineConfigListener */
     void addChannel(const stdString &group_name,
                     const stdString &channel_name,
                     double scan_period,

@@ -102,7 +102,10 @@ public:
     /** Implements ProcessVariableValueListener for handling enable/disable */     
     void pvValue(Guard &guard, ProcessVariable &pv,
                  const RawValue::Data *data);
-
+                 
+    /** Append this channel to a FUX document. */ 
+    void addToFUX(Guard &guard, class FUX::Element *doc);
+                
 private:
     double scan_period;
     bool monitor;

@@ -81,9 +81,22 @@ void Engine::write_config(Guard &guard)
 {
     // TODO: config.write("onlineconfig.xml");
     FUX fux;
-    FUX::Element *e, *doc = new FUX::Element(0, "engineconfig");
+    FUX::Element *doc = new FUX::Element(0, "engineconfig");
     fux.setDoc(doc);
     config.addToFUX(doc);
+    
+    stdList<GroupInfo *>::const_iterator gi;
+    for (gi = groups.begin(); gi != groups.end(); ++gi)
+    {
+        Guard group_guard(**gi);
+        (*gi)->addToFUX(group_guard, doc);
+    }
+    
+    AutoFilePtr f("onlineconfig.xml", "wt");
+    if (!f)
+        throw GenericException(__FILE__, __LINE__,
+                               "Cannot create 'onlineconfig.xml'\n");
+    fux.dump(f);
 }
 
 void Engine::addChannel(const stdString &group_name,

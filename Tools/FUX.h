@@ -48,13 +48,22 @@ public:
     class Element
     {
     public:
-        /** Create new, empty element. */
+        /** Create new, empty element.
+         *  <p>
+         *  When parent is given, this element is added to the parent.
+         */
         Element(Element *parent, const stdString &name);
 
-        /** Create new element with value. */
+        /** Create new element with value.
+         *  <p>
+         *  When parent is given, this element is added to the parent.
+         */
         Element(Element *parent, const stdString &name, const stdString &value);
         
-        /** Create Element, using printf-style format and args for value. */
+        /** Create Element, using printf-style format and args for value.
+         *  <p>
+         *  When parent is given, this element is added to the parent.
+         */
         Element(Element *parent, const char *name, const char *format, ...)
                 __attribute__ ((format (printf, 4, 5)));
         
@@ -81,10 +90,6 @@ public:
         void append(const char *text, size_t len)
         {   value.append(text, len); }
         
-        /** Add a child to this Element. */
-        void add(Element *child)
-        {   children.push_back(child); }
-
         /** @return Returns the first child of given name or 0. */
         Element *find(const char *name);
         

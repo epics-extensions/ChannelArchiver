@@ -108,3 +108,15 @@ void GroupInfo::decConnected(Guard &group_guard, ArchiveChannel &pv)
                                getName().c_str(), pv.getName().c_str());
      --num_connected;
 }
+
+void GroupInfo::addToFUX(Guard &group_guard, FUX::Element *doc)
+{
+    FUX::Element *group = new FUX::Element(doc, "group");
+    new FUX::Element(group, "name", getName());
+    stdList<ArchiveChannel *>::const_iterator ci;
+    for (ci = channels.begin(); ci != channels.end(); ++ci)
+    {
+        Guard channel_guard(**ci);
+        (*ci)->addToFUX(channel_guard, group);
+    }
+}

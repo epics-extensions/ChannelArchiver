@@ -37,6 +37,8 @@ public:
     // ProcessVariableListener
     void pvConnected(Guard &guard, ProcessVariable &pv, const epicsTime &when);
 
+    void addToFUX(Guard &guard, class FUX::Element *doc);
+
 private:
     TimeFilter time_filter;
 };

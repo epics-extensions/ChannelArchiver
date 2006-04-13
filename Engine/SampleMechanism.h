@@ -138,6 +138,9 @@ public:
      */                     
     unsigned long write(Guard &guard, Index &index);
     
+    /** Append this sample mechanism to a FUX document. */ 
+    virtual void addToFUX(Guard &guard, class FUX::Element *doc) = 0;
+    
 protected:
     const EngineConfig &config;
     ProcessVariable pv;

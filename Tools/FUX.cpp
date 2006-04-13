@@ -35,12 +35,18 @@ XERCES_CPP_NAMESPACE_USE
 
 FUX::Element::Element(FUX::Element *parent, const stdString &name)
         : parent(parent), name(name)
-{}
+{
+    if (parent)
+        parent->children.push_back(this);
+}
 
 FUX::Element::Element(FUX::Element *parent, const stdString &name,
                       const stdString &value)
         : parent(parent), name(name), value(value)
-{}
+{
+    if (parent)
+        parent->children.push_back(this);
+}
 
 FUX::Element::Element(Element *parent, const char *name,
                       const char *format, ...)
@@ -52,6 +58,8 @@ FUX::Element::Element(Element *parent, const char *name,
     vsnprintf(buf, sizeof(buf), format, ap);
     va_end(ap);
     value = buf;    
+    if (parent)
+        parent->children.push_back(this);
 }
 
 FUX::Element::~Element()
@@ -96,10 +104,7 @@ void FUX::start_tag(void *data, const char *el, const char **attr)
         if (me->root == 0)
             me->root = me->current = new Element(0, el);
         else
-        {
             me->current = new Element(me->current, el);
-            me->current->getParent()->add(me->current);
-        }
         me->inside_tag = true;
     }
     catch (...)

@@ -49,3 +49,9 @@ void SampleMechanismMonitoredGet::pvConnected(Guard &guard,
         pv.subscribe(guard);    
 }
 
+void SampleMechanismMonitoredGet::addToFUX(Guard &guard, FUX::Element *doc)
+{
+    new FUX::Element(doc, "period", "%g", period);
+    new FUX::Element(doc, "scan");
+}
+

@@ -40,4 +40,9 @@ void SampleMechanismMonitored::pvConnected(Guard &guard, ProcessVariable &pv,
         pv.subscribe(guard);
 }
 
+void SampleMechanismMonitored::addToFUX(Guard &guard, class FUX::Element *doc)
+{
+    new FUX::Element(doc, "period", "%g", period);
+    new FUX::Element(doc, "monitor");
+}
 

@@ -43,6 +43,8 @@ public:
     void pvConnected(Guard &guard, ProcessVariable &pv,
                      const epicsTime &when);
 
+    void addToFUX(Guard &guard, class FUX::Element *doc);
+
 private:
     TimeSlotFilter time_slot_filter;
     RepeatFilter   repeat_filter;

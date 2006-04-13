@@ -69,6 +69,9 @@ public:
     
     /** Invoked by ArchiveChannel to update connection count. */
     void decConnected(Guard &group_guard, class ArchiveChannel &pv);
+    
+    /** Append this group to a FUX document. */ 
+    void addToFUX(Guard &group_guard, class FUX::Element *doc);
 
 private:
     GroupInfo(const GroupInfo &); // not impl.

@@ -55,3 +55,9 @@ void SampleMechanismGet::scan()
     pv.getValue(guard);
 }
 
+void SampleMechanismGet::addToFUX(Guard &guard, class FUX::Element *doc)
+{
+    new FUX::Element(doc, "period", "%g", period);
+    new FUX::Element(doc, "scan");
+}
+

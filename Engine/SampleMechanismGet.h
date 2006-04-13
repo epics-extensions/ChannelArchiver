@@ -41,6 +41,8 @@ public:
     
     // Scannable
     void scan();
+    
+    void addToFUX(Guard &guard, class FUX::Element *doc);
    
 private:
     ScanList     &scan_list;

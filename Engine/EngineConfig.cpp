@@ -8,19 +8,19 @@
 // Engine
 #include "EngineConfig.h"
 
-
 void EngineConfig::addToFUX(FUX::Element *doc)
 {
-    doc->add(new FUX::Element(doc, "write_period", "%g", getWritePeriod()));    
-    doc->add(new FUX::Element(doc, "get_threshold", "%g", getGetThreshold()));
-    doc->add(new FUX::Element(doc, "file_size", "%zu", getFileSizeLimit()));
-    doc->add(new FUX::Element(doc, "ignored_future", "%g",
-            getIgnoredFutureSecs()/60.0/60.0));
-    doc->add(new FUX::Element(doc, "buffer_reserve", "%d", getBufferReserve()));
-    doc->add(new FUX::Element(doc, "max_repeat_count", "%zu",
-             getMaxRepeatCount()));
+    new FUX::Element(doc, "write_period", "%g", getWritePeriod());    
+    new FUX::Element(doc, "get_threshold", "%g", getGetThreshold());
+    new FUX::Element(doc, "file_size", "%g",
+                     getFileSizeLimit()/1024.0/1024.0);
+    new FUX::Element(doc, "ignored_future", "%g",
+            getIgnoredFutureSecs()/60.0/60.0);
+    new FUX::Element(doc, "buffer_reserve", "%d", getBufferReserve());
+    new FUX::Element(doc, "max_repeat_count", "%zu",
+             getMaxRepeatCount());
     if (getDisconnectOnDisable())
-        doc->add(new FUX::Element(doc, "disconnect"));
+        new FUX::Element(doc, "disconnect");
 }
 
 EngineConfigParser::EngineConfigParser()
@@ -150,72 +150,3 @@ void EngineConfigParser::handle_channel(const stdString &group_name,
         listener->addChannel(group_name, channel_name,
                              period, disabling, monitor);
 }
-
-#if 0
-
-static bool add_channel(Guard &engine_guard, FUX::Element *group,
-                        const GroupInfo *gi, ArchiveChannel *c)
-{
-    char buf[100];
-    FUX::Element *channel = new FUX::Element(group, "channel");
-    group->add(channel);
-    FUX::Element *e = new FUX::Element(channel, "name", c->getName());
-    channel->add(e);
-    Guard guard(c->mutex);
-    e = new FUX::Element(channel, "period");
-    sprintf(buf, "%g", c->getPeriod(guard));
-    e->value = buf;
-    channel->add(e);
-
-    if (c->getMechanism(guard)->isScanning())
-        channel->add(new FUX::Element(channel, "scan"));
-    else
-        channel->add(new FUX::Element(channel, "monitor"));
-    if (c->getGroupsToDisable(guard).test(gi->getID()))
-        channel->add(new FUX::Element(channel, "disable"));
-    return true;
-}
-
-static bool add_group(Guard &engine_guard,
-                      FUX::Element *doc, const GroupInfo *gi)
-{
-    FUX::Element *group = new FUX::Element(doc, "group");
-    doc->add(group);
-    FUX::Element *e = new FUX::Element(group, "name");
-    e->value = gi->getName();
-    group->add(e);
-    const stdList<class ArchiveChannel *> &channels = gi->getChannels();
-    stdList<class ArchiveChannel *>::const_iterator ci;
-    for (ci = channels.begin(); ci != channels.end(); ++ci)
-        if (!add_channel(engine_guard, group, gi, *ci))
-            return false;
-    return true;
-}
-
-bool EngineConfig::write(Guard &engine_guard, class Engine *engine)
-{
-    char buf[100];
-    FUX fux;
-    FUX::Element *doc = new FUX::Element(0, "engineconfig");
-    fux.setDoc(doc);
-
-
-
-    const stdList<GroupInfo *> &groups = engine->getGroups(engine_guard);
-    stdList<GroupInfo *>::const_iterator gi;
-    for (gi = groups.begin(); gi != groups.end(); ++gi)
-        if (! add_group(engine_guard, doc, *gi))
-            return false;
-    
-    FILE *f = fopen("onlineconfig.xml", "wt");
-    if (!f)
-    {
-        throw GenericException(__FILE__, __LINE__, "Cannot create 'onlineconfig.xml'\n");
-        return false;
-    }
-    fux.dump(f);
-    fclose(f);
-    return true;
-}
-
-#endif

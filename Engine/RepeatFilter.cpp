@@ -3,7 +3,7 @@
 // Engine
 #include "RepeatFilter.h"
 
-#define DEBUG_REP_FILT
+// #define DEBUG_REP_FILT
 
 RepeatFilter::RepeatFilter(const EngineConfig &config,
                            ProcessVariableListener *listener)

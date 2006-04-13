@@ -333,3 +333,12 @@ void ArchiveChannel::pvValue(Guard &guard, ProcessVariable &pv,
         }
     }
 }
+
+void ArchiveChannel::addToFUX(Guard &guard, class FUX::Element *doc)
+{
+    FUX::Element *channel = new FUX::Element(doc, "channel");
+    new FUX::Element(channel, "name", getName());
+    sample_mechanism->addToFUX(guard, channel);
+    if (canDisable())
+        new FUX::Element(channel, "disable");
+}

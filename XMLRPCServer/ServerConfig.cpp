@@ -17,22 +17,22 @@ bool ServerConfig::read(const char *filename)
         LOG_MSG("ServerConfig: Cannot parse '%s'\n", filename);
         return false;
     }
-    LOG_ASSERT(doc->name == "serverconfig");
+    LOG_ASSERT(doc->getName() == "serverconfig");
     Entry entry;
     stdList<FUX::Element *>::const_iterator archs, e;
-    for (archs=doc->children.begin(); archs!=doc->children.end(); ++archs)
+    for (archs=doc->getChildren().begin(); archs!=doc->getChildren().end(); ++archs)
     {
         arch = *archs;
-        LOG_ASSERT(arch->name == "archive");
-        e = arch->children.begin();
-        LOG_ASSERT((*e)->name == "key");
-        entry.key = atoi((*e)->value.c_str());
+        LOG_ASSERT(arch->getName() == "archive");
+        e = arch->getChildren().begin();
+        LOG_ASSERT((*e)->getName() == "key");
+        entry.key = atoi((*e)->getValue().c_str());
         ++e;
-        LOG_ASSERT((*e)->name == "name");
-        entry.name = (*e)->value;
+        LOG_ASSERT((*e)->getName() == "name");
+        entry.name = (*e)->getValue();
         ++e;
-        LOG_ASSERT((*e)->name == "path");
-        entry.path = (*e)->value;
+        LOG_ASSERT((*e)->getName() == "path");
+        entry.path = (*e)->getValue();
         config.push_back(entry);
         entry.clear();
     }

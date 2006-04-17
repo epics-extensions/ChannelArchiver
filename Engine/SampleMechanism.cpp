@@ -88,8 +88,10 @@ void SampleMechanism::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
     running = false;
-    pv.removeListener(guard, &disable_filter);    
+    // Remove listener so we don't get the 'disconnected' call...
+    pv.removeListener(guard, &disable_filter);
     pv.stop(guard);
+    // .. because we use 'stopped' anyway.
     addEvent(guard, ARCH_STOPPED, epicsTime::getCurrent());
 }
 
@@ -130,9 +132,16 @@ void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
         }
         // Get buffer which matches the current PV type.
         buffer.allocate(type, count, config.getSuggestedBufferSpace(period));
-        // Copy saved data back (usually: nothing)
+        // Copy saved info events back (usually: nothing)
         while ((val = tmp.removeRawValue()) != 0)
-            buffer.addRawValue(val);
+        {
+            RawValue::Data *value = buffer.getNextElement();
+            size_t size = RawValue::getSize(buffer.getDbrType(),
+                                            buffer.getDbrCount());
+            memset(value, 0, size);
+            RawValue::setStatus(value, 0, RawValue::getSevr(val));
+            RawValue::setTime(value, RawValue::getTime(val));
+        }
     }   
     have_sample_after_connection = false;
 }

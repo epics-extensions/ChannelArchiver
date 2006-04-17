@@ -37,7 +37,8 @@ public:
      *  minimized, any 'monitor' overrides a 'non-monitor'
      *  configure call.
      */
-    void configure(EngineConfig &config, ProcessVariableContext &ctx,
+    void configure(Guard &guard,
+                   EngineConfig &config, ProcessVariableContext &ctx,
                    ScanList &scan_list,
                    double scan_period, bool monitor);
                 
@@ -91,22 +92,24 @@ public:
     /** Implements ProcessVariableStateListener by forwrding
      *  connect/disconnect info to ArchiveChannelStateListeners
      */
-    void pvConnected(Guard &guard, ProcessVariable &pv, const epicsTime &when);
+    void pvConnected(Guard &pv_guard, ProcessVariable &pv,
+                     const epicsTime &when);
     
     /** Implements ProcessVariableStateListener by forwrding
      *  connect/disconnect info to ArchiveChannelStateListeners
      */
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
+    void pvDisconnected(Guard &pv_guard, ProcessVariable &pv,
                         const epicsTime &when);
               
     /** Implements ProcessVariableValueListener for handling enable/disable */     
-    void pvValue(Guard &guard, ProcessVariable &pv,
+    void pvValue(Guard &pv_guard, ProcessVariable &pv,
                  const RawValue::Data *data);
                  
     /** Append this channel to a FUX document. */ 
     void addToFUX(Guard &guard, class FUX::Element *doc);
                 
 private:
+    epicsMutex mutex;
     double scan_period;
     bool monitor;
     AutoPtr<SampleMechanism> sample_mechanism;
@@ -122,7 +125,7 @@ private:
      *  That does not imply that it currently <b>does</b> disable
      *  anything.
      */
-    bool canDisable() const;
+    bool canDisable(Guard &guard) const;
     
     /** Is this channel right now disabling its 'disable_groups'? */
     bool currently_disabling;
@@ -130,7 +133,8 @@ private:
     /** Count for how often this channel was disabled by its 'groups' */
     size_t disable_count;
     
-    void reconfigure(EngineConfig &config, ProcessVariableContext &ctx,
+    void reconfigure(Guard &guard,
+                     EngineConfig &config, ProcessVariableContext &ctx,
                      ScanList &scan_list);
 };
 
@@ -154,12 +158,7 @@ inline bool ArchiveChannel::isDisabled(Guard &guard) const
     return disable_count == groups.size();
 }
     
-inline stdString ArchiveChannel::getSampleInfo(Guard &guard)
-{
-    return sample_mechanism->getInfo(guard);
-}
-
-inline bool ArchiveChannel::canDisable() const
+inline bool ArchiveChannel::canDisable(Guard &guard) const
 {
     return !disable_groups.empty();
 }

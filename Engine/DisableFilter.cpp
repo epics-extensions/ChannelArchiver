@@ -3,11 +3,11 @@
 // Engine
 #include "DisableFilter.h"
 
-#define DEBUG_DISABLE_FILT
+// #define DEBUG_DISABLE_FILT
 
 DisableFilter::DisableFilter(ProcessVariableListener *listener)
     : ProcessVariableFilter(listener),
-      is_disabled(false), is_connected(false), was_connected(false)
+      is_disabled(false), is_connected(false)
 {
 }
 
@@ -18,18 +18,12 @@ DisableFilter::~DisableFilter()
 void DisableFilter::disable(Guard &guard)
 {
     is_disabled = true;
-    was_connected = is_connected;
 }
 
 void DisableFilter::enable(Guard &guard, ProcessVariable &pv,
                            const epicsTime &when)
 {
     is_disabled = false;
-    // Bring listener up to date on connection status
-    if (was_connected  &&  !is_connected)
-        ProcessVariableFilter::pvDisconnected(guard, pv, when);
-    else if (!was_connected  &&  is_connected)
-        ProcessVariableFilter::pvConnected(guard, pv, when);
     // If there is a buffered value, send that to listener
     if (last_value)
     {
@@ -42,27 +36,22 @@ void DisableFilter::enable(Guard &guard, ProcessVariable &pv,
 void DisableFilter::pvConnected(Guard &guard, ProcessVariable &pv,
                                 const epicsTime &when)
 {
-    LOG_MSG("DisableFilter('%s')::pvConnected: %s\n",
-            pv.getName().c_str(),
-            (is_disabled ? "blocked" : "passed"));
+    LOG_MSG("DisableFilter('%s')::pvConnected\n",
+            pv.getName().c_str());
     is_connected = true;
-    // Suppress while disabled
-    if (! is_disabled)
-        ProcessVariableFilter::pvConnected(guard, pv, when);
+    ProcessVariableFilter::pvConnected(guard, pv, when);
 }
 
 void DisableFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
                                   const epicsTime &when)
 {
-    LOG_MSG("DisableFilter('%s')::pvDisconnected: %s\n",
-            pv.getName().c_str(),
-            (is_disabled ? "blocked" : "passed"));
+    LOG_MSG("DisableFilter('%s')::pvDisconnected\n",
+            pv.getName().c_str());
     is_connected = false;
     // When disabled, this means that any last value becomes invalid.
     if (is_disabled)
         last_value = 0;
-    else
-        ProcessVariableFilter::pvDisconnected(guard, pv, when);
+    ProcessVariableFilter::pvDisconnected(guard, pv, when);
 }
 
 void DisableFilter::pvValue(Guard &guard, ProcessVariable &pv,

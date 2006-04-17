@@ -46,8 +46,6 @@ private:
     bool is_disabled;
     /** Is PV currently connected? */
     bool is_connected;
-    /** Was PV connected when we got disabled? */
-    bool was_connected;
     /** Last value received while disabled. */
     RawValueAutoPtr last_value;
 };

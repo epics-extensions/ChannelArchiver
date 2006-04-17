@@ -283,12 +283,16 @@ void ProcessVariable::stop(Guard &guard)
     // While locked, set all indicators back to INIT state
     chid to_del = id;
     id = 0;
+    bool was_connected = state == CONNECTED;
     state = INIT;
     // Then unlock around CA lib. calls to prevent deadlocks.
     {
         GuardRelease release(guard);
         ca_clear_channel(to_del);
     }
+    // If there are listeners, tell them that we are disconnected.
+    if (was_connected)
+        firePvDisconnected(guard);
 }
 
 void ProcessVariable::connection_handler(struct connection_handler_args arg)
@@ -307,12 +311,7 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
                         me->getName().c_str());
                 return;
             }
-            epicsTime now = epicsTime::getCurrent();
-            stdList<ProcessVariableStateListener *>::iterator l;
-            for (l = me->state_listeners.begin();
-                 l != me->state_listeners.end();
-                 ++l)
-                (*l)->pvDisconnected(guard, *me, now);
+            me->firePvDisconnected(guard);
             return;
         }
         // else: Connection is 'up'
@@ -431,6 +430,14 @@ bool ProcessVariable::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
     LOG_MSG("ProcessVariable(%s) setup_ctrl_info cannot handle type %d\n",
             getName().c_str(), type);
     return false;
+}
+
+void ProcessVariable::firePvDisconnected(Guard &guard)
+{
+    epicsTime now = epicsTime::getCurrent();
+    stdList<ProcessVariableStateListener *>::iterator l;
+    for (l = state_listeners.begin();  l != state_listeners.end();  ++l)
+        (*l)->pvDisconnected(guard, *this, now);
 }
 
 void ProcessVariable::control_callback(struct event_handler_args arg)

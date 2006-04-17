@@ -88,13 +88,13 @@ TEST_CASE test_disable_filter()
         filt.disable(guard);
     }
 
-    // Re-connect no longer passes    
+    // Re-connect
     {
         Guard guard(pv);
         filt.pvConnected(guard, pv, time);
     }
     TEST(pvl.values == 1);
-    TEST(pvl.connected == false);
+    TEST(pvl.connected == true);
     
     // Sample doesn't pass.
     time += 1; 
@@ -112,7 +112,7 @@ TEST_CASE test_disable_filter()
         Guard guard(pv);
         filt.enable(guard, pv, time);
     }
-    // Now the 'connect' should arrive
+    // Still connected
     TEST(pvl.connected == true);
     // And the last value
     TEST(pvl.values == 2);

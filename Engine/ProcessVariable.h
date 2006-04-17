@@ -139,6 +139,7 @@ private:
     static void value_callback(struct event_handler_args);
     
     bool setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx);
+    void firePvDisconnected(Guard &guard);
 };
 
 inline bool ProcessVariable::isConnected(Guard &guard) const

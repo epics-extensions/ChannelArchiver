@@ -131,8 +131,11 @@ void Engine::addChannel(const stdString &group_name,
         channels.push_back(channel);       
     }
     else
-        channel->configure(config, pv_context, scan_list,
+    {   // Lock: Engine, channel
+        Guard channel_guard(*channel);
+        channel->configure(channel_guard, config, pv_context, scan_list,
                            scan_period, monitor);
+    }
     // Hook channel into group
     {   // Lock order: engine, group
         Guard group_guard(*group);
@@ -297,7 +300,7 @@ unsigned long Engine::write(Guard &engine_guard)
 void Engine::acConnected(Guard &guard, ArchiveChannel &c,
                          const epicsTime &when)
 {
-    //LOG_MSG("Engine: '%s' connected\n", c.getName().c_str());
+    LOG_MSG("Engine: '%s' connected\n", c.getName().c_str());
     GuardRelease release(guard); // Lock order: Engine before channel.
     {
         Guard engine_guard(*this);
@@ -308,7 +311,7 @@ void Engine::acConnected(Guard &guard, ArchiveChannel &c,
 void Engine::acDisconnected(Guard &guard, ArchiveChannel &c,
                             const epicsTime &when)
 {
-    //LOG_MSG("Engine: '%s' disconnected\n", c.getName().c_str());
+    LOG_MSG("Engine: '%s' disconnected\n", c.getName().c_str());
     GuardRelease release(guard); // Lock order: Engine before channel.
     {
         Guard engine_guard(*this);

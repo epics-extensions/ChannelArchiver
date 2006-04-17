@@ -30,12 +30,6 @@ void GroupInfo::addChannel(Guard &group_guard, ArchiveChannel *channel)
         if (*i == channel)
             return;
     channels.push_back(channel);
-    Guard guard(*channel);
-    /*
-    if (disable_count > 0) // disable right away?
-        channel->disable(engine_guard, channel_guard,
-                         epicsTime::getCurrent());
-    */
 }
 
 const stdList<class ArchiveChannel *> &
@@ -95,6 +89,14 @@ void GroupInfo::incConnected(Guard &group_guard, ArchiveChannel &pv)
 {
     group_guard.check(__FILE__, __LINE__, mutex);
     ++num_connected;
+    if (num_connected > channels.size())
+        throw GenericException(__FILE__, __LINE__,
+                               "Group %s connect count is %zu out of %zu "
+                               "on increment from '%s'",
+                               getName().c_str(),
+                               num_connected,
+                               channels.size(),
+                               pv.getName().c_str());    
 }
     
 // called by ArchiveChannel    

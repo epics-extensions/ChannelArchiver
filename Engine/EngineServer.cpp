@@ -345,6 +345,7 @@ void groups(HTTPClientConnection *connection, const stdString &path,
         }
         stdList<GroupInfo *>::const_iterator group;
         size_t  channel_count, connect_count;
+        bool enabled;
         stdString name;
         name.reserve(80);
         page.openTable(1, "Name", 1, "Enabled", 1, "Channels",
@@ -356,9 +357,12 @@ void groups(HTTPClientConnection *connection, const stdString &path,
             name += "\">";
             name += (*group)->getName();
             name += "</A>";
-            Guard group_guard((*group)->getMutex());
-            channel_count = (*group)->getChannels(group_guard).size();
-            connect_count = (*group)->getNumConnected(group_guard);
+            {
+                Guard group_guard((*group)->getMutex());
+                channel_count = (*group)->getChannels(group_guard).size();
+                connect_count = (*group)->getNumConnected(group_guard);
+                enabled = (*group)->isEnabled(group_guard);
+            }
             total_channel_count += channel_count;
             total_connect_count += connect_count;
             cvtUlongToString((unsigned long) channel_count, channels);
@@ -369,7 +373,7 @@ void groups(HTTPClientConnection *connection, const stdString &path,
                 cvtUlongToString((unsigned long)connect_count, connected);
             
             page.tableLine(name.c_str(),
-                            ((*group)->isEnabled() ?
+                            (enabled ?
                              "Yes" : "<FONT COLOR=#FFFF00>No</FONT>"),
                             channels, connected, 0);
         }
@@ -586,9 +590,14 @@ static void channelGroups(HTTPClientConnection *connection,
             link += "\">";
             link += (*group)->getName();
             link += "</A>";
-            page.tableLine(link.c_str(),
-                           ((*group)->isEnabled() ?
-                            "Yes" : "<FONT COLOR=#FF0000>No</FONT>"), 0);
+            // Lock order: Group, channel
+            GuardRelease release(guard);
+            {
+                Guard group_guard(**group);
+                page.tableLine(link.c_str(),
+                               ((*group)->isEnabled(group_guard) ?
+                                "Yes" : "<FONT COLOR=#FF0000>No</FONT>"), 0);
+            }
         }
         page.closeTable();
     }

@@ -59,7 +59,7 @@ public:
     void enable(Guard &group_guard,
                 class ArchiveChannel *cause, const epicsTime &when);
     
-    bool isEnabled() const;
+    bool isEnabled(Guard &group_guard) const;
 
     /** @return Returns # of channels in group that are connected. */
     size_t getNumConnected(Guard &group_guard) const;
@@ -84,7 +84,7 @@ private:
     size_t disable_count;  // disabled by how many channels?
 };
 
-inline bool GroupInfo::isEnabled() const
+inline bool GroupInfo::isEnabled(Guard &group_guard) const
 {
     return disable_count <= 0;
 }

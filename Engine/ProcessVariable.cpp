@@ -468,7 +468,8 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
         }
         epicsTime now = epicsTime::getCurrent();
         stdList<ProcessVariableStateListener *>::iterator l;
-        for (l = me->state_listeners.begin(); l != me->state_listeners.end(); ++l)
+        for (l = me->state_listeners.begin();
+             l != me->state_listeners.end();   ++l)
             (*l)->pvConnected(guard, *me, now);
     }
     catch (GenericException &e)

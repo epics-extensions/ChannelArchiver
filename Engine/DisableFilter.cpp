@@ -42,6 +42,9 @@ void DisableFilter::enable(Guard &guard, ProcessVariable &pv,
 void DisableFilter::pvConnected(Guard &guard, ProcessVariable &pv,
                                 const epicsTime &when)
 {
+    LOG_MSG("DisableFilter('%s')::pvConnected: %s\n",
+            pv.getName().c_str(),
+            (is_disabled ? "blocked" : "passed"));
     is_connected = true;
     // Suppress while disabled
     if (! is_disabled)
@@ -51,6 +54,9 @@ void DisableFilter::pvConnected(Guard &guard, ProcessVariable &pv,
 void DisableFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
                                   const epicsTime &when)
 {
+    LOG_MSG("DisableFilter('%s')::pvDisconnected: %s\n",
+            pv.getName().c_str(),
+            (is_disabled ? "blocked" : "passed"));
     is_connected = false;
     // When disabled, this means that any last value becomes invalid.
     if (is_disabled)
@@ -62,6 +68,10 @@ void DisableFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
 void DisableFilter::pvValue(Guard &guard, ProcessVariable &pv,
                            const RawValue::Data *data)
 {
+    LOG_MSG("DisableFilter('%s')::pvValue: %s\n",
+            pv.getName().c_str(),
+            (is_disabled ? "blocked" : "passed"));
+    
     if (is_disabled)
     {   // Remember value
         DbrType type = pv.getDbrType(guard);

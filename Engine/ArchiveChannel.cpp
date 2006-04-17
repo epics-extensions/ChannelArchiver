@@ -112,6 +112,28 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
                                 Guard &channel_guard, bool disabling)
 {
     channel_guard.check(__FILE__, __LINE__, getMutex());
+    stdList<GroupInfo *>::iterator i;
+    // Add to the group list
+    bool add = true;
+    for (i=groups.begin(); i!=groups.end(); ++i)
+    {
+        if (*i == group)
+        {
+            add = false;
+            break;
+        }
+    }
+    if (add)
+    {
+        groups.push_back(group);
+        // Is the group disabled?      
+        if (! group->isEnabled(group_guard))
+        {  
+            LOG_MSG("Channel '%s': added to disabled group '%s'\n",
+                    getName().c_str(), group->getName().c_str());
+            disable(channel_guard, epicsTime::getCurrent());
+        }
+    }       
     // Add to the 'disable' groups?
     if (disabling)
     {
@@ -120,19 +142,30 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
         // --> monitor values!
         if (! canDisable())
             sample_mechanism->addValueListener(channel_guard, this);            
-        // Remove & add as quick hack to add only once.
-        // TODO: Check if the channel is already 'disabling',
-        //       and this is a new group, which we have to
-        //       disable right now.
-        disable_groups.remove(group);
-        disable_groups.push_back(group);
+        // Add, but only once.
+        add = true;
+        for (i=disable_groups.begin(); i!=disable_groups.end(); ++i)
+        {
+            if (*i == group)
+            {
+                add = false;
+                break;
+            }
+        }
+        if (add)
+        {
+            disable_groups.push_back(group);
+            // Is the channel already 'disabling'?
+            // Then disable that new group right away.
+            if (currently_disabling)
+            {
+                epicsTime when = epicsTime::getCurrent();
+                LOG_MSG("Channel '%s' disables '%s' right away\n",
+                        getName().c_str(), group->getName().c_str());  
+                group->disable(group_guard, this, when);
+            }
+        }
     }
-    // Add to the group list
-    stdList<GroupInfo *>::iterator i;
-    for (i=groups.begin(); i!=groups.end(); ++i)
-        if (*i == group)
-            return; // Already in there
-    groups.push_back(group);
 }
 
 void ArchiveChannel::start(Guard &guard)
@@ -151,6 +184,9 @@ bool ArchiveChannel::isConnected(Guard &guard) const
                                  == ProcessVariable::CONNECTED;
 }
      
+// Called by group to disable channel.
+// Doesn't mean that this channel itself can disable,
+// that's handled in pvValue() callback!
 void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
 {
     ++disable_count;
@@ -175,6 +211,7 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
 #endif
 }
  
+// Called by group to re-enable channel.
 void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
 {
     if (disable_count <= 0)
@@ -295,8 +332,9 @@ void ArchiveChannel::pvValue(Guard &guard, ProcessVariable &pv,
     {
         //LOG_MSG("ArchiveChannel '%s' got disabling value\n",
         //        getName().c_str());
-        if (currently_disabling)
+        if (currently_disabling) // Was and still is disabling
             return;
+        // Wasn't, but is now disabling.
         LOG_MSG("ArchiveChannel '%s' disables its groups\n",
                 getName().c_str());
         currently_disabling = true;
@@ -306,7 +344,7 @@ void ArchiveChannel::pvValue(Guard &guard, ProcessVariable &pv,
         for (gi = disable_groups.begin(); gi != disable_groups.end(); ++gi)
         {
             GroupInfo *g = *gi;
-            GuardRelease release(guard);
+            GuardRelease release(guard); // Lock Order: Group, channel
             {
                 Guard group_guard(*g);
                 g->disable(group_guard, this, when);
@@ -317,8 +355,9 @@ void ArchiveChannel::pvValue(Guard &guard, ProcessVariable &pv,
     {
         //LOG_MSG("ArchiveChannel '%s' got enabling value\n",
         //        getName().c_str());
-        if (! currently_disabling)
+        if (! currently_disabling) // Wasn't and isn't disabling.
             return;
+        // Re-enable groups.
         LOG_MSG("ArchiveChannel '%s' enables its groups\n",
                 getName().c_str());
         currently_disabling = false;

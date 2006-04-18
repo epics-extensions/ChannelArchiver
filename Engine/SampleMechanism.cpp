@@ -56,9 +56,10 @@ stdString SampleMechanism::getInfo(Guard &guard) const
 void SampleMechanism::start(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
+    LOG_ASSERT(running == false);
+    pv.addListener(guard, &disable_filter);    
     pv.start(guard);
     running = true;
-    pv.addListener(guard, &disable_filter);    
 }   
 
 bool SampleMechanism::isRunning(Guard &guard)
@@ -87,10 +88,11 @@ void SampleMechanism::enable(Guard &guard, const epicsTime &when)
 void SampleMechanism::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
-    running = false;
+    LOG_ASSERT(running == true);    
     // Remove listener so we don't get the 'disconnected' call...
-    pv.removeListener(guard, &disable_filter);
+    running = false;
     pv.stop(guard);
+    pv.removeListener(guard, &disable_filter);
     // .. because we use 'stopped' anyway.
     addEvent(guard, ARCH_STOPPED, epicsTime::getCurrent());
 }
@@ -149,6 +151,9 @@ void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
 void SampleMechanism::pvDisconnected(Guard &guard, ProcessVariable &pv,
                                      const epicsTime &when)
 {
+    // ignore if this arrives as a result of 'stop()'
+    if (! running)
+        return;
 #ifdef DEBUG_SAMPLE_MECHANISM
     LOG_MSG("SampleMechanism(%s): disconnected\n", pv.getName().c_str());
 #endif

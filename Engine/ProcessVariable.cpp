@@ -11,7 +11,9 @@
 static ThrottledMsgLogger nulltime_throttle("Null-Timestamp", 60.0);
 static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 
-//#define DEBUG_PV
+#define DEBUG_PV
+
+// TODO: You just cannot add/remove listeners while running.
 
 ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
     : NamedBase(name), ctx(ctx), state(INIT),
@@ -19,19 +21,15 @@ ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
       outstanding_gets(0), subscribed(false)
 {
 #   ifdef DEBUG_PV
-    printf("new ProcessVariable(%s)\n", this->getName().c_str());
+    printf("new ProcessVariable(%s)\n", getName().c_str());
 #   endif
     {
         Guard ctx_guard(ctx);
         ctx.incRef(ctx_guard);
     }
     // Set some default t match the default getDbrType/Count
-    ctrl_info.setNumeric(0, "?",
-                         0.0, 0.0,
-                         0.0, 0.0,
-                         0.0, 0.0);
-}
-                      
+    ctrl_info.setNumeric(0, "?", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+}                      
 
 ProcessVariable::~ProcessVariable()
 {
@@ -51,7 +49,6 @@ ProcessVariable::~ProcessVariable()
                 getName().c_str(), value_listeners.size());
         return;
     }
-                
     try
     {
         Guard ctx_guard(ctx);
@@ -98,55 +95,63 @@ const char *ProcessVariable::getCAStateStr(Guard &guard) const
         Guard ctx_guard(ctx);
         LOG_ASSERT(ctx.isAttached(ctx_guard));
     }
-    if (id != 0)
-    {
-        switch (ca_state(id))
-        {
-        case cs_never_conn: return "Never Conn.";
-        case cs_prev_conn:  return "Prev. Conn.";
-        case cs_conn:       return "Connected";
-        case cs_closed:     return "Closed";
-        default:            return "unknown";
-        }
+    if (id == 0)
+        return "Not Initialized";
+    enum channel_state cs;
+    chid _id = id;
+    {   // Unlock while dealing with CAC.
+        GuardRelease release(guard);
+        cs = ca_state(_id);
     }
-    return "Not Initialized";
+    switch (cs)
+    {
+    case cs_never_conn: return "Never Conn.";
+    case cs_prev_conn:  return "Prev. Conn.";
+    case cs_conn:       return "Connected";
+    case cs_closed:     return "Closed";
+    default:            return "unknown";
+    }
 }
 
 void ProcessVariable::addStateListener(
     Guard &guard, ProcessVariableStateListener *listener)
 {
-    guard.check(__FILE__, __LINE__, mutex);    
+    guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(!isRunning(guard));    
     stdList<ProcessVariableStateListener *>::iterator l;
     for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
+    {
         if (*l == listener)
             throw GenericException(__FILE__, __LINE__,
                                    "Duplicate listener for '%s'",
                                    getName().c_str());
+    }
     state_listeners.push_back(listener);                              
-    //LOG_MSG("PV '%s' adds State listener 0x%lX, total %zu\n",
-    //        getName().c_str(), (unsigned long)listener,
-    //        state_listeners.size());
 }
 
 void ProcessVariable::removeStateListener(
     Guard &guard, ProcessVariableStateListener *listener)
 {
     guard.check(__FILE__, __LINE__, mutex);  
-    size_t old = state_listeners.size();
-    state_listeners.remove(listener);                              
-    if (state_listeners.size() + 1  !=  old)
-        throw GenericException(__FILE__, __LINE__,
-                               "Unknown listener for '%s'",
-                               getName().c_str());
-    //LOG_MSG("PV '%s' removes State listener 0x%lX, total %zu\n",
-    //        getName().c_str(), (unsigned long)listener,
-    //        state_listeners.size());
+    LOG_ASSERT(!isRunning(guard));    
+    stdList<ProcessVariableStateListener *>::iterator l;
+    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
+    {
+        if (*l == listener)
+        {
+            state_listeners.erase(l);
+            return;
+        }
+    }
+    throw GenericException(__FILE__, __LINE__, "Unknown listener for '%s'",
+                           getName().c_str());
 }
 
 void ProcessVariable::addValueListener(
     Guard &guard, ProcessVariableValueListener *listener)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(!isRunning(guard));    
     stdList<ProcessVariableValueListener *>::iterator l;
     for (l = value_listeners.begin(); l != value_listeners.end(); ++l)
         if (*l == listener)
@@ -159,7 +164,18 @@ void ProcessVariable::removeValueListener(
     Guard &guard, ProcessVariableValueListener *listener)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    value_listeners.remove(listener);                              
+    LOG_ASSERT(!isRunning(guard));    
+    stdList<ProcessVariableValueListener *>::iterator l;
+    for (l = value_listeners.begin(); l != value_listeners.end(); ++l)
+    {
+        if (*l == listener)
+        {
+            value_listeners.erase(l);
+            return;
+        }
+    }
+    throw GenericException(__FILE__, __LINE__, "Unknown listener for '%s'",
+                           getName().c_str());
 }
 
 void ProcessVariable::start(Guard &guard)
@@ -169,27 +185,37 @@ void ProcessVariable::start(Guard &guard)
         Guard ctx_guard(ctx);
         LOG_ASSERT(ctx.isAttached(ctx_guard));
     }
-    if (id != 0)
-        throw GenericException(__FILE__, __LINE__,
-                               "Duplicate start(%s)", getName().c_str());
 #   ifdef DEBUG_PV
     printf("start ProcessVariable(%s)\n", getName().c_str());
 #   endif
+    LOG_ASSERT(! isRunning(guard));
+    LOG_ASSERT(state == INIT);
     state = DISCONNECTED;
-    // Unlock around CA lib. calls to prevent deadlocks in callbacks!
-    GuardRelease release(guard);
-   	int status = ca_create_channel(getName().c_str(), connection_handler,
-                                   this, CA_PRIORITY_ARCHIVE, &id);
+    // Unlock around CA lib. calls to prevent deadlocks in callbacks.
+    int status;
+    chid _id;
+    {
+        GuardRelease release(guard);
+   	    status = ca_create_channel(getName().c_str(), connection_handler,
+                                   this, CA_PRIORITY_ARCHIVE, &_id);
+    }
+    id = _id;
     if (status != ECA_NORMAL)
     {
         LOG_MSG("'%s': ca_create_channel failed, status %s\n",
                 getName().c_str(), ca_message(status));
         return;
     }
-    {   // Lock ctx while PV is unlocked.
+    {   // Lock Order: PV, PV ctx.
         Guard ctx_guard(ctx);
         ctx.requestFlush(ctx_guard);
     }
+}
+
+bool ProcessVariable::isRunning(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    return id != 0;
 }
 
 void ProcessVariable::getValue(Guard &guard)
@@ -202,9 +228,10 @@ void ProcessVariable::getValue(Guard &guard)
     if (state != CONNECTED)
         return; // Can't get
     ++outstanding_gets;
-    GuardRelease release(guard);
+    chid _id = id;
+    GuardRelease release(guard); // Unlock while in CAC.
     int status = ca_array_get_callback(dbr_type, dbr_count,
-                                       id, value_callback, this);
+                                       _id, value_callback, this);
     if (status != ECA_NORMAL)
     {
         LOG_MSG("%s: ca_array_get_callback failed: %s\n",
@@ -231,11 +258,15 @@ void ProcessVariable::subscribe(Guard &guard)
     // Prevent multiple subscriptions
     if (subscribed)
         return;
+    evid _ev_id;
+    DbrType _type = dbr_type;
+    DbrCount _count = dbr_count;
     {   // Release around CA call.
+        chid _id = id;
         GuardRelease release(guard);
-        int status = ca_create_subscription(dbr_type, dbr_count, id,
+        int status = ca_create_subscription(_type, _count, _id,
                                             DBE_LOG | DBE_ALARM,
-                                            value_callback, this, &ev_id);
+                                            value_callback, this, &_ev_id);
         if (status != ECA_NORMAL)
         {
             LOG_MSG("%s: ca_create_subscription failed: %s\n",
@@ -243,6 +274,7 @@ void ProcessVariable::subscribe(Guard &guard)
             return;
         }
     }
+    ev_id = _ev_id;
     subscribed = true;
     // At this point, PV is locked. Locking ctx is OK with locking order.
     Guard ctx_guard(ctx);
@@ -259,10 +291,10 @@ void ProcessVariable::unsubscribe(Guard &guard)
     if (subscribed)
     {
         subscribed = false;
-        evid cpy = ev_id;
+        evid _ev_id = ev_id;
         ev_id = 0;
         GuardRelease release(guard);
-        ca_clear_subscription(cpy);
+        ca_clear_subscription(_ev_id);
     }    
 }
 
@@ -273,22 +305,20 @@ void ProcessVariable::stop(Guard &guard)
         Guard ctx_guard(ctx);
         LOG_ASSERT(ctx.isAttached(ctx_guard));
     }
-    if (id == 0)
-        throw GenericException(__FILE__, __LINE__,
-                               "Stop without start(%s)", getName().c_str());
 #   ifdef DEBUG_PV
     printf("stop ProcessVariable(%s)\n", getName().c_str());
 #   endif
+    LOG_ASSERT(isRunning(guard));
     unsubscribe(guard);
     // While locked, set all indicators back to INIT state
-    chid to_del = id;
+    chid _id = id;
     id = 0;
     bool was_connected = state == CONNECTED;
     state = INIT;
     // Then unlock around CA lib. calls to prevent deadlocks.
     {
         GuardRelease release(guard);
-        ca_clear_channel(to_del);
+        ca_clear_channel(_id);
     }
     // If there are listeners, tell them that we are disconnected.
     if (was_connected)
@@ -301,43 +331,38 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
     LOG_ASSERT(me != 0);
     try
     {
-        Guard guard(*me);
-        if (arg.op == CA_OP_CONN_DOWN)
-        {   // Connection is down
-            me->state = DISCONNECTED;
-            if (me->state_listeners.empty())
-            {
-                LOG_MSG("ProcessVariable(%s) is disconnected\n",
-                        me->getName().c_str());
+        chid _id;
+        {
+            Guard guard(*me);
+            if (arg.op == CA_OP_CONN_DOWN)
+            {   // Connection is down
+                me->state = DISCONNECTED;
+                me->firePvDisconnected(guard);
                 return;
             }
-            me->firePvDisconnected(guard);
+            // else: Connection is 'up'
+#           ifdef DEBUG_PV
+            printf("ProcessVariable(%s) getting control info\n",
+                   me->getName().c_str());
+#           endif
+            me->state = GETTING_INFO;
+            _id = me->id;
+        }
+        // Get control information for this channel.
+        // Unlocked while in CAC.
+        // Bug in (at least older) CA: Works only for 1 element,
+        // even for array channels.
+        int status = ca_array_get_callback(ca_field_type(_id)+DBR_CTRL_STRING,
+                                           1 /* ca_element_count(me->ch_id) */,
+                                           _id, control_callback, me);
+        if (status != ECA_NORMAL)
+        {
+            LOG_MSG("ProcessVariable('%s') connection_handler error %s\n",
+                    me->getName().c_str(), ca_message (status));
             return;
         }
-        // else: Connection is 'up'
-    #   ifdef DEBUG_PV
-        printf("ProcessVariable(%s) getting control info\n",
-               me->getName().c_str());
-    #   endif
-        me->state = GETTING_INFO;
-        // Get control information for this channel.
-        {
-            GuardRelease release(guard);
-            int status = ca_array_get_callback(
-                ca_field_type(me->id)+DBR_CTRL_STRING,
-                1 /* ca_element_count(me->ch_id) */,
-                me->id, control_callback, me);
-            if (status != ECA_NORMAL)
-            {
-                LOG_MSG("ProcessVariable('%s') connection_handler error %s\n",
-                        me->getName().c_str(), ca_message (status));
-                return;
-            }
-            {
-                Guard ctx_guard(me->ctx);
-                me->ctx.requestFlush(ctx_guard);
-            }
-        }
+        Guard ctx_guard(me->ctx);
+        me->ctx.requestFlush(ctx_guard);
     }
     catch (GenericException &e)
     {
@@ -347,7 +372,8 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
 }
 
 // Fill crtl_info from raw dbr_ctrl_xx data
-bool ProcessVariable::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
+bool ProcessVariable::setup_ctrl_info(Guard &guard,
+                                      DbrType type, const void *dbr_ctrl_xx)
 {
     switch (type)
     {
@@ -432,14 +458,6 @@ bool ProcessVariable::setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx)
     return false;
 }
 
-void ProcessVariable::firePvDisconnected(Guard &guard)
-{
-    epicsTime now = epicsTime::getCurrent();
-    stdList<ProcessVariableStateListener *>::iterator l;
-    for (l = state_listeners.begin();  l != state_listeners.end();  ++l)
-        (*l)->pvDisconnected(guard, *this, now);
-}
-
 void ProcessVariable::control_callback(struct event_handler_args arg)
 {
     ProcessVariable *me = (ProcessVariable *) ca_puser(arg.chid);
@@ -450,6 +468,14 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
                 me->getName().c_str(),  ca_message(arg.status));
         return;
     }
+    chid _id;
+    {
+        Guard guard(*me);
+        _id = me->id;
+    }    
+    // For native type DBR_xx, use DBR_TIME_xx, and native count:
+    DbrType _type   = ca_field_type(_id) + DBR_TIME_STRING;
+    DbrCount _count = ca_element_count(_id);
     try
     {
         // Should be invoked with the control info 'get' data,
@@ -462,22 +488,13 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
             return;
         }
         // Setup the PV info.
-        if (!me->setup_ctrl_info(arg.type, arg.dbr))
+        if (!me->setup_ctrl_info(guard, arg.type, arg.dbr))
             return;
-        me->dbr_type  = ca_field_type(me->id)+DBR_TIME_STRING;
-        me->dbr_count = ca_element_count(me->id);
+        me->dbr_type  = _type;
+        me->dbr_count = _count;
         me->state     = CONNECTED;
         // Notify listeners that PV is now fully connected.
-        if (me->state_listeners.empty())
-        {
-            LOG_MSG("ProcessVariable(%s) Connected\n", me->getName().c_str());
-            return;
-        }
-        epicsTime now = epicsTime::getCurrent();
-        stdList<ProcessVariableStateListener *>::iterator l;
-        for (l = me->state_listeners.begin();
-             l != me->state_listeners.end();   ++l)
-            (*l)->pvConnected(guard, *me, now);
+        me->firePvConnected(guard);
     }
     catch (GenericException &e)
     {
@@ -545,20 +562,56 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
             return;
         }
         // Notify listeners of new value
-        if (me->value_listeners.empty())
-        {
-            LOG_MSG("ProcessVariable(%s) value\n", me->getName().c_str());
-            return;
-        }
-        stdList<ProcessVariableValueListener *>::iterator l;
-        for (l = me->value_listeners.begin(); l != me->value_listeners.end(); ++l)
-            (*l)->pvValue(guard, *me, value);
+        me->firePvValue(guard, value);
     }
     catch (GenericException &e)
     {
         LOG_MSG("ProcessVariable(%s) value_callback exception:\n%s\n",
                 me->getName().c_str(), e.what());
     }
+}
+
+
+void ProcessVariable::firePvConnected(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);    
+    LOG_ASSERT(isRunning(guard));
+    if (state_listeners.empty())
+    {
+        LOG_MSG("ProcessVariable(%s) Connected\n", getName().c_str());
+        return;
+    }
+    epicsTime now = epicsTime::getCurrent();
+    stdList<ProcessVariableStateListener *>::iterator l;
+    for (l = state_listeners.begin();  l != state_listeners.end();  ++l)
+        (*l)->pvConnected(guard, *this, now);
+}
+
+void ProcessVariable::firePvDisconnected(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    if (state_listeners.empty())
+    {
+        LOG_MSG("ProcessVariable(%s) is disconnected\n",
+                getName().c_str());
+        return;
+    }
+    epicsTime now = epicsTime::getCurrent();
+    stdList<ProcessVariableStateListener *>::iterator l;
+    for (l = state_listeners.begin();  l != state_listeners.end();  ++l)
+        (*l)->pvDisconnected(guard, *this, now);
+}
+
+void ProcessVariable::firePvValue(Guard &guard, const RawValue::Data *value)
+{
+    if (value_listeners.empty())
+    {
+        LOG_MSG("ProcessVariable(%s) value\n", getName().c_str());
+        return;
+    }
+    stdList<ProcessVariableValueListener *>::iterator l;
+    for (l = value_listeners.begin();  l != value_listeners.end();  ++l)
+        (*l)->pvValue(guard, *this, value);
 }
 
 #if 0

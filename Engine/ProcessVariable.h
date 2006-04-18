@@ -20,6 +20,17 @@
  *  also requests the full information (DBR_CTRL_...)
  *  and from then on get/monitor will only
  *  get the DBR_TIME_...
+ *  <p>
+ *  Locking: The ProcessVariable and the ProcessVariableContext
+ *  call into the ChannelAccess client library.
+ *  The CA client library also invokes callbacks in the 
+ *  ProcessVariable. To avoid deadlocks between ProcessVariable
+ *  and CA semaphores, the ProcessVariable unlocks itself
+ *  before calling any CA library.
+ *  This means, however, that one should not otherwise modify
+ *  the ProcessVariable while it is dealing with the CA client
+ *  library. To help enforce this, the add/removeListener calls
+ *  are only allowed while the ProcessVariable is not running.
  */
 class ProcessVariable : public NamedBase, public Guardable
 {
@@ -93,9 +104,16 @@ public:
     /** Remove a ProcessVariableListener. */
     void removeListener(Guard &guard, ProcessVariableListener *listener);
 
-    /** Start the connection mechanism. */
+    /** Start the connection mechanism.
+     *  @see stop()
+     *  @see isRunning()
+     */
     void start(Guard &guard);
     
+    /** @return Returns true if start() has been called but not stop().
+     *  @see start()     */
+    bool isRunning(Guard &guard);
+
     /** Perform a single 'get'.
      *
      *  Value gets delivered to listeners.
@@ -138,8 +156,10 @@ private:
     static void control_callback(struct event_handler_args arg);
     static void value_callback(struct event_handler_args);
     
-    bool setup_ctrl_info(DbrType type, const void *dbr_ctrl_xx);
+    bool setup_ctrl_info(Guard &guard, DbrType type, const void *dbr_ctrl_xx);
+    void firePvConnected(Guard &guard);
     void firePvDisconnected(Guard &guard);
+    void firePvValue(Guard &guard, const RawValue::Data *value);
 };
 
 inline bool ProcessVariable::isConnected(Guard &guard) const

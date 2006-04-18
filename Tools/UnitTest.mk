@@ -15,6 +15,7 @@ UnitTest_SRCS += FilenameTest.cpp
 UnitTest_SRCS += GenericExceptionTest.cpp
 UnitTest_SRCS += GuardTest.cpp
 UnitTest_SRCS += IndexConfigTest.cpp
+UnitTest_SRCS += ListTest.cpp
 UnitTest_SRCS += LockfileTest.cpp
 UnitTest_SRCS += MsgLoggerTest.cpp
 UnitTest_SRCS += ThreadTest.cpp

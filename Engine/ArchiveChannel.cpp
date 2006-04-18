@@ -79,10 +79,10 @@ void ArchiveChannel::configure(EngineConfig &config,
     LOG_MSG("ArchiveChannel '%s' reconfig...\n",
             getName().c_str());
     LOG_ASSERT(sample_mechanism);
-    bool was_running;
     // Check args, stop old sample mechanism.
     {
         Guard guard(*this);
+        LOG_ASSERT(!sample_mechanism->isRunning(guard));
         // If anybody wants to monitor, use monitor
         if (monitor)
             this->monitor = true;
@@ -93,27 +93,14 @@ void ArchiveChannel::configure(EngineConfig &config,
             this->scan_period = scan_period;
     
         // See if something's already running.
-        was_running = sample_mechanism->isRunning(guard);
-        if (was_running)
-            sample_mechanism->stop(guard);
         sample_mechanism->removeStateListener(guard, this);
         if (canDisable(guard))  
             sample_mechanism->removeValueListener(guard, this);
     }
     // Replace with new one
-    {
-        Guard guard(sample_ptr_mutex);
-        sample_mechanism = createSampleMechanism(config, ctx, scan_list);
-        LOG_ASSERT(sample_mechanism);
-    }
-    // Possibly, start again
-    Guard guard(*this);
-    if (was_running)
-    {
-        sample_mechanism->start(guard);
-        if (isDisabled(guard))
-            sample_mechanism->disable(guard, epicsTime::getCurrent());
-    }
+    Guard guard(sample_ptr_mutex);
+    sample_mechanism = createSampleMechanism(config, ctx, scan_list);
+    LOG_ASSERT(sample_mechanism);
     if (canDisable(guard))  
         sample_mechanism->addValueListener(guard, this);   
 }
@@ -204,10 +191,7 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
 void ArchiveChannel::start(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
-    if (sample_mechanism->isRunning(guard))
-        throw GenericException(__FILE__, __LINE__,
-                               "Channel '%s' started twice",
-                               getName().c_str()); 
+    LOG_ASSERT(!sample_mechanism->isRunning(guard));
     sample_mechanism->start(guard);
 }
       
@@ -279,10 +263,7 @@ stdString ArchiveChannel::getSampleInfo(Guard &guard)
 void ArchiveChannel::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
-    if (! sample_mechanism->isRunning(guard))
-        throw GenericException(__FILE__, __LINE__,
-                               "Channel '%s' stopped while not running",
-                               getName().c_str()); 
+    LOG_ASSERT(sample_mechanism->isRunning(guard));
     sample_mechanism->stop(guard);
 }
 
@@ -298,10 +279,12 @@ void ArchiveChannel::addStateListener(
     guard.check(__FILE__, __LINE__, getMutex());
     stdList<ArchiveChannelStateListener *>::iterator l;
     for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
+    {
         if (*l == listener)
             throw GenericException(__FILE__, __LINE__,
                                    "Duplicate listener for '%s'",
                                    getName().c_str());
+    }
     state_listeners.push_back(listener);                              
 }
 

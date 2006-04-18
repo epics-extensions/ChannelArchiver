@@ -43,6 +43,8 @@ extern TEST_CASE release_test();
 extern TEST_CASE guard_performance();
 // Unit IndexConfigTest:
 extern TEST_CASE index_config_test();
+// Unit ListTest:
+extern TEST_CASE test_list();
 // Unit LockfileTest:
 extern TEST_CASE test_lockfile();
 // Unit MsgLoggerTest:
@@ -364,6 +366,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\nindex_config_test:\n");
             if (index_config_test())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "ListTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit ListTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_list")==0)
+       {
+            ++run;
+            printf("\ntest_list:\n");
+            if (test_list())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

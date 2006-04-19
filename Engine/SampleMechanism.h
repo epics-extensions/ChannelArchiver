@@ -53,7 +53,9 @@ public:
      */
     const stdString &getName() const;
     
-    /** @return Returns the PV mutex.
+    /** @return Returns the mutex for the SampleMechanism.
+     *  <p>
+     *  Actually uses the mutex of the ProcessVariable.
      *  @see Guardable */
     epicsMutex &getMutex();
 

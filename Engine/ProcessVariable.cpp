@@ -571,7 +571,6 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
     }
 }
 
-
 void ProcessVariable::firePvConnected(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);    

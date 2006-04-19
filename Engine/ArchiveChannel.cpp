@@ -33,42 +33,27 @@ ArchiveChannel::~ArchiveChannel()
     {
         try
         {
-            Guard guard(*this);
+            Guard guard(*sample_mechanism);
             sample_mechanism->removeStateListener(guard, this);
             if (canDisable(guard))  
                 sample_mechanism->removeValueListener(guard, this);   
         }
+        catch (GenericException &e)
+        {
+            LOG_MSG("ArchiveChannel '%s': %s\n", getName().c_str(), e.what());
+        }
         catch (...)
         {
+            LOG_MSG("ArchiveChannel '%s': exception in desctructor\n",
+                     getName().c_str());
         }
     } 
     sample_mechanism = 0;
 }
 
-// To the outside, the mutex of the ArchiveChannel is the same as
-// the mutex of the SampleMechanism and ProcessVariable.
-// However, inside configure() we actually change the sample_mechanism!
-// So sample_ptr_mutex is used to prevent access to sample_mechanism
-// while it's being changed.
-
-// This still sucks:
-
-//Task A       Task B
-//
-//getMutex     configure
-//             locks (old sample_mechanism)
-//wait
-//
-//locks(old)   unlocks
-//             deletes old mechanism, adds new
-//holds lock
-//to rubbish           
-                                  
 epicsMutex &ArchiveChannel::getMutex()
 {
-    Guard guard(sample_ptr_mutex);
-    LOG_ASSERT(sample_mechanism);
-    return sample_mechanism->getMutex();
+    return mutex;
 }
 
 void ArchiveChannel::configure(EngineConfig &config,
@@ -80,9 +65,10 @@ void ArchiveChannel::configure(EngineConfig &config,
             getName().c_str());
     LOG_ASSERT(sample_mechanism);
     // Check args, stop old sample mechanism.
+    Guard guard(*this);
     {
-        Guard guard(*this);
-        LOG_ASSERT(!sample_mechanism->isRunning(guard));
+        Guard sample_guard(*sample_mechanism);
+        LOG_ASSERT(!sample_mechanism->isRunning(sample_guard));
         // If anybody wants to monitor, use monitor
         if (monitor)
             this->monitor = true;
@@ -92,17 +78,18 @@ void ArchiveChannel::configure(EngineConfig &config,
         else if (this->scan_period > scan_period) // minimize
             this->scan_period = scan_period;
     
-        // See if something's already running.
-        sample_mechanism->removeStateListener(guard, this);
+        sample_mechanism->removeStateListener(sample_guard, this);
         if (canDisable(guard))  
-            sample_mechanism->removeValueListener(guard, this);
+            sample_mechanism->removeValueListener(sample_guard, this);
     }
     // Replace with new one
-    Guard guard(sample_ptr_mutex);
     sample_mechanism = createSampleMechanism(config, ctx, scan_list);
     LOG_ASSERT(sample_mechanism);
-    if (canDisable(guard))  
-        sample_mechanism->addValueListener(guard, this);   
+    if (canDisable(guard))
+    {
+        Guard sample_guard(*sample_mechanism);
+        sample_mechanism->addValueListener(sample_guard, this);
+    }
 }
 
 SampleMechanism *ArchiveChannel::createSampleMechanism(
@@ -131,7 +118,8 @@ SampleMechanism *ArchiveChannel::createSampleMechanism(
 void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
                                 Guard &channel_guard, bool disabling)
 {
-    channel_guard.check(__FILE__, __LINE__, getMutex());
+    channel_guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(!isRunning(channel_guard));    
     stdList<GroupInfo *>::iterator i;
     // Add to the group list
     bool add = true;
@@ -161,7 +149,10 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
         // i.e. not diabling, yet?
         // --> monitor values!
         if (! canDisable(channel_guard))
-            sample_mechanism->addValueListener(channel_guard, this);      
+        {
+            Guard sample_guard(*sample_mechanism);
+            sample_mechanism->addValueListener(sample_guard, this);
+        }
         // Add, but only once.
         add = true;
         for (i=disable_groups.begin(); i!=disable_groups.end(); ++i)
@@ -190,21 +181,24 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
 
 void ArchiveChannel::start(Guard &guard)
 {
-    guard.check(__FILE__, __LINE__, getMutex());
+    guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(!isRunning(guard));
-    sample_mechanism->start(guard);
+    Guard sample_guard(*sample_mechanism);
+    sample_mechanism->start(sample_guard);
 }
       
 bool ArchiveChannel::isRunning(Guard &guard)
 {
-    guard.check(__FILE__, __LINE__, getMutex());
+    guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(sample_mechanism);
-    return sample_mechanism->isRunning(guard);
+    Guard sample_guard(*sample_mechanism);
+    return sample_mechanism->isRunning(sample_guard);
 }
 
 bool ArchiveChannel::isConnected(Guard &guard) const
 {
-    return sample_mechanism->getPVState(guard)
+    Guard sample_guard(*sample_mechanism);
+    return sample_mechanism->getPVState(sample_guard)
                                  == ProcessVariable::CONNECTED;
 }
      
@@ -213,7 +207,7 @@ bool ArchiveChannel::isConnected(Guard &guard) const
 // that's handled in pvValue() callback!
 void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
 {
-    guard.check(__FILE__, __LINE__, getMutex());
+    guard.check(__FILE__, __LINE__, mutex);
     ++disable_count;
     if (disable_count > groups.size())
     {
@@ -224,7 +218,8 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
     if (isDisabled(guard))
     {
         LOG_MSG("Channel '%s' disabled\n", getName().c_str());  
-        sample_mechanism->disable(guard, when);
+        Guard sample_guard(*sample_mechanism);    
+        sample_mechanism->disable(sample_guard, when);
     }
 #if 0
     // TODO:
@@ -239,7 +234,7 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
 // Called by group to re-enable channel.
 void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
 {
-    guard.check(__FILE__, __LINE__, getMutex());
+    guard.check(__FILE__, __LINE__, mutex);
     if (disable_count <= 0)
     {
         LOG_MSG("ERROR: Channel '%s' enabled while not disabled?\n",
@@ -250,7 +245,8 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
     if (!isDisabled(guard))
     {
         LOG_MSG("Channel '%s' enabled\n", getName().c_str());   
-        sample_mechanism->enable(guard, when);
+        Guard sample_guard(*sample_mechanism);    
+        sample_mechanism->enable(sample_guard, when);
     }
 #if 0
     // TODO:
@@ -264,26 +260,29 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
           
 stdString ArchiveChannel::getSampleInfo(Guard &guard)
 {
-    return sample_mechanism->getInfo(guard);
+    Guard sample_guard(*sample_mechanism);    
+    return sample_mechanism->getInfo(sample_guard);
 }
      
 void ArchiveChannel::stop(Guard &guard)
 {
-    guard.check(__FILE__, __LINE__, getMutex());
+    guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isRunning(guard));
-    sample_mechanism->stop(guard);
+    Guard sample_guard(*sample_mechanism);    
+    sample_mechanism->stop(sample_guard);
 }
 
 unsigned long  ArchiveChannel::write(Guard &guard, Index &index)
 {
-    guard.check(__FILE__, __LINE__, getMutex());
-    return sample_mechanism->write(guard, index);
+    guard.check(__FILE__, __LINE__, mutex);
+    Guard sample_guard(*sample_mechanism);    
+    return sample_mechanism->write(sample_guard, index);
 }
 
 void ArchiveChannel::addStateListener(
     Guard &guard, ArchiveChannelStateListener *listener)
 {
-    guard.check(__FILE__, __LINE__, getMutex());
+    guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(!isRunning(guard));    
     stdList<ArchiveChannelStateListener *>::iterator l;
     for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
@@ -299,7 +298,7 @@ void ArchiveChannel::addStateListener(
 void ArchiveChannel::removeStateListener(
     Guard &guard, ArchiveChannelStateListener *listener)
 {
-    guard.check(__FILE__, __LINE__, getMutex());
+    guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(!isRunning(guard));    
     state_listeners.remove(listener);                              
 }

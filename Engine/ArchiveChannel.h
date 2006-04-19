@@ -14,19 +14,6 @@
 
 /** \ingroup Engine
  *  One archived channel.
- *  <p>
- *  Locking:
- *  Observe the lock order described in the Engine header file.
- *  In addition, note that the ArchiveChannel uses the mutex of its
- *  ScanMechanism, which in turn is the mutex of the ProcessVariable.
- *  This is because start/stop and other ArchiveChannel calls result
- *  in ChannelAccess calls, while the other way around ChannelAccess
- *  callbacks will percolate up from the ProcessVariable to the ArchiveChannel.
- *  To avoid deadlocks, one must never lock the channel when invoking
- *  the CA client library.
- *  So when the ProcessVariable invokes CA, it releases its mutex,
- *  which is the same as the ArchiveChannel mutex, so that CA callbacks
- *  can run and temporarily lock the ArchiveChannel.
  */
 class ArchiveChannel : public NamedBase,
                        public Guardable,
@@ -135,11 +122,10 @@ public:
     void addToFUX(Guard &guard, class FUX::Element *doc);
                 
 private:
+    epicsMutex mutex;
     double scan_period;
     bool monitor;
     
-    // See getMutex()
-    epicsMutex sample_ptr_mutex;
     AutoPtr<SampleMechanism> sample_mechanism;
 
     // Groups that this channel disables (might be empty)

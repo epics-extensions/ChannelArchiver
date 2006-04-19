@@ -191,10 +191,17 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
 void ArchiveChannel::start(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
-    LOG_ASSERT(!sample_mechanism->isRunning(guard));
+    LOG_ASSERT(!isRunning(guard));
     sample_mechanism->start(guard);
 }
       
+bool ArchiveChannel::isRunning(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, getMutex());
+    LOG_ASSERT(sample_mechanism);
+    return sample_mechanism->isRunning(guard);
+}
+
 bool ArchiveChannel::isConnected(Guard &guard) const
 {
     return sample_mechanism->getPVState(guard)
@@ -263,7 +270,7 @@ stdString ArchiveChannel::getSampleInfo(Guard &guard)
 void ArchiveChannel::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
-    LOG_ASSERT(sample_mechanism->isRunning(guard));
+    LOG_ASSERT(isRunning(guard));
     sample_mechanism->stop(guard);
 }
 
@@ -277,6 +284,7 @@ void ArchiveChannel::addStateListener(
     Guard &guard, ArchiveChannelStateListener *listener)
 {
     guard.check(__FILE__, __LINE__, getMutex());
+    LOG_ASSERT(!isRunning(guard));    
     stdList<ArchiveChannelStateListener *>::iterator l;
     for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
     {
@@ -292,6 +300,7 @@ void ArchiveChannel::removeStateListener(
     Guard &guard, ArchiveChannelStateListener *listener)
 {
     guard.check(__FILE__, __LINE__, getMutex());
+    LOG_ASSERT(!isRunning(guard));    
     state_listeners.remove(listener);                              
 }
 
@@ -306,9 +315,7 @@ void ArchiveChannel::pvConnected(Guard &pv_guard, ProcessVariable &pv,
     {
         Guard guard(*this); // Lock order: only Channel
         // Notify listeners
-        stdList<ArchiveChannelStateListener *>::iterator l;
-            for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
-              (*l)->acConnected(guard, *this, when);   
+        fireAcConnected(guard, when);
         // Notify groups
         stdList<GroupInfo *>::iterator gi;
         for (gi = groups.begin(); gi != groups.end(); ++gi)
@@ -334,11 +341,7 @@ void ArchiveChannel::pvDisconnected(Guard &pv_guard, ProcessVariable &pv,
     {
         Guard guard(*this); // Lock order: Only Channel.
         // Notify listeners
-        stdList<ArchiveChannelStateListener *>::iterator l;
-        {
-            for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
-                (*l)->acDisconnected(guard, *this, when);    
-        }
+        fireAcDisconnected(guard, when);
         // Notify groups
         stdList<GroupInfo *>::iterator gi;
         for (gi = groups.begin(); gi != groups.end(); ++gi)
@@ -425,3 +428,18 @@ void ArchiveChannel::addToFUX(Guard &guard, class FUX::Element *doc)
     if (canDisable(guard))
         new FUX::Element(channel, "disable");
 }
+
+void ArchiveChannel::fireAcConnected(Guard &guard, const epicsTime &when)
+{
+    stdList<ArchiveChannelStateListener *>::iterator l;
+    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
+      (*l)->acConnected(guard, *this, when);   
+}
+
+void ArchiveChannel::fireAcDisconnected(Guard &guard, const epicsTime &when)
+{
+    stdList<ArchiveChannelStateListener *>::iterator l;
+    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
+      (*l)->acDisconnected(guard, *this, when);   
+}
+

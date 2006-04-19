@@ -131,7 +131,9 @@ void Engine::addChannel(const stdString &group_name,
         channels.push_back(channel);       
     }
     else
-    {   channel->configure(config, pv_context, scan_list,
+    {
+        
+        channel->configure(config, pv_context, scan_list,
                            scan_period, monitor);
     }
     // Hook channel into group

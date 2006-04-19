@@ -70,6 +70,10 @@ public:
     /** Start the sample mechanism. */        
     void start(Guard &guard);
     
+    /** @return Returns true if start() has been called but not stop().
+     *  @see start()     */
+    bool isRunning(Guard &guard);
+    
     /** @return Returns true if started and successfully connected. */
     bool isConnected(Guard &guard) const;
      
@@ -96,10 +100,18 @@ public:
      */
     unsigned long write(Guard &guard, Index &index);
 
-    /** Add a ProcessVariableStateListener. */
+    /** Add a ProcessVariableStateListener.
+     *  <p>
+     *  Only allowed while not running.
+     *  @see isRunning
+     */
     void addStateListener(Guard &guard, ArchiveChannelStateListener *listener);
 
-    /** Remove a ProcessVariableStateListener. */
+    /** Remove a ProcessVariableStateListener.
+     *  <p>
+     *  Only allowed while not running.
+     *  @see isRunning
+     */
     void removeStateListener(Guard &guard,
                              ArchiveChannelStateListener *listener);
                             
@@ -152,6 +164,10 @@ private:
     SampleMechanism *createSampleMechanism(EngineConfig &config,
                                            ProcessVariableContext &ctx,
                                            ScanList &scan_list);
+                                           
+    void fireAcConnected(Guard &guard, const epicsTime &when);
+
+    void fireAcDisconnected(Guard &guard, const epicsTime &when);
 };
 
 inline const stdList<class GroupInfo *>

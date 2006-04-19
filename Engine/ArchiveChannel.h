@@ -51,6 +51,11 @@ public:
     /** @return Returns list of groups where this channel is a member. */
     const stdList<class GroupInfo *> getGroups(Guard &guard) const;
 
+    /** @return Returns true if currently disabling.
+     *  @see getGroupsToDisable
+     */
+    bool isDisabling(Guard &guard) const;
+
     /** @return Returns list of groups to disable. */
     const stdList<class GroupInfo *> getGroupsToDisable(Guard &guard) const;
                       
@@ -179,6 +184,11 @@ inline bool ArchiveChannel::isDisabled(Guard &guard) const
 inline bool ArchiveChannel::canDisable(Guard &guard) const
 {
     return !disable_groups.empty();
+}
+
+inline bool ArchiveChannel::isDisabling(Guard &guard) const
+{
+    return currently_disabling;
 }
 
 #endif /*ARCHIVECHANNEL_H_*/

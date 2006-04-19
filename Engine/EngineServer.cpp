@@ -288,13 +288,20 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
     const stdList<class GroupInfo *> groups = channel->getGroupsToDisable(guard);
     stdList<class GroupInfo *>::const_iterator group;
     stdString disabling;
-    for (group = groups.begin();  group != groups.end();  ++group)
+    if (groups.size() > 0)
     {
-        if (group != groups.begin())
-            disabling += ", ";
-        disabling += (*group)->getName();
+        bool is_disabling = channel->isDisabling(guard);
+        if (! is_disabling)
+            disabling = "("; 
+        for (group = groups.begin();  group != groups.end();  ++group)
+        {
+            if (group != groups.begin())
+                disabling += ", ";
+            disabling += (*group)->getName();
+        }
+        if (! is_disabling)
+            disabling += ")"; 
     }
-
     page.tableLine(
         channel_link.c_str(),
         (channel->isConnected(guard) ? 

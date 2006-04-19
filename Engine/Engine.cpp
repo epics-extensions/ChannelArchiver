@@ -132,7 +132,11 @@ void Engine::addChannel(const stdString &group_name,
     }
     else
     {
-        
+        {
+            Guard guard(*channel);
+            if (channel->isRunning(guard))
+                channel->stop(guard);
+        }
         channel->configure(config, pv_context, scan_list,
                            scan_period, monitor);
     }
@@ -143,13 +147,12 @@ void Engine::addChannel(const stdString &group_name,
         {   // Lock order: engine, group, channel
             Guard channel_guard(*channel);
             channel->addToGroup(group_guard, group, channel_guard, disabling);
+            // Listen to connect/disconnect
             if (new_channel)
-            {   // Listen to connect/disconnect
                 channel->addStateListener(channel_guard, this);
-                // Start channel that's added online
-                if (is_running)
-                    channel->start(channel_guard);
-            }
+            // Start channel that's added online
+            if (is_running)
+                channel->start(channel_guard);
         }
     }
 }

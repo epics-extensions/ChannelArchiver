@@ -36,6 +36,23 @@
  *  <li>ProcessVariable
  *  <li>ProcessVariableContext
  *  </ol>
+ * 
+ *  Attempts to add channels or re-load configs while running
+ *  resulted in deadlocks.
+ *  <p>
+ *  Example:
+ *  HTTPClient locks engine, adds channel,
+ *  starts it since we're already running.
+ *  Then adds another channel, and tries to start it (lock order Engine, CA).
+ *  At the same time, the connection for the first channel arrives from
+ *  Channel Access, trying to lock the Engine in acConnected (order CA, Engine):
+ *  Deadlock.
+ *  <p>
+ *  The main problem is with stopping and removing things like
+ *  a SampleMechanism while other running PVs can 'disable'.
+ *  <p>
+ *  TODO The only sane way out seems to be:
+ *  TODO stop the engine while updating the configuration.
  */
  
 /** \ingroup Engine

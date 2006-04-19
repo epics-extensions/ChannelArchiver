@@ -8,6 +8,8 @@
 // Tools
 #include <GenericException.h>
 
+#define DEBUG_DEADLOCK
+
 /** \ingroup Tools
  *  Interface for something that can be protected by a Guard.
  *
@@ -31,14 +33,14 @@ public:
     /** Constructor attaches to mutex and locks. */
     Guard(Guardable &guardable) : mutex(guardable.getMutex())
     {
-        mutex.lock();
+        lock();
         is_locked = true;
     }
 
     /** Constructor attaches to mutex and locks. */
     Guard(epicsMutex &mutex) : mutex(mutex)
     {
-        mutex.lock();
+        lock();
         is_locked = true;
     }
 
@@ -66,11 +68,7 @@ public:
     }
 
     /** Lock again after a temporary unlock. */
-    void lock()
-    {
-        mutex.lock();
-        is_locked = true;
-    }
+    void lock();
 
     /** @return Returns the current lock state. */
     bool isLocked()

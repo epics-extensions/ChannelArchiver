@@ -458,6 +458,8 @@ bool ProcessVariable::setup_ctrl_info(Guard &guard,
     return false;
 }
 
+// Should be invoked with the control info 'get' data,
+// requested in the connection handler.
 void ProcessVariable::control_callback(struct event_handler_args arg)
 {
     ProcessVariable *me = (ProcessVariable *) ca_puser(arg.chid);
@@ -471,6 +473,12 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
     chid _id;
     {
         Guard guard(*me);
+        if (me->state != GETTING_INFO)
+        {
+            LOG_MSG("ProcessVariable(%s) received control_callback while %s\n",
+                    me->getName().c_str(), me->getStateStr(guard));
+            return;
+        }
         _id = me->id;
     }    
     // For native type DBR_xx, use DBR_TIME_xx, and native count:
@@ -478,15 +486,7 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
     DbrCount _count = ca_element_count(_id);
     try
     {
-        // Should be invoked with the control info 'get' data,
-        // requested in the connection handler.
         Guard guard(*me);    
-        if (me->state != GETTING_INFO)
-        {
-            LOG_MSG("ProcessVariable(%s) received control_callback while %s\n",
-                    me->getName().c_str(), me->getStateStr(guard));
-            return;
-        }
         // Setup the PV info.
         if (!me->setup_ctrl_info(guard, arg.type, arg.dbr))
             return;
@@ -546,8 +546,11 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
         // Check if we expected a value at all
         Guard guard(*me);
         if (me->outstanding_gets <= 0  &&  !me->subscribed)
+        {
             LOG_MSG("ProcessVariable(%s) received unexpected value_callback\n",
                     me->getName().c_str());
+            return;
+        }
         if (me->outstanding_gets > 0)
             --me->outstanding_gets;
         if (me->state != CONNECTED)

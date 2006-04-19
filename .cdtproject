@@ -78,7 +78,7 @@
 <buildCommand>make</buildCommand>
 <buildArguments></buildArguments>
 <buildTarget>all</buildTarget>
-<stopOnError>false</stopOnError>
+<stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="test" path="Engine_New" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
@@ -97,13 +97,13 @@
 <target name="all" path="Storage" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments></buildArguments>
-<stopOnError>false</stopOnError>
+<buildTarget>all</buildTarget>
+<stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="all" path="XMLRPCServer" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments></buildArguments>
-<buildTarget></buildTarget>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>

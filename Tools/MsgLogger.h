@@ -4,6 +4,7 @@
 
 // System
 #include <stdio.h>
+#include <stdlib.h>
 // Tools
 #include <GenericException.h>
 #include <AutoFilePtr.h>
@@ -84,6 +85,8 @@ void LOG_MSG(const char *format, ...)
     {                                                                \
         LOG_MSG("\nASSERT '%s' FAILED:\n%s (%d)\n\n",                \
                 #e, __FILE__, __LINE__);                             \
+        if (getenv("ABORT_ON_ERRORS"))                               \
+            abort();                                                 \
         throw GenericException(__FILE__, __LINE__,                   \
                                "ASSERT '%s' FAILED", #e);            \
     }

@@ -43,6 +43,7 @@ LIB_SRCS += Bitset.cpp
 LIB_SRCS += CGIDemangler.cpp
 LIB_SRCS += epicsTimeHelper.cpp
 LIB_SRCS += Filename.cpp
+LIB_SRCS += Guard.cpp
 LIB_SRCS += GenericException.cpp
 LIB_SRCS += IndexConfig.cpp
 LIB_SRCS += Lockfile.cpp

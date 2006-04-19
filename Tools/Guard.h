@@ -51,12 +51,12 @@ public:
         mutex.unlock();
     }
 
-    /** Check if the guard is assigned to the correct mutex. */
-    void check(const char *file, size_t line, const epicsMutex &the_one_it_should_be)
-    {
-        if (&mutex != &the_one_it_should_be)
-            throw GenericException(file, line, "Found a Guard for the wrong Mutex");
-    }
+    /** Check if the guard is assigned to the correct mutex.
+     *  <p>
+     *  Uses ABORT_ON_ERRORS environment variable.
+     */
+    void check(const char *file, size_t line,
+               const epicsMutex &the_one_it_should_be);
 
     /** Unlock, meant for temporary, manual unlock(). */
     void unlock()

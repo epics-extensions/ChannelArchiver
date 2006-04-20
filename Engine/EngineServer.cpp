@@ -475,9 +475,11 @@ static void addChannel(HTTPClientConnection *connection,
         {
             Guard engine_guard(*engine);
             engine->attachToProcessVariableContext(engine_guard);
+            engine->stop(engine_guard);
             engine->addChannel(group_name, channel_name, period,
                                disabling, monitored);
             engine->write_config(engine_guard);
+            engine->start(engine_guard);
         }
         page.line("</I> was added to group <I>");
         page.out(group_name);
@@ -512,8 +514,10 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path,
         page.out(group_name);
         {
             Guard engine_guard(*engine);
+            engine->stop(engine_guard);            
             engine->addGroup(engine_guard, group_name);
             engine->write_config(engine_guard);
+            engine->start(engine_guard);            
         }            
         page.line("</I> was added to the engine.");
     }
@@ -542,14 +546,19 @@ static void parseConfig(HTTPClientConnection *connection,
             return;
         }
         page.line("<H1>Configuration</H1>");
-        page.out("Configuration <I>");
-        page.out(config_name);
+        page.line("Stopping the engine...<p>");
         {
             Guard engine_guard(*engine);
             engine->attachToProcessVariableContext(engine_guard);
+            engine->stop(engine_guard);
+            page.line("Reading config file...<p>");
             engine->read_config(engine_guard, config_name);
             engine->write_config(engine_guard);        
+            page.line("Starting Engine again...<p>");
+            engine->start(engine_guard);
         }        
+        page.out("Configuration <I>");
+        page.out(config_name);
         page.line("</I> was loaded.");
     }
     catch (GenericException &e)

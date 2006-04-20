@@ -25,6 +25,8 @@ Engine::Engine(const stdString &index_name)
 
 Engine::~Engine()
 {
+    if (is_running)
+        LOG_MSG("ERROR: Engine is still 'running' in destructor.\n");
     LOG_MSG("Removing memory for channels and groups.\n");
     try
     {

@@ -40,19 +40,22 @@
  *  Attempts to add channels or re-load configs while running
  *  resulted in deadlocks.
  *  <p>
- *  Example:
- *  HTTPClient locks engine, adds channel,
- *  starts it since we're already running.
+ *  Example:<br>
+ *  HTTPClient locks engine, adds channel, starts it since we're running.
  *  Then adds another channel, and tries to start it (lock order Engine, CA).
  *  At the same time, the connection for the first channel arrives from
  *  Channel Access, trying to lock the Engine in acConnected (order CA, Engine):
  *  Deadlock.
  *  <p>
- *  The main problem is with stopping and removing things like
- *  a SampleMechanism while other running PVs can 'disable'.
+ *  Another problem arises when re-configuring a channel, i.e.
+ *  changing its ScanMechanism and thus replacing its ProcessVariable,
+ *  while other PVs can at the same time receive callbacks which
+ *  result in the need to enable/disable the group which includes the
+ *  channel undergoing reconfiguration.
  *  <p>
- *  TODO The only sane way out seems to be:
- *  TODO stop the engine while updating the configuration.
+ *  The only sane way out seems to be:
+ *  stop the engine while updating the configuration.
+ *  All *config*() methods will thus throw exceptions while isRunning().
  */
  
 /** \ingroup Engine
@@ -153,6 +156,10 @@ public:
     /** Start the sample mechanism. */        
     void start(Guard &guard);
       
+    /** @return Returns true if start() has been called but not stop().
+     *  @see start()     */
+    bool isRunning(Guard &guard);      
+      
     /** Stop sampling. */
     void stop(Guard &guard);
     
@@ -190,5 +197,10 @@ private:
     double                    process_delay_avg;// process()
     epicsTime                 next_write_time;// process()
 };
+
+inline bool Engine::isRunning(Guard &guard)
+{
+    return is_running;
+}
 
 #endif /*ENGINE_H_*/

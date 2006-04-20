@@ -128,6 +128,8 @@ private:
 
     // returns # of clients that are still active
     size_t client_cleanup();
+    
+    void reject(SOCKET socket);    
 };
 
 /**\ingroup Engine

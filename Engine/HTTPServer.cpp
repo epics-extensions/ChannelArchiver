@@ -138,19 +138,6 @@ void HTTPServer::run()
     bool overloaded = false;
     while (go)
     {
-        size_t num_clients = client_cleanup();
-        if (num_clients >= MAX_NUM_CLIENTS)
-        {
-            if (! overloaded)
-            {
-                LOG_MSG("HTTPServer reached %zu concurrent clients.\n",
-                        num_clients);
-                overloaded = true;
-            }
-            epicsThreadSleep(HTTPD_TIMEOUT);
-            continue;
-        }
-        overloaded = false;
         // Don't hang in accept() but use select() so that
         // we have a chance to react to the main program
         // setting go == false
@@ -170,6 +157,25 @@ void HTTPServer::run()
         SOCKET peer = accept(socket, (struct sockaddr *)&peername, &len);
         if (peer == INVALID_SOCKET)
             continue;
+        // How to handle too many clients?
+        // Certainly try to avoid overload, i.e. ignore them.
+        // Accept, give error, and then close their connections?
+        size_t num_clients = client_cleanup();
+        if (num_clients >= MAX_NUM_CLIENTS)
+        { 
+            if (! overloaded)
+            {
+                LOG_MSG("HTTPServer reached %zu concurrent clients.\n",
+                        num_clients);
+                overloaded = true;
+            }
+            reject(peer);
+            // Wait: Don't allow 'attack' of clients to raise our CPU load.
+            //epicsThreadSleep(HTTPD_TIMEOUT);
+            continue;
+        }
+        overloaded = false;
+            
 #if     defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
         {
             stdString local_info, peer_info;
@@ -241,6 +247,16 @@ size_t HTTPServer::client_cleanup()
         LOG_MSG("%zu clients left.\n", num_clients);
 #   endif
     return num_clients;
+}
+
+void HTTPServer::reject(SOCKET socket)
+{
+    {
+        HTMLPage page(socket, "Error");
+        page.line("Too many clients");
+    }
+    shutdown(socket, 2);
+    epicsSocketDestroy(socket);    
 }
 
 void HTTPServer::serverinfo(SOCKET socket)

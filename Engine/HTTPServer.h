@@ -32,8 +32,13 @@
 // Maximum number of clients that we accept.
 // This includes connections that are "done"
 // and need to be cleaned up
-// (which happens every HTTPD_TIMEOUT seconds)
-#define MAX_NUM_CLIENTS 10
+// (which happens every HTTPD_TIMEOUT seconds).
+// Since most clients lock the engine to get the
+// list of channels,
+// really only one client can run at a time.
+// Allowing a few more to queue up is OK,
+// but a long list doesn't make any sense.
+#define MAX_NUM_CLIENTS 3
 
 // These timeouts influence how quickly the server reacts,
 // including how fast the whole engine can be shut down.

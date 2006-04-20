@@ -73,12 +73,14 @@ void Engine::attachToProcessVariableContext(Guard &guard)
     
 void Engine::read_config(Guard &guard, const stdString &file_name)
 {
+    LOG_ASSERT(is_running == false);    
     config.read(file_name.c_str(), this);
     DataWriter::file_size_limit = (FileOffset) config.getFileSizeLimit();
 }
 
 void Engine::write_config(Guard &guard)
 {
+    LOG_ASSERT(is_running == false);    
     FUX fux;
     FUX::Element *doc = new FUX::Element(0, "engineconfig");
     fux.setDoc(doc);
@@ -99,6 +101,7 @@ void Engine::write_config(Guard &guard)
 
 GroupInfo *Engine::addGroup(Guard &guard, const stdString &group_name)
 {
+    LOG_ASSERT(is_running == false);        
     GroupInfo *group = findGroup(guard, group_name);
     if (!group)
     {
@@ -113,6 +116,7 @@ void Engine::addChannel(const stdString &group_name,
                         double scan_period,
                         bool disabling, bool monitor)
 {
+    LOG_ASSERT(is_running == false);        
     /*printf("Group '%s', Channel '%s': period %g, %s%s\n",
            group_name.c_str(), channel_name.c_str(), scan_period,
            (monitor ? "monitor" : "scan"),

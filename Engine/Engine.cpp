@@ -21,6 +21,7 @@ Engine::Engine(const stdString &index_name)
       process_delay_avg(0.0)
 {
     // LOG_MSG("Engine 0x%lX\n", (unsigned long) this);
+    start_time = epicsTime::getCurrent();    
 }
 
 Engine::~Engine()
@@ -167,13 +168,14 @@ void Engine::start(Guard &engine_guard)
 {
     engine_guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(is_running == false);
-    start_time = epicsTime::getCurrent();
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
     {
         ArchiveChannel *c = *channel;
-        Guard guard(*c);
-        c->start(guard);
+        {
+            Guard guard(*c);
+            c->start(guard);
+        }
         ++channel;
     }
     is_running = true;
@@ -187,8 +189,10 @@ void Engine::stop(Guard &engine_guard)
     while (channel != channels.end())
     {
         ArchiveChannel *c = *channel;
-        Guard guard(*c);
-        c->stop(guard);
+        {
+            Guard guard(*c);
+            c->stop(guard);
+        }
         ++channel;
     }
     is_running = false;

@@ -184,6 +184,7 @@ void ArchiveChannel::start(Guard &guard)
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(!isRunning(guard));
     Guard sample_guard(*sample_mechanism);
+    GuardRelease release(guard); // Avoid deadlock with CA callbacks        
     sample_mechanism->start(sample_guard);
 }
       
@@ -268,7 +269,8 @@ void ArchiveChannel::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isRunning(guard));
-    Guard sample_guard(*sample_mechanism);    
+    Guard sample_guard(*sample_mechanism);
+    GuardRelease release(guard); // Avoid deadlock with CA callbacks    
     sample_mechanism->stop(sample_guard);
 }
 

@@ -341,12 +341,19 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
                 return;
             }
             // else: Connection is 'up'
+            _id = me->id;
+            if (_id == 0)
+            {
+                LOG_MSG("ProcessVariable(%s) received "
+                        "unexpected connection_handler\n",
+                        me->getName().c_str());
+                return;
+            }
 #           ifdef DEBUG_PV
             printf("ProcessVariable(%s) getting control info\n",
                    me->getName().c_str());
 #           endif
             me->state = GETTING_INFO;
-            _id = me->id;
         }
         // Get control information for this channel.
         // Unlocked while in CAC.

@@ -37,8 +37,16 @@
  *  <li>ProcessVariableContext
  *  </ol>
  * 
+ *  The simple deadlock situation:
+ *  Trying to stop a channel (lock channel, PV, then ca_* locks CA),
+ *  while a CA value arrives (lock CA, then PV, then channel).
+ *  <p>
+ *  In addition, a CA callback can result in more calls:<BR>
+ *  CA -> ProcessVariable callback -> ArchiveChannel ->
+ *  Group disable/enable -> _other_ ArchiveChannel en/disable ...
+ *  <p>
  *  Attempts to add channels or re-load configs while running
- *  resulted in deadlocks.
+ *  resulted in deadlocks that I couldn't easily resolve.
  *  <p>
  *  Example:<br>
  *  HTTPClient locks engine, adds channel, starts it since we're running.
@@ -54,8 +62,16 @@
  *  channel undergoing reconfiguration.
  *  <p>
  *  The only sane way out seems to be:
- *  stop the engine while updating the configuration.
- *  All *config*() methods will thus throw exceptions while isRunning().
+ *  <ul>
+ *  <li>Unlock as much as possible while calling CA, to avoid deadlocks
+ *      with CA.
+ *  <li>This, however, means that we must not change anything (add channels,
+ *      group membership, sample mechanisms) while CA is running and we
+ *      are temporarily unlocked.
+ *  <li>So we stop the engine while modifying the configuration.
+ *      All *config*() methods will throw exceptions while isRunning()
+ *      to assert this.
+ *  </ul>
  */
  
 /** \ingroup Engine

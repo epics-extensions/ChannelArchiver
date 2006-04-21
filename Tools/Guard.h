@@ -31,14 +31,14 @@ class Guard
 {
 public:
     /** Constructor attaches to mutex and locks. */
-    Guard(Guardable &guardable) : mutex(guardable.getMutex())
+    Guard(Guardable &guardable) : mutex(guardable.getMutex()), is_locked(false)
     {
         lock();
         is_locked = true;
     }
 
     /** Constructor attaches to mutex and locks. */
-    Guard(epicsMutex &mutex) : mutex(mutex)
+    Guard(epicsMutex &mutex) : mutex(mutex), is_locked(false)
     {
         lock();
         is_locked = true;

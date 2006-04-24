@@ -22,7 +22,7 @@ static void caException(struct exception_handler_args args)
 }
 
 ProcessVariableContext::ProcessVariableContext()
-    : ca_context(0), refs(0), flush_requested(false)
+    : is_running(false), ca_context(0), refs(0), flush_requested(false)
 {
 	LOG_MSG("Creating ChannelAccess Context.\n");
 	if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL ||
@@ -48,6 +48,24 @@ ProcessVariableContext::~ProcessVariableContext()
 epicsMutex &ProcessVariableContext::getMutex()
 {
     return mutex;
+}
+
+void ProcessVariableContext::start(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    is_running = true;
+}
+
+bool ProcessVariableContext::isRunning(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    return is_running;
+}
+
+void ProcessVariableContext::stop(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    is_running = false;
 }
 
 void ProcessVariableContext::attach(Guard &guard)

@@ -62,48 +62,48 @@
 <buildTargets>
 <target name="all" path="Engine" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <buildTarget>all</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="test" path="Engine" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <buildTarget>test</buildTarget>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="Tools" path="Tools" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <buildTarget>all</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="test" path="Engine_New" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <buildTarget>test</buildTarget>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="all" path="Engine_New" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="all" path="Storage" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <buildTarget>all</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="all" path="XMLRPCServer" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments></buildArguments>
+<buildArguments/>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>

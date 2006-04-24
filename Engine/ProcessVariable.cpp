@@ -510,6 +510,9 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
     }
 }
 
+// TODO Check context::isRunning in all callbacks
+
+
 // Each subscription monitor or 'get' callback goes here:
 void ProcessVariable::value_callback(struct event_handler_args arg)
 {

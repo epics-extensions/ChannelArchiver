@@ -5,14 +5,31 @@
 #include <Guard.h>
 
 /**\ingroup Engine
- *  Context for ProcessVariables.
- *  
+ *  Context for ProcessVariable instances.
+ *  <p>
  *  ChannelAccess assigns PVs to contexts.
  *  This one helps to use the same context across threads.
- * 
+ *  <p>
  *  Uses a reference count to check that
  *  all PVs which used it were cleared when the context
  *  is destroyed.
+ *  <p>
+ *  Also helps to avoid some deadlocks:
+ *  We cannot re-configure the Engine while CA callbacks
+ *  arrive, since we cannot lock and change the ArchiveChannel
+ *  and GroupInfo lists while CA callbacks might change the
+ *  connection status of groups or the engine,
+ *  or while callbacks disable/enable groups.
+ *  <p>
+ *  But even stopping all the channels can result in a deadlock,
+ *  since the engine is locked, looping over all channels and
+ *  eventually invoking ca_clear_channel,
+ *  while at the same time a "connect" callback can try to
+ *  increment the engine's connect count.
+ *  <p>
+ *  So when the engine stops, it'll stop the ProcessVariableContext,
+ *  which sets a flag to ignore all CA callbacks inside the
+ *  ProcessVariable.
  */
 class ProcessVariableContext : public Guardable
 {
@@ -25,6 +42,16 @@ public:
     
     /** @see Guardable */
     epicsMutex &getMutex();
+    
+    /** Start the context. */        
+    void start(Guard &guard);
+      
+    /** @return Returns true if start() has been called but not stop().
+     *  @see start()     */
+    bool isRunning(Guard &guard);      
+      
+    /** Stop the context. */
+    void stop(Guard &guard);
     
     /** Attach current thread to this context.
      *  <p>
@@ -74,6 +101,8 @@ public:
 private:
     // The mutex
     epicsMutex mutex;
+
+    bool is_running;
     
     // The context
     struct ca_client_context *ca_context;
@@ -83,5 +112,6 @@ private:
     
     bool flush_requested;
 };
+
 
 #endif /*PROCESSVARIABLECONTEXT_H_*/

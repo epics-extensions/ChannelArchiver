@@ -168,10 +168,6 @@ void Engine::start(Guard &engine_guard)
 {
     engine_guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(is_running == false);
-    {
-        Guard ctx_guard(pv_context);
-        pv_context.start(ctx_guard);
-    }
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
     {
@@ -189,10 +185,6 @@ void Engine::stop(Guard &engine_guard)
 {
     engine_guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(is_running == true);
-    {
-        Guard ctx_guard(pv_context);
-        pv_context.stop(ctx_guard);
-    }    
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
     while (channel != channels.end())
     {

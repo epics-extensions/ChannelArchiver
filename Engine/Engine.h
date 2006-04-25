@@ -36,42 +36,32 @@
  *  <li>ProcessVariable
  *  <li>ProcessVariableContext
  *  </ol>
- * 
- *  The simple deadlock situation:
- *  Trying to stop a channel (lock channel, PV, then ca_* locks CA),
- *  while a CA value arrives (lock CA, then PV, then channel).
+ *
+ *  Beyond the reach of this code are locks internal to the CA client library.
+ *  Possible lock chains:
  *  <p>
- *  In addition, a CA callback can result in more calls:<BR>
- *  CA -> ProcessVariable callback -> ArchiveChannel ->
- *  Group disable/enable -> _other_ ArchiveChannel en/disable ...
+ *  1. Start the engine: Engine, ArchiveChannel, PV, ca_...
  *  <p>
- *  Attempts to add channels or re-load configs while running
- *  resulted in deadlocks that I couldn't easily resolve.
+ *  2. CA connect or control info callback: CA, PV, channel, group and engine
+ *     to update number of connected channels.
  *  <p>
- *  Example:<br>
- *  HTTPClient locks engine, adds channel, starts it since we're running.
- *  Then adds another channel, and tries to start it (lock order Engine, CA).
- *  At the same time, the connection for the first channel arrives from
- *  Channel Access, trying to lock the Engine in acConnected (order CA, Engine):
- *  Deadlock.
+ *  3. CA value arrives: CA,  PV, channel.<br>
+ *     Maybe enable/disable group, which locks group and other channels.
  *  <p>
- *  Another problem arises when re-configuring a channel, i.e.
- *  changing its ScanMechanism and thus replacing its ProcessVariable,
- *  while other PVs can at the same time receive callbacks which
- *  result in the need to enable/disable the group which includes the
- *  channel undergoing reconfiguration.
+ *  4. HTTP client lists group or channel info:<br>
+ *     Lock Engine, group or channel, maybe channel's PV and ca_state().<br>
+ *     DEADLOCK with 2 or 3.
  *  <p>
- *  The only sane way out seems to be:
- *  <ul>
- *  <li>Unlock as much as possible while calling CA, to avoid deadlocks
- *      with CA.
- *  <li>This, however, means that we must not change anything (add channels,
- *      group membership, sample mechanisms) while CA is running and we
- *      are temporarily unlocked.
- *  <li>So we stop the engine while modifying the configuration.
- *      All *config*() methods will throw exceptions while isRunning()
- *      to assert this.
- *  </ul>
+ *  5. Stop a channel (including from HTTPClient config update):
+ *     channel, PV, then ca_*<br>
+ *     DEADLOCK with 2 or 3.
+ *  <p>
+ *  6. Stop engine (including ...): engine, channel, PV, ca_<br>
+ *     DEADLOCK with 2 or 3.
+ *  <p>
+ *  The basic PV/CA conflicts need to be handled by PV lock releases
+ *  whenever calling CA.
+ *  <p>
  */
  
 /** \ingroup Engine

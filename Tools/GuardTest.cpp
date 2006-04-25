@@ -11,6 +11,7 @@ TEST_CASE guard_test()
         guard.check(__FILE__, __LINE__, mutex1);
         TEST("Guard::check is OK");
         TEST(guard.isLocked());
+        mutex1.show(10);
         try
         {
             guard.check(__FILE__, __LINE__, mutex2);

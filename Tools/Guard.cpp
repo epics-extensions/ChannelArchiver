@@ -29,7 +29,7 @@ void Guard::lock()
         if (mutex.tryLock())
             break;
         epicsThreadSleep(0.01);
-        if (++i > 1000)
+        if (++i > 1000) // apx. 10 seconds
         {
             LOG_MSG("Assumed deadlock");
             abort();

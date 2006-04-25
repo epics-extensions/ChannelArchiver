@@ -42,17 +42,7 @@ public:
     
     /** @see Guardable */
     epicsMutex &getMutex();
-    
-    /** Start the context. */        
-    void start(Guard &guard);
-      
-    /** @return Returns true if start() has been called but not stop().
-     *  @see start()     */
-    bool isRunning(Guard &guard);      
-      
-    /** Stop the context. */
-    void stop(Guard &guard);
-    
+        
     /** Attach current thread to this context.
      *  <p>
      *  Except for the thread that created the context,
@@ -101,8 +91,6 @@ public:
 private:
     // The mutex
     epicsMutex mutex;
-
-    bool is_running;
     
     // The context
     struct ca_client_context *ca_context;

@@ -43,21 +43,34 @@
  *  1. Start the engine: Engine, ArchiveChannel, PV, ca_...
  *  <p>
  *  2. CA connect or control info callback: CA, PV, channel, group and engine
- *     to update number of connected channels.
+ *     to update number of connected channels.<br>
+ *     This is basically the reversed lock order!
+ *     To preserve the lock order, the channel will release the PV lock
+ *     before locking itself, and unlock itself before locking the group.
+ *     This does assume that the configuration (group membership etc.)
+ *     does not change! 
  *  <p>
  *  3. CA value arrives: CA,  PV, channel.<br>
  *     Maybe enable/disable group, which locks group and other channels.
+ *     As in 2, the lock order must be preserved.
  *  <p>
  *  4. HTTP client lists group or channel info:<br>
  *     Lock Engine, group or channel, maybe channel's PV and ca_state().<br>
  *     DEADLOCK with 2 or 3.
+ *     <br>
+ *     TODO: Handled by not keeping any locks?
  *  <p>
  *  5. Stop a channel (including from HTTPClient config update):
  *     channel, PV, then ca_*<br>
  *     DEADLOCK with 2 or 3.
+ *     <br>
+ *     TODO: ???   
  *  <p>
  *  6. Stop engine (including ...): engine, channel, PV, ca_<br>
  *     DEADLOCK with 2 or 3.
+ *     <br>
+ *     TODO: Handle by 2 not locking the engine?
+ *           So engine gets connection count by counting the group's count?
  *  <p>
  *  The basic PV/CA conflicts need to be handled by PV lock releases
  *  whenever calling CA.

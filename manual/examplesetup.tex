@@ -145,6 +145,11 @@ as ``archive1.sns.ornl.gov'' etc.
 The same applies to the host tags which specify where a
 data server should run.
 
+It is important to note that the host names are used as simple regular expressions,
+and not in the sense of a name lookup.
+So ``\INDEX{localhost}'' would \emph{not} work as expected!
+Instead of matching any host, it will probably match none of your hosts.
+
 For the example from listing \ref{lst:archiveconfig}, we would get
 these subdirectories:
 \begin{lstlisting}[frame=none,keywordstyle=\sffamily]

@@ -10,7 +10,6 @@
 #include "SampleMechanism.h"
 #include "EngineConfig.h"
 #include "ScanList.h"
-#include "ArchiveChannelStateListener.h"
 
 /** \ingroup Engine
  *  One archived channel.
@@ -92,21 +91,6 @@ public:
      */
     unsigned long write(Guard &guard, Index &index);
 
-    /** Add a ProcessVariableStateListener.
-     *  <p>
-     *  Only allowed while not running.
-     *  @see isRunning
-     */
-    void addStateListener(Guard &guard, ArchiveChannelStateListener *listener);
-
-    /** Remove a ProcessVariableStateListener.
-     *  <p>
-     *  Only allowed while not running.
-     *  @see isRunning
-     */
-    void removeStateListener(Guard &guard,
-                             ArchiveChannelStateListener *listener);
-                            
     /** Implements ProcessVariableStateListener by forwrding
      *  connect/disconnect info to ArchiveChannelStateListeners
      */
@@ -138,8 +122,6 @@ private:
     // Groups to which this channel belongs (at least one)
     stdList<class GroupInfo *> groups;
     
-    stdList<ArchiveChannelStateListener *> state_listeners;
-    
     /** @return Returns true if channel can disable any groups.
      *  That does not imply that it currently <b>does</b> disable
      *  anything.
@@ -155,10 +137,6 @@ private:
     SampleMechanism *createSampleMechanism(EngineConfig &config,
                                            ProcessVariableContext &ctx,
                                            ScanList &scan_list);
-                                           
-    void fireAcConnected(Guard &guard, const epicsTime &when);
-
-    void fireAcDisconnected(Guard &guard, const epicsTime &when);
 };
 
 inline const stdList<class GroupInfo *>

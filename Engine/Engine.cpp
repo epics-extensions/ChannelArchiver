@@ -15,7 +15,6 @@ Engine::Engine(const stdString &index_name)
     : is_running(false),
       index_name(index_name),
       description("Archive Engine"),
-      num_connected(0),
       write_duration(0.0),
       write_count(0),
       process_delay_avg(0.0)
@@ -36,14 +35,6 @@ Engine::~Engine()
         {
             ArchiveChannel *c = channels.back();
             channels.pop_back();
-            try
-            {
-                Guard guard(*c);
-                c->removeStateListener(guard, this);
-            }
-            catch (...)
-            {
-            }
             delete c;
         }
         while (! groups.empty())
@@ -154,9 +145,6 @@ void Engine::addChannel(const stdString &group_name,
         {   // Lock order: engine, group, channel
             Guard channel_guard(*channel);
             channel->addToGroup(group_guard, group, channel_guard, disabling);
-            // Listen to connect/disconnect
-            if (new_channel)
-                channel->addStateListener(channel_guard, this);
             // Start channel that's added online
             if (is_running)
                 channel->start(channel_guard);
@@ -264,6 +252,21 @@ GroupInfo *Engine::findGroup(Guard &engine_guard, const stdString &name)
     return 0;
 }
 
+size_t Engine::getNumConnected(Guard &guard) const
+{
+    size_t count = 0;
+    guard.check(__FILE__, __LINE__, mutex);
+    stdList<ArchiveChannel *>::const_iterator channel;
+    for (channel = channels.begin();  channel != channels.end();  ++channel)
+    {
+        ArchiveChannel *c = *channel;
+        Guard channel_guard(*c);
+        if (c->isConnected(channel_guard))
+            ++count;
+    }
+    return count;
+}
+
 ArchiveChannel *Engine::findChannel(Guard &engine_guard, const stdString &name)
 {
     engine_guard.check(__FILE__, __LINE__, mutex);
@@ -309,26 +312,3 @@ unsigned long Engine::write(Guard &engine_guard)
     //LOG_MSG("Engine: writing done.\n");
     return count;
 }
-
-void Engine::acConnected(Guard &guard, ArchiveChannel &c,
-                         const epicsTime &when)
-{
-    LOG_MSG("Engine: '%s' connected\n", c.getName().c_str());
-    GuardRelease release(guard); // Lock order: Engine before channel.
-    {
-        Guard engine_guard(*this);
-        ++num_connected;
-    }
-}
-    
-void Engine::acDisconnected(Guard &guard, ArchiveChannel &c,
-                            const epicsTime &when)
-{
-    LOG_MSG("Engine: '%s' disconnected\n", c.getName().c_str());
-    GuardRelease release(guard); // Lock order: Engine before channel.
-    {
-        Guard engine_guard(*this);
-        --num_connected;
-    }
-}
-

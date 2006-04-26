@@ -39,39 +39,38 @@
  *
  *  Beyond the reach of this code are locks internal to the CA client library.
  *  Possible lock chains:
- *  <p>
- *  1. Start the engine: Engine, ArchiveChannel, PV, ca_...
- *  <p>
- *  2. CA connect or control info callback: CA, PV, channel, group and engine
- *     to update number of connected channels.<br>
- *     This is basically the reversed lock order!
- *     To preserve the lock order, the channel will release the PV lock
- *     before locking itself, and unlock itself before locking the group.
- *     This does assume that the configuration (group membership etc.)
- *     does not change! 
- *  <p>
- *  3. CA value arrives: CA,  PV, channel.<br>
- *     Maybe enable/disable group, which locks group and other channels.
- *     As in 2, the lock order must be preserved.
- *  <p>
- *  4. HTTP client lists group or channel info:<br>
- *     Lock Engine, group or channel, maybe channel's PV and ca_state().<br>
- *     DEADLOCK with 2 or 3.
- *     <br>
- *     TODO: Handled by not keeping any locks?
- *  <p>
- *  5. Stop a channel (including from HTTPClient config update):
- *     channel, PV, then ca_*<br>
- *     DEADLOCK with 2 or 3.
- *     <br>
- *     TODO: ???   
- *  <p>
- *  6. Stop engine (including ...): engine, channel, PV, ca_<br>
- *     DEADLOCK with 2 or 3.
- *     <br>
- *     TODO: Handle by 2 not locking the engine?
- *           So engine gets connection count by counting the group's count?
- *  <p>
+ *  <ul>
+ *  <li>Start the engine: Engine, ArchiveChannel, ProcessVariable, ca_...<br>
+ *      Has to lock the Engine to prevent concurrent stop().
+ *  <li>CA connect or control info callback: CA, PV, channel, group.<br>
+ *      This is basically the reversed lock order!
+ *      To preserve the lock order, the channel will release the PV lock
+ *      before locking itself, and unlock itself before locking the group.
+ *      This does assume that the configuration (group membership etc.)
+ *      does not change!<br>
+ *      The engine used to maintain a connection count that was updated
+ *      in here as well, but locking the engine in here results in deadlocks
+ *      with case 6.
+ *  <li>CA value arrives: CA,  PV, channel.<br>
+ *      Maybe enable/disable group, which locks group and other channels.
+ *      As in 2, the lock order must be preserved.
+ *  <li>HTTP client lists group or channel info:<br>
+ *      Lock Engine, group or channel, maybe channel's PV and ca_state().<br>
+ *      Must lock the engine to prevent concurrent engine changes.
+ *      DEADLOCK with 2 or 3.
+ *      <br>
+ *      TODO: Handled by not keeping any locks?
+ *  <li>Stop a channel (including from HTTPClient config update):
+ *      channel, PV, then ca_*<br>
+ *      Handled as part of 6.
+ *  <li>Stop engine (including ...): engine, channel, PV, ca_<br>
+ *      DEADLOCK with 2 or 3.
+ *      <br>
+ *      Must lock the engine to prevent concurrent engine changes.
+ *  <li>Change channel or overall config<br>
+ *      Handled after stopping the Engine, reload, then start.
+ *      No new problems.
+ *  </ul>
  *  The basic PV/CA conflicts need to be handled by PV lock releases
  *  whenever calling CA.
  *  <p>
@@ -81,8 +80,7 @@
  *  The archive engine.
  */
 class Engine : public Guardable,
-               public EngineConfigListener,
-               public ArchiveChannelStateListener
+               public EngineConfigListener
 {
 public:
     static const double MAX_DELAY = 0.5;
@@ -128,7 +126,7 @@ public:
     { return channels; }
 
     /** @return Returns number of connected channels. */    
-    size_t  getNumConnected(Guard &guard) const  { return num_connected; }
+    size_t getNumConnected(Guard &guard) const;
 
     /** @return Returns channel with given name or 0. */    
     ArchiveChannel *findChannel(Guard &engine_guard, const stdString &name);    
@@ -194,11 +192,6 @@ public:
      */
     unsigned long write(Guard &guard);
     
-    // ArchiveChannelStateListener
-    void acConnected(Guard &guard, ArchiveChannel &pv, const epicsTime &when);
-    
-    // ArchiveChannelStateListener
-    void acDisconnected(Guard &guard,ArchiveChannel &pv,const epicsTime &when);
 private:
     epicsMutex                mutex;
     bool                      is_running;
@@ -210,7 +203,6 @@ private:
     ProcessVariableContext    pv_context;
     stdList<GroupInfo *>      groups;   // scan-groups of channels
 	stdList<ArchiveChannel *> channels; // all the channels
-    size_t                    num_connected; // Updated by ArchiveChannelStateListener
     double                    write_duration; // Updated by process()
     size_t                    write_count;    // process()
     double                    process_delay_avg;// process()

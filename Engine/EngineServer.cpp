@@ -570,6 +570,32 @@ static void parseConfig(HTTPClientConnection *connection,
     }
 }
 
+static void restart(HTTPClientConnection *connection,
+                    const stdString &path, void *user_arg)
+{
+    Engine *engine = (Engine *)user_arg;
+    HTMLPage page(connection->getSocket(), "Archiver Engine");
+    try
+    {
+        page.line("<H1>Restart</H1>");
+        page.line("Stopping the engine...<p>");
+        {
+            Guard engine_guard(*engine);
+            engine->attachToProcessVariableContext(engine_guard);
+            engine->stop(engine_guard);
+            page.line("Starting Engine again...<p>");
+            engine->start(engine_guard);
+        }        
+    }
+    catch (GenericException &e)
+    {
+         page.line("<H3>Error</H3>");
+         page.line("<PRE>");
+         page.line(e.what());
+         page.line("</PRE>");
+    }
+}
+
 static void channelGroups(HTTPClientConnection *connection,
                           const stdString &path, void *user_arg)
 {
@@ -659,7 +685,7 @@ static PathHandlerList engine_handlers[] =
     { "/addgroup?", 10, addGroup },
     { "/parseconfig?", 12, parseConfig },
     { "/channelgroups?", 15, channelGroups },
-//    { "/castatus?", 10, caStatus },
+    { "/restart", 0, restart },
     { "/",  0, engineinfo },
     { 0,    0,  },
 };

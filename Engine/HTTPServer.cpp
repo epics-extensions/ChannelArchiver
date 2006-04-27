@@ -134,62 +134,77 @@ void HTTPServer::run()
     if (sigaction(SIGPIPE, &action, 0))
         LOG_MSG("Error setting SIGPIPE handler\n");
 
-    // Wait for HTTP clients & spawn client handlers.
-    bool overloaded = false;
-    while (go)
+    try
     {
-        // Don't hang in accept() but use select() so that
-        // we have a chance to react to the main program
-        // setting go == false
-        fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(socket, &fds);
-        struct timeval timeout;
-        timeout.tv_sec = HTTPD_TIMEOUT;
-        timeout.tv_usec = 0;
-        if (select(socket+1, &fds, 0, 0, &timeout)!=1 ||
-            !FD_ISSET(socket, &fds))
-            continue;
-        if (!go) // might have stopped while in select()
-            break;
-        struct sockaddr_in peername;
-        socklen_t len = sizeof peername;
-        SOCKET peer = accept(socket, (struct sockaddr *)&peername, &len);
-        if (peer == INVALID_SOCKET)
-            continue;
-        // How to handle too many clients?
-        // Certainly try to avoid overload, i.e. ignore them.
-        // Accept, give error, and then close their connections?
-        size_t num_clients = client_cleanup();
-        if (num_clients >= MAX_NUM_CLIENTS)
-        { 
-            if (! overloaded)
-            {
-                LOG_MSG("HTTPServer reached %zu concurrent clients.\n",
-                        num_clients);
-                overloaded = true;
-            }
-            reject(peer);
-            // Wait: Don't allow 'attack' of clients to raise our CPU load.
-            //epicsThreadSleep(HTTPD_TIMEOUT);
-            continue;
-        }
-        overloaded = false;
-            
-#if     defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
+        // Wait for HTTP clients & spawn client handlers.
+        bool overloaded = false;
+        while (go)
         {
-            stdString local_info, peer_info;
-            GetSocketInfo(peer, local_info, peer_info);
-            client_IP_log_throttle.LOG_MSG(
-                "HTTPServer thread 0x%08lX accepted %s/%s.\n",
-                (unsigned long)epicsThreadGetIdSelf(),
-                local_info.c_str(), peer_info.c_str());
+            // Don't hang in accept() but use select() so that
+            // we have a chance to react to the main program
+            // setting go == false
+            fd_set fds;
+            FD_ZERO(&fds);
+            FD_SET(socket, &fds);
+            struct timeval timeout;
+            timeout.tv_sec = HTTPD_TIMEOUT;
+            timeout.tv_usec = 0;
+            if (select(socket+1, &fds, 0, 0, &timeout)!=1 ||
+                !FD_ISSET(socket, &fds))
+                continue;
+            if (!go) // might have stopped while in select()
+                break;
+            struct sockaddr_in peername;
+            socklen_t len = sizeof peername;
+            SOCKET peer = accept(socket, (struct sockaddr *)&peername, &len);
+            if (peer == INVALID_SOCKET)
+                continue;
+            // How to handle too many clients?
+            // Certainly try to avoid overload, i.e. ignore them.
+            // Accept, give error, and then close their connections?
+            size_t num_clients = client_cleanup();
+            if (num_clients >= MAX_NUM_CLIENTS)
+            { 
+                if (! overloaded)
+                {
+                    LOG_MSG("HTTPServer reached %zu concurrent clients.\n",
+                            num_clients);
+                    overloaded = true;
+                }
+                reject(peer);
+                // Wait: Don't allow 'attack' of clients to raise our CPU load.
+                //epicsThreadSleep(HTTPD_TIMEOUT);
+                continue;
+            }
+            overloaded = false;
+                
+    #if     defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
+            {
+                stdString local_info, peer_info;
+                GetSocketInfo(peer, local_info, peer_info);
+                client_IP_log_throttle.LOG_MSG(
+                    "HTTPServer thread 0x%08lX accepted %s/%s.\n",
+                    (unsigned long)epicsThreadGetIdSelf(),
+                    local_info.c_str(), peer_info.c_str());
+            }
+    #endif
+            start_client(peer);
+            // Allow a little runtime, so that it might already be done
+            // when we perform the next client_cleanup()
+            // epicsThreadSleep(HTTPD_TIMEOUT);
         }
-#endif
-        start_client(peer);
-        // Allow a little runtime, so that it might already be done
-        // when we perform the next client_cleanup()
-        // epicsThreadSleep(HTTPD_TIMEOUT);
+    }
+    catch (GenericException &e)
+    {
+        LOG_MSG("HTTPServer thread exception:\n%s\n", e.what());
+    }
+    catch (std::exception &e)
+    {
+        LOG_MSG("HTTPServer thread fatal exception:\n%s\n", e.what());
+    }    
+    catch (...)
+    {
+        LOG_MSG("HTTPServer thread: Unknown exception\n");
     }
 #ifdef HTTPD_DEBUG
     LOG_MSG("HTTPServer thread 0x%08lX exiting.\n",
@@ -223,6 +238,7 @@ size_t HTTPServer::client_cleanup()
             continue;
         if (clients[i]->isDone())
         {
+            clients[i]->join();
             // Update runtime statistics
             client_duration = 0.99*client_duration + 0.01*clients[i]->getRuntime();
             // valgrind complains about access to undefined mem.
@@ -384,9 +400,17 @@ void HTTPClientConnection::run()
     }
     catch (...)
     {
-        LOG_MSG ("Unknown Exception\n");
+        LOG_MSG ("HTTPClient: Unknown Exception\n");
     }
     done = true;
+}
+
+void HTTPClientConnection::join()
+{
+    if (! thread.exitWait(1.0))
+    {
+        LOG_MSG("HTTPClientConnection::join() failed for # %zu", num);
+    }
 }
 
 // Result: done, i.e. connection can be closed?
@@ -488,6 +512,11 @@ bool HTTPClientConnection::analyzeInput()
     // Linear search ?!
     // Hash or map lookup isn't straightforward
     // because path has to be cut for parameters first...
+    if (strcmp(path.c_str(), "/ping") == 0)
+    {
+        // No output at all.
+        return true;
+    }
     if (strcmp(path.c_str(), "/server") == 0)
     {
         server->serverinfo(socket);

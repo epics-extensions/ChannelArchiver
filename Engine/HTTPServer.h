@@ -172,6 +172,8 @@ public:
     /** @returns The runtime in seconds. */
     double getRuntime() const
     {   return runtime; }
+    
+    void join();
 
 private:
     epicsThread              thread; // .. that handles this connection

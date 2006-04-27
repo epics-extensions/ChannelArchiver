@@ -84,13 +84,14 @@ For C and C++, we use xmlrpc-c from
 The Makefiles in ChannelArchiver/XMLRPCServer assume this to be
 installed in the default location, that is under /usr/local.
 
-With RedHat~6.2, xmlrpc-c compiled out of the box.  Under RedHat~9.0
+With RedHat~6.2, xmlrpc-c compiled out of the box.  With everything else,
+it has been a varying pain in the eyebrow. Under RedHat~9.0
 and Mandrake~10, it ran into a compile-time error that could be fixed
 by un-commenting ``using namespace std;'' in the header file which
 reported the error.  Under Fedora Core~2 and Mandrake~10, there were
 additional errors that can be fixed by replacing includes for
 ``strstream.h'' with ``strstream'' in the affected files.  Both RedHat
-AS and Mandrake 10 needed additional packages, see below.
+AS or ES and Mandrake 10 needed additional packages, see below.
 
 \NOTE The default serialization code in xmlrpc-c-0.9.9 will serialize
 sufficiently small numbers as zero, see details in section \ref{sec:xml:tiny}.
@@ -119,6 +120,10 @@ make install
 created as a result of ``configure'', you might prefer to read that
 patch file and apply the changes manually when you're not on RedHat 9
 or Mandrake 10.
+
+For RedHat Enterprise Linux Workstation 4 (gcc 3.4.4),
+I needed to delete an empty ``default:'' tag in line 103 of
+src/validatee.c.
 
 For Mac OS X, a version with patched configure scripts
 \cite{darwinports} that also includes the ``small numbers'' patch
@@ -174,7 +179,7 @@ or try this direct link:
      {http://xml.apache.org/xerces-c/index.html}
 \end{center}
 to get the sources. The Makefiles assume this to be installed under /usr/local.
-Example installation under RH9:
+Example installation under RedHat:
 \begin{lstlisting}[keywordstyle=\sffamily]
 tar vzxf xerces-c-current.tar.gz 
 cd xerces-c-src2_4_0
@@ -195,15 +200,15 @@ make install
 ./runConfigure -p macosx -n native -P /usr/local
 \end{lstlisting}
 
-\noindent Newer compilers (like gcc 4.0 as used on Mac OS 10.4)
-need to patch this:
+\noindent Newer compilers (like gcc 3.4.4 for RedHat WS 4,
+ or gcc 4.0 as used on Mac OS 10.4)
+need this patch:
 \begin{lstlisting}[keywordstyle=\sffamily]
 Add
    #include <xercesc/framework/MemoryManager.hpp>
 to
    src/xercesc/util/RefArrayOf.hpp
 \end{lstlisting}
-
 
 % Building Samples
 %cd $XERCESCROOT/samples

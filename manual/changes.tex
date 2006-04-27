@@ -42,6 +42,22 @@ and the rather confusing code inside the sample mechanisms
 has mostly been replaced with a 'pipe' of ProcessVariableFilter
 classes, which again can be tested individually.
 
+Also switched to using Eclipse as the IDE.
+Doesn't nearly work as nicely for C++ as it does for Java,
+but still nice.
+Basic setup:
+
+\begin{itemize}
+\item Unpack ChannelArchiver sources as usual.
+\item Open Eclipse, use the directory ``extensions/src'' as a
+      workspace directory.
+\item Create a new Standard C++ Makefile Project, using
+      ``ChannelArchiver'' as the name. It will parse the existing
+      sources, but with a few indexer errors.
+\item In ``Project/Properties/C/C++ Include Path and Symbols'',
+      select ChannelArchiver, ``Add Include .. from Workspace'',
+      and add Tools, Storage, LibIO, XML-RPC, Engine.
+\end{itemize}
 
 \item 03/27/2006 --- Version 2.8.1:\\
 Fix: The nanosecond check could cause a crash when receiving

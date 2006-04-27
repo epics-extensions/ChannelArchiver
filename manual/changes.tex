@@ -46,7 +46,6 @@ Also switched to using Eclipse as the IDE.
 Doesn't nearly work as nicely for C++ as it does for Java,
 but still nice.
 Basic setup:
-
 \begin{itemize}
 \item Unpack ChannelArchiver sources as usual.
 \item Open Eclipse, use the directory ``extensions/src'' as a
@@ -58,6 +57,17 @@ Basic setup:
       select ChannelArchiver, ``Add Include .. from Workspace'',
       and add Tools, Storage, LibIO, XML-RPC, Engine.
 \end{itemize}
+
+\NOTE When running under Fedora Core 2 (Linux kernel 2.6.5,
+gcc 3.3.3), the ArchiveEngine leaked memory whenever its HTTPD
+was accessed. The memory leak was visible in the ``top'' command,
+and in fact the engine would crash after some time with out-of-memory messages
+from pthread\_create.
+
+Interestingly, ``valgrind'' did not indicate a \INDEX{memory leak} on that
+same architecture. Furthermore, I could also not detect a memory leak on RedHat WS 4
+nor Mac OS X, so I assume this was a freak behavior for only Fedora 2,
+some combination of its compiler and runtime library. 
 
 \item 03/27/2006 --- Version 2.8.1:\\
 Fix: The nanosecond check could cause a crash when receiving

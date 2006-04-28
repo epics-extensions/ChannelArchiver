@@ -29,6 +29,8 @@ extern TEST_CASE test_bitset();
 extern TEST_CASE test_ca();
 // Unit ConversionsTest:
 extern TEST_CASE test_conversions();
+// Unit DeadlockTest:
+extern TEST_CASE deadlock_test();
 // Unit FUXTest:
 extern TEST_CASE test_fux();
 // Unit FilenameTest:
@@ -250,6 +252,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\ntest_conversions:\n");
             if (test_conversions())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "DeadlockTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit DeadlockTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "deadlock_test")==0)
+       {
+            ++run;
+            printf("\ndeadlock_test:\n");
+            if (deadlock_test())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

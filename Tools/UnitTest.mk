@@ -10,6 +10,7 @@ UnitTest_SRCS += BinIOTest.cpp
 UnitTest_SRCS += BitsetTest.cpp
 UnitTest_SRCS += CATest.cpp
 UnitTest_SRCS += ConversionsTest.cpp
+UnitTest_SRCS += DeadlockTest.cpp
 UnitTest_SRCS += FUXTest.cpp
 UnitTest_SRCS += FilenameTest.cpp
 UnitTest_SRCS += GenericExceptionTest.cpp

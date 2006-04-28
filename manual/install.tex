@@ -122,8 +122,9 @@ patch file and apply the changes manually when you're not on RedHat 9
 or Mandrake 10.
 
 For RedHat Enterprise Linux Workstation 4 (gcc 3.4.4),
-I needed to delete an empty ``default:'' tag in line 103 of
-src/validatee.c.
+I needed to delete an empty ``default:'' tag in a case statement
+in line 103 of src/validatee.c, because the compiler considered
+it an error.
 
 For Mac OS X, a version with patched configure scripts
 \cite{darwinports} that also includes the ``small numbers'' patch

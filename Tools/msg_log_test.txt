@@ -2,3 +2,7 @@
 04/12/2006 18:09:48 Test went OK
 04/12/2006 18:09:48 You should see this message in the log file,
 not on the screen
+04/28/2006 16:52:45 Hi
+04/28/2006 16:52:45 Test went OK
+04/28/2006 16:52:45 You should see this message in the log file,
+not on the screen

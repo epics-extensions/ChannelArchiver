@@ -1,47 +1,12 @@
 // Base
-#include <epicsMutex.h>
 #include <epicsThread.h>
 
 // Tools
-#include "ToolsConfig.h"
-#include "MsgLogger.h"
+#include "OrderedMutex.h"
 #include "Guard.h"
-#include "UnitTest.h"
+#include "MsgLogger.h"
 
-/** A mutex with informational name and lock order.
- *  <p>
- *  Meant to help with deadlock-detection.
- *  Attempt to take mutexes out of order,
- *  which could result in deadlocks,
- *  are detected.
- */
-class OrderedMutex
-{
-public:
-    /** Create mutex with name and lock order. */
-    OrderedMutex(const char *name, size_t order);
-
-    /** @return Returns the mutex name. */
-    const stdString &getName() const
-    {   return name; }
-
-    /** @return Returns the mutex order. */
-    size_t getOrder() const
-    {   return order; }
-
-    /** Lock the mutex. */
-    void lock(const char *file, size_t line);
-    
-    /** Unlock the mutex. */
-    void unlock();
-    
-private:
-    stdString name;
-    size_t order;
-    epicsMutex mutex;
-};
-
-// --------------------------
+#ifdef DETECT_DEADLOCK
 
 /** Monitor the locks that one thread currently holds. */
 class ThreadList
@@ -58,10 +23,17 @@ public:
     {   return thread; }
 
     /** Add a lock that this thread wants to take. */
-    bool add(const OrderedMutex *lock);
+    bool add(const OrderedMutex *lock)
+    {
+        locks.push_back(lock);
+        return check();
+    }
 
     /** Remove a lock from list for this thread. */
-    void remove(const OrderedMutex *lock);
+    void remove(const OrderedMutex *lock)
+    {
+        locks.remove(lock);
+    }
 
     /** Dump info about locks. */
     void dump() const;
@@ -72,17 +44,6 @@ private:
     /** Check lock order. */
     bool check() const;
 };
-
-bool ThreadList::add(const OrderedMutex *lock)
-{
-    locks.push_back(lock);
-    return check();
-}
-
-void ThreadList::remove(const OrderedMutex *lock)
-{
-    locks.remove(lock);
-}
 
 void ThreadList::dump() const
 {
@@ -128,9 +89,17 @@ class LockMonitor
 {
 public:
     /** Constructor. There should only be one lock monitor. */
-    LockMonitor();
+    LockMonitor()
+    {
+        LOG_ASSERT(! exists);
+        exists = true;
+    }
 
-    ~LockMonitor();
+    ~LockMonitor()
+    {
+        LOG_ASSERT(exists);
+        exists = false;
+    }
     
     /** Record that given thread tries to take some mutex. */
     void add(const char *file, size_t line,
@@ -147,17 +116,6 @@ private:
 
 bool LockMonitor::exists = false;
 
-LockMonitor::LockMonitor()
-{
-    LOG_ASSERT(! exists);
-    exists = true;
-}
-
-LockMonitor::~LockMonitor()
-{
-    LOG_ASSERT(exists);
-    exists = false;
-}
 
 void LockMonitor::add(const char *file, size_t line,
                       epicsThreadId thread, OrderedMutex &lock)
@@ -171,9 +129,11 @@ void LockMonitor::add(const char *file, size_t line,
         {
             if (!i->add(&lock))
             {
-                fprintf(stderr, "%s (%zu): Violation of lock order\n",
-                        file, line);
+                fprintf(stderr, "=========================================\n");
+                fprintf(stderr, "Violation of lock order in\n");
+                fprintf(stderr, "file %s, line %zu:\n\n", file, line);
                 dump(guard);
+                fprintf(stderr, "=========================================\n");
                 throw GenericException(file, line, "Violation of lock order");
             }
             return;
@@ -209,11 +169,6 @@ void LockMonitor::dump(Guard &guard)
 // The one and only lock monitor.
 LockMonitor lock_monitor;
 
-OrderedMutex::OrderedMutex(const char *name, size_t order)
-    : name(name), order(order)
-{
-}
-
 void OrderedMutex::lock(const char *file, size_t line)
 {
     lock_monitor.add(file, line, epicsThreadGetIdSelf(), *this);
@@ -225,39 +180,5 @@ void OrderedMutex::unlock()
     lock_monitor.remove(epicsThreadGetIdSelf(), *this);
     mutex.unlock();
 }
+#endif
 
-// --------------------------
-
-TEST_CASE deadlock_test()
-{
-    OrderedMutex a("a", 1);
-    OrderedMutex b("b", 2);
-    
-    try
-    {
-        a.lock(__FILE__, __LINE__);
-        b.lock(__FILE__, __LINE__);
-        
-        b.unlock();
-        a.unlock();
-    }
-    catch (GenericException &e)
-    {
-        FAIL("Caught exception");
-    }
-    try
-    {
-        b.lock(__FILE__, __LINE__);
-        a.lock(__FILE__, __LINE__);
-        FAIL("I reversed the lock order without problems?!");
-        b.unlock();
-        a.unlock();
-    }
-    catch (GenericException &e)
-    {
-        PASS("Caught exception:");
-        printf("        %s\n", e.what());
-    }
-    
-    TEST_OK;
-}

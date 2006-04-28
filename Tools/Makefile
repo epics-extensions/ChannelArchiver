@@ -49,6 +49,7 @@ LIB_SRCS += IndexConfig.cpp
 LIB_SRCS += Lockfile.cpp
 LIB_SRCS += MsgLogger.cpp
 LIB_SRCS += NetTools.cpp
+LIB_SRCS += OrderedMutex.cpp
 LIB_SRCS += RegularExpression.cpp
 LIB_SRCS += stdString.cpp
 LIB_SRCS += ThrottledMsgLogger.cpp

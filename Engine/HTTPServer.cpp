@@ -220,8 +220,26 @@ void HTTPServer::start_client(SOCKET peer)
     {
         if (clients[i])
             continue;
-        clients[i] = new HTTPClientConnection(this, peer, ++total_clients);
-        clients[i]->start();
+        try
+        {   // Found empty slot, create new client.
+            clients[i] = new HTTPClientConnection(this, peer, ++total_clients);
+            clients[i]->start();
+            return; // OK
+        }
+        catch (GenericException &e)
+        {
+            LOG_MSG("HTTPServer::start_client exception:\n%s\n", e.what());
+        }
+        catch (std::exception &e)
+        {
+            LOG_MSG("HTTPServer::start_client fatal exception:\n%s\n",
+                    e.what());
+        }    
+        catch (...)
+        {
+            LOG_MSG("HTTPServer::start_client: Unknown exception\n");
+        }
+        clients[i] = 0;
         return;
     }
     LOG_MSG("HTTPServer client list is full\n");

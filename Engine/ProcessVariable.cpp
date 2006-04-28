@@ -258,11 +258,17 @@ void ProcessVariable::subscribe(Guard &guard)
     // Prevent multiple subscriptions
     if (subscribed)
         return;
+    chid _id = id;
+    if (_id == 0)
+    {
+        LOG_MSG("Skipped subscription to %s, already stopped",
+                getName().c_str());
+        return;
+    }
     evid _ev_id;
     DbrType _type = dbr_type;
     DbrCount _count = dbr_count;
     {   // Release around CA call.
-        chid _id = id;
         GuardRelease release(guard);
         int status = ca_create_subscription(_type, _count, _id,
                                             DBE_LOG | DBE_ALARM,

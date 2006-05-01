@@ -18,6 +18,7 @@ extern TEST_CASE engine_config();
 extern TEST_CASE test_http_server();
 // Unit ProcessVariableTest:
 extern TEST_CASE process_variable();
+extern TEST_CASE pv_lock_test();
 // Unit SampleMechanismTest:
 extern TEST_CASE test_sample_get();
 extern TEST_CASE test_sample_monitor();
@@ -123,6 +124,15 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\nprocess_variable:\n");
             if (process_variable())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+       if (single_case==0  ||  strcmp(single_case, "pv_lock_test")==0)
+       {
+            ++run;
+            printf("\npv_lock_test:\n");
+            if (pv_lock_test())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

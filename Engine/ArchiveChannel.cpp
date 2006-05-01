@@ -267,7 +267,6 @@ void ArchiveChannel::stop(Guard &guard)
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isRunning(guard));
     Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
-    GuardRelease release(__FILE__, __LINE__, guard); // Avoid deadlock with CA callbacks    
     sample_mechanism->stop(sample_guard);
 }
 

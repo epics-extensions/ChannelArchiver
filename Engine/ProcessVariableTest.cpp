@@ -166,3 +166,89 @@ TEST_CASE process_variable()
     }
     TEST_OK;
 }
+
+// Demo for the following scenario:
+//
+// Application starts a channel,
+// and then tries to stop the channel
+// while a CA callback arrives.
+static epicsEvent hack;
+class LockApp : public ProcessVariableListener
+{
+public:
+    LockApp() : mutex("App", 1), connected(false), values(0)
+    {}
+    
+    virtual ~LockApp()
+    {}
+    
+    void start()
+    {
+        Guard guard(__FILE__, __LINE__, mutex);
+        pv = new ProcessVariable(ctx, "janet");
+        Guard pv_guard(__FILE__, __LINE__, *pv);
+        pv->addListener(pv_guard, this);
+        pv->start(pv_guard);
+        Guard ctx_guard(__FILE__, __LINE__, ctx);
+        ctx.flush(ctx_guard);
+    }
+    
+    void stop()
+    {
+        puts("stopping\n");
+        {
+            Guard guard(__FILE__, __LINE__, mutex);
+            Guard pv_guard(__FILE__, __LINE__, *pv);
+            pv->stop(pv_guard);
+            pv->removeListener(pv_guard, this);
+        }
+        pv = 0;
+        Guard ctx_guard(__FILE__, __LINE__, ctx);
+        ctx.flush(ctx_guard);
+    }
+
+    void pvConnected(Guard &pv_guard, ProcessVariable &pv,
+                     const epicsTime &when)
+    {
+        GuardRelease release(__FILE__, __LINE__, pv_guard);
+        {
+            Guard guard(__FILE__, __LINE__, mutex);
+            connected = true;
+            puts("Connected, triggering stop\n");
+        }
+        hack.signal();
+    }
+    
+    void pvDisconnected(Guard &pv_guard, ProcessVariable &pv,
+                        const epicsTime &when)
+    {
+        puts("disconnected\n");
+        GuardRelease release(__FILE__, __LINE__, pv_guard);
+        Guard guard(__FILE__, __LINE__, mutex);
+        connected = false;
+    }
+    
+    void pvValue(class Guard &pv_guard, class ProcessVariable &pv,
+                 const RawValue::Data *data)
+    {
+        Guard guard(__FILE__, __LINE__, mutex);
+        ++values;
+    }
+
+private:
+    OrderedMutex mutex;    
+    bool connected;
+    size_t values;
+    ProcessVariableContext ctx;
+    AutoPtr<ProcessVariable> pv;
+};
+
+TEST_CASE pv_lock_test()
+{
+    LockApp app;
+    app.start();
+    hack.wait();
+    app.stop();
+    epicsThreadSleep(2.0);
+    TEST_OK;
+}       

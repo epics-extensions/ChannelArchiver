@@ -35,6 +35,11 @@ public:
         locks.remove(lock);
     }
 
+    bool isEmpty() const
+    {
+        return locks.empty();
+    }
+
     /** Dump info about locks. */
     void dump() const;
     
@@ -152,6 +157,8 @@ void LockMonitor::remove(epicsThreadId thread, OrderedMutex &lock)
         if (i->getThread() == thread)
         {
             i->remove(&lock);
+            if (i->isEmpty())
+                threads.erase(i);
             return;
         }
     }

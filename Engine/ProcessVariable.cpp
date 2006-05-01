@@ -16,7 +16,7 @@ static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 // TODO: You just cannot add/remove listeners while running.
 
 ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
-    : NamedBase(name), ctx(ctx), state(INIT),
+    : NamedBase(name), mutex("ProcessVariable", 1), ctx(ctx), state(INIT),
       id(0), ev_id(0), dbr_type(DBR_TIME_DOUBLE), dbr_count(1),
       outstanding_gets(0), subscribed(false)
 {
@@ -24,7 +24,7 @@ ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
     printf("new ProcessVariable(%s)\n", getName().c_str());
 #   endif
     {
-        Guard ctx_guard(ctx);
+        Guard ctx_guard(__FILE__, __LINE__, ctx);
         ctx.incRef(ctx_guard);
     }
     // Set some default t match the default getDbrType/Count
@@ -51,7 +51,7 @@ ProcessVariable::~ProcessVariable()
     }
     try
     {
-        Guard ctx_guard(ctx);
+        Guard ctx_guard(__FILE__, __LINE__, ctx);
         ctx.decRef(ctx_guard);
     }
     catch (GenericException &e)
@@ -64,7 +64,7 @@ ProcessVariable::~ProcessVariable()
 #   endif
 }
 
-epicsMutex &ProcessVariable::getMutex()
+OrderedMutex &ProcessVariable::getMutex()
 {
     return mutex;
 }
@@ -91,17 +91,17 @@ const char *ProcessVariable::getStateStr(Guard &guard) const
 const char *ProcessVariable::getCAStateStr(Guard &guard) const
 {
     guard.check(__FILE__, __LINE__, mutex);
-    {
-        Guard ctx_guard(ctx);
-        LOG_ASSERT(ctx.isAttached(ctx_guard));
-    }
     if (id == 0)
         return "Not Initialized";
     enum channel_state cs;
     chid _id = id;
     {   // Unlock while dealing with CAC.
-        GuardRelease release(guard);
-        cs = ca_state(_id);
+        GuardRelease release(__FILE__, __LINE__, guard);
+        {
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
+            LOG_ASSERT(ctx.isAttached(ctx_guard));
+            cs = ca_state(_id);
+        }
     }
     switch (cs)
     {
@@ -181,10 +181,6 @@ void ProcessVariable::removeValueListener(
 void ProcessVariable::start(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    {
-        Guard ctx_guard(ctx);
-        LOG_ASSERT(ctx.isAttached(ctx_guard));
-    }
 #   ifdef DEBUG_PV
     printf("start ProcessVariable(%s)\n", getName().c_str());
 #   endif
@@ -195,21 +191,19 @@ void ProcessVariable::start(Guard &guard)
     int status;
     chid _id;
     {
-        GuardRelease release(guard);
-   	    status = ca_create_channel(getName().c_str(), connection_handler,
-                                   this, CA_PRIORITY_ARCHIVE, &_id);
+        GuardRelease release(__FILE__, __LINE__, guard);
+        {
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
+            LOG_ASSERT(ctx.isAttached(ctx_guard));
+       	    status = ca_create_channel(getName().c_str(), connection_handler,
+                                       this, CA_PRIORITY_ARCHIVE, &_id);
+            ctx.requestFlush(ctx_guard);
+        }
     }
     id = _id;
     if (status != ECA_NORMAL)
-    {
         LOG_MSG("'%s': ca_create_channel failed, status %s\n",
                 getName().c_str(), ca_message(status));
-        return;
-    }
-    {   // Lock Order: PV, PV ctx.
-        Guard ctx_guard(ctx);
-        ctx.requestFlush(ctx_guard);
-    }
 }
 
 bool ProcessVariable::isRunning(Guard &guard)
@@ -221,25 +215,22 @@ bool ProcessVariable::isRunning(Guard &guard)
 void ProcessVariable::getValue(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    {
-        Guard ctx_guard(ctx);
-        LOG_ASSERT(ctx.isAttached(ctx_guard));
-    }
     if (state != CONNECTED)
         return; // Can't get
     ++outstanding_gets;
     chid _id = id;
-    GuardRelease release(guard); // Unlock while in CAC.
-    int status = ca_array_get_callback(dbr_type, dbr_count,
-                                       _id, value_callback, this);
-    if (status != ECA_NORMAL)
+    GuardRelease release(__FILE__, __LINE__, guard); // Unlock while in CAC.
     {
-        LOG_MSG("%s: ca_array_get_callback failed: %s\n",
-                getName().c_str(), ca_message(status));
-        return;
-    }
-    {   // Lock ctx while PV is unlocked.
-        Guard ctx_guard(ctx);
+        Guard ctx_guard(__FILE__, __LINE__, ctx);
+        LOG_ASSERT(ctx.isAttached(ctx_guard));
+        int status = ca_array_get_callback(dbr_type, dbr_count,
+                                           _id, value_callback, this);
+        if (status != ECA_NORMAL)
+        {
+            LOG_MSG("%s: ca_array_get_callback failed: %s\n",
+                    getName().c_str(), ca_message(status));
+            return;
+        }
         ctx.requestFlush(ctx_guard);
     }    
 }
@@ -247,10 +238,6 @@ void ProcessVariable::getValue(Guard &guard)
 void ProcessVariable::subscribe(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    {
-        Guard ctx_guard(ctx);
-        LOG_ASSERT(ctx.isAttached(ctx_guard));
-    }
     if (dbr_type == 0)
         throw GenericException(__FILE__, __LINE__,
                                "Cannot subscribe to %s, never connected",
@@ -269,37 +256,39 @@ void ProcessVariable::subscribe(Guard &guard)
     DbrType _type = dbr_type;
     DbrCount _count = dbr_count;
     {   // Release around CA call.
-        GuardRelease release(guard);
-        int status = ca_create_subscription(_type, _count, _id,
-                                            DBE_LOG | DBE_ALARM,
-                                            value_callback, this, &_ev_id);
-        if (status != ECA_NORMAL)
+        GuardRelease release(__FILE__, __LINE__, guard);
         {
-            LOG_MSG("%s: ca_create_subscription failed: %s\n",
-                    getName().c_str(), ca_message(status));
-            return;
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
+            LOG_ASSERT(ctx.isAttached(ctx_guard));
+            int status = ca_create_subscription(_type, _count, _id,
+                                                DBE_LOG | DBE_ALARM,
+                                                value_callback, this, &_ev_id);
+            if (status != ECA_NORMAL)
+            {
+                LOG_MSG("%s: ca_create_subscription failed: %s\n",
+                        getName().c_str(), ca_message(status));
+                return;
+            }
+            ctx.requestFlush(ctx_guard);
         }
     }
     ev_id = _ev_id;
     subscribed = true;
-    // At this point, PV is locked. Locking ctx is OK with locking order.
-    Guard ctx_guard(ctx);
-    ctx.requestFlush(ctx_guard);
 }
 
 void ProcessVariable::unsubscribe(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    {
-        Guard ctx_guard(ctx);
-        LOG_ASSERT(ctx.isAttached(ctx_guard));
-    }
     if (subscribed)
     {
         subscribed = false;
         evid _ev_id = ev_id;
         ev_id = 0;
-        GuardRelease release(guard);
+        GuardRelease release(__FILE__, __LINE__, guard);
+        {
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
+            LOG_ASSERT(ctx.isAttached(ctx_guard));
+        }
         ca_clear_subscription(_ev_id);
     }    
 }
@@ -307,10 +296,6 @@ void ProcessVariable::unsubscribe(Guard &guard)
 void ProcessVariable::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    {
-        Guard ctx_guard(ctx);
-        LOG_ASSERT(ctx.isAttached(ctx_guard));
-    }
 #   ifdef DEBUG_PV
     printf("stop ProcessVariable(%s)\n", getName().c_str());
 #   endif
@@ -323,7 +308,11 @@ void ProcessVariable::stop(Guard &guard)
     state = INIT;
     // Then unlock around CA lib. calls to prevent deadlocks.
     {
-        GuardRelease release(guard);
+        GuardRelease release(__FILE__, __LINE__, guard);
+        {
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
+            LOG_ASSERT(ctx.isAttached(ctx_guard));
+        }
         ca_clear_channel(_id);
     }
     // If there are listeners, tell them that we are disconnected.
@@ -339,7 +328,7 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
     {
         chid _id;
         {
-            Guard guard(*me);
+            Guard guard(__FILE__, __LINE__, *me);
             if (arg.op == CA_OP_CONN_DOWN)
             {   // Connection is down
                 me->state = DISCONNECTED;
@@ -374,7 +363,7 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
                     me->getName().c_str(), ca_message (status));
             return;
         }
-        Guard ctx_guard(me->ctx);
+        Guard ctx_guard(__FILE__, __LINE__, me->ctx);
         me->ctx.requestFlush(ctx_guard);
     }
     catch (GenericException &e)
@@ -485,7 +474,7 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
     }
     chid _id;
     {
-        Guard guard(*me);
+        Guard guard(__FILE__, __LINE__, *me);
         if (me->state != GETTING_INFO)
         {
             LOG_MSG("ProcessVariable(%s) received control_callback while %s\n",
@@ -499,7 +488,7 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
     DbrCount _count = ca_element_count(_id);
     try
     {
-        Guard guard(*me);    
+        Guard guard(__FILE__, __LINE__, *me);    
         // Setup the PV info.
         if (!me->setup_ctrl_info(guard, arg.type, arg.dbr))
             return;
@@ -560,7 +549,7 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
     try
     {
         // Check if we expected a value at all
-        Guard guard(*me);
+        Guard guard(__FILE__, __LINE__, *me);
         if (me->outstanding_gets <= 0  &&  !me->subscribed)
         {
             LOG_MSG("ProcessVariable(%s) received unexpected value_callback\n",

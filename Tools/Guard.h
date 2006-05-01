@@ -31,6 +31,9 @@ public:
     }
 
 private:
+    epicsMutexGuard(const epicsMutexGuard &); // not impl.
+    epicsMutexGuard &operator = (const epicsMutexGuard &); // not impl.
+
     epicsMutex &mutex;
 };
 
@@ -132,6 +135,9 @@ public:
     }
 
 private:
+    GuardRelease(const GuardRelease &); // not impl.
+    GuardRelease &operator = (const GuardRelease &); // not impl.
+
     const char *file;
     size_t line;
     Guard &guard;

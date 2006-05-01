@@ -22,7 +22,8 @@ static void caException(struct exception_handler_args args)
 }
 
 ProcessVariableContext::ProcessVariableContext()
-    : ca_context(0), refs(0), flush_requested(false)
+    : mutex("ProcessVariableContext", 1),
+      ca_context(0), refs(0), flush_requested(false)
 {
 	LOG_MSG("Creating ChannelAccess Context.\n");
 	if (ca_context_create(ca_enable_preemptive_callback) != ECA_NORMAL ||
@@ -45,7 +46,7 @@ ProcessVariableContext::~ProcessVariableContext()
     ca_context = 0;
 }
 
-epicsMutex &ProcessVariableContext::getMutex()
+OrderedMutex &ProcessVariableContext::getMutex()
 {
     return mutex;
 }
@@ -117,7 +118,7 @@ void ProcessVariableContext::flush(Guard &guard)
     LOG_ASSERT(isAttached(guard));
     flush_requested = false;
     {
-        GuardRelease release(guard);
+        GuardRelease release(__FILE__, __LINE__, guard);
 	    ca_flush_io();
     }
 }

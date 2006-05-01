@@ -41,7 +41,7 @@ public:
     virtual ~ProcessVariableContext();
     
     /** @see Guardable */
-    epicsMutex &getMutex();
+    OrderedMutex &getMutex();
         
     /** Attach current thread to this context.
      *  <p>
@@ -90,7 +90,7 @@ public:
     void flush(Guard &guard);
 private:
     // The mutex
-    epicsMutex mutex;
+    OrderedMutex mutex;
     
     // The context
     struct ca_client_context *ca_context;

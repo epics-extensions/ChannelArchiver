@@ -42,7 +42,7 @@ public:
     virtual ~ProcessVariable();
 
     /** @see Guardable */
-    epicsMutex &getMutex();
+    OrderedMutex &getMutex();
     
     /** Possible states of a ProcessVariable. */
     enum State
@@ -138,7 +138,7 @@ public:
     void stop(Guard &guard);
     
 private:
-    epicsMutex                         mutex;
+    OrderedMutex                       mutex;
     ProcessVariableContext             &ctx;
     State                              state;
     stdList<ProcessVariableStateListener *> state_listeners;

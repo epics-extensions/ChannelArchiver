@@ -6,3 +6,19 @@ not on the screen
 04/28/2006 16:52:45 Test went OK
 04/28/2006 16:52:45 You should see this message in the log file,
 not on the screen
+05/01/2006 11:25:46 Hi
+05/01/2006 11:25:46 Test went OK
+05/01/2006 11:25:46 You should see this message in the log file,
+not on the screen
+05/01/2006 11:31:13 Hi
+05/01/2006 11:31:13 Test went OK
+05/01/2006 11:31:13 You should see this message in the log file,
+not on the screen
+05/01/2006 11:36:28 Hi
+05/01/2006 11:36:28 Test went OK
+05/01/2006 11:36:28 You should see this message in the log file,
+not on the screen
+05/01/2006 11:36:59 Hi
+05/01/2006 11:36:59 Test went OK
+05/01/2006 11:36:59 You should see this message in the log file,
+not on the screen

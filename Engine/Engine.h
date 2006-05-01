@@ -29,12 +29,12 @@
  *  one object from the following list, they have to be taken
  *  in this order, for example: First lock the PV, then the PVCtx.
  *  <ol>
- *  <li>Engine
- *  <li>GroupInfo
- *  <li>ArchiveChannel
- *  <li>SampleMechanism (same lock as ProcessVariable)
- *  <li>ProcessVariable
  *  <li>ProcessVariableContext
+ *  <li>ProcessVariable
+ *  <li>SampleMechanism (same lock as ProcessVariable)
+ *  <li>ArchiveChannel
+ *  <li>GroupInfo
+ *  <li>Engine
  *  </ol>
  *
  *  Beyond the reach of this code are locks internal to the CA client library.

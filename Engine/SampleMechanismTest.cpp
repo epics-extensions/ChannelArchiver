@@ -13,6 +13,7 @@
 
 TEST_CASE test_sample_get()
 {
+    puts("Note: This test takes 60 seconds.");
     ScanList scan_list;
     EngineConfig config;
     //config.setMaxRepeatCount(2);
@@ -23,7 +24,7 @@ TEST_CASE test_sample_get()
             new SampleMechanismGet(config, ctx, scan_list, "fred", 5));
         TEST(sample->getName() == "fred");
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             sample->start(guard);
         }
         size_t wait = 0;
@@ -31,7 +32,7 @@ TEST_CASE test_sample_get()
         {        
             epicsThreadSleep(0.1);
             {
-                Guard ctx_guard(ctx);                    
+                Guard ctx_guard(__FILE__, __LINE__, ctx);                    
                 if (ctx.isFlushRequested(ctx_guard))
                     ctx.flush(ctx_guard);
             }
@@ -43,13 +44,13 @@ TEST_CASE test_sample_get()
                 break;
         }
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             sample->stop(guard);
         }
         // Expect at least initial, initial host-stamped,
         // a repeat value, another, final 'off'
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             TEST(sample->getSampleCount(guard) > 4);
         }
     }
@@ -59,6 +60,7 @@ TEST_CASE test_sample_get()
 
 TEST_CASE test_sample_monitor()
 {
+    puts("Note: This test takes 2 seconds.");    
     EngineConfig config;
     ProcessVariableContext ctx;
     {
@@ -66,7 +68,7 @@ TEST_CASE test_sample_monitor()
             new SampleMechanismMonitored(config, ctx, "janet", 1));
         TEST(sample->getName() == "janet");
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             sample->start(guard);
         }
         size_t wait = 0;
@@ -74,7 +76,7 @@ TEST_CASE test_sample_monitor()
         {        
             epicsThreadSleep(0.1);
             {
-                Guard ctx_guard(ctx);                    
+                Guard ctx_guard(__FILE__, __LINE__, ctx);                    
                 if (ctx.isFlushRequested(ctx_guard))
                     ctx.flush(ctx_guard);
             }
@@ -83,12 +85,12 @@ TEST_CASE test_sample_monitor()
                 break;
         }
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             sample->stop(guard);
         }
         // Expect at least 10 samples
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             TEST(sample->getSampleCount(guard) > 10);
         }
     }
@@ -97,6 +99,7 @@ TEST_CASE test_sample_monitor()
 
 TEST_CASE test_sample_monitor_get()
 {
+    puts("Note: This test takes 60 seconds.");
     EngineConfig config;
     //config.setMaxRepeatCount(2);
     ProcessVariableContext ctx;
@@ -106,7 +109,7 @@ TEST_CASE test_sample_monitor_get()
             new SampleMechanismMonitoredGet(config, ctx, "fred", 5));
         TEST(sample->getName() == "fred");
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             sample->start(guard);
         }
         size_t wait = 0;
@@ -114,7 +117,7 @@ TEST_CASE test_sample_monitor_get()
         {        
             epicsThreadSleep(0.1);
             {
-                Guard ctx_guard(ctx);                    
+                Guard ctx_guard(__FILE__, __LINE__, ctx);                    
                 if (ctx.isFlushRequested(ctx_guard))
                     ctx.flush(ctx_guard);
             }
@@ -123,13 +126,13 @@ TEST_CASE test_sample_monitor_get()
                 break;
         }
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             sample->stop(guard);
         }
         // Expect at least initial, initial host-stamped,
         // a repeat value, another, final 'off'
         {
-            Guard guard(*sample);
+            Guard guard(__FILE__, __LINE__, *sample);
             TEST(sample->getSampleCount(guard) > 4);
         }
     }

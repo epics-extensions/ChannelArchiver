@@ -27,21 +27,25 @@
  *  <p>
  *  This is the lock order. When locking more than
  *  one object from the following list, they have to be taken
- *  in this order, for example: First lock the PV, then the PVCtx.
- *  <ol>
- *  <li>ProcessVariableContext
- *  <li>ProcessVariable
- *  <li>SampleMechanism (same lock as ProcessVariable)
- *  <li>ArchiveChannel
- *  <li>GroupInfo
- *  <li>Engine
- *  </ol>
+ *  in this order, for example: First lock the Engine, then an ArchiveChannel,
+ *  then the ProcessVariableContext.
+ *  <ul>
+ *  <li>(10) Engine
+ *  <li>(20) GroupInfo
+ *  <li>(30) ArchiveChannel
+ *  <li>(40) SampleMechanism (same mutex as ProcessVariable)
+ *  <li>(40) ProcessVariable
+ *  <li>(50) ProcessVariableContext
+ *  <li>(60) HTTPD Client List
+ *  <li>(100) ThrottledMsgLogger
+ *  </ul>
  *
  *  Beyond the reach of this code are locks internal to the CA client library.
  *  Possible lock chains:
  *  <ul>
  *  <li>Start the engine: Engine, ArchiveChannel, ProcessVariable, ca_...<br>
  *      Has to lock the Engine to prevent concurrent stop().
+ *      This initial scenario created the lock order.
  *  <li>CA connect or control info callback: CA, PV, channel, group.<br>
  *      This is basically the reversed lock order!
  *      To preserve the lock order, the channel will release the PV lock
@@ -91,7 +95,7 @@ public:
     virtual ~Engine();
     
     /** Guardable interface. */
-    epicsMutex &getMutex();
+    OrderedMutex &getMutex();
 
     /** @return Returns the description. */
     const stdString &getIndexName(Guard &guard) const { return index_name; }
@@ -193,7 +197,7 @@ public:
     unsigned long write(Guard &guard);
     
 private:
-    epicsMutex                mutex;
+    OrderedMutex              mutex;
     bool                      is_running;
     epicsTime                 start_time;
     stdString                 index_name;

@@ -51,7 +51,7 @@ void SampleMechanismGet::stop(Guard &guard)
 // Invoked by scanner.
 void SampleMechanismGet::scan()
 {   // Trigger a 'get', which should result in pvValue() callback.
-    Guard guard(pv);
+    Guard guard(__FILE__, __LINE__, pv);
     pv.getValue(guard);
 }
 

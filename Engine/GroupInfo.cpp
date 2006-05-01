@@ -8,7 +8,8 @@
 #include "ArchiveChannel.h"
 
 GroupInfo::GroupInfo(const stdString &name)
-    : NamedBase(name.c_str()), num_connected(0), disable_count(0)
+    : NamedBase(name.c_str()),
+      mutex("GroupInfo", 20),num_connected(0), disable_count(0)
 {
 }
 
@@ -16,7 +17,7 @@ GroupInfo::~GroupInfo()
 {
 }
 
-epicsMutex &GroupInfo::getMutex()
+OrderedMutex &GroupInfo::getMutex()
 {
     return mutex;
 }
@@ -54,7 +55,7 @@ void GroupInfo::disable(Guard &group_guard,
     for (ci = channels.begin(); ci != channels.end(); ++ci)
     {
         ArchiveChannel *c = *ci;
-        Guard guard(*c);
+        Guard guard(__FILE__, __LINE__, *c);
         c->disable(guard, when);
     }
 }
@@ -79,7 +80,7 @@ void GroupInfo::enable(Guard &group_guard,
     for (ci = channels.begin(); ci != channels.end(); ++ci)
     {
         ArchiveChannel *c = *ci;
-        Guard guard(*c);
+        Guard guard(__FILE__, __LINE__, *c);
         c->enable(guard, when);
     }
 }
@@ -118,7 +119,7 @@ void GroupInfo::addToFUX(Guard &group_guard, FUX::Element *doc)
     stdList<ArchiveChannel *>::const_iterator ci;
     for (ci = channels.begin(); ci != channels.end(); ++ci)
     {
-        Guard channel_guard(**ci);
+        Guard channel_guard(__FILE__, __LINE__, **ci);
         (*ci)->addToFUX(channel_guard, group);
     }
 }

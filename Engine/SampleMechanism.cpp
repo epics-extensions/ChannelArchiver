@@ -37,7 +37,7 @@ const stdString &SampleMechanism::getName() const
     return pv.getName();
 }
 
-epicsMutex &SampleMechanism::getMutex()
+OrderedMutex &SampleMechanism::getMutex()
 {
     return pv.getMutex();
 }

@@ -86,7 +86,7 @@ int main(int argc, const char *argv[])
 #endif
             AutoPtr<Engine> engine(new Engine(index_name));
             {
-                Guard guard(*engine);
+                Guard guard(__FILE__, __LINE__, *engine);
                 if (! description.get().empty())
                     engine->setDescription(guard, description);
                 engine->read_config(guard, config_name);
@@ -110,7 +110,7 @@ int main(int argc, const char *argv[])
             }
             {
                 LOG_MSG ("Flushing buffers to disk.\n");
-                Guard guard(*engine);
+                Guard guard(__FILE__, __LINE__, *engine);
                 engine->stop(guard);
                 engine->write(guard);
             }

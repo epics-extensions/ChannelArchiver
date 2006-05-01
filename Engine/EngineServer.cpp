@@ -42,7 +42,7 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
     size_t file_size;
     bool disconn;
     {   // Engine locked
-        Guard engine_guard(*engine);
+        Guard engine_guard(__FILE__, __LINE__, *engine);
         desc = engine->getDescription(engine_guard).c_str();
         startTime = engine->getStartTime(engine_guard);
         index = engine->getIndexName(engine_guard).c_str();
@@ -242,7 +242,7 @@ static void channels(HTTPClientConnection *connection, const stdString &path,
     stdList<ArchiveChannel *>::const_iterator channel;
     stdString link;
     link.reserve(80);
-    Guard engine_guard(*engine);
+    Guard engine_guard(__FILE__, __LINE__, *engine);
     engine->attachToProcessVariableContext(engine_guard);    
     const stdList<ArchiveChannel *> &channels = engine->getChannels(engine_guard);
     for (channel = channels.begin(); channel != channels.end(); ++channel)
@@ -252,7 +252,7 @@ static void channels(HTTPClientConnection *connection, const stdString &path,
         link += "\">";
         link += (*channel)->getName();
         link += "</A>";
-        Guard guard((*channel)->getMutex());
+        Guard guard(__FILE__, __LINE__, (*channel)->getMutex());
         page.tableLine(link.c_str(),
                        ((*channel)->isConnected(guard) ?
                         "connected" :
@@ -284,7 +284,7 @@ static void channelInfoLine(HTMLPage &page, ArchiveChannel *channel)
     channel_link += channel->getName();
     channel_link += "</A>";
     
-    Guard guard(*channel);
+    Guard guard(__FILE__, __LINE__, *channel);
     const stdList<class GroupInfo *> groups = channel->getGroupsToDisable(guard);
     stdList<class GroupInfo *>::const_iterator group;
     stdString disabling;
@@ -320,7 +320,7 @@ static void channelInfo(HTTPClientConnection *connection,
 {
     Engine *engine = (Engine *)user_arg;
     stdString channel_name = path.substr(9);
-    Guard engine_guard(*engine);
+    Guard engine_guard(__FILE__, __LINE__, *engine);
     engine->attachToProcessVariableContext(engine_guard);    
     ArchiveChannel *channel
         = engine->findChannel(engine_guard, channel_name);
@@ -343,7 +343,7 @@ void groups(HTTPClientConnection *connection, const stdString &path,
     char channels[50], connected[100];
     size_t  total_channel_count=0, total_connect_count=0;      
     {
-        Guard engine_guard(*engine);
+        Guard engine_guard(__FILE__, __LINE__, *engine);
         const stdList<GroupInfo *> &groups = engine->getGroups(engine_guard);
         if (groups.empty())
         {
@@ -365,7 +365,7 @@ void groups(HTTPClientConnection *connection, const stdString &path,
             name += (*group)->getName();
             name += "</A>";
             {
-                Guard group_guard((*group)->getMutex());
+                Guard group_guard(__FILE__, __LINE__, (*group)->getMutex());
                 channel_count = (*group)->getChannels(group_guard).size();
                 connect_count = (*group)->getNumConnected(group_guard);
                 enabled = (*group)->isEnabled(group_guard);
@@ -405,7 +405,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path,
     {
         stdString group_name = path.substr(7);
         CGIDemangler::unescape(group_name);
-        Guard engine_guard(*engine);
+        Guard engine_guard(__FILE__, __LINE__, *engine);
         engine->attachToProcessVariableContext(engine_guard);
         GroupInfo *group = engine->findGroup(engine_guard, group_name);
         if (! group)
@@ -426,7 +426,7 @@ static void groupInfo(HTTPClientConnection *connection, const stdString &path,
         page.line("<H2>Channels</H2>");
         channelInfoTable(page);
         {
-            Guard group_guard(*group);
+            Guard group_guard(__FILE__, __LINE__, *group);
             const stdList<ArchiveChannel *> group_channels
                 = group->getChannels(group_guard);
             stdList<ArchiveChannel *>::const_iterator channel;
@@ -473,7 +473,7 @@ static void addChannel(HTTPClientConnection *connection,
         page.out("Channel <I>");
         page.out(channel_name);
         {
-            Guard engine_guard(*engine);
+            Guard engine_guard(__FILE__, __LINE__, *engine);
             engine->attachToProcessVariableContext(engine_guard);
             engine->stop(engine_guard);
             engine->addChannel(group_name, channel_name, period,
@@ -513,7 +513,7 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path,
         page.out("Group <I>");
         page.out(group_name);
         {
-            Guard engine_guard(*engine);
+            Guard engine_guard(__FILE__, __LINE__, *engine);
             engine->stop(engine_guard);            
             engine->addGroup(engine_guard, group_name);
             engine->write_config(engine_guard);
@@ -548,7 +548,7 @@ static void parseConfig(HTTPClientConnection *connection,
         page.line("<H1>Configuration</H1>");
         page.line("Stopping the engine...<p>");
         {
-            Guard engine_guard(*engine);
+            Guard engine_guard(__FILE__, __LINE__, *engine);
             engine->attachToProcessVariableContext(engine_guard);
             engine->stop(engine_guard);
             page.line("Reading config file...<p>");
@@ -580,7 +580,7 @@ static void restart(HTTPClientConnection *connection,
         page.line("<H1>Restart</H1>");
         page.line("Stopping the engine...<p>");
         {
-            Guard engine_guard(*engine);
+            Guard engine_guard(__FILE__, __LINE__, *engine);
             engine->attachToProcessVariableContext(engine_guard);
             engine->stop(engine_guard);
             page.line("Starting Engine again...<p>");
@@ -606,7 +606,7 @@ static void channelGroups(HTTPClientConnection *connection,
         CGIDemangler args;
         args.parse(path.substr(15).c_str());
         stdString channel_name = args.find("CHANNEL");
-        Guard engine_guard(*engine);
+        Guard engine_guard(__FILE__, __LINE__, *engine);
         ArchiveChannel *channel =
             engine->findChannel(engine_guard, channel_name);
         if (! channel)
@@ -618,7 +618,7 @@ static void channelGroups(HTTPClientConnection *connection,
         page.out(channel_name);
         page.line("'</H2>");
         
-        Guard guard(*channel);
+        Guard guard(__FILE__, __LINE__, *channel);
         page.out("<H2>Group membership</H2>");
         page.openTable(1, "Group", 1, "Enabled", 0);
         stdList<GroupInfo *>::const_iterator group;
@@ -633,9 +633,9 @@ static void channelGroups(HTTPClientConnection *connection,
             link += (*group)->getName();
             link += "</A>";
             // Lock order: Group, channel
-            GuardRelease release(guard);
+            GuardRelease release(__FILE__, __LINE__, guard);
             {
-                Guard group_guard(**group);
+                Guard group_guard(__FILE__, __LINE__, **group);
                 page.tableLine(link.c_str(),
                                ((*group)->isEnabled(group_guard) ?
                                 "Yes" : "<FONT COLOR=#FF0000>No</FONT>"), 0);

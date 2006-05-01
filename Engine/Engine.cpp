@@ -12,7 +12,8 @@
 #include "Engine.h"
 
 Engine::Engine(const stdString &index_name)
-    : is_running(false),
+    : mutex("Engine", 10),
+      is_running(false),
       index_name(index_name),
       description("Archive Engine"),
       write_duration(0.0),
@@ -30,7 +31,7 @@ Engine::~Engine()
     LOG_MSG("Removing memory for channels and groups.\n");
     try
     {
-        Guard engine_guard(*this);
+        Guard engine_guard(__FILE__, __LINE__, *this);
         while (! channels.empty())
         {
             ArchiveChannel *c = channels.back();
@@ -49,7 +50,7 @@ Engine::~Engine()
     } 
 }
 
-epicsMutex &Engine::getMutex()
+OrderedMutex &Engine::getMutex()
 {
     return mutex;
 }
@@ -61,7 +62,7 @@ void Engine::setDescription(Guard &guard, const stdString &description)
     
 void Engine::attachToProcessVariableContext(Guard &guard)
 { 
-    Guard ctx_guard(pv_context);
+    Guard ctx_guard(__FILE__, __LINE__, pv_context);
     pv_context.attach(ctx_guard);
 }
     
@@ -82,7 +83,7 @@ void Engine::write_config(Guard &guard)
     stdList<GroupInfo *>::const_iterator gi;
     for (gi = groups.begin(); gi != groups.end(); ++gi)
     {
-        Guard group_guard(**gi);
+        Guard group_guard(__FILE__, __LINE__, **gi);
         (*gi)->addToFUX(group_guard, doc);
     }
     
@@ -115,7 +116,7 @@ void Engine::addChannel(const stdString &group_name,
            group_name.c_str(), channel_name.c_str(), scan_period,
            (monitor ? "monitor" : "scan"),
            (disabling ? ", disabling" : "")); */
-    Guard engine_guard(*this); // Lock order: engine
+    Guard engine_guard(__FILE__, __LINE__, *this); // Lock order: engine
     // Get group
     GroupInfo *group = addGroup(engine_guard, group_name);
     // Get channel
@@ -131,7 +132,7 @@ void Engine::addChannel(const stdString &group_name,
     else
     {
         {
-            Guard guard(*channel);
+            Guard guard(__FILE__, __LINE__, *channel);
             if (channel->isRunning(guard))
                 channel->stop(guard);
         }
@@ -140,10 +141,10 @@ void Engine::addChannel(const stdString &group_name,
     }
     // Hook channel into group
     {   // Lock order: engine, group
-        Guard group_guard(*group);
+        Guard group_guard(__FILE__, __LINE__, *group);
         group->addChannel(group_guard, channel);
         {   // Lock order: engine, group, channel
-            Guard channel_guard(*channel);
+            Guard channel_guard(__FILE__, __LINE__, *channel);
             channel->addToGroup(group_guard, group, channel_guard, disabling);
             // Start channel that's added online
             if (is_running)
@@ -161,7 +162,7 @@ void Engine::start(Guard &engine_guard)
     {
         ArchiveChannel *c = *channel;
         {
-            Guard guard(*c);
+            Guard guard(__FILE__, __LINE__, *c);
             c->start(guard);
         }
         ++channel;
@@ -178,7 +179,7 @@ void Engine::stop(Guard &engine_guard)
     {
         ArchiveChannel *c = *channel;
         {
-            Guard guard(*c);
+            Guard guard(__FILE__, __LINE__, *c);
             c->stop(guard);
         }
         ++channel;
@@ -190,7 +191,7 @@ bool Engine::process()
 {
     // Check if PV context requires a flush
     {
-        Guard pv_ctxt_guard(pv_context);
+        Guard pv_ctxt_guard(__FILE__, __LINE__, pv_context);
         if (pv_context.isFlushRequested(pv_ctxt_guard))
             pv_context.flush(pv_ctxt_guard);
     }
@@ -200,7 +201,7 @@ bool Engine::process()
     // and response to engine shutdown will suffer.
     double delay;
     {   // Engine locked
-        Guard engine_guard(*this);
+        Guard engine_guard(__FILE__, __LINE__, *this);
         if (scan_list.isDueAtAll())
         {   // Determine delay until next 'scan'.
             delay = scan_list.getDueTime() - now;
@@ -260,7 +261,7 @@ size_t Engine::getNumConnected(Guard &guard) const
     for (channel = channels.begin();  channel != channels.end();  ++channel)
     {
         ArchiveChannel *c = *channel;
-        Guard channel_guard(*c);
+        Guard channel_guard(__FILE__, __LINE__, *c);
         if (c->isConnected(channel_guard))
             ++count;
     }
@@ -293,7 +294,7 @@ unsigned long Engine::write(Guard &engine_guard)
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {
             ArchiveChannel *c = *ch;
-            Guard guard(*c);
+            Guard guard(__FILE__, __LINE__, *c);
             count += c->write(guard, index);
         }
     }

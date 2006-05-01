@@ -54,7 +54,7 @@ TEST_CASE test_disable_filter()
     epicsTime time = epicsTime::getCurrent();   
     TEST(pvl.values == 0);
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvConnected(guard, pv, time);
     }
     TEST(pvl.values == 0);
@@ -68,7 +68,7 @@ TEST_CASE test_disable_filter()
     RawValue::setDouble(type, count, value, 3.14);
     RawValue::setTime(value, time);    
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 1);
@@ -76,7 +76,7 @@ TEST_CASE test_disable_filter()
     // Disconnect gets passed.
     time += 1;   
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvDisconnected(guard, pv, time);
     }
     TEST(pvl.connected == false);
@@ -84,13 +84,13 @@ TEST_CASE test_disable_filter()
     // Disable
     puts (" --- Disable ---");
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.disable(guard);
     }
 
     // Re-connect
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvConnected(guard, pv, time);
     }
     TEST(pvl.values == 1);
@@ -100,7 +100,7 @@ TEST_CASE test_disable_filter()
     time += 1; 
     RawValue::setTime(value, time);    
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 1);
@@ -109,7 +109,7 @@ TEST_CASE test_disable_filter()
     puts (" --- Enable ---");
     time += 1;
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.enable(guard, pv, time);
     }
     // Still connected

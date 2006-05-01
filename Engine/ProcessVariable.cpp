@@ -16,7 +16,7 @@ static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 // TODO: You just cannot add/remove listeners while running.
 
 ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
-    : NamedBase(name), mutex("ProcessVariable", 1), ctx(ctx), state(INIT),
+    : NamedBase(name), mutex(name, 40), ctx(ctx), state(INIT),
       id(0), ev_id(0), dbr_type(DBR_TIME_DOUBLE), dbr_count(1),
       outstanding_gets(0), subscribed(false)
 {

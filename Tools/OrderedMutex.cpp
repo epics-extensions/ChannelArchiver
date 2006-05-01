@@ -82,7 +82,7 @@ bool ThreadList::check() const
     {
         l = *i;
         size_t order = l->getOrder();
-        if (order <= previous)
+        if (order < previous)
             return false;
         previous = order;
         ++i;
@@ -148,6 +148,13 @@ void LockMonitor::add(const char *file, size_t line,
                 fprintf(stderr, "=========================================\n");
                 // Remove the offending one, since we won't lock it
                 i->remove(&lock);
+                if (getenv("ABORT_ON_ERRORS"))
+                {
+                    LOG_MSG("%s (%zu): Violation of lock order\n",
+                            file, line);
+                    abort();
+                }
+                // else
                 throw GenericException(file, line, "Violation of lock order");
             }
             return;
@@ -205,7 +212,17 @@ void OrderedMutex::lock(const char *file, size_t line)
 {
     LockMonitor::getInstance()->add(file, line, epicsThreadGetIdSelf(), *this);
     if (epicsMutexLock(mutex) != epicsMutexLockOK)
-        throw GenericException(file, line, "mutex lock failed");
+    {
+        if (getenv("ABORT_ON_ERRORS"))
+        {
+            LOG_MSG("%s (%zu): mutex lock '%s' failed\n",
+                file, line, name.c_str());
+            abort();
+        }
+        // else
+        throw GenericException(file, line, "mutex lock '%s' failed",
+                               name.c_str());
+    }
     // LockMonitor::getInstance()->dump();
 }
     

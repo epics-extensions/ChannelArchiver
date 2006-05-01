@@ -42,7 +42,7 @@ public:
     virtual ~GroupInfo();
 
     /** Guardable interface */
-    epicsMutex &getMutex();
+    OrderedMutex &getMutex();
     
     /** Add channel to this group. NOP if already group member. */
     void addChannel(Guard &group_guard, class ArchiveChannel *channel);
@@ -77,7 +77,7 @@ private:
     GroupInfo(const GroupInfo &); // not impl.
     GroupInfo & operator = (const GroupInfo &); // not impl.
 
-    epicsMutex mutex;   
+    OrderedMutex mutex;   
 
     stdList<class ArchiveChannel *> channels; 
     size_t num_connected;

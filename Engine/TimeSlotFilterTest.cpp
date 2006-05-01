@@ -53,7 +53,7 @@ TEST_CASE test_time_slot_filter()
     epicsTime time = epicsTime::getCurrent();   
     TEST(pvl.values == 0);
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvConnected(guard, pv, time);
     }
     TEST(pvl.values == 0);
@@ -66,7 +66,7 @@ TEST_CASE test_time_slot_filter()
     RawValue::setDouble(type, count, value, 3.14);
     RawValue::setTime(value, time);    
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 1);
@@ -75,7 +75,7 @@ TEST_CASE test_time_slot_filter()
     time = roundTimeUp(time, 10.0); 
     RawValue::setTime(value, time);    
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 2);
@@ -86,7 +86,7 @@ TEST_CASE test_time_slot_filter()
     {
         RawValue::setTime(value, time + 0.1*i);    
         {
-            Guard guard(pv);
+            Guard guard(__FILE__, __LINE__, pv);
             filt.pvValue(guard, pv, value);
         }
         TEST(pvl.values == 2);
@@ -95,7 +95,7 @@ TEST_CASE test_time_slot_filter()
     time += 10.0;
     RawValue::setTime(value, time);    
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 3);
@@ -105,7 +105,7 @@ TEST_CASE test_time_slot_filter()
     {
         RawValue::setTime(value, time + 0.1*i);    
         {
-            Guard guard(pv);
+            Guard guard(__FILE__, __LINE__, pv);
             filt.pvValue(guard, pv, value);
         }
         TEST(pvl.values == 3);
@@ -114,7 +114,7 @@ TEST_CASE test_time_slot_filter()
     time += 30.0;
     RawValue::setTime(value, time);    
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvValue(guard, pv, value);
     }
     TEST(pvl.values == 4);
@@ -123,7 +123,7 @@ TEST_CASE test_time_slot_filter()
     // Disconnect gets passed.
     time = epicsTime::getCurrent();   
     {
-        Guard guard(pv);
+        Guard guard(__FILE__, __LINE__, pv);
         filt.pvDisconnected(guard, pv, time);
     }
     TEST(pvl.connected == false);

@@ -57,7 +57,7 @@ public:
      *  <p>
      *  Actually uses the mutex of the ProcessVariable.
      *  @see Guardable */
-    epicsMutex &getMutex();
+    OrderedMutex &getMutex();
 
     /** @return Returns a description of mechanism and current state. */
     virtual stdString getInfo(Guard &guard) const;

@@ -22,7 +22,7 @@ static void caException(struct exception_handler_args args)
 }
 
 ProcessVariableContext::ProcessVariableContext()
-    : mutex("ProcessVariableContext", 1),
+    : mutex("ProcessVariableContext", 50),
       ca_context(0), refs(0), flush_requested(false)
 {
 	LOG_MSG("Creating ChannelAccess Context.\n");

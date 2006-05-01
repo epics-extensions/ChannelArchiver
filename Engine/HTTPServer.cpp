@@ -66,6 +66,7 @@ HTTPServer::HTTPServer(short port, PathHandlerList *handlers, void *user_arg)
     user_arg(user_arg),
     total_clients(0),
     client_duration(0.0),
+    client_list_mutex("HTTPD Client List", 60),
     clients(new AutoPtr<HTTPClientConnection> [MAX_NUM_CLIENTS])
 {
     socket = epicsSocketCreate(AF_INET, SOCK_STREAM, 0);
@@ -214,7 +215,7 @@ void HTTPServer::run()
 
 void HTTPServer::start_client(SOCKET peer)
 {
-    Guard guard(client_list_mutex);
+    Guard guard(__FILE__, __LINE__, client_list_mutex);
     size_t i;
     for (i = 0; i < MAX_NUM_CLIENTS; ++i)
     {
@@ -248,7 +249,7 @@ void HTTPServer::start_client(SOCKET peer)
 size_t HTTPServer::client_cleanup()
 {
     size_t i, num_clients = 0;
-    Guard guard(client_list_mutex);
+    Guard guard(__FILE__, __LINE__, client_list_mutex);
 
     for (i = 0; i < MAX_NUM_CLIENTS; ++i)
     {
@@ -302,7 +303,7 @@ void HTTPServer::serverinfo(SOCKET socket)
     char num[20], age[50];
     const char *status;
     {
-        Guard guard(client_list_mutex);
+        Guard guard(__FILE__, __LINE__, client_list_mutex);
         size_t i;
         for (i = 0; i < MAX_NUM_CLIENTS; ++i)
         {

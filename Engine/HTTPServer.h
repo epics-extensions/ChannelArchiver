@@ -120,7 +120,7 @@ private:
     void                                  *user_arg;
     size_t                                total_clients;
     double                                client_duration; // seconds; averaged
-    epicsMutex                            client_list_mutex;
+    OrderedMutex                          client_list_mutex;
     AutoArrayPtr< AutoPtr<class HTTPClientConnection> > clients;
 
     // Create a new HTTPClientConnection, add to 'clients'.

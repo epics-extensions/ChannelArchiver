@@ -58,12 +58,12 @@ TEST_CASE process_variable()
     {
         AutoPtr<ProcessVariable> pv(new ProcessVariable(*ctx, "janet"));
         AutoPtr<ProcessVariable> pv2(new ProcessVariable(*ctx, "janet"));
-        Guard pv_guard(*pv);
-        Guard pv_guard2(*pv2);        
+        Guard pv_guard(__FILE__, __LINE__, *pv);
+        Guard pv_guard2(__FILE__, __LINE__, *pv2);        
         pv->addListener(pv_guard, pvl);
         pv2->addListener(pv_guard2, pvl2);
         {
-            Guard ctx_guard(*ctx);
+            Guard ctx_guard(__FILE__, __LINE__, *ctx);
             TEST(ctx->getRefs(ctx_guard) == 2);
         }
         TEST(pv->getName() == "janet"); 
@@ -78,15 +78,15 @@ TEST_CASE process_variable()
         TEST(pv->getState(pv_guard) == ProcessVariable::DISCONNECTED); 
         TEST(pv2->getState(pv_guard2) == ProcessVariable::DISCONNECTED); 
         {
-            GuardRelease release(pv_guard);
-            GuardRelease release2(pv_guard2);
+            GuardRelease release(__FILE__, __LINE__, pv_guard);
+            GuardRelease release2(__FILE__, __LINE__, pv_guard2);
             size_t wait = 0;
             while (pvl->connected  == false  ||
                    pvl2->connected == false)
             {        
                 epicsThreadSleep(0.1);
                 {
-                    Guard ctx_guard(*ctx);                    
+                    Guard ctx_guard(__FILE__, __LINE__, *ctx);                    
                     if (ctx->isFlushRequested(ctx_guard))
                         ctx->flush(ctx_guard);
                 }
@@ -108,13 +108,13 @@ TEST_CASE process_variable()
             pv->getValue(pv_guard);
             {   // The PV cannot deliver the result of the 'get'
                 // while it's locked, so unlock:
-                GuardRelease release(pv_guard);
+                GuardRelease release(__FILE__, __LINE__, pv_guard);
                 size_t wait = 0;
                 while (pvl->values < 1)
                 {        
                     epicsThreadSleep(0.1);
                     {
-                        Guard ctx_guard(*ctx);                    
+                        Guard ctx_guard(__FILE__, __LINE__, *ctx);                    
                         if (ctx->isFlushRequested(ctx_guard))
                             ctx->flush(ctx_guard);
                     }
@@ -134,14 +134,14 @@ TEST_CASE process_variable()
         pv2->getValue(pv_guard2);
         {
             // Unlock the PV so that it can deliver monitors:
-            GuardRelease release(pv_guard);
-            GuardRelease release2(pv_guard2);
+            GuardRelease release(__FILE__, __LINE__, pv_guard);
+            GuardRelease release2(__FILE__, __LINE__, pv_guard2);
             size_t wait = 0;
             while (pvl->values < 4)
             {        
                 epicsThreadSleep(0.1);
                 {
-                    Guard ctx_guard(*ctx);                    
+                    Guard ctx_guard(__FILE__, __LINE__, *ctx);                    
                     if (ctx->isFlushRequested(ctx_guard))
                         ctx->flush(ctx_guard);
                 }
@@ -161,7 +161,7 @@ TEST_CASE process_variable()
         pv2->removeListener(pv_guard2, pvl2);
     }
     {
-        Guard ctx_guard(*ctx);
+        Guard ctx_guard(__FILE__, __LINE__, *ctx);
         TEST(ctx->getRefs(ctx_guard) == 0);
     }
     TEST_OK;

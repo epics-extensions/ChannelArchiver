@@ -28,7 +28,7 @@ public:
     virtual ~ArchiveChannel();
 
     /** @see Guardable */
-    epicsMutex &getMutex();
+    OrderedMutex &getMutex();
 
     /** Configure or re-configure channel.
      *  <p>
@@ -111,7 +111,7 @@ public:
     void addToFUX(Guard &guard, class FUX::Element *doc);
                 
 private:
-    epicsMutex mutex;
+    OrderedMutex mutex;
     double scan_period;
     bool monitor;
     

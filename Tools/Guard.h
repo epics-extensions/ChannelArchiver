@@ -3,12 +3,36 @@
 #ifndef _GUARD_H_
 #define _GUARD_H_
 
-// Base
-#include <epicsMutex.h>
 // Tools
 #include <GenericException.h>
+#include <OrderedMutex.h>
 
-#define DEBUG_DEADLOCK
+/** \ingroup Tools
+ *  Guard automatically takes and releases an epicsMutex.
+ *  <p>
+ *  Idea follows Jeff Hill's epicsGuard.
+ *  <p>
+ *  Archiver should prefer OrderedMutex and Guard over the
+ *  basic epicsMutex and epicsMutexGuard.
+ */
+class epicsMutexGuard
+{
+public:
+    /** Constructor locks mutex. */
+    epicsMutexGuard(epicsMutex &mutex) : mutex(mutex)
+    {
+        mutex.lock();
+    }
+
+    /** Destructor unlocks mutex. */
+    ~epicsMutexGuard()
+    {
+        mutex.unlock();
+    }
+
+private:
+    epicsMutex &mutex;
+};
 
 /** \ingroup Tools
  *  Interface for something that can be protected by a Guard.
@@ -19,7 +43,7 @@ class Guardable
 {
 public:
     /** @return Returns the mutex for this object. */
-    virtual epicsMutex &getMutex() = 0;
+    virtual OrderedMutex &getMutex() = 0;
 };
 
 /** \ingroup Tools
@@ -31,16 +55,18 @@ class Guard
 {
 public:
     /** Constructor attaches to mutex and locks. */
-    Guard(Guardable &guardable) : mutex(guardable.getMutex()), is_locked(false)
+    Guard(const char *file, size_t line, Guardable &guardable)
+     : mutex(guardable.getMutex()), is_locked(false)
     {
-        lock();
+        lock(file, line);
         is_locked = true;
     }
 
     /** Constructor attaches to mutex and locks. */
-    Guard(epicsMutex &mutex) : mutex(mutex), is_locked(false)
+    Guard(const char *file, size_t line, OrderedMutex &mutex)
+     : mutex(mutex), is_locked(false)
     {
-        lock();
+        lock(file, line);
         is_locked = true;
     }
 
@@ -58,7 +84,7 @@ public:
      *  Uses ABORT_ON_ERRORS environment variable.
      */
     void check(const char *file, size_t line,
-               const epicsMutex &the_one_it_should_be);
+               const OrderedMutex &the_one_it_should_be);
 
     /** Unlock, meant for temporary, manual unlock(). */
     void unlock()
@@ -68,7 +94,7 @@ public:
     }
 
     /** Lock again after a temporary unlock. */
-    void lock();
+    void lock(const char *file, size_t line);
 
     /** @return Returns the current lock state. */
     bool isLocked()
@@ -79,7 +105,7 @@ public:
 private:
     Guard(const Guard &); // not impl.
     Guard &operator = (const Guard &); // not impl.
-    epicsMutex &mutex;
+    OrderedMutex &mutex;
     bool is_locked;
 };
 
@@ -93,7 +119,8 @@ class GuardRelease
 {
 public:
     /** Constructor releases the guard. */
-    GuardRelease(Guard &guard) : guard(guard)
+    GuardRelease(const char *file, size_t line, Guard &guard)
+     : file(file), line(line), guard(guard)
     {
         guard.unlock();
     }
@@ -101,10 +128,12 @@ public:
     /** Destructor re-locks the guard. */
     ~GuardRelease()
     {
-        guard.lock();
+        guard.lock(file, line);
     }
 
 private:
+    const char *file;
+    size_t line;
     Guard &guard;
 };
 

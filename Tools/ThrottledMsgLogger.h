@@ -22,7 +22,7 @@ public:
     /// @param name The name of the throttle, used for the suppression message.
     /// @param seconds_between_messages The throttle delay.
     ThrottledMsgLogger(const char *name, double seconds_between_messages)
-       : Throttle(seconds_between_messages), name(name), too_many(false)
+       : Throttle(name, seconds_between_messages), name(name), too_many(false)
     {
     }
     

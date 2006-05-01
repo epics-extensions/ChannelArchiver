@@ -3,6 +3,7 @@
 
 // Tools
 #include "OrderedMutex.h"
+#include "GenericException.h"
 #include "Guard.h"
 #include "MsgLogger.h"
 
@@ -81,7 +82,7 @@ bool ThreadList::check() const
     {
         l = *i;
         size_t order = l->getOrder();
-        if (order < previous)
+        if (order <= previous)
             return false;
         previous = order;
         ++i;
@@ -93,39 +94,45 @@ bool ThreadList::check() const
 class LockMonitor
 {
 public:
-    /** Constructor. There should only be one lock monitor. */
-    LockMonitor()
-    {
-        LOG_ASSERT(! exists);
-        exists = true;
-    }
+    /** Get/create the singleton LockMonitor. */
+    static LockMonitor *getInstance();
 
-    ~LockMonitor()
-    {
-        LOG_ASSERT(exists);
-        exists = false;
-    }
-    
     /** Record that given thread tries to take some mutex. */
     void add(const char *file, size_t line,
              epicsThreadId thread, OrderedMutex &lock);
 
     /** Record that given thread release some mutex. */
     void remove(epicsThreadId thread, OrderedMutex &lock);
+    
+    void dump();
 private:
-    static bool exists;
+    /** Constructor. There should only be one lock monitor. */
+    LockMonitor(){}
+
+    /** Destructor. */
+    ~LockMonitor() {}
+    
+    static LockMonitor *lock_monitor;
     epicsMutex mutex;
     stdList<ThreadList> threads;
-    void dump(Guard &guard);
+    void dump(epicsMutexGuard &guard);
 };
 
-bool LockMonitor::exists = false;
 
+// Singleton
+LockMonitor *LockMonitor::lock_monitor = 0;
+
+LockMonitor *LockMonitor::getInstance()
+{
+    if (! lock_monitor)
+        lock_monitor = new LockMonitor();
+    return lock_monitor;
+}
 
 void LockMonitor::add(const char *file, size_t line,
                       epicsThreadId thread, OrderedMutex &lock)
 {
-    Guard guard(mutex);
+    epicsMutexGuard guard(mutex);
     // Add lock to the list of locks for that thread.
     stdList<ThreadList>::iterator i;
     for (i = threads.begin();  i != threads.end();  ++i)
@@ -139,6 +146,8 @@ void LockMonitor::add(const char *file, size_t line,
                 fprintf(stderr, "file %s, line %zu:\n\n", file, line);
                 dump(guard);
                 fprintf(stderr, "=========================================\n");
+                // Remove the offending one, since we won't lock it
+                i->remove(&lock);
                 throw GenericException(file, line, "Violation of lock order");
             }
             return;
@@ -149,7 +158,7 @@ void LockMonitor::add(const char *file, size_t line,
 
 void LockMonitor::remove(epicsThreadId thread, OrderedMutex &lock)
 {
-    Guard guard(mutex);
+    epicsMutexGuard guard(mutex);
     // Remove lock from the list of locks for that thread.
     stdList<ThreadList>::iterator i;
     for (i = threads.begin();  i != threads.end();  ++i)
@@ -165,27 +174,46 @@ void LockMonitor::remove(epicsThreadId thread, OrderedMutex &lock)
     throw GenericException(__FILE__, __LINE__, "Unknown thread");
 }
 
-void LockMonitor::dump(Guard &guard)
+void LockMonitor::dump()
 {
+    epicsMutexGuard guard(mutex);
+    dump(guard);
+}
+
+void LockMonitor::dump(epicsMutexGuard &guard)
+{
+    if (threads.size() == 0)
+        fprintf(stderr, "No locks\n");
     // Remove lock from the list of locks for that thread.
     stdList<ThreadList>::iterator i;
     for (i = threads.begin();  i != threads.end();  ++i)
         i->dump();
 }
 
-// The one and only lock monitor.
-LockMonitor lock_monitor;
+OrderedMutex::OrderedMutex(const char *name, size_t order)
+        : name(name), order(order), mutex(epicsMutexCreate())
+{
+    LOG_ASSERT(mutex);
+}
+
+OrderedMutex::~OrderedMutex()
+{
+    epicsMutexDestroy(mutex);
+}
 
 void OrderedMutex::lock(const char *file, size_t line)
 {
-    lock_monitor.add(file, line, epicsThreadGetIdSelf(), *this);
-    mutex.lock();
+    LockMonitor::getInstance()->add(file, line, epicsThreadGetIdSelf(), *this);
+    if (epicsMutexLock(mutex) != epicsMutexLockOK)
+        throw GenericException(file, line, "mutex lock failed");
+    // LockMonitor::getInstance()->dump();
 }
     
 void OrderedMutex::unlock()
 {
-    lock_monitor.remove(epicsThreadGetIdSelf(), *this);
-    mutex.unlock();
+    LockMonitor::getInstance()->remove(epicsThreadGetIdSelf(), *this);
+    epicsMutexUnlock(mutex);
+    // LockMonitor::getInstance()->dump();
 }
 #endif
 

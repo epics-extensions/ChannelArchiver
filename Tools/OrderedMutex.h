@@ -36,8 +36,10 @@ class OrderedMutex
 {
 public:
     /** Create mutex with name and lock order. */
-    OrderedMutex(const char *name, size_t order)
-        : name(name), order(order) {}
+    OrderedMutex(const char *name, size_t order);
+
+    /** Destructor. */
+    ~OrderedMutex();
 
     /** @return Returns the mutex name. */
     const stdString &getName() const
@@ -63,14 +65,15 @@ public:
 private:
     stdString name;
     size_t order;
-    epicsMutex mutex;
+    epicsMutexId mutex;
 };
 
 #ifndef DETECT_DEADLOCK
 
 inline void OrderedMutex::lock(const char *file, size_t line)
 {
-    mutex.lock();
+    if (mutex.lock() != epicsMutexLockOK)
+        throw GenerixException(file, line, "mutex lock failed");
 }
     
 inline void OrderedMutex::unlock()

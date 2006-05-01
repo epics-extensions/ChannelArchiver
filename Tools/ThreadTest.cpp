@@ -131,8 +131,8 @@ public:
         while (count < TURN_LIMIT)
         {
             {
-                Guard left(forks[this->left]);
-                Guard right(forks[this->right]);
+                epicsMutexGuard left(forks[this->left]);
+                epicsMutexGuard right(forks[this->right]);
                 printf("%s eating, utilizing %s and %s\n",
                         name, names[this->left], names[this->right]);
                 ++count;

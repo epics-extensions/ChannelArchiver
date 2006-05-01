@@ -6,7 +6,8 @@
 #include "MsgLogger.h"
 #include "Guard.h"
 
-void Guard::check(const char *file, size_t line, const epicsMutex &the_one_it_should_be)
+void Guard::check(const char *file, size_t line,
+                  const OrderedMutex &the_one_it_should_be)
 {
     if (&mutex == &the_one_it_should_be)
         return;
@@ -20,8 +21,8 @@ void Guard::check(const char *file, size_t line, const epicsMutex &the_one_it_sh
     throw GenericException(file, line, "Found a Guard for the wrong Mutex");
 }
 
-void Guard::lock()
+void Guard::lock(const char *file, size_t line)
 {    
-    mutex.lock();
+    mutex.lock(file, line);
     is_locked = true;
 }

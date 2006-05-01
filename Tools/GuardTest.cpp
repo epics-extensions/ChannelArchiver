@@ -5,13 +5,12 @@
 
 TEST_CASE guard_test()
 {
-    epicsMutex mutex1, mutex2;
+    OrderedMutex mutex1("1", 1), mutex2("2", 2);
     {
-        Guard guard(mutex1);
+        Guard guard(__FILE__, __LINE__, mutex1);
         guard.check(__FILE__, __LINE__, mutex1);
         TEST("Guard::check is OK");
         TEST(guard.isLocked());
-        mutex1.show(10);
         try
         {
             guard.check(__FILE__, __LINE__, mutex2);
@@ -28,13 +27,13 @@ TEST_CASE guard_test()
 
 TEST_CASE release_test()
 {
-    epicsMutex mutex;
+    OrderedMutex mutex("test", 1);
     {
-        Guard guard(mutex);
+        Guard guard(__FILE__, __LINE__, mutex);
         guard.check(__FILE__, __LINE__, mutex);
         TEST(guard.isLocked());
         {
-            GuardRelease release(guard);
+            GuardRelease release(__FILE__, __LINE__, guard);
             TEST(!guard.isLocked());
         }
         TEST(guard.isLocked());
@@ -44,15 +43,15 @@ TEST_CASE release_test()
 
 TEST_CASE guard_performance()
 {
-    epicsMutex mutex;
+    OrderedMutex mutex("test", 1);
     {
     	BenchTimer timer;
-        Guard guard(mutex);
+        Guard guard(__FILE__, __LINE__, mutex);
         size_t i, N=100000;
         for (i=0; i<N; ++i)
         {
         	guard.unlock();
-        	guard.lock();
+        	guard.lock(__FILE__, __LINE__);
         }
         timer.stop();
         double t = timer.runtime();

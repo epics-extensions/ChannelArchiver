@@ -52,6 +52,7 @@ LIB_SRCS += NetTools.cpp
 LIB_SRCS += OrderedMutex.cpp
 LIB_SRCS += RegularExpression.cpp
 LIB_SRCS += stdString.cpp
+LIB_SRCS += Throttle.cpp
 LIB_SRCS += ThrottledMsgLogger.cpp
 LIB_SRCS += UnitTestLib.cpp
 LIB_SRCS += FUX.cpp

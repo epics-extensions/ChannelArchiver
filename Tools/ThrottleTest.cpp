@@ -7,7 +7,7 @@
 
 TEST_CASE test_throttle()
 {
-     Throttle throttle(2.0);
+     Throttle throttle("Test", 2.0);
      // OK to print one message.
      TEST(throttle.isPermitted());    
      // Then, messages are discouraged...

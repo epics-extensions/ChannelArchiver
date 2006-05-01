@@ -39,6 +39,7 @@ TEST_CASE deadlock_test()
     {
         PASS("Caught exception:");
         printf("        %s\n", e.what());
+        b.unlock(); // Release all locks
     }
     
     TEST_OK;

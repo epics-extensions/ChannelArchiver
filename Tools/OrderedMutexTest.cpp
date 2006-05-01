@@ -14,20 +14,22 @@ TEST_CASE deadlock_test()
         b.unlock();
         a.unlock();
         PASS("Took a, b");
-        // Take in allowed order
+        // Take in allowed order, more than once
+        a.lock(__FILE__, __LINE__);
         a.lock(__FILE__, __LINE__);
         b.lock(__FILE__, __LINE__);
         // Release, order does not matter.
         a.unlock();
         b.unlock();
-        PASS("Took a, b");
+        a.unlock();
+        PASS("Took a, a, b");
     }
     catch (GenericException &e)
     {
         FAIL("Caught exception");
     }
     try
-    {   // Take in wrong oder.
+    {   // Attempt to take in wrong oder.
         b.lock(__FILE__, __LINE__);
         a.lock(__FILE__, __LINE__);
         // Should not get here.

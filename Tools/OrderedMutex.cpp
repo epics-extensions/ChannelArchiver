@@ -7,7 +7,7 @@
 #include "Guard.h"
 #include "MsgLogger.h"
 
-#ifdef DETECT_DEADLOCK
+#define DETECT_DEADLOCK
 
 /** Monitor the locks that one thread currently holds. */
 class ThreadList
@@ -31,10 +31,7 @@ public:
     }
 
     /** Remove a lock from list for this thread. */
-    void remove(const OrderedMutex *lock)
-    {
-        locks.remove(lock);
-    }
+    void remove(const OrderedMutex *lock);
 
     bool isEmpty() const
     {
@@ -50,6 +47,27 @@ private:
     /** Check lock order. */
     bool check() const;
 };
+
+void ThreadList::remove(const OrderedMutex *lock)
+{
+    // Remove lock from the list of locks for this thread.
+    stdList<const OrderedMutex *>::iterator i;
+    for (i = locks.begin();  i != locks.end();  ++i)
+    {
+        if (*i == lock)
+        {
+            locks.erase(i);
+            return;
+        }
+    }
+    if (getenv("ABORT_ON_ERRORS"))
+    {
+        LOG_MSG("ThreadList: Unknown lock '%s'\n", lock->getName().c_str());
+        abort();
+    }
+    throw GenericException(__FILE__, __LINE__, "Unknown lock '%s'",
+                           lock->getName().c_str());
+}
 
 void ThreadList::dump() const
 {
@@ -118,7 +136,6 @@ private:
     void dump(epicsMutexGuard &guard);
 };
 
-
 // Singleton
 LockMonitor *LockMonitor::lock_monitor = 0;
 
@@ -178,6 +195,12 @@ void LockMonitor::remove(epicsThreadId thread, OrderedMutex &lock)
             return;
         }
     }
+    if (getenv("ABORT_ON_ERRORS"))
+    {
+        LOG_MSG("LockMonitor: Unknown thread\n");
+        dump(guard);
+        abort();
+    }
     throw GenericException(__FILE__, __LINE__, "Unknown thread");
 }
 
@@ -210,7 +233,9 @@ OrderedMutex::~OrderedMutex()
 
 void OrderedMutex::lock(const char *file, size_t line)
 {
+#ifdef DETECT_DEADLOCK
     LockMonitor::getInstance()->add(file, line, epicsThreadGetIdSelf(), *this);
+#endif
     if (epicsMutexLock(mutex) != epicsMutexLockOK)
     {
         if (getenv("ABORT_ON_ERRORS"))
@@ -223,14 +248,25 @@ void OrderedMutex::lock(const char *file, size_t line)
         throw GenericException(file, line, "mutex lock '%s' failed",
                                name.c_str());
     }
-    // LockMonitor::getInstance()->dump();
+#ifdef DETECT_DEADLOCK
+    if (getenv("TRACE_MUTEX"))
+    {
+        fprintf(stderr, "%25s:%4zu Lock   : ", file, line);
+        LockMonitor::getInstance()->dump();
+    }
+#endif
 }
     
 void OrderedMutex::unlock()
 {
-    LockMonitor::getInstance()->remove(epicsThreadGetIdSelf(), *this);
     epicsMutexUnlock(mutex);
-    // LockMonitor::getInstance()->dump();
-}
+#ifdef DETECT_DEADLOCK
+    LockMonitor::getInstance()->remove(epicsThreadGetIdSelf(), *this);
+    if (getenv("TRACE_MUTEX"))
+    {
+        fprintf(stderr, "                               Unlock : ");
+        LockMonitor::getInstance()->dump();
+    }
 #endif
+}
 

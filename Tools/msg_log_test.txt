@@ -22,3 +22,7 @@ not on the screen
 05/01/2006 11:36:59 Test went OK
 05/01/2006 11:36:59 You should see this message in the log file,
 not on the screen
+05/01/2006 15:32:22 Hi
+05/01/2006 15:32:22 Test went OK
+05/01/2006 15:32:22 You should see this message in the log file,
+not on the screen

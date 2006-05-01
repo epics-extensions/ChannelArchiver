@@ -9,8 +9,6 @@
 #include "GenericException.h"
 #include "ToolsConfig.h"
 
-#define DETECT_DEADLOCK
-
 /** \ingroup Tools
  *  A mutex with informational name and lock order.
  *  <p>
@@ -67,20 +65,5 @@ private:
     size_t order;
     epicsMutexId mutex;
 };
-
-#ifndef DETECT_DEADLOCK
-
-inline void OrderedMutex::lock(const char *file, size_t line)
-{
-    if (mutex.lock() != epicsMutexLockOK)
-        throw GenerixException(file, line, "mutex lock failed");
-}
-    
-inline void OrderedMutex::unlock()
-{
-    mutex.unlock();
-}
-
-#endif
 
 #endif

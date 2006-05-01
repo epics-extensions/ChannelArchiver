@@ -18,7 +18,7 @@ TEST_CASE guard_test()
         }
         catch (GenericException &e)
         {
-            printf("  OK  : Caught %s", e.what());
+            printf("  OK  : Caught %s\n", e.what());
             TEST_OK;
         }
         FAIL("Didn't catch the guard failure");
@@ -27,7 +27,7 @@ TEST_CASE guard_test()
 
 TEST_CASE release_test()
 {
-    OrderedMutex mutex("test", 1);
+    OrderedMutex mutex("to_release", 1);
     {
         Guard guard(__FILE__, __LINE__, mutex);
         guard.check(__FILE__, __LINE__, mutex);
@@ -47,7 +47,7 @@ TEST_CASE guard_performance()
     {
     	BenchTimer timer;
         Guard guard(__FILE__, __LINE__, mutex);
-        size_t i, N=100000;
+        size_t i, N=10;
         for (i=0; i<N; ++i)
         {
         	guard.unlock();

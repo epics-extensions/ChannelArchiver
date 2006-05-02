@@ -139,7 +139,10 @@ TEST_CASE process_variable()
             pv2->getValue(pv_guard2);
         }
         wait = 0;
-        while (pvl->values < 4)
+        size_t num = 4;
+        if (getenv("REPEAT"))
+            num = atoi(getenv("REPEAT"));
+        while (pvl->values < num)
         {        
             epicsThreadSleep(0.1);
             {
@@ -148,7 +151,7 @@ TEST_CASE process_variable()
                     ctx->flush(ctx_guard);
             }
             ++wait;
-            if (wait > 40)
+            if (wait > 10*num)
                 break;
         }
         

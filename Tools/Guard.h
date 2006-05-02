@@ -30,6 +30,9 @@ public:
         mutex.unlock();
     }
 
+    void check(const char *file, size_t line,
+               const epicsMutex &the_one_it_should_be);
+
 private:
     epicsMutexGuard(const epicsMutexGuard &); // not impl.
     epicsMutexGuard &operator = (const epicsMutexGuard &); // not impl.

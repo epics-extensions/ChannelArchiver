@@ -14,10 +14,15 @@ TEST_CASE test_concurrent_list()
     stdString bob("bob");
     
     ConcurrentList<stdString> subscribers;
+    TEST(subscribers.isEmpty() == true);
     subscribers.add(&fred);
+    TEST(subscribers.isEmpty() == false);
     subscribers.add(&freddy);
+    TEST(subscribers.isEmpty() == false);
     subscribers.add(&jane);
+    TEST(subscribers.isEmpty() == false);
     subscribers.add(&janet);
+    TEST(subscribers.isEmpty() == false);
     
     // This test assumes a certain order in which
     // elements are added to the list,

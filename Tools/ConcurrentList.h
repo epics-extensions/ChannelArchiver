@@ -25,6 +25,9 @@ public:
     /** @return Returns the mutex for the Guard passed to other methods. */
     epicsMutex &getMutex() { return mutex; }
     
+    /** @return Returns true if the list is empty. */
+    bool isEmpty(epicsMutexGuard &guard);
+    
     /** Add an item to the list.
      *  <p>
      *  The position of that item on the list is
@@ -110,6 +113,13 @@ private:
 template<class T> class ConcurrentList : private ConcurrentPtrList
 {
 public:  
+    /** @see ConcurrentPtrList::isEmpty */
+    bool isEmpty()
+    {
+        epicsMutexGuard guard(ConcurrentPtrList::getMutex());
+        return ConcurrentPtrList::isEmpty(guard);
+    }
+
     /** @see ConcurrentPtrList::add */
     void add(T *i)
     {

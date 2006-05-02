@@ -27,6 +27,9 @@ public:
     
     /** @return Returns true if the list is empty. */
     bool isEmpty(epicsMutexGuard &guard);
+
+    /** @return Returns number of entries. */
+    size_t size(epicsMutexGuard &guard);
     
     /** Add an item to the list.
      *  <p>
@@ -112,12 +115,19 @@ private:
  */
 template<class T> class ConcurrentList : private ConcurrentPtrList
 {
-public:  
+public:
     /** @see ConcurrentPtrList::isEmpty */
     bool isEmpty()
     {
         epicsMutexGuard guard(ConcurrentPtrList::getMutex());
         return ConcurrentPtrList::isEmpty(guard);
+    }
+    
+    /** @see ConcurrentPtrList::size */
+    size_t size()
+    {
+        epicsMutexGuard guard(ConcurrentPtrList::getMutex());
+        return ConcurrentPtrList::size(guard);
     }
 
     /** @see ConcurrentPtrList::add */

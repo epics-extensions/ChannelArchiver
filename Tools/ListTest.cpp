@@ -15,14 +15,19 @@ TEST_CASE test_concurrent_list()
     
     ConcurrentList<stdString> subscribers;
     TEST(subscribers.isEmpty() == true);
+    TEST(subscribers.size()    == 0);
     subscribers.add(&fred);
     TEST(subscribers.isEmpty() == false);
+    TEST(subscribers.size()    == 1);
     subscribers.add(&freddy);
     TEST(subscribers.isEmpty() == false);
+    TEST(subscribers.size()    == 2);
     subscribers.add(&jane);
     TEST(subscribers.isEmpty() == false);
+    TEST(subscribers.size()    == 3);
     subscribers.add(&janet);
     TEST(subscribers.isEmpty() == false);
+    TEST(subscribers.size()    == 4);
     
     // This test assumes a certain order in which
     // elements are added to the list,

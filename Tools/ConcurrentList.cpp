@@ -52,6 +52,20 @@ bool ConcurrentPtrList::isEmpty(epicsMutexGuard &guard)
     return true; // nothing found, must be empty.
 }
 
+size_t ConcurrentPtrList::size(epicsMutexGuard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
+    size_t count = 0;
+    CPElement *e = list;
+    while (e)
+    {
+        if (e->getItem())
+            ++count;
+        e = e->getNext();
+    }    
+    return count;
+}
+
 void ConcurrentPtrList::add(epicsMutexGuard &guard, void *item)
 {
     guard.check(__FILE__, __LINE__, mutex);

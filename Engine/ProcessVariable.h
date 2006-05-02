@@ -5,6 +5,7 @@
 #include <cadef.h>
 // Tool
 #include <Guard.h>
+#include <ConcurrentList.h>
 // Storage
 #include <RawValue.h>
 #include <CtrlInfo.h>
@@ -85,24 +86,22 @@ public:
     const CtrlInfo &getCtrlInfo(Guard &guard) const;
 
     /** Add a ProcessVariableStateListener. */
-    void addStateListener(Guard &guard, ProcessVariableStateListener *listener);
+    void addStateListener(ProcessVariableStateListener *listener);
 
     /** Remove a ProcessVariableStateListener. */
-    void removeStateListener(Guard &guard,
-                             ProcessVariableStateListener *listener);
+    void removeStateListener(ProcessVariableStateListener *listener);
 
     /** Add a ProcessVariableValueListener. */
-    void addValueListener(Guard &guard, ProcessVariableValueListener *listener);
+    void addValueListener(ProcessVariableValueListener *listener);
 
     /** Remove a ProcessVariableValueListener. */
-    void removeValueListener(Guard &guard,
-                             ProcessVariableValueListener *listener);
+    void removeValueListener(ProcessVariableValueListener *listener);
 
     /** Add a ProcessVariableListener. */
-    void addListener(Guard &guard, ProcessVariableListener *listener);
+    void addListener(ProcessVariableListener *listener);
 
     /** Remove a ProcessVariableListener. */
-    void removeListener(Guard &guard, ProcessVariableListener *listener);
+    void removeListener(ProcessVariableListener *listener);
 
     /** Start the connection mechanism.
      *  @see stop()
@@ -138,18 +137,19 @@ public:
     void stop(Guard &guard);
     
 private:
-    OrderedMutex                       mutex;
-    ProcessVariableContext             &ctx;
-    State                              state;
-    stdList<ProcessVariableStateListener *> state_listeners;
-    stdList<ProcessVariableValueListener *> value_listeners;
-    chid                               id;
-    evid                               ev_id;
-    DbrType                            dbr_type;
-    DbrCount                           dbr_count;
-    CtrlInfo                           ctrl_info;
-    size_t                             outstanding_gets;
-    bool                               subscribed;
+    OrderedMutex                                 mutex;
+    ProcessVariableContext                       &ctx;
+    State                                        state;
+    chid                                         id;
+    evid                                         ev_id;
+    DbrType                                      dbr_type;
+    DbrCount                                     dbr_count;
+    CtrlInfo                                     ctrl_info;
+    size_t                                       outstanding_gets;
+    bool                                         subscribed;
+
+    ConcurrentList<ProcessVariableStateListener> state_listeners;
+    ConcurrentList<ProcessVariableValueListener> value_listeners;
  
     // Channel Access callbacks   
     static void connection_handler(struct connection_handler_args arg);
@@ -157,9 +157,9 @@ private:
     static void value_callback(struct event_handler_args);
     
     bool setup_ctrl_info(Guard &guard, DbrType type, const void *dbr_ctrl_xx);
-    void firePvConnected(Guard &guard);
-    void firePvDisconnected(Guard &guard);
-    void firePvValue(Guard &guard, const RawValue::Data *value);
+    void firePvConnected();
+    void firePvDisconnected();
+    void firePvValue(const RawValue::Data *value);
 };
 
 inline bool ProcessVariable::isConnected(Guard &guard) const
@@ -182,18 +182,40 @@ inline const CtrlInfo &ProcessVariable::getCtrlInfo(Guard &guard) const
     return ctrl_info;
 }
 
-inline void ProcessVariable::addListener(Guard &guard,
-                                         ProcessVariableListener *listener)
+inline void ProcessVariable::addStateListener(
+                                       ProcessVariableStateListener *listener)
 {
-    addStateListener(guard, listener);
-    addValueListener(guard, listener);
+    state_listeners.add(listener);                              
 }
 
-inline void ProcessVariable::removeListener(Guard &guard,
-                                            ProcessVariableListener *listener)
+inline void ProcessVariable::removeStateListener(
+                                       ProcessVariableStateListener *listener)
 {
-    removeValueListener(guard, listener);
-    removeStateListener(guard, listener);
+    state_listeners.remove(listener);
+}
+
+inline void ProcessVariable::addValueListener(
+                                       ProcessVariableValueListener *listener)
+{
+    value_listeners.add(listener);                              
+}
+
+inline void ProcessVariable::removeValueListener(
+                                       ProcessVariableValueListener *listener)
+{
+    value_listeners.remove(listener);
+}
+
+inline void ProcessVariable::addListener(ProcessVariableListener *listener)
+{
+    addStateListener(listener);
+    addValueListener(listener);
+}
+
+inline void ProcessVariable::removeListener(ProcessVariableListener *listener)
+{
+    removeValueListener(listener);
+    removeStateListener(listener);
 }
 
 inline bool ProcessVariable::isSubscribed(Guard &guard) const

@@ -7,28 +7,28 @@ LIB_SRCS += Named.cpp
 LIB_SRCS += CircularBuffer.cpp
 LIB_SRCS += ProcessVariableContext.cpp
 LIB_SRCS += ProcessVariable.cpp
-LIB_SRCS += ProcessVariableFilter.cpp
-LIB_SRCS += RepeatFilter.cpp
-LIB_SRCS += TimeFilter.cpp
-LIB_SRCS += TimeSlotFilter
-LIB_SRCS += DisableFilter
-LIB_SRCS += ScanList.cpp
-LIB_SRCS += SampleMechanism.cpp 
-LIB_SRCS += SampleMechanismMonitored.cpp
-LIB_SRCS += SampleMechanismGet.cpp
-LIB_SRCS += SampleMechanismMonitoredGet.cpp
-LIB_SRCS += ArchiveChannel.cpp
-LIB_SRCS += GroupInfo.cpp
-LIB_SRCS += EngineConfig.cpp
-LIB_SRCS += Engine.cpp
-LIB_SRCS += HTMLPage.cpp
-LIB_SRCS += HTTPServer.cpp
-LIB_SRCS += EngineServer.cpp
-LIB_SRCS += main.cpp
+#LIB_SRCS += ProcessVariableFilter.cpp
+#LIB_SRCS += RepeatFilter.cpp
+#LIB_SRCS += TimeFilter.cpp
+#LIB_SRCS += TimeSlotFilter
+#LIB_SRCS += DisableFilter
+#LIB_SRCS += ScanList.cpp
+#LIB_SRCS += SampleMechanism.cpp 
+#LIB_SRCS += SampleMechanismMonitored.cpp
+#LIB_SRCS += SampleMechanismGet.cpp
+#LIB_SRCS += SampleMechanismMonitoredGet.cpp
+#LIB_SRCS += ArchiveChannel.cpp
+#LIB_SRCS += GroupInfo.cpp
+#LIB_SRCS += EngineConfig.cpp
+#LIB_SRCS += Engine.cpp
+#LIB_SRCS += HTMLPage.cpp
+#LIB_SRCS += HTTPServer.cpp
+#LIB_SRCS += EngineServer.cpp
+#LIB_SRCS += main.cpp
 LIBRARY_HOST := Engine
 
-ArchiveEngine_SRCS += main.cpp
-PROD_HOST := ArchiveEngine
+#ArchiveEngine_SRCS += main.cpp
+#PROD_HOST := ArchiveEngine
 PROD_LIBS_DEFAULT := Engine Storage Tools    $(EPICS_BASE_IOC_LIBS)
 #PROD_LIBS_WIN32   := EngineObj StorageObj ToolsObj $(EPICS_BASE_IOC_LIBS)
 #SYS_PROD_LIBS_WIN32 = ws2_32 advapi32 user32
@@ -38,7 +38,6 @@ Storage_DIR    = $(INSTALL_LIB)
 #StorageObj_DIR = $(INSTALL_LIB)
 Tools_DIR      = $(INSTALL_LIB)
 #ToolsObj_DIR   = $(INSTALL_LIB)
-
 
 # Only for benchmarking the read/write routines
 # or other CA tests
@@ -55,6 +54,19 @@ SCRIPTS += ConvertEngineConfig.pl
 # when we're down in O.$(EPICS_HOST_ARCH):
 -include UnitTest.mk
 -include ../UnitTest.mk
+
+
+UnitTest_SRCS = CircularBufferTest.cpp
+#UnitTest_SRCS += DisableFilterTest.cpp
+#UnitTest_SRCS += EngineConfigTest.cpp
+#UnitTest_SRCS += HTTPServerTest.cpp
+UnitTest_SRCS += ProcessVariableTest.cpp
+#UnitTest_SRCS += SampleMechanismTest.cpp
+#UnitTest_SRCS += ScanListTest.cpp
+#UnitTest_SRCS += TimeFilterTest.cpp
+#UnitTest_SRCS += TimeSlotFilterTest.cpp
+UnitTest_SRCS += UnitTest.cpp
+
 
 include $(TOP)/configure/RULES
 

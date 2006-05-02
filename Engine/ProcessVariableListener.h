@@ -14,13 +14,11 @@ public:
      * 
      *  This means: connected and received control info.
      */
-    virtual void pvConnected(class Guard &guard,
-                             class ProcessVariable &pv,
+    virtual void pvConnected(class ProcessVariable &pv,
                              const epicsTime &when) = 0;
     
     /** Invoked when the pv disconnects. */
-    virtual void pvDisconnected(class Guard &guard,
-                                class ProcessVariable &pv,
+    virtual void pvDisconnected(class ProcessVariable &pv,
                                 const epicsTime &when) = 0;
 };
 
@@ -34,8 +32,7 @@ public:
      *
      *  Can be the result of a 'getValue' or 'subscribe'.
      */
-    virtual void pvValue(class Guard &guard,
-                         class ProcessVariable &pv,
+    virtual void pvValue(class ProcessVariable &pv,
                          const RawValue::Data *data) = 0;
 };
 

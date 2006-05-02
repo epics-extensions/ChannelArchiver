@@ -11,9 +11,7 @@
 static ThrottledMsgLogger nulltime_throttle("Null-Timestamp", 60.0);
 static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 
-#define DEBUG_PV
-
-// TODO: You just cannot add/remove listeners while running.
+//#define DEBUG_PV
 
 ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
     : NamedBase(name), mutex(name, 40), ctx(ctx), state(INIT),
@@ -37,13 +35,13 @@ ProcessVariable::~ProcessVariable()
         LOG_MSG("ProcessVariable(%s) destroyed without stopping!\n",
                 getName().c_str());
                 
-    if (!state_listeners.empty())
+    if (!state_listeners.isEmpty())
     {
         LOG_MSG("ProcessVariable(%s) still has %zu state listeners\n",
                 getName().c_str(), state_listeners.size());
         return;
     }
-    if (!value_listeners.empty())
+    if (!value_listeners.isEmpty())
     {
         LOG_MSG("ProcessVariable(%s) still has %zu value listeners\n",
                 getName().c_str(), value_listeners.size());
@@ -111,71 +109,6 @@ const char *ProcessVariable::getCAStateStr(Guard &guard) const
     case cs_closed:     return "Closed";
     default:            return "unknown";
     }
-}
-
-void ProcessVariable::addStateListener(
-    Guard &guard, ProcessVariableStateListener *listener)
-{
-    guard.check(__FILE__, __LINE__, mutex);
-    LOG_ASSERT(!isRunning(guard));    
-    stdList<ProcessVariableStateListener *>::iterator l;
-    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
-    {
-        if (*l == listener)
-            throw GenericException(__FILE__, __LINE__,
-                                   "Duplicate listener for '%s'",
-                                   getName().c_str());
-    }
-    state_listeners.push_back(listener);                              
-}
-
-void ProcessVariable::removeStateListener(
-    Guard &guard, ProcessVariableStateListener *listener)
-{
-    guard.check(__FILE__, __LINE__, mutex);  
-    LOG_ASSERT(!isRunning(guard));    
-    stdList<ProcessVariableStateListener *>::iterator l;
-    for (l = state_listeners.begin(); l != state_listeners.end(); ++l)
-    {
-        if (*l == listener)
-        {
-            state_listeners.erase(l);
-            return;
-        }
-    }
-    throw GenericException(__FILE__, __LINE__, "Unknown listener for '%s'",
-                           getName().c_str());
-}
-
-void ProcessVariable::addValueListener(
-    Guard &guard, ProcessVariableValueListener *listener)
-{
-    guard.check(__FILE__, __LINE__, mutex);
-    LOG_ASSERT(!isRunning(guard));    
-    stdList<ProcessVariableValueListener *>::iterator l;
-    for (l = value_listeners.begin(); l != value_listeners.end(); ++l)
-        if (*l == listener)
-            throw GenericException(__FILE__, __LINE__,
-                                   "Duplicate listener for '%s'", getName().c_str());
-    value_listeners.push_back(listener);                              
-}
-
-void ProcessVariable::removeValueListener(
-    Guard &guard, ProcessVariableValueListener *listener)
-{
-    guard.check(__FILE__, __LINE__, mutex);
-    LOG_ASSERT(!isRunning(guard));    
-    stdList<ProcessVariableValueListener *>::iterator l;
-    for (l = value_listeners.begin(); l != value_listeners.end(); ++l)
-    {
-        if (*l == listener)
-        {
-            value_listeners.erase(l);
-            return;
-        }
-    }
-    throw GenericException(__FILE__, __LINE__, "Unknown listener for '%s'",
-                           getName().c_str());
 }
 
 void ProcessVariable::start(Guard &guard)
@@ -295,13 +228,13 @@ void ProcessVariable::unsubscribe(Guard &guard)
 
 void ProcessVariable::stop(Guard &guard)
 {
-    guard.check(__FILE__, __LINE__, mutex);
 #   ifdef DEBUG_PV
     printf("stop ProcessVariable(%s)\n", getName().c_str());
 #   endif
+    guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isRunning(guard));
     unsubscribe(guard);
-    // While locked, set all indicators back to INIT state
+    // Aet all indicators back to INIT state
     chid _id = id;
     id = 0;
     bool was_connected = state == CONNECTED;
@@ -314,10 +247,10 @@ void ProcessVariable::stop(Guard &guard)
             LOG_ASSERT(ctx.isAttached(ctx_guard));
         }
         ca_clear_channel(_id);
+        // If there are listeners, tell them that we are disconnected.
+        if (was_connected)
+            firePvDisconnected();
     }
-    // If there are listeners, tell them that we are disconnected.
-    if (was_connected)
-        firePvDisconnected(guard);
 }
 
 void ProcessVariable::connection_handler(struct connection_handler_args arg)
@@ -328,14 +261,18 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
     {
         chid _id;
         {
-            Guard guard(__FILE__, __LINE__, *me);
             if (arg.op == CA_OP_CONN_DOWN)
-            {   // Connection is down
-                me->state = DISCONNECTED;
-                me->firePvDisconnected(guard);
+            {   
+                {
+                    // Connection is down
+                    Guard guard(__FILE__, __LINE__, *me);
+                    me->state = DISCONNECTED;
+                }
+                me->firePvDisconnected();
                 return;
             }
             // else: Connection is 'up'
+            Guard guard(__FILE__, __LINE__, *me);
             _id = me->id;
             if (_id == 0)
             {
@@ -488,15 +425,17 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
     DbrCount _count = ca_element_count(_id);
     try
     {
-        Guard guard(__FILE__, __LINE__, *me);    
-        // Setup the PV info.
-        if (!me->setup_ctrl_info(guard, arg.type, arg.dbr))
-            return;
-        me->dbr_type  = _type;
-        me->dbr_count = _count;
-        me->state     = CONNECTED;
+        {
+            Guard guard(__FILE__, __LINE__, *me);    
+            // Setup the PV info.
+            if (!me->setup_ctrl_info(guard, arg.type, arg.dbr))
+                return;
+            me->dbr_type  = _type;
+            me->dbr_count = _count;
+            me->state     = CONNECTED;
+        }
         // Notify listeners that PV is now fully connected.
-        me->firePvConnected(guard);
+        me->firePvConnected();
     }
     catch (GenericException &e)
     {
@@ -548,29 +487,31 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
     }
     try
     {
-        // Check if we expected a value at all
-        Guard guard(__FILE__, __LINE__, *me);
-        if (me->outstanding_gets <= 0  &&  !me->subscribed)
         {
-            LOG_MSG("ProcessVariable(%s) received unexpected value_callback\n",
-                    me->getName().c_str());
-            return;
-        }
-        if (me->outstanding_gets > 0)
-            --me->outstanding_gets;
-        if (me->state != CONNECTED)
-        {
-            // After a disconnect, this can happen in the GETTING_INFO state:
-            // The CAC lib already sends us new monitors after the re-connect,
-            // while we wait for the ctrl-info get_callback to finish.
-            if (me->state == GETTING_INFO) // ignore
+            // Check if we expected a value at all
+            Guard guard(__FILE__, __LINE__, *me);
+            if (me->outstanding_gets <= 0  &&  !me->subscribed)
+            {
+                LOG_MSG("ProcessVariable(%s) received unexpected value_callback\n",
+                        me->getName().c_str());
                 return;
-            LOG_MSG("ProcessVariable(%s) received value_callback while %s\n",
-                    me->getName().c_str(), me->getStateStr(guard));
-            return;
+            }
+            if (me->outstanding_gets > 0)
+                --me->outstanding_gets;
+            if (me->state != CONNECTED)
+            {
+                // After a disconnect, this can happen in the GETTING_INFO state:
+                // The CAC lib already sends us new monitors after the re-connect,
+                // while we wait for the ctrl-info get_callback to finish.
+                if (me->state == GETTING_INFO) // ignore
+                    return;
+                LOG_MSG("ProcessVariable(%s) received value_callback while %s\n",
+                        me->getName().c_str(), me->getStateStr(guard));
+                return;
+            }
         }
         // Notify listeners of new value
-        me->firePvValue(guard, value);
+        me->firePvValue(value);
     }
     catch (GenericException &e)
     {
@@ -579,46 +520,30 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
     }
 }
 
-void ProcessVariable::firePvConnected(Guard &guard)
+void ProcessVariable::firePvConnected()
 {
-    guard.check(__FILE__, __LINE__, mutex);    
-    LOG_ASSERT(isRunning(guard));
-    if (state_listeners.empty())
-    {
-        LOG_MSG("ProcessVariable(%s) Connected\n", getName().c_str());
-        return;
-    }
     epicsTime now = epicsTime::getCurrent();
-    stdList<ProcessVariableStateListener *>::iterator l;
-    for (l = state_listeners.begin();  l != state_listeners.end();  ++l)
-        (*l)->pvConnected(guard, *this, now);
+    ConcurrentListIterator<ProcessVariableStateListener>
+        l(state_listeners.iterator());
+    while (l.hasNext())
+        l.next()->pvConnected(*this, now);
 }
 
-void ProcessVariable::firePvDisconnected(Guard &guard)
+void ProcessVariable::firePvDisconnected()
 {
-    guard.check(__FILE__, __LINE__, mutex);
-    if (state_listeners.empty())
-    {
-        LOG_MSG("ProcessVariable(%s) is disconnected\n",
-                getName().c_str());
-        return;
-    }
     epicsTime now = epicsTime::getCurrent();
-    stdList<ProcessVariableStateListener *>::iterator l;
-    for (l = state_listeners.begin();  l != state_listeners.end();  ++l)
-        (*l)->pvDisconnected(guard, *this, now);
+    ConcurrentListIterator<ProcessVariableStateListener>
+        l(state_listeners.iterator());
+    while (l.hasNext())
+        l.next()->pvDisconnected(*this, now);
 }
 
-void ProcessVariable::firePvValue(Guard &guard, const RawValue::Data *value)
+void ProcessVariable::firePvValue(const RawValue::Data *value)
 {
-    if (value_listeners.empty())
-    {
-        LOG_MSG("ProcessVariable(%s) value\n", getName().c_str());
-        return;
-    }
-    stdList<ProcessVariableValueListener *>::iterator l;
-    for (l = value_listeners.begin();  l != value_listeners.end();  ++l)
-        (*l)->pvValue(guard, *this, value);
+    ConcurrentListIterator<ProcessVariableValueListener>
+        l(value_listeners.iterator());
+    while (l.hasNext())
+        l.next()->pvValue(*this, value);
 }
 
 #if 0

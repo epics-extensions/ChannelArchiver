@@ -12,21 +12,21 @@ ProcessVariableFilter::ProcessVariableFilter(ProcessVariableListener *listener)
 ProcessVariableFilter::~ProcessVariableFilter()
 {}
 
-void ProcessVariableFilter::pvConnected(Guard &guard, ProcessVariable &pv,
+void ProcessVariableFilter::pvConnected(ProcessVariable &pv,
                                         const epicsTime &when)
 {
-    listener->pvConnected(guard, pv, when);
+    listener->pvConnected(pv, when);
 }
 
-void ProcessVariableFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
+void ProcessVariableFilter::pvDisconnected(ProcessVariable &pv,
                                            const epicsTime &when)
 {
-    listener->pvDisconnected(guard, pv, when);
+    listener->pvDisconnected(pv, when);
 }
 
-void ProcessVariableFilter::pvValue(Guard &guard, ProcessVariable &pv,
+void ProcessVariableFilter::pvValue(ProcessVariable &pv,
                                     const RawValue::Data *data)
 {
-    listener->pvValue(guard, pv, data);
+    listener->pvValue(pv, data);
 }
     

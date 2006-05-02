@@ -26,22 +26,19 @@ public:
     /** React to connection, then pass on to listener.
      *  @see ProcessVariableListener
      */
-    virtual void pvConnected(Guard &guard, ProcessVariable &pv,
-                             const epicsTime &when);
+    virtual void pvConnected(ProcessVariable &pv, const epicsTime &when);
 
     /** React to disconnect, then pass on to listener.
      *  @see ProcessVariableListener
      */
-    virtual void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                                const epicsTime &when);
+    virtual void pvDisconnected(ProcessVariable &pv, const epicsTime &when);
     
     /** React to new value and filter it.
      *  <p>
      *  Might invoke listener with the value, another value, or not at all.
      *  @see ProcessVariableListener
      */
-    virtual void pvValue(Guard &guard, ProcessVariable &pv,
-                         const RawValue::Data *data);
+    virtual void pvValue(ProcessVariable &pv, const RawValue::Data *data);
     
 private:
     ProcessVariableListener *listener;

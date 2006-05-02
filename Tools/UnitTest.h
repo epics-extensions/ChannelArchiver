@@ -13,6 +13,9 @@
 
 typedef bool TEST_CASE;
 
+#define COMMENT(msg)                    \
+           printf("  ----- %s\n", msg);
+
 #define FAIL(msg)                       \
        {                                \
            printf("  FAIL: %s\n", msg); \

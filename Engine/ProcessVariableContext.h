@@ -8,28 +8,12 @@
  *  Context for ProcessVariable instances.
  *  <p>
  *  ChannelAccess assigns PVs to contexts.
- *  This one helps to use the same context across threads.
+ *  This one helps to use the same context across threads,
+ *  and keeps track of the required CA 'flush'.
  *  <p>
  *  Uses a reference count to check that
- *  all PVs which used it were cleared when the context
+ *  all PVs were cleared by the time the context
  *  is destroyed.
- *  <p>
- *  Also helps to avoid some deadlocks:
- *  We cannot re-configure the Engine while CA callbacks
- *  arrive, since we cannot lock and change the ArchiveChannel
- *  and GroupInfo lists while CA callbacks might change the
- *  connection status of groups or the engine,
- *  or while callbacks disable/enable groups.
- *  <p>
- *  But even stopping all the channels can result in a deadlock,
- *  since the engine is locked, looping over all channels and
- *  eventually invoking ca_clear_channel,
- *  while at the same time a "connect" callback can try to
- *  increment the engine's connect count.
- *  <p>
- *  So when the engine stops, it'll stop the ProcessVariableContext,
- *  which sets a flag to ignore all CA callbacks inside the
- *  ProcessVariable.
  */
 class ProcessVariableContext : public Guardable
 {
@@ -100,6 +84,5 @@ private:
     
     bool flush_requested;
 };
-
 
 #endif /*PROCESSVARIABLECONTEXT_H_*/

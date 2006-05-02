@@ -25,7 +25,7 @@ ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
         Guard ctx_guard(__FILE__, __LINE__, ctx);
         ctx.incRef(ctx_guard);
     }
-    // Set some default t match the default getDbrType/Count
+    // Set some default info to match the default getDbrType/Count
     ctrl_info.setNumeric(0, "?", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 }                      
 
@@ -34,7 +34,6 @@ ProcessVariable::~ProcessVariable()
     if (state != INIT)
         LOG_MSG("ProcessVariable(%s) destroyed without stopping!\n",
                 getName().c_str());
-                
     if (!state_listeners.isEmpty())
     {
         LOG_MSG("ProcessVariable(%s) still has %zu state listeners\n",
@@ -89,17 +88,17 @@ const char *ProcessVariable::getStateStr(Guard &guard) const
 const char *ProcessVariable::getCAStateStr(Guard &guard) const
 {
     guard.check(__FILE__, __LINE__, mutex);
-    if (id == 0)
+    chid _id = id;
+    if (_id == 0)
         return "Not Initialized";
     enum channel_state cs;
-    chid _id = id;
     {   // Unlock while dealing with CAC.
         GuardRelease release(__FILE__, __LINE__, guard);
         {
             Guard ctx_guard(__FILE__, __LINE__, ctx);
             LOG_ASSERT(ctx.isAttached(ctx_guard));
-            cs = ca_state(_id);
         }
+        cs = ca_state(_id);
     }
     switch (cs)
     {
@@ -181,12 +180,12 @@ void ProcessVariable::subscribe(Guard &guard)
     chid _id = id;
     if (_id == 0)
     {
-        LOG_MSG("Skipped subscription to %s, already stopped",
+        LOG_MSG("Skipped subscription to %s, already stopped\n",
                 getName().c_str());
         return;
     }
-    evid _ev_id;
-    DbrType _type = dbr_type;
+    evid     _ev_id;
+    DbrType  _type  = dbr_type;
     DbrCount _count = dbr_count;
     {   // Release around CA call.
         GuardRelease release(__FILE__, __LINE__, guard);
@@ -234,10 +233,10 @@ void ProcessVariable::stop(Guard &guard)
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isRunning(guard));
     unsubscribe(guard);
-    // Aet all indicators back to INIT state
+    // Set all indicators back to INIT state
     chid _id = id;
     id = 0;
-    bool was_connected = state == CONNECTED;
+    bool was_connected = (state == CONNECTED);
     state = INIT;
     // Then unlock around CA lib. calls to prevent deadlocks.
     {
@@ -253,6 +252,7 @@ void ProcessVariable::stop(Guard &guard)
     }
 }
 
+// Channel Access callback
 void ProcessVariable::connection_handler(struct connection_handler_args arg)
 {
     ProcessVariable *me = (ProcessVariable *) ca_puser(arg.chid);
@@ -397,6 +397,7 @@ bool ProcessVariable::setup_ctrl_info(Guard &guard,
     return false;
 }
 
+// Channel Access callback
 // Should be invoked with the control info 'get' data,
 // requested in the connection handler.
 void ProcessVariable::control_callback(struct event_handler_args arg)
@@ -444,9 +445,7 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
     }
 }
 
-// TODO Check context::isRunning in all callbacks
-
-
+// Channel Access callback
 // Each subscription monitor or 'get' callback goes here:
 void ProcessVariable::value_callback(struct event_handler_args arg)
 {
@@ -545,20 +544,4 @@ void ProcessVariable::firePvValue(const RawValue::Data *value)
     while (l.hasNext())
         l.next()->pvValue(*this, value);
 }
-
-#if 0
-//  TODO: Dump CA client lib info to file on demand.
-    if (info_dump_file.length() > 0)
-    {
-        int out = open(info_dump_file.c_str(), O_CREAT|O_WRONLY, 0x777);
-        info_dump_file.assign(0, 0);
-        if (out >= 0)
-        {
-            int oldout = dup(1);
-            dup2(out, 1);
-            ca_client_status(10);
-            dup2(oldout, 1);
-        }
-    }
-#endif
 

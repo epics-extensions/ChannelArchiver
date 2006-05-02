@@ -176,7 +176,20 @@ TEST_CASE process_variable()
 // Application starts a channel,
 // and then tries to stop the channel
 // while a CA callback arrives.
+//
+// With env. var. REPEAT=10,
+// it'll toggle between stopping in the connect
+// or the value callback.
+//
+// Depending on the linger time, a few monitors might
+// arrive while the PV is already considered stopped,
+// because the ca_clear_subscription() needs to wait
+// until we leave the callback which originates
+// in the CA client library.
 static epicsEvent hack;
+static bool stop_in_connect = true;
+static double linger = 0.1;
+
 class LockApp : public ProcessVariableListener
 {
 public:
@@ -200,7 +213,7 @@ public:
     
     void stop()
     {
-        puts("stopping\n");
+        puts("stopping");
         AutoPtr<ProcessVariable> tmp;
         {
             Guard guard(__FILE__, __LINE__, mutex);
@@ -210,6 +223,7 @@ public:
         }
         {
             Guard pv_guard(__FILE__, __LINE__, *tmp);
+            tmp->unsubscribe(pv_guard);        
             tmp->stop(pv_guard);
         }
         tmp->removeListener(this);
@@ -223,24 +237,47 @@ public:
         {
             Guard guard(__FILE__, __LINE__, mutex);
             connected = true;
-            puts("Connected, triggering stop\n");
+            puts("\nConnected");
         }
-        hack.signal();
-        epicsThreadSleep(1.0);
+        if (stop_in_connect)
+        {
+            puts("Stop in connect");
+            hack.signal();
+        }
+        {
+            Guard pv_guard(__FILE__, __LINE__, pv);
+            pv.subscribe(pv_guard);
+        }
+        {
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
+            ctx.flush(ctx_guard);
+        }
+        epicsThreadSleep(linger);
     }
     
     void pvDisconnected(ProcessVariable &pv, const epicsTime &when)
     {
-        Guard guard(__FILE__, __LINE__, mutex);
-        puts("disconnected\n");
-        connected = false;
+        {
+            Guard guard(__FILE__, __LINE__, mutex);
+            puts("disconnected");
+            connected = false;
+        }
+        epicsThreadSleep(linger);
     }
     
     void pvValue(class ProcessVariable &pv, const RawValue::Data *data)
     {
-        Guard guard(__FILE__, __LINE__, mutex);
-        puts("value\n");
-        ++values;
+        {
+            Guard guard(__FILE__, __LINE__, mutex);
+            puts("value");
+            ++values;
+        }
+        if (! stop_in_connect)
+        {
+            puts("Stop in value");
+            hack.signal();
+        }
+        epicsThreadSleep(linger);
     }
 
 private:
@@ -261,6 +298,7 @@ TEST_CASE pv_lock_test()
         num = 1;
     for (i = 0; i<num; ++i)
     {
+        stop_in_connect = i & 1;
         app.start();
         hack.wait();
         app.stop();

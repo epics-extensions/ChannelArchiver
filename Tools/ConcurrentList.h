@@ -79,10 +79,7 @@ public:
     /** @return Returns the mutex for the Guard passed to other methods. */
     OrderedMutex &getMutex() { return list->getMutex(); }
     
-    /** @return Returns true if there is another element. */
-    bool hasNext(Guard &guard);
-    
-    /** @return Returns the next element. */
+    /** @return Returns the next element or 0 if there is none. */
     void *next(Guard &guard);
 private:
     ConcurrentPtrList *list;
@@ -100,14 +97,7 @@ template<class T> class ConcurrentListIterator
 {
 public:
     ConcurrentListIterator(ConcurrentPtrListIterator iter) : iter(iter) {}
-    
-    /** @see ConcurrentPtrListIterator::hasNext */
-    bool hasNext()
-    {
-        Guard guard(__FILE__, __LINE__, iter.getMutex());
-        return iter.hasNext(guard);
-    }
-    
+        
     /** @see ConcurrentPtrListIterator::next */
     T *next()
     {

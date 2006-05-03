@@ -163,19 +163,10 @@ void ConcurrentPtrListIterator::getNext(Guard &guard)
     while (item == 0  &&  next_element);
 }
 
-bool ConcurrentPtrListIterator::hasNext(Guard &guard)
-{
-    guard.check(__FILE__, __LINE__, getMutex());    
-    return item != 0;
-}
-
 void *ConcurrentPtrListIterator::next(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());    
-    if (!item)
-        throw GenericException(__FILE__, __LINE__, "End of list");
     void *result = item;
     getNext(guard);
     return result;
 }
-

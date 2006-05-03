@@ -39,57 +39,40 @@ TEST_CASE test_concurrent_list()
     
     COMMENT("Simple Iteration");
     ConcurrentListIterator<stdString> s = subscribers.iterator();
-    TEST(s.hasNext());
     TEST(*s.next() == "fred");
-    TEST(s.hasNext());
     TEST(*s.next() == "freddy");
-    TEST(s.hasNext());
     TEST(*s.next() == "jane");
-    TEST(s.hasNext());
     TEST(*s.next() == "janet");
-    TEST(s.hasNext() == false);
-    try
-    {
-        s.next();
-        FAIL("Allowed to step past last element?!");
-    }
-    catch (GenericException &e)
-    {
-        PASS(e.what());
-    }
+    TEST(s.next() == 0);
+    TEST(s.next() == 0);
+    TEST(s.next() == 0);
+    TEST(s.next() == 0);
         
     COMMENT("Iteration where 'fred' is removed while iterator is on it");
     // Start over: Position on first entry, "fred"
     s = subscribers.iterator();
-    TEST(s.hasNext());
     // Remove element, ...
     subscribers.remove(&fred);
     // but iterator was already on the element, so you still get it:
     TEST(*s.next() == "fred");
-    TEST(s.hasNext());
     TEST(*s.next() == "freddy");
-    TEST(s.hasNext());
     TEST(*s.next() == "jane");
-    TEST(s.hasNext());
     TEST(*s.next() == "janet");
-    TEST(s.hasNext() == false);
+    TEST(s.next() == 0);
+    TEST(s.next() == 0);
 
     COMMENT("Iteration where 'fred' is gone, but 'bob' was added.");
     COMMENT("Then add 'fred' again while iterating.");
     subscribers.add(&bob);
     s = subscribers.iterator();
-    TEST(s.hasNext());
     TEST(*s.next() == "bob");
-    TEST(s.hasNext());
     TEST(*s.next() == "freddy");
     subscribers.add(&fred);
-    TEST(s.hasNext());
     TEST(*s.next() == "jane");
-    TEST(s.hasNext());
     TEST(*s.next() == "janet");
-    TEST(s.hasNext());
     TEST(*s.next() == "fred");
-    TEST(s.hasNext() == false);
+    TEST(s.next() == 0);
+    TEST(s.next() == 0);
     
     TEST_OK;
 }

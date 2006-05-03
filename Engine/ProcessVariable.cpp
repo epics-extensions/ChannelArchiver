@@ -6,6 +6,7 @@
 // Storage
 #include <RawValue.h>
 // Local
+#include "EngineLocks.h"
 #include "ProcessVariable.h"
 
 static ThrottledMsgLogger nulltime_throttle("Null-Timestamp", 60.0);
@@ -14,9 +15,16 @@ static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 //#define DEBUG_PV
 
 ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
-    : NamedBase(name), mutex(name, 40), ctx(ctx), state(INIT),
-      id(0), ev_id(0), dbr_type(DBR_TIME_DOUBLE), dbr_count(1),
-      outstanding_gets(0), subscribed(false)
+    : NamedBase(name),
+      mutex(name, EngineLocks::ProcessVariable),
+      ctx(ctx),
+      state(INIT),
+      id(0),
+      ev_id(0),
+      dbr_type(DBR_TIME_DOUBLE),
+      dbr_count(1),
+      outstanding_gets(0),
+      subscribed(false)
 {
 #   ifdef DEBUG_PV
     printf("new ProcessVariable(%s)\n", getName().c_str());

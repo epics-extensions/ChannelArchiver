@@ -19,6 +19,7 @@
 #include <ToolsConfig.h>
 #include <ThrottledMsgLogger.h>
 // Engine
+#include "EngineLocks.h"
 #include "HTTPServer.h"
 
 #undef MOZILLA_HACK
@@ -66,7 +67,7 @@ HTTPServer::HTTPServer(short port, PathHandlerList *handlers, void *user_arg)
     user_arg(user_arg),
     total_clients(0),
     client_duration(0.0),
-    client_list_mutex("HTTPD Client List", 60),
+    client_list_mutex("HTTPD Client List", EngineLocks::HTTPServer),
     clients(new AutoPtr<HTTPClientConnection> [MAX_NUM_CLIENTS])
 {
     socket = epicsSocketCreate(AF_INET, SOCK_STREAM, 0);

@@ -10,9 +10,10 @@
 #include <DataWriter.h>
 // Engine
 #include "Engine.h"
+#include "EngineLocks.h"
 
 Engine::Engine(const stdString &index_name)
-    : mutex("Engine", 10),
+    : mutex("Engine", ENGINE_LOCK),
       is_running(false),
       index_name(index_name),
       description("Archive Engine"),

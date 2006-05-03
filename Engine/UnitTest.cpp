@@ -27,6 +27,7 @@ extern TEST_CASE test_sample_monitor_get();
 extern TEST_CASE test_scan_list();
 // Unit TimeFilterTest:
 extern TEST_CASE test_time_filter();
+extern TEST_CASE test_repeat_filter();
 // Unit TimeSlotFilterTest:
 extern TEST_CASE test_time_slot_filter();
 
@@ -90,6 +91,29 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
+
+
+
+
+    if (single_unit==0  ||  strcmp(single_unit, "RepeatFilterTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit RepeatFilterTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_repeat_filter")==0)
+       {
+            ++run;
+            printf("\ntest_repeat_filter:\n");
+            if (test_repeat_filter())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+
+
+
 
     printf("======================================================================\n");
     size_t failed = run - passed;

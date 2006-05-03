@@ -21,17 +21,17 @@ public:
     /** It's suggested to stop the filter when sampling stops,
      *  since this flushes accumulated repeats.
      */
-    void stop(Guard &guard, ProcessVariable &pv);
+    void stop(ProcessVariable &pv);
         
     // ProcessVariableListener
-    void pvConnected(Guard &guard, ProcessVariable &pv,
-                     const epicsTime &when);
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                        const epicsTime &when);
-    void pvValue(Guard &guard, ProcessVariable &pv,
-                 const RawValue::Data *data);
+    void pvConnected(ProcessVariable &pv, const epicsTime &when);
+    void pvDisconnected(ProcessVariable &pv, const epicsTime &when);
+    void pvValue(ProcessVariable &pv, const RawValue::Data *data);
     
 private:
+    // RepeatFilter is usually accessed by ProcessVariable (CA),
+    // but also by engine thread in 'stop()', so we need a mutex.
+    OrderedMutex mutex;
     const EngineConfig &config;
     bool is_previous_value_valid;
     RawValueAutoPtr previous_value; // the previous value

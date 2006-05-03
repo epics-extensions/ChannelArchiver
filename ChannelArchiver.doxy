@@ -1,4 +1,7 @@
 # Doxyfile 1.4.6
+#
+# Results in some error messages when used with an older version of doygen!
+#
 
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project

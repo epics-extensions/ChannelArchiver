@@ -8,7 +8,7 @@ LIB_SRCS += CircularBuffer.cpp
 LIB_SRCS += ProcessVariableContext.cpp
 LIB_SRCS += ProcessVariable.cpp
 LIB_SRCS += ProcessVariableFilter.cpp
-#LIB_SRCS += RepeatFilter.cpp
+LIB_SRCS += RepeatFilter.cpp
 #LIB_SRCS += TimeFilter.cpp
 #LIB_SRCS += TimeSlotFilter
 #LIB_SRCS += DisableFilter
@@ -55,7 +55,6 @@ SCRIPTS += ConvertEngineConfig.pl
 -include UnitTest.mk
 -include ../UnitTest.mk
 
-
 UnitTest_SRCS = CircularBufferTest.cpp
 #UnitTest_SRCS += DisableFilterTest.cpp
 #UnitTest_SRCS += EngineConfigTest.cpp
@@ -64,9 +63,9 @@ UnitTest_SRCS += ProcessVariableTest.cpp
 #UnitTest_SRCS += SampleMechanismTest.cpp
 #UnitTest_SRCS += ScanListTest.cpp
 #UnitTest_SRCS += TimeFilterTest.cpp
+UnitTest_SRCS += RepeatFilterTest.cpp
 #UnitTest_SRCS += TimeSlotFilterTest.cpp
 UnitTest_SRCS += UnitTest.cpp
-
 
 include $(TOP)/configure/RULES
 

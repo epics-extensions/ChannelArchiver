@@ -3,13 +3,16 @@
 // Tools
 #include "MsgLogger.h"
 // Engine
+#include "EngineLocks.h"
 #include "Engine.h"
 #include "GroupInfo.h"
 #include "ArchiveChannel.h"
 
 GroupInfo::GroupInfo(const stdString &name)
     : NamedBase(name.c_str()),
-      mutex("GroupInfo", 20),num_connected(0), disable_count(0)
+      mutex("GroupInfo", GROUP_INFO_LOCK),
+      num_connected(0),
+      disable_count(0)
 {
 }
 

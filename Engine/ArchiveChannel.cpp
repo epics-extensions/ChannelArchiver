@@ -1,6 +1,7 @@
 // Tools
 #include <MsgLogger.h>
 // Engine
+#include "EngineLocks.h"
 #include "ArchiveChannel.h"
 #include "GroupInfo.h"
 #include "SampleMechanismMonitored.h"
@@ -15,7 +16,7 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
                                const char *channel_name,
                                double scan_period, bool monitor)
     : NamedBase(channel_name), 
-      mutex("ArchiveChannel", 30), 
+      mutex("ArchiveChannel", ARCHIVE_CHANNEL_LOCK), 
       scan_period(scan_period),
       monitor(monitor),
       currently_disabling(false),

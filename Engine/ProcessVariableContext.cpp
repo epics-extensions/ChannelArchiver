@@ -4,6 +4,7 @@
 #include <GenericException.h>
 #include <MsgLogger.h>
 // Local
+#include "EngineLocks.h"
 #include "ProcessVariableContext.h"
 
 static void caException(struct exception_handler_args args)
@@ -22,7 +23,7 @@ static void caException(struct exception_handler_args args)
 }
 
 ProcessVariableContext::ProcessVariableContext()
-    : mutex("ProcessVariableContext", 50),
+    : mutex("ProcessVariableContext", EngineLocks::ProcessVariableContext),
       ca_context(0), refs(0), flush_requested(false)
 {
 	LOG_MSG("Creating ChannelAccess Context.\n");

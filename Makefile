@@ -16,9 +16,11 @@ DIRS += Manager
 include $(TOP)/configure/RULES_DIRS
 
 stats:
-	@echo -n "Lines of Code (C, C++, Perl) :"
+	@echo -n "Lines of Code (C++)             :"
 	@wc -l */*.h */*.cpp | fgrep total
-	@echo -n "Lines of Documentation Source:"
+	@echo -n "Lines of Test Code (C++, shell) :"
+	@wc -l */*Test*.h */*Test*.cpp */test.sh | fgrep total
+	@echo -n "Lines of Documentation Source   :"
 	@wc -l manual/*.tex | fgrep total
 
 tests:

@@ -16,7 +16,7 @@
 class ProcessVariableFilter : public ProcessVariableListener
 {
 public:
-    /** Create a PV filter which passes (filtered) events
+    /** Create a PV filter which passes filtered events
      *  on to the provided listener.
      */
     ProcessVariableFilter(ProcessVariableListener *listener);

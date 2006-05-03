@@ -39,7 +39,16 @@ public:
      */
     void add(Guard &guard, void *item);
 
-    /** Remove an item from the list. */
+    /** Remove an item from the list.
+     *  <p>
+     *  @return Returns true if item was found and removed.
+     */
+    bool removeIfFound(Guard &guard, void *item);
+
+    /** Remove an item from the list.
+     *  <p>
+     *  @exception GenericException if item is not found on the list.
+     */
     void remove(Guard &guard, void *item);
     
     /** Obtain iterator, positioned at the start of the list. */
@@ -138,17 +147,24 @@ public:
     }
 
     /** @see ConcurrentPtrList::add */
-    void add(T *i)
+    void add(T *item)
     {
         Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
-        ConcurrentPtrList::add(guard, i);
+        ConcurrentPtrList::add(guard, item);
+    }
+    
+    /** @see ConcurrentPtrList::removeIfFound */
+    bool removeIfFound(void *item)
+    {
+        Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
+        return ConcurrentPtrList::removeIfFound(guard, item);
     }
     
     /** @see ConcurrentPtrList::remove */
-    void remove(T *i)
+    void remove(T *item)
     {
         Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
-        ConcurrentPtrList::remove(guard, i);
+        ConcurrentPtrList::remove(guard, item);
     }
 
     /** @see ConcurrentPtrList::iterator */

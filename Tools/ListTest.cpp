@@ -16,6 +16,7 @@ TEST_CASE test_concurrent_list()
     ConcurrentList<stdString> subscribers;
     TEST(subscribers.isEmpty() == true);
     TEST(subscribers.size()    == 0);
+    TEST(subscribers.removeIfFound(&bob) == false);
     subscribers.add(&fred);
     TEST(subscribers.isEmpty() == false);
     TEST(subscribers.size()    == 1);
@@ -28,6 +29,8 @@ TEST_CASE test_concurrent_list()
     subscribers.add(&janet);
     TEST(subscribers.isEmpty() == false);
     TEST(subscribers.size()    == 4);
+    
+    TEST(subscribers.removeIfFound(&bob) == false);
     
     // This test assumes a certain order in which
     // elements are added to the list,

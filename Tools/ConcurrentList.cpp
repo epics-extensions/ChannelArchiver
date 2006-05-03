@@ -95,7 +95,7 @@ void ConcurrentPtrList::add(Guard &guard, void *item)
     }
 }
 
-void ConcurrentPtrList::remove(Guard &guard, void *item)
+bool ConcurrentPtrList::removeIfFound(Guard &guard, void *item)
 {
     guard.check(__FILE__, __LINE__, mutex);    
     CPElement *e = list;
@@ -104,10 +104,17 @@ void ConcurrentPtrList::remove(Guard &guard, void *item)
         if (e->getItem() == item)
         {
             e->setItem(0);
-            return;
+            return true;
         }
         e = e->getNext();
     }
+    return false;    
+}
+
+void ConcurrentPtrList::remove(Guard &guard, void *item)
+{
+    if (removeIfFound(guard, item))
+        return;
     throw GenericException(__FILE__, __LINE__, "Unknown item");    
 }
 

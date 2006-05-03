@@ -16,9 +16,13 @@ extern TEST_CASE test_disable_filter();
 extern TEST_CASE engine_config();
 // Unit HTTPServerTest:
 extern TEST_CASE test_http_server();
+// Unit ProcessVariableFilterTest:
+extern TEST_CASE test_pv_filter();
 // Unit ProcessVariableTest:
 extern TEST_CASE process_variable();
 extern TEST_CASE pv_lock_test();
+// Unit RepeatFilterTest:
+extern TEST_CASE test_repeat_filter();
 // Unit SampleMechanismTest:
 extern TEST_CASE test_sample_get();
 extern TEST_CASE test_sample_monitor();
@@ -27,7 +31,6 @@ extern TEST_CASE test_sample_monitor_get();
 extern TEST_CASE test_scan_list();
 // Unit TimeFilterTest:
 extern TEST_CASE test_time_filter();
-extern TEST_CASE test_repeat_filter();
 // Unit TimeSlotFilterTest:
 extern TEST_CASE test_time_slot_filter();
 
@@ -66,6 +69,70 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
+    if (single_unit==0  ||  strcmp(single_unit, "DisableFilterTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit DisableFilterTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_disable_filter")==0)
+       {
+            ++run;
+            printf("\ntest_disable_filter:\n");
+            if (test_disable_filter())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "EngineConfigTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit EngineConfigTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "engine_config")==0)
+       {
+            ++run;
+            printf("\nengine_config:\n");
+            if (engine_config())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "HTTPServerTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit HTTPServerTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_http_server")==0)
+       {
+            ++run;
+            printf("\ntest_http_server:\n");
+            if (test_http_server())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "ProcessVariableFilterTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit ProcessVariableFilterTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_pv_filter")==0)
+       {
+            ++run;
+            printf("\ntest_pv_filter:\n");
+            if (test_pv_filter())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
     if (single_unit==0  ||  strcmp(single_unit, "ProcessVariableTest")==0)
     {
         printf("======================================================================\n");
@@ -91,10 +158,6 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
-
-
-
-
     if (single_unit==0  ||  strcmp(single_unit, "RepeatFilterTest")==0)
     {
         printf("======================================================================\n");
@@ -111,8 +174,58 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
-
-
+#if 0
+    if (single_unit==0  ||  strcmp(single_unit, "SampleMechanismTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit SampleMechanismTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_sample_get")==0)
+       {
+            ++run;
+            printf("\ntest_sample_get:\n");
+            if (test_sample_get())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+       if (single_case==0  ||  strcmp(single_case, "test_sample_monitor")==0)
+       {
+            ++run;
+            printf("\ntest_sample_monitor:\n");
+            if (test_sample_monitor())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+       if (single_case==0  ||  strcmp(single_case, "test_sample_monitor_get")==0)
+       {
+            ++run;
+            printf("\ntest_sample_monitor_get:\n");
+            if (test_sample_monitor_get())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "ScanListTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit ScanListTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_scan_list")==0)
+       {
+            ++run;
+            printf("\ntest_scan_list:\n");
+            if (test_scan_list())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+#endif
     if (single_unit==0  ||  strcmp(single_unit, "TimeFilterTest")==0)
     {
         printf("======================================================================\n");
@@ -129,8 +242,22 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
-
-
+    if (single_unit==0  ||  strcmp(single_unit, "TimeSlotFilterTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit TimeSlotFilterTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_time_slot_filter")==0)
+       {
+            ++run;
+            printf("\ntest_time_slot_filter:\n");
+            if (test_time_slot_filter())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
 
     printf("======================================================================\n");
     size_t failed = run - passed;

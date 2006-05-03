@@ -10,7 +10,9 @@ DisableFilter::DisableFilter(ProcessVariableListener *listener)
     : ProcessVariableFilter(listener),
       mutex("DisableFilter", EngineLocks::DisableFilter),
       is_disabled(false),
-      is_connected(false)
+      is_connected(false),
+      type(0),
+      count(0)
 {
 }
 
@@ -28,64 +30,82 @@ void DisableFilter::enable(ProcessVariable &pv, const epicsTime &when)
 {
     Guard guard(__FILE__, __LINE__, mutex);
     is_disabled = false;
-    // If there is a buffered value, send that to listener
+    // If there is a buffered value, send it to listener.
     if (last_value)
-    {
-        RawValue::setTime(last_value, when);
-        
-        // TODO:
-        RawValueAutoPtr copy;
-        copy = last_value;
-        last_value = 0;
+    {   // Copy and release last_value before we unlock *this
+        // for the pvValue() call.
+        RawValueAutoPtr copy(last_value);
+        LOG_ASSERT(!last_value);
+        RawValue::setTime(copy, when);
         {
-            GuardRelease
+            GuardRelease release(__FILE__, __LINE__, guard);
             ProcessVariableFilter::pvValue(pv, copy);
         }
     }
 }
 
-void DisableFilter::pvConnected(Guard &guard, ProcessVariable &pv,
-                                const epicsTime &when)
+void DisableFilter::pvConnected(ProcessVariable &pv, const epicsTime &when)
 {
-#ifdef DEBUG_DISABLE_FILT
-    LOG_MSG("DisableFilter('%s')::pvConnected\n",
-            pv.getName().c_str());
-#endif    
-    is_connected = true;
-    ProcessVariableFilter::pvConnected(guard, pv, when);
-}
-
-void DisableFilter::pvDisconnected(Guard &guard, ProcessVariable &pv,
-                                  const epicsTime &when)
-{
-#ifdef DEBUG_DISABLE_FILT
-    LOG_MSG("DisableFilter('%s')::pvDisconnected\n",
-            pv.getName().c_str());
-#endif    
-    is_connected = false;
-    // When disabled, this means that any last value becomes invalid.
-    if (is_disabled)
-        last_value = 0;
-    ProcessVariableFilter::pvDisconnected(guard, pv, when);
-}
-
-void DisableFilter::pvValue(Guard &guard, ProcessVariable &pv,
-                           const RawValue::Data *data)
-{
-#ifdef DEBUG_DISABLE_FILT
-    LOG_MSG("DisableFilter('%s')::pvValue: %s\n",
-            pv.getName().c_str(),
-            (is_disabled ? "blocked" : "passed"));
-#endif    
-    if (is_disabled)
-    {   // Remember value
-        DbrType type = pv.getDbrType(guard);
-        DbrCount count = pv.getDbrCount(guard);
-        if (! last_value)
-            last_value = RawValue::allocate(type, count, 1);
-        LOG_ASSERT(last_value);
-        RawValue::copy(type, count, last_value, data);
+    // Remember value type & count, assuming that it does not change
+    // while we are connected.
+    {
+        Guard pv_guard(__FILE__, __LINE__, pv);
+        type = pv.getDbrType(pv_guard);
+        count = pv.getDbrCount(pv_guard);
     }
-    else // or pass on to listener.
-        ProcessVariableFilter::pvValue(guard, pv, data);
+    {
+        Guard guard(__FILE__, __LINE__, mutex);
+#ifdef  DEBUG_DISABLE_FILT
+        LOG_MSG("DisableFilter('%s')::pvConnected\n",
+                pv.getName().c_str());
+#endif    
+        is_connected = true;
+    }
+    
+    ProcessVariableFilter::pvConnected(pv, when);
+}
+
+void DisableFilter::pvDisconnected(ProcessVariable &pv, const epicsTime &when)
+{
+    {
+        Guard guard(__FILE__, __LINE__, mutex);
+#ifdef  DEBUG_DISABLE_FILT
+        LOG_MSG("DisableFilter('%s')::pvDisconnected\n",
+                pv.getName().c_str());
+#endif    
+        is_connected = false;
+        // When disabled, this means that any last value becomes invalid.
+        if (is_disabled)
+        {
+            type = 0;
+            count = 0;
+            last_value = 0;
+        }
+    }
+    ProcessVariableFilter::pvDisconnected(pv, when);
+}
+
+void DisableFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
+{
+    {
+        Guard guard(__FILE__, __LINE__, mutex);
+#ifdef  DEBUG_DISABLE_FILT
+        LOG_MSG("DisableFilter('%s')::pvValue: %s\n",
+                pv.getName().c_str(),
+                (is_disabled ? "blocked" : "passed"));
+#endif    
+        if (is_disabled)
+        {   // Remember value
+            LOG_ASSERT(type > 0);
+            LOG_ASSERT(count > 0);
+            if (! last_value)
+                last_value = RawValue::allocate(type, count, 1);
+            LOG_ASSERT(last_value);
+            RawValue::copy(type, count, last_value, data);
+            return;
+        }
+        // is_disabled == false ...
+    }
+    // ... pass value on to listener.
+    ProcessVariableFilter::pvValue(pv, data);
 }

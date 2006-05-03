@@ -6,35 +6,8 @@
 #include <AutoPtr.h>
 #include <epicsTimeHelper.h>
 // Local
-
 #include "TimeSlotFilter.h"
-
-class TSFTPVListner : public ProcessVariableListener
-{
-public:
-    bool connected;
-    size_t values;
-    
-    TSFTPVListner() : connected(false), values(0)
-    {}
-    
-    void pvConnected(ProcessVariable &pv, const epicsTime &when)
-    {
-        printf("ProcessVariableListener PV: '%s' connected!\n",
-               pv.getName().c_str());
-        connected = true;
-    }
-    
-    void pvDisconnected(ProcessVariable &pv, const epicsTime &when)
-    {
-        connected = false;
-    }
-    
-    void pvValue(class ProcessVariable &pv, const RawValue::Data *data)
-    {
-        ++values;
-    }
-};
+#include "DemoProcessVariableListener.h"
 
 TEST_CASE test_time_slot_filter()
 {
@@ -43,7 +16,7 @@ TEST_CASE test_time_slot_filter()
     
     ProcessVariableContext ctx;
     ProcessVariable pv(ctx, "test");
-    TSFTPVListner pvl;
+    DemoProcessVariableListener pvl;
     TimeSlotFilter filt(10.0, &pvl);     
     
     // Connect gets passed.

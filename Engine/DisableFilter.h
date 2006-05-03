@@ -40,12 +40,17 @@ public:
     void pvValue(ProcessVariable &pv, const RawValue::Data *data);
 private:
     /** Allow concurrent access from ProcessVariableListener
-     *  and enable/disable. */ 
+     *  and enable/disable.
+     */ 
     OrderedMutex mutex;
     /** Is filter disabled? */
     bool is_disabled;
     /** Is PV currently connected? */
     bool is_connected;
+    /** Type of last_value. */
+    DbrType type;
+    /** Count of last_value. */
+    DbrCount count; 
     /** Last value received while disabled. */
     RawValueAutoPtr last_value;
 };

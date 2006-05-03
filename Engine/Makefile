@@ -8,6 +8,7 @@ LIB_SRCS += CircularBuffer.cpp
 LIB_SRCS += ProcessVariableContext.cpp
 LIB_SRCS += ProcessVariable.cpp
 LIB_SRCS += ProcessVariableFilter.cpp
+LIB_SRCS += DemoProcessVariableListener.cpp
 LIB_SRCS += RepeatFilter.cpp
 LIB_SRCS += TimeFilter.cpp
 LIB_SRCS += TimeSlotFilter
@@ -56,6 +57,7 @@ SCRIPTS += ConvertEngineConfig.pl
 -include ../UnitTest.mk
 
 UnitTest_SRCS = CircularBufferTest.cpp
+UnitTest_SRCS += ProcessVariableFilterTest.cpp
 UnitTest_SRCS += DisableFilterTest.cpp
 UnitTest_SRCS += EngineConfigTest.cpp
 UnitTest_SRCS += HTTPServerTest.cpp

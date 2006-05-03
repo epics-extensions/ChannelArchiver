@@ -6,39 +6,8 @@
 #include <AutoPtr.h>
 #include <epicsTimeHelper.h>
 // Local
-
 #include "TimeFilter.h"
-
-class TFTPVListener : public ProcessVariableListener
-{
-public:
-    bool connected;
-    size_t values;
-    
-    TFTPVListener() : connected(false), values(0)
-    {}
-    
-    void pvConnected(ProcessVariable &pv, const epicsTime &when)
-    {
-        printf("ProcessVariableListener: '%s' connected.\n",
-               pv.getName().c_str());
-        connected = true;
-    }
-    
-    void pvDisconnected(ProcessVariable &pv, const epicsTime &when)
-    {
-        printf("ProcessVariableListener: '%s' disconnected.\n",
-               pv.getName().c_str());
-        connected = false;
-    }
-    
-    void pvValue(class ProcessVariable &pv, const RawValue::Data *data)
-    {
-        printf("ProcessVariableListener: '%s' has value.\n",
-               pv.getName().c_str());
-        ++values;
-    }
-};
+#include "DemoProcessVariableListener.h"
 
 TEST_CASE test_time_filter()
 {
@@ -49,7 +18,7 @@ TEST_CASE test_time_filter()
     ProcessVariable pv(ctx, "test");
     // Note: We assume there is no "test" PV, and never even start the pv.
     // All events from the pv to the filter are fake!
-    TFTPVListener pvl;
+    DemoProcessVariableListener pvl;
     TimeFilter filt(config, &pvl);     
     
     // Connect gets passed.

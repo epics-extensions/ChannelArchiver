@@ -20,15 +20,21 @@ DisableFilter::~DisableFilter()
 {
 }
 
-void DisableFilter::disable()
+OrderedMutex &DisableFilter::getMutex()
 {
-    Guard guard(__FILE__, __LINE__, mutex);
+    return mutex;
+}
+
+void DisableFilter::disable(Guard &guard)
+{
+    guard.check(__FILE__, __LINE__, mutex);
     is_disabled = true;
 }
 
-void DisableFilter::enable(ProcessVariable &pv, const epicsTime &when)
+void DisableFilter::enable(Guard &guard, 
+                           ProcessVariable &pv, const epicsTime &when)
 {
-    Guard guard(__FILE__, __LINE__, mutex);
+    guard.check(__FILE__, __LINE__, mutex);
     is_disabled = false;
     // If there is a buffered value, send it to listener.
     if (last_value)
@@ -50,7 +56,7 @@ void DisableFilter::pvConnected(ProcessVariable &pv, const epicsTime &when)
     // while we are connected.
     {
         Guard pv_guard(__FILE__, __LINE__, pv);
-        type = pv.getDbrType(pv_guard);
+        type  = pv.getDbrType(pv_guard);
         count = pv.getDbrCount(pv_guard);
     }
     {

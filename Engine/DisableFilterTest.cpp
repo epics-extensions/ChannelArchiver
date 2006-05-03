@@ -40,8 +40,10 @@ TEST_CASE test_disable_filter()
 
     // Disable
     puts (" --- Disable ---");
-    filt.disable();
-
+    {
+        Guard guard(__FILE__, __LINE__, filt);
+        filt.disable(guard);
+    }
     // Re-connect
     filt.pvConnected(pv, time);
     TEST(pvl.values == 1);
@@ -56,7 +58,10 @@ TEST_CASE test_disable_filter()
     // Enable again.
     puts (" --- Enable ---");
     time += 1;
-    filt.enable(pv, time);
+    {
+        Guard guard(__FILE__, __LINE__, filt);
+        filt.enable(guard, pv, time);
+    }
     // Still connected
     TEST(pvl.connected == true);
     // And the last value

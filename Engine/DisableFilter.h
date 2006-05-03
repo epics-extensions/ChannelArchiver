@@ -18,21 +18,27 @@
  *  so we start out with that last good sample when 'enabled' again,
  *  without having to wait for another new sample.
  */
-class DisableFilter : public ProcessVariableFilter
+class DisableFilter : public ProcessVariableFilter, public Guardable
 {
 public:
     /** Construct a DisableFilter. */
     DisableFilter(ProcessVariableListener *listener);
 
-    ~DisableFilter();
+    virtual ~DisableFilter();
+
+    /** Allow concurrent access from ProcessVariableListener
+     *  and enable/disable.
+     *  @see Guardable
+     */ 
+    OrderedMutex &getMutex();
                                
     /** Temporarily disable sampling.
      *  @see enable()  */
-    void disable();
+    void disable(Guard &guard);
      
     /** Re-enable sampling.
      *  @see disable() */
-    void enable(ProcessVariable &pv, const epicsTime &when);                           
+    void enable(Guard &guard, ProcessVariable &pv, const epicsTime &when);                           
                                  
     // ProcessVariableListener
     void pvConnected(ProcessVariable &pv, const epicsTime &when);

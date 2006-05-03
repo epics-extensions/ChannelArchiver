@@ -134,15 +134,29 @@ private:
     epicsMutex mutex;
     stdList<ThreadList> threads;
     void dump(epicsMutexGuard &guard);
+    
+    static void cleanup();
 };
 
 // Singleton
 LockMonitor *LockMonitor::lock_monitor = 0;
 
+void LockMonitor::cleanup()
+{
+    if (lock_monitor)
+    {
+        delete lock_monitor;
+        lock_monitor = 0;
+    }
+}
+
 LockMonitor *LockMonitor::getInstance()
 {
     if (! lock_monitor)
+    {
         lock_monitor = new LockMonitor();
+        atexit(cleanup);
+    }
     return lock_monitor;
 }
 

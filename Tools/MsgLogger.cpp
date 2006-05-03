@@ -60,11 +60,18 @@ void MsgLogger::createDefaultLogger()
     try
     {
         MsgLogger::TheMsgLogger = new MsgLogger();
+        atexit(deleteDefaultLogger);
     }
     catch (...)
     {
         MsgLogger::TheMsgLogger = 0;
     }
+}
+
+void MsgLogger::deleteDefaultLogger()
+{
+    delete MsgLogger::TheMsgLogger;
+    MsgLogger::TheMsgLogger = 0;
 }
 
 void LOG_MSG(const char *format, va_list ap)

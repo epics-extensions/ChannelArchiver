@@ -6,14 +6,15 @@
 #include "TimeFilter.h"
 
 // Throttle messages to once per hour
-static ThrottledMsgLogger futuristic_time_throttle("Future Timestamps", 60.0*60.0);
-static ThrottledMsgLogger back_in_time_throttle("Back-in-time", 60.0*60.0);
-
-#define DEBUG_REP_FILT
+static ThrottledMsgLogger futuristic_time_throttle("Future Timestamps",
+                                                   60.0*60.0);
+static ThrottledMsgLogger back_in_time_throttle("Back-in-time",
+                                                60.0*60.0);
 
 TimeFilter::TimeFilter(const EngineConfig &config,
                        ProcessVariableListener *listener)
-    : ProcessVariableFilter(listener), config(config)
+    : ProcessVariableFilter(listener),
+      config(config)
 {
 }
 
@@ -21,11 +22,13 @@ TimeFilter::~TimeFilter()
 {
 }
 
-void TimeFilter::pvValue(Guard &guard, ProcessVariable &pv,
-                         const RawValue::Data *data)
+// We assume that only the ProcessVariable will invoke
+// this pvValue() callback, and since there is no concurrent
+// access to the TimeFilter from other threads, there's no mutex.
+void TimeFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
 {
-    epicsTime stamp = RawValue::getTime(data);
-    double future = stamp - epicsTime::getCurrent();
+    epicsTime stamp  = RawValue::getTime(data);
+    double    future = stamp - epicsTime::getCurrent();
     if (future > config.getIgnoredFutureSecs())
     {
         stdString t;
@@ -46,5 +49,5 @@ void TimeFilter::pvValue(Guard &guard, ProcessVariable &pv,
     }    
     // OK, remember this time stamp and pass value to listener.
     last_stamp = stamp;
-    ProcessVariableFilter::pvValue(guard, pv, data);
+    ProcessVariableFilter::pvValue(pv, data);
 }

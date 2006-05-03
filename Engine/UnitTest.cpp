@@ -113,6 +113,23 @@ int main(int argc, const char *argv[])
     }
 
 
+    if (single_unit==0  ||  strcmp(single_unit, "TimeFilterTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit TimeFilterTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_time_filter")==0)
+       {
+            ++run;
+            printf("\ntest_time_filter:\n");
+            if (test_time_filter())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+
 
 
     printf("======================================================================\n");

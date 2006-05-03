@@ -7,6 +7,9 @@
 
 /**\ingroup Engine
  *  Global engine configuration parameters.
+ *  <p>
+ *  Does not use a mutex, assuming that the engine is stopped while
+ *  parsing a new configuration and thus changing EngineConfig.
  */
 class EngineConfig
 {

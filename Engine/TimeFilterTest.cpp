@@ -18,24 +18,21 @@ public:
     TFTPVListener() : connected(false), values(0)
     {}
     
-    void pvConnected(Guard &guard, ProcessVariable &pv,
-                     const epicsTime &when)
+    void pvConnected(ProcessVariable &pv, const epicsTime &when)
     {
         printf("ProcessVariableListener: '%s' connected.\n",
                pv.getName().c_str());
         connected = true;
     }
     
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                        const epicsTime &when)
+    void pvDisconnected(ProcessVariable &pv, const epicsTime &when)
     {
         printf("ProcessVariableListener: '%s' disconnected.\n",
                pv.getName().c_str());
         connected = false;
     }
     
-    void pvValue(class Guard &guard, class ProcessVariable &pv,
-                 const RawValue::Data *data)
+    void pvValue(class ProcessVariable &pv, const RawValue::Data *data)
     {
         printf("ProcessVariableListener: '%s' has value.\n",
                pv.getName().c_str());
@@ -58,10 +55,7 @@ TEST_CASE test_time_filter()
     // Connect gets passed.
     epicsTime time = epicsTime::getCurrent();   
     TEST(pvl.values == 0);
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvConnected(guard, pv, time);
-    }
+    filt.pvConnected(pv, time);
     TEST(pvl.values == 0);
     TEST(pvl.connected == true);
      
@@ -71,83 +65,54 @@ TEST_CASE test_time_filter()
     RawValueAutoPtr value(RawValue::allocate(type, count, 1));
     RawValue::setDouble(type, count, value, 3.14);
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 1);
 
     // Same time gets passed.
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 2);
 
     // New time gets passed.
     time += 10;
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 3);
 
     // Back-in-time is blocked
     time -= 20;
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 3);
 
     // New time gets passed.
     time += 30;
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 4);
 
     // Back-in-time is blocked
     time -= 10;
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 4);
     
     // New time gets passed.
     time += 20;
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 5);
     
     // Time is now at 'now + 30'
     // Toggle 'ignored future' test
     time = epicsTime::getCurrent() + (config.getIgnoredFutureSecs() + 10);
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 5);
     
     // Disconnect gets passed.
     time = epicsTime::getCurrent();   
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvDisconnected(guard, pv, time);
-    }
+    filt.pvDisconnected(pv, time);
     TEST(pvl.connected == false);
 
     TEST_OK;
 }
-
-

@@ -3,6 +3,8 @@
 
 // Base
 #include <epicsTime.h>
+// Tools
+#include <ConcurrentList.h>
 // Engine
 #include "Named.h"
 
@@ -22,12 +24,14 @@ public:
     virtual void scan() = 0;
 };
 
-
 /**\ingroup Engine
  *  A ScanList keeps track of Scannable items.
  *  <p>
  *  It does not spawn new threads, somebody else needs to check
  *  when the next scan is due and then invoke scan() in time.
+ *  <p>
+ *  The ScanList is self-protecting against concurrent access,
+ *  based on the ConcurrentList used to maintain items to scan.
  */
 class ScanList
 {
@@ -43,11 +47,10 @@ public:
 
     /** Does the scan list contain anyting? */
     bool isDueAtAll()
-    {   return ! lists.empty(); }
+    {   return ! lists.isEmpty(); }
     
     /** When should scan() be called ? */
-    const epicsTime &getDueTime() const
-    {   return next_list_scan; }
+    const epicsTime &getDueTime();
 
     /** Remove an item from the ScanList */
     void remove(Scannable *item);
@@ -55,10 +58,10 @@ public:
     /** Scan all channels that are due at/after deadline. */
     void scan(const epicsTime &deadline);
 
-    void dump() const;
+    void dump();
 
 private:
-    stdList<class SinglePeriodScanList *> lists;
+    ConcurrentList<class SinglePeriodScanList> lists;
     bool is_due_at_all;
     epicsTime next_list_scan;
 };

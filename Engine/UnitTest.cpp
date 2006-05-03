@@ -209,6 +209,7 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
+#endif
     if (single_unit==0  ||  strcmp(single_unit, "ScanListTest")==0)
     {
         printf("======================================================================\n");
@@ -225,7 +226,6 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
-#endif
     if (single_unit==0  ||  strcmp(single_unit, "TimeFilterTest")==0)
     {
         printf("======================================================================\n");

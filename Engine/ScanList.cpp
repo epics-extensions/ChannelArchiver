@@ -11,6 +11,8 @@
 /*  List of channels to scan for one period.
  *  <p>
  *  Used internally by the ScanList.
+ *  <p>
+ *  Uses a ConcurrentList, also uses its lock.
  */
 class SinglePeriodScanList
 {
@@ -23,29 +25,31 @@ public:
         return period;
     }
     
-    epicsTime getNextScantime() const
+    epicsTime getNextScantime();
+
+    void add(Scannable *item)
     {
-        return next_scan;
+        items.add(item);
     }
 
-    void add(Scannable *item);
-
-    void remove(Scannable *item);
+    void remove(Scannable *item)
+    {
+        items.removeIfFound(item);
+    }
     
     void scan();
 
-    bool empty() const
+    bool isEmpty()
     {
-        return items.empty();
+        return items.isEmpty();
     }
 
-    void dump() const;
+    void dump();
     
 private:
-    double               period;    // Scan period in seconds
-    stdList<Scannable *> items;     // Items to scan every 'period'
-    epicsTime            next_scan; // Next time this list is due
-    
+    double                    period;    // Scan period in seconds
+    ConcurrentList<Scannable> items;     // Items to scan every 'period'
+    epicsTime                 next_scan; // Next time this list is due
     void computeNextScantime();
 };
 
@@ -66,45 +70,37 @@ SinglePeriodScanList::~SinglePeriodScanList()
 #endif
 }
 
-void SinglePeriodScanList::add(Scannable *item)
+epicsTime SinglePeriodScanList::getNextScantime()
 {
-    stdList<Scannable *>::iterator l;
-    // Avoid duplicate entries.
-    for (l = items.begin(); l != items.end(); ++l)
-        if (*l == item)
-            throw GenericException(__FILE__, __LINE__,
-                "Duplicate item '%s' for %.2f s scan list",
-                item->getName().c_str(), period);
-    items.push_back(item);
-}
-
-void SinglePeriodScanList::remove(Scannable *item)
-{
-    items.remove(item);
+    Guard guard(__FILE__, __LINE__, items);
+    return next_scan;
 }
 
 void SinglePeriodScanList::scan()
 {
-    stdList<Scannable *>::iterator item;
-    for (item = items.begin(); item != items.end(); ++item)
-        (*item)->scan();
+    ConcurrentListIterator<Scannable> i = items.iterator();
+    Scannable *scannable;
+    while ((scannable = i.next()) != 0)
+        scannable->scan();
     computeNextScantime();
 }
 
-void SinglePeriodScanList::dump() const
+void SinglePeriodScanList::dump()
 {
-    stdList<Scannable *>::const_iterator item;
     printf("Scan List %g sec\n", period);
-    for (item = items.begin(); item != items.end(); ++item)
-        printf("'%s'\n", (*item)->getName().c_str());
+    ConcurrentListIterator<Scannable> i = items.iterator();
+    Scannable *scannable;
+    while ((scannable = i.next()) != 0)
+        printf("'%s'\n", scannable->getName().c_str());
 }
 
 void SinglePeriodScanList::computeNextScantime()
 {
+    epicsTime now = epicsTime::getCurrent();
+    Guard guard(__FILE__, __LINE__, items);
     // Start with simple calculation of next time.
     next_scan += period;
     // Use the more elaborate rounding if that time already passed.
-    epicsTime now = epicsTime::getCurrent();
     if (next_scan < now)
         next_scan = roundTimeUp(now, period);
 #ifdef DEBUG_SCANLIST
@@ -124,16 +120,9 @@ ScanList::ScanList()
 
 ScanList::~ScanList()
 {
-    if (!lists.empty())
+    if (!lists.isEmpty())
     {
         LOG_MSG("ScanList not empty while destructed\n");
-    }
-    while (!lists.empty())
-    {
-        SinglePeriodScanList *sl = lists.front();
-        lists.pop_front();
-        LOG_MSG("Removing the %g second scan list.\n", sl->getPeriod());
-        delete sl;
     }
 }
 
@@ -145,62 +134,71 @@ void ScanList::add(Scannable *item, double period)
     // Find a scan list with suitable period,
     // meaning: a scan period that matches the requested
     // period to some epsilon.
-    stdList<SinglePeriodScanList *>::iterator li;
     SinglePeriodScanList *list = 0;
-    for (li = lists.begin(); li != lists.end(); ++li)
+    ConcurrentListIterator<SinglePeriodScanList> i = lists.iterator();
+    SinglePeriodScanList *spl;
+    while ((spl = i.next()) != 0)
     {
-        if (fabs((*li)->getPeriod() - period) < 0.05)
+        if (fabs(spl->getPeriod() - period) < 0.05)
         {
-            list = *li; // found one!
+            list = spl; // found one!
             break;
         }
     }
     if (list == 0) // create new list for this period
     {
         list = new SinglePeriodScanList(period);
-        lists.push_back(list);
+        lists.add(list);
     }
+    // Add item to list; an existing one or a newly created one.
     list->add(item);
+}
+
+const epicsTime &ScanList::getDueTime()
+{
+    Guard guard(__FILE__, __LINE__, lists);
+    return next_list_scan;
 }
 
 void ScanList::remove(Scannable *item)
 {
-    stdList<SinglePeriodScanList *>::iterator li = lists.begin();
-    SinglePeriodScanList *l;
-    while (li != lists.end())
+    ConcurrentListIterator<SinglePeriodScanList> i = lists.iterator();
+    SinglePeriodScanList *spl;
+    while ((spl = i.next()) != 0)
     {
-        l = *li;
         // Remove item from every SinglePeriodScanList
         // (should really be at most on one)
-        l->remove(item);
+        spl->remove(item);
         // In case that shrunk a S.P.S.L to zero, drop that list.
-        if (l->empty())
-        {   // .. which advances the li.
-            li = lists.erase(li);
-            delete l;
+        if (spl->isEmpty())
+        {
+            lists.remove(spl);
+            delete spl;
         }
-        else // otherwise, advance li as usual:
-            ++li;
     }
 }
 
 void ScanList::scan(const epicsTime &deadline)
 {
-    stdList<SinglePeriodScanList *>::iterator li;
+    ConcurrentListIterator<SinglePeriodScanList> i = lists.iterator();
 #ifdef DEBUG_SCANLIST
     LOG_MSG("ScanList::scan\n");
 #endif
     // Reset: Next time any list is due
-    next_list_scan = nullTime;
-    for (li = lists.begin(); li != lists.end(); ++li)
+    epicsTime next_due = nullTime;
+    SinglePeriodScanList *spl;
+    while ((spl = i.next()) != 0)
     {
-        if (deadline >= (*li)->getNextScantime())
-            (*li)->scan();
+        if (deadline >= spl->getNextScantime())
+            spl->scan();
         // Update earliest scan time
-        if (next_list_scan == nullTime ||
-            next_list_scan > (*li)->getNextScantime())
-            next_list_scan = (*li)->getNextScantime();
+        if (next_due == nullTime ||
+            next_due > spl->getNextScantime())
+            next_due = spl->getNextScantime();
     }
+
+    Guard guard(__FILE__, __LINE__, lists);
+    next_list_scan = next_due;
 #ifdef DEBUG_SCANLIST
     stdString time;
     epicsTime2string(next_list_scan, time);            
@@ -208,11 +206,12 @@ void ScanList::scan(const epicsTime &deadline)
 #endif
 }
 
-void ScanList::dump() const
+void ScanList::dump()
 {
-    stdList<SinglePeriodScanList *>::const_iterator li;
-    for (li = lists.begin(); li != lists.end(); ++li)
-        (*li)->dump();
+    ConcurrentListIterator<SinglePeriodScanList> i = lists.iterator();
+    SinglePeriodScanList *spl;
+    while ((spl = i.next()) != 0)
+        spl->dump();
 }
 
 // EOF ScanList.cpp

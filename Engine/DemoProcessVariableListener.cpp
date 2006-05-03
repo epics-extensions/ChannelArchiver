@@ -27,7 +27,12 @@ void DemoProcessVariableListener::pvDisconnected(ProcessVariable &pv,
 void DemoProcessVariableListener::pvValue(class ProcessVariable &pv,
                                           const RawValue::Data *data)
 {
-    printf("        DemoProcessVariableListener: '%s' has value.\n",
-               pv.getName().c_str());
+    printf("        DemoProcessVariableListener: '%s' = ",
+           pv.getName().c_str());
+    {
+        Guard pv_guard(__FILE__, __LINE__, pv);
+        RawValue::show(stdout, pv.getDbrType(pv_guard),
+                       pv.getDbrCount(pv_guard), data, 0);
+    }
     ++values;
 }

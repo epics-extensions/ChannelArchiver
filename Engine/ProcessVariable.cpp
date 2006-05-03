@@ -532,8 +532,9 @@ void ProcessVariable::firePvConnected()
     epicsTime now = epicsTime::getCurrent();
     ConcurrentListIterator<ProcessVariableStateListener>
         l(state_listeners.iterator());
-    while (l.hasNext())
-        l.next()->pvConnected(*this, now);
+    ProcessVariableStateListener *listener;
+    while ((listener = l.next()) != 0)
+        listener->pvConnected(*this, now);
 }
 
 void ProcessVariable::firePvDisconnected()
@@ -541,15 +542,17 @@ void ProcessVariable::firePvDisconnected()
     epicsTime now = epicsTime::getCurrent();
     ConcurrentListIterator<ProcessVariableStateListener>
         l(state_listeners.iterator());
-    while (l.hasNext())
-        l.next()->pvDisconnected(*this, now);
+    ProcessVariableStateListener *listener;
+    while ((listener = l.next()) != 0)
+        listener->pvDisconnected(*this, now);
 }
 
 void ProcessVariable::firePvValue(const RawValue::Data *value)
 {
     ConcurrentListIterator<ProcessVariableValueListener>
         l(value_listeners.iterator());
-    while (l.hasNext())
-        l.next()->pvValue(*this, value);
+    ProcessVariableValueListener *listener;
+    while ((listener = l.next()) != 0)
+        listener->pvValue(*this, value);
 }
 

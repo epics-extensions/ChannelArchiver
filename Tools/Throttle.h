@@ -19,9 +19,7 @@ class Throttle
 {
 public:
     /** Create throttle with the given name and threshold. */
-    Throttle(const char *name, double seconds_between_messages)
-      : mutex(name, 100), seconds(seconds_between_messages)
-    {}
+    Throttle(const char *name, double seconds_between_messages);
 
     /** @return Returns true when it's OK to print message at given time. */
     bool isPermitted(const epicsTime &when);

@@ -26,7 +26,10 @@ private:
 // where items with value '0' are indicators for deleted elements.
 // They are skipped by any (ongoing) iterator,
 // and removed later.
-ConcurrentPtrList::ConcurrentPtrList() : list(0) {}
+ConcurrentPtrList::ConcurrentPtrList()
+    : mutex("ConcurrentPtrList", OrderedMutex::ConcurrentList),
+      list(0)
+{}
 
 ConcurrentPtrList::~ConcurrentPtrList()
 {
@@ -39,7 +42,7 @@ ConcurrentPtrList::~ConcurrentPtrList()
     }
 }
 
-bool ConcurrentPtrList::isEmpty(epicsMutexGuard &guard)
+bool ConcurrentPtrList::isEmpty(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
     CPElement *e = list;
@@ -52,7 +55,7 @@ bool ConcurrentPtrList::isEmpty(epicsMutexGuard &guard)
     return true; // nothing found, must be empty.
 }
 
-size_t ConcurrentPtrList::size(epicsMutexGuard &guard)
+size_t ConcurrentPtrList::size(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
     size_t count = 0;
@@ -66,7 +69,7 @@ size_t ConcurrentPtrList::size(epicsMutexGuard &guard)
     return count;
 }
 
-void ConcurrentPtrList::add(epicsMutexGuard &guard, void *item)
+void ConcurrentPtrList::add(Guard &guard, void *item)
 {
     guard.check(__FILE__, __LINE__, mutex);
     if (list == 0)
@@ -92,7 +95,7 @@ void ConcurrentPtrList::add(epicsMutexGuard &guard, void *item)
     }
 }
 
-void ConcurrentPtrList::remove(epicsMutexGuard &guard, void *item)
+void ConcurrentPtrList::remove(Guard &guard, void *item)
 {
     guard.check(__FILE__, __LINE__, mutex);    
     CPElement *e = list;
@@ -108,7 +111,7 @@ void ConcurrentPtrList::remove(epicsMutexGuard &guard, void *item)
     throw GenericException(__FILE__, __LINE__, "Unknown item");    
 }
 
-ConcurrentPtrListIterator ConcurrentPtrList::iterator(epicsMutexGuard &guard)
+ConcurrentPtrListIterator ConcurrentPtrList::iterator(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);    
     return ConcurrentPtrListIterator(guard, this, list);
@@ -121,7 +124,7 @@ ConcurrentPtrListIterator ConcurrentPtrList::iterator(epicsMutexGuard &guard)
 // calls to hasNext() and next().
 // The next_element already points to the
 // following list element.
-ConcurrentPtrListIterator::ConcurrentPtrListIterator(epicsMutexGuard &guard,
+ConcurrentPtrListIterator::ConcurrentPtrListIterator(Guard &guard,
                                                      ConcurrentPtrList *list,
                                                      CPElement *element)
     : list(list), next_element(element), item(0)
@@ -137,7 +140,7 @@ ConcurrentPtrListIterator::~ConcurrentPtrListIterator()
     // For now, that's not done.
 }
 
-void ConcurrentPtrListIterator::getNext(epicsMutexGuard &guard)
+void ConcurrentPtrListIterator::getNext(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());    
     if (next_element == 0)
@@ -153,13 +156,13 @@ void ConcurrentPtrListIterator::getNext(epicsMutexGuard &guard)
     while (item == 0  &&  next_element);
 }
 
-bool ConcurrentPtrListIterator::hasNext(epicsMutexGuard &guard)
+bool ConcurrentPtrListIterator::hasNext(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());    
     return item != 0;
 }
 
-void *ConcurrentPtrListIterator::next(epicsMutexGuard &guard)
+void *ConcurrentPtrListIterator::next(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());    
     if (!item)

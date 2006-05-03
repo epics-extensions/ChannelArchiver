@@ -20,16 +20,16 @@ public:
     ConcurrentPtrList();
 
     /** Delete list and all its elements. */
-    ~ConcurrentPtrList();
+    virtual ~ConcurrentPtrList();
     
     /** @return Returns the mutex for the Guard passed to other methods. */
-    epicsMutex &getMutex() { return mutex; }
+    OrderedMutex &getMutex() { return mutex; }
     
     /** @return Returns true if the list is empty. */
-    bool isEmpty(epicsMutexGuard &guard);
+    bool isEmpty(Guard &guard);
 
     /** @return Returns number of entries. */
-    size_t size(epicsMutexGuard &guard);
+    size_t size(Guard &guard);
     
     /** Add an item to the list.
      *  <p>
@@ -37,16 +37,16 @@ public:
      *  not necessarily predicatable.
      *  Typically at the end, but may be at a 'reused' location.
      */
-    void add(epicsMutexGuard &guard, void *item);
+    void add(Guard &guard, void *item);
 
     /** Remove an item from the list. */
-    void remove(epicsMutexGuard &guard, void *item);
+    void remove(Guard &guard, void *item);
     
     /** Obtain iterator, positioned at the start of the list. */
-    class ConcurrentPtrListIterator iterator(epicsMutexGuard &guard);
+    class ConcurrentPtrListIterator iterator(Guard &guard);
     
 private:
-    epicsMutex       mutex;
+    OrderedMutex     mutex;
     class CPElement *list;
 };
 
@@ -60,27 +60,27 @@ public:
     /** Constructor. Users should use ConcurrentPtrList::iterator().
      *  @see ConcurrentPtrList::iterator()
      */
-    ConcurrentPtrListIterator(epicsMutexGuard &guard,
+    ConcurrentPtrListIterator(Guard &guard,
                               ConcurrentPtrList *list,
                               class CPElement *element);
 
     /** Destructor. */
-    ~ConcurrentPtrListIterator();
+    virtual ~ConcurrentPtrListIterator();
 
     /** @return Returns the mutex for the Guard passed to other methods. */
-    epicsMutex &getMutex() { return list->getMutex(); }
+    OrderedMutex &getMutex() { return list->getMutex(); }
     
     /** @return Returns true if there is another element. */
-    bool hasNext(epicsMutexGuard &guard);
+    bool hasNext(Guard &guard);
     
     /** @return Returns the next element. */
-    void *next(epicsMutexGuard &guard);
+    void *next(Guard &guard);
 private:
     ConcurrentPtrList *list;
     class CPElement   *next_element;
     void              *item;
 
-    void getNext(epicsMutexGuard &guard);
+    void getNext(Guard &guard);
 };
  
 /** \ingroup Tools
@@ -95,14 +95,14 @@ public:
     /** @see ConcurrentPtrListIterator::hasNext */
     bool hasNext()
     {
-        epicsMutexGuard guard(iter.getMutex());
+        Guard guard(__FILE__, __LINE__, iter.getMutex());
         return iter.hasNext(guard);
     }
     
     /** @see ConcurrentPtrListIterator::next */
     T *next()
     {
-        epicsMutexGuard guard(iter.getMutex());
+        Guard guard(__FILE__, __LINE__, iter.getMutex());
         return (T *) iter.next(guard);
     }
 private:
@@ -113,41 +113,48 @@ private:
  *  Type-save wrapper for ConcurrentPtrList.
  *  @see ConcurrentPtrList
  */
-template<class T> class ConcurrentList : private ConcurrentPtrList
+template<class T> class ConcurrentList
+    : public Guardable, private ConcurrentPtrList
 {
 public:
+    /** @return Returns the list mutex. */
+    OrderedMutex &getMutex()
+    {
+        return ConcurrentPtrList::getMutex();
+    }
+    
     /** @see ConcurrentPtrList::isEmpty */
     bool isEmpty()
     {
-        epicsMutexGuard guard(ConcurrentPtrList::getMutex());
+        Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
         return ConcurrentPtrList::isEmpty(guard);
     }
     
     /** @see ConcurrentPtrList::size */
     size_t size()
     {
-        epicsMutexGuard guard(ConcurrentPtrList::getMutex());
+        Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
         return ConcurrentPtrList::size(guard);
     }
 
     /** @see ConcurrentPtrList::add */
     void add(T *i)
     {
-        epicsMutexGuard guard(ConcurrentPtrList::getMutex());
+        Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
         ConcurrentPtrList::add(guard, i);
     }
     
     /** @see ConcurrentPtrList::remove */
     void remove(T *i)
     {
-        epicsMutexGuard guard(ConcurrentPtrList::getMutex());
+        Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
         ConcurrentPtrList::remove(guard, i);
     }
 
     /** @see ConcurrentPtrList::iterator */
     ConcurrentListIterator<T> iterator()
     {
-        epicsMutexGuard guard(ConcurrentPtrList::getMutex());
+        Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
         return ConcurrentListIterator<T>(ConcurrentPtrList::iterator(guard));
     }
 };

@@ -1,7 +1,11 @@
-
 // Tools
 #include "Guard.h"
 #include "Throttle.h"
+
+Throttle::Throttle(const char *name, double seconds_between_messages)
+  : mutex(name, OrderedMutex::Throttle), seconds(seconds_between_messages)
+{
+}
 
 bool Throttle::isPermitted(const epicsTime &when)
 {

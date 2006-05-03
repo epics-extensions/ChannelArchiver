@@ -33,6 +33,12 @@
 class OrderedMutex
 {
 public:
+    /** Lock order used by Tools::Throttle. */
+    static const size_t Throttle = 101;
+    
+    /** Lock order used by Tools::ConcurrentList. */
+    static const size_t ConcurrentList = 100;
+
     /** Create mutex with name and lock order. */
     OrderedMutex(const char *name, size_t order);
 

@@ -10,8 +10,8 @@ LIB_SRCS += ProcessVariable.cpp
 LIB_SRCS += ProcessVariableFilter.cpp
 LIB_SRCS += RepeatFilter.cpp
 LIB_SRCS += TimeFilter.cpp
-#LIB_SRCS += TimeSlotFilter
-#LIB_SRCS += DisableFilter
+LIB_SRCS += TimeSlotFilter
+LIB_SRCS += DisableFilter
 #LIB_SRCS += ScanList.cpp
 #LIB_SRCS += SampleMechanism.cpp 
 #LIB_SRCS += SampleMechanismMonitored.cpp
@@ -19,7 +19,7 @@ LIB_SRCS += TimeFilter.cpp
 #LIB_SRCS += SampleMechanismMonitoredGet.cpp
 #LIB_SRCS += ArchiveChannel.cpp
 #LIB_SRCS += GroupInfo.cpp
-#LIB_SRCS += EngineConfig.cpp
+LIB_SRCS += EngineConfig.cpp
 #LIB_SRCS += Engine.cpp
 LIB_SRCS += HTMLPage.cpp
 LIB_SRCS += HTTPServer.cpp
@@ -56,15 +56,15 @@ SCRIPTS += ConvertEngineConfig.pl
 -include ../UnitTest.mk
 
 UnitTest_SRCS = CircularBufferTest.cpp
-#UnitTest_SRCS += DisableFilterTest.cpp
-#UnitTest_SRCS += EngineConfigTest.cpp
+UnitTest_SRCS += DisableFilterTest.cpp
+UnitTest_SRCS += EngineConfigTest.cpp
 UnitTest_SRCS += HTTPServerTest.cpp
 UnitTest_SRCS += ProcessVariableTest.cpp
 #UnitTest_SRCS += SampleMechanismTest.cpp
 #UnitTest_SRCS += ScanListTest.cpp
 UnitTest_SRCS += TimeFilterTest.cpp
 UnitTest_SRCS += RepeatFilterTest.cpp
-#UnitTest_SRCS += TimeSlotFilterTest.cpp
+UnitTest_SRCS += TimeSlotFilterTest.cpp
 UnitTest_SRCS += UnitTest.cpp
 
 include $(TOP)/configure/RULES

@@ -28,20 +28,20 @@ public:
                                
     /** Temporarily disable sampling.
      *  @see enable()  */
-    void disable(Guard &guard);
+    void disable();
      
     /** Re-enable sampling.
      *  @see disable() */
-    void enable(Guard &guard, ProcessVariable &pv, const epicsTime &when);                           
+    void enable(ProcessVariable &pv, const epicsTime &when);                           
                                  
     // ProcessVariableListener
-    void pvConnected(Guard &guard, ProcessVariable &pv,
-                     const epicsTime &when);
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                        const epicsTime &when);
-    void pvValue(Guard &guard, ProcessVariable &pv,
-                 const RawValue::Data *data);
+    void pvConnected(ProcessVariable &pv, const epicsTime &when);
+    void pvDisconnected(ProcessVariable &pv, const epicsTime &when);
+    void pvValue(ProcessVariable &pv, const RawValue::Data *data);
 private:
+    /** Allow concurrent access from ProcessVariableListener
+     *  and enable/disable. */ 
+    OrderedMutex mutex;
     /** Is filter disabled? */
     bool is_disabled;
     /** Is PV currently connected? */

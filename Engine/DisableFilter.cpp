@@ -1,13 +1,16 @@
 // Tools
 #include <MsgLogger.h>
 // Engine
+#include "EngineLocks.h"
 #include "DisableFilter.h"
 
 // #define DEBUG_DISABLE_FILT
 
 DisableFilter::DisableFilter(ProcessVariableListener *listener)
     : ProcessVariableFilter(listener),
-      is_disabled(false), is_connected(false)
+      mutex("DisableFilter", EngineLocks::DisableFilter),
+      is_disabled(false),
+      is_connected(false)
 {
 }
 
@@ -15,21 +18,29 @@ DisableFilter::~DisableFilter()
 {
 }
 
-void DisableFilter::disable(Guard &guard)
+void DisableFilter::disable()
 {
+    Guard guard(__FILE__, __LINE__, mutex);
     is_disabled = true;
 }
 
-void DisableFilter::enable(Guard &guard, ProcessVariable &pv,
-                           const epicsTime &when)
+void DisableFilter::enable(ProcessVariable &pv, const epicsTime &when)
 {
+    Guard guard(__FILE__, __LINE__, mutex);
     is_disabled = false;
     // If there is a buffered value, send that to listener
     if (last_value)
     {
         RawValue::setTime(last_value, when);
-        ProcessVariableFilter::pvValue(guard, pv, last_value);
+        
+        // TODO:
+        RawValueAutoPtr copy;
+        copy = last_value;
         last_value = 0;
+        {
+            GuardRelease
+            ProcessVariableFilter::pvValue(pv, copy);
+        }
     }
 }
 

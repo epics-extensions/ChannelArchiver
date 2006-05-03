@@ -15,8 +15,9 @@ TimeSlotFilter::~TimeSlotFilter()
 {
 }
 
-void TimeSlotFilter::pvValue(Guard &guard, ProcessVariable &pv,
-                             const RawValue::Data *data)
+// We assume that only the ProcessVariable calls pvValue,
+// no concurrent access from other threads, thus no mutex.
+void TimeSlotFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
 {
     // next_slot determines if we can use the current
     // monitor of if we should ignore it.
@@ -32,7 +33,7 @@ void TimeSlotFilter::pvValue(Guard &guard, ProcessVariable &pv,
         return;
     // OK, determine next slot and pass value to listener.
     next_slot = roundTimeUp(stamp, period);
-    ProcessVariableFilter::pvValue(guard, pv, data);
+    ProcessVariableFilter::pvValue(pv, data);
 #   ifdef DEBUG_SLOT_FILT
     stdString txt;
     LOG_MSG("TimeSlotFilter: next slot %s\n", epicsTimeTxt(next_slot, txt));

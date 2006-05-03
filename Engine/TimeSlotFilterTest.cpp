@@ -18,22 +18,19 @@ public:
     TSFTPVListner() : connected(false), values(0)
     {}
     
-    void pvConnected(Guard &guard, ProcessVariable &pv,
-                     const epicsTime &when)
+    void pvConnected(ProcessVariable &pv, const epicsTime &when)
     {
         printf("ProcessVariableListener PV: '%s' connected!\n",
                pv.getName().c_str());
         connected = true;
     }
     
-    void pvDisconnected(Guard &guard, ProcessVariable &pv,
-                        const epicsTime &when)
+    void pvDisconnected(ProcessVariable &pv, const epicsTime &when)
     {
         connected = false;
     }
     
-    void pvValue(class Guard &guard, class ProcessVariable &pv,
-                 const RawValue::Data *data)
+    void pvValue(class ProcessVariable &pv, const RawValue::Data *data)
     {
         ++values;
     }
@@ -52,10 +49,7 @@ TEST_CASE test_time_slot_filter()
     // Connect gets passed.
     epicsTime time = epicsTime::getCurrent();   
     TEST(pvl.values == 0);
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvConnected(guard, pv, time);
-    }
+    filt.pvConnected(pv, time);
     TEST(pvl.values == 0);
     TEST(pvl.connected == true);
      
@@ -65,19 +59,13 @@ TEST_CASE test_time_slot_filter()
     RawValueAutoPtr value(RawValue::allocate(type, count, 1));
     RawValue::setDouble(type, count, value, 3.14);
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 1);
     
     // This is the next time slot, so this value should pass, too.
     time = roundTimeUp(time, 10.0); 
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 2);
 
     // But not again...
@@ -85,47 +73,32 @@ TEST_CASE test_time_slot_filter()
     for (i=1; i<10; ++i)
     {
         RawValue::setTime(value, time + 0.1*i);    
-        {
-            Guard guard(__FILE__, __LINE__, pv);
-            filt.pvValue(guard, pv, value);
-        }
+        filt.pvValue(pv, value);
         TEST(pvl.values == 2);
     }
     // ... until the next time slot is reached
     time += 10.0;
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 3);
 
     // One more try
     for (i=1; i<10; ++i)
     {
         RawValue::setTime(value, time + 0.1*i);    
-        {
-            Guard guard(__FILE__, __LINE__, pv);
-            filt.pvValue(guard, pv, value);
-        }
+        filt.pvValue(pv, value);
         TEST(pvl.values == 3);
     }
     // ... until the next time slot is reached
     time += 30.0;
     RawValue::setTime(value, time);    
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvValue(guard, pv, value);
-    }
+    filt.pvValue(pv, value);
     TEST(pvl.values == 4);
 
 
     // Disconnect gets passed.
     time = epicsTime::getCurrent();   
-    {
-        Guard guard(__FILE__, __LINE__, pv);
-        filt.pvDisconnected(guard, pv, time);
-    }
+    filt.pvDisconnected(pv, time);
     TEST(pvl.connected == false);
 
     TEST_OK;

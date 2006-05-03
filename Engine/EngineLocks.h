@@ -79,6 +79,9 @@ public:
     /** Lock order constant for the RepeatFilter. */
     static const size_t RepeatFilter = 40;
 
+    /** Lock order constant for the DisableFilter. */
+    static const size_t DisableFilter = 41;
+
     /** Lock order constant for the ProcessVariable. */
     static const size_t ProcessVariable = 50;
 

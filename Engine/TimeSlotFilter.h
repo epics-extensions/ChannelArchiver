@@ -17,8 +17,7 @@ public:
     virtual ~TimeSlotFilter();
                 
     // ProcessVariableListener
-    void pvValue(Guard &guard, ProcessVariable &pv,
-                 const RawValue::Data *data);
+    void pvValue(ProcessVariable &pv, const RawValue::Data *data);
 private:
     double period;
     epicsTime next_slot;

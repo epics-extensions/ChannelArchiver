@@ -146,6 +146,9 @@ bool SpreadsheetReader::next()
             {
                 type[i]  = reader[i]->getType();
                 count[i] = reader[i]->getCount();
+                // TODO: Does valgrind 
+                // for SpreadsheetReaderTest, spreadsheet_values
+                // indicate a memory leak at this line?
                 value[i] = RawValue::allocate(type[i], count[i], 1);
             }
             RawValue::copy(type[i], count[i], value[i], read_data[i]);

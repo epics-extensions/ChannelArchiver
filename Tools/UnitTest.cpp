@@ -38,6 +38,7 @@ extern TEST_CASE how_new_fails();
 extern TEST_CASE various_exception_tests();
 extern TEST_CASE double_throw();
 // Unit GuardTest:
+extern TEST_CASE order_test();
 extern TEST_CASE guard_test();
 extern TEST_CASE release_test();
 extern TEST_CASE guard_performance();
@@ -330,6 +331,15 @@ int main(int argc, const char *argv[])
         printf("Unit GuardTest:\n");
         printf("----------------------------------------------------------------------\n");
         ++units;
+       if (single_case==0  ||  strcmp(single_case, "order_test")==0)
+       {
+            ++run;
+            printf("\norder_test:\n");
+            if (order_test())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
        if (single_case==0  ||  strcmp(single_case, "guard_test")==0)
        {
             ++run;

@@ -3,6 +3,50 @@
 #include "BenchTimer.h"
 #include "UnitTest.h"
 
+class NamedThingy
+{
+public:
+    NamedThingy(stdString &log, const char *name) : log(log), name(name)
+    {
+    }
+
+    ~NamedThingy()
+    {
+        log += name;
+    }
+private:
+    stdString &log;
+    const char *name;
+};
+
+// This silly looking test is really about
+//   GuardRelease release...
+//   Guard guard ...
+// When leaving the context, we would like to see the guard
+// dropped, then the release taken back up,
+// because otherwise it'll result in a deadlock.   
+TEST_CASE order_test()
+{   
+    COMMENT("Things get created and deleted in mirror image order...");
+    stdString log;
+    {   // This should always work, because we enforce the order
+        // with added code blocks;
+        NamedThingy a(log, "A");
+        {
+            NamedThingy b(log, "B");
+        }
+    }
+    TEST(log == "BA");
+
+    {   // This also seems to work.
+        NamedThingy a(log, "A");
+        NamedThingy b(log, "B");
+    }
+    TEST(log == "BABA");
+
+    TEST_OK;  
+}
+
 TEST_CASE guard_test()
 {
     OrderedMutex mutex1("1", 1), mutex2("2", 2);
@@ -47,7 +91,7 @@ TEST_CASE guard_performance()
     {
     	BenchTimer timer;
         Guard guard(__FILE__, __LINE__, mutex);
-        size_t i, N=10;
+        size_t i, N=100;
         for (i=0; i<N; ++i)
         {
         	guard.unlock();

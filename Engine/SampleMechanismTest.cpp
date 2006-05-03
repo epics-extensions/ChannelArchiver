@@ -6,12 +6,54 @@
 #include <AutoPtr.h>
 #include <epicsTimeHelper.h>
 // Local
+#include "SampleMechanism.h"
+#include "DemoProcessVariableListener.h"
 
+TEST_CASE test_sample_mechanism()
+{
+    EngineConfig config;
+    ProcessVariableContext ctx;
+    DemoProcessVariableListener listener;
+    
+    COMMENT("Testing the basic SampleMechanism...");
+    SampleMechanism sample(config, ctx, "janet", 5.0, &listener);
+    TEST(sample.getName() == "janet");
+    COMMENT("Trying to connect...");
+    {   
+        Guard guard(__FILE__, __LINE__, sample);
+        COMMENT(sample.getInfo(guard).c_str());
+        sample.start(guard);
+        TEST(sample.isRunning(guard));
+    }
+    size_t wait = 0;
+    for (wait=1;  listener.connected==false && wait<10;  ++wait)
+    {        
+        epicsThreadSleep(0.1);
+        {
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
+            ctx.flush(ctx_guard);
+        }
+    }
+    TEST(listener.connected == true);
+    COMMENT("Disconnecting, hoping for 'disconnected' in the sample buffer.");
+    {
+        Guard guard(__FILE__, __LINE__, sample);
+        COMMENT(sample.getInfo(guard).c_str());
+        sample.stop(guard);
+        COMMENT(sample.getInfo(guard).c_str());
+        TEST(sample.getSampleCount(guard) == 1);
+    }
+    TEST(listener.connected == false);
+    TEST_OK;
+}
+
+
+#if 0
 #include "SampleMechanismGet.h"
 #include "SampleMechanismMonitored.h"
 #include "SampleMechanismMonitoredGet.h"
 
-TEST_CASE test_sample_get()
+TEST_XX_CASE test_sample_get()
 {
     puts("Note: This test takes 60 seconds.");
     ScanList scan_list;
@@ -58,7 +100,7 @@ TEST_CASE test_sample_get()
 }
 
 
-TEST_CASE test_sample_monitor()
+TEST_XX_CASE test_sample_monitor()
 {
     puts("Note: This test takes 2 seconds.");    
     EngineConfig config;
@@ -97,7 +139,7 @@ TEST_CASE test_sample_monitor()
     TEST_OK;
 }
 
-TEST_CASE test_sample_monitor_get()
+TEST_XX_CASE test_sample_monitor_get()
 {
     puts("Note: This test takes 60 seconds.");
     EngineConfig config;
@@ -139,4 +181,4 @@ TEST_CASE test_sample_monitor_get()
     TEST_OK;
 }
 
-
+#endif

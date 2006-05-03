@@ -117,10 +117,13 @@ void ProcessVariableContext::flush(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isAttached(guard));
-    flush_requested = false;
+    if (flush_requested)
     {
-        GuardRelease release(__FILE__, __LINE__, guard);
-	    ca_flush_io();
+        flush_requested = false;
+        {
+            GuardRelease release(__FILE__, __LINE__, guard);
+    	    ca_flush_io();
+        }
     }
 }
 

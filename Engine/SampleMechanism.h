@@ -11,10 +11,10 @@
 #include "DisableFilter.h"
 
 /**\ingroup Engine
- *  Sample Mechanism base.
+ *  Sample Mechanism base, has a ProcessVariable and filters its values.
  *  <p>
  *  This base class for all sample mechanisms maintains the
- *  ProcessVariable start/stop.
+ *  ProcessVariable start/stop, and also has a DisableFilter.
  *  <p>
  *  Data from the PV goes to the DisableFilter, via which
  *  the enable/disable is implemented.
@@ -54,8 +54,6 @@ public:
     const stdString &getName() const;
     
     /** @return Returns the mutex for the SampleMechanism.
-     *  <p>
-     *  Actually uses the mutex of the ProcessVariable.
      *  @see Guardable */
     OrderedMutex &getMutex();
 
@@ -75,26 +73,24 @@ public:
     ProcessVariable::State getPVState(Guard &guard);
     
     /** Add a listener to the underlying PV. */
-    void addStateListener(Guard &guard, ProcessVariableStateListener *listener);
+    void addStateListener(ProcessVariableStateListener *listener);
 
     /** Remove a listener from the underlying PV. */
-    void removeStateListener(Guard &guard,
-                             ProcessVariableStateListener *listener);
+    void removeStateListener(ProcessVariableStateListener *listener);
 
     /** Add a listener to the underlying PV. */
-    void addValueListener(Guard &guard, ProcessVariableValueListener *listener);
+    void addValueListener(ProcessVariableValueListener *listener);
 
     /** Remove a listener from the underlying PV. */
-    void removeValueListener(Guard &guard,
-                             ProcessVariableValueListener *listener);
+    void removeValueListener(ProcessVariableValueListener *listener);
     
     /** Temporarily disable sampling.
      *  @see enable()  */
-    void disable(Guard &guard, const epicsTime &when);
+    void disable(const epicsTime &when);
      
     /** Re-enable sampling.
      *  @see disable() */
-    void enable(Guard &guard, const epicsTime &when);
+    void enable(const epicsTime &when);
     
     /** Stop sampling.
      *  @see #start()
@@ -110,17 +106,13 @@ public:
      *  <p>
      *  Base implementation allocates circular buffer
      */
-    virtual void pvConnected(class Guard &guard,
-                             class ProcessVariable &pv,
-                             const epicsTime &when);
+    void pvConnected(class ProcessVariable &pv, const epicsTime &when);
     
     /** ProcessVariableStateListener.
      *  <p>
      *  Base implementation adds a "DISCONNECTED" marker.
      */
-    virtual void pvDisconnected(class Guard &guard,
-                                class ProcessVariable &pv,
-                                const epicsTime &when);
+    void pvDisconnected(class ProcessVariable &pv, const epicsTime &when);
 
     /** ProcessVariableValueListener.
      *  <p>
@@ -131,9 +123,7 @@ public:
      *  original time stamp might be before the last 'disconnect',
      *  so this gives us an idea of when the PV connected.
      */
-    virtual void pvValue(class Guard &guard,
-                         class ProcessVariable &pv,
-                         const RawValue::Data *data);
+    void pvValue(class ProcessVariable &pv, const RawValue::Data *data);
     
     /** Write current buffer to index.
      *  @return Returns number of samples written.
@@ -141,9 +131,10 @@ public:
     unsigned long write(Guard &guard, Index &index);
     
     /** Append this sample mechanism to a FUX document. */ 
-    virtual void addToFUX(Guard &guard, class FUX::Element *doc) = 0;
+    virtual void addToFUX(Guard &guard, class FUX::Element *doc);
     
 protected:
+    OrderedMutex mutex;
     const EngineConfig &config;
     ProcessVariable pv;
     DisableFilter disable_filter;
@@ -162,28 +153,28 @@ protected:
     void addEvent(Guard &guard, short severity, const epicsTime &when);
 };
 
-inline void SampleMechanism::addStateListener(Guard &guard,
+inline void SampleMechanism::addStateListener(
                                        ProcessVariableStateListener *listener)
 {
-    pv.addStateListener(guard, listener);
+    pv.addStateListener(listener);
 }
 
-inline void SampleMechanism::removeStateListener(Guard &guard,
+inline void SampleMechanism::removeStateListener(
                                        ProcessVariableStateListener *listener)
 {
-    pv.removeStateListener(guard, listener);
+    pv.removeStateListener(listener);
 }
 
-inline void SampleMechanism::addValueListener(Guard &guard,
+inline void SampleMechanism::addValueListener(
                                        ProcessVariableValueListener *listener)
 {
-    pv.addValueListener(guard, listener);
+    pv.addValueListener(listener);
 }
 
-inline void SampleMechanism::removeValueListener(Guard &guard,
+inline void SampleMechanism::removeValueListener(
                                        ProcessVariableValueListener *listener)
 {
-    pv.removeValueListener(guard, listener);
+    pv.removeValueListener(listener);
 }
 
 #endif /*SAMPLEMECHANISM_H_*/

@@ -24,9 +24,7 @@ extern TEST_CASE pv_lock_test();
 // Unit RepeatFilterTest:
 extern TEST_CASE test_repeat_filter();
 // Unit SampleMechanismTest:
-extern TEST_CASE test_sample_get();
-extern TEST_CASE test_sample_monitor();
-extern TEST_CASE test_sample_monitor_get();
+extern TEST_CASE test_sample_mechanism();
 // Unit ScanListTest:
 extern TEST_CASE test_scan_list();
 // Unit TimeFilterTest:
@@ -174,42 +172,22 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
-#if 0
     if (single_unit==0  ||  strcmp(single_unit, "SampleMechanismTest")==0)
     {
         printf("======================================================================\n");
         printf("Unit SampleMechanismTest:\n");
         printf("----------------------------------------------------------------------\n");
         ++units;
-       if (single_case==0  ||  strcmp(single_case, "test_sample_get")==0)
+       if (single_case==0  ||  strcmp(single_case, "test_sample_mechanism")==0)
        {
             ++run;
-            printf("\ntest_sample_get:\n");
-            if (test_sample_get())
-                ++passed;
-            else
-                printf("THERE WERE ERRORS!\n");
-       }
-       if (single_case==0  ||  strcmp(single_case, "test_sample_monitor")==0)
-       {
-            ++run;
-            printf("\ntest_sample_monitor:\n");
-            if (test_sample_monitor())
-                ++passed;
-            else
-                printf("THERE WERE ERRORS!\n");
-       }
-       if (single_case==0  ||  strcmp(single_case, "test_sample_monitor_get")==0)
-       {
-            ++run;
-            printf("\ntest_sample_monitor_get:\n");
-            if (test_sample_monitor_get())
+            printf("\ntest_sample_mechanism:\n");
+            if (test_sample_mechanism())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");
        }
     }
-#endif
     if (single_unit==0  ||  strcmp(single_unit, "ScanListTest")==0)
     {
         printf("======================================================================\n");

@@ -5,6 +5,7 @@
 // Storage
 #include <DataWriter.h>
 // Local
+#include "EngineLocks.h"
 #include "SampleMechanism.h"
 
 // #define DEBUG_SAMPLE_MECHANISM
@@ -17,10 +18,14 @@ SampleMechanism::SampleMechanism(
     ProcessVariableContext &ctx,
     const char *name, double period,
     ProcessVariableListener *disable_filt_listener)
-    : config(config), pv(ctx, name),
+    : mutex("SampleMechanism", EngineLocks::SampleMechanism),
+      config(config),
+      pv(ctx, name),
       disable_filter(disable_filt_listener),
-      running(false), period(period),
-      last_stamp_set(false), have_sample_after_connection(false)
+      running(false),
+      period(period),
+      last_stamp_set(false),
+      have_sample_after_connection(false)
 {
 }
 
@@ -39,17 +44,22 @@ const stdString &SampleMechanism::getName() const
 
 OrderedMutex &SampleMechanism::getMutex()
 {
-    return pv.getMutex();
+    return mutex;
 }
 
 stdString SampleMechanism::getInfo(Guard &guard) const
 {
+    guard.check(__FILE__, __LINE__, getMutex());
+    GuardRelease release(__FILE__, __LINE__, guard);
     stdString info;
     info.reserve(200);
     info = "PV ";
-    info += pv.getStateStr(guard);
-    info += ", CA ";
-    info += pv.getCAStateStr(guard);
+    {
+        Guard pv_guard(__FILE__, __LINE__, pv);
+        info += pv.getStateStr(pv_guard);
+        info += ", CA ";
+        info += pv.getCAStateStr(pv_guard);
+    }
     return info;
 }
 
@@ -57,10 +67,14 @@ void SampleMechanism::start(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
     LOG_ASSERT(running == false);
-    pv.addListener(guard, &disable_filter);    
-    pv.start(guard);
     running = true;
-}   
+    GuardRelease release(__FILE__, __LINE__, guard);    
+    pv.addListener(&disable_filter);
+    {    
+        Guard pv_guard(__FILE__, __LINE__, pv);
+        pv.start(pv_guard);
+    }   
+}
 
 bool SampleMechanism::isRunning(Guard &guard)
 {
@@ -71,19 +85,28 @@ bool SampleMechanism::isRunning(Guard &guard)
 ProcessVariable::State SampleMechanism::getPVState(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
-    return pv.getState(guard);
+    GuardRelease release(__FILE__, __LINE__, guard);    
+    Guard pv_guard(__FILE__, __LINE__, pv);
+    return pv.getState(pv_guard);        
 }
     
-void SampleMechanism::disable(Guard &guard, const epicsTime &when)
+void SampleMechanism::disable(const epicsTime &when)
 {
-    addEvent(guard, ARCH_DISABLED, when);
-    disable_filter.disable(guard);
+    {
+        Guard guard(__FILE__, __LINE__, getMutex());
+        addEvent(guard, ARCH_DISABLED, when);
+    }
+    Guard dis_guard(__FILE__, __LINE__, disable_filter);
+    disable_filter.disable(dis_guard);
 }
  
-void SampleMechanism::enable(Guard &guard, const epicsTime &when)
+void SampleMechanism::enable(const epicsTime &when)
 {
-    disable_filter.enable(guard, pv, when);
+    Guard dis_guard(__FILE__, __LINE__, disable_filter);
+    disable_filter.enable(dis_guard, pv, when);
 }   
+    
+    TODO: review from here on with SampleMechanism::mutex
     
 void SampleMechanism::stop(Guard &guard)
 {
@@ -91,8 +114,12 @@ void SampleMechanism::stop(Guard &guard)
     LOG_ASSERT(running == true);    
     // Remove listener so we don't get the 'disconnected' call...
     running = false;
-    pv.stop(guard);
-    pv.removeListener(guard, &disable_filter);
+    {
+        GuardRelease release(__FILE__, __LINE__, guard);    
+        Guard pv_guard(__FILE__, __LINE__, pv);    
+        pv.stop(guard);
+    }
+    pv.removeListener(&disable_filter);
     // .. because we use 'stopped' anyway.
     addEvent(guard, ARCH_STOPPED, epicsTime::getCurrent());
 }
@@ -102,12 +129,13 @@ size_t SampleMechanism::getSampleCount(Guard &guard) const
     return buffer.getCount();
 }
 
-void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
+void SampleMechanism::pvConnected(ProcessVariable &pv,
                                   const epicsTime &when)
 {
 #ifdef DEBUG_SAMPLE_MECHANISM
     LOG_MSG("SampleMechanism(%s): connected\n", pv.getName().c_str());
 #endif
+    Guard guard(__FILE__, __LINE__, getMutex());
     // If necessary, allocate a new circular buffer.
     DbrType type   = pv.getDbrType(guard);
     DbrCount count = pv.getDbrCount(guard);
@@ -148,9 +176,10 @@ void SampleMechanism::pvConnected(Guard &guard, ProcessVariable &pv,
     have_sample_after_connection = false;
 }
     
-void SampleMechanism::pvDisconnected(Guard &guard, ProcessVariable &pv,
+void SampleMechanism::pvDisconnected(ProcessVariable &pv,
                                      const epicsTime &when)
 {
+    Guard guard(__FILE__, __LINE__, getMutex());
     // ignore if this arrives as a result of 'stop()'
     if (! running)
         return;
@@ -162,12 +191,13 @@ void SampleMechanism::pvDisconnected(Guard &guard, ProcessVariable &pv,
 
 // Last in the chain from PV via filters to the Circular buffer:
 // One more back-in-time check, then add to buffer.
-void SampleMechanism::pvValue(Guard &guard, ProcessVariable &pv,
+void SampleMechanism::pvValue(ProcessVariable &pv,
                               const RawValue::Data *data)
 {
 #ifdef DEBUG_SAMPLE_MECHANISM
     LOG_MSG("SampleMechanism(%s): value\n", pv.getName().c_str());
 #endif
+    Guard guard(__FILE__, __LINE__, getMutex());
     // Last back-in-time check before writing to disk
     epicsTime stamp = RawValue::getTime(data);
     if (last_stamp_set && last_stamp > stamp)
@@ -265,3 +295,7 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
     return count;        
 }
 
+void SampleMechanism::addToFUX(Guard &guard, class FUX::Element *doc)
+{
+    guard.check(__FILE__, __LINE__, getMutex());
+}

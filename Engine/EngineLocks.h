@@ -70,26 +70,23 @@ public:
     /** Lock order constant for the ArchiveChannel. */
     static const size_t ArchiveChannel = 30;
 
-    /** Lock order constant for the SampleMechanism.
-     *  <p>
-     *  Uses the ProcessVariable mutex.
-     */
-    static const size_t SampleMechanism = 50;
+    /** Lock order constant for the SampleMechanism. */
+    static const size_t SampleMechanism = 40;
 
     /** Lock order constant for the RepeatFilter. */
-    static const size_t RepeatFilter = 40;
+    static const size_t RepeatFilter = 50;
 
     /** Lock order constant for the DisableFilter. */
-    static const size_t DisableFilter = 41;
+    static const size_t DisableFilter = 51;
 
     /** Lock order constant for the ProcessVariable. */
-    static const size_t ProcessVariable = 50;
+    static const size_t ProcessVariable = 60;
 
     /** Lock order constant for the ProcessVariableContext. */
-    static const size_t ProcessVariableContext = 60;
+    static const size_t ProcessVariableContext = 70;
 
     /** Lock order constant for the client list of the HTTPServer. */
-    static const size_t HTTPServer = 70;
+    static const size_t HTTPServer = 80;
 };
 
 #endif

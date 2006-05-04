@@ -7,7 +7,10 @@ the beginning of the R3.14 port.
 \begin{itemize}
 
 \item ?/?/2006 --- Version 2.9:\\
-Major refactoring of the ArchiveEngine code.
+During restarts, ArchiveDaemon.pl waits for an engine that was stopped
+to remove its lock file before starting a new one.
+
+\noindent Major refactoring of the ArchiveEngine code.
 
 Visible changes:
 \begin{itemize}

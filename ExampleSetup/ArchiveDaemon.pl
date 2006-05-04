@@ -197,7 +197,7 @@ sub read_config($)
         $config->{engine}{$engine}{lockfile} = 0;
         $config->{engine}{$engine}{next_start} = 0;
         $config->{engine}{$engine}{next_stop} = 0;
-        $config->{engine}{$engine}{started} = 0;
+        $config->{engine}{$engine}{started} = '';
         $config->{engine}{$engine}{stopped} = 0;
         $config->{engine}{$engine}{channels} = 0;
         $config->{engine}{$engine}{connected} = 0;
@@ -415,7 +415,7 @@ sub handle_HTTP_main($)
         # Port
         print $client "<TD ALIGN=CENTER>$config->{engine}{$engine}{port}</TD>";
         # Started | Status
-        if ($config->{engine}{$engine}{started})
+        if (length($config->{engine}{$engine}{started}) > 0)
         {
             print $client "<TD ALIGN=CENTER>$config->{engine}{$engine}{started}</TD>";
             $connected = $config->{engine}{$engine}{connected};
@@ -537,7 +537,7 @@ sub handle_HTTP_status($)
             print $client "disabled|0|0<br>\n";
             ++$disabled;
         }
-        elsif ($config->{engine}{$engine}{started})
+        elsif (length($config->{engine}{$engine}{started}) > 0)
         {
             ++$running;
             $channels += $config->{engine}{$engine}{channels};
@@ -935,7 +935,7 @@ sub stop_engines($)
 
         stop_engine($config->{engine}{$engine}{port});
         # Mark engine as not running, and stopped on purpose.
-        $config->{engine}{$engine}{started} = 0;
+        $config->{engine}{$engine}{started} = '';
         $config->{engine}{$engine}{stopped} = 1;
         ++ $stopped;
     }

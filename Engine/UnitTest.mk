@@ -9,6 +9,7 @@ UnitTest_SRCS += HTTPServerTest.cpp
 UnitTest_SRCS += ProcessVariableFilterTest.cpp
 UnitTest_SRCS += ProcessVariableTest.cpp
 UnitTest_SRCS += RepeatFilterTest.cpp
+UnitTest_SRCS += SampleMechanismMonitoredGetTest.cpp
 UnitTest_SRCS += SampleMechanismMonitoredTest.cpp
 UnitTest_SRCS += SampleMechanismTest.cpp
 UnitTest_SRCS += ScanListTest.cpp

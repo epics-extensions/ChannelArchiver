@@ -18,10 +18,10 @@ SampleMechanism::SampleMechanism(
     ProcessVariableContext &ctx,
     const char *name, double period,
     ProcessVariableListener *disable_filt_listener)
-    : mutex("SampleMechanism", EngineLocks::SampleMechanism),
-      config(config),
+    : config(config),
       pv(ctx, name),
       disable_filter(disable_filt_listener),
+      mutex("SampleMechanism", EngineLocks::SampleMechanism),
       running(false),
       period(period),
       last_stamp_set(false),
@@ -47,7 +47,7 @@ OrderedMutex &SampleMechanism::getMutex()
     return mutex;
 }
 
-stdString SampleMechanism::getInfo(Guard &guard) const
+stdString SampleMechanism::getInfo(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
     GuardRelease release(__FILE__, __LINE__, guard);
@@ -82,10 +82,8 @@ bool SampleMechanism::isRunning(Guard &guard)
     return running;
 }
 
-ProcessVariable::State SampleMechanism::getPVState(Guard &guard)
+ProcessVariable::State SampleMechanism::getPVState()
 {
-    guard.check(__FILE__, __LINE__, getMutex());
-    GuardRelease release(__FILE__, __LINE__, guard);    
     Guard pv_guard(__FILE__, __LINE__, pv);
     return pv.getState(pv_guard);        
 }
@@ -106,21 +104,19 @@ void SampleMechanism::enable(const epicsTime &when)
     disable_filter.enable(dis_guard, pv, when);
 }   
     
-    TODO: review from here on with SampleMechanism::mutex
-    
 void SampleMechanism::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, getMutex());
     LOG_ASSERT(running == true);    
-    // Remove listener so we don't get the 'disconnected' call...
     running = false;
     {
         GuardRelease release(__FILE__, __LINE__, guard);    
         Guard pv_guard(__FILE__, __LINE__, pv);    
-        pv.stop(guard);
+        // Adds ARCH_DISCONNECTED....
+        pv.stop(pv_guard);
     }
     pv.removeListener(&disable_filter);
-    // .. because we use 'stopped' anyway.
+    // Log ARCH_STOPPED.
     addEvent(guard, ARCH_STOPPED, epicsTime::getCurrent());
 }
 
@@ -129,77 +125,79 @@ size_t SampleMechanism::getSampleCount(Guard &guard) const
     return buffer.getCount();
 }
 
-void SampleMechanism::pvConnected(ProcessVariable &pv,
-                                  const epicsTime &when)
+void SampleMechanism::pvConnected(ProcessVariable &pv, const epicsTime &when)
 {
 #ifdef DEBUG_SAMPLE_MECHANISM
     LOG_MSG("SampleMechanism(%s): connected\n", pv.getName().c_str());
 #endif
+    DbrType type;
+    DbrCount count;
+    {
+        Guard pv_guard(__FILE__, __LINE__, pv);
+        type  = pv.getDbrType(pv_guard);
+        count = pv.getDbrCount(pv_guard);
+    }
     Guard guard(__FILE__, __LINE__, getMutex());
-    // If necessary, allocate a new circular buffer.
-    DbrType type   = pv.getDbrType(guard);
-    DbrCount count = pv.getDbrCount(guard);
-    if (type != buffer.getDbrType()  ||  count != buffer.getDbrCount())
-    {   // Why there might be values in the buffer on connect:
-        // 1) Channel was disabled before it connected,
-        //    and addEvent(disabled) used 'double' as a guess.
-        // 2) A quick reboot caused a reconnect with new data types
-        //    before the engine could write the data gathered before the reboot.
-        //
-        // Those few _data_ samples are gone, but we don't want to loose
-        // some of the key _events_.
-        CircularBuffer tmp;
-        const RawValue::Data *val;
-        if (buffer.getCount() > 0)
-        {   // Copy all events into tmp.
-            tmp.allocate(buffer.getDbrType(), buffer.getDbrCount(),
-                         buffer.getCount());
-            while ((val = buffer.removeRawValue()) != 0)
-            {
-                if (RawValue::isInfo(val))
-                    tmp.addRawValue(val);
-            }
-        }
-        // Get buffer which matches the current PV type.
-        buffer.allocate(type, count, config.getSuggestedBufferSpace(period));
-        // Copy saved info events back (usually: nothing)
-        while ((val = tmp.removeRawValue()) != 0)
-        {
-            RawValue::Data *value = buffer.getNextElement();
-            size_t size = RawValue::getSize(buffer.getDbrType(),
-                                            buffer.getDbrCount());
-            memset(value, 0, size);
-            RawValue::setStatus(value, 0, RawValue::getSevr(val));
-            RawValue::setTime(value, RawValue::getTime(val));
-        }
+    have_sample_after_connection = false;    
+    // Need a new or different circular buffer?
+    if (type == buffer.getDbrType()  &&  count == buffer.getDbrCount())
+        return; // No.    
+    // Yes, but check if the current buffer already contains values because...
+    // - Channel was disabled before it connected,
+    //   and addEvent(disabled) used 'double' as a guess.
+    // - A quick reboot caused a reconnect with new data types
+    //   before the engine could write the data gathered before the reboot.
+    // Those few _data_ samples are gone, but we don't want to loose
+    // some of the key _events_.
+    CircularBuffer tmp;
+    const RawValue::Data *val;
+    if (buffer.getCount() > 0)
+    {   // Copy all events into tmp.
+        tmp.allocate(buffer.getDbrType(), buffer.getDbrCount(),
+                     buffer.getCount());
+        while ((val = buffer.removeRawValue()) != 0)
+            if (RawValue::isInfo(val))
+                tmp.addRawValue(val);
+    }
+    // Get buffer which matches the current PV type.
+    buffer.allocate(type, count, config.getSuggestedBufferSpace(period));
+    size_t size = RawValue::getSize(type, count);
+    // Copy saved info events back (usually: nothing)
+    while ((val = tmp.removeRawValue()) != 0)
+    {
+        RawValue::Data *val_mem = buffer.getNextElement();
+        memset(val_mem, 0, size);
+        RawValue::setTime(val_mem, RawValue::getTime(val));
+        RawValue::setStatus(val_mem, 0, RawValue::getSevr(val));
+#ifdef  DEBUG_SAMPLE_MECHANISM
+        stdString status;
+        RawValue::getStatus(val_mem, status);
+        LOG_MSG("SampleMechanism(%s):::pvConnected preserved event %s\n",
+                pv.getName().c_str(), status.c_str());
+#endif
     }   
-    have_sample_after_connection = false;
 }
     
 void SampleMechanism::pvDisconnected(ProcessVariable &pv,
                                      const epicsTime &when)
 {
-    Guard guard(__FILE__, __LINE__, getMutex());
-    // ignore if this arrives as a result of 'stop()'
-    if (! running)
-        return;
 #ifdef DEBUG_SAMPLE_MECHANISM
     LOG_MSG("SampleMechanism(%s): disconnected\n", pv.getName().c_str());
 #endif
+    Guard guard(__FILE__, __LINE__, getMutex());
     addEvent(guard, ARCH_DISCONNECT, when);
 }
 
 // Last in the chain from PV via filters to the Circular buffer:
 // One more back-in-time check, then add to buffer.
-void SampleMechanism::pvValue(ProcessVariable &pv,
-                              const RawValue::Data *data)
+void SampleMechanism::pvValue(ProcessVariable &pv, const RawValue::Data *data)
 {
 #ifdef DEBUG_SAMPLE_MECHANISM
     LOG_MSG("SampleMechanism(%s): value\n", pv.getName().c_str());
 #endif
-    Guard guard(__FILE__, __LINE__, getMutex());
     // Last back-in-time check before writing to disk
     epicsTime stamp = RawValue::getTime(data);
+    Guard guard(__FILE__, __LINE__, getMutex());
     if (last_stamp_set && last_stamp > stamp)
     {
         back_in_time_throttle.LOG_MSG("SampleMechanism(%s): back in time\n",
@@ -210,23 +208,22 @@ void SampleMechanism::pvValue(ProcessVariable &pv,
     buffer.addRawValue(data);
     last_stamp = stamp;
     last_stamp_set = true;
+    if (have_sample_after_connection)
+        return;
     // After connection, add another copy with the host time stamp.
-    if (!have_sample_after_connection)
+    have_sample_after_connection = true;
+    epicsTime now = epicsTime::getCurrent();
+    if (now > stamp)
     {
-        have_sample_after_connection = true;
-        epicsTime now = epicsTime::getCurrent();
-        if (now > stamp)
-        {
 #ifdef DEBUG_SAMPLE_MECHANISM        
-            LOG_MSG("SampleMechanism(%s): adding sample stamped 'now'\n",
-                   pv.getName().c_str());
+        LOG_MSG("SampleMechanism(%s): adding sample stamped 'now'\n",
+                pv.getName().c_str());
 #endif
-            RawValue::Data *value = buffer.getNextElement();
-            RawValue::copy(buffer.getDbrType(), buffer.getDbrCount(),
-                           value, data);
-            RawValue::setTime(value, now);              
-            last_stamp = now;
-        }
+        RawValue::Data *value = buffer.getNextElement();
+        RawValue::copy(buffer.getDbrType(), buffer.getDbrCount(),
+                       value, data);
+        RawValue::setTime(value, now);              
+        last_stamp = now;
     }
 }
 
@@ -234,6 +231,10 @@ void SampleMechanism::pvValue(ProcessVariable &pv,
 void SampleMechanism::addEvent(Guard &guard, short severity,
                                const epicsTime &when)
 {
+#ifdef DEBUG_SAMPLE_MECHANISM
+    LOG_MSG("SampleMechanism(%s)::addEvent(0x%X)\n",
+            pv.getName().c_str(), (int) severity);
+#endif
     guard.check(__FILE__, __LINE__, getMutex());
     if (buffer.getCapacity() < 1)
     {   // Data type is unknown, but we want to add an event.
@@ -241,6 +242,11 @@ void SampleMechanism::addEvent(Guard &guard, short severity,
         buffer.allocate(pv.getDbrType(guard),
                         pv.getDbrCount(guard),
                         config.getSuggestedBufferSpace(period));
+#ifdef DEBUG_SAMPLE_MECHANISM
+        LOG_MSG("SampleMechanism(%s)::addEvent(0x%X) "
+                "allocates default buffer\n",
+                pv.getName().c_str(), (int) severity);
+#endif
     }
     RawValue::Data *value = buffer.getNextElement();
     size_t size = RawValue::getSize(buffer.getDbrType(),
@@ -265,14 +271,24 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
     size_t i, num_samples = buffer.getCount();
     if (num_samples <= 0)
         return 0;
-        
-    DataWriter writer(index, getName(),
-                      pv.getCtrlInfo(guard),
-                      pv.getDbrType(guard),
-                      pv.getDbrCount(guard),
-                      period, num_samples);
+    
+    AutoPtr<DataWriter> writer;
+    DbrType  type  = buffer.getDbrType();
+    DbrCount count = buffer.getDbrCount();
+    {
+        GuardRelease release(__FILE__, __LINE__, guard);    
+        Guard pv_guard(__FILE__, __LINE__, pv);
+        writer = new DataWriter(index, getName(), pv.getCtrlInfo(pv_guard),
+                                type, count, period, num_samples);
+    }
+    // TODO: Unlock whenever possible,
+    //       allowing addition of new values while writing.
+    //       That way delayed writes will cause buffer overruns,
+    //       but won't stop the whole show and result in CA timeouts.
+    //       Means that num_samples might grow and is only
+    //       an initial estimate.
     const RawValue::Data *value;
-    unsigned long count = 0;
+    unsigned long value_count = 0;
     for (i=0; i<num_samples; ++i)
     {
         if (!(value = buffer.removeRawValue()))
@@ -281,7 +297,7 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
                     getName().c_str());
             break;
         }
-        if (! writer.add(value))
+        if (! writer->add(value))
         {
             stdString txt;
             epicsTime2string(RawValue::getTime(value), txt);
@@ -289,10 +305,10 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
                     getName().c_str(), txt.c_str());
             break;
         }
-        ++count;
+        ++value_count;
     }
     buffer.reset();
-    return count;        
+    return value_count;        
 }
 
 void SampleMechanism::addToFUX(Guard &guard, class FUX::Element *doc)

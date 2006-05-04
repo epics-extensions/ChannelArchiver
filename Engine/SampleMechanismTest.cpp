@@ -13,10 +13,13 @@ TEST_CASE test_sample_mechanism()
 {
     EngineConfig config;
     ProcessVariableContext ctx;
-    DemoProcessVariableListener listener;
+    // DemoProcessVariableListener listener;
     
     COMMENT("Testing the basic SampleMechanism...");
-    SampleMechanism sample(config, ctx, "janet", 5.0, &listener);
+    // Note: The data pipe goes from the sample's PV
+    //       to the DisableFilter in sample and then
+    //       on to sample. We insert no further filter.
+    SampleMechanism sample(config, ctx, "janet", 5.0, &sample);
     TEST(sample.getName() == "janet");
     COMMENT("Trying to connect...");
     {   
@@ -25,34 +28,43 @@ TEST_CASE test_sample_mechanism()
         sample.start(guard);
         TEST(sample.isRunning(guard));
     }
+    // Wait for CA connection
     size_t wait = 0;
-    for (wait=1;  listener.connected==false && wait<10;  ++wait)
+    while (wait < 10  &&  sample.getPVState() != ProcessVariable::CONNECTED)
     {        
         epicsThreadSleep(0.1);
         {
             Guard ctx_guard(__FILE__, __LINE__, ctx);
             ctx.flush(ctx_guard);
         }
+        ++wait;
     }
-    TEST(listener.connected == true);
-    COMMENT("Disconnecting, hoping for 'disconnected' in the sample buffer.");
+    TEST(sample.getPVState() == ProcessVariable::CONNECTED);
     {
         Guard guard(__FILE__, __LINE__, sample);
         COMMENT(sample.getInfo(guard).c_str());
+        COMMENT("Disconnecting, expecting 'disconnected' and 'off' events.");
         sample.stop(guard);
         COMMENT(sample.getInfo(guard).c_str());
-        TEST(sample.getSampleCount(guard) == 1);
+        TEST(sample.getSampleCount(guard) == 2);
     }
-    TEST(listener.connected == false);
+    
+    // IDEA: Test the tmp buffer stuff in SampleMechanism::pvConnected?
+    //       Not feasable with the PV which uses ChannelAccess.
+    //       That would require a fake PV, one where we can
+    //       manually trigger the connect/disconnect/value change.
+    
+    TEST(sample.getPVState() == ProcessVariable::INIT);
     TEST_OK;
 }
-
 
 #if 0
 #include "SampleMechanismGet.h"
 #include "SampleMechanismMonitored.h"
 #include "SampleMechanismMonitoredGet.h"
 
+// TODO: Test extra-value-after-connection stuff.
+    
 TEST_XX_CASE test_sample_get()
 {
     puts("Note: This test takes 60 seconds.");

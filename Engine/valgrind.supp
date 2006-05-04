@@ -1,52 +1,61 @@
 {
-   unsupported_pthread_attr_setscope
+   pthread_attr_setscope: invalid or unsupported scope
    core:PThread
    fun:pthread_error
    fun:pthread_attr_setscope
 }
-
 {
-   init_threadInfo_leak
+   iocshRegister_once
    Memcheck:Leak
    fun:malloc
    fun:mallocMustSucceed
    fun:epicsStrDup
    fun:init_threadInfo
+   fun:once
+   fun:pthread_once
+   fun:epicsThreadOnceOsd
+   fun:iocshRegister
 }
-
 {
-   ipAddrToAsciiAsynchronous_init_leak
-   Memcheck:Leak
-   fun:calloc
-   fun:epicsMutexOsiCreate
-   fun:_ZN10epicsMutexC1Ev
-   fun:_Z41__static_initialization_and_destruction_0ii
-}
-
-{
-   Xerces
-   Memcheck:Leak
-   fun:malloc
-   fun:__cxa_get_globals
-   fun:__cxa_throw
-   fun:_ZN11xercesc_2_46XMLURL6setURLEPKtS2_
-}
-
-{
-   TimerSingleton
+   epicsTimerQueueActive_Leak
    Memcheck:Leak
    fun:_Znwj
    fun:_ZN14epicsSingletonI19timerQueueActiveMgrE12getReferenceEv
    fun:_ZN21epicsTimerQueueActive8allocateEbj
    fun:_ZN3cacC1ER10epicsMutexS1_R16cacContextNotify
 }
-
 {
-   AddrToAsciiEngine
+   ipAddrToAsciiEngine
+   Memcheck:Leak
+   fun:calloc
+   fun:_dlerror_run
+   fun:dlsym
+   fun:pthread_create
+   fun:epicsThreadCreate
+}
+{
+   AnotherSingleton
    Memcheck:Leak
    fun:_Znwj
+   fun:_ZN14epicsSingletonI13localHostNameE12getReferenceEv
    fun:_ZN6tcpiiu18hostNameSetRequestER10epicsGuardI10epicsMutexE
    fun:_ZN6tcpiiuC1ER3cacR10epicsMutexS3_R16cacContextNotifydR15epicsTimerQueueRK11osiSockAddrR19comBufMemoryManagerjR19ipAddrToAsciiEngineRKj
-   fun:_ZN3cac25transferChanToVirtCircuitER10epicsGuardI10epicsMutexEjjtmjRK11osiSockAddrRK9epicsTime
 }
+{
+   ipAddrToAsciiEnginePrivat
+   Memcheck:Leak
+   fun:calloc
+   fun:epicsMutexOsiCreate
+   fun:_ZN10epicsMutexC1Ev
+   fun:_GLOBAL__I__ZN26ipAddrToAsciiEnginePrivate11globalMutexE
+}
+{
+   ipAddrToAsciiEnginePrivat2
+   Memcheck:Leak
+   fun:calloc
+   fun:callocMustSucceed
+   fun:epicsMutexOsdCreate
+   fun:epicsMutexOsiCreate
+}
+
 

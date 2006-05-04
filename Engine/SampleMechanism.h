@@ -41,6 +41,10 @@ public:
      *  @param name   The pv name to connect to.
      *  @param period The sample period. Use differs with derived class.
      *  @param disable_filt_listener The next listener after the DisableFilter.
+     * 
+     *  The disable_filt_listener would typically be another
+     *  ProcessVariableFilter, linking to yet another one,
+     *  and the final filter then sends PV events to the SampleMechanism.
      */
     SampleMechanism(const EngineConfig &config,
                     ProcessVariableContext &ctx, const char *name,
@@ -58,7 +62,7 @@ public:
     OrderedMutex &getMutex();
 
     /** @return Returns a description of mechanism and current state. */
-    virtual stdString getInfo(Guard &guard) const;
+    virtual stdString getInfo(Guard &guard);
     
     /** Start the sample mechanism.
      *  <p>
@@ -70,7 +74,7 @@ public:
     bool isRunning(Guard &guard);
     
     /** @return Returns the state of the ProcessVariable. */
-    ProcessVariable::State getPVState(Guard &guard);
+    ProcessVariable::State getPVState();
     
     /** Add a listener to the underlying PV. */
     void addStateListener(ProcessVariableStateListener *listener);
@@ -134,10 +138,12 @@ public:
     virtual void addToFUX(Guard &guard, class FUX::Element *doc);
     
 protected:
-    OrderedMutex mutex;
+    // These have their own mutex or don't need one.
     const EngineConfig &config;
     ProcessVariable pv;
     DisableFilter disable_filter;
+    
+    OrderedMutex mutex;    // Mutex for the remaining data.
     bool running;
     double period;         // .. in seconds
     CircularBuffer buffer; // Sample storage between disk writes.

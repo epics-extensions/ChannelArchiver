@@ -71,8 +71,8 @@ test:
 	O.$(EPICS_HOST_ARCH)/UnitTest
 	
 valgrind:
-	IN_VALGRIND=1 valgrind --tool=memcheck $(VALGRIND_FLAGS) O.$(EPICS_HOST_ARCH)/UnitTest
+	IN_VALGRIND=1 valgrind $(VALGRIND_FLAGS) --suppressions=valgrind.supp O.$(EPICS_HOST_ARCH)/UnitTest
 
 val_eng:
-	ABORT_ON_ERRORS=1 valgrind --tool=memcheck $(VALGRIND_FLAGS) O.$(EPICS_HOST_ARCH)/ArchiveEngine excas.xml index
+	ABORT_ON_ERRORS=1 valgrind $(VALGRIND_FLAGS) O.$(EPICS_HOST_ARCH)/ArchiveEngine excas.xml index
 

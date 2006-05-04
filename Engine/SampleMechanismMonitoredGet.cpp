@@ -39,10 +39,7 @@ stdString SampleMechanismMonitoredGet::getInfo(Guard &guard)
 
 void SampleMechanismMonitoredGet::stop(Guard &guard)
 {
-    {
-        GuardRelease release(__FILE__, __LINE__, guard);
-        repeat_filter.stop(pv);
-    }
+    repeat_filter.stop(pv);
     SampleMechanism::stop(guard);
 }
 

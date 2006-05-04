@@ -23,6 +23,8 @@ extern TEST_CASE process_variable();
 extern TEST_CASE pv_lock_test();
 // Unit RepeatFilterTest:
 extern TEST_CASE test_repeat_filter();
+// Unit SampleMechanismGetTest:
+extern TEST_CASE test_sample_mechanism_get();
 // Unit SampleMechanismMonitoredGetTest:
 extern TEST_CASE test_sample_mechanism_monitored_get();
 // Unit SampleMechanismMonitoredTest:
@@ -171,6 +173,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\ntest_repeat_filter:\n");
             if (test_repeat_filter())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "SampleMechanismGetTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit SampleMechanismGetTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_sample_mechanism_get")==0)
+       {
+            ++run;
+            printf("\ntest_sample_mechanism_get:\n");
+            if (test_sample_mechanism_get())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

@@ -35,7 +35,7 @@ public:
     virtual ~SampleMechanismGet();
     
     // SampleMechanism  
-    stdString getInfo(Guard &guard) const;
+    stdString getInfo(Guard &guard);
     void start(Guard &guard);    
     void stop(Guard &guard);
     

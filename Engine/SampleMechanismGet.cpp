@@ -20,18 +20,22 @@ SampleMechanismGet::~SampleMechanismGet()
 {
 }
 
-stdString SampleMechanismGet::getInfo(Guard &guard) const
+stdString SampleMechanismGet::getInfo(Guard &guard)
 {
     char per[10];
     snprintf(per, sizeof(per), "%.1f s", period);
+    GuardRelease release(__FILE__, __LINE__, guard);
+
     stdString info;
     info.reserve(200);
     info = "Get, ";
     info += per;
     info += ", PV ";
-    info += pv.getStateStr(guard);
+
+    Guard pv_guard(__FILE__, __LINE__, pv);
+    info += pv.getStateStr(pv_guard);
     info += ", CA ";
-    info += pv.getCAStateStr(guard);
+    info += pv.getCAStateStr(pv_guard);
     return info;
 }
 
@@ -44,15 +48,15 @@ void SampleMechanismGet::start(Guard &guard)
 void SampleMechanismGet::stop(Guard &guard)
 {
     scan_list.remove(this);
-    repeat_filter.stop(guard, pv);
+    repeat_filter.stop(pv);
     SampleMechanism::stop(guard);
 }
 
 // Invoked by scanner.
 void SampleMechanismGet::scan()
 {   // Trigger a 'get', which should result in pvValue() callback.
-    Guard guard(__FILE__, __LINE__, pv);
-    pv.getValue(guard);
+    Guard pv_guard(__FILE__, __LINE__, pv);
+    pv.getValue(pv_guard);
 }
 
 void SampleMechanismGet::addToFUX(Guard &guard, class FUX::Element *doc)

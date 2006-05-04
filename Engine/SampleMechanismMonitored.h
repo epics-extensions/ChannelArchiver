@@ -32,10 +32,10 @@ public:
     virtual ~SampleMechanismMonitored();
 
     // SampleMechanism  
-    stdString getInfo(Guard &guard) const;
+    stdString getInfo(Guard &guard);
     
     // ProcessVariableListener
-    void pvConnected(Guard &guard, ProcessVariable &pv, const epicsTime &when);
+    void pvConnected(ProcessVariable &pv, const epicsTime &when);
 
     void addToFUX(Guard &guard, class FUX::Element *doc);
 

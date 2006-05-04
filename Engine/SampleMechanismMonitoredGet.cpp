@@ -18,7 +18,7 @@ SampleMechanismMonitoredGet::~SampleMechanismMonitoredGet()
 {
 }
 
-stdString SampleMechanismMonitoredGet::getInfo(Guard &guard) const
+stdString SampleMechanismMonitoredGet::getInfo(Guard &guard)
 {
     char per[10];
     snprintf(per, sizeof(per), "%.1f s", period);

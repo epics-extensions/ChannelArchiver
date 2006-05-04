@@ -10,8 +10,10 @@
 
 // #define DEBUG_SAMPLE_MECHANISM
 
+// One hour between messages
 static ThrottledMsgLogger back_in_time_throttle("Buffer Back-in-time",
                                                 60.0*60.0);
+static ThrottledMsgLogger overwrite_throttle("Buffer Overwrite", 60.0*60.0);
 
 SampleMechanism::SampleMechanism(
     const EngineConfig &config,
@@ -268,9 +270,9 @@ void SampleMechanism::addEvent(Guard &guard, short severity,
 unsigned long SampleMechanism::write(Guard &guard, Index &index)
 {
     guard.check(__FILE__, __LINE__, getMutex());
-    size_t i, num_samples = buffer.getCount();
+    size_t num_samples = buffer.getCount();
     if (num_samples <= 0)
-        return 0;
+        return 0; // Nothing to write
     
     AutoPtr<DataWriter> writer;
     DbrType  type  = buffer.getDbrType();
@@ -281,32 +283,30 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
         writer = new DataWriter(index, getName(), pv.getCtrlInfo(pv_guard),
                                 type, count, period, num_samples);
     }
-    // TODO: Unlock whenever possible,
-    //       allowing addition of new values while writing.
-    //       That way delayed writes will cause buffer overruns,
-    //       but won't stop the whole show and result in CA timeouts.
-    //       Means that num_samples might grow and is only
-    //       an initial estimate.
+    // Unlock whenever possible, allowing addition of new values while writing.
+    // That way delayed writes will cause buffer overruns,
+    // but won't stop the whole show and result in CA timeouts.
+    // Means that num_samples might grow and is only
+    // an initial estimate.
     const RawValue::Data *value;
     unsigned long value_count = 0;
-    for (i=0; i<num_samples; ++i)
+    while ((value = buffer.removeRawValue()) != 0)
     {
-        if (!(value = buffer.removeRawValue()))
-        {
-            LOG_MSG("'%s': Circular buffer empty while writing\n",
-                    getName().c_str());
-            break;
-        }
+        GuardRelease release(__FILE__, __LINE__, guard);
         if (! writer->add(value))
         {
             stdString txt;
             epicsTime2string(RawValue::getTime(value), txt);
             LOG_MSG("'%s': back-in-time write value stamped %s\n",
                     getName().c_str(), txt.c_str());
-            break;
         }
         ++value_count;
     }
+    // Check overwrites and reset buffer in any case.
+    if (buffer.getOverwrites())
+        overwrite_throttle.LOG_MSG("%s: %zu buffer overwrites\n",
+                                   pv.getName().c_str(),
+                                   buffer.getOverwrites());
     buffer.reset();
     return value_count;        
 }

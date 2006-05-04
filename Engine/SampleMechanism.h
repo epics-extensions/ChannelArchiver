@@ -41,10 +41,14 @@ public:
      *  @param name   The pv name to connect to.
      *  @param period The sample period. Use differs with derived class.
      *  @param disable_filt_listener The next listener after the DisableFilter.
-     * 
+     *  <p>
      *  The disable_filt_listener would typically be another
      *  ProcessVariableFilter, linking to yet another one,
      *  and the final filter then sends PV events to the SampleMechanism.
+     *  The derived SampleMechanisms provide those intermediate
+     *  PV filters and point the last one to the basic SampleMechanism,
+     *  so the derived mechanisms don't need a PV listener in the
+     *  constructor.
      */
     SampleMechanism(const EngineConfig &config,
                     ProcessVariableContext &ctx, const char *name,
@@ -110,13 +114,13 @@ public:
      *  <p>
      *  Base implementation allocates circular buffer
      */
-    void pvConnected(class ProcessVariable &pv, const epicsTime &when);
+    void pvConnected(ProcessVariable &pv, const epicsTime &when);
     
     /** ProcessVariableStateListener.
      *  <p>
      *  Base implementation adds a "DISCONNECTED" marker.
      */
-    void pvDisconnected(class ProcessVariable &pv, const epicsTime &when);
+    void pvDisconnected(ProcessVariable &pv, const epicsTime &when);
 
     /** ProcessVariableValueListener.
      *  <p>
@@ -127,7 +131,7 @@ public:
      *  original time stamp might be before the last 'disconnect',
      *  so this gives us an idea of when the PV connected.
      */
-    void pvValue(class ProcessVariable &pv, const RawValue::Data *data);
+    void pvValue(ProcessVariable &pv, const RawValue::Data *data);
     
     /** Write current buffer to index.
      *  @return Returns number of samples written.

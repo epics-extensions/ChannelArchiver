@@ -49,6 +49,8 @@ TEST_CASE test_circular_buffer()
         data->value = i;
         buffer.addRawValue(data);
     }
+    printf("--- Overwrites: %zu\n", buffer.getOverwrites());
+    TEST(buffer.getOverwrites() == N-buffer.getCapacity());
     puts("--- Peeking the values out");
     for (i=0; i<(long)buffer.getCount(); ++i)
         RawValue::show(stdout, type, count, buffer.getRawValue(i));
@@ -60,6 +62,12 @@ TEST_CASE test_circular_buffer()
         RawValue::show(stdout, type, count, p);
     TEST(buffer.getCapacity() == 8);
     TEST(buffer.getCount() == 0);
+
+    // Buffer remembers overwrites. 
+    TEST(buffer.getOverwrites() == N-buffer.getCapacity());
+    buffer.reset();
+    TEST(buffer.getOverwrites() == 0);
+
 
     TEST_OK;
 }

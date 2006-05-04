@@ -58,10 +58,7 @@ RawValue::Data *CircularBuffer::getNextElement()
 	// compute the place in the circular queue
 	if (++head >= max_index)
 		head = 0;
-
 	// here is the over write of the queue
-	// we slow it down in the event handler
-	// we reset it in the archiving routine
 	if (head == tail)
 	{
 		++overwrites;

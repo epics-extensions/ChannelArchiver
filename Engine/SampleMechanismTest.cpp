@@ -6,14 +6,12 @@
 #include <AutoPtr.h>
 #include <epicsTimeHelper.h>
 // Local
-#include "SampleMechanism.h"
-#include "DemoProcessVariableListener.h"
+#include "SampleMechanismMonitored.h"
 
 TEST_CASE test_sample_mechanism()
 {
     EngineConfig config;
     ProcessVariableContext ctx;
-    // DemoProcessVariableListener listener;
     
     COMMENT("Testing the basic SampleMechanism...");
     // Note: The data pipe goes from the sample's PV

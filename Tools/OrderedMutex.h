@@ -72,4 +72,7 @@ private:
     epicsMutexId mutex;
 };
 
+// Dumps the current lock list.
+extern void LockMonitorDump();
+
 #endif

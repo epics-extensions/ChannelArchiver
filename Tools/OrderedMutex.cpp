@@ -234,6 +234,13 @@ void LockMonitor::dump(epicsMutexGuard &guard)
         i->dump();
 }
 
+void LockMonitorDump()
+{
+    LockMonitor *lm = LockMonitor::getInstance();
+    LOG_ASSERT(lm);
+    lm->dump();
+}
+
 OrderedMutex::OrderedMutex(const char *name, size_t order)
         : name(name), order(order), mutex(epicsMutexCreate())
 {

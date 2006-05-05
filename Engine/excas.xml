@@ -7,6 +7,7 @@
    <ignored_future>1.0</ignored_future>
    <buffer_reserve>3</buffer_reserve>
    <max_repeat_count>120</max_repeat_count>
+   <disconnect/>
    <!-- fred disables Test and Test 2, but not Test3.
         So 'janet' which is also in test3 should stay enabled.
         Only 'jane' gets disabled.

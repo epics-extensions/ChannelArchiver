@@ -290,6 +290,11 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
     // an initial estimate.
     const RawValue::Data *value;
     unsigned long value_count = 0;
+
+    puts("Fake write delay >>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    LockMonitorDump();
+
+
     while ((value = buffer.removeRawValue()) != 0)
     {
         GuardRelease release(__FILE__, __LINE__, guard);
@@ -301,7 +306,13 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
                     getName().c_str(), txt.c_str());
         }
         ++value_count;
+                
+        epicsThreadSleep(0.001); // ----------
     }
+
+    puts("Fake write delay <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+
+
     // Check overwrites and reset buffer in any case.
     if (buffer.getOverwrites())
         overwrite_throttle.LOG_MSG("%s: %zu buffer overwrites\n",

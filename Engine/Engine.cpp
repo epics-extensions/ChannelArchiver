@@ -131,15 +131,7 @@ void Engine::addChannel(const stdString &group_name,
         channels.push_back(channel);       
     }
     else
-    {
-        {
-            Guard guard(__FILE__, __LINE__, *channel);
-            if (channel->isRunning(guard))
-                channel->stop(guard);
-        }
-        channel->configure(config, pv_context, scan_list,
-                           scan_period, monitor);
-    }
+        channel->configure(pv_context, scan_list, scan_period, monitor);
     // Hook channel into group
     {   // Lock order: engine, group
         Guard group_guard(__FILE__, __LINE__, *group);
@@ -147,9 +139,6 @@ void Engine::addChannel(const stdString &group_name,
         {   // Lock order: engine, group, channel
             Guard channel_guard(__FILE__, __LINE__, *channel);
             channel->addToGroup(group_guard, group, channel_guard, disabling);
-            // Start channel that's added online
-            if (is_running)
-                channel->start(channel_guard);
         }
     }
 }

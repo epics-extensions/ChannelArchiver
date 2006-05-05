@@ -38,7 +38,7 @@ public:
      *  <p>
      *  Do _not_ lock the ArchiveChannel while calling configure!
      */
-    void configure(EngineConfig &config, ProcessVariableContext &ctx,
+    void configure(ProcessVariableContext &ctx,
                    ScanList &scan_list,
                    double scan_period, bool monitor);
                 
@@ -108,6 +108,7 @@ public:
     void addToFUX(Guard &guard, class FUX::Element *doc);
                 
 private:
+    EngineConfig &config;
     OrderedMutex mutex;
     double scan_period;
     bool monitor;

@@ -15,7 +15,8 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
                                ScanList &scan_list,
                                const char *channel_name,
                                double scan_period, bool monitor)
-    : NamedBase(channel_name), 
+    : NamedBase(channel_name),
+      config(config),
       mutex("ArchiveChannel", EngineLocks::ArchiveChannel), 
       scan_period(scan_period),
       monitor(monitor),
@@ -78,8 +79,7 @@ void ArchiveChannel::waitWhileSampleMechanismBusy(Guard &guard)
     }
 }
 
-void ArchiveChannel::configure(EngineConfig &config,
-                               ProcessVariableContext &ctx,
+void ArchiveChannel::configure(ProcessVariableContext &ctx,
                                ScanList &scan_list,
                                double scan_period, bool monitor)
 {
@@ -133,6 +133,31 @@ SampleMechanism *ArchiveChannel::createSampleMechanism(
     return new_mechanism.release();
 }
  
+#if 0
+// TODO: Alternatives to 'disable'.
+
+// Per group, as opposed to: all groups to which this channel belongs.
+enum group_mode
+{
+    /** Plain group member. */
+    gm_plain,
+    /** Disable the group whenever our value is > 0. */
+    gm_disabling,
+    /** Disable the group unless connected and value is > 0. */
+    gm_enabling,
+    /** Trigger the group whenever we receive a value > 0. */
+    gm_trigger
+};
+
+// Triggered sample modes:
+//
+// SampleModeTriggered : Simply save the most recent value?
+// SampleModeTriggeredCorrelator : Save the next correlated value?
+
+// Replace currently_disabling with 'disable_value',
+// since intepretation is now per group.
+#endif 
+
 void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
                                 Guard &channel_guard, bool disabling)
 {
@@ -197,7 +222,8 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
 void ArchiveChannel::start(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    LOG_ASSERT(!isRunning(guard));
+    if (isRunning(guard))
+        return;
     Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
     sample_mechanism->start(sample_guard);
 }
@@ -243,17 +269,9 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
     {
         LOG_MSG("Channel '%s' disabled\n", getName().c_str());  
         sample_mechanism->disable(when);
+        if (config.getDisconnectOnDisable())
+            stop(guard);
     }
-#if 0
-    // TODO:
-    // In case we're asked to disconnect _and_ this channel
-    // doesn't need to stay connected because it disables other channels,
-    // stop CA.
-    // But don't to that if this channel is itself disabling groups,
-    // and thus needs to stay informed about the PV's value!
-    if (theEngine->disconnectOnDisable(engine_guard) && groups_to_disable.empty())
-        stop(engine_guard, guard);
-#endif
 }
  
 // Called by group to re-enable channel.
@@ -273,15 +291,9 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
     {
         LOG_MSG("Channel '%s' enabled\n", getName().c_str());    
         sample_mechanism->enable(when);
+        if (config.getDisconnectOnDisable())
+            start(guard);
     }
-#if 0
-    // TODO:
-    // In case we're asked to disconnect _and_ this channel
-    // doesn't need to stay connected because it disables other channels,
-    // stop CA
-    if (theEngine->disconnectOnDisable(engine_guard) && groups_to_disable.empty())
-        stop(engine_guard, guard);
-#endif
 }    
           
 stdString ArchiveChannel::getSampleInfo(Guard &guard)
@@ -293,7 +305,8 @@ stdString ArchiveChannel::getSampleInfo(Guard &guard)
 void ArchiveChannel::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    LOG_ASSERT(isRunning(guard));
+    if (!isRunning(guard))
+        return;
     waitWhileSampleMechanismBusy(guard);
     sample_mechanism_busy = true;
     {

@@ -10,7 +10,7 @@
 
 TEST_CASE test_sample_mechanism_get()
 {
-    COMMENT("Note: This test takes 60 seconds.");
+    COMMENT("Note: This test takes about 30 seconds.");
     ScanList scan_list;
     WritableEngineConfig config;
     config.setMaxRepeatCount(1);
@@ -18,6 +18,7 @@ TEST_CASE test_sample_mechanism_get()
     ProcessVariableContext ctx;
     SampleMechanismGet sample(config, ctx, scan_list, "fred", 5.0);
     TEST(sample.getName() == "fred");
+    TEST(scan_list.isDueAtAll() == false);
     COMMENT("Trying to connect...");
     {   
         Guard guard(__FILE__, __LINE__, sample);
@@ -25,6 +26,9 @@ TEST_CASE test_sample_mechanism_get()
         sample.start(guard);
         TEST(sample.isRunning(guard));
     }
+    // Should now be on scan list.
+    TEST(scan_list.isDueAtAll() == true);
+    // Wait for CA connection.
     size_t wait = 0;
     while (wait < 10  &&  sample.getPVState() != ProcessVariable::CONNECTED)
     {        
@@ -71,9 +75,9 @@ TEST_CASE test_sample_mechanism_get()
     TEST(values >= 3);
     int added_samples = after_disconnect - values;
     COMMENT("Check if 'disconnected' and 'off' were added");
-    TEST(added_samples == 2);
-    
+    TEST(added_samples == 2);    
     TEST(sample.getPVState() == ProcessVariable::INIT);
+    TEST(scan_list.isDueAtAll() == false);
     TEST_OK;
 }
 

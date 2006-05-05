@@ -62,7 +62,6 @@ public:
 
 private:
     ConcurrentList<class SinglePeriodScanList> lists;
-    bool is_due_at_all;
     epicsTime next_list_scan;
 };
 

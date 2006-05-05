@@ -93,6 +93,8 @@ int main(int argc, const char *argv[])
                 engine->start(guard);
             }
             {
+                // TODO: Move before start() and change locking
+                //       to allow HTTPD runs while starting?
                 AutoPtr<EngineServer> server(
                     new EngineServer((int) port, engine));
                 // Main loop

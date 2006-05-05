@@ -7,6 +7,8 @@
 #include "EngineLocks.h"
 #include "ProcessVariableContext.h"
 
+// #define DEBUG_PV_CONTEXT
+
 static void caException(struct exception_handler_args args)
 {
     const char *pName;
@@ -80,6 +82,9 @@ void ProcessVariableContext::incRef(Guard &guard)
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isAttached(guard));
 	++refs;
+#   ifdef DEBUG_PV_CONTEXT
+    printf("ProcessVariableContext::incRef: %zu refs\n", refs);
+#   endif
 }
 		
 void ProcessVariableContext::decRef(Guard &guard)
@@ -90,6 +95,9 @@ void ProcessVariableContext::decRef(Guard &guard)
 	    throw GenericException(__FILE__, __LINE__,
 	                           "RefCount goes negative");
 	--refs;
+#   ifdef DEBUG_PV_CONTEXT
+    printf("ProcessVariableContext::decRef: %zu refs\n", refs);
+#   endif
 }
 
 size_t ProcessVariableContext::getRefs(Guard &guard)
@@ -101,6 +109,9 @@ size_t ProcessVariableContext::getRefs(Guard &guard)
 
 void ProcessVariableContext::requestFlush(Guard &guard)
 {
+#   ifdef DEBUG_PV_CONTEXT
+    printf("ProcessVariableContext::requestFlush\n");
+#   endif
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isAttached(guard));
 	flush_requested = true;
@@ -120,6 +131,9 @@ void ProcessVariableContext::flush(Guard &guard)
     if (flush_requested)
     {
         flush_requested = false;
+#       ifdef DEBUG_PV_CONTEXT
+        printf("ProcessVariableContext::flush\n");
+#       endif
         {
             GuardRelease release(__FILE__, __LINE__, guard);
     	    ca_flush_io();

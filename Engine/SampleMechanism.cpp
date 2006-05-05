@@ -8,7 +8,7 @@
 #include "EngineLocks.h"
 #include "SampleMechanism.h"
 
-// #define DEBUG_SAMPLE_MECHANISM
+#define DEBUG_SAMPLE_MECHANISM
 
 // One hour between messages
 static ThrottledMsgLogger back_in_time_throttle("Buffer Back-in-time",

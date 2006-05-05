@@ -6,7 +6,7 @@
 // Engine
 #include "ScanList.h"
 
-// #define DEBUG_SCANLIST
+#define DEBUG_SCANLIST
 
 /*  List of channels to scan for one period.
  *  <p>
@@ -114,7 +114,6 @@ void SinglePeriodScanList::computeNextScantime()
 
 ScanList::ScanList()
 {
-    is_due_at_all = false;
     next_list_scan = nullTime;
 }
 
@@ -128,6 +127,7 @@ ScanList::~ScanList()
 
 void ScanList::add(Scannable *item, double period)
 {
+    bool first_item = lists.isEmpty();
     // Check it the channel is already on some
     // list where it needs to be removed
     remove(item);
@@ -152,6 +152,16 @@ void ScanList::add(Scannable *item, double period)
     }
     // Add item to list; an existing one or a newly created one.
     list->add(item);
+    // Update the next scan time
+    epicsTime due = list->getNextScantime();
+    Guard guard(__FILE__, __LINE__, lists);
+    if (first_item  ||  due < next_list_scan)
+    {
+        next_list_scan = due;
+#ifdef  DEBUG_SCANLIST
+        LOG_MSG("Updated the overall due time.\n");
+#endif   
+    }
 }
 
 const epicsTime &ScanList::getDueTime()

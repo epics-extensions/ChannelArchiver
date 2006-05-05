@@ -94,18 +94,15 @@ public:
     /** Implements ProcessVariableStateListener by forwrding
      *  connect/disconnect info to ArchiveChannelStateListeners
      */
-    void pvConnected(Guard &pv_guard, ProcessVariable &pv,
-                     const epicsTime &when);
+    void pvConnected(ProcessVariable &pv, const epicsTime &when);
     
     /** Implements ProcessVariableStateListener by forwrding
      *  connect/disconnect info to ArchiveChannelStateListeners
      */
-    void pvDisconnected(Guard &pv_guard, ProcessVariable &pv,
-                        const epicsTime &when);
+    void pvDisconnected(ProcessVariable &pv, const epicsTime &when);
               
     /** Implements ProcessVariableValueListener for handling enable/disable */     
-    void pvValue(Guard &pv_guard, ProcessVariable &pv,
-                 const RawValue::Data *data);
+    void pvValue(ProcessVariable &pv, const RawValue::Data *data);
                  
     /** Append this channel to a FUX document. */ 
     void addToFUX(Guard &guard, class FUX::Element *doc);
@@ -115,8 +112,12 @@ private:
     double scan_period;
     bool monitor;
     
+    // See comments in implementation of waitWhileSampleMechanismBusy().
+    bool sample_mechanism_busy;
     AutoPtr<SampleMechanism> sample_mechanism;
+    void waitWhileSampleMechanismBusy(Guard &guard);
 
+    // TODO: Use ConcurrentList types for the next 2.
     // Groups that this channel disables (might be empty)
     stdList<class GroupInfo *> disable_groups;
     // Groups to which this channel belongs (at least one)

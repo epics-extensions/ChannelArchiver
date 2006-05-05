@@ -79,7 +79,7 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
     page.tableLine("Directory ", line, 0);
 #endif
     sprintf(line, "%.3f sec", proc_dly);
-    page.tableLine("Avg. Proc. Delay", line, 0);
+    page.tableLine("Avg. Process Delay", line, 0);
 
     // Idle time defined as:
     // How much of the max. delay do we get to use?

@@ -16,9 +16,10 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
                                const char *channel_name,
                                double scan_period, bool monitor)
     : NamedBase(channel_name), 
-      mutex("ArchiveChannel", ARCHIVE_CHANNEL_LOCK), 
+      mutex("ArchiveChannel", EngineLocks::ArchiveChannel), 
       scan_period(scan_period),
       monitor(monitor),
+      sample_mechanism_busy(false),
       currently_disabling(false),
       disable_count(0)
 {
@@ -28,14 +29,19 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
 
 ArchiveChannel::~ArchiveChannel()
 {
+    LOG_ASSERT(! sample_mechanism_busy);
     if (sample_mechanism)
     {
         try
         {
-            Guard guard(__FILE__, __LINE__, *sample_mechanism);
-            sample_mechanism->removeStateListener(guard, this);
-            if (canDisable(guard))  
-                sample_mechanism->removeValueListener(guard, this);   
+            sample_mechanism->removeStateListener(this);
+            bool can_disable;
+            {
+                Guard guard(__FILE__, __LINE__, *this);
+                can_disable = canDisable(guard);
+            }
+            if (can_disable) 
+                sample_mechanism->removeValueListener(this);   
         }
         catch (GenericException &e)
         {
@@ -55,6 +61,23 @@ OrderedMutex &ArchiveChannel::getMutex()
     return mutex;
 }
 
+// In order to allow as much concurrency with CA,
+// the ArchiveChannel unlock whenever possible,
+// most important while writing.
+// In order to prevent changes to the sample_mechanism pointer
+// while the channel is unlocked, the flag sample_mechanism_busy
+// is used.
+void ArchiveChannel::waitWhileSampleMechanismBusy(Guard &guard)
+{
+    while (sample_mechanism_busy)
+    {
+        GuardRelease release(__FILE__, __LINE__, guard);
+        LOG_MSG("ArchiveChannel '%s' waiting for busy sample_mechanism.\n",
+                getName().c_str());
+        epicsThreadSleep(1.0);
+    }
+}
+
 void ArchiveChannel::configure(EngineConfig &config,
                                ProcessVariableContext &ctx,
                                ScanList &scan_list,
@@ -65,6 +88,7 @@ void ArchiveChannel::configure(EngineConfig &config,
     LOG_ASSERT(sample_mechanism);
     // Check args, stop old sample mechanism.
     Guard guard(__FILE__, __LINE__, *this);
+    waitWhileSampleMechanismBusy(guard);
     {
         Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
         LOG_ASSERT(!sample_mechanism->isRunning(sample_guard));
@@ -76,19 +100,15 @@ void ArchiveChannel::configure(EngineConfig &config,
             this->scan_period = scan_period;
         else if (this->scan_period > scan_period) // minimize
             this->scan_period = scan_period;
-    
-        sample_mechanism->removeStateListener(sample_guard, this);
-        if (canDisable(guard))  
-            sample_mechanism->removeValueListener(sample_guard, this);
     }
+    sample_mechanism->removeStateListener(this);
+    if (canDisable(guard))  
+        sample_mechanism->removeValueListener(this);
     // Replace with new one
     sample_mechanism = createSampleMechanism(config, ctx, scan_list);
     LOG_ASSERT(sample_mechanism);
     if (canDisable(guard))
-    {
-        Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
-        sample_mechanism->addValueListener(sample_guard, this);
-    }
+        sample_mechanism->addValueListener(this);
 }
 
 SampleMechanism *ArchiveChannel::createSampleMechanism(
@@ -109,11 +129,10 @@ SampleMechanism *ArchiveChannel::createSampleMechanism(
                                                         getName().c_str(),
                                                          scan_period);
     LOG_ASSERT(new_mechanism);
-    Guard guard(__FILE__, __LINE__, *new_mechanism); // Lock: Channel, SampleMech.          
-    new_mechanism->addStateListener(guard, this);
+    new_mechanism->addStateListener(this);
     return new_mechanism.release();
 }
-
+ 
 void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
                                 Guard &channel_guard, bool disabling)
 {
@@ -148,10 +167,7 @@ void ArchiveChannel::addToGroup(Guard &group_guard, GroupInfo *group,
         // i.e. not diabling, yet?
         // --> monitor values!
         if (! canDisable(channel_guard))
-        {
-            Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
-            sample_mechanism->addValueListener(sample_guard, this);
-        }
+            sample_mechanism->addValueListener(this);
         // Add, but only once.
         add = true;
         for (i=disable_groups.begin(); i!=disable_groups.end(); ++i)
@@ -196,9 +212,9 @@ bool ArchiveChannel::isRunning(Guard &guard)
 
 bool ArchiveChannel::isConnected(Guard &guard) const
 {
-    Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
-    return sample_mechanism->getPVState(sample_guard)
-                                 == ProcessVariable::CONNECTED;
+    guard.check(__FILE__, __LINE__, mutex);
+    LOG_ASSERT(sample_mechanism);
+    return sample_mechanism->getPVState() == ProcessVariable::CONNECTED;
 }
      
 // Called by group to disable channel.
@@ -217,8 +233,7 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
     if (isDisabled(guard))
     {
         LOG_MSG("Channel '%s' disabled\n", getName().c_str());  
-        Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);    
-        sample_mechanism->disable(sample_guard, when);
+        sample_mechanism->disable(when);
     }
 #if 0
     // TODO:
@@ -243,9 +258,8 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
     --disable_count;
     if (!isDisabled(guard))
     {
-        LOG_MSG("Channel '%s' enabled\n", getName().c_str());   
-        Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);    
-        sample_mechanism->enable(sample_guard, when);
+        LOG_MSG("Channel '%s' enabled\n", getName().c_str());    
+        sample_mechanism->enable(when);
     }
 #if 0
     // TODO:
@@ -267,124 +281,140 @@ void ArchiveChannel::stop(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isRunning(guard));
-    Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
-    sample_mechanism->stop(sample_guard);
+    waitWhileSampleMechanismBusy(guard);
+    sample_mechanism_busy = true;
+    {
+        GuardRelease release(__FILE__, __LINE__, guard);
+        Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
+        sample_mechanism->stop(sample_guard);
+    }
+    sample_mechanism_busy = false;
 }
 
-unsigned long  ArchiveChannel::write(Guard &guard, Index &index)
+unsigned long ArchiveChannel::write(Guard &guard, Index &index)
 {
+    // In order to allow CA callbacks whenever possible,
+    // the ArchiveChannel unlocks while writing,
+    // as will the SampleMechanism::write temporarily.
+    // On the other hand, we must prevent changes to the sample_mechanism
+    // while writing. The is_writing flag indicates this.
     guard.check(__FILE__, __LINE__, mutex);
-    Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);    
-    return sample_mechanism->write(sample_guard, index);
+    if (sample_mechanism_busy)
+    {
+        LOG_MSG("'%s' : cannot write because sample mechanism is busy\n",
+                getName().c_str());
+        return 0;
+    }
+    sample_mechanism_busy = true;
+    unsigned long samples_written;
+    {
+        GuardRelease release(__FILE__, __LINE__, guard);
+        Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
+        samples_written = sample_mechanism->write(sample_guard, index);
+    }
+    sample_mechanism_busy = false;
+    return samples_written;
 }
 
 // ArchiveChannel is StateListener to SampleMechanism (==PV)
-void ArchiveChannel::pvConnected(Guard &pv_guard, ProcessVariable &pv,
-                                 const epicsTime &when)
+void ArchiveChannel::pvConnected(ProcessVariable &pv, const epicsTime &when)
 {
 #ifdef DEBUG_ARCHIVE_CHANNEL
     LOG_MSG("ArchiveChannel '%s' is connected\n", getName().c_str());
 #endif
-    GuardRelease release(__FILE__, __LINE__, pv_guard);
+    Guard guard(__FILE__, __LINE__, *this); // Lock order: only Channel
+    // Notify groups
+    stdList<GroupInfo *>::iterator gi;
+    for (gi = groups.begin(); gi != groups.end(); ++gi)
     {
-        Guard guard(__FILE__, __LINE__, *this); // Lock order: only Channel
-        // Notify groups
-        stdList<GroupInfo *>::iterator gi;
-        for (gi = groups.begin(); gi != groups.end(); ++gi)
+        GroupInfo *g = *gi;
+        GuardRelease release(__FILE__, __LINE__, guard);
         {
-            GroupInfo *g = *gi;
-            GuardRelease release(__FILE__, __LINE__, guard);
-            {
-                Guard group_guard(__FILE__, __LINE__, *g); // Lock Order: only Group
-                g->incConnected(group_guard, *this);
-            }
+            Guard group_guard(__FILE__, __LINE__, *g); // Lock Order: only Group
+            g->incConnected(group_guard, *this);
         }
     }
 }
 
 // ArchiveChannel is StateListener to SampleMechanism (==PV)
-void ArchiveChannel::pvDisconnected(Guard &pv_guard, ProcessVariable &pv,
-                    const epicsTime &when)
+void ArchiveChannel::pvDisconnected(ProcessVariable &pv, const epicsTime &when)
 {
 #ifdef DEBUG_ARCHIVE_CHANNEL
     LOG_MSG("ArchiveChannel '%s' is disconnected\n", getName().c_str());
 #endif
-    GuardRelease pv_release(__FILE__, __LINE__, pv_guard);
+    Guard guard(__FILE__, __LINE__, *this); // Lock order: Only Channel.
+    // Notify groups
+    stdList<GroupInfo *>::iterator gi;
+    for (gi = groups.begin(); gi != groups.end(); ++gi)
     {
-        Guard guard(__FILE__, __LINE__, *this); // Lock order: Only Channel.
-        // Notify groups
-        stdList<GroupInfo *>::iterator gi;
-        for (gi = groups.begin(); gi != groups.end(); ++gi)
+        GroupInfo *g = *gi;
+        GuardRelease release(__FILE__, __LINE__, guard);
         {
-            GroupInfo *g = *gi;
-            GuardRelease release(__FILE__, __LINE__, guard);
-            {
-                Guard group_guard(__FILE__, __LINE__, *g); // Lock order: Only Group.
-                g->decConnected(group_guard, *this);
-            }
+            Guard group_guard(__FILE__, __LINE__, *g); // Lock order: Only Group.
+            g->decConnected(group_guard, *this);
         }
     }
 }
 
 // ArchiveChannel is ValueListener to SampleMechanism (==PV) _IF_ disabling
-void ArchiveChannel::pvValue(Guard &pv_guard, ProcessVariable &pv,
-                             const RawValue::Data *data)
+void ArchiveChannel::pvValue(ProcessVariable &pv, const RawValue::Data *data)
 {
-    bool should_disable = RawValue::isAboveZero(pv.getDbrType(pv_guard), data);
-    GuardRelease pv_release(__FILE__, __LINE__, pv_guard);
+    bool should_disable;
     {
-        Guard guard(__FILE__, __LINE__, *this); // Lock order: Only Channel
-        if (!canDisable(guard))
-        {
-            LOG_MSG("ArchiveChannel '%s' got value for disable test "
-                    "but not configured to disable\n",
-                    getName().c_str());
+        Guard pv_guard(__FILE__, __LINE__, pv);
+        should_disable = RawValue::isAboveZero(pv.getDbrType(pv_guard), data);
+    }
+    Guard guard(__FILE__, __LINE__, *this); // Lock order: Only Channel
+    if (!canDisable(guard))
+    {
+        LOG_MSG("ArchiveChannel '%s' got value for disable test "
+                "but not configured to disable\n",
+                getName().c_str());
+        return;
+    }        
+    if (should_disable)
+    {
+        //LOG_MSG("ArchiveChannel '%s' got disabling value\n",
+        //        getName().c_str());
+        if (currently_disabling) // Was and still is disabling
             return;
-        }        
-        if (should_disable)
+        // Wasn't, but is now disabling.
+        LOG_MSG("ArchiveChannel '%s' disables its groups\n",
+                getName().c_str());
+        currently_disabling = true;
+        // Notify groups
+        stdList<GroupInfo *>::iterator gi;
+        epicsTime when = RawValue::getTime(data);
+        for (gi = disable_groups.begin(); gi != disable_groups.end(); ++gi)
         {
-            //LOG_MSG("ArchiveChannel '%s' got disabling value\n",
-            //        getName().c_str());
-            if (currently_disabling) // Was and still is disabling
-                return;
-            // Wasn't, but is now disabling.
-            LOG_MSG("ArchiveChannel '%s' disables its groups\n",
-                    getName().c_str());
-            currently_disabling = true;
-            // Notify groups
-            stdList<GroupInfo *>::iterator gi;
-            epicsTime when = RawValue::getTime(data);
-            for (gi = disable_groups.begin(); gi != disable_groups.end(); ++gi)
+            GroupInfo *g = *gi;
+            GuardRelease release(__FILE__, __LINE__, guard);
             {
-                GroupInfo *g = *gi;
-                GuardRelease release(__FILE__, __LINE__, guard);
-                {
-                    Guard group_guard(__FILE__, __LINE__, *g);  // Lock order: Only Group.
-                    g->disable(group_guard, this, when);
-                }
+                Guard group_guard(__FILE__, __LINE__, *g);  // Lock order: Only Group.
+                g->disable(group_guard, this, when);
             }
         }
-        else
+    }
+    else
+    {
+        //LOG_MSG("ArchiveChannel '%s' got enabling value\n",
+        //        getName().c_str());
+        if (! currently_disabling) // Wasn't and isn't disabling.
+            return;
+        // Re-enable groups.
+        LOG_MSG("ArchiveChannel '%s' enables its groups\n",
+                getName().c_str());
+        currently_disabling = false;
+        // Notify groups
+        stdList<GroupInfo *>::iterator gi;
+        epicsTime when = RawValue::getTime(data);
+        for (gi = disable_groups.begin(); gi != disable_groups.end(); ++gi)
         {
-            //LOG_MSG("ArchiveChannel '%s' got enabling value\n",
-            //        getName().c_str());
-            if (! currently_disabling) // Wasn't and isn't disabling.
-                return;
-            // Re-enable groups.
-            LOG_MSG("ArchiveChannel '%s' enables its groups\n",
-                    getName().c_str());
-            currently_disabling = false;
-            // Notify groups
-            stdList<GroupInfo *>::iterator gi;
-            epicsTime when = RawValue::getTime(data);
-            for (gi = disable_groups.begin(); gi != disable_groups.end(); ++gi)
+            GroupInfo *g = *gi;
+            GuardRelease release(__FILE__, __LINE__, guard);
             {
-                GroupInfo *g = *gi;
-                GuardRelease release(__FILE__, __LINE__, guard);
-                {
-                    Guard group_guard(__FILE__, __LINE__, *g);  // Lock order: Only Group.
-                    g->enable(group_guard, this, when);
-                }
+                Guard group_guard(__FILE__, __LINE__, *g);  // Lock order: Only Group.
+                g->enable(group_guard, this, when);
             }
         }
     }

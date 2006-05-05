@@ -13,7 +13,7 @@
 #include "EngineLocks.h"
 
 Engine::Engine(const stdString &index_name)
-    : mutex("Engine", ENGINE_LOCK),
+    : mutex("Engine", EngineLocks::Engine),
       is_running(false),
       index_name(index_name),
       description("Archive Engine"),

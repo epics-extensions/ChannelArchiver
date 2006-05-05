@@ -10,7 +10,7 @@
 
 GroupInfo::GroupInfo(const stdString &name)
     : NamedBase(name.c_str()),
-      mutex("GroupInfo", GROUP_INFO_LOCK),
+      mutex("GroupInfo", EngineLocks::GroupInfo),
       num_connected(0),
       disable_count(0)
 {

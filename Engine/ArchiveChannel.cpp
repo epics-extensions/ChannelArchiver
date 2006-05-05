@@ -230,6 +230,15 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
                 getName().c_str(), disable_count);
         return;
     }
+    // That handled the bookkeeping of being disabled or not.
+    // In case this channel is itself capable of disabling,
+    // it needs to stay enabled in order to stay informed
+    // wether it should disable its groups or not.
+    // It's also probably a good idea to see in the archive
+    // what values the disabling channel had, so skip
+    // the actual 'disable' for disabling channels.
+    if (canDisable(guard))
+        return;
     if (isDisabled(guard))
     {
         LOG_MSG("Channel '%s' disabled\n", getName().c_str());  
@@ -239,7 +248,9 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
     // TODO:
     // In case we're asked to disconnect _and_ this channel
     // doesn't need to stay connected because it disables other channels,
-    // stop CA
+    // stop CA.
+    // But don't to that if this channel is itself disabling groups,
+    // and thus needs to stay informed about the PV's value!
     if (theEngine->disconnectOnDisable(engine_guard) && groups_to_disable.empty())
         stop(engine_guard, guard);
 #endif
@@ -256,6 +267,8 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
         return;
     }
     --disable_count;
+    if (canDisable(guard))
+        return;    
     if (!isDisabled(guard))
     {
         LOG_MSG("Channel '%s' enabled\n", getName().c_str());    

@@ -476,6 +476,7 @@ static void addChannel(HTTPClientConnection *connection,
             Guard engine_guard(__FILE__, __LINE__, *engine);
             engine->attachToProcessVariableContext(engine_guard);
             engine->stop(engine_guard);
+            engine->write(engine_guard);            
             engine->addChannel(group_name, channel_name, period,
                                disabling, monitored);
             engine->write_config(engine_guard);
@@ -514,7 +515,8 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path,
         page.out(group_name);
         {
             Guard engine_guard(__FILE__, __LINE__, *engine);
-            engine->stop(engine_guard);            
+            engine->stop(engine_guard);         
+            engine->write(engine_guard);                        
             engine->addGroup(engine_guard, group_name);
             engine->write_config(engine_guard);
             engine->start(engine_guard);            
@@ -551,6 +553,7 @@ static void parseConfig(HTTPClientConnection *connection,
             Guard engine_guard(__FILE__, __LINE__, *engine);
             engine->attachToProcessVariableContext(engine_guard);
             engine->stop(engine_guard);
+            engine->write(engine_guard);            
             page.line("Reading config file...<p>");
             engine->read_config(engine_guard, config_name);
             engine->write_config(engine_guard);        
@@ -583,6 +586,7 @@ static void restart(HTTPClientConnection *connection,
             Guard engine_guard(__FILE__, __LINE__, *engine);
             engine->attachToProcessVariableContext(engine_guard);
             engine->stop(engine_guard);
+            engine->write(engine_guard);            
             page.line("Starting Engine again...<p>");
             engine->start(engine_guard);
         }        

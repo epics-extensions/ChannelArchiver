@@ -200,13 +200,20 @@ is above zero, sampling of the whole group will be disabled until the
 channel returns to zero or below zero
 (see \ref{sec:disconnect} for additional disconnection).
 
-
 This is useful for e.g.\ a group of channels related to power
 supplies: Whenever the power supply is off, we might want to disable
 scanning of the power supplies' voltage and current because those
 channels will only yield noise. By disabling the sampling based on a
 ``Power Supply is Off'' channel, we can avoid storing those values
 which are of no interest.
+
+The channel which is ``disabling'' its group will stay enabled.
+Internal to the archive engine, it obviously needs to stay connected
+and enabled. How else would it otherwise learn when to re-enable
+its group? Since it might be of interest to learn which values of the
+``disabling'' channel caused the other channels in the group to be enabled
+or disabled, its samples are also added to the archive: Disabling channels
+are never disabled themselves.
 
 \NOTE There is no ``enabling'' feature, meaning: The channel
 marked as ``disable'' will disable its group whenever it is above

@@ -93,7 +93,7 @@ int main(int argc, const char *argv[])
                 engine->start(guard);
             }
             {
-                // TODO: Move before start() and change locking
+                // TODO: Maybe Move before start() and change locking
                 //       to allow HTTPD runs while starting?
                 AutoPtr<EngineServer> server(
                     new EngineServer((int) port, engine));
@@ -106,9 +106,9 @@ int main(int argc, const char *argv[])
                 {
                     // Processing the main loop
                 }
-               LOG_MSG ("\n-------------------------------------------------\n"
-                        "Process loop ended.\n"
-                        "-------------------------------------------------\n");
+                LOG_MSG ("\n-------------------------------------------------\n"
+                         "Process loop ended.\n"
+                         "-------------------------------------------------\n");
             }
             {
                 LOG_MSG ("Flushing buffers to disk.\n");

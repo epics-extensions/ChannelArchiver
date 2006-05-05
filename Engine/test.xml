@@ -9,8 +9,7 @@
    <max_repeat_count>120</max_repeat_count>
    <group>
       <name>Test</name>
-      <channel><name>fred</name>
-               <period>5</period><scan/><disable/>
-      </channel>
+      <channel><name>fred</name> <period>5</period><scan/><disable/> </channel>
+      <channel><name>janet</name> <period>1</period><monitor/> </channel>
    </group>
 </engineconfig>

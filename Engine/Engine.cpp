@@ -146,6 +146,7 @@ void Engine::addChannel(const stdString &group_name,
 void Engine::start(Guard &engine_guard)
 {
     // TODO: Maybe unlock in start to allow HTTPD runs during lengthy start
+    LOG_MSG("Engine starts.\n");
     engine_guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(is_running == false);
     stdList<ArchiveChannel *>::iterator channel = channels.begin();
@@ -163,6 +164,7 @@ void Engine::start(Guard &engine_guard)
       
 void Engine::stop(Guard &engine_guard)
 {
+    LOG_MSG("Engine stops.\n");
     engine_guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(is_running == true);
     stdList<ArchiveChannel *>::iterator channel = channels.begin();

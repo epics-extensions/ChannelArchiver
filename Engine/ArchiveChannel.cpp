@@ -8,7 +8,7 @@
 #include "SampleMechanismGet.h"
 #include "SampleMechanismMonitoredGet.h"
 
-#define DEBUG_ARCHIVE_CHANNEL
+//#define DEBUG_ARCHIVE_CHANNEL
  
 ArchiveChannel::ArchiveChannel(EngineConfig &config,
                                ProcessVariableContext &ctx,

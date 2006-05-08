@@ -301,7 +301,7 @@ TEST_CASE pv_lock_test()
         num = 1;
     for (i = 0; i<num; ++i)
     {
-        stop_in_connect = i & 1;
+        stop_in_connect = ! (i & 1);
         app.start();
         hack.wait();
         app.stop();

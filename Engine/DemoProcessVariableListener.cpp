@@ -2,7 +2,7 @@
 #include "DemoProcessVariableListener.h"
 
 DemoProcessVariableListener::DemoProcessVariableListener()
-    : connected(false), values(0)
+    : connected(false), values(0), listener(0)
 {}
 
 DemoProcessVariableListener::~DemoProcessVariableListener()
@@ -14,6 +14,8 @@ void DemoProcessVariableListener::pvConnected(ProcessVariable &pv,
     printf("        DemoProcessVariableListener: '%s' connected.\n",
            pv.getName().c_str());
     connected = true;
+    if (listener)
+        listener->pvConnected(pv, when);
 }
 
 void DemoProcessVariableListener::pvDisconnected(ProcessVariable &pv,
@@ -22,6 +24,8 @@ void DemoProcessVariableListener::pvDisconnected(ProcessVariable &pv,
     printf("        DemoProcessVariableListener: '%s' disconnected.\n",
            pv.getName().c_str());
     connected = false;
+    if (listener)
+        listener->pvDisconnected(pv, when);
 }
 
 void DemoProcessVariableListener::pvValue(class ProcessVariable &pv,
@@ -35,4 +39,6 @@ void DemoProcessVariableListener::pvValue(class ProcessVariable &pv,
                        pv.getDbrCount(pv_guard), data, 0);
     }
     ++values;
+    if (listener)
+        listener->pvValue(pv, data);
 }

@@ -6,6 +6,7 @@
 #include <AutoPtr.h>
 #include <epicsTimeHelper.h>
 // Local
+#include "DemoProcessVariableListener.h"
 #include "SampleMechanismMonitored.h"
 
 TEST_CASE test_sample_mechanism()
@@ -14,10 +15,15 @@ TEST_CASE test_sample_mechanism()
     ProcessVariableContext ctx;
     
     COMMENT("Testing the basic SampleMechanism...");
-    // Note: The data pipe goes from the sample's PV
-    //       to the DisableFilter in sample and then
-    //       on to sample. We insert no further filter.
-    SampleMechanism sample(config, ctx, "janet", 5.0, &sample);
+    // The data pipe goes from the sample's PV
+    // to the DisableFilter in sample and then
+    // on to sample. We needn't insert a filter,
+    // but gcc 3.2.3 complains about unknown 'sample' in
+    //   SampleMechanism sample(config, ctx, "janet", 5.0, &sample);
+    // so we do use an in-between filter.
+    DemoProcessVariableListener filter;
+    SampleMechanism sample(config, ctx, "janet", 5.0, &filter);
+    filter.setListener(&sample);
     TEST(sample.getName() == "janet");
     COMMENT("Trying to connect...");
     {   

@@ -14,11 +14,21 @@ public:
     DemoProcessVariableListener();
     virtual ~DemoProcessVariableListener();
     
+    /** Forward all requests to yet another listener,
+     *  so it acts like a PV Filter.
+     */
+    void setListener(ProcessVariableListener *listener)
+    {
+        this->listener = listener;
+    }
+    
     void pvConnected(ProcessVariable &pv, const epicsTime &when);
     
     void pvDisconnected(ProcessVariable &pv, const epicsTime &when);
     
     void pvValue(class ProcessVariable &pv, const RawValue::Data *data);
+private:
+    ProcessVariableListener *listener;
 };
 
 #endif

@@ -40,8 +40,22 @@ ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
 ProcessVariable::~ProcessVariable()
 {
     if (state != INIT)
+    {
         LOG_MSG("ProcessVariable(%s) destroyed without stopping!\n",
                 getName().c_str());
+        // Bad situation.
+        // If you don't clear the channel, CA might still invoke callbacks
+        // for a ProcessVariable instance that is no more.
+        // On the other hand, who knows if the 'id' is valid
+        // and we won't crash in ca_clear_channel?
+        // We assume that the id _is_ valid, so protect against further
+        // callbacks. ca_clear_channel should remove all subscriptions.
+        if (id != 0)
+        {
+            ca_clear_channel(id);
+            id = 0;
+        }
+    }
     if (!state_listeners.isEmpty())
     {
         LOG_MSG("ProcessVariable(%s) still has %zu state listeners\n",

@@ -51,9 +51,11 @@ public:
 
     /** Start a table with column headers.
      *  <p>
+     *  Arguments: size, name, size, name, ...., 0.
+     *  <p>
      *  Last column name must be 0.
      */
-    void openTable (size_t colspan, const char *column, ...);
+    void openTable (int colspan, const char *column, ...);
     
     /** Add line to table.
      *  <p>

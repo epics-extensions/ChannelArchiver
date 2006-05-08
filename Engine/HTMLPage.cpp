@@ -121,7 +121,11 @@ void HTMLPage::line(const stdString &line)
 }
 
 // Last column name must be 0
-void HTMLPage::openTable(size_t colspan, const char *column, ...)
+// Used to use size_t, but the default type in calls
+//  openTable(1, "xx", 2, "yy", 0)
+// must be int, and when expecting size_t in va-arg,
+// valgrind warned about uninitialized memory on 64bit OSs.
+void HTMLPage::openTable(int colspan, const char *column, ...)
 {
     va_list    ap;
     const char *name = column;
@@ -143,7 +147,7 @@ void HTMLPage::openTable(size_t colspan, const char *column, ...)
         out(name);
         out("</FONT></TH>");
 
-        colspan = va_arg(ap, size_t);
+        colspan = va_arg(ap, int);
         if (!colspan)
             break;
         name = va_arg(ap, const char *);

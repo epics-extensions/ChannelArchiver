@@ -69,10 +69,17 @@ static void engineinfo(HTTPClientConnection *connection, const stdString &path,
     page.tableLine("Channels", line, 0);
 
     if (num_channels != num_connected)
+    {
         sprintf(line,"<FONT COLOR=#FF0000>%d</FONT>",(int)num_connected);
+        page.tableLine("Connected", line, 0);
+        cvtUlongToString(num_channels - num_connected, line);
+        page.tableLine("Disconnected", line, 0);
+    }
     else
+    {
         cvtUlongToString(num_connected, line);
         page.tableLine("Connected", line, 0);
+    }
         
 #ifdef SHOW_DIR
     getcwd(dir, sizeof line);                 

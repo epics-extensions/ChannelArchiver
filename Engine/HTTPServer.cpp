@@ -94,17 +94,17 @@ HTTPServer::~HTTPServer()
 {
     // Tell server and clients to stop.
     go = false;
-    // Wait for clients to quit
-    int waited = 0;
+    // Wait for clients to quit.
     while (client_cleanup() > 0)
     {
-        if (waited > 10)
-        {
-            LOG_MSG("HTTPServer doesn't see the clients quit.\n");
-            break;
-        }
-        epicsThreadSleep(1.0);
-        ++waited;
+        LOG_MSG("HTTPServer waiting for clients to quit.\n");
+        epicsThreadSleep(5.0);
+        // We used to 'break' after some timeout, but then
+        // the actual epicsThread will still hang around until
+        // the client quits. So if a client is hung, for example
+        // waiting for an Engine lock, there's no early way out
+        // other than waiting or 'kill -9'.
+        // So we wait.
     }
     // Wait for server to quit
     if (! thread.exitWait(5.0))
@@ -348,7 +348,8 @@ HTTPClientConnection::~HTTPClientConnection()
 {
     if (! done)
     {
-        LOG_MSG("~HTTPClientConnection: Forced Shutdown of %zu", num);
+        LOG_MSG("HTTPClientConnection: Forced shutdown while # %zu still up\n",
+                num);
         epicsSocketDestroy(socket);
     }
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2

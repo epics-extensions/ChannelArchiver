@@ -149,8 +149,22 @@ void ProcessVariable::start(Guard &guard)
         {
             Guard ctx_guard(__FILE__, __LINE__, ctx);
             LOG_ASSERT(ctx.isAttached(ctx_guard));
-       	    status = ca_create_channel(getName().c_str(), connection_handler,
-                                       this, CA_PRIORITY_ARCHIVE, &_id);
+            try
+            {
+       	        status = ca_create_channel(getName().c_str(),
+                                           connection_handler,
+                                           this, CA_PRIORITY_ARCHIVE, &_id);
+            }
+            catch (std::exception &e)
+            {
+                LOG_MSG("ProcessVariable::start(%s): %s\n",
+                        getName().c_str(), e.what());
+            }
+            catch (...)
+            {
+                LOG_MSG("ProcessVariable::start(%s): Unknown Exception\n",
+                        getName().c_str());
+            }                          
             ctx.requestFlush(ctx_guard);
         }
     }
@@ -177,8 +191,22 @@ void ProcessVariable::getValue(Guard &guard)
     {
         Guard ctx_guard(__FILE__, __LINE__, ctx);
         LOG_ASSERT(ctx.isAttached(ctx_guard));
-        int status = ca_array_get_callback(dbr_type, dbr_count,
+        int status;
+        try
+        {
+            status = ca_array_get_callback(dbr_type, dbr_count,
                                            _id, value_callback, this);
+        }
+        catch (std::exception &e)
+        {
+            LOG_MSG("ProcessVariable::getValue(%s): %s\n",
+                    getName().c_str(), e.what());
+        }
+        catch (...)
+        {
+            LOG_MSG("ProcessVariable::getValue(%s): Unknown Exception\n",
+                    getName().c_str());
+        }                          
         if (status != ECA_NORMAL)
         {
             LOG_MSG("%s: ca_array_get_callback failed: %s\n",
@@ -214,9 +242,23 @@ void ProcessVariable::subscribe(Guard &guard)
         {
             Guard ctx_guard(__FILE__, __LINE__, ctx);
             LOG_ASSERT(ctx.isAttached(ctx_guard));
-            int status = ca_create_subscription(_type, _count, _id,
+            int status;
+            try
+            {
+                status = ca_create_subscription(_type, _count, _id,
                                                 DBE_LOG | DBE_ALARM,
                                                 value_callback, this, &_ev_id);
+            }
+            catch (std::exception &e)
+            {
+                LOG_MSG("ProcessVariable::subscribe(%s): %s\n",
+                        getName().c_str(), e.what());
+            }
+            catch (...)
+            {
+                LOG_MSG("ProcessVariable::subscribe(%s): Unknown Exception\n",
+                        getName().c_str());
+            } 
             if (status != ECA_NORMAL)
             {
                 LOG_MSG("%s: ca_create_subscription failed: %s\n",
@@ -243,7 +285,20 @@ void ProcessVariable::unsubscribe(Guard &guard)
             Guard ctx_guard(__FILE__, __LINE__, ctx);
             LOG_ASSERT(ctx.isAttached(ctx_guard));
         }
-        ca_clear_subscription(_ev_id);
+        try
+        {
+            ca_clear_subscription(_ev_id);
+        }
+        catch (std::exception &e)
+        {
+            LOG_MSG("ProcessVariable::unsubscribe(%s): %s\n",
+                    getName().c_str(), e.what());
+        }
+        catch (...)
+        {
+            LOG_MSG("ProcessVariable::unsubscribe(%s): Unknown Exception\n",
+                    getName().c_str());
+        }    
     }    
 }
 
@@ -267,7 +322,20 @@ void ProcessVariable::stop(Guard &guard)
             Guard ctx_guard(__FILE__, __LINE__, ctx);
             LOG_ASSERT(ctx.isAttached(ctx_guard));
         }
-        ca_clear_channel(_id);
+        try
+        {
+            ca_clear_channel(_id);
+        }
+        catch (std::exception &e)
+        {
+            LOG_MSG("ProcessVariable::stop(%s): %s\n",
+                    getName().c_str(), e.what());
+        }
+        catch (...)
+        {
+            LOG_MSG("ProcessVariable::stop(%s): Unknown Exception\n",
+                    getName().c_str());
+        }
         // If there are listeners, tell them that we are disconnected.
         if (was_connected)
             firePvDisconnected();
@@ -313,9 +381,23 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
         // Unlocked while in CAC.
         // Bug in (at least older) CA: Works only for 1 element,
         // even for array channels.
-        int status = ca_array_get_callback(ca_field_type(_id)+DBR_CTRL_STRING,
+        int status;
+        try
+        {
+            status = ca_array_get_callback(ca_field_type(_id)+DBR_CTRL_STRING,
                                            1 /* ca_element_count(me->ch_id) */,
                                            _id, control_callback, me);
+        }
+        catch (std::exception &e)
+        {
+            LOG_MSG("ProcessVariable::connection_handler(%s): %s\n",
+                    me->getName().c_str(), e.what());
+        }
+        catch (...)
+        {
+            LOG_MSG("ProcessVariable::connection_handler(%s): "
+                    "Unknown Exception\n", me->getName().c_str());
+        } 
         if (status != ECA_NORMAL)
         {
             LOG_MSG("ProcessVariable('%s') connection_handler error %s\n",

@@ -30,7 +30,9 @@ ArchiveChannel::ArchiveChannel(EngineConfig &config,
 
 ArchiveChannel::~ArchiveChannel()
 {
-    LOG_ASSERT(! sample_mechanism_busy);
+    if (sample_mechanism_busy)
+        LOG_MSG("ArchiveChannel '%s': sample mechanism busy in destructor\n",
+                getName().c_str());
     if (sample_mechanism)
     {
         try
@@ -50,7 +52,7 @@ ArchiveChannel::~ArchiveChannel()
         }
         catch (...)
         {
-            LOG_MSG("ArchiveChannel '%s': exception in desctructor\n",
+            LOG_MSG("ArchiveChannel '%s': exception in destructor\n",
                      getName().c_str());
         }
     } 
@@ -63,11 +65,20 @@ OrderedMutex &ArchiveChannel::getMutex()
 }
 
 // In order to allow as much concurrency with CA,
-// the ArchiveChannel unlock whenever possible,
+// the ArchiveChannel unlocks whenever possible,
 // most important while writing.
-// In order to prevent changes to the sample_mechanism pointer
-// while the channel is unlocked, the flag sample_mechanism_busy
-// is used.
+// But we must prevent changes to the sample_mechanism,
+// most important not change it in configure(),
+// while the sample_mechanism is used for start/stop/write.
+// So anything that uses the sample_mechanism sets
+// the sample_mechanism_busy flag, can then unlock the ArchiveChannel,
+// and finally resets the flag.
+// In short:
+// Lock ArchiveChannel, then use sample_mechanism: OK.
+// Lock ArchiveChannel, find sample_mechanism_busy=false,
+// then set sample_mechanism_busy, unlock, and use sample_mechanism: OK.
+// Find sample_mechanism_busy, unlock the ArchiveChannel,
+// then use the sample_mechanism: BAD.
 void ArchiveChannel::waitWhileSampleMechanismBusy(Guard &guard)
 {
     while (sample_mechanism_busy)
@@ -89,6 +100,7 @@ void ArchiveChannel::configure(ProcessVariableContext &ctx,
     // Check args, stop old sample mechanism.
     Guard guard(__FILE__, __LINE__, *this);
     waitWhileSampleMechanismBusy(guard);
+    LOG_ASSERT(!sample_mechanism_busy);
     {
         Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
         LOG_ASSERT(!sample_mechanism->isRunning(sample_guard));
@@ -307,6 +319,8 @@ void ArchiveChannel::stop(Guard &guard)
     guard.check(__FILE__, __LINE__, mutex);
     if (!isRunning(guard))
         return;
+    // Unlock so that CA client lib. can do whatever it needs to do
+    // while it's stopping the channel.
     waitWhileSampleMechanismBusy(guard);
     sample_mechanism_busy = true;
     {
@@ -332,11 +346,29 @@ unsigned long ArchiveChannel::write(Guard &guard, Index &index)
         return 0;
     }
     sample_mechanism_busy = true;
-    unsigned long samples_written;
+    unsigned long samples_written = 0;
     {
         GuardRelease release(__FILE__, __LINE__, guard);
         Guard sample_guard(__FILE__, __LINE__, *sample_mechanism);
-        samples_written = sample_mechanism->write(sample_guard, index);
+        try
+        {
+            samples_written = sample_mechanism->write(sample_guard, index);
+        }
+        catch (GenericException &e)
+        {
+            LOG_MSG("ArchiveChannel '%s' write: %s\n",
+                    getName().c_str(), e.what());
+        }
+        catch (std::exception &e)
+        {
+            LOG_MSG("ArchiveChannel '%s' write: exception %s\n",
+                    getName().c_str(), e.what());
+        }
+        catch (...)
+        {
+            LOG_MSG("ArchiveChannel '%s' write: unknown exception\n",
+                     getName().c_str());
+        }
     }
     sample_mechanism_busy = false;
     return samples_written;

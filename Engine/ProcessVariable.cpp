@@ -234,7 +234,7 @@ void ProcessVariable::subscribe(Guard &guard)
                 getName().c_str());
         return;
     }
-    evid     _ev_id;
+    evid     _ev_id = 0;
     DbrType  _type  = dbr_type;
     DbrCount _count = dbr_count;
     {   // Release around CA call.
@@ -269,6 +269,7 @@ void ProcessVariable::subscribe(Guard &guard)
         }
     }
     ev_id = _ev_id;
+    LOG_ASSERT(ev_id != 0);
     subscribed = true;
 }
 

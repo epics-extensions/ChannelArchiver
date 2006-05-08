@@ -302,6 +302,7 @@ void HTTPServer::serverinfo(SOCKET socket)
     
     page.openTable(1, "Client Number", 1, "Status", 1, "Age [secs]", 0);
     char num[20], age[50];
+    epicsTime now = epicsTime::getCurrent();
     const char *status;
     {
         Guard guard(__FILE__, __LINE__, client_list_mutex);
@@ -312,7 +313,12 @@ void HTTPServer::serverinfo(SOCKET socket)
                 continue;
             sprintf(num, "%zu", clients[i]->getNum());
             status = (clients[i]->isDone() ? "done" : "running");
-            sprintf(age, "%.6f", clients[i]->getRuntime());
+            // The client's getRuntime() provides the active runtime,
+            // updated by the client itself.
+            // Here we show how long the client has been around even
+            // if it didn't run.
+            double uptime = now - clients[i]->getBirthTime();
+            sprintf(age, "%.6f", uptime);
             page.tableLine(num, status, age, 0);
         }
     }

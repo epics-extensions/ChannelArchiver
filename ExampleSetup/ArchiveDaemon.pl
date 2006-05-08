@@ -444,7 +444,7 @@ sub handle_HTTP_main($)
             if ($config->{engine}{$engine}{lockfile})
             {
                 print $client "<TD ALIGN=CENTER><FONT color=#FF0000>" .
-                    "Unknown. Found lock file.</FONT><br>";
+                    "Unknown. Lock file, but no response.</FONT><br>";
                 print $client "(Check again, see if issue persists)</TD>";
             }
             elsif ($config->{engine}{$engine}{disabled})
@@ -869,12 +869,14 @@ sub check_engines($)
             if ($config->{engine}{$engine}{lockfile})
             {
                 # There is still a lock file, assume engine has not yet quit.
+                print("$config->{engine}{$engine}{desc} still shutting down\n") if ($opt_d);
                 $config->{engine}{$engine}{started} = '';
                 $config->{engine}{$engine}{channels} = 0;
                 $config->{engine}{$engine}{connected} = 0;           
                 next; # Don't bother checking 
             }
             # else: Looks like engine removed the lockfile, so it stopped 100%
+            print("$config->{engine}{$engine}{desc} shut downdown completed.\n") if ($opt_d);
             $config->{engine}{$engine}{stopped} = 0;
         }
         # Query engine's HTTPD.

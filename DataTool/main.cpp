@@ -30,6 +30,47 @@ void show_hash_info(const stdString &index_name)
     index.showStats(stdout);
 }
 
+void count_channel_values(RTree *tree, const stdString &directory,
+                          DbrType &type, DbrCount &count, size_t &blocks, size_t &values)
+{
+    type   = 0;
+    count  = 0;
+    blocks = 0;
+    values = 0;
+    if (! tree)
+        return;
+    DataFile *datafile;
+    AutoPtr<DataHeader> header;
+    RTree::Datablock block;
+    RTree::Node node(tree->getM(), true);
+    stdString start, end;
+    int idx;
+    bool ok;
+    for (ok = tree->getFirstDatablock(node, idx, block);
+         ok;
+         ok = tree->getNextDatablock(node, idx, block))
+    {
+        ++blocks;
+        datafile = DataFile::reference(directory,
+                                       block.data_filename,
+                                       false);
+        header = datafile->getHeader(block.data_offset);
+        datafile->release();
+        if (header)
+        {
+            if (blocks == 1)
+            {
+                type  = header->data.dbr_type;
+                count = header->data.dbr_count;
+            }
+            values += header->data.num_samples;
+            header = 0;
+        }
+        else
+            printf("Cannot read header in data file.\n");
+    }
+}
+
 void list_names(const stdString &index_name, bool channel_detail)
 {
     IndexFile index(3);
@@ -37,21 +78,17 @@ void list_names(const stdString &index_name, bool channel_detail)
     epicsTime stime, etime, t0, t1;
     stdString directory, start, end;
     bool ok;
-    size_t count = 0;
+    size_t channels = 0, blocks = 0, values = 0;
     index.open(index_name, true);
+    if (channel_detail)
+        printf("# Name\tType\tCount\tStart\tEnd\tBlocks\tValues\n");
     for (ok = index.getFirstChannel(names);
          ok;
          ok = index.getNextChannel(names))
     {
         AutoPtr<RTree> tree(index.getTree(names.getName(), directory));
         tree->getInterval(stime, etime);
-	if (channel_detail)
-            printf("Channel '%s' (M=%d): %s - %s\n",
-                   names.getName().c_str(),
-                   tree->getM(),
-                   epicsTimeTxt(stime, start),
-                   epicsTimeTxt(etime, end));
-        if (count == 0)
+        if (channels == 0)
         {
             t0 = stime;
             t1 = etime;
@@ -63,10 +100,23 @@ void list_names(const stdString &index_name, bool channel_detail)
             if (t1 < etime)
                 t1 = etime;
         }
-        ++count;
+	size_t chan_blocks, chan_values;
+        DbrType  type;
+        DbrCount count;
+        count_channel_values(tree, directory, type, count, chan_blocks, chan_values);
+        ++channels;
+        blocks += chan_blocks;
+        values += chan_values;
+	if (channel_detail)
+            printf("%s\t%d\t%d\t%s\t%s\t%zu\t%zu\n",
+                   names.getName().c_str(),
+                   (int) type, (int) count,
+                   epicsTimeTxt(stime, start),
+                   epicsTimeTxt(etime, end),
+                   chan_blocks, chan_values);
     }
-    printf("%u channels, %s - %s\n",
-           (unsigned int)count,
+    printf("%zu channels, %zu values, %s - %s\n",
+           channels, values,
            epicsTimeTxt(t0, start), epicsTimeTxt(t1, end));
 }
 

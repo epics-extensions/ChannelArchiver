@@ -13,6 +13,7 @@ static ThrottledMsgLogger nulltime_throttle("Null-Timestamp", 60.0);
 static ThrottledMsgLogger nanosecond_throttle("Bad Nanoseconds", 60.0);
 
 //#define DEBUG_PV
+#define CHECK_EVID
 
 ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
     : NamedBase(name),
@@ -217,6 +218,15 @@ void ProcessVariable::getValue(Guard &guard)
     }    
 }
 
+#ifdef CHECK_EVID
+// Hack by reading oldSubscription definition from private CA headers,
+// to check if the ev_id points back to the correct PV.
+static void *peek_evid_userptr(evid ev_id)
+{
+    return *((void **) (((char *)ev_id) + 0x10));
+}
+#endif
+
 void ProcessVariable::subscribe(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
@@ -227,13 +237,13 @@ void ProcessVariable::subscribe(Guard &guard)
     // Prevent multiple subscriptions
     if (subscribed)
         return;
-    chid _id = id;
-    if (_id == 0)
+    if (id == 0)
     {
         LOG_MSG("Skipped subscription to %s, already stopped\n",
                 getName().c_str());
         return;
     }
+    chid     _id    = id;
     evid     _ev_id = 0;
     DbrType  _type  = dbr_type;
     DbrCount _count = dbr_count;
@@ -270,6 +280,10 @@ void ProcessVariable::subscribe(Guard &guard)
     }
     ev_id = _ev_id;
     LOG_ASSERT(ev_id != 0);
+#ifdef CHECK_EVID
+    void *user = peek_evid_userptr(ev_id);
+    LOG_ASSERT(user == this);
+#endif
     subscribed = true;
 }
 
@@ -278,6 +292,10 @@ void ProcessVariable::unsubscribe(Guard &guard)
     guard.check(__FILE__, __LINE__, mutex);
     if (subscribed)
     {
+#ifdef CHECK_EVID
+        void *user = peek_evid_userptr(ev_id);
+        LOG_ASSERT(user == this);
+#endif
         subscribed = false;
         evid _ev_id = ev_id;
         ev_id = 0;
@@ -556,6 +574,13 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
 {
     ProcessVariable *me = (ProcessVariable *) ca_puser(arg.chid);
     LOG_ASSERT(me != 0);
+#ifdef CHECK_EVID
+    if (me->subscribed)
+    {
+        void *user = peek_evid_userptr(me->ev_id);
+        LOG_ASSERT(user == me);
+    }
+#endif
     // Check if there is a useful value at all.
     if (arg.status != ECA_NORMAL)
     {

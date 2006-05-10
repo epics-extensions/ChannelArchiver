@@ -24,8 +24,7 @@ ProcessVariable::ProcessVariable(ProcessVariableContext &ctx, const char *name)
       ev_id(0),
       dbr_type(DBR_TIME_DOUBLE),
       dbr_count(1),
-      outstanding_gets(0),
-      subscribed(false)
+      outstanding_gets(0)
 {
 #   ifdef DEBUG_PV
     printf("new ProcessVariable(%s)\n", getName().c_str());
@@ -223,7 +222,7 @@ void ProcessVariable::getValue(Guard &guard)
 // to check if the ev_id points back to the correct PV.
 static void *peek_evid_userptr(evid ev_id)
 {
-    return *((void **) (((char *)ev_id) + 0x10));
+    return *((void **) (((char *)ev_id) + 4*sizeof(void *)));
 }
 #endif
 
@@ -235,7 +234,7 @@ void ProcessVariable::subscribe(Guard &guard)
                                "Cannot subscribe to %s, never connected",
                                getName().c_str());
     // Prevent multiple subscriptions
-    if (subscribed)
+    if (isSubscribed(guard))
         return;
     if (id == 0)
     {
@@ -284,19 +283,17 @@ void ProcessVariable::subscribe(Guard &guard)
     void *user = peek_evid_userptr(ev_id);
     LOG_ASSERT(user == this);
 #endif
-    subscribed = true;
 }
 
 void ProcessVariable::unsubscribe(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
-    if (subscribed)
+    if (isSubscribed(guard))
     {
 #ifdef CHECK_EVID
         void *user = peek_evid_userptr(ev_id);
         LOG_ASSERT(user == this);
 #endif
-        subscribed = false;
         evid _ev_id = ev_id;
         ev_id = 0;
         GuardRelease release(__FILE__, __LINE__, guard);
@@ -368,22 +365,18 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
     LOG_ASSERT(me != 0);
     try
     {
-        chid _id;
-        {
-            if (arg.op == CA_OP_CONN_DOWN)
-            {   
-                {
-                    // Connection is down
-                    Guard guard(__FILE__, __LINE__, *me);
-                    me->state = DISCONNECTED;
-                }
-                me->firePvDisconnected();
-                return;
+        if (arg.op == CA_OP_CONN_DOWN)
+        {   // Connection is down
+            {
+                Guard guard(__FILE__, __LINE__, *me);
+                me->state = DISCONNECTED;
             }
-            // else: Connection is 'up'
+            me->firePvDisconnected();
+            return;
+        }
+        {   // else: Connection is 'up'
             Guard guard(__FILE__, __LINE__, *me);
-            _id = me->id;
-            if (_id == 0)
+            if (me->id == 0)
             {
                 LOG_MSG("ProcessVariable(%s) received "
                         "unexpected connection_handler\n",
@@ -395,40 +388,41 @@ void ProcessVariable::connection_handler(struct connection_handler_args arg)
                    me->getName().c_str());
 #           endif
             me->state = GETTING_INFO;
-        }
-        // Get control information for this channel.
-        // Unlocked while in CAC.
-        // Bug in (at least older) CA: Works only for 1 element,
-        // even for array channels.
-        int status;
-        try
-        {
-            status = ca_array_get_callback(ca_field_type(_id)+DBR_CTRL_STRING,
-                                           1 /* ca_element_count(me->ch_id) */,
-                                           _id, control_callback, me);
-        }
-        catch (std::exception &e)
-        {
-            LOG_MSG("ProcessVariable::connection_handler(%s): %s\n",
-                    me->getName().c_str(), e.what());
-        }
-        catch (...)
-        {
-            LOG_MSG("ProcessVariable::connection_handler(%s): "
-                    "Unknown Exception\n", me->getName().c_str());
-        } 
-        if (status != ECA_NORMAL)
-        {
-            LOG_MSG("ProcessVariable('%s') connection_handler error %s\n",
-                    me->getName().c_str(), ca_message (status));
-            return;
+            // Get control information for this channel.
+            // Bug in (at least older) CA: Works only for 1 element,
+            // even for array channels.
+            // We are in CAC callback, and managed to lock ourself,
+            // so it should be OK to issue another CAC call.
+            try
+            {
+                int status = ca_array_get_callback(
+                    ca_field_type(me->id)+DBR_CTRL_STRING,
+                    1 /* ca_element_count(me->ch_id) */,
+                    me->id, control_callback, me);
+                if (status != ECA_NORMAL)
+                {
+                    LOG_MSG("ProcessVariable('%s') connection_handler error %s\n",
+                            me->getName().c_str(), ca_message (status));
+                    return;
+                }
+            }
+            catch (std::exception &e)
+            {
+                LOG_MSG("ProcessVariable::connection_handler(%s): %s\n",
+                        me->getName().c_str(), e.what());
+            }
+            catch (...)
+            {
+                LOG_MSG("ProcessVariable::connection_handler(%s): "
+                        "Unknown Exception\n", me->getName().c_str());
+            } 
         }
         Guard ctx_guard(__FILE__, __LINE__, me->ctx);
         me->ctx.requestFlush(ctx_guard);
     }
     catch (GenericException &e)
     {
-        LOG_MSG("ProcessVariable(%s) control_callback exception:\n%s\n",
+        LOG_MSG("ProcessVariable(%s) connection_handler exception:\n%s\n",
                 me->getName().c_str(), e.what());
     }    
 }
@@ -517,6 +511,7 @@ bool ProcessVariable::setup_ctrl_info(Guard &guard,
     }
     LOG_MSG("ProcessVariable(%s) setup_ctrl_info cannot handle type %d\n",
             getName().c_str(), type);
+    ctrl_info.setEnumerated(0, 0);
     return false;
 }
 
@@ -533,30 +528,23 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
                 me->getName().c_str(),  ca_message(arg.status));
         return;
     }
-    chid _id;
-    {
-        Guard guard(__FILE__, __LINE__, *me);
-        if (me->state != GETTING_INFO)
-        {
-            LOG_MSG("ProcessVariable(%s) received control_callback while %s\n",
-                    me->getName().c_str(), me->getStateStr(guard));
-            return;
-        }
-        _id = me->id;
-    }    
-    // For native type DBR_xx, use DBR_TIME_xx, and native count:
-    DbrType _type   = ca_field_type(_id) + DBR_TIME_STRING;
-    DbrCount _count = ca_element_count(_id);
     try
     {
         {
-            Guard guard(__FILE__, __LINE__, *me);    
+            Guard guard(__FILE__, __LINE__, *me);
+            if (me->state != GETTING_INFO  ||  me->id == 0)
+            {
+                LOG_MSG("ProcessVariable(%s) received control_callback while %s\n",
+                        me->getName().c_str(), me->getStateStr(guard));
+                return;
+            }
+            // For native type DBR_xx, use DBR_TIME_xx, and native count:
+            me->dbr_type  = ca_field_type(me->id) + DBR_TIME_STRING;
+            me->dbr_count = ca_element_count(me->id);
+            me->state     = CONNECTED;
             // Setup the PV info.
             if (!me->setup_ctrl_info(guard, arg.type, arg.dbr))
                 return;
-            me->dbr_type  = _type;
-            me->dbr_count = _count;
-            me->state     = CONNECTED;
         }
         // Notify listeners that PV is now fully connected.
         me->firePvConnected();
@@ -575,7 +563,7 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
     ProcessVariable *me = (ProcessVariable *) ca_puser(arg.chid);
     LOG_ASSERT(me != 0);
 #ifdef CHECK_EVID
-    if (me->subscribed)
+    if (me->ev_id)
     {
         void *user = peek_evid_userptr(me->ev_id);
         LOG_ASSERT(user == me);
@@ -619,7 +607,7 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
         {
             // Check if we expected a value at all
             Guard guard(__FILE__, __LINE__, *me);
-            if (me->outstanding_gets <= 0  &&  !me->subscribed)
+            if (me->outstanding_gets <= 0  &&  !me->isSubscribed(guard))
             {
                 LOG_MSG("ProcessVariable(%s) received unexpected value_callback\n",
                         me->getName().c_str());

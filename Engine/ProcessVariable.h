@@ -146,7 +146,6 @@ private:
     DbrCount                                     dbr_count;
     CtrlInfo                                     ctrl_info;
     size_t                                       outstanding_gets;
-    bool                                         subscribed;
 
     ConcurrentList<ProcessVariableStateListener> state_listeners;
     ConcurrentList<ProcessVariableValueListener> value_listeners;
@@ -220,7 +219,7 @@ inline void ProcessVariable::removeListener(ProcessVariableListener *listener)
 
 inline bool ProcessVariable::isSubscribed(Guard &guard) const
 {
-    return subscribed;
+    return ev_id != 0;
 }
 
 #endif /*PROCESSVARIABLE_H_*/

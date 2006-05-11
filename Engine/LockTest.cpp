@@ -19,18 +19,18 @@ epicsEvent hack;
 class Application
 {
 public:
-	Application() : id(0), connected(false)
-	{
-		ca_context_create(ca_enable_preemptive_callback);
-	}
-	
-	~Application()
-	{
-		ca_context_destroy();
-	}
+    Application() : id(0), connected(false)
+    {
+        ca_context_create(ca_enable_preemptive_callback);
+    }
+    
+    ~Application()
+    {
+        ca_context_destroy();
+    }
 
-	void start()
-	{
+    void start()
+    {
         // We're updating something in the application,
         // if only the 'id' in this case, so lock.
         mutex.lock();
@@ -39,10 +39,10 @@ public:
                           this, CA_PRIORITY_ARCHIVE, &id);
         mutex.unlock();
         ca_flush_io();
-	}
-	
-	void stop()
-	{
+    }
+    
+    void stop()
+    {
         puts("stop");
         mutex.lock();
         puts("stopping");
@@ -50,11 +50,12 @@ public:
         id = 0;
         mutex.unlock();
         ca_flush_io();
-	}
+        puts("stopped");
+    }
 
 private:
-	chid       id;
-	bool       connected;
+    chid       id;
+    bool       connected;
     epicsMutex mutex;
     
     static void connection_handler(struct connection_handler_args arg)
@@ -81,21 +82,22 @@ private:
     {
         Application *me = (Application *) ca_puser(arg.chid);
         me->mutex.lock();
-        puts("connected, got info");
+        puts("control_callback, got info, signalling main thread to stop.");
+        me->mutex.unlock();
         hack.signal();
         epicsThreadSleep(5.0);
-        me->mutex.unlock();
+        puts("leaving control_callback.");
     }
     
 };
 
 int main()
 {
-	Application app;
-	
+    Application app;
+    
     app.start();
     hack.wait();
     app.stop();
-	
-	return 0;
+    
+    return 0;
 }

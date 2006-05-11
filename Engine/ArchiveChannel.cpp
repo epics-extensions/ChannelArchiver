@@ -279,7 +279,9 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
         return;
     if (isDisabled(guard))
     {
+#       ifdef DEBUG_ARCHIVE_CHANNEL
         LOG_MSG("Channel '%s' disabled\n", getName().c_str());  
+#       endif
         sample_mechanism->disable(when);
         if (config.getDisconnectOnDisable())
             stop(guard);
@@ -301,7 +303,9 @@ void ArchiveChannel::enable(Guard &guard, const epicsTime &when)
         return;    
     if (!isDisabled(guard))
     {
+#       ifdef DEBUG_ARCHIVE_CHANNEL
         LOG_MSG("Channel '%s' enabled\n", getName().c_str());    
+#       endif
         sample_mechanism->enable(when);
         if (config.getDisconnectOnDisable())
             start(guard);
@@ -437,8 +441,10 @@ void ArchiveChannel::pvValue(ProcessVariable &pv, const RawValue::Data *data)
         if (currently_disabling) // Was and still is disabling
             return;
         // Wasn't, but is now disabling.
+#       ifdef DEBUG_ARCHIVE_CHANNEL
         LOG_MSG("ArchiveChannel '%s' disables its groups\n",
                 getName().c_str());
+#       endif
         currently_disabling = true;
         // Notify groups
         stdList<GroupInfo *>::iterator gi;
@@ -460,8 +466,10 @@ void ArchiveChannel::pvValue(ProcessVariable &pv, const RawValue::Data *data)
         if (! currently_disabling) // Wasn't and isn't disabling.
             return;
         // Re-enable groups.
+#       ifdef DEBUG_ARCHIVE_CHANNEL
         LOG_MSG("ArchiveChannel '%s' enables its groups\n",
                 getName().c_str());
+#       endif
         currently_disabling = false;
         // Notify groups
         stdList<GroupInfo *>::iterator gi;

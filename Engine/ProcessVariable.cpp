@@ -238,16 +238,35 @@ void ProcessVariable::subscribe(Guard &guard)
         return;
     if (id == 0)
     {
-        LOG_MSG("Skipped subscription to %s, already stopped\n",
-                getName().c_str());
+        LOG_MSG("'%s': Skipped subscription, already stopped, state %s.\n",
+                getName().c_str(),  getStateStr(guard));
         return;
     }
     chid     _id    = id;
     evid     _ev_id = 0;
     DbrType  _type  = dbr_type;
     DbrCount _count = dbr_count;
-    {   // Release around CA call.
-        GuardRelease release(__FILE__, __LINE__, guard);
+    {   // Release around CA call??
+        // --  GuardRelease release(__FILE__, __LINE__, guard);
+        // Right now, could a stop() and ca_clear_channel(id) happen,
+        // so that ca_create_subscription() uses an invalid id?
+        //
+        // Task A, CAC client:
+        // control_callback, pvConnected, subscribe
+        //
+        // Task B, Engine or HTTPD:
+        // stop, clear_channel
+        //
+        // LockTest.cpp indicates that the clear_channel() will wait
+        // for the CAC library to leabe the control_callback.
+        // So even though we unlock the ProcessVariable and somebody
+        // could invoke stop() and set id=0, we have the copied _id,
+        // and the ca_clear_channel(id) won't happen until we leave
+        // the control_callback.
+        // This of course only handles the use case of the engine
+        // where subscribe is invoked from control_callback & pvConnected.
+        // to be on the safe side, we keep the guard and prevent a stop(),
+        // until we find a deadlock that forces us to reconsider....
         {
             Guard ctx_guard(__FILE__, __LINE__, ctx);
             LOG_ASSERT(ctx.isAttached(ctx_guard));
@@ -288,6 +307,7 @@ void ProcessVariable::subscribe(Guard &guard)
 void ProcessVariable::unsubscribe(Guard &guard)
 {
     guard.check(__FILE__, __LINE__, mutex);
+    // See comments in stop(): this->id is already 0, state==INIT.
     if (isSubscribed(guard))
     {
 #ifdef CHECK_EVID
@@ -325,16 +345,20 @@ void ProcessVariable::stop(Guard &guard)
 #   endif
     guard.check(__FILE__, __LINE__, mutex);
     LOG_ASSERT(isRunning(guard));
-    unsubscribe(guard);
-    // Set all indicators back to INIT state
+    // We'll unlock in unsubscribe(), and then for the ca_clear_channel.
+    // At those times, an ongoing connection could invoke the connection_handler,
+    // control_callback or subscribe.
+    // Setting all indicators back to INIT state will cause those to bail.
     chid _id = id;
     id = 0;
     bool was_connected = (state == CONNECTED);
     state = INIT;
-    // Then unlock around CA lib. calls to prevent deadlocks.
+    outstanding_gets = 0;
+    unsubscribe(guard);
+    // Unlock around CA lib. calls to prevent deadlocks.
     {
         GuardRelease release(__FILE__, __LINE__, guard);
-        {
+        {   // If we were subscribed, this was already checked in unsubscribe()...
             Guard ctx_guard(__FILE__, __LINE__, ctx);
             LOG_ASSERT(ctx.isAttached(ctx_guard));
         }
@@ -534,8 +558,8 @@ void ProcessVariable::control_callback(struct event_handler_args arg)
             Guard guard(__FILE__, __LINE__, *me);
             if (me->state != GETTING_INFO  ||  me->id == 0)
             {
-                LOG_MSG("ProcessVariable(%s) received control_callback while %s\n",
-                        me->getName().c_str(), me->getStateStr(guard));
+                LOG_MSG("ProcessVariable(%s) received control_callback while %s, id=0x%lX\n",
+                        me->getName().c_str(), me->getStateStr(guard), (unsigned long) me->id);
                 return;
             }
             // For native type DBR_xx, use DBR_TIME_xx, and native count:
@@ -562,13 +586,6 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
 {
     ProcessVariable *me = (ProcessVariable *) ca_puser(arg.chid);
     LOG_ASSERT(me != 0);
-#ifdef CHECK_EVID
-    if (me->ev_id)
-    {
-        void *user = peek_evid_userptr(me->ev_id);
-        LOG_ASSERT(user == me);
-    }
-#endif
     // Check if there is a useful value at all.
     if (arg.status != ECA_NORMAL)
     {
@@ -605,16 +622,23 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
     try
     {
         {
-            // Check if we expected a value at all
+            // Do we expect a value because of 'get' or subscription?
             Guard guard(__FILE__, __LINE__, *me);
-            if (me->outstanding_gets <= 0  &&  !me->isSubscribed(guard))
+            if (me->outstanding_gets > 0)
+                --me->outstanding_gets;
+            else if (me->isSubscribed(guard) == false)
             {
-                LOG_MSG("ProcessVariable(%s) received unexpected value_callback\n",
+                LOG_MSG("ProcessVariable::value_callback(%s): not expected\n",
                         me->getName().c_str());
                 return;
             }
-            if (me->outstanding_gets > 0)
-                --me->outstanding_gets;
+#           ifdef CHECK_EVID
+            if (me->ev_id)
+            {
+                void *user = peek_evid_userptr(me->ev_id);
+                LOG_ASSERT(user == me);
+            }
+#           endif
             if (me->state != CONNECTED)
             {
                 // After a disconnect, this can happen in the GETTING_INFO state:
@@ -627,7 +651,7 @@ void ProcessVariable::value_callback(struct event_handler_args arg)
                 return;
             }
         }
-        // Notify listeners of new value
+        // Finally, notify listeners of new value.
         me->firePvValue(value);
     }
     catch (GenericException &e)

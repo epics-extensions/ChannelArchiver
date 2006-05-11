@@ -205,18 +205,20 @@ void SampleMechanism::pvValue(ProcessVariable &pv, const RawValue::Data *data)
     {
         back_in_time_throttle.LOG_MSG("SampleMechanism(%s): back in time\n",
                                       pv.getName().c_str());
-        return;
     }
-    // Add original sample
-    buffer.addRawValue(data);
-    last_stamp = stamp;
-    last_stamp_set = true;
+    else
+    {   // Add original sample
+        buffer.addRawValue(data);
+        last_stamp = stamp;
+        last_stamp_set = true;
+     }
     if (have_sample_after_connection)
         return;
-    // After connection, add another copy with the host time stamp.
-    have_sample_after_connection = true;
+    // After connection, add another copy with the host time stamp,
+    // unless that's going back in time.
     epicsTime now = epicsTime::getCurrent();
-    if (now > stamp)
+    if (now > stamp &&
+        (!last_stamp_set ||  now >= last_stamp))
     {
 #ifdef DEBUG_SAMPLE_MECHANISM        
         LOG_MSG("SampleMechanism(%s): adding sample stamped 'now'\n",
@@ -227,6 +229,8 @@ void SampleMechanism::pvValue(ProcessVariable &pv, const RawValue::Data *data)
                        value, data);
         RawValue::setTime(value, now);              
         last_stamp = now;
+        last_stamp_set = true;
+        have_sample_after_connection = true;
     }
 }
 

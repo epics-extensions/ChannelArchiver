@@ -236,10 +236,12 @@ void ProcessVariable::subscribe(Guard &guard)
     // Prevent multiple subscriptions
     if (isSubscribed(guard))
         return;
-    if (id == 0)
+    // While we were unlocked, a disconnect or stop() could have happend,
+    // in which case we need to bail out.
+    if (id == 0 || state != CONNECTED)
     {
-        LOG_MSG("'%s': Skipped subscription, already stopped, state %s.\n",
-                getName().c_str(),  getStateStr(guard));
+        LOG_MSG("'%s': Skipped subscription, state %s, id 0x%lu.\n",
+                getName().c_str(),  getStateStr(guard), (unsigned long) id);
         return;
     }
     chid     _id    = id;

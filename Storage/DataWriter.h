@@ -3,6 +3,7 @@
 // Tools
 #include <stdString.h>
 #include <AutoPtr.h>
+#include <NoCopy.h>
 // Storage
 #include <CtrlInfo.h>
 #include <RawValue.h>
@@ -71,6 +72,7 @@ public:
     static stdString data_file_name_base;
     
 private:
+    PROHIBIT_DEFAULT_COPY(DataWriter);
     Index &index;
     stdString directory;
     AutoPtr<RTree> tree;

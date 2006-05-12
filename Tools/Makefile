@@ -27,6 +27,7 @@ INC += IndexConfig.h
 INC += Lockfile.h 
 INC += MemoryBuffer.h 
 INC += MsgLogger.h
+INC += NoCopy.h
 INC += NetTools.h
 INC += OrderedMutex.h
 INC += RegularExpression.h 

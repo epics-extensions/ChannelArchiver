@@ -4,12 +4,13 @@
 #define __DATA_READER_H__
 
 // Tools
-#include "stdString.h"
+#include <stdString.h>
+#include <NoCopy.h>
 // Storage
-#include "CtrlInfo.h"
-#include "RawValue.h"
-#include "Index.h"
-#include "RTree.h"
+#include <CtrlInfo.h>
+#include <RawValue.h>
+#include <Index.h>
+#include <RTree.h>
 
 /// \addtogroup Storage
 /// @{
@@ -21,6 +22,8 @@
 class DataReader
 {
 public:
+    DataReader() {}
+
     virtual ~DataReader();
     
     /// Locate data.
@@ -99,6 +102,8 @@ public:
     /// @return Returns whether the ctrl_info  changed or not
     ///         AND(!) resets the flag!!
     virtual bool changedInfo() = 0;
+private:
+    PROHIBIT_DEFAULT_COPY(DataReader);
 };
 
 /// @}

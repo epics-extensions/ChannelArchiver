@@ -15,6 +15,8 @@
 class Index
 {
 public:
+    Index() {}
+
     virtual ~Index() {}
 
     /// Open an index.
@@ -75,6 +77,8 @@ public:
     /// @pre Successfull call to get_first_channel().
     /// @return true if there was another entry.
     virtual bool getNextChannel(NameIterator &iter) = 0;
+protected:
+    PROHIBIT_DEFAULT_COPY(Index);
 };
 
 /// \@}

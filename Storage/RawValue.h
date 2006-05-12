@@ -259,6 +259,7 @@ public:
     }
     
 private:
+    PROHIBIT_DEFAULT_COPY(RawValueAutoPtr);
     RawValue::Data *ptr;
 };
 

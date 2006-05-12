@@ -7,6 +7,7 @@
 #include <AutoPtr.h>
 // Storage
 #include <Index.h>
+#include <NoCopy.h>
 
 /** \ingroup Storage
  *  General Index for reading.
@@ -18,6 +19,8 @@
 class AutoIndex : public Index
 {
 public:
+    AutoIndex() {}
+
     ~AutoIndex();
 
     virtual void open(const stdString &filename, bool readonly=true);
@@ -35,6 +38,7 @@ public:
     virtual bool getNextChannel(NameIterator &iter);
 
 private:
+    PROHIBIT_DEFAULT_COPY(AutoIndex);
     stdString filename;
     AutoPtr<Index> index;
 };

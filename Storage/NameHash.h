@@ -5,8 +5,9 @@
 
 // Tools
 #include <stdString.h>
-// Index
-#include "FileAllocator.h"
+#include <NoCopy.h>
+// Storage
+#include <FileAllocator.h>
 
 /// \addtogroup Storage
 /// \@{
@@ -104,6 +105,7 @@ public:
     /// Generate info on table fill ratio and list length
     void showStats(FILE *f);
 private:
+    PROHIBIT_DEFAULT_COPY(NameHash);
     FileAllocator &fa;
     FileOffset anchor;       // Where offset gets deposited in file
     uint32_t ht_size;   // Hash Table size (entries, not bytes)

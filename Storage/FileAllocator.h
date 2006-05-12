@@ -106,6 +106,8 @@ public:
     bool dump(int level=1, FILE *f=stdout);
     
 private:
+    PROHIBIT_DEFAULT_COPY(FileAllocator);
+
     // TODO: Refactor as class??
     typedef struct
     {

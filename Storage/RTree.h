@@ -67,6 +67,8 @@ public:
         void write(FILE *f) const;
         /** @exception GenericException on read error */
         void read(FILE *f);
+    private:
+        PROHIBIT_DEFAULT_COPY(Datablock);
     };
 
     class Record
@@ -245,6 +247,7 @@ public:
     mutable size_t cache_misses, cache_hits; 
 
 private:
+    PROHIBIT_DEFAULT_COPY(RTree);
     FileAllocator &fa;
     // This is the (fixed) offset into the file
     // where the RTree information starts.

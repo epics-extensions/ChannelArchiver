@@ -120,6 +120,8 @@ protected:
     // The current values, i.e. copy of the reader's value
     // for the current time slice, or 0.
     AutoArrayPtr<RawValueAutoPtr> value;
+private:
+    PROHIBIT_DEFAULT_COPY(SpreadsheetReader);
 };
 
 /// @}

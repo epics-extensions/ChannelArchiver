@@ -1,486 +1,71 @@
+Hi Jeff:
 
-This was a core dump of an engine that handles about 2600 channels in a test
-where the engine was caused to disconnect and then reconnect all channels over and over.
+I recompiled without optimization,
+added a memset(.., 0, ...) to the new() operators that
+allocate tcpiiu and ipAddrToAsciiTransactionPrivate on
+freelists to better see what gets initialized and what's
+left behind from previous uses of that same memory.
+I also added simple "debug_marker" members to hostNameCache
+and ipAddrToAsciiTransactionPrivate,
+setting it to 1 in the constructor, then to 2, 3, ... in various parts of
+the code. Example:
 
-(gdb) thread apply all bt
-
-*** Main engine thread, sleeping
-Thread 29 (process 8591):
-#0  0x000000323430b9c5 in __nanosleep_nocancel () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bc616 in epicsThreadSleep (seconds=Variable "seconds" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:596
-#2  0x000000000040c136 in Engine::process (this=0x56ab00) at ../Engine.cpp:235
-#3  0x00000000004090e5 in main (argc=3, argv=0x7fbffff7a8) at ../main.cpp:105
-
-*** I assume ipAddrToAsciiEnginePrivate is waiting for gethostbyaddr
-Thread 28 (process 8593):
-#0  0x00000032338bcd22 in poll () from /lib64/tls/libc.so.6
-#1  0x0000003234b09459 in __libc_res_nsend () from /lib64/libresolv.so.2
-#2  0x0000003234b081e9 in __libc_res_nquery () from /lib64/libresolv.so.2
-#3  0x0000002a96b021b9 in _nss_dns_gethostbyaddr_r () from /lib64/libnss_dns.so.2
-#4  0x00000032338d8eb7 in gethostbyaddr_r@@GLIBC_2.2.5 () from /lib64/tls/libc.so.6
-#5  0x00000032338d8c51 in gethostbyaddr () from /lib64/tls/libc.so.6
-#6  0x0000002a966b9ca9 in ipAddrToHostName (pAddr=0x40040fb4, 
-    pBuf=0x56b750 "dtl-diag-ioc-bcm400.ics.sns.gov:5064", bufSize=1024)
-    at ../../../src/libCom/osi/os/posix/osdSock.c:148
-#7  0x0000002a966b9fd9 in ipAddrToA (paddr=0x40040fb0, pBuf=0x56b750 "dtl-diag-ioc-bcm400.ics.sns.gov:5064", 
-    bufSize=1024) at ../../../src/libCom/osi/osiSock.c:98
-#8  0x0000002a966b4f1c in ipAddrToAsciiEnginePrivate::run (this=0x56b740)
-    at ../../../src/libCom/misc/ipAddrToAsciiAsynchronous.cpp:263
-#9  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#10 0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#11 0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-*** Timer queue, waiting
-Thread 27 (process 8595):
-#0  0x0000003234308acf in pthread_cond_timedwait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd53c in epicsEventWaitWithTimeout (pevent=0x56c4f0, timeout=0.011992000000000003)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:65
-#2  0x0000002a966b6e7c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:72
-#3  0x0000002a966c228b in timerQueueActive::run (this=0x56c210)
-    at ../../../src/libCom/timer/timerQueueActive.cpp:70
-#4  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-*** Engine's HTTPD, waiting for a connection
-Thread 26 (process 8659):
-#0  0x00000032338bebe6 in __select_nocancel () from /lib64/tls/libc.so.6
-#1  0x000000000041b822 in HTTPServer::run (this=0x2a96a374a0) at ../HTTPServer.cpp:154
-#2  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#3  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#4  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-** That's one of those strange temporary threads that I mentioned
-Thread 25 (process 29733):
-#0  0x000000323430ad1b in __lll_mutex_lock_wait () from /lib64/tls/libpthread.so.0
-#1  0x00000000409d9960 in ?? ()
-
-Thread 24 (process 29735):
-#0  0x000000323430ad1b in __lll_mutex_lock_wait () from /lib64/tls/libpthread.so.0
-#1  0x000000000056dbd8 in ?? ()
-
-*** I think these are all ordinary CAC threads
-Thread 23 (process 29737):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d0ee80)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a965629fe in tcpSendThread::run (this=0x66e220) at ../tcpiiu.cpp:85
-#4  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 22 (process 29743):
-#0  0x000000323430b44a in recv () from /lib64/tls/libpthread.so.0
-#1  0x0000002a965622f1 in tcpiiu::recvBytes (this=0x66dd48, pBuf=0x2a9693d16c, nBytesInBuf=16384, 
-    stat=@0x40205f58) at ../tcpiiu.cpp:307
-#2  0x0000002a96561e50 in tcpRecvThread::run (this=0x66de30) at ../comBuf.h:188
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 21 (process 29745):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d06920)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a965629fe in tcpSendThread::run (this=0x66de88) at ../tcpiiu.cpp:85
-#4  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 20 (process 29747):
-#0  0x000000323430b44a in recv () from /lib64/tls/libpthread.so.0
-#1  0x0000002a965622f1 in tcpiiu::recvBytes (this=0x66fda0, pBuf=0x2a969290cc, nBytesInBuf=16384, 
-    stat=@0x40fe8f58) at ../tcpiiu.cpp:307
-#2  0x0000002a96561e50 in tcpRecvThread::run (this=0x66fe88) at ../comBuf.h:188
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 19 (process 29749):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d0f260)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a965629fe in tcpSendThread::run (this=0x66fee0) at ../tcpiiu.cpp:85
-#4  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 18 (process 29751):
-#0  0x000000323430b44a in recv () from /lib64/tls/libpthread.so.0
-#1  0x0000002a965622f1 in tcpiiu::recvBytes (this=0x66f2d8, pBuf=0x2a969491cc, nBytesInBuf=16384, 
-    stat=@0x40793f58) at ../tcpiiu.cpp:307
-#2  0x0000002a96561e50 in tcpRecvThread::run (this=0x66f3c0) at ../comBuf.h:188
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 17 (process 29753):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d03220)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a965629fe in tcpSendThread::run (this=0x66f418) at ../tcpiiu.cpp:85
-#4  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 16 (process 29755):
-#0  0x000000323430b44a in recv () from /lib64/tls/libpthread.so.0
-#1  0x0000002a965622f1 in tcpiiu::recvBytes (this=0x66cee8, pBuf=0x2a9698138c, nBytesInBuf=16384, 
-    stat=@0x40957f58) at ../tcpiiu.cpp:307
-#2  0x0000002a96561e50 in tcpRecvThread::run (this=0x66cfd0) at ../comBuf.h:188
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
----Type <return> to continue, or q <return> to quit---
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 15 (process 29757):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d01420)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a965629fe in tcpSendThread::run (this=0x66d028) at ../tcpiiu.cpp:85
-#4  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 14 (process 29759):
-#0  0x000000323430ad1b in __lll_mutex_lock_wait () from /lib64/tls/libpthread.so.0
-#1  0x0000000000000010 in ?? ()
-#2  0x0000002a966b6263 in epicsThread::beginWait (this=0x56b0b8)
-    at ../../../src/libCom/cxxTemplates/epicsGuard.h:81
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 13 (process 29761):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d10610)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a966b6239 in epicsThread::beginWait (this=0x670280)
-    at ../../../src/libCom/osi/epicsThread.cpp:113
-#4  0x0000002a966b6301 in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:58
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 12 (process 29763):
-#0  0x000000323430ad1b in __lll_mutex_lock_wait () from /lib64/tls/libpthread.so.0
-#1  0x0000000000000010 in ?? ()
-#2  0x0000002a966b6263 in epicsThread::beginWait (this=0x56b0b8)
-    at ../../../src/libCom/cxxTemplates/epicsGuard.h:81
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 11 (process 29765):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d06740)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a966b6239 in epicsThread::beginWait (this=0x66fb50)
-    at ../../../src/libCom/osi/epicsThread.cpp:113
-#4  0x0000002a966b6301 in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:58
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 10 (process 29767):
-#0  0x000000323430b37f in __connect_nocancel () from /lib64/tls/libpthread.so.0
-#1  0x0000002a96561ba2 in tcpRecvThread::connect (this=0x66f758, guard=@0x40ce0fc0) at ../tcpiiu.cpp:612
-#2  0x0000002a96561cc3 in tcpRecvThread::run (this=0x66f758) at ../tcpiiu.cpp:444
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 9 (process 29769):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d02010)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a966b6239 in epicsThread::beginWait (this=0x66f7b8)
-    at ../../../src/libCom/osi/epicsThread.cpp:113
-#4  0x0000002a966b6301 in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:58
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 8 (process 29771):
-#0  0x000000323430b37f in __connect_nocancel () from /lib64/tls/libpthread.so.0
-#1  0x0000002a96561ba2 in tcpRecvThread::connect (this=0x66d368, guard=@0x40712fc0) at ../tcpiiu.cpp:612
-#2  0x0000002a96561cc3 in tcpRecvThread::run (this=0x66d368) at ../tcpiiu.cpp:444
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 7 (process 29773):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d10910)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a966b6239 in epicsThread::beginWait (this=0x66d3c8)
-    at ../../../src/libCom/osi/epicsThread.cpp:113
-#4  0x0000002a966b6301 in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:58
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 6 (process 29775):
-#0  0x000000323430b37f in __connect_nocancel () from /lib64/tls/libpthread.so.0
-#1  0x0000002a96561ba2 in tcpRecvThread::connect (this=0x66e560, guard=@0x4116cfc0) at ../tcpiiu.cpp:612
-#2  0x0000002a96561cc3 in tcpRecvThread::run (this=0x66e560) at ../tcpiiu.cpp:444
-#3  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#4  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#5  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 5 (process 29777):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d049c0)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a966b6239 in epicsThread::beginWait (this=0x66e5c0)
-    at ../../../src/libCom/osi/epicsThread.cpp:113
-#4  0x0000002a966b6301 in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:58
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-Thread 4 (process 29779):
-#0  0x000000323430ae2d in __lll_mutex_unlock_wake () from /lib64/tls/libpthread.so.0
-#1  0x0000002a96d04b10 in ?? ()
-#2  0x0000000000000002 in ?? ()
-#3  0x0000000040f26fa0 in ?? ()
-#4  0x0000002a96688570 in vtable for cacComBufMemoryManager ()
-   from /ade/epics/supTop/base/R3.14.8.2/lib/linux-x86_64/libca.so
-#5  0x0000002a96562004 in tcpRecvThread::run (this=Variable "this" is not available.
-) at ../tcpiiu.cpp:578
-#6  0x0000002a966b6301 in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:58
-#7  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#8  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-*** Another of those strange temporary ones, I think.
-Thread 3 (process 29780):
-#0  0x00000032343060f8 in start_thread () from /lib64/tls/libpthread.so.0
-#1  0xfffffffffffffffc in ?? ()
-#2  0xffffffffffffffff in ?? ()
-#3  0x00000000412b1148 in ?? ()
-#4  0x000000323430ad1b in __lll_mutex_lock_wait () from /lib64/tls/libpthread.so.0
-#5  0x0000000000000202 in ?? ()
-#6  0x0000000000001d80 in ?? ()
-#7  0x0000000000000000 in ?? ()
-
-Thread 2 (process 29781):
-#0  0x00000032343088da in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/tls/libpthread.so.0
-#1  0x0000002a966bd391 in epicsEventWait (pevent=0x2a96d04d00)
-    at ../../../src/libCom/osi/os/posix/osdEvent.c:75
-#2  0x0000002a966b6e2c in epicsEvent::wait (this=Variable "this" is not available.
-) at ../../../src/libCom/osi/epicsEvent.cpp:63
-#3  0x0000002a966b6239 in epicsThread::beginWait (this=0x66e958)
-    at ../../../src/libCom/osi/epicsThread.cpp:113
-#4  0x0000002a966b6301 in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:58
-#5  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#6  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-*** This is the thread that caused the core dump.
-***
-*** The line numbers aren't all 100% sane.
-***
-*** Judging by the stack trace, it's creating a new tcpiiu::tcpiiu(),
-*** with ipAddrToAsciiEngine &engineIn = 0x56b740.
-*** That's the one from Thread 28, there waiting for gethostbyaddr to return.
-Thread 1 (process 8597):
-#0  0x0000000000000000 in ?? ()
-#1  0x0000002a96574828 in hostNameCache::hostNameCache () at ../../../include/epicsGuard.h:81
-#2  0x0000002a965636fc in tcpiiu (this=0x66c420, cac=@0x56b2c0, mutexIn=@0x56b038, cbMutexIn=@0x56b040, 
-    ctxNotifyIn=@0x56af70, connectionTimeout=30, timerQueue=@0x56c210, addrIn=@0x40103d40, 
-    comBufMemMgrIn=@0x56b4b8, minorVersion=11, engineIn=@0x56b740, priorityIn=@0x40103c34)
-    at ../tcpiiu.cpp:699
-#3  0x0000002a9654bd69 in cac::transferChanToVirtCircuit (this=0x56b2c0, cid=Variable "cid" is not available.
-) at ../virtualCircuit.h:318
-#4  0x0000002a9655a541 in udpiiu::searchRespAction (this=Variable "this" is not available.
-) at ../udpiiu.cpp:670
-#5  0x0000002a9655a221 in udpiiu::postMsg (this=0x72bbc0, net_addr=@0x40103fb0, pInBuf=0x72bff0 "\006", 
-    blockSize=96, currentTime=@0x40103f60) at ../udpiiu.cpp:832
-#6  0x0000002a9655b479 in udpRecvThread::run (this=0x73bff0) at ../udpiiu.cpp:380
-#7  0x0000002a966b633d in epicsThreadCallEntryPoint (pPvt=Variable "pPvt" is not available.
-) at ../../../src/libCom/osi/epicsThread.cpp:59
-#8  0x0000002a966bb757 in start_routine (arg=Variable "arg" is not available.
-) at ../../../src/libCom/osi/os/posix/osdThread.c:320
-#9  0x00000032343060aa in start_thread () from /lib64/tls/libpthread.so.0
-
-
-*** As far as I understand this, tcpiiu::tcpiiu() will initialize its hostNameCacheInstance,
-*** which calls hostNameCache::hostNameCache():
 hostNameCache::hostNameCache (
     const osiSockAddr & addr, ipAddrToAsciiEngine & engine ) :
     dnsTransaction ( engine.createTransaction() ), nameLength ( 0 )
 {
+    this->debug_marker = 1;
     this->dnsTransaction.ipAddrToAscii ( addr, *this );
-}
-
-*** The tcpiiu looks like the hostNameCacheInstance.dnsTransaction was created OK:
-print this.hostNameCacheInstance
-$6 = {
-  <ipAddrToAsciiCallBack> = {
-    _vptr.ipAddrToAsciiCallBack = 0x2a9668a9f0
-  }, 
-  members of hostNameCache: 
-  hostNameBuf = "dtl-diag-ioc-bcm622.ics.sns.gov:5064", '\0' <repeats 91
-times>, 
-  mutex = {
-    id = 0x2a96a0e390
-  }, 
-  dnsTransaction = @0x2a967d4e50, 
-  nameLength = 0
+    this->debug_marker = 2;
 }
 
 
-*** But the dnsTransaction.ipAddrToAscii() didn't get to set the "addr" and "pending":
-print *((ipAddrToAsciiTransactionPrivate *)this.hostNameCacheInstance.dnsTransaction)
-$11 = {
-  <ipAddrToAsciiTransaction> = {
-    _vptr.ipAddrToAsciiTransaction = 0x2a967d4e50
-  }, 
-  <tsDLNode<ipAddrToAsciiTransactionPrivate>> = {
-    pNext = 0x0, 
-    pPrev = 0x0
-  }, 
-  members of ipAddrToAsciiTransactionPrivate: 
-  addr = {
-    ia = {
-      sin_family = 0, 
-      sin_port = 0, 
-      sin_addr = {
-        s_addr = 0
-      }, 
-      sin_zero = "\000\000\000\000\000\000\000"
-    }, 
-    sa = {
-      sa_family = 0, 
-      sa_data = '\0' <repeats 13 times>
-    }
-  }, 
-  engine = @0x56b740, 
-  pCB = 0x0, 
-  pending = false
-}
+I ran into the same error:
+One thread, running ipAddrToAsciiEnginePrivate, is in gethostbyaddr,
+another other crashes in the tcpiiu() constructor:
 
-*** So I assume we're somewhere between calling ipAddrToAscii() or early on
-*** in there. For what it's worth, this is the snapshot of ipAddrToAsciiEnginePrivate:
+#0  0x0000000000000000 in ?? ()
+#1  0x0000002a965bd03b in hostNameCache::hostNameCache () at
+../msgForMultiplyDefinedPV.cpp:43
+#2  0x0000002a965a4b5a in tcpiiu (this=0x656610, cac=@0x56b2c0,
+mutexIn=@0x56b038, cbMutexIn=@0x56b040,
+    ctxNotifyIn=@0x56af70, connectionTimeout=30, timerQueue=@0x56c210,
+addrIn=@0x40103d10, comBufMemMgrIn=@0x56b4b8,
+    minorVersion=11, engineIn=@0x56b740, priorityIn=@0x40103c0c) at
+../tcpiiu.cpp:699
+#3  0x0000002a9658a097 in cac::transferChanToVirtCircuit (this=0x56b2c0,
+cid=2202298, sid=4294967295, typeCode=65535,
+    count=0, minorVersionNumber=11, addr=@0x40103d10, currentTime=@0x40103f50)
+at ../cac.cpp:524
+#4  0x0000002a965a10ef in udpiiu::searchRespAction (this=0x72bbc0,
+msg=@0x72bff0, addr=@0x40103fa0,
+    currentTime=@0x40103f50) at ../udpiiu.cpp:665
+#5  0x0000002a965a1541 in udpiiu::postMsg (this=0x72bbc0,
+net_addr=@0x40103fa0, pInBuf=0x72bff0 "\006", blockSize=96,
+    currentTime=@0x40103f50) at ../udpiiu.cpp:832
+#6  0x0000002a965a0b42 in udpRecvThread::run (this=0x73bff0) at
+../udpiiu.cpp:380
 
-print ((ipAddrToAsciiTransactionPrivate *)this.hostNameCacheInstance.dnsTransaction)->engine
-$14 = (ipAddrToAsciiEnginePrivate &) @0x56b740: {
-  <ipAddrToAsciiEngine> = {
-    _vptr.ipAddrToAsciiEngine = 0x2a967d4d70
-  }, 
-  <epicsThreadRunable> = {
-    _vptr.epicsThreadRunable = 0x2a967d4db0
-  }, 
-  members of ipAddrToAsciiEnginePrivate: 
-  nameTmp = "dtl-diag-ioc-bcm400.ics.sns.gov:5064", '\0' <repeats 987 times>, 
-  transactionFreeList = {
-    mutex = {<No data fields>}, 
-    pFreeList = 0x2a966b4020, 
-    pChunkList = 0x6737a0
-  }, 
-  labor = {
-    pFirst = 0x673920, 
-    pLast = 0x6739a0, 
-    itemCount = 8
-  }, 
-  mutex = {
-    id = 0x56bc30
-  }, 
-  laborEvent = {
-    id = 0x56bc60
-  }, 
-  destructorBlockEvent = {
-    id = 0x56bcd0
-  }, 
-  thread = {
-    runable = @0x56b748, 
-    id = 0x56be90, 
-    mutex = {
-      id = 0x56bd80
-    }, 
-    event = {
-      id = 0x56bdb0
-    }, 
-    exitEvent = {
-      id = 0x56be20
-    }, 
-    pWaitReleaseFlag = 0x4004101f, 
-    begin = true, 
-    cancel = false, 
-    terminated = false
-  }, 
-  pCurrent = 0x6738a0, 
-  cancelPendingCount = 0, 
-  exitFlag = false, 
-  callbackInProgress = false, 
-  static globalMutex = {
-    id = 0x567130
-  }, 
-  static pEngine = 0x56b740, 
-  static numberOfReferences = 1
-}
+The tcpiiu constructor doesn't get beyond the hostNameCacheInstance initialization,
+all the rest is 0.
+So it's in the hostNameCache constructor.
+Unclear why the debugger claims that's in msgForMultiplyDefinedPV.cpp:43.
+So something is clearly wrong.
+
+From the "debug_marker" I can tell that the
+dnsTransaction points to a ipAddrToAsciiTransactionPrivate
+for which the constructor has finished.
+The hostNameCache constructor is about to invoke
+   dnsTransaction.ipAddrToAscii()
+but never gets there.
+
+It's as if the vtbl for that ipAddrToAsciiTransactionPrivate
+is messed up.
+
+
+Changed the new/delete of ipAddrToAsciiTransactionPrivate to
+use malloc/free instead of the free list, and have not seen
+another crash since.
+
+
 

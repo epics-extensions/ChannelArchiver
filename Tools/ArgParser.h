@@ -12,6 +12,7 @@
 #define __ARGPARSER_H__
 
 #include <ToolsConfig.h>
+#include <NoCopy.h>
 
 /// \addtogroup Tools
 /// @{
@@ -76,6 +77,7 @@ public:
     const char *getArgument(size_t i);
 
 private:
+    PROHIBIT_DEFAULT_COPY(CmdArgParser);
     const char *_header;
     const char *_footer;
     const char *_args_info;
@@ -125,6 +127,7 @@ public:
     virtual size_t parse(const char *arg) = 0;
 
 protected:
+    PROHIBIT_DEFAULT_COPY(CmdArg);
     const char *_option;
     const char *_arguments;
     const char *_description;

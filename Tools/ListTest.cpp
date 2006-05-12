@@ -38,7 +38,7 @@ TEST_CASE test_concurrent_list()
     // of the ConcurrentList.
     
     COMMENT("Simple Iteration");
-    ConcurrentListIterator<stdString> s = subscribers.iterator();
+    ConcurrentListIterator<stdString> s(subscribers.iterator());
     TEST(*s.next() == "fred");
     TEST(*s.next() == "freddy");
     TEST(*s.next() == "jane");

@@ -8,6 +8,7 @@
 // Tools
 #include <GenericException.h>
 #include <AutoFilePtr.h>
+#include <NoCopy.h>
 
 /// \ingroup Tools
 /// The MsgLogger is a trace or logging facility.
@@ -75,6 +76,8 @@ protected:
     /// messages, and then point TheMsgLogger to the
     /// custom MsgLogger.
     virtual void print(const char *s);
+private:
+    PROHIBIT_DEFAULT_COPY(MsgLogger);
 };
 
 void LOG_MSG(const char *format, va_list ap);

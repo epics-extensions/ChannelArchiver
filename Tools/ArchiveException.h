@@ -6,7 +6,7 @@
 // System
 #include <stdio.h>
 // Tools
-#include "GenericException.h"
+#include <GenericException.h>
 
 // \ingroup Tools
 

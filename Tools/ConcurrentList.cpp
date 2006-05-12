@@ -139,6 +139,21 @@ ConcurrentPtrListIterator::ConcurrentPtrListIterator(Guard &guard,
     getNext(guard);
 }
 
+ConcurrentPtrListIterator::ConcurrentPtrListIterator(
+    const ConcurrentPtrListIterator &rhs)
+    : list(rhs.list), next_element(rhs.next_element), item(rhs.item)
+{
+}
+
+ConcurrentPtrListIterator & ConcurrentPtrListIterator::operator =
+   (const ConcurrentPtrListIterator &rhs)
+{
+    list = rhs.list;
+    next_element = rhs.next_element;
+    item = rhs.item;
+    return *this;
+}
+
 ConcurrentPtrListIterator::~ConcurrentPtrListIterator()
 {
     // Could try to use this->list to keep track

@@ -34,6 +34,7 @@ public:
     }
     
 private:
+    PROHIBIT_DEFAULT_COPY(Throttle);
     OrderedMutex mutex;
     double seconds;
     epicsTime last;

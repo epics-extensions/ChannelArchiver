@@ -5,6 +5,8 @@
 
 // System
 #include <stdio.h>
+// Tool
+#include <NoCopy.h>
 
 /// \ingroup Tools
 
@@ -65,10 +67,8 @@ public:
         return f;
     }
 private:
+    PROHIBIT_DEFAULT_COPY(AutoFilePtr);
     FILE *f;
-
-    // Not implemented, don't use these
-    AutoFilePtr & operator = (const AutoFilePtr &rhs);
 };
 
 #endif

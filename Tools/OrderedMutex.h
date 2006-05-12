@@ -6,8 +6,9 @@
 #include <epicsMutex.h>
 
 // Tools
-#include "GenericException.h"
-#include "ToolsConfig.h"
+#include <GenericException.h>
+#include <ToolsConfig.h>
+#include <NoCopy.h>
 
 /** \ingroup Tools
  *  A mutex with informational name and lock order.
@@ -67,6 +68,7 @@ public:
     void unlock();
     
 private:
+    PROHIBIT_DEFAULT_COPY(OrderedMutex);
     stdString name;
     size_t order;
     epicsMutexId mutex;
@@ -76,3 +78,4 @@ private:
 extern void LockMonitorDump();
 
 #endif
+

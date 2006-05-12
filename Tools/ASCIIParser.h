@@ -14,8 +14,9 @@
 // System
 #include <stdio.h>
 // Tools
-#include "ToolsConfig.h"
-#include "AutoFilePtr.h"
+#include <ToolsConfig.h>
+#include <AutoFilePtr.h>
+#include <NoCopy.h>
 
 /// \ingroup Tools
 
@@ -56,6 +57,7 @@ public:
     bool getParameter(stdString &parameter, stdString &value);
 
 private:
+    PROHIBIT_DEFAULT_COPY(ASCIIParser);
     AutoFilePtr   file;
     size_t        line_no;
     stdString     line;

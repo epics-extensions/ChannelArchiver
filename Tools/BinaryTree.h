@@ -10,6 +10,7 @@
 
 // Tools
 #include <GenericException.h>
+#include <NoCopy.h>
 
 // Tree Item:
 // Holds the full Item as well as left/right pointers
@@ -19,6 +20,8 @@ public:
     Item            _item;
     BinaryTreeItem    *_left;
     BinaryTreeItem    *_right;
+private:
+    PROHIBIT_DEFAULT_COPY(BinaryTreeItem);
 };
 
 /// \ingroup Tools
@@ -77,6 +80,7 @@ public:
     {    visit_inorder (visit, _root, arg); }
 
 private:
+    PROHIBIT_DEFAULT_COPY(BinaryTree);
     BinaryTreeItem<Item>    *_root;
 
     void insert(BinaryTreeItem<Item> *new_item, BinaryTreeItem<Item> **node)

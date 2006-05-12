@@ -2,8 +2,11 @@
 #ifndef __BITSET_H__
 #define __BITSET_H__
 
-#include<stdString.h>
+// System
 #include<stdint.h>
+// Tools
+#include<stdString.h>
+#include<NoCopy.h>
 
 /// \ingroup Tools BitSet, inspired by STL bitset.
 ///
@@ -65,8 +68,7 @@ public:
     stdString to_string() const;
 
 private:
-    BitSet (const BitSet &rhs); // not implemented
-    BitSet & operator = (const BitSet &rhs); // not implemented
+    PROHIBIT_DEFAULT_COPY(BitSet);
 
     uint32_t *bits;
     size_t num;   // # of W32 that _bits points to

@@ -6,6 +6,7 @@
 // Tools
 #include <GenericException.h>
 #include <OrderedMutex.h>
+#include <NoCopy.h>
 
 /** \ingroup Tools
  *  Guard automatically takes and releases an epicsMutex.
@@ -34,9 +35,7 @@ public:
                const epicsMutex &the_one_it_should_be);
 
 private:
-    epicsMutexGuard(const epicsMutexGuard &); // not impl.
-    epicsMutexGuard &operator = (const epicsMutexGuard &); // not impl.
-
+    PROHIBIT_DEFAULT_COPY(epicsMutexGuard);
     epicsMutex &mutex;
 };
 
@@ -109,8 +108,7 @@ public:
     }
 
 private:
-    Guard(const Guard &); // not impl.
-    Guard &operator = (const Guard &); // not impl.
+    PROHIBIT_DEFAULT_COPY(Guard);
     OrderedMutex &mutex;
     bool is_locked;
 };
@@ -138,9 +136,7 @@ public:
     }
 
 private:
-    GuardRelease(const GuardRelease &); // not impl.
-    GuardRelease &operator = (const GuardRelease &); // not impl.
-
+    PROHIBIT_DEFAULT_COPY(GuardRelease);
     const char *file;
     size_t line;
     Guard &guard;

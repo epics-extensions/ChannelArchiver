@@ -94,7 +94,6 @@ protected:
 private:
     const char  *sourcefile;
     size_t      line;
-
 };
 
 #endif // !defined(_GENERICEXCEPTION_H_)

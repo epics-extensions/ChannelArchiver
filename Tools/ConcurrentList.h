@@ -3,6 +3,7 @@
 
 // Tools
 #include <Guard.h>
+#include <NoCopy.h>
 
 /** \ingroup Tools
  *  A List that allows concurrent access.
@@ -55,6 +56,7 @@ public:
     class ConcurrentPtrListIterator iterator(Guard &guard);
     
 private:
+    PROHIBIT_DEFAULT_COPY(ConcurrentPtrList);
     OrderedMutex     mutex;
     class CPElement *list;
 };
@@ -72,6 +74,12 @@ public:
     ConcurrentPtrListIterator(Guard &guard,
                               ConcurrentPtrList *list,
                               class CPElement *element);
+
+    /** Copy Constructor. */
+    ConcurrentPtrListIterator(const ConcurrentPtrListIterator &rhs);
+
+    /** Copy operator. */
+    ConcurrentPtrListIterator & operator = (const ConcurrentPtrListIterator &);
 
     /** Destructor. */
     virtual ~ConcurrentPtrListIterator();
@@ -97,6 +105,14 @@ template<class T> class ConcurrentListIterator
 {
 public:
     ConcurrentListIterator(ConcurrentPtrListIterator iter) : iter(iter) {}
+
+    ConcurrentListIterator(const ConcurrentListIterator &rhs) : iter(rhs.iter) { }
+ 
+    ConcurrentListIterator & operator = (const ConcurrentListIterator &rhs)
+    {
+        iter = rhs.iter;
+        return *this;
+    }
         
     /** @see ConcurrentPtrListIterator::next */
     T *next()
@@ -116,6 +132,10 @@ template<class T> class ConcurrentList
     : public Guardable, private ConcurrentPtrList
 {
 public:
+    /** Constructor */
+    ConcurrentList()
+    {}
+
     /** @return Returns the list mutex. */
     OrderedMutex &getMutex()
     {
@@ -163,6 +183,8 @@ public:
         Guard guard(__FILE__, __LINE__, ConcurrentPtrList::getMutex());
         return ConcurrentListIterator<T>(ConcurrentPtrList::iterator(guard));
     }
+private:
+    PROHIBIT_DEFAULT_COPY(ConcurrentList);
 };
 
 #endif 

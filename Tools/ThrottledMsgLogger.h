@@ -30,6 +30,7 @@ public:
     void LOG_MSG(const char *format, ...)
         __attribute__ ((format (printf, 2, 3)));
 private:
+    PROHIBIT_DEFAULT_COPY(ThrottledMsgLogger);
     stdString name;
     bool   too_many;
 };

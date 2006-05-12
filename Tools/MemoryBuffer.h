@@ -2,15 +2,17 @@
 #ifndef __MEMORYBUFFER_H__
 #define __MEMORYBUFFER_H__
 
+// Tools
 #include <GenericException.h>
+#include <NoCopy.h>
 
-/// \ingroup Tools
-
-/// A memory region that can be resized.
-///
-/// A MemoryBuffer<T> which has reserved size,
-/// may grow in size (new, no realloc)
-/// and is automatically deallocated.
+/** \ingroup Tools
+ *  A memory region that can be resized.
+ * 
+ *  A MemoryBuffer<T> which has reserved size,
+ *  may grow in size (new, no realloc)
+ *  and is automatically deallocated.
+ */
 template <class T>
 class MemoryBuffer
 {
@@ -61,6 +63,7 @@ public:
     {    return size; }
 
 private:
+    PROHIBIT_DEFAULT_COPY(MemoryBuffer);
     char    *memory;
     size_t    size;
 };

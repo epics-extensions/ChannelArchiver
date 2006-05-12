@@ -7,6 +7,7 @@
 #include <stdio.h>
 // Tools
 #include <ToolsConfig.h>
+#include <NoCopy.h>
 
 // Define this one to use the Xerces XML library
 // When undefined, we default to the Expat library.
@@ -94,6 +95,7 @@ public:
         Element *find(const char *name);
         
     private:
+        PROHIBIT_DEFAULT_COPY(Element);
         Element *parent; ///< Parent element or 0.
         stdString name;  ///< Name of this element.
         stdString value; ///< Value of this element.
@@ -132,6 +134,7 @@ public:
      */
     void dump(FILE *f);
 private:
+    PROHIBIT_DEFAULT_COPY(FUX);
 #ifdef FUX_XERCES
     friend class FUXContentHandler;
     friend class FUXErrorHandler;

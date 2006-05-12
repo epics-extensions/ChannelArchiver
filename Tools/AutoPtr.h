@@ -5,6 +5,8 @@
 
 // System
 #include <stdlib.h> // size_t
+// Tools
+#include <NoCopy.h>
 
 /// \ingroup Tools
 
@@ -96,6 +98,7 @@ public:
     }
     
 private:
+    PROHIBIT_DEFAULT_COPY(AutoPtr);
     T *ptr;
 };
 
@@ -180,6 +183,7 @@ public:
     }
     
 private:
+    PROHIBIT_DEFAULT_COPY(AutoArrayPtr);
     T *arr;
 };
 

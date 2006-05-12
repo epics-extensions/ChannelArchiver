@@ -11,7 +11,9 @@
 #ifndef CGI_DEMANGLER_H
 #define CGI_DEMANGLER_H
 
+// Tools
 #include <ToolsConfig.h>
+#include <NoCopy.h>
 
 /// \ingroup Tools De-mangle CGI-type text.
 
@@ -52,6 +54,7 @@ public:
     {   return _vars;   }
 
 private:
+    PROHIBIT_DEFAULT_COPY(CGIDemangler);
     stdMap<stdString, stdString>    _vars;
 
     void analyseVar(char *var);

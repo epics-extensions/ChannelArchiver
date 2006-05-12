@@ -1,6 +1,8 @@
 #ifndef __HISTOGRAM_H__
 #define __HISTOGRAM_H__
 
+#include <NoCopy.h>
+
 //CLASS Histogram
 //
 // ... has not been tested extensively
@@ -20,6 +22,7 @@ public:
 
     void dump(FILE *f);
 private:
+    PROHIBIT_DEFAULT_COPY(Histogram);
     double _start, _width;
     size_t _num, _under, _over;
     size_t *_bucket;

@@ -27,6 +27,8 @@ public:
     Item    item;
     AVLItem *left, *right;
     short   balance;
+private:
+    PROHIBIT_DEFAULT_COPY(AVLItem);
 };
 
 /// \ingroup Tools
@@ -112,6 +114,7 @@ public:
     {   return check_balance(root); }
     
 private:
+    PROHIBIT_DEFAULT_COPY(AVLTree);
     AVLItem<Item>   *root;
 
     void rotate_right(AVLItem<Item> **node)

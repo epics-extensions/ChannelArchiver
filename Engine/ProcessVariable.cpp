@@ -147,8 +147,6 @@ void ProcessVariable::start(Guard &guard)
     {
         GuardRelease release(__FILE__, __LINE__, guard);
         {
-            Guard ctx_guard(__FILE__, __LINE__, ctx);
-            LOG_ASSERT(ctx.isAttached(ctx_guard));
             try
             {
        	        status = ca_create_channel(getName().c_str(),
@@ -165,6 +163,7 @@ void ProcessVariable::start(Guard &guard)
                 LOG_MSG("ProcessVariable::start(%s): Unknown Exception\n",
                         getName().c_str());
             }                          
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
             ctx.requestFlush(ctx_guard);
         }
     }

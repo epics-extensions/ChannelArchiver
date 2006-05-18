@@ -16,7 +16,7 @@ void EngineConfig::addToFUX(FUX::Element *doc)
                      getFileSizeLimit()/1024.0/1024.0);
     new FUX::Element(doc, "ignored_future", "%g",
             getIgnoredFutureSecs()/60.0/60.0);
-    new FUX::Element(doc, "buffer_reserve", "%d", getBufferReserve());
+    new FUX::Element(doc, "buffer_reserve", "%zu", getBufferReserve());
     new FUX::Element(doc, "max_repeat_count", "%zu",
              getMaxRepeatCount());
     if (getDisconnectOnDisable())

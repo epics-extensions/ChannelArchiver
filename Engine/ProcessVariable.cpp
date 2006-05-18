@@ -188,8 +188,6 @@ void ProcessVariable::getValue(Guard &guard)
     chid _id = id;
     GuardRelease release(__FILE__, __LINE__, guard); // Unlock while in CAC.
     {
-        Guard ctx_guard(__FILE__, __LINE__, ctx);
-        LOG_ASSERT(ctx.isAttached(ctx_guard));
         int status;
         try
         {
@@ -212,6 +210,7 @@ void ProcessVariable::getValue(Guard &guard)
                     getName().c_str(), ca_message(status));
             return;
         }
+        Guard ctx_guard(__FILE__, __LINE__, ctx);
         ctx.requestFlush(ctx_guard);
     }    
 }
@@ -269,8 +268,6 @@ void ProcessVariable::subscribe(Guard &guard)
         // to be on the safe side, we keep the guard and prevent a stop(),
         // until we find a deadlock that forces us to reconsider....
         {
-            Guard ctx_guard(__FILE__, __LINE__, ctx);
-            LOG_ASSERT(ctx.isAttached(ctx_guard));
             int status;
             try
             {
@@ -294,6 +291,7 @@ void ProcessVariable::subscribe(Guard &guard)
                         getName().c_str(), ca_message(status));
                 return;
             }
+            Guard ctx_guard(__FILE__, __LINE__, ctx);
             ctx.requestFlush(ctx_guard);
         }
     }

@@ -3,6 +3,8 @@ TOP=../../..
 include $(TOP)/configure/CONFIG
 include $(TOP)/src/ChannelArchiver/make.cfg
 
+# DEBUGCMD = purify
+
 LIB_SRCS += Named.cpp
 LIB_SRCS += CircularBuffer.cpp
 LIB_SRCS += ProcessVariableContext.cpp

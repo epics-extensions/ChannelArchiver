@@ -17,6 +17,11 @@
 template<class Item> class BinaryTreeItem
 {
 public:
+    BinaryTreeItem()
+    {
+        _left = 0;
+        _right = 0;
+    }
     Item            _item;
     BinaryTreeItem    *_left;
     BinaryTreeItem    *_right;

@@ -29,6 +29,8 @@
 class CGIDemangler
 {
 public:
+    CGIDemangler() {}
+
     /// Reduce any '%%xx' (percent sign,...) escape sequences to the characters they represent.
     /// Changes the text! The resulting text may be shorter than the original.
     static void unescape(char *text);

@@ -99,8 +99,7 @@ created in one directory together with an index file need to stay together.
 You can move the index and all data files into a different directory, but
 you must not remove or rename any single data file.
 
-\subsection{\INDEX{Index and Data File Repair}}
-As for how to \INDEX{repair} a \INDEX{damaged or lost index or data file}:
+\section{\INDEX{Index and Data File Repair}}
 Beginning with version 2-1-1 of the ChannelArchiver toolset, the items
 marked with (\dag) in Table~\ref{tab:datafile} were added.  A
 4-ASCII character magic ID at the start of the data file identifies
@@ -108,10 +107,12 @@ the new file type. Each CtrlInfo if preceded by 'INFO' and each Data
 Header is preceded by 'DATA' followed by the null-terminated channel
 name.
 
-One could write a rescue program that e.g.\ creates an index for data
-files by searching for the 'INFO' and 'DATA' tags, comparing the
-located 'DATA' blocks with the links between 'DATA' blocks and
-resolving conflicts based on the channel names and time ranges.  As
-long as the data inself contains no strings with 'INFO' or 'DATA', this could
-be successful, but so far no such tool has been written.
+The ``RecoverIndex'' subdirectory contains a tool thankfully provided
+by Noboru Yamamoto which can be used to \INDEX{repair} a \INDEX{damaged or lost index file},
+by searching the data files for the 'INFO' and 'DATA' tags.
+See the Readme.txt in that subdirectory for details.
+
+As for \INDEX{data file repair}, one can use the Data Tool described in the following
+section to copy all the data that's still accessible in a damaged data file
+to a new archive.
 

@@ -15,6 +15,9 @@ DIRS += Manager
 
 include $(TOP)/configure/RULES_DIRS
 
+# What's test code?
+# I use *Test*, as well as the Ordered Mutex,
+# Guard class
 stats:
 	@echo -n "Lines of Code (C++)             :"
 	@wc -l */*.h */*.cpp | fgrep total

@@ -6,16 +6,20 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
-\item ?/?/2006 --- Version 2.9:\\
+\item 06/?/2006 --- Version 2.9:\\
+In short:
+\begin{itemize}
+\item Very neat index recovery tool written by Nobory Yamamoto.
+\item Minor bugfixes to ExampleSetup.
+\item Major refactoring of the ArchiveEngine code.
+\end{itemize}
+
 During restarts, ArchiveDaemon.pl waits for an engine that was stopped
 to remove its lock file before starting a new one.
 
-\noindent Major refactoring of the ArchiveEngine code.
-
-Visible changes:
+Visible changes to the ArchiveEngine:
 \begin{itemize}
 \item Engine HTTPD displays ``Idle Time'' on its main page.
-\item The warning ``Cannot add event because data type is unknown'' is gone.
 \item The ``disabling'' mechanism now works better right at the start,
       while all the channels get connected in an unpredictable order.
       Before, the engine would like to log all disabled channels as DISABLED,
@@ -24,6 +28,11 @@ Visible changes:
       in the data as to why there is no data.
 \item ArchiveEngine uses about 2\%-4\% more CPU and memory.
 \end{itemize}
+
+Internally, the class layout has been reorganized,
+unit tests have been added, and everything was tested
+extensively, both with valgrind and purify,
+under R3.14.8.2, resolving some bugs in the CA client library.
 
 Why? The class layout looked OK from a distance;
 there was an Engine, Group, ArchiveChannel, SampleMechanism,
@@ -45,10 +54,22 @@ and the rather confusing code inside the sample mechanisms
 has mostly been replaced with a 'pipe' of ProcessVariableFilter
 classes, which again can be tested individually.
 
+\NOTE When running under Fedora Core 2 (Linux kernel 2.6.5,
+gcc 3.3.3), the ArchiveEngine leaked memory whenever its HTTPD
+was accessed. The memory leak was visible in the ``top'' command,
+and in fact the engine would crash after some time with out-of-memory messages
+from pthread\_create.
+
+Interestingly, ``valgrind'' did not indicate a \INDEX{memory leak} on that
+same architecture. Furthermore, I could also not detect a memory leak on RedHat WS 4
+nor Mac OS X, so I assume this was a freak behavior for only Fedora 2,
+some combination of its compiler and runtime library. 
+
 Also switched to using Eclipse as the IDE.
 Doesn't nearly work as nicely for C++ as it does for Java,
-but still nice.
-Basic setup:
+but still better than ``vi''.
+Basic setup notes (please ignore if you don't plan to work
+on the sources):
 \begin{itemize}
 \item Unpack ChannelArchiver sources as usual.
 \item Open Eclipse, use the directory ``extensions/src'' as a
@@ -61,16 +82,6 @@ Basic setup:
       and add Tools, Storage, LibIO, XML-RPC, Engine.
 \end{itemize}
 
-\NOTE When running under Fedora Core 2 (Linux kernel 2.6.5,
-gcc 3.3.3), the ArchiveEngine leaked memory whenever its HTTPD
-was accessed. The memory leak was visible in the ``top'' command,
-and in fact the engine would crash after some time with out-of-memory messages
-from pthread\_create.
-
-Interestingly, ``valgrind'' did not indicate a \INDEX{memory leak} on that
-same architecture. Furthermore, I could also not detect a memory leak on RedHat WS 4
-nor Mac OS X, so I assume this was a freak behavior for only Fedora 2,
-some combination of its compiler and runtime library. 
 
 \item 03/27/2006 --- Version 2.8.1:\\
 Fix: The nanosecond check could cause a crash when receiving

@@ -15,17 +15,47 @@ def IndexRecoveryMain(datafile="20060331",indexfilename="recovered_index"):
     print "** Adding data to index : ", indexfilename
     for data_block in data_blocks:
         name=stdString(data_block.name)
+        offset=data_block.offset
+        print "Channel '%s': Block %s @ %d" % (data_block.name, datafile, offset)
+
+        # Some start/end time sanity checks
+        if data_block.begin_time_nsec > 1e9:
+            print "Invalid start time nsecs %g" % data_block.begin_time_nsec
+            continue
+        if data_block.end_time_nsec > 1e9:
+            print "Invalid end time nsecs %g" % data_block.end_time_nsec
+            continue
+      
+        if data_block.begin_time_sec + data_block.begin_time_nsec/1e9 > data_block.end_time_sec + data_block.end_time_nsec/1e9:
+            print "Start time exceeds end time"
+            continue
+
         ts=timespec()
-        ts.tv_sec=data_block.begin_time_sec+int(EPICS_EPOCH_UTC)
-        ts.tv_nsec=data_block.begin_time_nsec
+        try:
+            ts.tv_sec=data_block.begin_time_sec+int(EPICS_EPOCH_UTC)
+        except:
+            print "Problem with start time seconds"
+            continue
+        try:
+            ts.tv_nsec=data_block.begin_time_nsec
+        except:
+            print "Problem with start time nsecs"
+            continue
         starttime=epicsTime(ts)
         ts=timespec()
-        ts.tv_sec=data_block.end_time_sec+int(EPICS_EPOCH_UTC)
-        ts.tv_nsec=data_block.end_time_nsec
+        try:
+            ts.tv_sec=data_block.end_time_sec+int(EPICS_EPOCH_UTC)
+        except:
+            print "Problem with end time seconds"
+            continue
+        try:
+            ts.tv_nsec=data_block.end_time_nsec
+        except:
+            print "Problem with end time nsecs"
+            continue
         endtime=epicsTime(ts)
+
         directory=stdString()
-        offset=data_block.offset
-        print "Block: '%s', %s @ %d" % (data_block.name, datafile, offset)
         rtreep=index.addChannel(name,directory)
         rtreep.insertDatablock(starttime, endtime, offset, data_filename)
         if data_block.next_file and data_block.next_file != datafile:

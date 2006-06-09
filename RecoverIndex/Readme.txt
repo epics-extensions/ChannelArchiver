@@ -3,12 +3,17 @@ Info
 
 This is a python-based tool for recovering a missing or broken index file,
 by reconstructing it from data files.
-It was contributed by Noboru Yamamoto, (noboru.yamamoto\@kek.jp).
+
+It was contributed by Noboru Yamamoto, (noboru.yamamoto\@kek.jp),
+for which I would like to thank him.
 
 Beginning with version 2-1-1 of the ChannelArchiver toolset, the DATA
 and INFO blocks in the binary data files have been marked with
 4-ASCII character magic IDs 'DATA' and 'INFO'.
-This index recovery tool searches the data files for these markers,
+Consequently the tool will only work with data files created by
+archiver tools from that or later versions.
+
+This index recovery tool searches the data files for these block markers,
 and attempts to create an index file.
 The mechanism will likely fail if your PV names include 'DATA' or 'INFO',
 or if your PV data itself happens to contain those strings,
@@ -54,10 +59,23 @@ looks the same:
         ArchiveExport new_index $pv | wc
     done
 
+Notes
+=====
+
+Recovery of damaged data and index files is difficult.
 Of course this has only been tested on few platforms and limited data sets.
 If you have a damaged index file, that probably means there's some problem
 with the data files as well, so the index reconstruction may fail or remain
 incomplete.
 
-Again, this was contributed by Noboru, so all the glory is his.
+The script locates all possible data and ctrl-info blocks.
+There is no limit to the possible sanity checks which one could perform.
+So far, basically only start/end time stamps are checked for each data block.
+One could try to verify if the data blocks are correctly interlinked, and test if the
+ctrl-info pointers from the located data blocks resolve OK.
+On the other hand, the script already works remarkably well, especially if one
+follow up with an
+  "mkdir save; ArchiveDataTool new_index -copy save/index"
+to copy all the samples which can now be reached via the rebuilt
+index into a new sub-archive, eliminating samples which go back-in-time etc.
 

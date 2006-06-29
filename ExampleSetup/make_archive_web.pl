@@ -144,6 +144,4 @@ $output_name = $opt_o  if (length($opt_o) > 0);
 $config = parse_config_file($config_name, $opt_d);
 update_status($config, $opt_d);
 
-        print "Before:\n", Dumper($config);
 write_html($output_name);
-        print "After:\n", Dumper($config);

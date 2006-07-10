@@ -6,7 +6,7 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
-\item 06/?/2006 --- Version 2.9:\\
+\item 07/10/2006 --- Version 2.9:\\
 In short:
 \begin{itemize}
 \item Very neat index recovery tool written by Nobory Yamamoto.
@@ -54,6 +54,13 @@ and the rather confusing code inside the sample mechanisms
 has mostly been replaced with a 'pipe' of ProcessVariableFilter
 classes, which again can be tested individually.
 
+Semaphores use an ``OrderedMutex'' wrapper which helps
+to detect deadlocks. It also slows the engine down, because
+each 'lock' and 'unlock' now locates the mutex with a linear
+search. Compared to the  engine's main impact of disk-I/O, that
+CPU load seemed neglegible, so this error checking feature
+is per default enabled.
+
 \NOTE When running under Fedora Core 2 (Linux kernel 2.6.5,
 gcc 3.3.3), the ArchiveEngine leaked memory whenever its HTTPD
 was accessed. The memory leak was visible in the ``top'' command,
@@ -81,7 +88,6 @@ on the sources):
       select ChannelArchiver, ``Add Include .. from Workspace'',
       and add Tools, Storage, LibIO, XML-RPC, Engine.
 \end{itemize}
-
 
 \item 03/27/2006 --- Version 2.8.1:\\
 Fix: The nanosecond check could cause a crash when receiving

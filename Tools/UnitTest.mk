@@ -25,4 +25,5 @@ UnitTest_SRCS += ThrottledMsgLoggerTest.cpp
 UnitTest_SRCS += TimerTest.cpp
 UnitTest_SRCS += epicsTimeHelperTest.cpp
 UnitTest_SRCS += stdStringTest.cpp
+UnitTest_SRCS += xxxTest.cpp
 UnitTest_SRCS += UnitTest.cpp

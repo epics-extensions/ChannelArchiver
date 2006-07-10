@@ -75,7 +75,7 @@ time stamps. The most common example is a ``Zero'' time stamp: After
 an IOC reboots, all records have a zero time stamp until they are
 processed. For passive records, as commonly used for operator input,
 this time stamp will stay zero until someone enters a value on an
-operator screen or via a safe/restore utility. The Engine cannot
+operator screen or via a save/restore utility. The Engine cannot
 archive those values because the retrieval relies on the values being
 sorted in time. A zero time stamp does not fit in.
 
@@ -237,7 +237,7 @@ find in the archive as a result.
       have to allocate a buffer for about 30 samples, based on our
       estimate of 1 second between incoming monitors.
       With the default buffer\_reserve of 3, it will actually allocate
-      a buffer for 60 values, so we don't loose data when the engine
+      a buffer for 90 values, so we don't loose data when the engine
       should get delayed in writing. On the other hand, when the
       computer is terribly busy, we might not receive any more values,
       either. In any case, the chances of overflowing the data buffer

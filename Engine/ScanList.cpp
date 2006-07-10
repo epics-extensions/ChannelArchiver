@@ -6,7 +6,7 @@
 // Engine
 #include "ScanList.h"
 
-#define DEBUG_SCANLIST
+// #define DEBUG_SCANLIST
 
 /*  List of channels to scan for one period.
  *  <p>

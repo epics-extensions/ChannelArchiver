@@ -4,7 +4,7 @@
 #include "EngineLocks.h"
 #include "RepeatFilter.h"
 
-#define DEBUG_REP_FILT
+#undef DEBUG_REP_FILT
 
 RepeatFilter::RepeatFilter(const EngineConfig &config,
                            ProcessVariableListener *listener)
@@ -80,7 +80,7 @@ void RepeatFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
                 if (repeat_count >= config.getMaxRepeatCount())
                 {   // Forced flush, marked by host time; keep the repeat value.
 #                   ifdef DEBUG_REP_FILT
-                    LOG_MSG("Reached max. repeat count.\n");
+                    LOG_MSG("'%s': Reached max. repeat count.\n", pv.getName().c_str());
 #                   endif
                     flush(guard, pv, epicsTime::getCurrent());
                 }
@@ -97,7 +97,7 @@ void RepeatFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
     }
     // and pass on to listener.
 #   ifdef DEBUG_REP_FILT
-    LOG_MSG("RepeatFilter passes value.\n");
+    LOG_MSG("'%s': RepeatFilter passes value.\n", pv.getName().c_str());
 #   endif
     ProcessVariableFilter::pvValue(pv, data);
 }

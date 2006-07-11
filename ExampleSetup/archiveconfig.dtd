@@ -6,18 +6,19 @@
 <!ELEMENT serverconfig (#PCDATA)>
 <!ELEMENT mailbox (#PCDATA)>
 
-<!ELEMENT daemon (run?, desc?, port, dataserver?, engine*)>
+<!ELEMENT daemon (run?, desc?, port?, dataserver?, engine*)>
 <!ATTLIST daemon directory CDATA #REQUIRED>
 
 <!ELEMENT dataserver (current_index?, index?, host?)>
 <!ELEMENT current_index (#PCDATA)>
 <!ATTLIST current_index key CDATA #REQUIRED>
 <!ELEMENT index (#PCDATA)>
-<!ATTLIST index type (list|binary) #REQUIRED>
+<!ATTLIST index type (serve|list|binary) #REQUIRED>
 <!ATTLIST index key CDATA #IMPLIED>
+<!ATTLIST index file CDATA #IMPLIED>
 <!ELEMENT host (#PCDATA)>
 
-<!ELEMENT engine (run?, desc?, port, restart?, dataserver?)>
+<!ELEMENT engine (run?, desc?, port?, restart?, dataserver?)>
 <!ATTLIST engine directory CDATA #REQUIRED>
 
 <!ELEMENT run (#PCDATA)> <!-- hostname where daemon or engine should run. 'false' for: don't run at all -->

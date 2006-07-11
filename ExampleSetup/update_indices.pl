@@ -73,7 +73,8 @@ sub create_indexconfig($@)
 
     if ($opt_d)
     {
-        print($full ? "  full re-index\n" : "  incremental re-index\n");
+        print("  creating " . cwd() . "/$indexconfig for " .
+              ($full ? "full re-index\n" : "incremental re-index\n"));
     }
     
     open(OUT, ">$indexconfig") or die "Cannot create " . cwd() . "/$indexconfig";
@@ -106,19 +107,27 @@ sub create_indexconfig($@)
     return $valid;
 }
 
-# Create the index.xml for the given engine directory.
+# Create the indexconfig for the given engine directory.
 # Looks for all files <year>/<day_or_time>/index.
 sub make_engine_index($$)
 {
     my ($d_dir, $e_dir) = @ARG;
 
-    # A 'binary' index might try update-only.
-    my ($full) = 0;
-    $full = 1 if ($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{index}{type} eq 'list');
-    $full = 1 if ($opt_f);
+    my ($full) = $opt_f;
+    if ($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{index}{type} eq 'list')
+    {
+        # A 'list' index must list all entries
+        $full = 1;
+    }
+    elsif ($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{index}{type} eq 'serve')
+    {
+        die "Logic error: Should not create engine files for 'served' index in $d_dir/$e_dir\n";
+    }
+    # else: binary
 
     # Collect all sub-archives
     chdir("$d_dir/$e_dir");
+    # Is there a more specific file glob pattern for <year>/<day_or_time>/index?
     my (@indices) = <*/*/index>;
     # Write
     my ($valid) = create_indexconfig($full, @indices);
@@ -137,15 +146,28 @@ sub make_daemon_index($)
 {
     my ($d_dir) = @ARG;
     my ($e_dir, @indices);
-    # A 'binary' index might try update-only.
-    my ($full) = 0;
-    $full = 1 if ($config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'list');
-    $full = 1 if ($opt_f);
+
+    my ($full) = $opt_f;
+    if ($config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'list')
+    {
+        # A 'list' index must list all entries
+        $full = 1;
+    }
+    elsif ($config->{daemon}{$d_dir}{dataserver}{index}{type} eq 'serve')
+    {
+        die "Logic error: Should not create daemon files for 'served' index in $d_dir\n";
+    }
 
     foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
     {
-	# Engine indices are currently limited to binary -> master_index.
-        push @indices, "$e_dir/master_index";
+        if ($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{index}{type} eq 'serve')
+        {
+            push @indices, "$e_dir/$config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{index}{file}";
+        }
+        else
+        {   # assume binary
+            push @indices, "$e_dir/master_index";
+        }
     }
     # Write
     chdir($d_dir);
@@ -172,6 +194,8 @@ sub add_serverconfig($$$)
     die "Duplicate key $key for $name ($path),\n"
         . "already used by $serverconfig{$key}{name} ($serverconfig{$key}{path})\n"
         if exists($serverconfig{$key});
+
+    printf "  serve %s as '%s', key '%s'\n", $path, $name, $key if ($opt_d);
     $serverconfig{$key} = { name => $name, path => $path };
 }
 
@@ -255,6 +279,8 @@ sub create_indices()
     foreach $d_dir ( keys %{ $config->{daemon} } )
     {
 	# Skip daemons/systems that don't match the supplied reg.ex.
+        # Their information is still added to the serverconfig,
+        # but their indices are not updated.
 	my ($skip) = (length($opt_s) > 0 and not $d_dir =~ $opt_s);
 
 	print("Daemon '$d_dir'" . ($skip ? " (skipped)\n" : "\n"));
@@ -268,10 +294,11 @@ sub create_indices()
                 die "Incomplete <dataserver> entry for '$d_dir':\n" .
                     "No <index> with 'key' attribute.\n";
             }
+            die("$dc->{dataserver}{index}{content}: Keys < 10 are reserved\n")
+                if ($dc->{dataserver}{index}{key} < 10);
             # Build on this host?
             if (is_localhost($dc->{dataserver}{host}))
             {
-                
                 if ($dc->{dataserver}{index}{type} eq 'list')
                 {
                     $index = "indexconfig.xml";
@@ -279,17 +306,20 @@ sub create_indices()
                     {
                         print("** Warning: found unused '$d_dir/master_index'\n");
                     }
+		    $need_daemon_index = 1;
+                }
+                elsif ($dc->{dataserver}{index}{type} eq 'serve')
+                {
+                    $index = $dc->{dataserver}{index}{file};
                 }
                 else
                 {
                     $index = "master_index";
+		    $need_daemon_index = 1;
                 }
-                die("$dc->{dataserver}{index}{content}: Keys < 10 are reserved\n")
-                    if ($dc->{dataserver}{index}{key} < 10);
                 add_serverconfig($dc->{dataserver}{index}{key},
                                  $dc->{dataserver}{index}{content},
                                  "$config->{root}/$d_dir/$index");
-		$need_daemon_index = 1;
             }
         }
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
@@ -301,7 +331,7 @@ sub create_indices()
             {   # current_index
                 if (exists($ec->{dataserver}{current_index}))
                 {
-                    die("$ec->{dataserver}{current_index}{content}: Keys < 10 are reserved\n")
+                    die("current_index $ec->{dataserver}{current_index}{content}: Keys < 10 are reserved\n")
                         if ($ec->{dataserver}{current_index}{key} < 10);
                     add_serverconfig($ec->{dataserver}{current_index}{key},
                                      $ec->{dataserver}{current_index}{content},
@@ -311,20 +341,27 @@ sub create_indices()
                 if (exists($ec->{dataserver}{index}))
                 {
                     # Check config.
-                    if ($ec->{dataserver}{index}{type} ne "binary")
+                    my ($file);
+                    if ($ec->{dataserver}{index}{type} eq "binary")
                     {
-                        die "Invalid <dataserver> entry for '$d_dir/$e_dir':\n" .
-                            "Currently only 'binary' supported on engine level.\n";
+                        make_engine_index($d_dir, $e_dir) unless ($skip);
+                        $file = "$config->{root}/$d_dir/$e_dir/master_index";
                     }
-                    # list or binary index for engine data
-                    make_engine_index($d_dir, $e_dir) unless ($skip);
+                    elsif ($ec->{dataserver}{index}{type} eq "serve")
+                    {
+                        $file = "$config->{root}/$d_dir/$e_dir/$ec->{dataserver}{index}{file}";
+                    }
+                    else
+                    {
+                        die "Invalid <dataserver> index type for '$d_dir/$e_dir':\n";
+                    }
                     if (exists($ec->{dataserver}{index}{key}))
                     {
                         die("$ec->{dataserver}{index}{content}: Keys < 10 are reserved\n")
                             if ($ec->{dataserver}{index}{key} < 10);
                         add_serverconfig($ec->{dataserver}{index}{key},
                                          $ec->{dataserver}{index}{content},
-                                         "$config->{root}/$d_dir/$e_dir/master_index");
+                                         $file);
                     }
                 }
             }
@@ -339,9 +376,6 @@ sub create_indices()
 }
 
 # The main code ==============================================
-
-# TODO: check list -> list -> list -> binary index
-# TODO: list-index for 'all'
 
 # Parse command-line options
 if (!getopts("adhc:s:fn") ||  $opt_h)

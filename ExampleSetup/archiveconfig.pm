@@ -15,7 +15,7 @@ package archiveconfig;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(time_as_text time_as_short_text parse_config_file dump_config is_localhost read_URL update_status);
+@EXPORT = qw(parse_config_file is_localhost read_URL update_status);
 
 use English;
 use strict;
@@ -30,24 +30,6 @@ use XML::Simple;
 # Timeout used when reading a HTTP client or ArchiveEngine.
 my ($read_timeout) = 30;
 my ($localhost) = hostname();
-
-sub time_as_text($)
-{
-    my ($seconds) = @ARG;
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
-        = localtime($seconds);
-    return sprintf("%04d/%02d/%02d %02d:%02d:%02d",
-                   1900+$year, 1+$mon, $mday, $hour, $min, $sec);
-}
-
-sub time_as_short_text($)
-{
-    my ($seconds) = @ARG;
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
-        = localtime($seconds);
-    return sprintf("%04d_%02d_%02d-%02d_%02d_%02d",
-                   1900+$year, 1+$mon, $mday, $hour, $min, $sec);
-}
 
 # Parse the old-style tab separated file format.
 #
@@ -127,36 +109,277 @@ sub parse_config_file($$)
     }
     if ($opt_d)
     {
+        print "Config as parsed from XML file:\n";
         print Dumper($config);
-        dump_config($config);
+        print "-------------------------------------\n";
     }
+    check_config($config, $opt_d);
+    if (0)
+    {
+        print "-------------------------------------\n";
+        print "Config after adding defaults:\n";
+        print Dumper($config);
+        print "-------------------------------------\n";
+    }
+
     return $config;
 }
 
-# Input: $config
-sub dump_config($)
+# Check configuration, add defaults for missing elements
+sub check_config($$)
 {
-    my ($config) = @ARG;
+    my ($config, $opt_d) = @ARG;
     my ($d_dir, $e_dir);
-    print("Configuration Dump:\n");
+    my (%ports, %keys);
+    print "ERROR: The mailbox directory doesn't exist\n" unless (-d  $config->{mailbox});
+
+    # Loop over daemons
     foreach $d_dir ( keys %{ $config->{daemon} } )
     {
-        printf("Daemon '%s': Port %d, description '%s'\n",
-               $d_dir,
-               $config->{daemon}{$d_dir}{port},
-               $config->{daemon}{$d_dir}{desc});
-        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+        print "Daemon '$d_dir'\n" if ($opt_d);
+        my ($daemon) = $config->{daemon}{$d_dir};
+
+        # Where daemon runs
+        unless (exists $daemon->{run})
         {
-            printf("    Engine '%s', port %d, description '%s', ",
-                   $e_dir,
-                   $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
-                   $config->{daemon}{$d_dir}{engine}{$e_dir}{desc});
-            printf("restart %s %s\n",
-                   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type},
-                   $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content});
+            $daemon->{run} = "false";
+            print "    (run entry defaults to 'false')\n" if ($opt_d);
         }
+        if (is_localhost($daemon->{run}))
+        {
+            print "    run='$daemon->{run}' (runs on this host)\n" if ($opt_d);
+        }
+        else
+        {
+            print "    run='$daemon->{run}' (not this host)\n" if ($opt_d);
+        }
+
+        # Description
+        unless (exists $daemon->{desc})
+        {
+            $daemon->{desc} = "$d_dir Daemon";
+            print "    (description defaults to directory name)\n" if ($opt_d);
+        }
+        print "    description='$daemon->{desc}'\n" if ($opt_d);
+
+        # Port
+        if (exists $daemon->{port})
+        {
+            print "    port='$daemon->{port}'\n" if ($opt_d);
+            print "ERROR: Port $daemon->{port} already used by $ports{$daemon->{port}}\n"
+                if (exists $ports{$daemon->{port}});
+            $ports{$daemon->{port}} = "Daemon $d_dir";
+        }
+        elsif ($daemon->{run} ne "false")
+        {
+            print "ERROR: Since daemon runs on host '$daemon->{run}', a port must be specified\n";
+        }
+
+        # Data server
+        if (exists($daemon->{dataserver}))
+        {
+            print "    Data Server for combined engine index:\n" if ($opt_d);
+            # Host entry
+            unless (exists $daemon->{dataserver}{host})
+            {
+                $daemon->{dataserver}{host} = "false";
+                print "        (host entry defaults to 'false')\n" if ($opt_d);
+            }
+            if (is_localhost($daemon->{dataserver}{host}))
+            {
+                print "        host='$daemon->{dataserver}{host}' (runs on this host)\n" if ($opt_d);
+            }
+            else
+            {
+                print "        host='$daemon->{dataserver}{host}' (not this host)\n" if ($opt_d);
+            }
+
+            # Accidental current_index?
+            print "ERROR: The current_index entry only applies to the engine data server,"
+                  . " not the daemon data server\n"
+                if (exists $daemon->{dataserver}{current_index});
+
+            # Decide index: list, binary, ...
+            if (exists  $daemon->{dataserver}{index})
+            {   # daemon indices require a key
+                print "ERROR: Missing key for index '$daemon->{dataserver}{index}{content}'\n"
+                    unless (exists $daemon->{dataserver}{index}{key});
+
+                # Check for duplicate keys
+                my ($key) = $daemon->{dataserver}{index}{key};
+                print "ERROR: Daemon key $key already used by $keys{$key}\n"
+                    if (exists $keys{$key});
+                $keys{$key} = "Daemon data server '$daemon->{dataserver}{index}{content}'";
+
+                if ($daemon->{dataserver}{index}{type} eq "serve")
+                {   # 'serve' type index requires file name and key
+                    print "ERROR: Missing file name for index '$daemon->{dataserver}{index}{content}'\n"
+                        unless (exists $daemon->{dataserver}{index}{file});
+                    my ($file) = "$config->{root}/$d_dir/$daemon->{dataserver}{index}{file}";
+                    print "WARNING: File '$file' is not accessible'\n"
+                        unless (-r $file);
+                    printf "        file '%s' served as '%s', key '%s'\n",
+                        $file, $daemon->{dataserver}{index}{content}, $daemon->{dataserver}{index}{key} if ($opt_d);
+                }
+                elsif ($daemon->{dataserver}{index}{type} eq "binary")
+                {   # create and maybe serve binary index
+                    my ($file) = "$config->{root}/$d_dir/master_index";
+                    printf "        creating indexconfig.xml and binary index '%s',", $file if ($opt_d);
+                    printf " served as '%s', key '%s'\n",
+                        $daemon->{dataserver}{index}{content}, $daemon->{dataserver}{index}{key} if ($opt_d);
+                }
+                else
+                {   # list index
+                    my ($file) = "$config->{root}/$d_dir/indexconfig.xml";
+                    printf "        creating list index '%s',", $file if ($opt_d);
+                    printf " served as '%s', key '%s'\n",
+                        $daemon->{dataserver}{index}{content}, $daemon->{dataserver}{index}{key} if ($opt_d);
+                }
+            }
+            else
+            {
+                print "ERROR: No 'index' entry, so nothing to serve!\n"
+            }
+        }
+
+        # Loop over engines for this daemon
+        foreach $e_dir ( keys %{ $daemon->{engine} } )
+        {
+            print "    Engine '$d_dir/$e_dir'\n" if ($opt_d);
+            my ($engine) = $daemon->{engine}{$e_dir};
+            # Where engine runs
+            unless (exists $engine->{run})
+            {
+                $engine->{run} = "false";
+                print "        (run entry defaults to 'false')\n" if ($opt_d);
+            }
+            if (is_localhost($engine->{run}))
+            {
+                print "        run='$engine->{run}' (runs on this host)\n" if ($opt_d);
+            }
+            else
+            {
+                print "        run='$engine->{run}' (not this host)\n" if ($opt_d);
+            }
+
+            # Description
+            unless (exists $engine->{desc})
+            {
+                $engine->{desc} = "$e_dir";
+                print "        (description defaults to directory name)\n" if ($opt_d);
+            }
+            print "        description='$engine->{desc}'\n" if ($opt_d);
+
+            # Port
+            if (exists $engine->{port})
+            {
+                print "        port='$engine->{port}'\n" if ($opt_d);
+
+                print "ERROR: Port $engine->{port} already used by $ports{$engine->{port}}\n"
+                    if (exists $ports{$engine->{port}});
+                $ports{$engine->{port}} = "Engine $e_dir";
+
+            }
+            elsif ($engine->{run} ne "false")
+            {
+                print "ERROR: Since engine runs on host '$engine->{run}', a port must be specified\n";
+            }
+
+            # Restart
+            if (exists $engine->{restart}{type})
+            {
+                print "        restart $engine->{restart}{type}, $engine->{restart}{content}\n" if ($opt_d);
+            }
+            else
+            {
+                $engine->{restart}{type} = "never";
+                $engine->{restart}{content} = "";
+                print "        no restart\n" if ($opt_d);
+            }
+
+            # Data server
+            if (exists($engine->{dataserver}))
+            {
+                print "        Data Server for this engine:\n" if ($opt_d);
+                # Host
+                unless (exists $engine->{dataserver}{host})
+                {
+                    $engine->{dataserver}{host} = "false";
+                    print "            (host entry defaults to 'false')\n" if ($opt_d);
+                }
+                if (is_localhost($engine->{dataserver}{host}))
+                {
+                    print "            host='$engine->{dataserver}{host}' (runs on this host)\n" if ($opt_d);
+                }
+                else
+                {
+                    print "            host='$engine->{dataserver}{host}' (not this host)\n" if ($opt_d);
+                }
+                my ($anything) = 0;
+                # current_index
+                if (exists $engine->{dataserver}{current_index})
+                {
+                    printf "            current_index='%s', key '%s'\n",
+                        $engine->{dataserver}{current_index}{content},
+                        $engine->{dataserver}{current_index}{key} if ($opt_d);
+                    my ($file) = "$config->{root}/$d_dir/$e_dir/current_index";
+                    print "WARNING: $file doesn't exist!\n" unless (-r $file);
+
+                    # Check for duplicate keys
+                    my ($key) = $engine->{dataserver}{current_index}{key};
+                    print "ERROR: Engine key $key already used by $keys{$key}\n"
+                        if (exists $keys{$key});
+                    $keys{$key} = "Engine data server '$engine->{dataserver}{current_index}{content}'";
+
+                    $anything = 1;
+                }
+                # other index entries
+                if (exists $engine->{dataserver}{index})
+                {
+                    if ($engine->{dataserver}{index}{type} eq "list")
+                    {
+                        print "ERROR: 'list' index is not supported for engines\n";
+                    }
+                    elsif ($engine->{dataserver}{index}{type} eq "serve")
+                    {   # 'serve' type index requires file name and key
+                        print "ERROR: Missing key for index '$engine->{dataserver}{index}{content}'\n"
+                            unless (exists $engine->{dataserver}{index}{key});
+                        print "ERROR: Missing file name for index '$engine->{dataserver}{index}{content}'\n"
+                            unless (exists $engine->{dataserver}{index}{file});
+                        my ($file) = "$config->{root}/$d_dir/$e_dir/$engine->{dataserver}{index}{file}";
+                        print "WARNING: File '$file' is not accessible'\n"
+                            unless (-r $file);
+                        printf "            file '%s' served as '%s', key '%s'\n",
+                            $file, $engine->{dataserver}{index}{content}, $engine->{dataserver}{index}{key} if ($opt_d);
+                        $anything = 1;
+                    }
+                    elsif ($engine->{dataserver}{index}{type} eq "binary")
+                    {   # create and maybe serve binary index
+                        my ($file) = "$config->{root}/$d_dir/$e_dir/master_index";
+                        printf "            creating indexconfig.xml and binary index '%s'\n", $file if ($opt_d);
+                        if (exists $engine->{dataserver}{index}{key})
+                        {
+                            printf "            served as '%s', key '%s'\n",
+                                $engine->{dataserver}{index}{content}, $engine->{dataserver}{index}{key} if ($opt_d);
+                        }
+                        $anything = 1;
+                    }
+
+                    # Check for duplicate keys
+                    if (exists $engine->{dataserver}{index}{key})
+                    {
+                        my ($key) = $engine->{dataserver}{index}{key};
+                        print "ERROR: Engine key $key already used by $keys{$key}\n"
+                            if (exists $keys{$key});
+                        $keys{$key} = "Engine data server '$engine->{dataserver}{index}{content}'";
+                    }
+                }
+                print "ERROR: No 'index' nor 'current_index' entry, so nothing to serve!\n"
+                    unless $anything;
+            }
+        }
+        print "\n" if ($opt_d);
     }
-    print("\n");
 }
 
 # For checking host-where-to-run or 'false'

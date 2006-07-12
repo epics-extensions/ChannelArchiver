@@ -4,3 +4,4 @@ O.*
 *.opt
 Debug
 Release
+.gdb*

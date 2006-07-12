@@ -21,6 +21,8 @@
 // what's happening.
 #define LOGFILE "/tmp/archserver.log"
 
+#define DUMP_CGI_INFO
+
 // Return name of configuration file from environment or 0
 const char *get_config_name(xmlrpc_env *env)
 {
@@ -93,6 +95,39 @@ int main(int argc, char *argv[])
         gettimeofday(&t0, 0);
         MsgLogger logger(LOGFILE);
         LOG_MSG("---- ArchiveServer " ARCH_VERSION_TXT " Started ----\n");
+        
+    // This runs as a CGI tool.
+        // Depending on the web server, we might get some interesting environment
+        // variables that tell us more about the request.
+        // Some are defined in the CGI standard, some seem to be up to the web
+        // server.
+#ifdef DUMP_ALL_ENV_VARS
+        // Dump all variables.
+        // This is cute for learning what you server provides.
+        // Not good for 'production' use because it's usually too much.
+        extern char **environ;
+        size_t i;
+        for (i = 0; environ[i]!=0; ++i)
+        {
+            const char *entry = environ[i];
+            LOG_MSG("%s\n", entry);
+        }
+#endif
+#ifdef DUMP_CGI_INFO
+        // Dump some selected variables which might help us to figure
+        // out who triggered the request, so one can later use this
+        // to determine usage patterns.
+        const char *client_ip   = getenv("REMOTE_ADDR");
+        const char *client_port = getenv("REMOTE_PORT");
+        const char *client_tool = getenv("HTTP_USER_AGENT");
+        if (client_ip == 0)
+            client_ip = "<?>";
+        if (client_port == 0)
+            client_port = "<?>";
+        if (client_tool == 0)
+            client_tool = "<?>";
+        LOG_MSG("Client: %s @ %s:%s\n", client_tool, client_ip, client_port);
+#endif
 #endif
         xmlrpc_cgi_init(XMLRPC_CGI_NO_FLAGS);
         xmlrpc_cgi_add_method_w_doc("archiver.info",     &get_info,     0, "S:", "Get info");

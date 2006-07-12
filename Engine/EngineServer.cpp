@@ -522,6 +522,7 @@ static void addGroup(HTTPClientConnection *connection, const stdString &path,
         page.out(group_name);
         {
             Guard engine_guard(__FILE__, __LINE__, *engine);
+	        engine->attachToProcessVariableContext(engine_guard);
             engine->stop(engine_guard);         
             engine->write(engine_guard);                        
             engine->addGroup(engine_guard, group_name);

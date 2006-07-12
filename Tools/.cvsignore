@@ -2,3 +2,6 @@ O.*
 *.plg
 Debug
 Release
+.gdb*
+msg_log_test.txt
+avl.dot

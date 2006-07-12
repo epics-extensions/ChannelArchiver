@@ -13,7 +13,7 @@
 <parser enabled="true"/>
 </buildOutputProvider>
 <scannerInfoProvider id="specsFile">
-<runAction arguments="-E -P -v -dD ${plugin_state_location}/${specs_file}" command="gcc" useDefault="true"/>
+<runAction arguments="-E -P -v -dD ${plugin_state_location}/${specs_file}" command="g++" useDefault="true"/>
 <parser enabled="true"/>
 </scannerInfoProvider>
 </profile>
@@ -50,68 +50,58 @@
 </item>
 <item id="org.eclipse.cdt.core.pathentry">
 <pathentry base-path="ChannelArchiver" include="Tools" kind="inc" path="" system="true"/>
-<pathentry base-path="ChannelArchiver" include="Engine" kind="inc" path="" system="true"/>
 <pathentry base-path="ChannelArchiver" include="Storage" kind="inc" path="" system="true"/>
 <pathentry base-path="ChannelArchiver" include="LibIO" kind="inc" path="" system="true"/>
 <pathentry base-path="ChannelArchiver" include="XMLRPCServer" kind="inc" path="" system="true"/>
+<pathentry base-path="ChannelArchiver" include="Engine" kind="inc" path="" system="true"/>
+<pathentry include="/Users/kasemir/epics/R3.14.8.2/base/include" kind="inc" path="" system="true"/>
+<pathentry include="/Users/kasemir/epics/R3.14.8.2/base/include/os/Darwin" kind="inc" path="" system="true"/>
 <pathentry kind="src" path=""/>
 <pathentry kind="out" path=""/>
 <pathentry kind="con" path="org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO"/>
 </item>
 <item id="org.eclipse.cdt.make.core.buildtargets">
 <buildTargets>
-<target name="all" path="Engine" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<target name="Engine" path="Engine" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>all</buildTarget>
-<stopOnError>true</stopOnError>
-<useDefaultCommand>true</useDefaultCommand>
-</target>
-<target name="test" path="Engine" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
-<buildCommand>make</buildCommand>
-<buildArguments/>
-<buildTarget>test</buildTarget>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="Tools" path="Tools" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>all</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
-<target name="test" path="Engine_New" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<target name="Tools Test" path="Tools" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>test</buildTarget>
-<stopOnError>false</stopOnError>
+<stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
-<target name="all" path="Engine_New" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<target name="clean" path="Tools" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
-<stopOnError>false</stopOnError>
-<useDefaultCommand>true</useDefaultCommand>
-</target>
-<target name="all" path="Storage" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
-<buildCommand>make</buildCommand>
-<buildArguments/>
-<buildTarget>all</buildTarget>
+<buildArguments></buildArguments>
+<buildTarget>clean</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="all" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
-<buildTarget/>
+<buildArguments></buildArguments>
+<buildTarget>all</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
-<target name="all" path="XMLRPCServer" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<target name="clean" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
-<stopOnError>false</stopOnError>
+<buildArguments></buildArguments>
+<buildTarget>clean</buildTarget>
+<stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 </buildTargets>

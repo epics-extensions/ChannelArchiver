@@ -170,7 +170,7 @@ void HTTPServer::run()
                 if (! overloaded)
                 {
                     LOG_MSG("HTTPServer reached %zu concurrent clients.\n",
-                            num_clients);
+                            (size_t)num_clients);
                     overloaded = true;
                 }
                 reject(peer);
@@ -265,7 +265,7 @@ size_t HTTPServer::client_cleanup()
             // What?? Format string? num?
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
             size_t num = clients[i]->getNum();
-            LOG_MSG("HTTPClientConnection %zu is done.\n", num);
+            LOG_MSG("HTTPClientConnection %zu is done.\n", (size_t)num);
 #           endif
             clients[i] = 0;
         }
@@ -273,14 +273,14 @@ size_t HTTPServer::client_cleanup()
         {
 #           if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
             size_t num = clients[i]->getNum();
-            LOG_MSG("HTTPClientConnection %zu is active\n", num);
+            LOG_MSG("HTTPClientConnection %zu is active\n", (size_t)num);
 #           endif
             ++num_clients;
         }
     }
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     if (num_clients > 0)
-        LOG_MSG("%zu clients left.\n", num_clients);
+        LOG_MSG("%zu clients left.\n", (size_t)num_clients);
 #   endif
     return num_clients;
 }
@@ -311,7 +311,7 @@ void HTTPServer::serverinfo(SOCKET socket)
         {
             if (! clients[i])
                 continue;
-            sprintf(num, "%zu", clients[i]->getNum());
+            sprintf(num, "%zu", (size_t)clients[i]->getNum());
             status = (clients[i]->isDone() ? "done" : "running");
             // The client's getRuntime() provides the active runtime,
             // updated by the client itself.
@@ -349,12 +349,12 @@ HTTPClientConnection::~HTTPClientConnection()
     if (! done)
     {
         LOG_MSG("HTTPClientConnection: Forced shutdown while # %zu still up\n",
-                num);
+                (size_t)num);
         epicsSocketDestroy(socket);
     }
 #   if defined(HTTPD_DEBUG) && HTTPD_DEBUG > 2
     else
-        LOG_MSG("~HTTPClientConnection: Graceful end of %zu\n", num);
+        LOG_MSG("~HTTPClientConnection: Graceful end of %zu\n", (size_t)num);
 #   endif
 }
 
@@ -366,7 +366,7 @@ void HTTPClientConnection::run()
         stdString local_info, peer_info;
         GetSocketInfo(socket, local_info, peer_info);
         LOG_MSG("HTTPClientConnection %zu thread 0x%08lX, handles %s/%s\n",
-                num, (unsigned long) epicsThreadGetIdSelf(),
+                (size_t)num, (unsigned long) epicsThreadGetIdSelf(),
                 local_info.c_str(), peer_info.c_str());
 #       endif
 #       ifdef MOZILLA_HACK
@@ -393,13 +393,13 @@ void HTTPClientConnection::run()
             if (server->isShuttingDown())
             {
                 LOG_MSG("HTTPClientConnection %zu stopped; server's ending\n",
-                        num);
+                        (size_t)num);
                 break;
             }
             runtime = epicsTime::getCurrent() - birthtime;
             if (runtime > HTTPD_CLIENT_TIMEOUT)
             {
-                LOG_MSG("HTTPClientConnection %zu timing out\n", num);
+                LOG_MSG("HTTPClientConnection %zu timing out\n", (size_t)num);
                 break;
             }
         }
@@ -436,7 +436,7 @@ void HTTPClientConnection::join()
 {
     if (! thread.exitWait(1.0))
     {
-        LOG_MSG("HTTPClientConnection::join() failed for # %zu", num);
+        LOG_MSG("HTTPClientConnection::join() failed for # %zu", (size_t)num);
     }
 }
 

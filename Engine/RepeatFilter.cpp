@@ -75,7 +75,7 @@ void RepeatFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
                 ++repeat_count;
 #               ifdef DEBUG_REP_FILT
                 LOG_MSG("RepeatFilter '%s': repeat %zu\n",
-                        pv.getName().c_str(), repeat_count);
+                        pv.getName().c_str(), (size_t)repeat_count);
 #               endif
                 if (repeat_count >= config.getMaxRepeatCount())
                 {   // Forced flush, marked by host time; keep the repeat value.
@@ -111,7 +111,7 @@ void RepeatFilter::flush(Guard &guard,
         return;
 #   ifdef DEBUG_REP_FILT
     LOG_MSG("RepeatFilter '%s': Flushing %zu repeats\n",
-            pv.getName().c_str(), repeat_count);
+            pv.getName().c_str(), (size_t)repeat_count);
 #   endif
     // Try to move time stamp of 'repeat' sample to the time
     // when the value became obsolete.

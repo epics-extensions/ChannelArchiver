@@ -66,6 +66,8 @@ extern TEST_CASE test_timer();
 extern TEST_CASE test_time();
 // Unit stdStringTest:
 extern TEST_CASE test_string();
+// Unit va_argTest:
+extern TEST_CASE va_arg_test();
 
 int main(int argc, const char *argv[])
 {
@@ -557,6 +559,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\ntest_string:\n");
             if (test_string())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "va_argTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit va_argTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "va_arg_test")==0)
+       {
+            ++run;
+            printf("\nva_arg_test:\n");
+            if (va_arg_test())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

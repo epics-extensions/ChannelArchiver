@@ -98,8 +98,8 @@ void GroupInfo::incConnected(Guard &group_guard, ArchiveChannel &pv)
                                "Group %s connect count is %zu out of %zu "
                                "on increment from '%s'",
                                getName().c_str(),
-                               num_connected,
-                               channels.size(),
+                               (size_t)num_connected,
+                               (size_t)channels.size(),
                                pv.getName().c_str());    
 }
     

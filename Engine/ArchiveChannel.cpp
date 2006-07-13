@@ -265,7 +265,7 @@ void ArchiveChannel::disable(Guard &guard, const epicsTime &when)
     if (disable_count > groups.size())
     {
         LOG_MSG("ERROR: Channel '%s' disabled %zu times?\n",
-                getName().c_str(), disable_count);
+                getName().c_str(), (size_t)disable_count);
         return;
     }
     // That handled the bookkeeping of being disabled or not.

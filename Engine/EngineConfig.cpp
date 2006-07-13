@@ -15,10 +15,11 @@ void EngineConfig::addToFUX(FUX::Element *doc)
     new FUX::Element(doc, "file_size", "%g",
                      getFileSizeLimit()/1024.0/1024.0);
     new FUX::Element(doc, "ignored_future", "%g",
-            getIgnoredFutureSecs()/60.0/60.0);
-    new FUX::Element(doc, "buffer_reserve", "%zu", getBufferReserve());
+                     getIgnoredFutureSecs()/60.0/60.0);
+    new FUX::Element(doc, "buffer_reserve", "%zu",
+                     (size_t)getBufferReserve());
     new FUX::Element(doc, "max_repeat_count", "%zu",
-             getMaxRepeatCount());
+                     (size_t)getMaxRepeatCount());
     if (getDisconnectOnDisable())
         new FUX::Element(doc, "disconnect");
 }

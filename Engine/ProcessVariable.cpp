@@ -59,13 +59,13 @@ ProcessVariable::~ProcessVariable()
     if (!state_listeners.isEmpty())
     {
         LOG_MSG("ProcessVariable(%s) still has %zu state listeners\n",
-                getName().c_str(), state_listeners.size());
+                getName().c_str(), (size_t)state_listeners.size());
         return;
     }
     if (!value_listeners.isEmpty())
     {
         LOG_MSG("ProcessVariable(%s) still has %zu value listeners\n",
-                getName().c_str(), value_listeners.size());
+                getName().c_str(), (size_t)value_listeners.size());
         return;
     }
     try

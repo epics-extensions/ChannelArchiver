@@ -41,7 +41,7 @@ ProcessVariableContext::~ProcessVariableContext()
     if (refs > 0)
     {
         LOG_MSG("ProcessVariableContext has %zu references "
-                "left on destruction\n", refs);
+                "left on destruction\n", (size_t)refs);
         return;
     }
     LOG_MSG("Stopping ChannelAccess.\n");
@@ -83,7 +83,7 @@ void ProcessVariableContext::incRef(Guard &guard)
     LOG_ASSERT(isAttached(guard));
     ++refs;
 #   ifdef DEBUG_PV_CONTEXT
-    printf("ProcessVariableContext::incRef: %zu refs\n", refs);
+    printf("ProcessVariableContext::incRef: %zu refs\n", (size_t)refs);
 #   endif
 }
         
@@ -96,7 +96,7 @@ void ProcessVariableContext::decRef(Guard &guard)
                                "RefCount goes negative");
     --refs;
 #   ifdef DEBUG_PV_CONTEXT
-    printf("ProcessVariableContext::decRef: %zu refs\n", refs);
+    printf("ProcessVariableContext::decRef: %zu refs\n", (size_t)refs);
 #   endif
 }
 

@@ -311,7 +311,7 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
     if (buffer.getOverwrites())
         overwrite_throttle.LOG_MSG("%s: %zu buffer overwrites\n",
                                    pv.getName().c_str(),
-                                   buffer.getOverwrites());
+                                   (size_t)buffer.getOverwrites());
     buffer.reset();
     return value_count;        
 }

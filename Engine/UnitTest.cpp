@@ -14,6 +14,8 @@ extern TEST_CASE test_circular_buffer();
 extern TEST_CASE test_disable_filter();
 // Unit EngineConfigTest:
 extern TEST_CASE engine_config();
+// Unit HTMLPageTest:
+extern TEST_CASE test_html_page();
 // Unit HTTPServerTest:
 extern TEST_CASE test_http_server();
 // Unit ProcessVariableFilterTest:
@@ -100,6 +102,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\nengine_config:\n");
             if (engine_config())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "HTMLPageTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit HTMLPageTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_html_page")==0)
+       {
+            ++run;
+            printf("\ntest_html_page:\n");
+            if (test_html_page())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

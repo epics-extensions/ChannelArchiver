@@ -11,6 +11,9 @@
 #ifndef __HTMLPAGE_H__
 #define __HTMLPAGE_H__
 
+// Tools
+#include <stdString.h>
+
 #ifdef solaris
 // Hack around clash of struct map in inet headers with std::map
 #define map xxxMapxxx
@@ -60,6 +63,9 @@ public:
     /** Add line to table.
      *  <p>
      *  Number of items, ending in 0, must match call to openTable().
+     *  Meaning: There must be an item for each column.
+     *  If a columns was declared with colspan==2 in openTable,
+     *  two items are required for that column.
      */
     void tableLine (const char *item, ...);
     

@@ -98,7 +98,12 @@ HTMLPage::~HTMLPage()
 
 void HTMLPage::out(const char *line, size_t length)
 {    
-    ::send(socket, line, length, 0);
+    // Used to use send, but man page claims send with 0 flags
+    // is the same as write, and write has the advantage of
+    // also working with stdout, so one can create unit tests
+    // w/o any sockets.
+    // ::send(socket, line, length, 0);
+    ::write(socket, line, length);
 }
 
 void HTMLPage::out(const char *line)

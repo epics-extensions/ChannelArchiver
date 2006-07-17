@@ -15,7 +15,7 @@ package archiveconfig;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(parse_config_file is_localhost read_URL update_status);
+@EXPORT = qw(time_as_text parse_config_file is_localhost read_URL update_status);
 
 use English;
 use strict;
@@ -30,6 +30,15 @@ use XML::Simple;
 # Timeout used when reading a HTTP client or ArchiveEngine.
 my ($read_timeout) = 30;
 my ($localhost) = hostname();
+
+sub time_as_text($)
+{
+    my ($seconds) = @ARG;
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+        = localtime($seconds);
+    return sprintf("%04d/%02d/%02d %02d:%02d:%02d",
+           1900+$year, 1+$mon, $mday, $hour, $min, $sec);
+}
 
 # Parse the old-style tab separated file format.
 #

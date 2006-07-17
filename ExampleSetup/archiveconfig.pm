@@ -143,7 +143,7 @@ sub check_config($$)
     print "ERROR: The mailbox directory doesn't exist\n" unless (-d  $config->{mailbox});
 
     # Loop over daemons
-    foreach $d_dir ( keys %{ $config->{daemon} } )
+    foreach $d_dir ( sort keys %{ $config->{daemon} } )
     {
         print "Daemon '$d_dir'\n" if ($opt_d);
         my ($daemon) = $config->{daemon}{$d_dir};
@@ -255,7 +255,7 @@ sub check_config($$)
         }
 
         # Loop over engines for this daemon
-        foreach $e_dir ( keys %{ $daemon->{engine} } )
+        foreach $e_dir ( sort keys %{ $daemon->{engine} } )
         {
             print "    Engine '$d_dir/$e_dir'\n" if ($opt_d);
             my ($engine) = $daemon->{engine}{$e_dir};
@@ -336,7 +336,10 @@ sub check_config($$)
                         $engine->{dataserver}{current_index}{content},
                         $engine->{dataserver}{current_index}{key} if ($opt_d);
                     my ($file) = "$config->{root}/$d_dir/$e_dir/current_index";
-                    print "WARNING: $file doesn't exist!\n" unless (-r $file);
+                    if ($is_local and not -r $file)
+                    {
+                        print "WARNING: $file doesn't exist!\n";
+                    }
 
                     # Check for duplicate keys
                     my ($key) = $engine->{dataserver}{current_index}{key};

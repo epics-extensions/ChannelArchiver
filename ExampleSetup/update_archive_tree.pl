@@ -144,7 +144,7 @@ sub create_daemon_files($)
         {
             printf("    <mailbox>$config->{mailbox}</mailbox>\n");
         }
-        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+        foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
         {
 	    if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
 	    {
@@ -258,7 +258,7 @@ sub create_daemon_files($)
 sub create_stuff()
 {
     my ($d_dir, $e_dir);
-    foreach $d_dir ( keys %{ $config->{daemon} } )
+    foreach $d_dir ( sort keys %{ $config->{daemon} } )
     {
 	# Skip daemons/systems that don't match the supplied reg.ex.
 	next if (length($opt_s) > 0 and not $d_dir =~ $opt_s);
@@ -270,7 +270,7 @@ sub create_stuff()
 	    mkpath($d_dir, 1);
 	    create_daemon_files($d_dir);
         }
-        foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
+        foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
 	    # Engine and ASCII-config dir
             if (is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))

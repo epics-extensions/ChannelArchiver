@@ -185,7 +185,8 @@ sub check_config($$)
                 $daemon->{dataserver}{host} = "false";
                 print "        (host entry defaults to 'false')\n" if ($opt_d);
             }
-            if (is_localhost($daemon->{dataserver}{host}))
+            my ($is_local) = is_localhost($daemon->{dataserver}{host});
+            if ($is_local)
             {
                 print "        host='$daemon->{dataserver}{host}' (runs on this host)\n" if ($opt_d);
             }
@@ -216,8 +217,10 @@ sub check_config($$)
                     print "ERROR: Missing file name for index '$daemon->{dataserver}{index}{content}'\n"
                         unless (exists $daemon->{dataserver}{index}{file});
                     my ($file) = "$config->{root}/$d_dir/$daemon->{dataserver}{index}{file}";
-                    print "WARNING: File '$file' is not accessible'\n"
-                        unless (-r $file);
+                    if ($is_local and not -r $file)
+                    {
+                        print "WARNING: File '$file' is not accessible'\n";
+                    }
                     printf "        file '%s' served as '%s', key '%s'\n",
                         $file, $daemon->{dataserver}{index}{content}, $daemon->{dataserver}{index}{key} if ($opt_d);
                 }
@@ -307,7 +310,8 @@ sub check_config($$)
                     $engine->{dataserver}{host} = "false";
                     print "            (host entry defaults to 'false')\n" if ($opt_d);
                 }
-                if (is_localhost($engine->{dataserver}{host}))
+                my ($is_local) = is_localhost($engine->{dataserver}{host});
+                if ($is_local)
                 {
                     print "            host='$engine->{dataserver}{host}' (runs on this host)\n" if ($opt_d);
                 }
@@ -347,8 +351,10 @@ sub check_config($$)
                         print "ERROR: Missing file name for index '$engine->{dataserver}{index}{content}'\n"
                             unless (exists $engine->{dataserver}{index}{file});
                         my ($file) = "$config->{root}/$d_dir/$e_dir/$engine->{dataserver}{index}{file}";
-                        print "WARNING: File '$file' is not accessible'\n"
-                            unless (-r $file);
+                        if ($is_local and not -r $file)
+                        {
+                            print "WARNING: File '$file' is not accessible'\n";
+                        }
                         printf "            file '%s' served as '%s', key '%s'\n",
                             $file, $engine->{dataserver}{index}{content}, $engine->{dataserver}{index}{key} if ($opt_d);
                         $anything = 1;

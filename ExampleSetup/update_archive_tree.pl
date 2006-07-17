@@ -265,15 +265,18 @@ sub create_stuff()
 
 	print("Daemon $d_dir\n");
 	# Daemon Directory
-	mkpath($d_dir, 1);
-	create_daemon_files($d_dir);
+        if (is_localhost($config->{daemon}{$d_dir}{run}))
+        {
+	    mkpath($d_dir, 1);
+	    create_daemon_files($d_dir);
+        }
         foreach $e_dir ( keys %{ $config->{daemon}{$d_dir}{engine} } )
 	{
-	    print(" - Engine $e_dir\n");
-	    mkpath("$d_dir/$e_dir", 1);    
 	    # Engine and ASCII-config dir
             if (is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))
             {
+	        print(" - Engine $e_dir\n");
+	        mkpath("$d_dir/$e_dir", 1);    
 	        mkpath("$d_dir/$e_dir/ASCIIConfig", 1);    
 	        create_engine_files($d_dir, $e_dir);
             }
@@ -329,4 +332,5 @@ $engine_dtd = "$root/engineconfig.dtd";
 create_stuff();
 
 check_dirs() if (length($opt_s) <= 0);
-    
+
+

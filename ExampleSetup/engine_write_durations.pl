@@ -46,11 +46,11 @@ $config_name = $opt_c  if (length($opt_c) > 0);
 
 $config = parse_config_file($config_name, $opt_d);
 
-my ($d_dir, $e_dir, @html, $line, $channels, $count, $time, $vps, $period);
+my ($d_dir, $e_dir, @html, $line, $channels, $proc_delay, $idle_time, $count, $time, $vps, $period);
 my ($total_channels, $total_count, $total_time, $total_vps);
 printf ("ArchiveEngine 'write' Statistics as of %s\n\n", time_as_text(time));
-printf "Engine              Port      Channels  Val.Count Wr.Period Val/sec   Write Duration\n";
-printf "------------------------------------------------------------------------------------\n";
+printf "Engine              Port      Channels  Val.Count Wr.Period Val/sec   Write Duration Delay     Idle\n";
+printf "------------------------------------------------------------------------------------------------------\n";
 $total_channels = 0;
 $total_count = 0;
 $total_time = 0;
@@ -60,12 +60,14 @@ foreach $d_dir ( sort keys %{ $config->{daemon} } )
     next if ($config->{daemon}{$d_dir}{'run'} eq 'false');
     foreach $e_dir ( sort keys %{ $config->{daemon}{$d_dir}{engine} } )
     {
-        next if ($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'} eq 'false');
+        next unless is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'});
 	printf("    Engine '%s/%s', %s:%d, description '%s'\n",
 	       $d_dir, $e_dir, $localhost,
                $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
                $config->{daemon}{$d_dir}{engine}{$e_dir}{desc}) if ($opt_d);
 	$channels = "<unknown>";
+        $proc_delay = "<unknown>";
+        $idle_time = "<unknown>";
 	$count = "<unknown>";
 	$time = "<unknown>";
 	$period= "<unknown>";
@@ -77,6 +79,15 @@ foreach $d_dir ( sort keys %{ $config->{daemon} } )
 	    {
 		$channels = $1;
 	    }
+	    if ($line =~ m"Process Delay.*>([0-9.]+) sec<")
+	    {
+		$proc_delay = $1;
+	    }
+	    if ($line =~ m"Idle time.*>([0-9.]+) %<")
+	    {
+		$idle_time = $1;
+	    }
+
 	    if ($line =~ m"Write Count.*>([0-9.]+)<")
 	    {
 		$count = $1;
@@ -99,15 +110,15 @@ foreach $d_dir ( sort keys %{ $config->{daemon} } )
         {
 	    $vps = 0;
         }
-	printf "%-20s%-10d%-10s%-10s%-10s%8.3f  %s\n",
+	printf "%-20s%-10d%-10s%-10s%-10s%8.3f  %s      %5.2f s   %5.1f \%\n",
                $d_dir . "/" . $e_dir, $config->{daemon}{$d_dir}{engine}{$e_dir}{port},
-               $channels, $count, $period, $vps, $time;
+               $channels, $count, $period, $vps, $time, $proc_delay, $idle_time;
 	$total_channels += $channels if ($channels > 0);
 	$total_count += $count if ($count > 0);
 	$total_vps += $vps if ($vps > 0);
 	$total_time += $time if ($time > 0);
     }
 }
-printf "------------------------------------------------------------------------------------\n";
+printf "------------------------------------------------------------------------------------------------------\n";
 printf "Total:                        %-9d %-9d           %8.3f  %.3f sec\n",
     $total_channels, $total_count, $total_vps, $total_time;

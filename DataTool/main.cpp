@@ -182,58 +182,73 @@ void copy_channel(const stdString &channel_name,
             printf("\n");
         fflush(stdout);
     }
-    determine_period_and_samples(index, channel_name, period, num_samples);
-    const RawValue::Data *value = reader.find(channel_name, start);
-    while (value && start && RawValue::getTime(value) < *start)
-    {   // Correct for "before-or-at" idea of find()
-        if (verbose > 2)
-            printf("Skipping sample before start time\n");
-        value = reader.next();
-    }
-    for (/**/; value; value = reader.next())
+    try
     {
-        if (end  &&  RawValue::getTime(value) >= *end)
-            break; // Reached or exceeded end time
-        if (!writer || reader.changedType() || reader.changedInfo())
-        {   // Need new or different writer
-            writer = new DataWriter(
-                new_index, channel_name,
-                reader.getInfo(), reader.getType(), reader.getCount(),
-                period, num_samples);
-            RawValue::free(last_value);
-            last_value_set = false;
-            last_value = RawValue::allocate(reader.getType(),
-                                            reader.getCount(), 1);
-            if (!writer  ||  !last_value)
-            {
-                printf("Cannot allocate DataWriter/RawValue\n");
-                return;
-            }
-        }
-        if (RawValue::getTime(value) < writer->getLastStamp())
-        {
-            ++back;
+        determine_period_and_samples(index, channel_name, period, num_samples);
+        const RawValue::Data *value = reader.find(channel_name, start);
+        while (value && start && RawValue::getTime(value) < *start)
+        {   // Correct for "before-or-at" idea of find()
             if (verbose > 2)
-                printf("Skipping %lu back-in-time values\r",
-                       (unsigned long) back);
-            continue;
+                printf("Skipping sample before start time\n");
+            value = reader.next();
         }
-        if (! writer->add(value))
+        for (/**/; value; value = reader.next())
         {
-            printf("DataWriter::add claims back-in-time\n");
-            continue;
+            if (end  &&  RawValue::getTime(value) >= *end)
+                break; // Reached or exceeded end time
+            if (!writer || reader.changedType() || reader.changedInfo())
+            {   // Need new or different writer
+                writer = new DataWriter(
+                    new_index, channel_name,
+                    reader.getInfo(), reader.getType(), reader.getCount(),
+                    period, num_samples);
+                RawValue::free(last_value);
+                last_value_set = false;
+                last_value = RawValue::allocate(reader.getType(),
+                                                reader.getCount(), 1);
+                if (!writer  ||  !last_value)
+                {
+                    printf("Cannot allocate DataWriter/RawValue\n");
+                    return;
+                }
+            }
+            if (RawValue::getTime(value) < writer->getLastStamp())
+            {
+                ++back;
+                if (verbose > 2)
+                    printf("Skipping %lu back-in-time values\r",
+                           (unsigned long) back);
+                continue;
+            }
+            if (! writer->add(value))
+            {
+                printf("DataWriter::add claims back-in-time\n");
+                continue;
+            }
+            // Keep track of last time stamp and status (not value!)
+            RawValue::setStatus(last_value,
+                                RawValue::getStat(value),
+                                RawValue::getSevr(value));
+            RawValue::setTime(last_value, RawValue::getTime(value));
+            last_value_set = true;
+            ++count;
+            if (verbose > 3 && (count % 1000 == 0))
+                printf("Copied %lu values\r", (unsigned long) count);
+            
         }
-        // Keep track of last time stamp and status (not value!)
-        RawValue::setStatus(last_value,
-                            RawValue::getStat(value),
-                            RawValue::getSevr(value));
-        RawValue::setTime(last_value, RawValue::getTime(value));
-        last_value_set = true;
-        ++count;
-        if (verbose > 3 && (count % 1000 == 0))
-            printf("Copied %lu values\r", (unsigned long) count);
-        
     }
+    catch (GenericException &e)
+    {   // Catch errrors in the sample copy loop,
+        // meaning to catch read errors on this channel, which are reported
+        // but don't stop the copy process for the other channels.
+        // Of course we'd also catch write errors in here,
+        // but don't really distinguish them...
+        fprintf(stderr, "Error on channel '%s':\n%s\n",
+                channel_name.c_str(), e.what());
+    }
+    // Always try to add the 'off' markers.
+    // Write errors in here are propagated up,
+    // because if we cannot write, we're hosed.
     if (do_enforce_off && last_value_set && count > 0 &&
         RawValue::getSevr(last_value) != ARCH_STOPPED)
     {   // Try to add an "Off" Sample.

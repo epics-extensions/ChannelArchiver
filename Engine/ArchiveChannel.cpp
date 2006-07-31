@@ -94,8 +94,10 @@ void ArchiveChannel::configure(ProcessVariableContext &ctx,
                                ScanList &scan_list,
                                double scan_period, bool monitor)
 {
+#   ifdef DEBUG_ARCHIVE_CHANNEL	
     LOG_MSG("ArchiveChannel '%s' reconfig...\n",
             getName().c_str());
+#   endif
     LOG_ASSERT(sample_mechanism);
     // Check args, stop old sample mechanism.
     Guard guard(__FILE__, __LINE__, *this);

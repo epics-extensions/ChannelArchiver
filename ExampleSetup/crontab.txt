@@ -7,8 +7,9 @@
 
 # Example entry on a "serving" computer:
 #
-# Every 30 minutes, update the server based on the info from the mailbox dir.
+# Every 2 minutes, update the server based on the info from the mailbox dir.
 #
 # min hour day month weekday
-0,30 * * * * /home/xfer/update_server.sh &
+0-59/2 * * * * /home/xfer/update_server.sh &
+
 

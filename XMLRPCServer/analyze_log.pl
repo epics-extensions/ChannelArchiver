@@ -65,4 +65,5 @@ for ($i=0; $i<=$#runtime_groups; ++$i)
 }
 print "Outragerous runtimes: $outrageous\n";
 print "maximum: $most_outrageous\n";
+print "Total number of requests: $total_runs\n";
 

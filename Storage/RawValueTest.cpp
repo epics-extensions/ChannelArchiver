@@ -45,6 +45,29 @@ TEST_CASE RawValue_format()
     TEST_OK;
 }
 
+TEST_CASE RawValue_compare()
+{
+    RawValueAutoPtr a(RawValue::allocate(DBR_TIME_DOUBLE, 1, 1));
+    RawValueAutoPtr b(RawValue::allocate(DBR_TIME_DOUBLE, 1, 1));
+
+    // Equal values are equal
+    RawValue::setDouble(DBR_TIME_DOUBLE, 1, a, 3.14);
+    RawValue::setDouble(DBR_TIME_DOUBLE, 1, b, 3.14);
+    epicsTime now = epicsTime::getCurrent();
+    RawValue::setTime(a, now);
+    RawValue::setTime(b, now);
+    TEST(RawValue::hasSameValue(DBR_TIME_DOUBLE, 1, a, b) == true);
+
+    // Time stamp changes are still considered equal
+    RawValue::setTime(b, now + 1);
+    TEST(RawValue::hasSameValue(DBR_TIME_DOUBLE, 1, a, b) == true);
+
+    // Status changes are not
+    a->status = 1;
+    TEST(RawValue::hasSameValue(DBR_TIME_DOUBLE, 1, a, b) == false);
+    TEST_OK;
+}
+
 TEST_CASE RawValue_auto_ptr()
 {
     {

@@ -61,6 +61,12 @@ bool RawValue::hasSameValue(DbrType type, DbrCount count, size_t size,
 {
     size_t offset;
 
+    // Different status or severity?
+    if (lhs->status != rhs->status  ||
+        lhs->severity != rhs->severity)
+        return false;
+ 
+    // Skip the time stamp and pads, compare the value
     switch (type)
     {
     case DBR_TIME_STRING: offset = offsetof (dbr_time_string, value); break;

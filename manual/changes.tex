@@ -6,6 +6,14 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 08/14/2006 --- Version 2.9.1:\\
+John Sinclair noticed that the engine fails to store certain
+changes that affect only the channel's status and severity.
+The bug was inside the RawValue::hasSameValue() routine, it
+omitted a status and severity comparison. The error has been
+around for quite some time, so many thanks go to John for
+finally finding this.
+
 \item 07/10/2006 --- Version 2.9:\\
 In short:
 \begin{itemize}

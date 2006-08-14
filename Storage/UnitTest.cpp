@@ -35,6 +35,7 @@ extern TEST_CASE RawDataReaderTest();
 extern TEST_CASE DualRawDataReaderTest();
 // Unit RawValueTest:
 extern TEST_CASE RawValue_format();
+extern TEST_CASE RawValue_compare();
 extern TEST_CASE RawValue_auto_ptr();
 // Unit SpreadsheetReaderTest:
 extern TEST_CASE spreadsheet_dump();
@@ -275,6 +276,15 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\nRawValue_format:\n");
             if (RawValue_format())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+       if (single_case==0  ||  strcmp(single_case, "RawValue_compare")==0)
+       {
+            ++run;
+            printf("\nRawValue_compare:\n");
+            if (RawValue_compare())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

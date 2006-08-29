@@ -20,6 +20,14 @@ class Throttle
 public:
     /** Create throttle with the given name and threshold. */
     Throttle(const char *name, double seconds_between_messages);
+    
+    /** Reset the throttle so that isPermitted will return 'true'. */
+    void reset();
+
+    /** Fire the throttle so that isPermitted will return 'false'
+     *  until the threshold is exceeded.
+     */
+    void fire();
 
     /** @return Returns true when it's OK to print message at given time. */
     bool isPermitted(const epicsTime &when);

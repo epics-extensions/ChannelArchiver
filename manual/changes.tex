@@ -6,6 +6,22 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 08/29/2006 --- Version 2.9.2:\\
+Suppress initial 'back in time' messages.
+
+The engine writes an initial sample with the 'host' time.
+That's good for channels that change slowly, since their
+last time stamp might be way old, even before the last
+'Archive Off' indicator. The host stamp asserts that we
+have one initial sample in the archive.
+On channels that change quickly, then arrive with a little
+network delay, we usually soon receive a sample that's stamped
+just before that last host-stamped sample, which resulted
+in a few initial 'back in time' warnings.
+Now the message log throttle for these messages gets fired
+with the first host-stamped entry, so messages are suppressed
+for about one hour.
+
 \item 08/14/2006 --- Version 2.9.1:\\
 John Sinclair noticed that the engine fails to store certain
 changes that affect only the channel's status and severity.

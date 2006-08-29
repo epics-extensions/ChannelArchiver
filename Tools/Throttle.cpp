@@ -7,6 +7,16 @@ Throttle::Throttle(const char *name, double seconds_between_messages)
 {
 }
 
+void Throttle::reset()
+{
+    last = epicsTime();
+}
+
+void Throttle::fire()
+{
+    last = epicsTime::getCurrent();
+}
+
 bool Throttle::isPermitted(const epicsTime &when)
 {
     Guard guard(__FILE__, __LINE__, mutex);

@@ -227,8 +227,8 @@ file name wildcards. Most regular expressions don't have a wildcard equivalent.
 Reg.\ Exp.    &   Wildcard  &   Matches...  \\
 \hline 
 .             &   ?         &   any single character \\
-.*            &   *         &   any string with 0 or more charcters \\
-.+            &             &   any string with 1 or more charcters \\
+.*            &   *         &   any string with 0 or more characters \\
+.+            &             &   any string with 1 or more characters \\
 \verb!^!      &             &   start of string \\
 \$            &             &   end of string \\
 \verb![aA]!   &             &   'a' or 'A' \\
@@ -238,4 +238,26 @@ Reg.\ Exp.    &   Wildcard  &   Matches...  \\
 b             &   *b*       &   'abc' or 'bbb' or 'xby' or ... \\
 \end{tabular}
 \end{center}
+
+\section{What about using \INDEX{NFS}?}
+For the network data server, it's probably OK to place some of the actual data
+on volumes that are NFS-mounted and not local to the data server.
+For the archive engine, use of NFS is discouraged.
+
+For one, the performance of NFS is usually by orders of magnitude below
+the performance of locally mounted disk drivers.
+In addition, NFS mounted disk drives can always have unexpected errors
+as a result of network delays or outages.
+The API for writing files, that means the read, write, and seek calls offered
+by the operating system, does not offer a clear indication if an error
+was a disk error or a network error, because NFS was specifically designed
+to look like a local file system, which it's clearly not.
+So the detection of NFS errors is difficult. And even if the engine wanted
+to handle those NFS errors which are to be expected, should it simply stop
+for 10 minutes, then try again? What if such an error happens in the middle
+of a write cycle, where partial data was written, and the archive files are
+in an inconsistent state?
+So as long as these issues are not properly addressed, the use of NFS with
+archive engines is strongly discouraged.
+
 

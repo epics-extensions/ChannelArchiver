@@ -26,6 +26,15 @@ public:
     {
     }
     
+    /** Fire the throttle so that isPermitted will return 'false'
+     *  until the threshold is exceeded.
+     */
+    void fire()
+    {
+        Throttle::fire();
+        too_many = true;
+    }
+    
     /// Log a throttled message.
     void LOG_MSG(const char *format, ...)
         __attribute__ ((format (printf, 2, 3)));

@@ -203,8 +203,17 @@ void SampleMechanism::pvValue(ProcessVariable &pv, const RawValue::Data *data)
     Guard guard(__FILE__, __LINE__, getMutex());
     if (last_stamp_set && last_stamp > stamp)
     {
-        back_in_time_throttle.LOG_MSG("SampleMechanism(%s): back in time\n",
-                                      pv.getName().c_str());
+    	    stdString msg, tmp;
+    	    msg.reserve(200);
+    	    msg = "SampleMechanism(";
+    	    msg += pv.getName();
+    	    msg += "): back in time from ";
+    	    epicsTime2string(last_stamp, tmp);
+    	    msg += tmp;
+    	    msg += " to ";
+    	    epicsTime2string(stamp, tmp);
+    	    msg += tmp;
+        back_in_time_throttle.LOG_MSG("%s\n", msg.c_str());
     }
     else
     {   // Add original sample
@@ -231,6 +240,16 @@ void SampleMechanism::pvValue(ProcessVariable &pv, const RawValue::Data *data)
         last_stamp = now;
         last_stamp_set = true;
         have_sample_after_connection = true;
+        // For 'fast' channels, we might receive a bunch of values
+        // which are time stamped between the orginal sample
+        // and this one that we stamped 'now'.
+        // It's unclear how many will follow,
+        // but those 'back in time' warnings should
+        // probably get suppressed.
+        // The easy way out: pretend that we just issued a
+        // back-in-time warning, which will prevent further
+        // ones until the throttle threshold expires.
+        back_in_time_throttle.fire();
     }
 }
 

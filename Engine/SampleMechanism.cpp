@@ -321,8 +321,9 @@ unsigned long SampleMechanism::write(Guard &guard, Index &index)
         {
             stdString txt;
             epicsTime2string(RawValue::getTime(value), txt);
-            LOG_MSG("'%s': back-in-time write value stamped %s\n",
-                    getName().c_str(), txt.c_str());
+            back_in_time_throttle.LOG_MSG(
+                "'%s': back-in-time write value stamped %s\n",
+                getName().c_str(), txt.c_str());
         }
         ++value_count;
     }

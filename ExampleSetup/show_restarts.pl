@@ -33,7 +33,7 @@ sub show_restarts($)
 {
     my ($config) = @ARG;
     my ($d_dir, $e_dir, $ok, $out, $disconnected);
-    my ($type, $time, %restarts);
+    my ($type, $time, $port, %restarts);
 
     foreach $d_dir ( sort keys %{ $config->{daemon} } )
     {
@@ -45,9 +45,11 @@ sub show_restarts($)
                  is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{'run'});
             $type = $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{type};
             $time = $config->{daemon}{$d_dir}{engine}{$e_dir}{restart}{content};
+            $port = $config->{daemon}{$d_dir}{engine}{$e_dir}{port};
+
             # print("    $e_dir  $type $time\n");
             # For each daemon, keep a sorted list of restart times:
-            push @{ $restarts{$d_dir} }, "$time ($e_dir, $type)";
+            push @{ $restarts{$d_dir} }, "$time ($e_dir, $type, port $port)";
             @{ $restarts{$d_dir} } = sort @{ $restarts{$d_dir} };
 	}
     }
@@ -56,10 +58,13 @@ sub show_restarts($)
     # under each daemon:
     foreach $d_dir ( sort { $restarts{$a}[0] cmp $restarts{$b}[0] } keys %restarts )
     {
-        print("$d_dir:\n");
+        printf("%s (port %d):\n",
+               $d_dir,
+               $config->{daemon}{$d_dir}{port});
 	foreach $e_dir ( @{ $restarts{$d_dir} } )
         {
-            print("    $e_dir\n");
+            printf("    %s\n",
+                   $e_dir);
         }
     }
 }

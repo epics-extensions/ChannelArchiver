@@ -49,6 +49,9 @@
 </profile>
 </item>
 <item id="org.eclipse.cdt.core.pathentry">
+<pathentry kind="src" path=""/>
+<pathentry kind="out" path=""/>
+<pathentry kind="con" path="org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO"/>
 <pathentry base-path="ChannelArchiver" include="Tools" kind="inc" path="" system="true"/>
 <pathentry base-path="ChannelArchiver" include="Storage" kind="inc" path="" system="true"/>
 <pathentry base-path="ChannelArchiver" include="LibIO" kind="inc" path="" system="true"/>
@@ -57,9 +60,6 @@
 <pathentry include="/Users/kasemir/epics/R3.14.8.2/base/include" kind="inc" path="" system="true"/>
 <pathentry include="/Users/kasemir/epics/R3.14.8.2/base/include/os/Darwin" kind="inc" path="" system="true"/>
 <pathentry include="/Applications/MATLAB72/extern/include" kind="inc" path="" system="true"/>
-<pathentry kind="src" path=""/>
-<pathentry kind="out" path=""/>
-<pathentry kind="con" path="org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO"/>
 </item>
 <item id="org.eclipse.cdt.make.core.buildtargets">
 <buildTargets>

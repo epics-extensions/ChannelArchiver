@@ -49,6 +49,8 @@ extern TEST_CASE test_concurrent_list();
 extern TEST_CASE test_list();
 // Unit LockfileTest:
 extern TEST_CASE test_lockfile();
+// Unit MemoryBufferTest:
+extern TEST_CASE test_mem_buf();
 // Unit MsgLoggerTest:
 extern TEST_CASE test_log();
 // Unit OrderedMutexTest:
@@ -422,6 +424,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\ntest_lockfile:\n");
             if (test_lockfile())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "MemoryBufferTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit MemoryBufferTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_mem_buf")==0)
+       {
+            ++run;
+            printf("\ntest_mem_buf:\n");
+            if (test_mem_buf())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

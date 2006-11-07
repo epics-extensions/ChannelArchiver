@@ -17,6 +17,7 @@ UnitTest_SRCS += GuardTest.cpp
 UnitTest_SRCS += IndexConfigTest.cpp
 UnitTest_SRCS += ListTest.cpp
 UnitTest_SRCS += LockfileTest.cpp
+UnitTest_SRCS += MemoryBufferTest.cpp
 UnitTest_SRCS += MsgLoggerTest.cpp
 UnitTest_SRCS += OrderedMutexTest.cpp
 UnitTest_SRCS += ThreadTest.cpp

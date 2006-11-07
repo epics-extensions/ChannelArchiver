@@ -215,6 +215,13 @@ sub update_schedule($)
     my ($e_mon, $e_mday, $e_year, $e_hour, $e_min, $e_sec);
     my ($hour, $minute, $hours, $minutes);
 
+	# Caveat:
+	# The final start/end times are seconds-since-epoch, based on UTC.
+	# But the pivot times are local times.
+	# UTC based computations can cause errors for daylight saving time:
+	# $seconds + 24*60*60 is not the same time, next day, during DST switchover.
+	# So try to calc. everything based on day/month/year... pieces,
+	# only converting to seconds at the end.
     print(" ------ update_schedule  : ", time_as_text($now), "\n") if ($opt_d);
     ($n_sec,$n_min,$n_hour,$n_mday,$n_mon,$n_year,$n_wday,$x,$x) =
         localtime($now);
@@ -259,17 +266,23 @@ sub update_schedule($)
                     timelocal_nocheck(0, $minute,$hour,
                       $n_mday+$days_to_go,$n_mon, $n_year);
                     # Already happened today, so we'll try again next week?
-                    $config->{engine}{$engine}{next_stop} += 24*60*60*7
-                        if ($engine_start_secs >
-                                    $config->{engine}{$engine}{next_stop});
+                    if ($engine_start_secs > $config->{engine}{$engine}{next_stop})
+                    {   # Use the next week.
+	                    $config->{engine}{$engine}{next_stop} =
+    	                	 timelocal_nocheck(0,$minute,$hour,$n_mday+7,$n_mon,$n_year);
+					}
                 }
                 else
                 {
                     $config->{engine}{$engine}{next_stop} = timelocal(0,$minute,$hour,
                                  $n_mday,$n_mon,$n_year);
                     # Today or already into the next day?
-                    $config->{engine}{$engine}{next_stop} += 24*60*60
-                    if ($engine_start_secs > $config->{engine}{$engine}{next_stop});
+                    if ($engine_start_secs > $config->{engine}{$engine}{next_stop})
+                    {   # Use the next day, let _nocheck handle the possible
+                        # '32nd day' problem, rolling into the next month.
+	                    $config->{engine}{$engine}{next_stop} =
+    	                	 timelocal_nocheck(0,$minute,$hour,$n_mday+1,$n_mon,$n_year);
+					}
                 }
             }
         }

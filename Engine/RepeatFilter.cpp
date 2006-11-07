@@ -4,7 +4,7 @@
 #include "EngineLocks.h"
 #include "RepeatFilter.h"
 
-#undef DEBUG_REP_FILT
+// #define DEBUG_REP_FILT
 
 RepeatFilter::RepeatFilter(const EngineConfig &config,
                            ProcessVariableListener *listener)

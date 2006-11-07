@@ -203,16 +203,16 @@ void SampleMechanism::pvValue(ProcessVariable &pv, const RawValue::Data *data)
     Guard guard(__FILE__, __LINE__, getMutex());
     if (last_stamp_set && last_stamp > stamp)
     {
-    	    stdString msg, tmp;
-    	    msg.reserve(200);
-    	    msg = "SampleMechanism(";
-    	    msg += pv.getName();
-    	    msg += "): back in time from ";
-    	    epicsTime2string(last_stamp, tmp);
-    	    msg += tmp;
-    	    msg += " to ";
-    	    epicsTime2string(stamp, tmp);
-    	    msg += tmp;
+        stdString msg, tmp;
+        msg.reserve(200);
+        msg = "SampleMechanism(";
+        msg += pv.getName();
+        msg += "): back in time from ";
+        epicsTime2string(last_stamp, tmp);
+        msg += tmp;
+        msg += " to ";
+        epicsTime2string(stamp, tmp);
+        msg += tmp;
         back_in_time_throttle.LOG_MSG("%s\n", msg.c_str());
     }
     else

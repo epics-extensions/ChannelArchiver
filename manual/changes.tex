@@ -6,6 +6,15 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 11/13/2006 --- Version 2.9.3:\\
+DataServer had a quirk:
+In case of not finding any data, it would report
+Numeric meta info with units="No Data",
+because that looks good in e.g.\ a spreadsheet export.
+At the same time, however, it would report the samples
+to be of enumerated type, which clashes with numeric
+control info.
+
 \item 08/29/2006 --- Version 2.9.2:\\
 Suppress initial 'back in time' messages.
 

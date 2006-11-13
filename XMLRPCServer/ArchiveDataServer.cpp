@@ -483,7 +483,7 @@ xmlrpc_value *get_sheet_data(xmlrpc_env *env,
             else
             {   // Channel exists, but has no data
                 meta[i] = encode_ctrl_info(env, 0);
-                xml_type[i] = XML_ENUM;
+                xml_type[i] = XML_DOUBLE;
                 xml_count[i] = 1;
             }
         }

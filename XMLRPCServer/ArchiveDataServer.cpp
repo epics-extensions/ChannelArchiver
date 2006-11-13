@@ -375,7 +375,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
             if (data == 0)
             {   // No exception from file error etc., just no data.
                 meta = encode_ctrl_info(env, 0);
-                xml_type = XML_ENUM;
+                xml_type = XML_DOUBLE;
                 xml_count = 1;
             }
             else

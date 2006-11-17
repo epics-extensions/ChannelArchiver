@@ -125,6 +125,15 @@ const RawValue::Data *PlotReader::fill_bin()
             }
             have_initial_final = true;
         }
+        // Hit a special value (disconnected, off)?
+        // Leave that in 'final', jump to end of bin and and break.
+        if (RawValue::isInfo(final))
+        {
+            do
+                reader_data = reader.next();
+            while (reader_data && RawValue::getTime(reader_data) < end_of_bin);
+            break;
+        }   
         if (RawValue::isInfo(final)==false  &&
             RawValue::getDouble(type, count, final, d))
         {   // Determine the minimum and maximum.

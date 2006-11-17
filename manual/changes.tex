@@ -6,6 +6,12 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 11/17/2006 --- :\\
+PlotReader jumps to end of bin on first 'info' sample,
+so that it shows up in the end result.
+That hides the real min/max, but might be better than missing
+the 'off' or 'disconnected' samples in the plot.
+
 \item 11/13/2006 --- Version 2.9.3:\\
 DataServer had a quirk:
 In case of not finding any data, it would report

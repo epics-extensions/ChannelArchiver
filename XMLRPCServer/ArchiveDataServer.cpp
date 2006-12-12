@@ -571,12 +571,13 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
             "from sources for version " ARCH_VERSION_TXT "\n"
             "Config: '%s'\n",
             ARCH_VER, config);
-    AutoXmlRpcValue how(xmlrpc_build_value(env, "(sssss)",
+    AutoXmlRpcValue how(xmlrpc_build_value(env, "(ssssss)",
                                            "raw",
                                            "spreadsheet",
-                                           "average",
+                                           "average (to count)",
                                            "plot-binning",
-                                           "linear"));
+                                           "linear",
+                                           "average (to delta)"));
     if (env->fault_occurred)
         return 0;
     // 'status': array of all status string.
@@ -794,7 +795,7 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
         case HOW_SHEET:
             return get_sheet_data(env, key, name_vector, start, end,
                                   actual_count, ReaderFactory::Raw, 0.0);
-        case HOW_AVERAGE:
+        case HOW_OLD_AVERAGE:
             return get_sheet_data(env, key, name_vector, start, end,
                                   actual_count,
                                   ReaderFactory::Average, (end-start)/count);
@@ -807,6 +808,10 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
             return get_sheet_data(env, key, name_vector, start, end,
                                   actual_count,
                                   ReaderFactory::Linear, (end-start)/count);
+        case HOW_AVERAGE:
+            return get_sheet_data(env, key, name_vector, start, end,
+                                  actual_count,
+                                  ReaderFactory::Average, (double)count);
     }
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_ARG_ERROR,
                                    "Invalid how=%d", how);

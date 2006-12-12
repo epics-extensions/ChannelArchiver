@@ -15,19 +15,32 @@
 /// Code related to the network data server
 
 // The version of this server
-#define ARCH_VER 0
+#define ARCH_VER 1
 
 // Code numbers for 'how'
 // Raw data, channel by channel
+// Since: V 0
 #define HOW_RAW      0
+
 // Raw data in 'filled' spreadsheet
+// Since: V 0
 #define HOW_SHEET    1
-// Averaged spreadsheet
-#define HOW_AVERAGE  2
-// Plot-binned, channel by channel
+
+// Averaged spreadsheet, delta = (end-start)/count
+// Since: V 0
+#define HOW_OLD_AVERAGE  2
+
+// Plot-binned, channel by channel, 'count' bins
+// Since: V 0
 #define HOW_PLOTBIN  3
-// Linear interpolation spreadsheet
+
+// Linear interpolation spreadsheet, delta = (end-start)/count
+// Since: V 0
 #define HOW_LINEAR   4
+
+// Averaged spreadsheet, delta = count
+// Since: V 1
+#define HOW_AVERAGE  5
 
 // XML-RPC does not define fault codes.
 // The xml-rpc-c library uses -500, -501, ... (up to -510)

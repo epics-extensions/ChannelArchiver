@@ -574,10 +574,10 @@ xmlrpc_value *get_info(xmlrpc_env *env, xmlrpc_value *args, void *user)
     AutoXmlRpcValue how(xmlrpc_build_value(env, "(ssssss)",
                                            "raw",
                                            "spreadsheet",
-                                           "average (to count)",
+                                           "average (w/ count)",
                                            "plot-binning",
                                            "linear",
-                                           "average (to delta)"));
+                                           "average"));
     if (env->fault_occurred)
         return 0;
     // 'status': array of all status string.

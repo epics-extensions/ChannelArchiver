@@ -223,7 +223,7 @@ count.  For details on the methods mentioned in here refer to section
   If a spreadsheet cell is empty because the channel does not have any
   useful value for that point in time, a status/severity of
   UDF/INVALID is returned (Tables \ref{tab:sevr} and \ref{tab:stat}).
-\item[\sffamily how = 2 (averaged to count):]
+\item[\sffamily how = 2 (averaged with 'count'):]
   Get averaged data from the archive, starting w/ 'start',
   up to either 'end' time or max. 'count' samples
   (see \ref{sec:lininterpol}).
@@ -240,7 +240,7 @@ count.  For details on the methods mentioned in here refer to section
   The data is interpolated onto time slots which are multiples
   of (end-start)/count, so you should expect to get close to 'count'
   values which cover 'start' to 'end'.
-\item[\sffamily how = 5 (averaged to delta):]
+\item[\sffamily how = 5 (averaged):]
   Get averaged data from the archive, starting w/ 'start',
   up to the 'end' time (see \ref{sec:lininterpol}).
   The data is averaged within bins whose size is determined by 

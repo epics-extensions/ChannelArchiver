@@ -52,15 +52,19 @@ PROD_LDLIBS += $($*_ENDFLAGS)
 include $(TOP)/configure/RULES
 
 # Install a copy of ArchiveDataServer in the web server directory
-# This is what we use at the SNS.
-# It is unlikely to work for you.
-# On MacOS, for example, the files usually go to something like
-#  /Library/WebServer/Documents/archive/cgi/ArchiveDataServer.cgi
-cgiinstall:
-	-cp /var/www/html/archive/cgi/ArchiveDataServer.cgi /var/www/html/archive/cgi/ArchiveDataServer_`date +"%Y-%m-%d-%H:%M"`
-	cp O.$(EPICS_HOST_ARCH)/DummyDataServer /var/www/html/archive/cgi/DummyDataServer.cgi
-	cp O.$(EPICS_HOST_ARCH)/ArchiveDataServer /var/www/html/archive/cgi/ArchiveDataServer.cgi
+# It is unlikely to work for you without changes
+ifeq (darwin, $(findstring darwin,$(EPICS_HOST_ARCH)))
+# On MacOS, for example, the files usually go here:
+CGIDIR=/Library/WebServer/Documents/archive/cgi
+else
+# This is what we use at the SNS under Linux
+CGIDIR=/var/www/html/archive/cgi
+endif
 
+cgiinstall:
+	-cp $(CGIDIR)/ArchiveDataServer.cgi $(CGIDIR)/ArchiveDataServer_`date +"%Y-%m-%d-%H:%M"`
+	cp O.$(EPICS_HOST_ARCH)/DummyDataServer $(CGIDIR)/DummyDataServer.cgi
+	cp O.$(EPICS_HOST_ARCH)/ArchiveDataServer $(CGIDIR)/ArchiveDataServer.cgi
 
 test:
 	sh test.sh

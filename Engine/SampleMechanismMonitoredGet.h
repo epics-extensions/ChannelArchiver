@@ -7,7 +7,7 @@
 #include "RepeatFilter.h"
 #include "TimeFilter.h"
 
-/*  TODO: Rething this.
+/*  TODO: Rethink this.
  *  It's OK for changing values:
  *  <li>ProcessVariable gets monitor
  *  <li>DisableFilter passes
@@ -30,6 +30,9 @@
  * 
  *  Should there be a repeat count?
  *  Or is this all garbage?
+ *  TODO: This is a real problem with 'error bit' channels that rarely change
+ *        in the presence of flow control. If we miss the one change because
+ *        of flow control, we never learn about it.
  */
 
 /**\ingroup Engine

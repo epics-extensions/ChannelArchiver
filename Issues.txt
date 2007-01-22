@@ -1,0 +1,220 @@
+Unexplained Crash in CtrlInfo::write:
+
+This was an 'enum' channel from a BI record in the SNS MAG/ps engine.
+The CtrlInfo was all zeros, and it crashed in 
+  throw GenericException("....garbage CtrlInfo...").
+  
+PV looks like it is connected, has 1 or 2 values, but 'zeroed' CtrlInfo
+of >400 bytes in size looks odd.
+
+
+
+#0  0xb75f447a in do_lookup_versioned () from /lib/ld-linux.so.2
+#1  0xb75f35e6 in _dl_lookup_versioned_symbol_internal () from /lib/ld-linux.so.2
+#2  0xb75f7283 in fixup () from /lib/ld-linux.so.2
+#3  0xb75f7140 in _dl_runtime_resolve () from /lib/ld-linux.so.2
+#4  0x0806e8c7 in CtrlInfo::write (this=0x8413eec, datafile=0xb54008f0, offset=31455187) at ../CtrlInfo.cpp:389
+#5  0x08072e3f in DataFile::addCtrlInfo (this=0xb54008f0, info=@0x8413eec, offset=@0xbfffc988) at ../DataFile.cpp:326
+#6  0x0807788e in DataWriter::addNewHeader (this=0xb5401078, new_ctrl_info=true) at ../DataWriter.cpp:314
+#7  0x0807668c in DataWriter (this=0xb5401078, index=@0xbfffcc20, channel_name=@0x8413eac, ctrl_info=@0x8413eec, dbr_type=17, dbr_count=1, period=60, num_samples=2)
+    at ../DataWriter.cpp:58
+#8  0x0806458e in SampleMechanism::write (this=0x8413e98, guard=@0xbfffcb80, index=@0xbfffcc20) at ../SampleMechanism.cpp:288
+#9  0x0805aadc in ArchiveChannel::write (this=0x8413dc8, guard=@0xbfffcbe0, index=@0xbfffcc20) at ../ArchiveChannel.cpp:361
+#10 0x0804fd43 in Engine::write (this=0x80ab1a8, engine_guard=@0xbfffcd00) at ../Engine.cpp:294
+#11 0x0804f72a in Engine::process (this=0x80ab1a8) at ../Engine.cpp:219
+#12 0x0804c917 in main (argc=9, argv=0xbfffd0c4) at ../main.cpp:105
+(gdb) fra
+#8  0x0806458e in SampleMechanism::write (this=0x8413e98, guard=@0xbfffcb80, index=@0xbfffcc20) at ../SampleMechanism.cpp:288
+288             writer = new DataWriter(index, getName(), pv.getCtrlInfo(pv_guard),
+(gdb) print *this
+
+$33 = {
+  <ProcessVariableListener> = {
+    <ProcessVariableStateListener> = {
+      _vptr.ProcessVariableStateListener = 0x80a7a4c
+    }, 
+    <ProcessVariableValueListener> = {
+      _vptr.ProcessVariableValueListener = 0x80a7a80
+    }, <No data fields>}, 
+  <Guardable> = {
+    _vptr.Guardable = 0x80a7a8c
+  }, 
+  <Named> = {
+    _vptr.Named = 0x80a7aa0
+  }, 
+  members of SampleMechanism: 
+  config = @0x80ab1f4, 
+  pv = {
+    <NamedBase> = {
+      <Named> = {
+        _vptr.Named = 0x80a7d88
+      }, 
+      members of NamedBase: 
+      name = {
+        _vptr.stdString = 0x80a7418, 
+        static npos = 4294967295, 
+        _str = 0x8413fe8 "CCL_Mag:PS_DCH306:CmdAvl", 
+        _len = 24, 
+        _res = 24
+      }
+    }, 
+    <Guardable> = {
+      _vptr.Guardable = 0x80a7da0
+    }, 
+    members of ProcessVariable: 
+    mutex = {
+      static Throttle = <optimized out>, 
+      static ConcurrentList = 100, 
+      name = {
+        _vptr.stdString = 0x80a7418, 
+        static npos = 4294967295, 
+        _str = 0x8414008 "CCL_Mag:PS_DCH306:CmdAvl", 
+        _len = 24, 
+        _res = 24
+      }, 
+      order = 60, 
+      mutex = 0x8414048
+    }, 
+    ctx = @0x80ab24c, 
+    state = CONNECTED, 
+    id = 0x818eb70, 
+    ev_id = 0x814b5f8, 
+    dbr_type = 17, 
+    dbr_count = 1, 
+    ctrl_info = {
+      _infobuf = {
+        memory = 0x81164b8 "", 
+        size = 452
+      }
+    }, 
+    outstanding_gets = 0, 
+    state_listeners = {
+      <Guardable> = {
+        _vptr.Guardable = 0x80a7e08
+      }, 
+      <ConcurrentPtrList> = {
+        _vptr.ConcurrentPtrList = 0x80a7e1c, 
+        mutex = {
+          static Throttle = <optimized out>, 
+          static ConcurrentList = 100, 
+---Type <return> to continue, or q <return> to quit---
+          name = {
+            _vptr.stdString = 0x80a7418, 
+            static npos = 4294967295, 
+            _str = 0x8414098 "ConcurrentPtrList", 
+            _len = 17, 
+            _res = 17
+          }, 
+          order = 100, 
+          mutex = 0x84140d0
+        }, 
+        list = 0x8414138
+      }, <No data fields>}, 
+    value_listeners = {
+      <Guardable> = {
+        _vptr.Guardable = 0x80a7dc8
+      }, 
+      <ConcurrentPtrList> = {
+        _vptr.ConcurrentPtrList = 0x80a7ddc, 
+        mutex = {
+          static Throttle = <optimized out>, 
+          static ConcurrentList = 100, 
+          name = {
+            _vptr.stdString = 0x80a7418, 
+            static npos = 4294967295, 
+            _str = 0x84140e8 "ConcurrentPtrList", 
+            _len = 17, 
+            _res = 17
+          }, 
+          order = 100, 
+          mutex = 0x8414120
+        }, 
+        list = 0x8267930
+      }, <No data fields>}
+  }, 
+  disable_filter = {
+    <ProcessVariableFilter> = {
+      <ProcessVariableListener> = {
+        <ProcessVariableStateListener> = {
+          _vptr.ProcessVariableStateListener = 0x80a7fc8
+        }, 
+        <ProcessVariableValueListener> = {
+          _vptr.ProcessVariableValueListener = 0x80a7fe8
+        }, <No data fields>}, 
+      members of ProcessVariableFilter: 
+      listener = 0x8413fc8
+    }, 
+    <Guardable> = {
+      _vptr.Guardable = 0x80a7ff4
+    }, 
+    members of DisableFilter: 
+    mutex = {
+      static Throttle = <optimized out>, 
+      static ConcurrentList = 100, 
+      name = {
+        _vptr.stdString = 0x80a7418, 
+        static npos = 4294967295, 
+        _str = 0x8414148 "DisableFilter", 
+        _len = 13, 
+        _res = 13
+      }, 
+      order = 51, 
+      mutex = 0x8414180
+    }, 
+    is_disabled = false, 
+    is_connected = true, 
+    type = 17, 
+    count = 1, 
+    last_value = {
+      ptr = 0x0
+---Type <return> to continue, or q <return> to quit--- 
+    }
+  }, 
+  mutex = {
+    static Throttle = <optimized out>, 
+    static ConcurrentList = 100, 
+    name = {
+      _vptr.stdString = 0x80a7418, 
+      static npos = 4294967295, 
+      _str = 0x8414198 "SampleMechanism", 
+      _len = 15, 
+      _res = 15
+    }, 
+    order = 40, 
+    mutex = 0x84141d0
+  }, 
+  running = true, 
+  period = 60, 
+  buffer = {
+    type = 17, 
+    count = 1, 
+    buffer = {
+      memory = 0x8116738 "", 
+      size = 64
+    }, 
+    element_size = 16, 
+    max_index = 4, 
+    head = 2, 
+    tail = 0, 
+    overwrites = 0
+  }, 
+  last_stamp_set = true, 
+  last_stamp = {
+    secPastEpoch = 536952869, 
+    nSec = 857010666
+  }, 
+  have_sample_after_connection = true
+}
+
+
+
+(gdb) print this->pv.ctrl_info._infobuf
+$37 = {
+  memory = 0x81164b8 "", 
+  size = 452
+}
+(gdb) print this->pv.ctrl_info._infobuf.memory[0]
+$39 = 0 '\0'
+(gdb) print this->pv.ctrl_info._infobuf.memory[0]@450
+$49 = '\0' <repeats 449 times>
+

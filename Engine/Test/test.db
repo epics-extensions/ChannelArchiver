@@ -20,3 +20,9 @@ record(calc, "ramp2_threshold")
    field(INPA, "ramp1 CP")
    field(CALC, "A >= 9")
 }
+
+record(ai, "setpoint")
+{
+   field(INP, "10")
+   field(PINI, "YES")
+}

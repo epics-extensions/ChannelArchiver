@@ -380,6 +380,12 @@ void CtrlInfo::write(DataFile *datafile, FileOffset offset) const
             converted = offsetof (CtrlInfoData, value)
                 + sizeof (EnumeratedInfo);
             break;
+        case Invalid:
+            throw GenericException(__FILE__, __LINE__,
+                                   "Datafile %s: CtrlInfo for 0x%lX is "
+                                   "undefined, size %d\n",
+                                   datafile->getBasename().c_str(),
+                                   (unsigned long)offset, info->size);
         default:
             throw GenericException(__FILE__, __LINE__,
                                    "Datafile %s: CtrlInfo for 0x%lX has "

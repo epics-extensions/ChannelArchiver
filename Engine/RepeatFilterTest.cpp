@@ -19,7 +19,7 @@ TEST_CASE test_repeat_filter()
     // Note: We assume there is no "test" PV, and never even start the pv.
     // All events from the pv to the filter are fake!
     DemoProcessVariableListener pvl;
-    RepeatFilter filt(config, &pvl);     
+    RepeatFilter filt(config, pv, &pvl);     
     
     COMMENT("Connect gets passed.");
     epicsTime time = epicsTime::getCurrent();

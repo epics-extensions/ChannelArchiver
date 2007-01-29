@@ -1,7 +1,63 @@
+#include <math.h>
 
 #include "ToolsConfig.h"
 #include "epicsTimeHelper.h"
 #include "UnitTest.h"
+
+TEST_CASE test_secondparser()
+{
+    double n;
+    TEST(SecondParser::parse(stdString("1.0"), n));
+    TEST(n == 1.0);
+
+    TEST(SecondParser::parse(stdString("0.1"), n));
+    TEST(n == 0.1);
+
+    TEST(SecondParser::parse(stdString("5 min"), n));
+    TEST(fabs(n - 5*60) < 0.001);
+
+    TEST(SecondParser::parse(stdString("0.5 min"), n));
+    TEST(fabs(n - 30) < 0.001);
+
+    TEST(SecondParser::parse(stdString("1.5 min"), n));
+    TEST(fabs(n - 90) < 0.001);
+
+    TEST(SecondParser::parse(stdString("2 hours"), n));
+    TEST(fabs(n - 2*60*60) < 0.001);
+
+    TEST(SecondParser::parse(stdString("2 days"), n));
+    TEST(fabs(n - 2*24*60*60) < 0.001);
+
+    // Change default to hours
+    TEST(SecondParser::parse(stdString("2"), n, 60*60));
+    TEST(fabs(n - 2*60*60) < 0.001);
+    
+    stdString t = SecondParser::format(1.0);
+    TEST(t == "1 sec");
+
+    t = SecondParser::format(0.1);
+    TEST(t == "0.1 sec");
+
+    t = SecondParser::format(30);
+    TEST(t == "30 sec");
+
+    t = SecondParser::format(5*60);
+    TEST(t == "5 min");
+    
+    t = SecondParser::format(90);
+    TEST(t == "1.5 min");
+
+    t = SecondParser::format(60);
+    TEST(t == "1 min");
+
+    t = SecondParser::format(60*60);
+    TEST(t == "1 hours");
+
+    t = SecondParser::format(24*60*60);
+    TEST(t == "1 days");
+
+    TEST_OK;
+}
 
 TEST_CASE test_time()
 {

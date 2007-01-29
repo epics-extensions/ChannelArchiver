@@ -5,17 +5,20 @@
 // Tools
 #include <MsgLogger.h>
 #include <FUX.h>
+#include <epicsTimeHelper.h>
 // Engine
 #include "EngineConfig.h"
 
 void EngineConfig::addToFUX(FUX::Element *doc)
 {
-    new FUX::Element(doc, "write_period", "%g", getWritePeriod());    
-    new FUX::Element(doc, "get_threshold", "%g", getGetThreshold());
+    new FUX::Element(doc, "write_period", "%s",
+                     SecondParser::format(getWritePeriod()).c_str());    
+    new FUX::Element(doc, "get_threshold", "%s",
+                     SecondParser::format(getGetThreshold()).c_str());
     new FUX::Element(doc, "file_size", "%g",
                      getFileSizeLimit()/1024.0/1024.0);
-    new FUX::Element(doc, "ignored_future", "%g",
-                     getIgnoredFutureSecs()/60.0/60.0);
+    new FUX::Element(doc, "ignored_future", "%s",
+                     SecondParser::format(getIgnoredFutureSecs()).c_str());
     new FUX::Element(doc, "buffer_reserve", "%zu",
                      (size_t)getBufferReserve());
     new FUX::Element(doc, "max_repeat_count", "%zu",
@@ -29,6 +32,9 @@ EngineConfigParser::EngineConfigParser()
 {
 }
 
+/** Get number out of text t into n.
+ *  @return true if OK
+ */
 static bool parse_double(const stdString &t, double &n)
 {
     const char *s = t.c_str();
@@ -55,7 +61,7 @@ void EngineConfigParser::read(const char *filename,
         e = *els;
         if (e->getName() == "write_period")
         {
-            if (!parse_double(e->getValue(), d))
+            if (!SecondParser::parse(e->getValue(), d))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in write_period\n",
                                        filename);
@@ -63,7 +69,7 @@ void EngineConfigParser::read(const char *filename,
         }
         else if (e->getName() == "get_threshold")
         {
-            if (!parse_double(e->getValue(), d))
+            if (!SecondParser::parse(e->getValue(), d))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in get_threshold\n",
                                        filename);
@@ -79,11 +85,11 @@ void EngineConfigParser::read(const char *filename,
         }
         else if (e->getName() == "ignored_future")
         {
-            if (!parse_double(e->getValue(), d))
+            if (!SecondParser::parse(e->getValue(), d, 60*60))
                 throw GenericException(__FILE__, __LINE__,
                                        "'%s': Error in ignored_future\n",
                                        filename);
-            setIgnoredFutureSecs(d*60*60);
+            setIgnoredFutureSecs(d);
         }
         else if (e->getName() == "buffer_reserve")
         {
@@ -133,7 +139,7 @@ void EngineConfigParser::handle_channel(const stdString &group_name,
     ++els;
     LOG_ASSERT((*els)->getName() == "period");
     double period;
-    if (!parse_double((*els)->getValue(), period))
+    if (!SecondParser::parse((*els)->getValue(), period))
         throw GenericException(__FILE__, __LINE__,
                                "Group '%s': Error in period for channel '%s'\n",
                                group_name.c_str(), channel_name.c_str());

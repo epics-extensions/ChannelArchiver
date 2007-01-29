@@ -1,0 +1,106 @@
+\section{What is a Channel?} % -----------------------------------------------
+The Channel Archiver deals with Channels that are served by EPICS
+ChannelAccess. It stores all the information available via ChannelAccess:
+\begin{itemize}
+\item Time Stamp
+\item Status/Severity
+\item Value
+\item Meta information:\\
+      Units, Limits, ... for numeric channels,
+      enumeration strings for enumerated channels.
+\end{itemize}
+
+\noindent The archiver stores the original \INDEX{time stamps} as it receives
+them from ChannelAccess. It cannot check if these time stamps are valid, except
+that it refuses to go ``back in time'' because it can only append new
+values to the end of the data storage. It is therefore imperative to
+properly configure the data sources, that is: the clocks on the CA
+servers. For more details on the EPICS time stamps refer to section
+\ref{sec:GMT}.
+
+\label{back:in:time}
+\NOTE If the CA server provides bad time stamps, for example stamps
+that are older than values which are already in the archive, or stamps
+that are unbelievably far ahead in the future, the ArchiveEngine will log
+a warning message and refuse to store the affected samples.
+This is a common reason for ``Why is there no data in my archive?''.
+(There is one more, hard to resolve reason for back-in-time warnings, see
+page \pageref{sec:back-in-timefaq}).
+
+As for the values themselves, the native data type of the channel as
+reported by ChannelAccess is stored. For those familiar with the
+ChannelAccess API, this means:
+Channels that report a native data type of DBR\_xxx\_ are stored as
+DBR\_TIME\_xxx after once requesting the full DBR\_CTRL\_xxx information.
+ The Archiver can therefore handle scalar and array numerics
+(double, int, ...), strings and enumerated types. 
+
+\section{Data Sources} \label{sec:datasource} % ------------------------------
+Before even considering the available \INDEX{sampling options}, it is
+important to understand the \INDEX{data sources}, the \INDEX{ChannelAccess
+servers} whose channels we intend to archive.
+In most cases we will archive channels served by an EPICS Input/Output
+Controller (\INDEX{IOC}) which is configured via a collection of EPICS
+\INDEX{records}.
+Alternatively, we can archive channels served by a custom-designed CA
+server that utilizes the portable CA library \INDEX{PCAS}.
+In those cases, one will have to contact the implementor of the custom
+CA server for details.
+In the following, we concentrate on the IOC scenario and use the
+analog input record from listing~\ref{lst:airecord} as an example.
+
+\lstinputlisting[float=htb,caption={``aiExample'' record},label=lst:airecord]{aiexample.db} 
+
+\noindent What happens when we try to archive the channel ``aiExample''?
+We will receive updates for the record's value field (VAL). In fact we
+might as well have configured the archiver to use ``aiExample.VAL''
+with exactly the same result.
+The record is scanned at 10~Hz, so we can expect 10 values per second.
+Almost: The archive dead band (ADEL) limits the values that we receive
+via CA to changes beyond 0.1. When archiving this channel, we could
+store at most 10 values per second or try to capture every change,
+utilizing the ADEL configuration to limit the network traffic.
+
+\NOTE The archiver has no knowledge of the scan rate nor the dead band
+configuration of your data source! You have to consult the IOC
+database or PCAS-based code to obtain these.
+
+With each value, the archiver stores the time stamp as well as the
+status and severity. For aiExample, we configured a high limit of 10
+with a MAJOR severity. Consequently we will see a status/severity of
+HIHI/MAJOR whenever the VAL field reaches the HIHI limit.
+In addition to the value (VAL field), the archiver also stores certain
+pieces of \INDEX{meta information}. For numeric channels, it will store the
+engineering units, suggested display precision, as well as limits for
+display, control, warnings, and alarms. For enumerated channels, it
+stores the enumeration strings.
+Applied to the aiExample record, the suggested display precision is
+read from the PREC field, the limits are derived from HOPR, LOPR,
+HIHI, ..., LOLO.
+
+\NOTE You will have to consult the record reference manual or even
+record source code to obtain the relations between record fields and
+channel properties. The analog input record's EGU field for example
+provides the engineering units for the VAL field. We could, however,
+also try to archive aiExample.SCAN, that is the SCAN field of the same
+record. That channel aiExample.SCAN will be an \emph{enumerated} type
+with possible values ``Passive'', ``.1 second'' and so on. The EGU
+field of the record no longer applies!
+Another example worth considering: While HOPR defines the upper
+control limit for the VAL field, what is the upper control limit if we
+archive the HOPR field itself?
+
+It is also important to remember that the archiver
+--- just like any other ChannelAccess client --- does {\bfseries not} know
+anything about the underlying EPICS record type of a channel. In fact
+the channel might not be based on any record at all if we use a
+PCAS-based server.
+Given the name of an analog input record, it will store the record's
+value, units and limits, that is: most of the essential record
+information. Given the name of a stepper motor record, the
+archiver will also store the record's value (motor position) with the
+units and limits of the motor position. It will not store the
+acceleration, maximum speed or other details that you might consider
+essential parts of the record. To archive those, one would have to
+archive them as individual channels.
+

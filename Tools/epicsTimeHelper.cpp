@@ -7,6 +7,68 @@
 #include "tsDefs.h"
 #include "MsgLogger.h"
 
+
+/** Parse seconds from text t.
+ *  <p>
+ *  Text may contain just the seconds, or "... seconds"
+ *  or "... minutes", "... hours", "... days".
+ *  Times may be abbreviated.
+ */
+bool SecondParser::parse(const stdString &t, double &n, double default_factor)
+{
+    const char *s = t.c_str();
+    char *e;
+    n = strtod(s, &e);
+    if (e == s  ||  n == HUGE_VAL  ||  n == -HUGE_VAL)
+        return false;
+    // Got a number, see if that's seconds/minutes/hours via optional suffix.
+    // Skip whitespace.
+    while (*e == ' '  ||  *e == '\t')
+        ++e;
+    size_t l = strlen(e);
+    if (l <= 0)
+    {
+        n *= default_factor;
+        return true; // no suffix, done.
+    }    
+    if (strncmp("seconds", e, l) == 0)
+        return true; // already in seconds, done
+    if (strncmp("minutes", e, l) == 0)
+    {   // convert given minutes to seconds
+        n *= secsPerMinute;
+        return true;
+    }
+    if (strncmp("hours", e, l) == 0)
+    {   // convert given hours to seconds
+        n *= secsPerHour;
+        return true;
+    }
+    if (strncmp("days", e, l) == 0)
+    {   // convert given days to seconds
+        n *= secsPerDay;
+        return true;
+    }
+    // unknown suffix
+    return false;
+}
+
+/** @return Seconds formatted as string,
+ *          using "... min" etc. when possible.
+ */
+stdString SecondParser::format(double seconds)
+{
+    char result[100];
+    if (seconds >= secsPerDay)
+        sprintf(result, "%g days", seconds/secsPerDay);
+    else if (seconds >= secsPerHour)
+        sprintf(result, "%g hours", seconds/secsPerHour);
+    else if (seconds >= secsPerMinute)
+        sprintf(result, "%g min", seconds/secsPerMinute);
+    else
+        sprintf(result, "%g sec", seconds);
+    return stdString(result);
+}
+
 // Because of unknown differences in the epoch definition,
 // the next two might be different!
 const epicsTime nullTime; // uninitialized (=0) class epicsTime

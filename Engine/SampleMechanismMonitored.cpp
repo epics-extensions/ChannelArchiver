@@ -1,6 +1,7 @@
 
 // Tools
 #include <MsgLogger.h>
+#include <epicsTimeHelper.h>
 // Engine
 #include "SampleMechanismMonitored.h"
 
@@ -47,7 +48,8 @@ void SampleMechanismMonitored::pvConnected(ProcessVariable &pv,
 
 void SampleMechanismMonitored::addToFUX(Guard &guard, class FUX::Element *doc)
 {
-    new FUX::Element(doc, "period", "%g", period);
+    new FUX::Element(doc, "period", "%s",
+                     SecondParser::format(period).c_str());
     new FUX::Element(doc, "monitor");
 }
 

@@ -6,6 +6,13 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 01/29/2007 --- Version 2.11.0:\\
+Config file allows specification of time periods as "1 second" or "1 minute"
+etc.\ instead of the previous plain number.
+
+Change in 'monitored get': It now adds repeat counts similar to
+the plain 'get', see rewritten manual section on scan mechanisms.
+
 \item 12/12/2006 --- Version 2.10.0:\\
 Added a new retrieval method to the data server,
 an 'average' that interpretes teh request parameter

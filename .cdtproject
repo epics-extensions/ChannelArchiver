@@ -65,49 +65,49 @@
 <buildTargets>
 <target name="Engine" path="Engine" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>all</buildTarget>
-<stopOnError>false</stopOnError>
+<stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="Tools" path="Tools" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>all</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="Tools Test" path="Tools" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>test</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="clean" path="Tools" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>clean</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="all" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>all</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="clean" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>clean</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 </target>
 <target name="cgiinstall" path="XMLRPCServer" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments></buildArguments>
 <buildTarget>cgiinstall</buildTarget>
 <stopOnError>false</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>

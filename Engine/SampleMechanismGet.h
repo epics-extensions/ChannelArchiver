@@ -40,7 +40,7 @@ public:
     void stop(Guard &guard);
     
     // Scannable
-    void scan();
+    void scan(const epicsTime &now);
     
     void addToFUX(Guard &guard, class FUX::Element *doc);
    

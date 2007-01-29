@@ -7,12 +7,15 @@
 // #define DEBUG_REP_FILT
 
 RepeatFilter::RepeatFilter(const EngineConfig &config,
+                           ProcessVariable &pv,
                            ProcessVariableListener *listener)
     : ProcessVariableFilter(listener),
       mutex("RepeatFilter", EngineLocks::RepeatFilter),
       config(config),
+      pv(pv),
       is_previous_value_valid(false),
-      repeat_count(0)
+      repeat_count(0),
+      had_value_since_update(false)
 {
 }
 
@@ -20,15 +23,22 @@ RepeatFilter::~RepeatFilter()
 {
 }
 
-void RepeatFilter::stop(ProcessVariable &pv)
+void RepeatFilter::stop()
 {
     Guard guard(__FILE__, __LINE__, mutex);
-    flush(guard, pv, epicsTime::getCurrent());
+    flush(guard, epicsTime::getCurrent());
     is_previous_value_valid = false;
 }
 
 void RepeatFilter::pvConnected(ProcessVariable &pv, const epicsTime &when)
 {
+    if (&pv != &this->pv)
+    {
+        LOG_MSG("RepeatFilter::pvConnected '%s' called with wrong PV '%s'\n",
+                this->pv.getName().c_str(),
+                pv.getName().c_str());
+        return;
+    }
     // Prepare storage for copying values now that data type is known.
     DbrType type;
     DbrCount count;
@@ -47,11 +57,18 @@ void RepeatFilter::pvConnected(ProcessVariable &pv, const epicsTime &when)
 
 void RepeatFilter::pvDisconnected(ProcessVariable &pv, const epicsTime &when)
 {
+    if (&pv != &this->pv)
+    {
+        LOG_MSG("RepeatFilter::pvDisconnected '%s' called with wrong PV '%s'\n",
+                this->pv.getName().c_str(),
+                pv.getName().c_str());
+        return;
+    }
     {
         // Before the disconnect is handled 'downstream',
         // log and clear any accumulated repeats.
         Guard guard(__FILE__, __LINE__, mutex);
-        flush(guard, pv, when);
+        flush(guard, when);
         is_previous_value_valid = false;
     }
     ProcessVariableFilter::pvDisconnected(pv, when);
@@ -59,6 +76,13 @@ void RepeatFilter::pvDisconnected(ProcessVariable &pv, const epicsTime &when)
 
 void RepeatFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
 {
+    if (&pv != &this->pv)
+    {
+        LOG_MSG("RepeatFilter::pvValue '%s' called with wrong PV '%s'\n",
+                this->pv.getName().c_str(),
+                pv.getName().c_str());
+        return;
+    }
     DbrType type;
     DbrCount count;
     {
@@ -72,22 +96,11 @@ void RepeatFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
         {
             if (RawValue::hasSameValue(type, count, previous_value, data))
             {   // Accumulate repeats.
-                ++repeat_count;
-#               ifdef DEBUG_REP_FILT
-                LOG_MSG("RepeatFilter '%s': repeat %zu\n",
-                        pv.getName().c_str(), (size_t)repeat_count);
-#               endif
-                if (repeat_count >= config.getMaxRepeatCount())
-                {   // Forced flush, marked by host time; keep the repeat value.
-#                   ifdef DEBUG_REP_FILT
-                    LOG_MSG("'%s': Reached max. repeat count.\n", pv.getName().c_str());
-#                   endif
-                    flush(guard, pv, epicsTime::getCurrent());
-                }
+                inc(guard, epicsTime::getCurrent());
                 return; // Do _not_ pass on to listener.
             }
             else // New data flushes repeats, then continue to handle new data.
-                flush(guard, pv, RawValue::getTime(data));
+                flush(guard, RawValue::getTime(data));
         }
         // Remember current value for repeat test.
         LOG_ASSERT(previous_value);
@@ -97,14 +110,46 @@ void RepeatFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
     }
     // and pass on to listener.
 #   ifdef DEBUG_REP_FILT
-    LOG_MSG("'%s': RepeatFilter passes value.\n", pv.getName().c_str());
+    LOG_MSG("'%s': RepeatFilter passes new value.\n", pv.getName().c_str());
 #   endif
+    had_value_since_update = true;
     ProcessVariableFilter::pvValue(pv, data);
 }
 
+void RepeatFilter::update(const epicsTime &now)
+{
+#   ifdef DEBUG_REP_FILT
+    LOG_MSG("'%s': RepeatFilter update.\n", pv.getName().c_str());
+#   endif
+    Guard guard(__FILE__, __LINE__, mutex);
+    if (had_value_since_update)
+    {   // OK so far, but 'arm', since if there are no more values
+        // until the next update(), we count repeats
+        had_value_since_update = false;
+        return;
+    }
+    // else: Accumulate repeats.
+    inc(guard, now);
+}
+
+void RepeatFilter::inc(Guard &guard, const epicsTime &when)
+{
+    ++repeat_count;
+#   ifdef DEBUG_REP_FILT
+    LOG_MSG("RepeatFilter '%s': repeat %zu\n",
+            pv.getName().c_str(), (size_t)repeat_count);
+#   endif
+    if (repeat_count >= config.getMaxRepeatCount())
+    {   // Forced flush, marked by host time; keep the repeat value.
+#       ifdef DEBUG_REP_FILT
+        LOG_MSG("'%s': Reached max. repeat count.\n", pv.getName().c_str());
+#       endif
+        flush(guard, when);
+    }
+}
+
 // In case we have a repeat value, send to listener and reset.
-void RepeatFilter::flush(Guard &guard,
-                         ProcessVariable &pv, const epicsTime &when)
+void RepeatFilter::flush(Guard &guard, const epicsTime &when)
 {
     guard.check(__FILE__, __LINE__, mutex);
     if (is_previous_value_valid == false || repeat_count <= 0)
@@ -121,6 +166,7 @@ void RepeatFilter::flush(Guard &guard,
     // Add 'repeat' sample.
     RawValue::setStatus(previous_value, repeat_count, ARCH_REPEAT);
     repeat_count = 0;
+    had_value_since_update = true;
     {
         GuardRelease release(__FILE__, __LINE__, guard);    
         ProcessVariableFilter::pvValue(pv, previous_value);

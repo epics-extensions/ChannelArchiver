@@ -1,15 +1,19 @@
 
 // Tools
 #include <MsgLogger.h>
+#include <epicsTimeHelper.h>
 // Engine
 #include "SampleMechanismMonitoredGet.h"
 
-SampleMechanismMonitoredGet::SampleMechanismMonitoredGet(
-    EngineConfig &config, ProcessVariableContext &ctx,
-    const char *name, double period)
+SampleMechanismMonitoredGet::SampleMechanismMonitoredGet(EngineConfig &config,
+                                                  ProcessVariableContext &ctx,
+                                                  ScanList &scan_list,
+                                                  const char *name,
+                                                  double period)
     : SampleMechanism(config, ctx, name, period, &time_slot_filter),
+      scan_list(scan_list),
       time_slot_filter(period, &repeat_filter),
-      repeat_filter(config, &time_filter),
+      repeat_filter(config, pv, &time_filter),
       time_filter(config, this)  
 {
 }
@@ -37,10 +41,28 @@ stdString SampleMechanismMonitoredGet::getInfo(Guard &guard)
     return info;
 }
 
+void SampleMechanismMonitoredGet::start(Guard &guard)
+{
+    SampleMechanism::start(guard);
+    scan_list.add(this, period);
+}   
+    
 void SampleMechanismMonitoredGet::stop(Guard &guard)
 {
-    repeat_filter.stop(pv);
+    scan_list.remove(this);
+    repeat_filter.stop();
     SampleMechanism::stop(guard);
+}
+
+// Invoked by scanner.
+void SampleMechanismMonitoredGet::scan(const epicsTime &now)
+{
+    {
+        Guard pv_guard(__FILE__, __LINE__, pv);
+        if (pv.isConnected(pv_guard) == false)
+            return;
+    }
+    repeat_filter.update(now);
 }
 
 void SampleMechanismMonitoredGet::pvConnected(
@@ -57,7 +79,8 @@ void SampleMechanismMonitoredGet::pvConnected(
 
 void SampleMechanismMonitoredGet::addToFUX(Guard &guard, FUX::Element *doc)
 {
-    new FUX::Element(doc, "period", "%g", period);
+    new FUX::Element(doc, "period", "%s",
+                     SecondParser::format(period).c_str());
     new FUX::Element(doc, "scan");
 }
 

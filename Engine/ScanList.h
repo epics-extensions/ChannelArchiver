@@ -20,8 +20,13 @@
 class Scannable : public virtual Named
 {
 public:
-    /** Invoked whenever a scan is due. */
-    virtual void scan() = 0;
+    /** Invoked whenever a scan is due.
+     *  <p>
+     *  The passed 'now' is the deadline time that was used
+     *  to decide if this item is due 'now', so it should
+     *  be very close to the current time, and might be
+     *  cheaper to use than asking for the exact current time. */
+    virtual void scan(const epicsTime &now) = 0;
 };
 
 /**\ingroup Engine
@@ -55,7 +60,7 @@ public:
     /** Remove an item from the ScanList */
     void remove(Scannable *item);
 
-    /** Scan all channels that are due at/after deadline. */
+    /** Scan all channels that are due at/before deadline. */
     void scan(const epicsTime &deadline);
 
     void dump();

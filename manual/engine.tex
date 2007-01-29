@@ -49,6 +49,20 @@ elements of the configuration file.
 
 \clearpage
 
+\subsection{\INDEX{Time Period Specifications}}
+Whenever time periods need to be specified, the engine is quite flexible.
+A value of 5 seconds can be expressed as
+"5 seconds", "5 secs", "5 s" or just "5", since the default time unit for most
+options is seconds. There is one exception in the ignored\_future tag,
+and to avoid confusion in general, it is best to always specify the units
+and not assume "seconds".
+
+In addition to "seconds", one can use suffixes "minutes", "hours" or "days",
+as well as their abbreviations down to just "m", "h" respectively "d".
+Consequently, a scan period of 30 seconds can be written as "30 sec",
+"30 seconds", "30 s", "30.000", "30", "0.5 minutes", "0.5 min", "0.5 m"
+and possibly in many more ways.
+
 \subsection{\INDEX{write\_period tag}}
 This is a \INDEX{global option} that needs to precede any group and
 channel definitions.  It configures the write period of the Archive
@@ -70,6 +84,9 @@ approximately 100~MB, at which point a new data file is created.
 Defines ``too far in the future'' as ``now $+$ ignored\_future''. It
 is specified in hours, and samples with time stamps beyond that time
 are ignored.
+Note that this is the one exception where the default period is in hours,
+not seconds as for all the other tags!
+
 Details: For strange reasons, the Engine sometimes receives values with invalid
 time stamps. The most common example is a ``Zero'' time stamp: After
 an IOC reboots, all records have a zero time stamp until they are

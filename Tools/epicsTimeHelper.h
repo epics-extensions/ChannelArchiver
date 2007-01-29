@@ -9,6 +9,32 @@
 /// \ingroup Tools
 /// \@{
 
+
+/** Parse seconds from text, and format seconds into text.
+ *  <p>
+ *  Text may contain just the seconds, or "... seconds"
+ *  or "... minutes", "... hours", "... days".
+ *  Times may be abbreviated.
+ */
+class SecondParser
+{
+public:
+    /** Parse text into number.
+     *  <p>
+     *  @parm default_factor Usually, we assume that a plain number without
+     *                       suffix represents seconds.
+     *                       A factor of 60*60, however, changes that default
+     *                       interpretation to hours.
+     *  @return true if OK. 
+     */
+    static bool parse(const stdString &t, double &n, double default_factor=1.0);
+
+    /** @return Seconds formatted as string,
+     *          using "... min" etc. when possible.
+     */
+    static stdString format(double seconds);
+};
+
 /// uninitialized (=0) class epicsTime.
 extern const epicsTime nullTime;
 

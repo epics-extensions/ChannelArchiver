@@ -65,6 +65,7 @@ extern TEST_CASE test_msg_throttle();
 // Unit TimerTest:
 extern TEST_CASE test_timer();
 // Unit epicsTimeHelperTest:
+extern TEST_CASE test_secondparser();
 extern TEST_CASE test_time();
 // Unit stdStringTest:
 extern TEST_CASE test_string();
@@ -556,6 +557,15 @@ int main(int argc, const char *argv[])
         printf("Unit epicsTimeHelperTest:\n");
         printf("----------------------------------------------------------------------\n");
         ++units;
+       if (single_case==0  ||  strcmp(single_case, "test_secondparser")==0)
+       {
+            ++run;
+            printf("\ntest_secondparser:\n");
+            if (test_secondparser())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
        if (single_case==0  ||  strcmp(single_case, "test_time")==0)
        {
             ++run;

@@ -10,9 +10,10 @@
 
 TEST_CASE test_sample_mechanism_monitored_get()
 {
+    ScanList scan_list;
     EngineConfig config;
     ProcessVariableContext ctx;
-    SampleMechanismMonitoredGet sample(config, ctx, "janet", 1.0);
+    SampleMechanismMonitoredGet sample(config, ctx, scan_list, "janet", 1.0);
     TEST(sample.getName() == "janet");
     COMMENT("Trying to connect...");
     {   

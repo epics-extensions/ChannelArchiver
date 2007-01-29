@@ -37,7 +37,7 @@ public:
         items.removeIfFound(item);
     }
     
-    void scan();
+    void scan(const epicsTime &now);
 
     bool isEmpty()
     {
@@ -76,12 +76,12 @@ epicsTime SinglePeriodScanList::getNextScantime()
     return next_scan;
 }
 
-void SinglePeriodScanList::scan()
+void SinglePeriodScanList::scan(const epicsTime &now)
 {
     ConcurrentListIterator<Scannable> i = items.iterator();
     Scannable *scannable;
     while ((scannable = i.next()) != 0)
-        scannable->scan();
+        scannable->scan(now);
     computeNextScantime();
 }
 
@@ -200,7 +200,7 @@ void ScanList::scan(const epicsTime &deadline)
     while ((spl = i.next()) != 0)
     {
         if (deadline >= spl->getNextScantime())
-            spl->scan();
+            spl->scan(deadline);
         // Update earliest scan time
         if (next_due == nullTime ||
             next_due > spl->getNextScantime())

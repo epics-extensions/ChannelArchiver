@@ -137,11 +137,11 @@ SampleMechanism *ArchiveChannel::createSampleMechanism(
     else if (scan_period >= config.getGetThreshold())
         new_mechanism = new SampleMechanismGet(config, ctx, scan_list,
                                                getName().c_str(),
-                                                scan_period);
+                                               scan_period);
     else
-        new_mechanism = new SampleMechanismMonitoredGet(config, ctx,
+        new_mechanism = new SampleMechanismMonitoredGet(config, ctx, scan_list,
                                                         getName().c_str(),
-                                                         scan_period);
+                                                        scan_period);
     LOG_ASSERT(new_mechanism);
     new_mechanism->addStateListener(this);
     return new_mechanism.release();

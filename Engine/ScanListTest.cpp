@@ -13,7 +13,7 @@ class Thing : public Scannable
 public:
     Thing(const char *name);
     const stdString &getName() const;
-    void scan();
+    void scan(const epicsTime &now);
     
     size_t scans;
 private:
@@ -31,7 +31,7 @@ const stdString &Thing::getName() const
     return name;
 }
 
-void Thing::scan()
+void Thing::scan(const epicsTime &now)
 {
     ++scans;
     printf("%s gets scanned\n", getName().c_str());

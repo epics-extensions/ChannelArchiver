@@ -1,0 +1,51 @@
+% waveforms.tex
+\section{Waveform Data} \label{sec:waveforms}
+In principle, the archiver toolset can be used for waveform channels
+as well as scalar channels.
+The archive engine stores the waveform data as received by ChannelAccess,
+and you can get that information back out.
+In practice, you might not be happy with the result because of basic
+waveform related shortcomings in EPICS.
+
+In all the cases listed below, the basic waveform samples and timestamp
+provided by ChannelAccess and thus the archiver are incomplete.
+One cannot display or otherwise use the waveform data without
+additional meta information like sample rate, positions etc.
+Some sites develop custom ChannelAccess clients which obtain this
+information from user input, a relational database,
+or other channels, maybe determining the latter based on a naming standard.
+The generic archiver toolkit only provides the basic data, no
+\INDEX{waveform meta information}.
+
+\begin{itemize}
+\item Fast-ADC-Type Data\\
+Your waveform data might represent the signal of a fast ADC.
+ChannelAccess and thus the archiver toolkit present you with
+the waveform samples, which probably stand for the voltages
+sampled by the ADC. You also get one timestamp. It might indicate
+the time when the ADC was triggered, which might be the time stamp
+of the first sample in the waveform.
+To use the data, you also need to know the sample rate,
+that is the time period between samples, but neither ChannelAccess
+nor the archiver hand you that number.
+
+\item Multi Channel Analyzer or Scanner Type Data\\
+In this case, the waveform samples might represent the intensities
+or histogram count of something that was measured at different
+positions or at different energies.
+To use that data, you also need that position or energy or other
+characteristic information for each sample.
+
+\item Images\\
+Some waveforms are used to represent images, where for example
+the first 640 samples of a waveform represent the first "line"
+of the image, the next 640 samples the next line and so on.
+Nothing tells you the line width, if one sample represents
+gray-scale intensity, or if 3 samples together represent red/green/blue
+etc.
+
+\item Custom Structures\\
+In other cases, EPICS waveforms are used to exchange custom data,
+ranging from strings that exceed 40 characters to arbitrary
+binary data. You need to know how to decode the information.
+\end{itemize}

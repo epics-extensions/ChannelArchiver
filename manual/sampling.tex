@@ -1,0 +1,158 @@
+\section{\INDEX{Sample Mechanisms}} \label{sec:sampling} % -----------------------------
+This section describes the basic sampling mechanisms and their issues,
+while the actual configuration of an archive engine is detailed in section
+\ref{sec:engineconfig}.
+
+Each ChannelAccess Server provides time-stamped data. An IOC for
+example stamps each value when the corresponding record is
+processed.  These time-stamps offer nano-second granularity. Most
+applications will not require the full accuracy, but some
+hardware-triggered acquisition, utilizing interrupts on a fast CPU,
+might in fact put the full time stamp resolution to good use.
+
+Other examples where exact time stamps are of interest are channels
+for user setpoints or faults. These channels might not change for a
+long time, but when they change, it is often important to know the
+exact time of the setpoint adjustment or fault.
+
+The archive engine tries to preserve the time stamps provided by
+the CA server, which results in some difficulties for the various
+sampling modes as well as for the user of the resulting data.
+
+\subsection{\INDEX{Scanned}}
+In this mode, the ArchiveEngine periodically requests a value from
+the CA server, for example once every minute. The value returned by
+the CA server is added to the archive. Since each "scan" is handled
+by actually requesting a value from the CA server and logging the
+result, i.e.\ a round-trip network request for each value,
+scanning should be limited to maybe once a minute or slower.
+
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=1.0\textwidth}{times}
+\end{center}
+\caption{\label{fig:times}Time Stamps and Sampling}
+\end{figure}
+
+Since each sample is stored with its original time stamp, 
+users are often surprised when retrieving archived data.
+
+Fig.~\ref{fig:times} shows the same channel, archived with different methods.
+When using the ``Monitor'' method for archiving, we capture all the
+changes of the channel, resulting in the data points marked by black
+diamonds.
+
+BLABLA HERE....
+
+
+When we use scanned operation, e.g.\ every 30~seconds, the following
+happens: About every 30 seconds, the ArchiveEngine stores the current
+value of the channel \emph{with its original time stamp!}.
+So while the ArchiveEngine might take a sample at
+\begin{center}
+14:53:30, 14:54:00, 14:54:30, 14:55:00, ...,
+\end{center}
+it stores the time stamps that come with the values, and in the
+example from Fig.~\ref{fig:times} those happened to be
+\begin{center}
+14:53:29.091,  14:53:59.092, 14:54:29.094,  14:54:59.095, ...
+\end{center}
+
+
+
+
+
+
+\subsection{\INDEX{Monitored}}
+
+\sub[\sffamily Monitor:]
+In this mode, the ArchiveEngine requests a CA monitor, i.e.\ it
+subscribes to changes and we store all the values that the server
+sends out. The CA server configuration determines when values are sent.
+
+
+
+
+
+\subsection{\INDEX{Scanned using Monitors}}
+Pure madness.
+
+This mode is very similar to the previous one:
+The ArchiveEngine is again configured to store periodic samples,
+e.g. one sample every 5 seconds. But instead of actively requesting a
+value from the CA server at this rate, it establishes a monitor and
+only saves a value every 5 seconds.
+
+When selecting monitored operation, you will need to provide an
+estimate of how many monitors the channel emits, so that the engine
+can allocate appropriate buffer space (more on this in sections
+\ref{sec:reserve} and \ref{sec:period}).
+
+The difference between the two sampled modes is subtle but important
+for performance reasons. Assume our data source changes at 1~Hz. If
+we want to store a value every 30 seconds, it is most efficient to
+send a 'read'-request every 30 seconds. If, on the other hand, we want
+to store a value every 5 seconds, it is usually more effective to
+establish a monitor, so we automatically receive updates about every
+second, and simply \emph{ignore} 4 of the 5 values.
+
+When configuring a channel, the user only selects either ``Monitor''
+or ``Scan'' with a sampling rate.  The ArchiveEngine will
+automatically determine which mechanism to use for sampled operation,
+periodic reads or monitors (see the \emph{get\_threshold} configuration
+parameter, section \ref{sec:getthreshold}, for details).
+
+\NOTE The values dumped into the data storage will not offer much
+indication of the sampling method. In the end, we only see values with
+time stamps. If for example the time stamps of the stored values
+change every 20 seconds, this could be the result of a monitored
+channel that happened to change every 20 seconds. We could also face a
+channel that changed at 10~Hz but was only sampled every 20 seconds. 
+
+
+\section{Sensible Sampling}
+The data source configuration and sampling need to be coordinated.  In
+fact the whole system needs to be understood. When we deal with water
+tank temperatures as one example, we have to understand that the
+temperature is unlikely to change rapidly. Let us assume that it only
+varies within 30...60 seconds. The analog input record that reads the
+temperature could be configured to scan every 2 seconds. Not because
+we expect the temperature to change that quickly but mostly to provide
+the operator with a warm and fuzzy feeling that we are still reading
+the temperature: The operator display will show minuscule variations
+in temperature every 2 seconds.  An ArchiveEngine that is meant to
+capture the long-term trend of the tank temperature could then sample
+the value every 60 seconds.
+
+On the other extreme could be channels for vacuum readings along linac
+cavities. The records that read them might be configured to scan as
+fast as the sensing devices permit, maybe beyond 10~Hz, so that
+interlocks on the IOC run as fast as possible. Their dead bands (ADEL
+and MDEL) on the other hand are configured to limit the data rate that
+is sent to monitoring CA clients: Only meaningful vacuum changes are
+sent out, significantly reducing the amount of data sent onto the
+network.  The ArchiveEngine can then be configured to monitor the
+channel: During normal operation, when the vacuum is fairly stable, it
+will only receive a few values, but whenever the vacuum changes
+because of a leak, it will receive a detailed picture of the event.
+
+Another example is a short-term archive that is meant to store
+beam position monitor (BPM) readings for every beam pulse. The records
+on the IOC can then be configured with ADEL=-1 and the ArchiveEngine
+to use monitors, resulting in a value being sent onto the network and
+stored in the archive even if the values did not change. The point
+here is to store the time stamps and beam positions for each beam
+pulse for later correlation. Needless to say that this can result in a
+lot of data if the engine is kept running unattended. The preferred
+mode of operation would be to run the engine only for the duration
+of a short experiment.
+
+\NOTE The scanning of the data source and the ArchiveEngine run in
+parallel, they are not synchronized.
+Example: If you have a record scanned every second and want to capture
+every change in value, configuring the ArchiveEngine to scan every
+second is {\bfseries not} advisable:
+Though both the record and the ArchiveEngine would scan every
+second, the two scans are not synchronized and rather unpredictable
+things can happen. Instead, the "Monitor" option for the ArchiveEngine
+should be used for this case.

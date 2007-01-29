@@ -1,0 +1,90 @@
+\section{Times: EPICS, Local, Greenwich, Daylight Saving} \label{sec:GMT}
+The EPICS base software that is used by the IOCs and also the archiver
+deals with time as seconds and nanoseconds since January 1, 1990.  This
+``\INDEX{EPICS Time}'' is using \INDEX{Greenwich Mean Time} (GMT),
+also known as Universal Time Coordinates (\INDEX{UTC}).  So the EPICS
+Time stamp 0 stands for 01/01/1990, 00:00:00 UTC.
+
+People living in Germany are typically in a time zone one hour east of
+UTC. For them, the EPICS Time stamp 0 translates into January 1, 1990,
+at 01:00:00 in the morning. This is one example of ``\INDEX{Local
+Time}''. Anybody living in the United States is of course familiar
+with time zone conversions ever since you tried to match what's in the
+TV Guide with what's actually on TV.
+
+The EPICS base software includes routines for converting EPICS Time
+into Local Time and vice versa. Before EPICS R3.14, these routines
+used an environment variable \INDEX{EPICS\_TS\_MIN\_WEST} which needed
+to be set to the minutes west of UTC. ``-60'' for Germany in the above
+example. Since R3.14, this environment variable is no longer
+used. The time stamp conversion code in EPICS base now relies on the
+operating system and the C/C++ runtime library to handle any time zone
+issues.
+
+It is important to remember that the data served by CA Servers is in
+EPICS time, that is based on UTC and \emph{not} your local time.  The
+ArchiveEngine stores that data as received, which is again in EPICS
+time based on UTC.  When the network data server is asked for samples,
+those are also based UTC, albeit with a slight shift from a 1990 \INDEX{epoch}
+to 1970, simply because this is more convenient to use in most
+programming languages. C, C++, Java and perl all include routines for
+converting 1970-epoch seconds to local time and back.
+
+Time stamps are only converted to local time when they are displayed
+or entered.  The ArchiveExport program will provide you with e.g.\ a
+spreadsheet that has a ``Time'' column in local time. The Java Archive
+Client will plot the data with a time axis in local time. Whenever you
+specify start and end times for a data request, this is done in local
+time.
+
+An example of possible consequences: Assume you live in San Francisco,
+California (UTC-8), and you receive a CD-ROM with archived data from the SNS
+in Oak Ridge, Tennessee (UTC-5). If you want to investigate what happened
+at noon, 12:00:00, on 01/01/2004 at the SNS, you will have to query for
+09:00:00 to adjust for the different time zones.
+
+The EPICS base code also relies on the operating system services for
+\INDEX{daylight saving time} (\INDEX{DST}). At least under RedHat Linux 9 this
+seems to work fine when you are inside the United States.
+Example: In the US, daylight saving time went into effect on
+04/04/2004, 02:00:00, and I archived a "stringin" record which had
+device support that converted the time stamp of the record into a string,
+including daylight savings information.
+The result looks like this when the data is exported again
+on the next day, that is at a time where DST is in effect:
+
+\medskip
+\begin{tabular}{lll}
+EPICS Seconds & Time     & Value \\
+\hline
+449917196     & 01:59:56 & 04/04/2004 01:59:56.805984000 \\
+449917197     & 01:59:57 & 04/04/2004 01:59:57.816036000 \\
+449917198     & 01:59:58 & 04/04/2004 01:59:58.826102000 \\
+449917199     & 01:59:59 & 04/04/2004 01:59:59.836110000 \\
+449917200     & 03:00:00 & 04/04/2004 03:00:00.846121000 (DST) \\
+449917201     & 03:00:01 & 04/04/2004 03:00:01.856196000 (DST) \\
+449917202     & 03:00:02 & 04/04/2004 03:00:02.867379000 (DST) \\
+449917203     & 03:00:03 & 04/04/2004 03:00:03.876315000 (DST) \\
+449917204     & 03:00:04 & 04/04/2004 03:00:04.886356000 (DST) 
+\end{tabular}
+
+\medskip
+\noindent The seconds of the raw EPICS time stamp simply continue to count up
+through the transition because UTC is not affected by DST.
+(This test was run in the US Mountain time zone, UTC-7, and the
+nanoseconds of the EPICS time stamp are omitted.)
+The Value of the string record, which contains the local time as the
+IOC saw it, jumps from what would have been 02:00:00 to 03:00:00 DST.
+When the time stamp is printed (at a later time when DST applies),
+the ``Time'' column matches the times in the value string.
+
+After changing the computer's clock to times in January 2004 and 2005,
+that is to times outside of DST before and after the data in the
+archive, the result is the exact same:
+The EPICS time stamp routines use the DST settings that apply for a
+given time stamp, not for the current time.
+
+Countries differ in their algorithms for switching to DST, and if your
+operating system does not follow the rules in your location, you might
+see sudden offsets in time between the wall clock and the archived
+data.

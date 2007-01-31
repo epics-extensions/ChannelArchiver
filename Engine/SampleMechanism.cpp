@@ -10,11 +10,11 @@
 
 // #define DEBUG_SAMPLE_MECHANISM
 
-// One hour between messages
+// Limiters for certain messages
 static ThrottledMsgLogger back_in_time_throttle("Buffer Back-in-time",
-                                                60.0*60.0);
-// One minute:
-static ThrottledMsgLogger overwrite_throttle("Buffer Overwrite", 60.0);
+                                                secsPerHour);
+static ThrottledMsgLogger overwrite_throttle("Buffer Overwrite",
+                                             secsPerHour);
 
 SampleMechanism::SampleMechanism(
     const EngineConfig &config,

@@ -52,7 +52,12 @@ private:
     bool is_previous_value_valid;
     RawValueAutoPtr previous_value; // the previous value
     size_t repeat_count; // repeat count for the previous value
+    /** Was there a new value since the last update call? */
     bool had_value_since_update;
+    /** Was the last logged sample a 'repeat' sample? */
+    bool last_sample_was_repeat;
+    /** Timestamp of the repeat sample. */
+    epicsTime repeat_stamp;
     
     void inc(Guard &guard, const epicsTime &when);
     void flush(Guard &guard, const epicsTime &when);

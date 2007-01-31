@@ -17,90 +17,7 @@ exact time of the setpoint adjustment or fault.
 
 The archive engine tries to preserve the time stamps provided by
 the CA server, which results in some difficulties for the various
-sampling modes as well as for the user of the resulting data.
-
-\subsection{\INDEX{Scanned}}
-In this mode, the ArchiveEngine periodically requests a value from
-the CA server, for example once every minute. The value returned by
-the CA server is added to the archive. Since each "scan" is handled
-by actually requesting a value from the CA server and logging the
-result, i.e.\ a round-trip network request for each value,
-scanning should be limited to maybe once a minute or slower.
-
-\begin{figure}[htb]
-\begin{center}
-\InsertImage{width=1.0\textwidth}{times}
-\end{center}
-\caption{\label{fig:times}Time Stamps and Sampling}
-\end{figure}
-
-Since each sample is stored with its original time stamp, 
-users are often surprised when retrieving archived data.
-
-Fig.~\ref{fig:times} shows the same channel, archived with different methods.
-When using the ``Monitor'' method for archiving, we capture all the
-changes of the channel, resulting in the data points marked by black
-diamonds.
-
-BLABLA HERE....
-
-
-When we use scanned operation, e.g.\ every 30~seconds, the following
-happens: About every 30 seconds, the ArchiveEngine stores the current
-value of the channel \emph{with its original time stamp!}.
-So while the ArchiveEngine might take a sample at
-\begin{center}
-14:53:30, 14:54:00, 14:54:30, 14:55:00, ...,
-\end{center}
-it stores the time stamps that come with the values, and in the
-example from Fig.~\ref{fig:times} those happened to be
-\begin{center}
-14:53:29.091,  14:53:59.092, 14:54:29.094,  14:54:59.095, ...
-\end{center}
-
-
-
-
-
-
-\subsection{\INDEX{Monitored}}
-
-\sub[\sffamily Monitor:]
-In this mode, the ArchiveEngine requests a CA monitor, i.e.\ it
-subscribes to changes and we store all the values that the server
-sends out. The CA server configuration determines when values are sent.
-
-
-
-
-
-\subsection{\INDEX{Scanned using Monitors}}
-Pure madness.
-
-This mode is very similar to the previous one:
-The ArchiveEngine is again configured to store periodic samples,
-e.g. one sample every 5 seconds. But instead of actively requesting a
-value from the CA server at this rate, it establishes a monitor and
-only saves a value every 5 seconds.
-
-When selecting monitored operation, you will need to provide an
-estimate of how many monitors the channel emits, so that the engine
-can allocate appropriate buffer space (more on this in sections
-\ref{sec:reserve} and \ref{sec:period}).
-
-The difference between the two sampled modes is subtle but important
-for performance reasons. Assume our data source changes at 1~Hz. If
-we want to store a value every 30 seconds, it is most efficient to
-send a 'read'-request every 30 seconds. If, on the other hand, we want
-to store a value every 5 seconds, it is usually more effective to
-establish a monitor, so we automatically receive updates about every
-second, and simply \emph{ignore} 4 of the 5 values.
-
-When configuring a channel, the user only selects either ``Monitor''
-or ``Scan'' with a sampling rate.  The ArchiveEngine will
-automatically determine which mechanism to use for sampled operation,
-periodic reads or monitors (see the \emph{get\_threshold} configuration
-parameter, section \ref{sec:getthreshold}, for details).
+sampling modes as well as the user of the resulting data.
 
 \NOTE The values dumped into the data storage will not offer much
 indication of the sampling method. In the end, we only see values with
@@ -109,8 +26,146 @@ change every 20 seconds, this could be the result of a monitored
 channel that happened to change every 20 seconds. We could also face a
 channel that changed at 10~Hz but was only sampled every 20 seconds. 
 
+\subsection{\INDEX{Monitored Sampling}}
+In this mode, the ArchiveEngine requests a CA monitor, i.e.\ it
+subscribes to changes of the channel, then stores all the values that the server
+sends out. The CA server configuration determines when values are sent.
+
+\medskip
+
+\begin{figure}[htb]
+\begin{center}
+\InsertImage{width=1.0\textwidth}{times}
+\end{center}
+\caption{\label{fig:times}Time Stamps and Sampling}
+\end{figure}
+
+\noindent This sounds simple enough; The archive captures each change of the channel,
+with the original time stamp.
+In fig.~\ref{fig:times}, black diamonds represent the actual changes of the
+channel that would be archived with monitored sampling.
+In practice, there are several problems:
+\begin{itemize}
+\item Channels like setpoints or fault indicators rarely change in an
+      operational machine.
+      But if a channel never changes, you get no new data.
+      Since the Engine also logs whenever ChannelAccess declares the
+      channel 'disconnected', we can assume that the last value in the archive
+      is still valid, until eventually a new value arrives.
+      In reality, however, users often suspect that something is wrong if they
+      see no new sample in the archive for days.
+      And often, they are correct.
+\item If the channel changes very rapidly, you get a lot of data, filling the
+      disk with probably more detail than ever needed.
+      In any case, the engine cannot simply
+      allocate more and more memory to buffer incoming samples between
+      writing them to disk, because a rogue channel that suddenly sends
+      a burst of values would then cause the engine to use up all the computer's
+      memory. Consequently, one needs to configure an expected period
+      between value changes, based upon which the engine prepares its
+      internal memory buffers. If many more values arrive, some are ignored.
+\end{itemize}
+
+\subsection{\INDEX{Scanned Sampling}}
+In this mode, the ArchiveEngine periodically requests a value from
+the CA server, for example once every minute. The value returned by
+the CA server is added to the archive. So even if the value does not
+change, we take a sample, which gives more of a warm fuzzy feeling than
+the monitored mode.
+To prevent saving the exact same value over and over again, wasting disk space,
+only 'repeat' counts are stored: Just before a new value is logged, the
+previous, unchanged value is logged with special status/severity values
+to indicate the \INDEX{repeat count}.
+If the value never changes, the engine increments the repeat count
+to a configurable maximum, then logs it and starts again.
+So even for values that never change, the archive should contain
+a periodic sample.
+
+For most slowly varying values like water temperatures or a long-term
+archive of operating voltages etc., this is a very practical mode.
+Possible issues:
+\begin{itemize}
+\item
+Not suitable for many "fault" indicator type channels:
+If a brief fault happens between sample times, the engine never notices
+it.
+\item
+Since each "scan" is handled
+by actually requesting a value from the CA server and logging the
+result, i.e.\ a round-trip network request for each value,
+scanning should be limited to maybe once a minute or slower.
+\item
+Since each sample is stored with its original time stamp, 
+users are often surprised when retrieving archived data.
+Assuming we scan a channel every 30~seconds, the following
+happens: About every 30 seconds, the ArchiveEngine requests and stores
+the current value of the channel \emph{with its original time stamp!}.
+So while the ArchiveEngine might take a sample at
+\begin{center}
+14:53:30, 14:54:00, 14:54:30, 14:55:00, ...,
+\end{center}
+it stores the time stamps that come with the values, not the nice looking,
+equidistant sample times. Depending on network
+delays and the scan rate of the record, that value might have been time-stamped
+some time before the engines sample time.
+In Fig.~\ref{fig:times} those times happened to be
+\begin{center}
+14:53:29.091,  14:53:59.092, 14:54:29.094,  14:54:59.095, ...
+\end{center}
+\end{itemize}
+
+\subsection{\INDEX{Scanned using Monitors}}
+The ArchiveEngine is configured to scan periodically,
+e.g.\ one sample every 5 seconds. But instead of actively requesting a
+value from the CA server at this rate, it establishes a monitor and
+only saves a value every 5 seconds.
+
+To clarify the "Scan" with and witout monitors, assume our data source changes
+at 1~Hz. If we want to store a value every 30 seconds, it is most efficient to
+send a 'read'-request every 30 seconds. If, on the other hand, we want
+to store a value every 5 seconds, it is usually more effective to
+establish a monitor, so we automatically receive updates about every
+second, and simply \emph{ignore} 4 of the 5 values.
+
+When configuring a channel, the user only selects ``Scan'' with a sampling rate.
+The decision between the simple scan and the scan based on monitors is
+automatic, depending on the scan period. If the scan period is smaller,
+i.e.\ faster than the \emph{get\_threshold} configuration
+parameter described in section \ref{sec:getthreshold}, 
+monitors are used.
+
+Possible issues:
+\begin{itemize}
+\item
+For scan rates of maybe 1 to 30 seconds, there is usually a performance
+advantage because of the reduced network traffic in comparison to
+the plain scan with round-trip network requests.
+But in order to give repeat count information similar to the plain scan,
+the engine still needs to periodically check the channel for newly arrived
+monitors. At fast scan periods like 0.1 seconds, this results in higher
+CPU load than basic monitored sampling.
+\item
+The engine has problems with merging data from the internal scan with
+incoming monitors.
+Assume that we scan every 10 seconds.
+At the end of one such scan interval, we might notice that we received a monitor,
+time stamped in the previous sample interval, so it is logged.
+At the next sample interval, we might not have received anything new,
+so we increase the repeat count.
+At an even later sample interval, we might still not have received anything
+new, and having accumulated the maximum repeat count, we log a special 'repeat'
+sample, time-stamped at the sample interval time.
+Just a split second later, we might receive a new monitor, stamped before the
+last sample interval, but because of network delays it only arrived now.
+Since the archive already contains the special 'repeat' value, this new sample
+goes back-in-time and cannot be logged as is.
+To get it into the archive, its time stamp is adjusted to match the
+preceding 'repeat' value. 
+\end{itemize}
 
 \section{Sensible Sampling}
+
+
 The data source configuration and sampling need to be coordinated.  In
 fact the whole system needs to be understood. When we deal with water
 tank temperatures as one example, we have to understand that the

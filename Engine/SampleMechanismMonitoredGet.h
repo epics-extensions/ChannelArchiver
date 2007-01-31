@@ -8,34 +8,6 @@
 #include "RepeatFilter.h"
 #include "TimeFilter.h"
 
-/*  TODO: Rethink this.
- *  It's OK for changing values:
- *  <li>ProcessVariable gets monitor
- *  <li>DisableFilter passes
- *  <li>TimeSlotFilter blocks unless scan period passed
- *  <li>RepeatFilter Counts up if value didn't change
- *  <li>TimeFilter Should pass sane time stamps
- *  <li>SampleMechanismMonitoredGet nothing
- *  <li>base SampleMechanism Should write
- * 
- *  But for a value that doesn't change for a while:
- *  <li>ProcessVariable gets no monitor
- *  ...
- *  <li>RepeatFilter Doesn't count up, since it's never called.
- * 
- *  Finally a new value:
- *  <li>ProcessVariable gets monitor
- *  ...
- *  <li>RepeatFilter Considers this the only value since the last one.
- *                   No repeat count!
- * 
- *  Should there be a repeat count?
- *  Or is this all garbage?
- *  TODO: This is a real problem with 'error bit' channels that rarely change
- *        in the presence of flow control. If we miss the one change because
- *        of flow control, we never learn about it.
- */
-
 /**\ingroup Engine
  *  Sample Mechanism that stores periodic samples using a 'monitor'.
  *  <p>

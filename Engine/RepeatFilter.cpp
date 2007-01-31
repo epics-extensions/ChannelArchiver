@@ -15,7 +15,8 @@ RepeatFilter::RepeatFilter(const EngineConfig &config,
       pv(pv),
       is_previous_value_valid(false),
       repeat_count(0),
-      had_value_since_update(false)
+      had_value_since_update(false),
+      last_sample_was_repeat(false)
 {
 }
 
@@ -89,7 +90,9 @@ void RepeatFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
         Guard pv_guard(__FILE__, __LINE__, pv);
         type  = pv.getDbrType(pv_guard);
         count = pv.getDbrCount(pv_guard);
-    }    
+    }
+    // Check new monitor or result of 'scan'.
+    // Does it have the same value, is it a 'repeat'?     
     {
         Guard guard(__FILE__, __LINE__, mutex);
         if (is_previous_value_valid)
@@ -102,20 +105,36 @@ void RepeatFilter::pvValue(ProcessVariable &pv, const RawValue::Data *data)
             else // New data flushes repeats, then continue to handle new data.
                 flush(guard, RawValue::getTime(data));
         }
+        
         // Remember current value for repeat test.
         LOG_ASSERT(previous_value);
         RawValue::copy(type, count, previous_value, data);
+        // If the last value was a 'repeat' sample,
+        // it could carry the timestamp from an update()
+        // call.
+        // A split second later, real new data can arrive,
+        // but with a time stamp just before the last
+        // 'repeat' sample.
+        // We can't go back to decrement or even remove
+        // the 'repeat' samples, but we at least tweak this
+        // time stamp so that the sample is logged and not
+        // refused because of back-in-time issues.
+        if (last_sample_was_repeat &&
+            RawValue::getTime(previous_value) < repeat_stamp)
+        {   RawValue::setTime(previous_value, repeat_stamp); }    
         is_previous_value_valid = true;
         repeat_count = 0;
+        had_value_since_update = true;
+        last_sample_was_repeat = false;
     }
     // and pass on to listener.
 #   ifdef DEBUG_REP_FILT
     LOG_MSG("'%s': RepeatFilter passes new value.\n", pv.getName().c_str());
 #   endif
-    had_value_since_update = true;
-    ProcessVariableFilter::pvValue(pv, data);
+    ProcessVariableFilter::pvValue(pv, previous_value);
 }
 
+// Called by SampleMechanismMonitoredGet::scan
 void RepeatFilter::update(const epicsTime &now)
 {
 #   ifdef DEBUG_REP_FILT
@@ -123,17 +142,18 @@ void RepeatFilter::update(const epicsTime &now)
 #   endif
     Guard guard(__FILE__, __LINE__, mutex);
     if (had_value_since_update)
-    {   // OK so far, but 'arm', since if there are no more values
-        // until the next update(), we count repeats
+    {   // OK so far, but 'arm'.
+        // If there are no more values until the next update(),
+        // we'll count repeats
         had_value_since_update = false;
         return;
     }
-    // else: Accumulate repeats.
+    // else: No new values received, accumulate repeats.
     inc(guard, now);
 }
 
 void RepeatFilter::inc(Guard &guard, const epicsTime &when)
-{
+{   // Count one more repeat.
     ++repeat_count;
 #   ifdef DEBUG_REP_FILT
     LOG_MSG("RepeatFilter '%s': repeat %zu\n",
@@ -165,6 +185,8 @@ void RepeatFilter::flush(Guard &guard, const epicsTime &when)
         RawValue::setTime(previous_value, when);
     // Add 'repeat' sample.
     RawValue::setStatus(previous_value, repeat_count, ARCH_REPEAT);
+    last_sample_was_repeat = true;
+    repeat_stamp = RawValue::getTime(previous_value);
     repeat_count = 0;
     had_value_since_update = true;
     {

@@ -25,8 +25,8 @@
 #undef MOZILLA_HACK
 
 #if defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
-// Throttle the log messages for accepted clients down to once every 10 minutes.
-static ThrottledMsgLogger client_IP_log_throttle("HTTP clients", 10*60);
+// Throttle the log messages for accepted clients
+static ThrottledMsgLogger client_IP_log_throttle("HTTP clients", 2*secsPerHour);
 #endif
 
 // The HTTPServer launches one HTTPClientConnection per

@@ -51,10 +51,16 @@ TEST_CASE test_secondparser()
     TEST(t == "1 min");
 
     t = SecondParser::format(60*60);
-    TEST(t == "1 hours");
+    TEST(t == "1 hour");
+
+    t = SecondParser::format(2*60*60);
+    TEST(t == "2 hours");
+
+    t = SecondParser::format(2*24*60*60);
+    TEST(t == "2 days");
 
     t = SecondParser::format(24*60*60);
-    TEST(t == "1 days");
+    TEST(t == "1 day");
 
     TEST_OK;
 }

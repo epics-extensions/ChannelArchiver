@@ -3,6 +3,7 @@
 #include <stdarg.h>
 // Tools
 #include "ThrottledMsgLogger.h"
+#include "epicsTimeHelper.h"
 
 void ThrottledMsgLogger::LOG_MSG(const char *format, ...)
 {
@@ -17,8 +18,9 @@ void ThrottledMsgLogger::LOG_MSG(const char *format, ...)
     else if (!too_many)
     {
         too_many = true;
-        ::LOG_MSG("%s: More messages suppressed for %g seconds....\n",
-                  name.c_str(), getThrottleThreshold());
+        ::LOG_MSG("%s: More messages suppressed for %s....\n",
+                  name.c_str(),
+                  SecondParser::format(getThrottleThreshold()).c_str());
     }
 }
 

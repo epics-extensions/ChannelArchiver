@@ -58,8 +58,12 @@ bool SecondParser::parse(const stdString &t, double &n, double default_factor)
 stdString SecondParser::format(double seconds)
 {
     char result[100];
-    if (seconds >= secsPerDay)
+    if (seconds == secsPerDay)
+        sprintf(result, "%g day", seconds/secsPerDay);
+    else if (seconds >= secsPerDay)
         sprintf(result, "%g days", seconds/secsPerDay);
+    else if (seconds == secsPerHour)
+        sprintf(result, "%g hour", seconds/secsPerHour);
     else if (seconds >= secsPerHour)
         sprintf(result, "%g hours", seconds/secsPerHour);
     else if (seconds >= secsPerMinute)

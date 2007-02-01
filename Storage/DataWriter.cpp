@@ -96,10 +96,10 @@ DataWriter::~DataWriter()
                         header->data.begin_time, header->data.end_time,
                         header->offset, header->datafile->getBasename()))
                 {
-                    LOG_MSG("~DataWriter: updateLastDatablock '%s' %s @ 0x%lX was a NOP\n",
-                            channel_name.c_str(),
-                            header->datafile->getBasename().c_str(),
-                            (unsigned long)header->offset);
+                    // LOG_MSG("~DataWriter: updateLastDatablock '%s' %s @ 0x%lX was a NOP\n",
+                    //         channel_name.c_str(),
+                    //         header->datafile->getBasename().c_str(),
+                    //         (unsigned long)header->offset);
                 }
                 tree = 0;
             }

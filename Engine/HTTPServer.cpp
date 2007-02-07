@@ -18,6 +18,7 @@
 #include <MsgLogger.h>
 #include <ToolsConfig.h>
 #include <ThrottledMsgLogger.h>
+#include <epicsTimeHelper.h>
 // Engine
 #include "EngineLocks.h"
 #include "HTTPServer.h"

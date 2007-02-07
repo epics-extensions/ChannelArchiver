@@ -6,7 +6,7 @@
 #
 # Run every two minutes
 # min hour day month weekday
-# 0-59/2 * * * * /home/xfer/update_server.sh &
+# 0-59/2 * * * * /home/scripts/update_server.sh &
 
 cd /arch
 source setup.sh

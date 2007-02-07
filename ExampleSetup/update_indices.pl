@@ -1,6 +1,11 @@
 #!/usr/bin/perl
 #
 # See usage()
+#
+# Usually this is run by the update_server.sh script.
+#
+# If the network data server and the engines are on the
+# same machine, you might consider update_indices.sh
 
 BEGIN
 {

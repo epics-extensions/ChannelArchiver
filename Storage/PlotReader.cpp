@@ -5,23 +5,23 @@
 // Storage
 #include "PlotReader.h"
 
-// #define DEBUG_PLOTREAD
+#define DEBUG_PLOTREAD
 
 PlotReader::PlotReader(Index &index, double delta)
-  : reader(index),
-    delta(delta),
+  : delta(delta),
+    reader(index),
     reader_data(0),
-    N(0),
     type(0),
     count(0),
     type_changed(false),
+    have_initial(false),
+    have_mini(false),
+    have_maxi(false),
+    have_info(false),
+    have_final(false),
     ctrl_info_changed(false),
-    have_initial_final(false),
-    current(0),
-    have_mini_maxi(false),
-    mini(0.0),
-    maxi(0.0),
-    state(s_dunno)
+    sample_index(0),
+    current(0)
 {
 #ifdef DEBUG_PLOTREAD
     printf("Plot Reader, delta %g (%g h)\n", delta, delta/60.0/60.0);
@@ -38,51 +38,38 @@ const RawValue::Data *PlotReader::find(const stdString &channel_name,
     if (delta <= 0.0)
         return reader_data;
     if (start)
-    {
         end_of_bin = *start + delta;
-        // reader_data could be the last sample just before 'start'.
-        // If it's a plain value: OK, we'll later shift that onto 'start'.
-        // Otherwise, move on until we're in the first bin.
-        while (RawValue::isInfo(reader_data) &&
-               RawValue::getTime(reader_data) < *start)
-        {
-#ifdef DEBUG_PLOTREAD
-            printf("Skipping before-start sample.\n");
-#endif
-            reader_data = reader.next();
-            if (!reader_data) // There is no data >= *start.
-            {
-                current = 0;
-                return 0;
-            }
-        }             
-    }
     else
         end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
-    return fill_bin();
+    return analyzeBin();
 }
 
-const RawValue::Data *PlotReader::fill_bin()
+void PlotReader::clearValues()
 {
-    double d;
-    N = 0;
-    have_initial_final = have_mini_maxi = false;
-    if (!reader_data)
-    {
-        current = 0;
+    have_initial = false;
+    have_mini = false;
+    have_maxi = false;
+    have_info = false;
+    have_final = false;
+    for (int i=0; i<BinSampleCount; ++i)
+        samples[i] = 0;
+    sample_index = 0;
+    current = 0;
+}
+
+const RawValue::Data *PlotReader::analyzeBin()
+{
+    clearValues();   
+    if (!reader_data) // done
         return 0;
+    if (RawValue::getTime(reader_data) > end_of_bin)
+    {   // Continue where the data is, skip bins that have nothing anyway
+        end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
     }
 #ifdef DEBUG_PLOTREAD
     stdString txt;
     printf("End of bin: %s\n", epicsTimeTxt(end_of_bin, txt));
 #endif
-    if (RawValue::getTime(reader_data) > end_of_bin)
-    {   // Continue where the data is, skip bins that have nothing anyway
-        end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
-#ifdef DEBUG_PLOTREAD
-        printf("Adjusted: %s\n", epicsTimeTxt(end_of_bin, txt));
-#endif
-    }
     while (reader_data   &&   RawValue::getTime(reader_data) < end_of_bin)
     {   // iterate until just after end_of_bin, updating mini, maxi, ...
 #ifdef DEBUG_PLOTREAD
@@ -90,164 +77,162 @@ const RawValue::Data *PlotReader::fill_bin()
         RawValue::show(stdout, reader.getType(), reader.getCount(),
                        reader_data, &reader.getInfo());
 #endif
-        // Check for changing info, type, count...
+        // Check for changing info
         if (reader.changedInfo())
         {
             info = reader.getInfo();
             ctrl_info_changed = true;
         }        
-        if (!initial ||
+        // Check for changing type type, count...
+        if (!have_initial ||
             type != reader.getType() || count != reader.getCount())
         {
             type    = reader.getType();
             count   = reader.getCount();
-            initial = RawValue::allocate(type, count, 1);
-            final   = RawValue::allocate(type, count, 1);
+            initial_sample = RawValue::allocate(type, count, 1);
+            mini_sample    = RawValue::allocate(type, count, 1);
+            maxi_sample    = RawValue::allocate(type, count, 1);
+            info_sample    = RawValue::allocate(type, count, 1);
+            final_sample   = RawValue::allocate(type, count, 1);
             type_changed = true;
             // If this happens within a bin: Tough - we start over.
-            N = 0;
-            have_initial_final = have_mini_maxi = false;
+            clearValues();   
         }
-        // The 'current' value is always copied into 'final'.
-        RawValue::copy(type, count, final, reader_data);
-        ++N;
-        if (!have_initial_final)
-        {   // Remember the initial value.
-            RawValue::copy(type, count, initial, reader_data);
-            // The very fist 'reader_data' could be the sample before 'start'.
-            // Map that onto 'start'
-            if (RawValue::getTime(initial) < end_of_bin - delta)
-            {
-#ifdef DEBUG_PLOTREAD
-                printf("Moving time of before-start sample to start\n");
-#endif
-                RawValue::setTime(initial, end_of_bin - delta);
-            }
-            have_initial_final = true;
+        // Get the initial sample
+        if (! have_initial)
+        {
+            RawValue::copy(type, count, initial_sample, reader_data);
+            have_initial = true;
         }
         // Hit a special value (disconnected, off)?
         // Leave that in 'final', jump to end of bin and and break.
-        if (RawValue::isInfo(final))
+        if (RawValue::isInfo(reader_data))
         {
-            do
-                reader_data = reader.next();
-            while (reader_data && RawValue::getTime(reader_data) < end_of_bin);
-            break;
-        }   
-        if (RawValue::isInfo(final)==false  &&
-            RawValue::getDouble(type, count, final, d))
-        {   // Determine the minimum and maximum.
-            if (have_mini_maxi)
-            {
-                if (mini > d)
-                    mini = d;
-                if (maxi < d)
-                    maxi = d;
+            RawValue::copy(type, count, info_sample, reader_data);
+            have_info = true;
+        }
+        else
+        {   // non-info sample...   
+            double dbl;
+            if (RawValue::getDouble(type, count, reader_data, dbl))
+            {   // Determine the minimum and maximum.
+                if (have_mini == false  ||  dbl < mini_dbl)
+                {
+                    mini_dbl = dbl;
+                    RawValue::copy(type, count, mini_sample, reader_data);
+                    have_mini = true;
+                }
+                if (have_maxi == false  ||  dbl > maxi_dbl)
+                {
+                    maxi_dbl = dbl;
+                    RawValue::copy(type, count, maxi_sample, reader_data);
+                    have_maxi = true;
+                }
             }
-            else
-            {
-                mini = maxi = d;
-                have_mini_maxi = true;
-            }
         }   
+        // So far, that's also the 'final', since we don't know, yet,
+        // if there will be another sample to follow.
+        RawValue::copy(type, count, final_sample, reader_data);
+        have_final = true;
         reader_data = reader.next();
     }
-    // Options at this point:
-    // 1) Found absolutely nothing (!have_initial_final)
-    // 2) There is no numeric data (!have_mini_maxi)
-    //    and the reader is also done (reader_data == 0)
-    // 3) We didn't find any useful data (!have_mini_maxi),
-    //    but the reader is still valid:
-    //    A gap in time, or raw data that we can't use (string, enum)
-    // 4) We found data (have_mini_maxi).
-    //    Reader might be valid, or we reached the end of the archive.
-    if (have_initial_final)
-        state = s_gotit;
-    else
-        state = s_dunno;  // case 1: Give up
+    
+    // Analyzed bin
+#ifdef DEBUG_PLOTREAD
+        printf("Analyzed bin:\n");
+        if (have_initial)
+        {
+            printf("init  = ");
+            RawValue::show(stdout, type, count, initial_sample, &info);
+        }
+        if (have_mini)
+        {
+            printf("mini  = ");
+            RawValue::show(stdout, type, count, mini_sample, &info);
+        }
+        if (have_maxi)
+        {
+            printf("maxi  = ");
+            RawValue::show(stdout, type, count, maxi_sample, &info);
+        }
+        if (have_info)
+        {
+            printf("info  = ");
+            RawValue::show(stdout, type, count, info_sample, &info);
+        }
+        if (have_final)
+        {
+            printf("final = ");
+            RawValue::show(stdout, type, count, final_sample, &info);
+        }
+#endif
+
+    // Collect the key samples that we found,
+    // inserting them in time order, but avoid duplicates
+    int N = 0;
+    if (have_initial)
+        addSample(initial_sample);
+    if (have_mini)
+        addSample(mini_sample);
+    if (have_maxi)
+        addSample(maxi_sample);
+    if (have_info)
+        addSample(info_sample);
+    if (have_final)
+        addSample(final_sample);
+    
+    // Prepare next bin
+    end_of_bin += delta;
+    
     return next();
+}
+
+/** Add sample to _samples_, inserting in time order, but ignoring dups. */
+void PlotReader::addSample(const RawValue::Data *sample)
+{
+    epicsTime new_time = RawValue::getTime(sample);
+    for (int i=0; i<BinSampleCount; ++i)
+    {
+        if (samples[i] == 0)
+        {   // Found empty slot (at end), insert, done.
+            samples[i] = sample;
+            return;
+        }
+        // Is this an existing sample?
+        if (RawValue::equal(type, count, samples[i], sample))
+            return; // don't add duplicate
+        // Compare times: Need to insert before?
+        epicsTime cur_time = RawValue::getTime(samples[i]);
+        if (new_time < cur_time)
+        {
+            // Scoot everything down to make place for new sample
+            for (int l=BinSampleCount-1; l>i; --l)
+                samples[l] = samples[l-1];     
+            // Insert new sample, done.
+            samples[i] = sample;
+            return;
+        }
+        // Else: Check next slot
+    }
 }
 
 const RawValue::Data *PlotReader::next()
 {
-    if (delta <= 0.0)
+    if (delta <= 0.0) // no binning at all
     {
         current = reader.next();
         return current;
     }
-    if (state != s_dunno)
-    {   // Anything in current bin?
-        // Should have copy of initial and final value.
-        // For numerics, also mini & maxi.
-        LOG_ASSERT(have_initial_final && initial && final);
-        double span;
-        switch (state)
-        {
-            case s_gotit:
-#ifdef DEBUG_PLOTREAD
-                printf("Initial: ");
-                RawValue::show(stdout, reader.getType(), reader.getCount(),
-                               initial, &reader.getInfo());
-#endif
-                state = s_ini;
-                current = initial;
-                return current;
-            case s_ini:
-                if (N <= 1)
-                    break; // only have initial value
-                // Try to update initial value to reflect mini/maxi.
-                // Need to preserve final value, it's returned later.
-                if (N > 2 && have_mini_maxi &&
-                    RawValue::setDouble(type, count, initial, mini))
-                {   // Artificial time stamp at 1/3 of bin
-                    const epicsTime t0 = RawValue::getTime(initial);
-                    span = RawValue::getTime(final) - t0;
-                    RawValue::setTime(initial, t0 + span/3);
-                    RawValue::setStatus(initial, 0, 0);
-#ifdef DEBUG_PLOTREAD
-                    printf("Minimum: ");
-                    RawValue::show(stdout, reader.getType(), reader.getCount(),
-                                   initial, &reader.getInfo());
-#endif
-                    state = s_min;
-                    current = initial;
-                    return current;
-                }
-                // fall through
-            case s_min:
-                if (N > 2 && have_mini_maxi &&
-                    RawValue::setDouble(type, count, initial, maxi))
-                {   // Artificial stamp at 2/3 of bin.
-                    // Note t0 is already at 1-3 of original [ini..fin]
-                    const epicsTime t0 = RawValue::getTime(initial);
-                    span = RawValue::getTime(final) - t0;
-                    RawValue::setTime(initial, t0 + span/2);
-#ifdef DEBUG_PLOTREAD
-                    printf("Maximum: ");
-                    RawValue::show(stdout, reader.getType(), reader.getCount(),
-                                   initial, &reader.getInfo());
-#endif
-                    state = s_max;
-                    current = initial;
-                    return current;
-                }
-                // fall through
-            case s_max:
-#ifdef DEBUG_PLOTREAD
-                printf("Final: ");
-                RawValue::show(stdout, reader.getType(), reader.getCount(),
-                               final, &reader.getInfo());
-#endif
-                state = s_fin;
-                current = final;
-                return current;
-            default:
-                break;
-        }
+    // Is there another sample in the current bin?
+    if (sample_index < BinSampleCount)
+    {
+        current = samples[sample_index];
+        ++sample_index;
+        if (current)
+            return current;
     }
-    // Check next bin
-    end_of_bin += delta;
-    return fill_bin();
+    // No, get data from next bin
+    return analyzeBin();
 }
 
 const RawValue::Data *PlotReader::get() const

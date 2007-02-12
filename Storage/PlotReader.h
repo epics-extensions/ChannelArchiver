@@ -12,24 +12,34 @@
  * that returns data in a format suitable for plotting.
  * 
  * Beginning at the requested start time, the raw samples
- * within the next bin of 'delta' seconds are investigated.
- * Returned is then the
+ * within the next bin of 'delta' seconds are investigated, locating the
  * - initial,
  * - minimum,
  * - maximum,
- * - and final value
- * within the bin.
- *
+ * - final value
+ * within the bin as well as the last 'info' sample
+ * like 'disconnected' or 'archive off'.
+ * 
+ * Those 5 samples are then sorted in time: Initial and final stay
+ * as they are, but minimum, maximum and info samples might occur at
+ * any time within the bin.
+ * 
+ * Finally, a 'unique' filter is applied:
+ * If the initial and minimum sample are one and the same,
+ * only the initial sample is returned. Similarly, the might only be a single
+ * intial == mini == maxi == final sample, so only that single sample
+ * is returned.
+ * 
  * Then the next bin is investigated.
- *
+ * 
  * Note that there is no indication which value we're currently
  * returning: The first call to find() will investigate the current
- * bin and return the inital value. The following call to next() will
- * return the minumum within the bin, then the maximum is returned and so on.
+ * bin and return the inital value. The following call to next() might
+ * return the minumum within the bin, then the maximum and so on.
  *
- * This is meant to feed a plotting tool, with the intention
- * of showing an envelope of the raw data, resulting in data reduction when
- * zooming out.
+ * This is meant to feed a plotting tool, one that simply draws a line
+ * from sample to sample, with the intention of showing an envelope of the
+ * raw data, resulting in significant data reduction.
  */
 class PlotReader : public DataReader
 {
@@ -50,29 +60,42 @@ public:
     bool changedType();
     bool changedInfo();
 private:
-    RawDataReader reader;
+    /** Bin size in seconds. */
     double delta;
+    /** End of the current bin. */
+    epicsTime end_of_bin;
+    
+    /** Base reader. */
+    RawDataReader reader;
 
-    // Current value of reader
+    /** Current value of underlying base reader */
     const RawValue::Data *reader_data;
 
-    // Value of this PlotReader
-    epicsTime end_of_bin;
-    unsigned long N;
+    /** Values of this PlotReader */
     DbrType type;
     DbrCount count;
-    CtrlInfo info;
     bool type_changed;
-    bool ctrl_info_changed;
-    bool have_initial_final;
-    RawValueAutoPtr initial, final;
-    const RawValue::Data *current;
-    bool have_mini_maxi;
-    double mini, maxi;
-    // State machine for next()
-    enum { s_dunno, s_gotit, s_ini, s_min, s_max, s_fin } state;
+    RawValueAutoPtr initial_sample, mini_sample, maxi_sample, info_sample, final_sample;
+    bool have_initial, have_mini, have_maxi, have_info, have_final;
+    double mini_dbl, maxi_dbl;
 
-    const RawValue::Data *fill_bin();
+    CtrlInfo info;
+    bool ctrl_info_changed;
+
+    enum { BinSampleCount = 5 };
+    const RawValue::Data *samples[BinSampleCount];
+    int sample_index;
+    
+    /** Add sample to _samples_, inserting in time order, but ignoring dups. */
+    void addSample(const RawValue::Data *);
+
+    const RawValue::Data *current;
+
+    /** Set to "we have nothing" */
+    void clearValues();
+
+    /** Analyze the next bin. */
+    const RawValue::Data *analyzeBin();
 };
 
 #endif

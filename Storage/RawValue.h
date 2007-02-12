@@ -59,8 +59,13 @@ public:
     /// Calculate size of a single value of type/count.
     static size_t getSize(DbrType type, DbrCount count);
 
+    /// Are two values equal?
+    static bool equal(DbrType type, DbrCount count,
+                      const Data *lhs, const Data *rhs)
+    {   return memcmp(lhs, rhs, getSize(type, count)) == 0;    }
+
     /// Compare the value part of two RawValues, not the time stamp or status!
-    /// (for full comparison, use memcmp over size given by getSize()).
+    /// (for full comparison, use equal()).
     ///
     /// Both lhs, rhs must have the same type.
     static bool hasSameValue(DbrType type, DbrCount count,
@@ -69,20 +74,27 @@ public:
                              const Data *lhs, const Data *rhs);
 
     /// Full copy (stat, time, value). Only valid for Values of same type.
-    static void copy(DbrType type, DbrCount count, Data *lhs, const Data *rhs);
+    static void copy(DbrType type, DbrCount count, Data *lhs, const Data *rhs)
+    {   memcpy(lhs, rhs, getSize(type, count));    }
 
     /// Get status
-    static short getStat(const Data *value);
-
+    static short getStat(const Data *value)
+    {   return value->status; }
+ 
     /// Get severity
-    static short getSevr(const Data *value);
-
+    static short getSevr(const Data *value)
+    {   return value->severity; }
+ 
     /// Get status/severity as string
     static void getStatus(const Data *value, stdString &status);
 
     /// Does the severity represent one of the special ARCH_xxx values
     /// that does not carry any value
-    static bool isInfo(const Data *value);
+    static bool isInfo(const Data *value)
+    {
+        short s = value->severity;
+        return s==ARCH_DISCONNECT || s==ARCH_STOPPED || s==ARCH_DISABLED;
+    }
 
     /// Check the value to see if it's above zero.
 
@@ -92,19 +104,25 @@ public:
     static bool isAboveZero(DbrType type, const Data *value);
     
     /// Set status and severity
-    static void setStatus(Data *value, short status, short severity);
+    static void setStatus(Data *value, short status, short severity)
+    {
+        value->status = status;
+        value->severity = severity;
+    }
 
     /// Parse stat/sevr from text
     static bool parseStatus(const stdString &text, short &stat, short &sevr);
 
     /// Get time stamp
-    static const epicsTime getTime(const Data *value);
+    static const epicsTime getTime(const Data *value)
+    {   return epicsTime(value->stamp);  }
 
     /// Get time stamp as text
     static void getTime(const Data *value, stdString &time);
 
     /// Set time stamp
-    static void setTime(Data *value, const epicsTime &stamp);
+    static void setTime(Data *value, const epicsTime &stamp)
+    {   value->stamp = (epicsTimeStamp)stamp; }
 
     /// Get data as a double or return false
 
@@ -267,35 +285,5 @@ private:
 };
 
 /// @}
-
-inline void RawValue::copy(DbrType type, DbrCount count,
-                           Data *lhs, const Data *rhs)
-{
-    memcpy(lhs, rhs, getSize(type, count));
-}
-
-inline short RawValue::getStat(const Data *value)
-{ return value->status; }
-
-inline short RawValue::getSevr(const Data *value)
-{ return value->severity; }
-
-inline bool RawValue::isInfo(const Data *value)
-{
-    short s = value->severity;
-    return  s==ARCH_DISCONNECT || s==ARCH_STOPPED || s==ARCH_DISABLED;
-}
-
-inline void RawValue::setStatus(Data *value, short status, short severity)
-{
-    value->status = status;
-    value->severity = severity;
-}
-
-inline const epicsTime RawValue::getTime(const Data *value)
-{   return epicsTime(value->stamp);  }
-
-inline void RawValue::setTime(Data *value, const epicsTime &stamp)
-{   value->stamp = (epicsTimeStamp)stamp; }
 
 #endif

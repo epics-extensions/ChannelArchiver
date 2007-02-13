@@ -5,7 +5,7 @@
 // Storage
 #include "PlotReader.h"
 
-#define DEBUG_PLOTREAD
+// #define DEBUG_PLOTREAD
 
 PlotReader::PlotReader(Index &index, double delta)
   : delta(delta),
@@ -169,7 +169,6 @@ const RawValue::Data *PlotReader::analyzeBin()
 
     // Collect the key samples that we found,
     // inserting them in time order, but avoid duplicates
-    int N = 0;
     if (have_initial)
         addSample(initial_sample);
     if (have_mini)
@@ -198,14 +197,15 @@ void PlotReader::addSample(const RawValue::Data *sample)
             samples[i] = sample;
             return;
         }
-        // Is this an existing sample?
+        // Is this a duplicate sample?
+        // (Example: The 'minimum' could be the same as the 'initial'.
+        //           Or if there was only one sample, initial == final)
         if (RawValue::equal(type, count, samples[i], sample))
             return; // don't add duplicate
         // Compare times: Need to insert before?
         epicsTime cur_time = RawValue::getTime(samples[i]);
         if (new_time < cur_time)
-        {
-            // Scoot everything down to make place for new sample
+        {   // Scoot everything down, make room for new sample
             for (int l=BinSampleCount-1; l>i; --l)
                 samples[l] = samples[l-1];     
             // Insert new sample, done.

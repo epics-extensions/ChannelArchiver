@@ -6,6 +6,21 @@ the beginning of the R3.14 port.
 % Compare: make.cfg, ArchiveDaemon.pl $version
 \begin{itemize}
 
+\item 02/13/2007 --- Version 2.12.0:\\
+Changed the implementation of "plot-binning".
+Originally, it returned the initial/mini/maxi/final sample for each bin.
+The initial and final samples were original, the mini and maxi were
+interpolated, loosing original time and severity.
+Further, it usually clobbered 'info' samples like "archive off" or
+"disconnected".
+
+The 11/17/2006 change kept the 'info' samples, but that solution
+tended to loose the rest of the bin data after the first 'info' sample.
+
+The new plot-binning can return up to 5 samples per bin,
+(initial, mini, maxi, last 'info' sample, final), keeping their original
+time stamps and severity, sorting them by time.
+
 \item 01/29/2007 --- Version 2.11.0:\\
 Config file allows specification of time periods as "1 second" or "1 minute"
 etc.\ instead of the previous plain number.

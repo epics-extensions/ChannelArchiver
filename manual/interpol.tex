@@ -242,20 +242,14 @@ all compare to the raw data.
 This method is meant for plotting, providing data that --- when
 plotted --- looks very much if not exactly like the raw data, albeit
 significantly reducing the number of data points and hence speeding up
-the plot.  To accomplish this, the data is binned as described in the
-previous section. The following is then applied to each bin:
-\begin{itemize}
-\item If there is no sample for the time span of a bin, the bin
-  remains empty.
-\item If there is one sample, it is placed in the bin.
-\item If there are two samples, they are placed in the bin.
-\item If there are more than two samples, the first and last one
-  are placed in the bin. In addition, two artificial samples are
-  created with a time stamp right between the first and last sample.
-  One contains the minimum, the other the maximum of all raw samples
-  who's time stamps fall into the bin. They are presented to the user
-  in the sequence initial, minimum, maximum, final.
-\end{itemize}
+the plot.  To accomplish this, the data is binned as follows:
+For each bin, the initial,  minimum, maximum, and final sample is
+determined. In case the bin contains 'info' samples like 'disconnected'
+or 'archive off', the last of them is also kept.
+Those up to 5 samples are then sorted in time and duplicates are removed.
+So if a bin contains 0, 1 or two samples, the result contains those original
+samples. Otherwise, the result might contain up to 5 samples per bin for the
+initial, minimum, maximum, last 'info' and final sample in time order.
 
 \noindent Fig.~\ref{fig:interpol} compares the raw data of a Klystron
 test run, 2400 samples, with the result of plot-binning, bin size 600
@@ -263,21 +257,10 @@ seconds, yielding around 280 samples. While plot binning significantly
 reduced the sample count, the overall shape of the klystron output as
 well as the outliers are well preserved.
 
-Note that the ``before or at'' interpretation of start times does not
-apply for Plot-Binning: The exact start time of the request is used to
-determine the beginning of the first bin, and only samples within each
-bin are considered, there is no interpolation onto bin-boundaries.  In
-general, the use of $N$ bins can result in up to 4$N$ data points,
-since each bin might provide an initial, minimum, maximum and final
-value.  In most cases, this results in a significant data
-reduction. As long as we plot this such that the width of the plot in
-pixels is close to the number of bins, there is little visual
+Note that the result does not provide any hints as to whether you are looking
+at the "initial" sample of a bin or the "final".
+As long as we plot the resulting stream of samples such that the width of
+the plot in pixels is close to the number of bins, there is little visual
 difference between the raw data plot and the binned plot.  Typical
 numbers for $N$ are around the width of a computer screen in pixels,
-that is 800\ldots 1200.  For the special case were 3 raw values happen
-to fall into every bin, we will get 4$N$ instead of 4$N$ data
-points. For typical $N$, that is a slight but not dramatic increase in
-retrieval or plotting time. It is neglectable compared to the fact
-that binning guarantees an upper limit of 4$N$ data points, no matter
-how many raw
-samples there are.
+that is 800\ldots 1200.  

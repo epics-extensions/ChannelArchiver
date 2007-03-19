@@ -101,6 +101,7 @@ inline void DataHeader::clear()
 
 class DataFile
 {
+    friend class DataHeaderIterator;
 public:
     // Max. number of samples per header.
     // Though a header could hold more than this,
@@ -138,8 +139,6 @@ public:
     bool addNewValue(DataHeaderIterator &header, const BinValue &value, bool update_header);
 
 private:
-    friend class DataHeaderIterator;
-
     size_t  _ref_count;
 
     // The current data file:

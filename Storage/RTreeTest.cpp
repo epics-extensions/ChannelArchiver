@@ -40,29 +40,39 @@ static TestData man_data2[] =
     { "8", "9", "FileB",  0x30 },
     { "9","10", "FileB",  0x40 },
 };
+// ... both
+static TestData man_data3[] =
+{
+    { "1", "2", "FileA",  0x10 },
+    { "2", "3", "FileA",  0x20 },
+    { "3", "4", "FileA",  0x30 },
+    { "4", "5", "FileA",  0x40 },
+    { "5", "6", "FileA",  0x50 },
+    { "6", "7", "FileA",  0x60 },
+    { "4", "6", "FileB",  0x10 },
+    { "6", "8", "FileB",  0x20 },
+    { "8", "9", "FileB",  0x30 },
+    { "9","10", "FileB",  0x40 },
+};
 // This is meant to handle all cases at least once.
 static TestData fill_data[] =
 {
-    { "20", "21", "20-21",  1 },    // starting point
-    { "10", "11", "10-11",  2 },    // insert left
-    { "30", "31", "30-31",  3 },    // insert right
-    { "40", "41", "40-41",  4 },    // overflow right
-    { "10", "15", "10-15",  5 },    // left overlaps with existing
-    { "39", "41", "38-41",  6 },    // right overlaps with existing
-    { "26", "27", "26-27",  7 },    // overflow left
-    { "26", "32", "26-32",  8 },    // left overlaps & interleaves 2 exist. recs
-    { "25", "30", "25-30",  9 },    // right overlaps 2 exist. recs
-    { "20", "21", "20-21(B)", 10 }, // fully hidden under existing record
-    { "50", "51", "50-51",  11 },   // insert right
-    { "60", "61", "60-61",  12 },   // overflow right
-    { "70", "71", "70-71",  13 },   // insert right
-    { "80", "81", "80-81",  14 },   // overflow right
-    { "90", "91", "90-91",  15 },   // insert right
-    { "95", "96", "95-96",  16 },   // overflow right
-    { "96", "97", "96-97",  17 },   // insert right
-    { "98", "99", "98-99",  18 },   // overflow right
-    { "38", "39", "38-39",  19 },   // insert left in central node
-    { "37", "38", "37-38",  20 },   // overflow left in central node
+    { "50", "60", "50-60",  0 },    // starting point
+    { "70", "80", "70-80",  1 },    // way 'after'
+    { "80", "85", "80-85",  2 },    // just 'after'
+    { "20", "30", "20-30",  3 },    // way 'before', also node overflow
+    { "40", "50", "40-50",  4 },    // just 'before'
+    { "50", "60", "50-60(B)",  5 }, // exact match to existing range
+    { "20", "32", "20-32",  6 },    // longer than 20-30
+    { "31", "33", "31-33",  7 },    // overlap right end of 30-32
+    { "65", "80", "65-80",  8 },    // starts before 70-80
+    { "35", "45", "35-45",  9 },    // left overlap with 40-50
+    { "62", "63", "62-63", 10 },    // New range between 50-60 and 65-70
+    { "61", "64", "61-64", 11 },    // bigger than 62-63
+    { "40", "42", "40-42", 12 },    // first half of 40-45
+    { "25", "30", "25-30", 13 },    // last half of 20-30
+    { "47", "48", "47-48", 14 },    // subsection of 45-50
+    { "10", "90", "10-90", 15 },    // overlap the whole tree
 };
 
 // Array of the above tests
@@ -90,7 +100,12 @@ static TestConfig test_config[] =
         "test/man_index_b",
         man_data2, sizeof(man_data2)/sizeof(TestData),
         "test/man_index_b.dot", 0
-    }
+    },
+    {
+        "test/man_index_ab",
+        man_data3, sizeof(man_data3)/sizeof(TestData),
+        "test/man_index_ab.dot", 0
+    },
 };
 
 TEST_CASE fill_tests()
@@ -124,15 +139,16 @@ TEST_CASE fill_tests()
             // Loop over data points
             for (i=0; i<num; ++i)
             {
-                // Leave 'before' and 'after' of the last insertion
-                if (i==(num-1))
-                    tree->makeDot("/tmp/index0.dot");
+                // Create dot file of 'before' and 'after' state
+                // for the last insertion.
+                tree->makeDot("/tmp/index0.dot");
                 // Insert new data point
                 string2epicsTime(test_config[test].data[i].start, start);
                 string2epicsTime(test_config[test].data[i].end, end);
                 stdString filename = test_config[test].data[i].file;
-                if (!tree->insertDatablock(start, end,
-                                           test_config[test].data[i].offset, filename))
+                if (!tree->insertDatablock(Interval(start, end),
+                                           test_config[test].data[i].offset,
+                                           filename))
                 {
                     printf("Insert %s..%s: %zu failed\n",
                            test_config[test].data[i].start,
@@ -140,8 +156,9 @@ TEST_CASE fill_tests()
                     FAIL("insertDatablock (1)");
                 }
                 // When inserted again, that should be a NOP
-                if (tree->insertDatablock(start, end,
-                                          test_config[test].data[i].offset, filename))
+                if (tree->insertDatablock(Interval(start, end),
+                                          test_config[test].data[i].offset,
+                                          filename))
                 {
                     printf("Re-Insert %s..%s: %zu failed\n",
                            test_config[test].data[i].start,
@@ -149,8 +166,7 @@ TEST_CASE fill_tests()
                     FAIL("insertDatablock (2)");
                 }
                 // ... 'after' of the last insertion
-                if (i==(num-1))
-                    tree->makeDot("/tmp/index1.dot");
+                tree->makeDot("/tmp/index1.dot");
                 // Check
                 if (!tree->selfTest(nodes, records))
                 {
@@ -162,6 +178,30 @@ TEST_CASE fill_tests()
                    records*100.0/(nodes*tree->getM()));
             tree->makeDot(test_config[test].dotfile);
             TEST(fa.dump(0));
+            
+            // Remove entries
+            for (i=0; i<num; ++i)
+            {
+                // Remove this data block
+                string2epicsTime(test_config[test].data[i].start, start);
+                string2epicsTime(test_config[test].data[i].end, end);
+                stdString filename = test_config[test].data[i].file;
+                tree->makeDot("/tmp/remove0.dot");
+                if (!tree->removeDatablock(Interval(start, end),
+                                           test_config[test].data[i].offset,
+                                           filename))
+                {
+                    printf("Remove %s..%s @ 0x%lX: %zu failed\n",
+                           test_config[test].data[i].start,
+                           test_config[test].data[i].end,
+                           (unsigned long) test_config[test].data[i].offset,
+                           i);
+                    FAIL("removeDatablock (1)");
+                }
+                tree->makeDot("/tmp/remove1.dot");
+                TEST(tree->selfTest(nodes, records));
+            }
+            
             fa.detach();
             if (test_config[test].diff)
             {
@@ -191,23 +231,21 @@ TEST_CASE dump_blocks()
         unsigned long nodes, records;
         TEST(tree.selfTest(nodes, records));
         stdString s, e;
-        RTree::Datablock block;
-        RTree::Node node(tree.getM(), true);
-        int idx;
-        bool ok;
-        for (ok = tree.getFirstDatablock(node, idx, block);
-             ok;
-             ok = tree.getNextDatablock(node, idx, block))
+        AutoPtr<RTree::Datablock> block(tree.getFirstDatablock());
+        while (block)
         {
+            const Interval &range = block->getInterval();
             printf("%s - %s: '%s' @ 0x%lX\n",
-                   epicsTimeTxt(node.record[idx].start, s),
-                   epicsTimeTxt(node.record[idx].end, e),
-                   block.data_filename.c_str(),
-                   (unsigned long)block.data_offset);
-            while (tree.getNextChainedBlock(block))
+                   epicsTimeTxt(range.getStart(), s),
+                   epicsTimeTxt(range.getEnd(), e),
+                   block->getDataFilename().c_str(),
+                   (unsigned long)block->getDataOffset());
+            while (block->getNextChainedBlock())
                 printf("---  '%s' @ 0x%lX\n",
-                       block.data_filename.c_str(),
-                       (unsigned long)block.data_offset);
+                       block->getDataFilename().c_str(),
+                       (unsigned long)block->getDataOffset());
+            if (! block->getNextDatablock())
+                block = 0;
         }
         fa.detach();
     }
@@ -222,56 +260,56 @@ TEST_CASE dump_blocks()
 #ifdef INDEX_TEST
 static TestData update_data[] =
 {
-    { "200", "210", "-last-", 1 }, // Last engine's last block
-    { "209", "209", "-new-",  1 }, // New engine's block, hidden
-    { "209", "220", "-new-",  1 }, // .. growing
-    { "209", "230", "-new-",  1 }, // .. growing
-    { "230", "270", "-new-",  1 }, // .. unreal, but handled as growing.
-    { "280", "280", "-new2-", 1 }, // Second block of new engine, one sample 
-    { "280", "281", "-new2-", 1 }, // .. growing
-    { "280", "282", "-new2-", 1 }, // .. growing
-    { "280", "283", "-new2-", 1 }, // .. growing
-    { "280", "290", "-new2-", 1 }, // .. growing
+    { "100", "100", "old", 1 }, // Engine adds a block
+    { "100", "200", "old", 1 }, // .. grows it.
+    { "200", "200", "old", 2 }, // Adds another block
+    { "200", "205", "old", 2 }, // .. grows it,
+    { "200", "210", "old", 2 }, // .. grows it, then quits.
+    { "209", "209", "new",  3 }, // New engine's block wedges into previous
+    { "209", "220", "new",  3 }, // .. growing, adding more records to end
+    { "209", "230", "new",  3 }, // .. growing
+    { "209", "270", "new",  3 }, //... grown up.
+    { "280", "280", "new2", 4 }, // Second block of new engine, one sample 
+    { "280", "281", "new2", 4 }, // .. growing
+    { "280", "282", "new2", 4 }, // .. growing
+    { "280", "283", "new2", 4 }, // .. growing
+    { "280", "290", "new2", 4 }, // done.
 };
 
 TEST_CASE update_test()
 {
-    size_t i = 0, num = sizeof(update_data)/sizeof(TestData);
+    const size_t num = sizeof(update_data)/sizeof(TestData);
+    size_t i = 0;
 
     TEST_DELETE_FILE("test/update.tst");
     try
     {
         IndexFile index(10);
-        stdString directory;
         FileAllocator::minimum_size = 0;
         FileAllocator::file_size_increment = 0;
         FileAllocator fa;
-        index.open("test/update.tst", false);
+        index.open("test/update.tst", Index::ReadAndWrite);
     
-        AutoPtr<RTree> tree(index.addChannel("test", directory));
-        TEST_MSG(tree, "Added Channel");
+        AutoPtr<Index::Result> result(index.addChannel("test"));
+        TEST_MSG(result, "Added Channel");
     
         unsigned long nodes, records;
-        TEST_MSG(tree->selfTest(nodes, records), "Initial Self Test");
+        TEST_MSG(result->getRTree()->selfTest(nodes, records), "Initial Self Test");
     
         epicsTime start, end;
         for (i=0; i<num; ++i)
         {
-            if (i==(num-1))
-                tree->makeDot("update0.dot");
+            result->getRTree()->makeDot("/tmp/update0.dot");
             string2epicsTime(update_data[i].start, start);
             string2epicsTime(update_data[i].end, end);
             stdString filename = update_data[i].file;
-            tree->updateLastDatablock(start, end, update_data[i].offset, filename);
-            if (i==(num-1))
-                tree->makeDot("update1.dot");
-            if (!tree->selfTest(nodes, records))
-            {
-                FAIL("Self test");
-            }
+            result->getRTree()->updateLastDatablock(Interval(start, end),
+                                      update_data[i].offset, filename);
+            result->getRTree()->makeDot("/tmp/update1.dot");
+            TEST_MSG(result->getRTree()->selfTest(nodes, records), "Self test");
         }
-        tree->makeDot("test/update_data.dot");
-        TEST_MSG(tree->selfTest(nodes, records), "Final Self Test");
+        result->getRTree()->makeDot("test/update_data.dot");
+        TEST_MSG(result->getRTree()->selfTest(nodes, records), "Final Self Test");
         TEST_FILEDIFF("test/update_data.dot", "test/update_data.dot.OK");
     }
     catch (GenericException &e)

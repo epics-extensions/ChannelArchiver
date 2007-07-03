@@ -6,9 +6,6 @@
 #include "DataFile.h"
 #include "OldDataWriter.h"
 
-// TODO: Switch to new data file after
-// time limit or file size limit
-
 static stdString makeDataFileName()
 {
     int year, month, day, hour, min, sec;

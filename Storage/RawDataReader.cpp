@@ -11,8 +11,6 @@
 
 RawDataReader::RawDataReader(Index &index)
         : index(index),
-          rec_idx(0),
-          valid_datablock(false),
           dbr_type(0),
           dbr_count(0),
           type_changed(false),
@@ -20,7 +18,9 @@ RawDataReader::RawDataReader(Index &index)
           period(0.0),
           raw_value_size(0),
           val_idx(0)
-{}
+{
+    LOG_ASSERT(index.getFilename().length() > 0);
+}
 
 RawDataReader::~RawDataReader()
 {
@@ -32,134 +32,139 @@ RawDataReader::~RawDataReader()
 const RawValue::Data *RawDataReader::find(const stdString &channel_name,
                                           const epicsTime *start)
 {
+#   ifdef DEBUG_DATAREADER
+    printf("- RawDataReader(%s)::find(%s)\n",
+           index.getName().c_str(), channel_name.c_str());
+#   endif
     this->channel_name = channel_name;
-    // Get tree
-    // TODO: getTree(... , start) for better ListIndex
-    tree = index.getTree(channel_name, directory);
-    if (! tree)
+    // Lookup channel in index
+    index_result = index.findChannel(channel_name);
+    if (! index_result)
         return 0; // Channel not found
-    try
-    {
-        node = new RTree::Node(tree->getM(), true);
-    }
-    catch (...)
-    {
-        throw GenericException(__FILE__, __LINE__, "Cannot alloc node for '%s'",
-                               channel_name.c_str());
-    }
     try
     {
         // Get 1st data block
         if (start)
-            valid_datablock = tree->searchDatablock(*start, *node,
-                                                    rec_idx, datablock);
+            datablock = index_result->getRTree()->search(*start);
         else
-            valid_datablock = tree->getFirstDatablock(*node, rec_idx, datablock);
-        if (! valid_datablock)  // No values for this time in index
+            datablock = index_result->getRTree()->getFirstDatablock();
+        if (! datablock)  // No values for this time in index
             return 0;
-    #ifdef DEBUG_DATAREADER
+        LOG_ASSERT(datablock->isValid());
+#       ifdef DEBUG_DATAREADER
         {
-            stdString s, e;
-            epicsTime2string(node->record[rec_idx].start, s);
-            epicsTime2string(node->record[rec_idx].end, e);
-            printf("- First Block: %s @ 0x%lX: %s - %s\n",
-                   datablock.data_filename.c_str(),
-                   (unsigned long)datablock.data_offset,
-                   s.c_str(), e.c_str());
+            stdString range = datablock->getInterval().toString();
+            printf("- First Block: %s @ 0x%lX: %s\n",
+                   datablock->getDataFilename().c_str(),
+                   (unsigned long)datablock->getDataOffset(),
+                   range.c_str());
         }
-    #endif
+#       endif
+        if (datablock->getDataOffset() == 0)
+            throw GenericException(__FILE__, __LINE__,
+                                   "Cannot handle shallow indices");
         // Get the buffer for that data block
-        getHeader(directory, datablock.data_filename, datablock.data_offset);
+        getHeader(datablock->getDataFilename(), datablock->getDataOffset());
         if (start)
             return findSample(*start);
         else
-            return findSample(node->record[rec_idx].start);
+            return findSample(datablock->getInterval().getStart());
     }
     catch (GenericException &e)
     {  // Add channel name to the message
-        throw GenericException(__FILE__, __LINE__, "Channel '%s':\n%s",
+        throw GenericException(__FILE__, __LINE__,
+                               "Index '%s', Channel '%s':\n%s",
+                               index.getFilename().c_str(),
                                channel_name.c_str(), e.what());
     }
 }
+
+const stdString &RawDataReader::getName() const
+{
+    return channel_name;
+}                                  
 
 // Read next sample, the one to which val_idx points.
 const RawValue::Data *RawDataReader::next()
 {
     if (!header)
         throw GenericException(__FILE__, __LINE__,
-                               "Data Reader called after "
-                               "reaching end of data");
-    // End of current header?
+                               "Data Reader called after reaching end of data");
+    // Still in current header?
+    if (val_idx < header->data.num_samples)
+        return nextFromDatablock();
+    // Exhaused the current header.
+    if (datablock)
+    {   // Try to get next data block
+        LOG_ASSERT(datablock->isValid());
+        if (datablock->getNextDatablock())
+        {
+#           ifdef DEBUG_DATAREADER
+            printf("- Next Block: %s @ 0x%lX: %s\n",
+                   datablock->getDataFilename().c_str(),
+                   (unsigned long)datablock->getDataOffset(),
+                   datablock->getInterval().toString().c_str());
+                   
+#           endif
+            getHeader(datablock->getDataFilename(), datablock->getDataOffset());
+            if (!findSample(datablock->getInterval().getStart()))
+                return 0;
+            if (RawValue::getTime(data) >= datablock->getInterval().getStart())
+                return data;
+#       ifdef DEBUG_DATAREADER
+            printf("- findSample gave sample<start, skipping that one\n");
+#       endif
+            return next();  
+        } 
+        // indicate that there's no datablock
+        datablock = 0;
+    }
+    // TODO: For better ListIndex functionality,
+    //       ask index again with proper start time,
+    //       which might switch to to another sub-archive
+    // data= find(...., last known end time);
+    // maybe skip one sample < proper time.
+
+    // else: RTree indicates end of data.
+    // In the special case of a master index between updates,
+    // the last data file might in fact have more samples
+    // than the RTree thinks there are, so try to read on.
+#   ifdef DEBUG_DATAREADER
+    printf("- RawDataReader(%s) reached end for '%s' in '%s': ",
+           index.getName().c_str(),
+           header->datafile->getBasename().c_str(),
+           header->datafile->getDirname().c_str());
+    printf("Sample %zd of %lu\n",
+           val_idx, (unsigned long)header->data.num_samples);
+#   endif
+    // Refresh datafile and header.
+    header->datafile->reopen();
+    header->read(header->offset);
+    // Need to look for next header (w/o asking RTree) ?
     if (val_idx >= header->data.num_samples)
     {
-        if (valid_datablock)
-            valid_datablock = tree->getNextDatablock(*node,rec_idx,datablock);
-        if (valid_datablock)
-        {
-#           ifdef DEBUG_DATAREADER
-            stdString s, e;
-            printf("- Next  Block: %s @ 0x%lX: %s - %s\n",
-                   datablock.data_filename.c_str(),
-                   (unsigned long)datablock.data_offset,
-                   epicsTimeTxt(node->record[rec_idx].start, s),
-                   epicsTimeTxt(node->record[rec_idx].end, e));
-#           endif
-            getHeader(directory,
-                      datablock.data_filename, datablock.data_offset);
-            if (!findSample(node->record[rec_idx].start))
-                return 0;
-            if (RawValue::getTime(data) >= node->record[rec_idx].start)
-                return data;
-#           ifdef DEBUG_DATAREADER
-            printf("- findSample gave sample<start, skipping that one\n");
-#           endif
-            return next();   
-        }
-        // TODO: For better ListIndex functionality,
-        //       ask index again with proper start time,
-        //       which might swich to to another sub-archive
-        // data= find(...., last known end time);
-        // maybe skip one sample < proper time.
-        // remove the re-open stuff.
-
-        // else: RTree indicates end of data.
-        // In the special case of a master index between updates,
-        // the last data file might in fact have more samples
-        // than the RTree thinks there are, so try to read on.
+        if (!Filename::isValid(header->data.next_file))
+            return 0; // Reached last sample in last buffer.
+        // Found a new buffer, unknown to RTree
+        getHeader(header->data.next_file, header->data.next_offset);
 #       ifdef DEBUG_DATAREADER
-        stdString txt;
-        printf("- RawDataReader reached end for '%s' in '%s': ",
-               header->datafile->getBasename().c_str(),
-               header->datafile->getDirname().c_str());
-        printf("Sample %zd of %lu\n",
-               val_idx, (unsigned long)header->data.num_samples);
-#       endif
-        // Refresh datafile and header.
-        header->datafile->reopen();
-        header->read(header->offset);
-        // Need to look for next header (w/o asking RTree) ?
-        if (val_idx >= header->data.num_samples)
-        {
-            if (!Filename::isValid(header->data.next_file))
-                return 0; // Reached last sample in last buffer.
-            // Found a new buffer, unknown to RTree
-            getHeader(header->datafile->getDirname(),
-                      header->data.next_file,
-                      header->data.next_offset);
-#           ifdef DEBUG_DATAREADER
-            stdString txt;
-            printf("- Using new data block %s @ 0x%X:\n",
+        printf("- Using new data block %s @ 0x%X:\n",
                    header->datafile->getFilename().c_str(),
                    (unsigned int)header->offset);
-#           endif
-            return findSample(header->data.begin_time);
-        }
-        // After refresh, the last buffer had more samples.
-#       ifdef DEBUG_DATAREADER 
-        printf("Using sample %zd of %lu\n",
-               val_idx, (unsigned long)header->data.num_samples);
 #       endif
+        return findSample(header->data.begin_time);
     }
+    // After refresh, the last buffer had more samples.
+#   ifdef DEBUG_DATAREADER 
+    printf("Using sample %zd of %lu\n",
+           val_idx, (unsigned long)header->data.num_samples);
+#   endif
+    return nextFromDatablock();
+}   
+    
+// Read next sample, the one to which val_idx points.
+const RawValue::Data *RawDataReader::nextFromDatablock()
+{    
     // Read 'val_idx' sample in current block.
     FileOffset offset = header->offset
         + sizeof(DataHeader::DataHeaderData) + val_idx * raw_value_size;
@@ -169,16 +174,11 @@ const RawValue::Data *RawDataReader::next()
     // This is because the DataFile might contain the current sample
     // in the current buffer, but the RTree already has a different
     // DataFile in mind for this time stamp.
-    if (valid_datablock  &&
-        RawValue::getTime(data) > node->record[rec_idx].end)
+    if (datablock  &&
+        RawValue::getTime(data) > datablock->getInterval().getEnd())
     {   // Recurse after marking end of samples in the current datafile
         val_idx = header->data.num_samples;
         return next();
-        // TODO: Handle this case:
-        // Master only knows about e.g. 10 samples in last block
-        // Meanwhile, there are 30 samples.
-        // This code will set val_idx = last and try the _next_ block,
-        // even though it should continue in the current block.
     }
     ++val_idx;
     return data;
@@ -212,9 +212,7 @@ bool RawDataReader::changedInfo()
     
 // Sets header to new dirname/basename/offset,
 // or throws GenericException with details.
-void RawDataReader::getHeader(const stdString &dirname,
-                              const stdString &basename,
-                              FileOffset offset)
+void RawDataReader::getHeader(const stdString &basename, FileOffset offset)
 {
     if (!Filename::isValid(basename))
         throw GenericException(__FILE__, __LINE__, "'%s': Invalid basename",
@@ -227,7 +225,8 @@ void RawDataReader::getHeader(const stdString &dirname,
             if (basename[0] == '/') // Index gave us the data file with the full path
                 datafile = DataFile::reference("", basename, false);
             else // Look relative to the index's directory
-                datafile = DataFile::reference(dirname, basename, false);
+                datafile = DataFile::reference(index_result->getDirectory(),
+                                               basename, false);
     
             try
             {
@@ -275,9 +274,11 @@ void RawDataReader::getHeader(const stdString &dirname,
     catch (GenericException &e)
     {
         throw GenericException(__FILE__, __LINE__,
-                               "Error in data header '%s', '%s' @ 0x%08lX for channel '%s'.\n%s",
-                               dirname.c_str(), basename.c_str(),
-                               (unsigned long) offset, channel_name.c_str(), e.what());
+           "Error in data header '%s', '%s' @ 0x%08lX for channel '%s'.\n%s",
+           index_result->getDirectory().c_str(),
+           basename.c_str(),
+           (unsigned long) offset, channel_name.c_str(),
+           e.what());
     }
 }
 

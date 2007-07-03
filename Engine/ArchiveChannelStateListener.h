@@ -10,6 +10,8 @@
 class ArchiveChannelStateListener
 {
 public:
+    virtual ~ArchiveChannelStateListener();
+    
     /** Invoked when the pv connects.
      * 
      *  This means: connected and received control info.

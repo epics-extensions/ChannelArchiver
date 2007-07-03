@@ -4,10 +4,10 @@
 #define __RTREE_H__
 
 // Tools
-#include <epicsTimeHelper.h>
 #include <AVLTree.h>
 // Storage
 #include <FileAllocator.h>
+#include <Interval.h>
 
 // When using the ArchiveDataTool to convert about 500 channels,
 // 230MB of data, 102K directory file into an index, these were the
@@ -53,68 +53,80 @@
 class RTree
 {
 public:
+	/** Each RTree leaf points to Datablocks;
+	 *  they describe where the actual data that
+	 *  the index references resides via
+	 *  a filename and an offset into that file.
+	 */
     class Datablock
     {
     public:
-        Datablock() : next_ID(0), data_offset(0), offset(0) {}
-        FileOffset    next_ID;       
-        FileOffset    data_offset;   /**< This block's offset in DataFile */
-        stdString data_filename;     /**< DataFile for this block */
+        Datablock();
+        virtual ~Datablock();
+
+        /** @return true if this data block info is valid. */
+        virtual bool isValid() const = 0;
+           
+        /** The file name referenced by this entry. */
+        const stdString &getDataFilename() const
+        {
+            LOG_ASSERT(isValid());
+            return data_filename;
+        }
         
-        FileOffset offset;           /**< Location of DataBlock in index file */
-        FileOffset getSize() const;
-        /** @exception GenericException on write error */
-        void write(FILE *f) const;
-        /** @exception GenericException on read error */
-        void read(FILE *f);
-    private:
-        PROHIBIT_DEFAULT_COPY(Datablock);
-    };
-
-    class Record
-    {
-    public:
-        Record();
-        void clear();
-        epicsTime  start, end;  // Range
-        FileOffset child_or_ID; // data block ID for leaf node; 0 if unused
-        /** @exception GenericException on write error */
-        void write(FILE *f) const;
-        /** @exception GenericException on read error */
-        void read(FILE *f);
-    };
-
-    class Node
-    {
-    public:
-        Node(int M, bool leaf);
-        Node(const Node &);
-        ~Node();
-
-        Node &operator = (const Node &);
+        /** The file offset of this entry. */
+        FileOffset getDataOffset() const
+        {
+            LOG_ASSERT(isValid());
+            return data_offset;
+        }
         
-        bool    isLeaf;  /**< Node or Leaf?        */ 
-        FileOffset  parent;  /**< 0 for root */
-        Record  *record; /**< index records of this node */
-        FileOffset  offset;  /**< Location in file */
+        virtual const Interval &getInterval() const = 0;
         
-        /** Write to file at offset (needs to be set beforehand)
-          * @exception GenericException on write error
-          */
-        void write(FILE *f) const;
-
-        /** Read from file at offset (needs to be set beforehand)
-         *  @exception GenericException on read error
+        /** Get a sub-block that's under the current block.
+	     * 
+	     *  A record might not only point to the 'main' data block,
+	     *  the one originally inserted and commonly used
+	     *  for data retrieval. It can also contain a chain of
+	     *  data blocks that were inserted later (at a lower priority).
+	     *  In case you care about those, invoke getNextChainedBlock()
+	     *  until it returns false.
+         *  <p>
+         *  A possible usage scenario would be to
+         *  <ol>
+         *  <li>Start with a valid data block.
+         *  <li>iterate over chained blocks until getNextChainedBlock()
+         *      returns false
+         *  <li>then continue with getNextDatablock()
+         *  </ol>
+         *  To allow for this, getNextChainedBlock() will leave the
+         *  data block 'valid' when it reaches the last chained block.
+	     *
+	     *  @exception GenericException on read error, or when called
+         *            while isValid() == false.
+	     */
+	    virtual bool getNextChainedBlock() = 0;
+	    
+        /** Get the data block for the next time interval from
+         *  the RTree.
+         *  @return true if one found. Otherwise, false is returned
+         *          and isValid() will also indicate false.
+         *  @see getPrevDatablock
+         *  @exception GenericException on read error, or when called
+         *             with isValid() == false.
          */
-        void read(FILE *f);
+        virtual bool getNextDatablock() = 0;
 
-        /** Obtain interval covered by this node
-          * @return True if there is a valid interval, false if empty.
-          */
-        bool getInterval(epicsTime &start, epicsTime &end) const;
-    private:
-        int M;
-        bool operator == (const Node &); // not impl.
+        /** Absolutely no clue what this one could do.
+	     *  @see getNextDatablock
+	     */
+	    virtual bool getPrevDatablock() = 0;
+        
+    protected:
+        PROHIBIT_DEFAULT_COPY(Datablock);
+
+        FileOffset data_offset;
+        stdString  data_filename;
     };
 
     /** \see constructor Rtree() */
@@ -141,14 +153,41 @@ public:
 
     /** The 'M' value, i.e. Node size, of this RTree. */
     int getM() const
-    { return M; }
+    {   return M; }
     
     /** Return range covered by this RTree
-      * @return True if there is a valid interval, false if empty.
       * @exception GenericException on read error
       */
-    bool getInterval(epicsTime &start, epicsTime &end);
+    Interval getInterval();
 
+    /** Locate data after start time.
+     *
+     *  Specifically, the last record with data at or just before
+     *  the start time is returned, so that the user can then decide
+     *  if and how that value might extrapolate onto the start time.
+     *  There's one exception: When requesting a start time
+     *  that preceeds the first available data point, so that there is
+     *  no previous data point, the very first record is returned.
+     *  
+     * @return Data block info or 0 if nothing found.
+     *         Caller must delete.
+     *
+     * @exception GenericException on read error.
+     */
+    Datablock *search(const epicsTime &start) const;
+
+    /** @return Locate first datablock in tree, or 0 if there is nothing.
+     *          Client must delete.
+     *  @exception GenericException on read error.
+     */
+    Datablock *getFirstDatablock() const;
+    
+    /** \see getFirstDatablock */
+    Datablock *getLastDatablock() const; 
+    
+    /** @return Leaf node suitable for range. */
+    class Node chooseLeaf(const Interval &range);
+    
     /** Create and insert a new Datablock.
      *
      * Note: Once a data block (offset and filename) is inserted
@@ -164,61 +203,18 @@ public:
      *         were already found.
      * @exception GenericException on write error.
      */
-    bool insertDatablock(const epicsTime &start, const epicsTime &end,
+    bool insertDatablock(const Interval &range,
                          FileOffset data_offset,
                          const stdString &data_filename);
     
-    /** Locate entry after start time.
-     *
-     * Updates Node & i and returns true if found.
-     *
-     * Specifically, the last record with data at or just before
-     * the start time is returned, so that the user can then decide
-     * if and how that value might extrapolate onto the start time.
-     * There's one exception: When requesting a start time
-     * that preceeds the first available data point, so that there is
-     * no previous data point, the very first record is returned.
-     *
-     * @exception GenericException on read error.
+    /** Remove reference to given data block.
+     *  @return Number of data block references found and removed, or 0.
+     *  @exception GenericException on internal error.
      */
-    bool searchDatablock(const epicsTime &start, Node &node, int &i,
-                         Datablock &block) const;
+    size_t removeDatablock(const Interval &range,
+                         FileOffset data_offset,
+                         const stdString &data_filename);
 
-    /** Locate first datablock in tree.
-     *
-     * @exception GenericException on read error.
-     */
-    bool getFirstDatablock(Node &node, int &i, Datablock &block) const;
-    
-    /** \see getFirstDatablock */
-    bool getLastDatablock(Node &node, int &i, Datablock &block) const;    
-
-    /** Get a sub-block that's under the current block.
-     * 
-     * A record might not only point to the 'main' data block,
-     * the one originally inserted and commonly used
-     * for data retrieval. It can also contain a chain of
-     * data blocks that were inserted later (at a lower priority).
-     * In case you care about those, invoke getNextChainedBlock()
-     * until it returns false.
-     *
-     * @exception GenericException on read error.
-     */
-    bool getNextChainedBlock(Datablock &block) const;
-    
-    /** Absolutely no clue what this one could do.
-     * @see getNextDatablock
-     *
-     * @exception GenericException on read error.
-     */
-    bool getPrevDatablock(Node &node, int &i, Datablock &block) const;
-
-    /** @see getPrevDatablock
-     *
-     * @exception GenericException on read error.
-     */
-    bool getNextDatablock(Node &node, int &i, Datablock &block) const;
-    
     /** Tries to update existing datablock.
      *
      * Tries to update the end time of the last datablock,
@@ -229,7 +225,7 @@ public:
      *         were already found.
      * @exception GenericException on write error.
      */
-    bool updateLastDatablock(const epicsTime &start, const epicsTime &end,
+    bool updateLastDatablock(const Interval &range,
                              FileOffset data_offset, stdString data_filename);
     
     /** Create a graphviz 'dot' file. */
@@ -244,111 +240,72 @@ public:
      */
     bool selfTest(unsigned long &nodes, unsigned long &records);
 
-    mutable size_t cache_misses, cache_hits; 
-
 private:
     PROHIBIT_DEFAULT_COPY(RTree);
+    
+    /** FileAllocator of the file that contains this RTree. */
     FileAllocator &fa;
-    // This is the (fixed) offset into the file
-    // where the RTree information starts.
-    // It points to
-    // FileOffset current root offset
-    // FileOffset RTreeM
-    FileOffset anchor;
+    
+    /** This is the (fixed) offset into the file
+     *  where the RTree information starts.
+     *  It points to
+     *  FileOffset current root offset
+     *  FileOffset RTreeM
+     */
+    const FileOffset anchor;
     
     // FileOffset to the root = content of what's at anchor
     FileOffset root_offset;
 
     int M;
     
-    mutable AVLTree<Node> node_cache;
-
-    /** @exception GenericException on read error */
-    void read_node(Node &node) const;
-
-    /** @exception GenericException on write error */
-    void write_node(const Node &node);
-    
-    /** @exception GenericException on error */
-    void self_test_node(unsigned long &nodes, unsigned long &records,
-                        FileOffset n, FileOffset p,
-                        epicsTime start, epicsTime end);
+    // mutable AVLTree<Node> node_cache;
+    mutable size_t cache_misses, cache_hits; 
     
     void make_node_dot(FILE *dot, FILE *f, FileOffset node_offset);
 
-    bool search(const epicsTime &start, Node &node, int &i) const;
-
-    /** Set node & record index to first entry in tree.
+    /** Locate node and index for the first valid record in the tree.
+     *  @return true on success, false if tree is empty.
      * @exception GenericException on read error
      */
-    bool getFirst(Node &node, int &i) const;
+    bool getFirstRecord(class Node &node, int &record_index) const;
 
-    /** Set node & record index to last entry in tree.
-     * @exception GenericException on read error
-     */
-    bool getLast(Node &node, int &i) const;
+    /** @see getFirstRecord() */
+    bool getLastRecord(class Node &node, int &record_index) const;
 
-    /** If node & i were set to a valid entry by search(), update to prev. */
-    bool prev(Node &node, int &i) const
-    {    return prev_next(node, i, -1); }
-    
-    /** If node & i were set to a valid entry by search(), update to next. */
-    bool next(Node &node, int &i) const
-    {    return prev_next(node, i, +1); }
+    /** Split an existing record at the given 'cut' time, so that
+     *  there are two records start..cut and cut...end with the same
+     *  data blocks as the original record.
+     */
+    void split_record(Node &node, int idx, const epicsTime &cut);
 
-    /** Like prev() or next(). Dir must be +-1. */
-    bool prev_next(Node &node, int &i, int dir) const;
-    
-    /** @return true if new block offset/filename was added under node/i,
-     *         false if block with offset/filename was already there.
-     * @exception GenericException if something's messed up.
-     */
-    bool add_block_to_record(const Node &node, int i,
-                            FileOffset data_offset,
-                            const stdString &data_filename);
-    
-    /** Configure block for data_offset/name,
-     * allocate space in file and write.
-     * @exception GenericException on write error.
-     */
-    void write_new_datablock(FileOffset data_offset,
-                             const stdString &data_filename,
-                             Datablock &block);
-    
-    /** Sets node to selected leaf for new entry start/end/ID.
-     * Invoke by setting node.offset == root_offset.
-     * @exception GenericException on read error.
-     */
-    void choose_leaf(const epicsTime &start, const epicsTime &end, Node &node);
-
-    /** @exception GenericException on read/write error. */
-    void insert_record_into_node(Node &node,
-                                 int idx,
-                                 const epicsTime &start,
-                                 const epicsTime &end,
-                                 FileOffset ID,
-                                 Node &overflow,
-                                 bool &caused_overflow, bool &rec_in_overflow);
-    
     /** Adjusts tree from node on upwards (update parents).
-     * If new_node!=0, it's added to node's parent,
-     * handling all resulting splits.
-     * adjust_tree will write new_node, but not necessarily node!
-     * @exception GenericException on read/write error
+     *  If new_node!=0, it's added to node's parent,
+     *  handling all resulting splits.
+     *  adjust_tree will write new_node, but not necessarily node!
+     *  @exception GenericException on read/write error
      */
     void adjust_tree(Node &node, Node *new_node);
-
-    /** Remove entry from tree. */
-    bool remove(const epicsTime &start, const epicsTime &end, FileOffset ID);
-
+    
+    /** Remove reference to given data block from given node on down.
+     *  @return Number of references found and removed.
+     *  @exception GenericException on internal error.
+     */
+    size_t removeDatablock(Node &node, const Interval &range,
+                       FileOffset data_offset, const stdString &data_filename);
+      
+    /** Remove data block under given node's record. */
+    size_t removeDatablock(Node &node, int record_index, const Interval &range,
+                       FileOffset data_offset, const stdString &data_filename);
+                       
     /** Remove record i from node, condense tree.
      * @exception GenericException on read/write error.
      */
     void remove_record(Node &node, int i);
 
     /** Starting at a node that was just made "smaller",
-     * go back up to root and update all parents.
-     * @exception GenericException on read/write error
+     *  go back up to root and update all parents.
+     *  @exception GenericException on read/write error
      */
     void condense_tree(Node &node);
 
@@ -359,7 +316,7 @@ private:
      * call have not changed, only the end time has been extended,
      * and the intention is to update the tree.
      * Sometimes, however, the engine created a new block,
-     * in which case it will call append_latest a final time
+     * in which case it will call updateLast a final time
      * to update the end time and then it'll follow with an insert().
      * \return True if start & ID refer to the existing last block
      *         and the end time was succesfully updated.

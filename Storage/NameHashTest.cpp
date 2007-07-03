@@ -1,6 +1,7 @@
 
 // Tools
 #include <BinIO.h>
+#include <AutoPtr.h>
 #include <AutoFilePtr.h>
 #include <GenericException.h>
 #include <UnitTest.h>
@@ -26,20 +27,25 @@ TEST_CASE name_hash_test()
         TEST(names.insert("james",  ID_txt, 3) == false);
         TEST(names.insert("James",  ID_txt, 4) == true);
 
-        FileOffset ID;
-        TEST(names.find("freddy", ID_txt, ID));
-        TEST(ID == 2);
+        {
+            AutoPtr<NameHash::Entry> entry(names.find("freddy"));
+            TEST(entry);
+            TEST(entry->getId() == 2);
+        }
 
-        NameHash::Entry entry;
-        uint32_t hashvalue;
-        bool valid = names.startIteration(hashvalue, entry);
-	size_t name_count = 0;
-        while (valid)
+        AutoPtr<NameHash::Iterator> iter(names.iterator());
+	    size_t name_count = 0;
+        while (iter->isValid())
         {
             ++name_count;
-            printf("        Hash: %4ld - Name: %-30s ID: %ld\n",
-                   (long)hashvalue, entry.name.c_str(), (long)entry.ID);
-            valid = names.nextIteration(hashvalue, entry);
+            printf("        Name: %-30s ID: %ld\n",
+                   iter->getName().c_str(),
+                   (long)iter->getId());
+            TEST(iter->getName() != "fred"    ||  iter->getId() == 1);
+            TEST(iter->getName() != "freddy"  ||  iter->getId() == 2);
+            TEST(iter->getName() != "james"   ||  iter->getId() == 3);
+            TEST(iter->getName() != "James"   ||  iter->getId() == 4);
+            iter->next();
         }
         TEST(name_count == 4);
         names.showStats(stdout);

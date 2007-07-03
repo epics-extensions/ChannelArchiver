@@ -115,6 +115,11 @@ AddModule mod_cgi.c
 # is a CGI program because of the .cgi extension:
 AddHandler cgi-script .cgi
 
+# In case of CGI errors, something like this might help,
+# since it logs the input and output of all failed CGI runs.
+# Check the Apache manual for details.
+ScriptLog /tmp/cgi.log
+
 <Directory /var/www/html/archive>
    Order Allow,Deny
    Allow from All
@@ -200,6 +205,9 @@ was looking for a proper XML-RPC request.
 If you see only pages of binary-looking garbage, your web server
 doesn't recognize ArchiveDataServer.cgi as a CGI program,
 and instead of running it, you get a copy of it.
+
+With the Apache web server, the ScriptLog option can be helpful. Check
+the Apache manual.
 
 \subsection{Standalone Data Server} % ---------------------------------------------
 The preferred deployment of the network data server is within a

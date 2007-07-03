@@ -31,7 +31,6 @@ PlotReader::PlotReader(Index &index, double delta)
 const RawValue::Data *PlotReader::find(const stdString &channel_name,
                                        const epicsTime *start)
 {
-    this->channel_name = channel_name;
     reader_data = reader.find(channel_name, start);
     if (!reader_data)
         return 0;
@@ -43,6 +42,11 @@ const RawValue::Data *PlotReader::find(const stdString &channel_name,
         end_of_bin = roundTimeUp(RawValue::getTime(reader_data), delta);
     return analyzeBin();
 }
+
+const stdString &PlotReader::getName() const
+{
+    return reader.getName();
+}                                  
 
 void PlotReader::clearValues()
 {

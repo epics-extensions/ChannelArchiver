@@ -41,7 +41,7 @@ Index *open_index(xmlrpc_env *env, int key)
         } 
         LOG_MSG("Open index, key %d = '%s'\n", key, index_name.c_str());
         AutoPtr<Index> index(new AutoIndex());
-        index->open(index_name, true);
+        index->open(index_name);
         return index.release();
     }
     catch (GenericException &e)

@@ -3,6 +3,7 @@
 #include <string.h>
 // Tools
 #include <AutoFilePtr.h>
+#include <GenericException.h>
 #include <UnitTest.h>
 // Local
 #include "FileAllocator.h"
@@ -83,62 +84,98 @@ TEST_CASE file_allocator_open_existing()
 {
     AutoFilePtr f("test/file_allocator.dat", "r+b");
     TEST_MSG(f, "Re-opened file");
-
-    FileAllocator fa;
-    TEST_MSG(fa.attach(f, 1000, false) == false, "re-attach");
-    TEST_MSG(fa.dump(), "Consistency Check");
-
-    puts("-- upping file size increment to 50000 --");
-    FileAllocator::file_size_increment = 50000;
-    long o1, o2, o3;
-    TEST_MSG((o1=fa.allocate(10000)), "allocate 10000");
-    printf("Got offset %ld\n", o1);
-    TEST_MSG(fa.dump(), "Consistency Check\n");
-
-    TEST_MSG((o1=fa.allocate(10000)), "allocate 10000");
-    printf("Got offset %ld\n", o1);
-    TEST_MSG(fa.dump(), "Consistency Check\n");
-
-    TEST_MSG((o1=fa.allocate(10000)), "allocate 10000");
-    printf("Got offset %ld\n", o1);
-    TEST_MSG(fa.dump(), "Consistency Check\n");
-
-    TEST_MSG((o2=fa.allocate(5000)), "allocate 5000");
-    printf("Got offset %ld\n", o2);
-    TEST_MSG(fa.dump(), "Consistency Check\n");
-
-    TEST_MSG((o3=fa.allocate(5000)), "allocate 5000");
-    printf("Got offset %ld\n", o3);
-    TEST_MSG(fa.dump(), "Consistency Check\n");
     {
-        AutoFilePtr file("test/file_allocator.out", "wt");
-        TEST_MSG(fa.dump(1, file), "Consistency Check\n");
-    }
-    TEST_FILEDIFF("test/file_allocator.out", "test/file_allocator.OK");
-
-    TEST("Performing some random tests");
-    long o[10];
-    memset(o, 0, sizeof(o));
-    int i;
-    for (i=0; i<500; ++i)
-    {   // Randomly free an existing block
-        if (o[i%10] && rand()>RAND_MAX/2)
+        FileAllocator fa;
+        TEST_MSG(fa.attach(f, 1000, false) == false, "re-attach");
+        TEST_MSG(fa.dump(), "Consistency Check");
+    
+        puts("-- upping file size increment to 50000 --");
+        FileAllocator::file_size_increment = 50000;
+        long o1, o2, o3;
+        TEST_MSG((o1=fa.allocate(10000)), "allocate 10000");
+        printf("Got offset %ld\n", o1);
+        TEST_MSG(fa.dump(), "Consistency Check\n");
+    
+        TEST_MSG((o1=fa.allocate(10000)), "allocate 10000");
+        printf("Got offset %ld\n", o1);
+        TEST_MSG(fa.dump(), "Consistency Check\n");
+    
+        TEST_MSG((o1=fa.allocate(10000)), "allocate 10000");
+        printf("Got offset %ld\n", o1);
+        TEST_MSG(fa.dump(), "Consistency Check\n");
+    
+        TEST_MSG((o2=fa.allocate(5000)), "allocate 5000");
+        printf("Got offset %ld\n", o2);
+        TEST_MSG(fa.dump(), "Consistency Check\n");
+    
+        TEST_MSG((o3=fa.allocate(5000)), "allocate 5000");
+        printf("Got offset %ld\n", o3);
+        TEST_MSG(fa.dump(), "Consistency Check\n");
         {
-            fa.free(o[i%10]);
-            o[i%10] = 0;
+            AutoFilePtr file("test/file_allocator.out", "wt");
+            TEST_MSG(fa.dump(1, file), "Consistency Check\n");
         }
-        else
-        {   // allocate another one
-            o[i%10] = fa.allocate(rand() & 0xFFFF);
-            if (o[i%10] == 0)
-                printf("Alloc failed\n");
+        TEST_FILEDIFF("test/file_allocator.out", "test/file_allocator.OK");
+    
+        TEST("Performing some random tests");
+        long o[10];
+        memset(o, 0, sizeof(o));
+        int i;
+        for (i=0; i<500; ++i)
+        {   // Randomly free an existing block
+            if (o[i%10] && rand()>RAND_MAX/2)
+            {
+                fa.free(o[i%10]);
+                o[i%10] = 0;
+            }
+            else
+            {   // allocate another one
+                o[i%10] = fa.allocate(rand() & 0xFFFF);
+                if (o[i%10] == 0)
+                    printf("Alloc failed\n");
+            }
+            if (! fa.dump(0))
+                FAIL("Consistency check failed");
         }
-        if (! fa.dump(0))
-            FAIL("Consistency check failed");
+        TEST("If you didn't see any error message, that went fine.");
+    
+        printf("Total file size is now:    %lu bytes\n",
+               (unsigned long)fa.size());
+        FileOffset missing = 0x7FFFFFFF - fa.size();
+        printf("Missing towards 2GB limit: %ld bytes\n",
+               (unsigned long)missing);
+    
+        TEST_MSG((fa.allocate(missing/2)), "allocate about 1/2 of that");
+        printf("Total file size is now:    %lu bytes\n",
+               (unsigned long)fa.size());
+        missing = 0x7FFFFFFF - fa.size();
+        printf("Missing towards 2GB limit: %ld bytes\n",
+               (unsigned long)missing);
+    
+        TEST_MSG((fa.allocate(missing/2)), "allocate about 1/2 of that");
+        printf("Total file size is now:    %lu bytes\n",
+               (unsigned long)fa.size());
+        missing = 0x7FFFFFFF - fa.size();
+        printf("Missing towards 2GB limit: %ld bytes\n",
+               (unsigned long)missing);
+    
+        try
+        {
+              fa.allocate(missing);
+              FAIL("allocated more than 2GB?!");
+        }
+        catch (GenericException &ex)
+        {
+            TEST("Caught attempt to allocate more than 2BG:");
+            printf("%s\n", ex.what());
+        }
+        printf("Total file size is now:    %lu bytes\n", (unsigned long)fa.size());
+    
+        TEST("Detach");
+        fa.detach();
     }
-    TEST("If you didn't see any error message, that went fine.");
-    fa.detach();
-
+    
+    TEST("Close file: Slow because OS sync's the actual disk file?");
     TEST_OK;
 }
 

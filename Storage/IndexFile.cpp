@@ -14,18 +14,32 @@
 
 // #define DEBUG_SOFTLINKS
 
-uint32_t IndexFile::ht_size = 1009;
+// #define DEBUG_INDEXFILE
 
-IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), f(0), names(fa, 4)
-{}
+const uint32_t IndexFile::ht_size = 1009;
+
+IndexFile::IndexFile(int RTreeM) : RTreeM(RTreeM), names(fa, 4)
+{
+#ifdef DEBUG_INDEXFILE
+    printf("IndexFile()\n");
+#endif
+}
 
 IndexFile::~IndexFile()
 {
     close();
+#ifdef DEBUG_INDEXFILE
+    printf("~IndexFile()\n");
+#endif
 }
 
-void IndexFile::open(const stdString &filename, bool readonly)
+void IndexFile::open(const stdString &filename, ReadWrite readwrite)
 {
+#ifdef DEBUG_INDEXFILE
+    printf("IndexFile::open(%s)\n", filename.c_str());
+#endif
+    close();
+    
     stdString name = filename;
     stdString linked_filename;
     // Follow links.
@@ -51,16 +65,20 @@ void IndexFile::open(const stdString &filename, bool readonly)
         LOG_MSG("   ==> '%s'\n", name.c_str());
 #endif
     }
-    Filename::getDirname(name, dirname);
+    
+    // In case the name was a link,
+    // set the name of this index to the actual target
+    setFilename(name);
+    
     bool new_file = false;
-    if (readonly)
-        f.open(filename.c_str(), "rb");
+    if (readwrite == ReadOnly)
+        f.open(name.c_str(), "rb");
     else
     {   // Try existing file
-        f.open(filename.c_str(), "r+b");
+        f.open(name.c_str(), "r+b");
         if (!f)
         {   // Create new file
-            f.open(filename.c_str(), "w+b");
+            f.open(name.c_str(), "w+b");
             new_file = true;
         }   
     }
@@ -68,11 +86,11 @@ void IndexFile::open(const stdString &filename, bool readonly)
         throw GenericException(__FILE__, __LINE__,
                                "Cannot %s file '%s'",
                                (new_file ? "create" : "open"),
-                               filename.c_str());
-    // TODO: Tune these two. All 0 seems best?!
+                               name.c_str());
+    // Tune these two? All 0 seems best?!
     FileAllocator::minimum_size = 0;
     FileAllocator::file_size_increment = 0;
-    fa.attach(f, 4+NameHash::anchor_size, !readonly);
+    fa.attach(f, 4+NameHash::anchor_size, readwrite == ReadAndWrite);
     if (new_file)
     {
         if (fseek(f, 0, SEEK_SET))
@@ -112,15 +130,21 @@ void IndexFile::close()
     {
         fa.detach();
         f.close();
+#ifdef DEBUG_INDEXFILE
+        printf("IndexFile::close(%s)\n", filename.c_str());
+#endif
+        clearFilename();
     }   
 }
 
-RTree *IndexFile::addChannel(const stdString &channel, stdString &directory)
-{   // Using AutoPtr in case e.g. tree->init throws exception.
-    AutoPtr<RTree> tree(getTree(channel, directory));
-    if (tree)
-        return tree.release(); // Done, found existing.
+Index::Result *IndexFile::addChannel(const stdString &channel)
+{
+    Result *result = findChannel(channel);
+    if (result)
+        return result; // Done, found existing.
     FileOffset tree_anchor = fa.allocate(RTree::anchor_size);
+    // Using AutoPtr in case e.g. tree->init throws exception.
+    AutoPtr<RTree> tree;
     try
     {
         tree = new RTree(fa, tree_anchor);
@@ -140,16 +164,16 @@ RTree *IndexFile::addChannel(const stdString &channel, stdString &directory)
                                "had no RTree but was already in name hash.",
                                channel.c_str());
     // Done, new name entry & RTree.
-    directory = dirname;
-    return tree.release();
+    return new Result(tree.release(), getDirectory());
 }
 
-RTree *IndexFile::getTree(const stdString &channel, stdString &directory)
+Index::Result *IndexFile::findChannel(const stdString &channel)
 {
-    stdString  tree_filename;
-    FileOffset tree_anchor;
-    if (!names.find(channel, tree_filename, tree_anchor))
+    AutoPtr<NameHash::Entry> entry(names.find(channel));
+    if (!entry)
         return 0; // All OK, but channel not found.
+    stdString  tree_filename = entry->getIdTxt();
+    FileOffset tree_anchor = entry->getId();
     // Using AutoPtr in case e.g. tree->reattach throws exception.
     AutoPtr<RTree> tree;
     try
@@ -164,18 +188,44 @@ RTree *IndexFile::getTree(const stdString &channel, stdString &directory)
                                channel.c_str());
     }
     tree->reattach();
-    directory = dirname;
-    return tree.release();
+    return new Result(tree.release(), getDirectory());
 }
 
-bool IndexFile::getFirstChannel(NameIterator &iter)
+class IndexFileNameIterator : public Index::NameIterator
 {
-    return names.startIteration(iter.hashvalue, iter.entry);
+public:
+    IndexFileNameIterator(NameHash::Iterator *name_iter);
+       
+    // NameIterator interface
+    virtual bool isValid() const;
+    virtual const stdString &getName() const;
+    virtual void  next();
+private:
+    AutoPtr<NameHash::Iterator> name_iter;
+};
+
+IndexFileNameIterator::IndexFileNameIterator(NameHash::Iterator *name_iter)
+    : name_iter(name_iter)
+{}
+
+bool IndexFileNameIterator::isValid() const
+{
+    return name_iter->isValid();
 }
 
-bool IndexFile::getNextChannel(NameIterator &iter)
+const stdString &IndexFileNameIterator::getName() const
 {
-    return names.nextIteration(iter.hashvalue, iter.entry);
+    return name_iter->getName();
+}
+
+void IndexFileNameIterator::next()
+{
+    name_iter->next();
+}
+
+Index::NameIterator *IndexFile::iterator()
+{
+    return new IndexFileNameIterator(names.iterator());
 }
 
 void IndexFile::showStats(FILE *f)
@@ -195,34 +245,31 @@ bool IndexFile::check(int level)
             printf("FileAllocator ERROR\n");
             return false;
         }
-        NameIterator names;
-        bool have_name;
+        AutoPtr<NameIterator> names;
         unsigned long channels = 0;
         unsigned long total_nodes=0, total_used_records=0, total_records=0;
         unsigned long nodes, records;
-        stdString dir;
-        for (have_name = getFirstChannel(names);
-             have_name;
-             have_name = getNextChannel(names))
+        
+        for (names = iterator();  names->isValid();  names->next())
         {
             ++channels;
-            AutoPtr<RTree> tree(getTree(names.getName(), dir));
-            if (!tree)
+            AutoPtr<Result> result(findChannel(names->getName()));
+            if (!result)
             {
-                printf("%s not found\n", names.getName().c_str());
+                printf("%s not found\n", names->getName().c_str());
                 return false;
             }
             printf(".");
             fflush(stdout);
-            if (!tree->selfTest(nodes, records))
+            if (!result->getRTree()->selfTest(nodes, records))
             {
                 printf("RTree for channel '%s' is broken\n",
-                       names.getName().c_str());
+                       names->getName().c_str());
                 return false;
             }
             total_nodes += nodes;
             total_used_records += records;
-            total_records += nodes * tree->getM();
+            total_records += nodes * result->getRTree()->getM();
         }
         printf("\nAll RTree self-tests check out fine\n");
         printf("%ld channels\n", channels);

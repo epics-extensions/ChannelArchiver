@@ -19,6 +19,7 @@ gopher0, 2x333Mhz, RAID5          8600
 // Tools
 #include <ArgParser.h>
 // Storage
+#include <IndexFile.h>
 #include <DataWriter.h>
 #include <RawDataReader.h>
 #include <OldDataWriter.h>
@@ -32,7 +33,7 @@ bool write_samples(const stdString &index_name,
     IndexFile index(50);
     CtrlInfo info;
 
-    index.open(index_name.c_str(), false);
+    index.open(index_name.c_str(), Index::ReadAndWrite);
     info.setNumeric (2, "socks",
                      0.0, 10.0,
                      0.0, 1.0, 9.0, 10.0);
@@ -71,7 +72,7 @@ bool old_write_samples(const stdString &index_name,
     OldDirectoryFile index;
     CtrlInfo info;
 
-    if (!index.open(index_name, true))
+    if (!index.open(index_name, Index::ReadAndWrite))
     {
         fprintf(stderr, "Cannot create dir. file '%s'\n",
                 index_name.c_str());
@@ -113,7 +114,7 @@ size_t read_samples(const stdString &index_name,
 {
     IndexFile index(50);
 
-    index.open(index_name.c_str(), true);
+    index.open(index_name.c_str());
     size_t samples = 0;
     AutoPtr<DataReader> reader(new RawDataReader(index));
     const RawValue::Data *data =

@@ -74,7 +74,7 @@ Index *open_index(xmlrpc_env *env, int key)
                                            "Cannot allocate index");
             return 0;
         }
-        index->open(index_name, true);
+        index->open(index_name);
         return index.release();
     }
     catch (GenericException &e)

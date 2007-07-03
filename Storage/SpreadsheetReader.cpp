@@ -76,7 +76,7 @@ size_t SpreadsheetReader::getNum() const
 {   return num; }
 
 const stdString &SpreadsheetReader::getName(size_t i) const
-{   return reader[i]->channel_name; }
+{   return reader[i]->getName(); }
 
 const RawValue::Data *SpreadsheetReader::get(size_t i) const
 {   return value[i]; }

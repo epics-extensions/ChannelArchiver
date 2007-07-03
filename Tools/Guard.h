@@ -47,6 +47,8 @@ private:
 class Guardable
 {
 public:
+    virtual ~Guardable();
+    
     /** @return Returns the mutex for this object. */
     virtual OrderedMutex &getMutex() = 0;
 };

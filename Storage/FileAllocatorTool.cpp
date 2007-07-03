@@ -32,6 +32,8 @@ int main(int argc, const char *argv[])
     stdString file_name = parser.getArgument(0);
     long reserved = atol(parser.getArgument(1));
     
+    if (verbose)
+        printf("Opening '%s'\n", file_name.c_str());
     FILE *f = fopen(file_name.c_str(), "rb");
     if (!f)
     {
@@ -40,12 +42,11 @@ int main(int argc, const char *argv[])
         return -1;
     }
     
+    if (verbose)
+        printf("Attaching read-only file allocator, %lu reserved bytes\n",
+               reserved);
     FileAllocator fa;
-    if (!fa.attach(f, reserved, true))
-    {
-        fprintf(stderr, "Cannot attach FileAllocator\n");
-        return -1;
-    }   
+    fa.attach(f, reserved, false);
     fa.dump(verbose ? 10 : 0);
     fa.detach();
     fclose(f);

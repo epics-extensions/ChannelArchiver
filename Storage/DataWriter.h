@@ -74,8 +74,7 @@ public:
 private:
     PROHIBIT_DEFAULT_COPY(DataWriter);
     Index &index;
-    stdString directory;
-    AutoPtr<RTree> tree;
+    AutoPtr<Index::Result> index_result;
     const stdString channel_name;
     const CtrlInfo &ctrl_info;
     DbrType dbr_type;

@@ -111,6 +111,8 @@ public:
 class EngineConfigListener
 {
 public:
+    virtual ~EngineConfigListener();
+    
     /** Invoked for each channel that the EngineConfigParser found. */
     virtual void addChannel(const stdString &group_name,
                             const stdString &channel_name,

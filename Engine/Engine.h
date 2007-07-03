@@ -33,7 +33,7 @@ class Engine : public Guardable,
                public EngineConfigListener
 {
 public:
-    static const double MAX_DELAY = 0.5;
+    static const double MAX_DELAY;
     
     /** Create Engine that writes to given index. */
     Engine(const stdString &index_name);

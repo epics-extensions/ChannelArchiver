@@ -20,8 +20,12 @@ extern TEST_CASE file_allocator_create_new_file();
 extern TEST_CASE file_allocator_open_existing();
 // Unit HashTableTest:
 extern TEST_CASE hash_table_test();
+// Unit IndexFileTest:
+extern TEST_CASE index_file_test();
 // Unit LinearReaderTest:
 extern TEST_CASE LinearReaderTest();
+// Unit ListIndexTest:
+extern TEST_CASE list_index_test();
 // Unit NameHashTest:
 extern TEST_CASE name_hash_test();
 // Unit PlotReaderTest:
@@ -158,6 +162,22 @@ int main(int argc, const char *argv[])
                 printf("THERE WERE ERRORS!\n");
        }
     }
+    if (single_unit==0  ||  strcmp(single_unit, "IndexFileTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit IndexFileTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "index_file_test")==0)
+       {
+            ++run;
+            printf("\nindex_file_test:\n");
+            if (index_file_test())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
     if (single_unit==0  ||  strcmp(single_unit, "LinearReaderTest")==0)
     {
         printf("======================================================================\n");
@@ -169,6 +189,22 @@ int main(int argc, const char *argv[])
             ++run;
             printf("\nLinearReaderTest:\n");
             if (LinearReaderTest())
+                ++passed;
+            else
+                printf("THERE WERE ERRORS!\n");
+       }
+    }
+    if (single_unit==0  ||  strcmp(single_unit, "ListIndexTest")==0)
+    {
+        printf("======================================================================\n");
+        printf("Unit ListIndexTest:\n");
+        printf("----------------------------------------------------------------------\n");
+        ++units;
+       if (single_case==0  ||  strcmp(single_case, "list_index_test")==0)
+       {
+            ++run;
+            printf("\nlist_index_test:\n");
+            if (list_index_test())
                 ++passed;
             else
                 printf("THERE WERE ERRORS!\n");

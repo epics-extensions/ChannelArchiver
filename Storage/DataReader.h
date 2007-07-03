@@ -46,6 +46,9 @@ public:
     virtual const RawValue::Data *find(const stdString &channel_name,
                                        const epicsTime *start) = 0;
 
+    /// Name of the channel, i.e. the one passed to find()
+    virtual const stdString &getName() const = 0;
+    
     /// Obtain the next value.
     ///
     /// After a successful call to find() for the first value,
@@ -64,9 +67,6 @@ public:
     ///            called after reaching the end of data.
     virtual const RawValue::Data *next() = 0;
 
-    /// Name of the channel, i.e. the one passed to find()
-    stdString channel_name;
-    
     /// Current value.
     ///
     /// Same as the last find() or next() result.

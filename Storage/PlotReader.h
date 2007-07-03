@@ -52,6 +52,7 @@ public:
     PlotReader(Index &index, double delta);
     const RawValue::Data *find(const stdString &channel_name,
                                const epicsTime *start);
+    const stdString &getName() const;
     const RawValue::Data *next();
     const RawValue::Data *get() const;
     DbrType getType() const;

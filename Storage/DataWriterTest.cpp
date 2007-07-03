@@ -18,7 +18,7 @@ TEST_CASE data_writer_test()
     try
     {
         IndexFile index(50);
-        index.open(index_name, false);
+        index.open(index_name, Index::ReadAndWrite);
     
         CtrlInfo info;
         info.setNumeric (2, "socks",
@@ -65,7 +65,7 @@ TEST_CASE data_writer_readback()
     try
     {
         IndexFile index(50);
-        index.open(index_name, true);
+        index.open(index_name, Index::ReadOnly);
         AutoPtr<DataReader> reader(new RawDataReader(index));
         const RawValue::Data *data =
             reader->find(channel_name, 0);

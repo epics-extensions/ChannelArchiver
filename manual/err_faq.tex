@@ -260,4 +260,12 @@ in an inconsistent state?
 So as long as these issues are not properly addressed, the use of NFS with
 archive engines is strongly discouraged.
 
-
+\section{What is a \INDEX{shallow index}?}
+An experimental feature under development:
+While a 'full' master index references the data blocks in data files,
+a 'shallow' index only points to yet another index file.
+When building a hierarchy of indices, shallow indices for the summary
+indices are much smaller than their full counterpart,
+so they update quicker.
+For big data sets, where a 'full' index grows beyond 2GB, a shallow
+index is also the best option.

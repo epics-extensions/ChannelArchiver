@@ -103,3 +103,8 @@ stdString stdString::substr(size_type from, size_type n) const
     return s;
 }         
 
+void stdString::show() const
+{
+    printf("stdString '%s' (%zd chars, room for %zd)\n",
+           _str, _len, _res);
+}

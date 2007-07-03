@@ -21,40 +21,21 @@
 /// Each hash table entry is a file offset that points
 /// to the beginnig of the NameHash::Entry list for that
 /// hash value.
+///
+/// One NameHash entry on the disk is stored like this:
+/// @code
+///     long next
+///     long ID
+///     short length of name
+///     short length of ID_txt
+///     char  name[]   // Stored without the delimiting'\0' !!
+///     char  ID_txt[] // Stored without the '\0' !!
+/// @endcode
+/// ID_txt might be "", but the name can never be empty.
 class NameHash
 {
 public:
-    /// One NameHash entry on the disk is stored like this:
-    /// @code
-    ///     long next
-    ///     long ID
-    ///     short length of name
-    ///     short length of ID_txt
-    ///     char  name[]   // Stored without the delimiting'\0' !!
-    ///     char  ID_txt[] // Stored without the '\0' !!
-    /// @endcode
-    /// ID_txt might be "", but the name can never be empty.
-    class Entry
-    {
-    public:
-        stdString  name;  ///< Channel Name.
-        stdString  ID_txt;///< String and numeric ID
-        FileOffset ID;    ///< (filename and offset to RTree for the channel).
-        FileOffset next;  ///< Offset to next entry w/ same hash value
-
-        FileOffset offset;///< Offset of this Entry
-
-        /// Size of entry
-        FileOffset getSize() const;
-        /// Write at offset.
-        /// @exception GenericException on error.
-        void write(FILE *f) const;
-
-        /// Read from offset.
-        /// @exception GenericException on error.
-        void read(FILE *f);
-    };
-
+    
     static const uint32_t anchor_size = 8;
     
     /// Constructor.
@@ -80,41 +61,75 @@ public:
     /// @exception GenericException on error.
     bool insert(const stdString &name, const stdString &ID_txt, FileOffset ID);
 
+    /** One entry in the NameHash. */
+    class Entry
+    {
+    public:
+        virtual ~Entry();
+        
+        /** Channel Name. */
+        virtual const stdString &getName() const = 0;
+        
+        /** ID string 
+         *  (for index file, that might be the data file name)
+         */
+        virtual const stdString &getIdTxt() const = 0;
+    
+        /** ID code 
+         *  (for index file, that might be the file offset)
+         */
+        virtual FileOffset getId() const = 0;
+    };
+
     /// Locate name and obtain its ID.
-    /// @return Returns true on success, false when name is 
-    /// @exception GenericException on error.
-    bool find(const stdString &name, stdString &ID_txt, FileOffset &ID);
+    /// @return Returns NameInfo or 0 if nothing found. Receiver must delete.
+    /// @exception GenericException on internal error.
+    Entry *find(const stdString &name);
+
+    /** Iterator over names in the hash. */    
+    class Iterator : public Entry
+    {
+    public:
+        virtual ~Iterator();
+        
+        /** @return true if valid */
+        virtual bool isValid() const = 0;
+        
+        /** Get next entry.
+         *  @see isValid
+         */
+        virtual void next() = 0;
+    };
     
     /// Start iterating over all entries (in table's order).
     ///
-    /// @return Returns true if hashvalue & entry were set to something valid,
-    ///         false if there's nothing to see.
+    /// @return Returns iterator. Might not be 'valid'. Caller must delete.
     /// @exception GenericException on error.
-    bool startIteration(uint32_t &hashvalue, Entry &entry);
-    
-    /// Get next entry during iteration.
-    ///
-    /// @pre start_iteration() was successfully invoked.
-    /// @return Returns true if there was another entry found.
-    /// @exception GenericException on error.
-    bool nextIteration(uint32_t &hashvalue, Entry &entry);
-    
-    /// Get hash value (public to allow for test code)
-    uint32_t hash(const stdString &name) const;  
+    Iterator *iterator();
 
     /// Generate info on table fill ratio and list length
     void showStats(FILE *f);
 private:
+    friend class PrivateIterator;
+
     PROHIBIT_DEFAULT_COPY(NameHash);
+    
     FileAllocator &fa;
     FileOffset anchor;       // Where offset gets deposited in file
     uint32_t ht_size;   // Hash Table size (entries, not bytes)
     FileOffset table_offset; // Start of HT in file
-    /// Seek to hash_value, read offset.
-    /// @exception GenericException on read error.
-    void read_HT_entry(uint32_t hash_value, FileOffset &offset);
-    /// Seek to hash_value, write offset.
-    /// @exception GenericException on write error.
+    
+    /// Get hash value
+    uint32_t hash(const stdString &name) const;  
+
+    /** Seek to hash_value, read offset.
+     *  @exception GenericException on read error.
+     */
+    FileOffset read_HT_entry(uint32_t hash_value) const;
+    
+    /** Seek to hash_value, write offset.
+     *  @exception GenericException on write error.
+     */
     void write_HT_entry(uint32_t hash_value, FileOffset offset) const;
 };
 

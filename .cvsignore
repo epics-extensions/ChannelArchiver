@@ -5,3 +5,7 @@ Debug
 Release
 doxy
 llrf
+.gdb_history
+test
+shallow
+index.xml

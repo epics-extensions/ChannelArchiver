@@ -392,9 +392,14 @@ void DataHeader::read(FileOffset offset)
     USHORTFromDisk(data.dbr_type);
     USHORTFromDisk(data.dbr_count);
     DoubleFromDisk(data.period);
-    epicsTimeStampFromDisk(data.begin_time);
-    epicsTimeStampFromDisk(data.next_file_time);
-    epicsTimeStampFromDisk(data.end_time);
+    // Would like to give error messages for bad time stamps,
+    // but just printing them messes the data server up,
+    // and exceptions would result in no data.
+    // The flat zero nanoseconds are often an indicator
+    // for bad time stamps, though.
+    safeEpicsTimeStampFromDisk(data.begin_time);
+    safeEpicsTimeStampFromDisk(data.next_file_time);
+    safeEpicsTimeStampFromDisk(data.end_time);
 }
 
 void DataHeader::write() const

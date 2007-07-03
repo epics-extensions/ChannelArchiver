@@ -12,6 +12,8 @@
 #include "Engine.h"
 #include "EngineLocks.h"
 
+const double Engine::MAX_DELAY = 0.5;
+
 Engine::Engine(const stdString &index_name)
     : mutex("Engine", EngineLocks::Engine),
       is_running(false),
@@ -285,7 +287,7 @@ unsigned long Engine::write(Guard &engine_guard)
     try
     {
         IndexFile index(RTreeM);
-        index.open(index_name, false);
+        index.open(index_name, Index::ReadAndWrite);
         stdList<ArchiveChannel *>::iterator ch;
         for (ch = channels.begin(); ch != channels.end(); ++ch)
         {

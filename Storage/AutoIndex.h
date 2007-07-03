@@ -12,7 +12,7 @@
 /** \ingroup Storage
  *  General Index for reading.
  * 
- *  Index which automatically picks ListIndex or FileIndex
+ *  Index which automatically picks ListIndex or IndexFile
  *  when reading, based on looking at the first few bytes
  *  in the index file.
  */
@@ -23,23 +23,18 @@ public:
 
     ~AutoIndex();
 
-    virtual void open(const stdString &filename, bool readonly=true);
+    virtual void open(const stdString &filename, ReadWrite readwrite=ReadOnly);
 
     virtual void close();
     
-    virtual class RTree *addChannel(const stdString &channel,
-                                    stdString &directory);
+    virtual Result *addChannel(const stdString &channel);
 
-    virtual class RTree *getTree(const stdString &channel,
-                                 stdString &directory);
+    virtual Result *findChannel(const stdString &channel);
 
-    virtual bool getFirstChannel(NameIterator &iter);
-
-    virtual bool getNextChannel(NameIterator &iter);
+    virtual NameIterator *iterator();
 
 private:
     PROHIBIT_DEFAULT_COPY(AutoIndex);
-    stdString filename;
     AutoPtr<Index> index;
 };
 

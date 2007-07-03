@@ -10,6 +10,8 @@
 class ProcessVariableStateListener
 {
 public:
+    virtual ~ProcessVariableStateListener();
+    
     /** Invoked when the pv connects.
      * 
      *  This means: connected and received control info.
@@ -28,6 +30,8 @@ public:
 class ProcessVariableValueListener
 {
 public:
+    virtual ~ProcessVariableValueListener();
+    
     /** Invoked when the pv has a new value.
      *
      *  Can be the result of a 'getValue' or 'subscribe'.

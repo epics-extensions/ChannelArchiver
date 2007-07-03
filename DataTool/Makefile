@@ -5,7 +5,7 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 
 USR_CXXFLAGS += -I ../../Storage 
 
-SRCS += main.cpp
+SRCS += DataTool.cpp
 
 PROD_HOST := ArchiveDataTool
 PROD_LIBS_DEFAULT := Storage Tools ca Com 

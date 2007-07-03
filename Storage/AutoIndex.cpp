@@ -10,17 +10,20 @@
 #include "IndexFile.h"
 #include "ListIndex.h"
 
-#undef DEBUG_AUTOINDEX
+// #define DEBUG_AUTOINDEX
 
 AutoIndex::~AutoIndex()
 {
     close();
 }
 
-void AutoIndex::open(const stdString &filename, bool readonly)
+void AutoIndex::open(const stdString &filename, ReadWrite readwrite)
 {
-    this->filename = filename;
-    if (!readonly)
+#ifdef DEBUG_AUTOINDEX
+    printf("AutoIndex::open(%s)\n", filename.c_str());
+#endif
+    setFilename(filename);
+    if (readwrite != ReadOnly)
         throw GenericException(__FILE__, __LINE__,
                                "AutoIndex '%s' Writing is not supported!\n",
                                filename.c_str());
@@ -35,14 +38,14 @@ void AutoIndex::open(const stdString &filename, bool readonly)
     }
     try
     {
-        index->open(filename, true);
+        index->open(filename, readwrite);
 #ifdef DEBUG_AUTOINDEX
-        LOG_MSG("AutoIndex(%s) -> ListIndex\n", filename.c_str());
+        printf("AutoIndex(%s) -> ListIndex\n", filename.c_str());
 #endif
         return;
     }
     catch (GenericException &e)
-    {   // can't open as binary index; ignore.
+    {   // can't open as list; ignore.
         index = 0;
     }
 
@@ -50,44 +53,47 @@ void AutoIndex::open(const stdString &filename, bool readonly)
     try
     {
         index = new IndexFile();
+#ifdef DEBUG_AUTOINDEX
+        printf("AutoIndex(%s) -> IndexFile\n", filename.c_str());
+#endif
     }
     catch (...)
     {       
         throw GenericException(__FILE__, __LINE__, "AutoIndex: No mem");
     }
-    index->open(filename, true);
+    index->open(filename, readwrite);
 #ifdef DEBUG_AUTOINDEX
-    LOG_MSG("AutoIndex(%s) -> IndexFile\n", filename.c_str());
+    printf("AutoIndex(%s) -> IndexFile\n", filename.c_str());
 #endif
 }
 
 // Close what's open. OK to call if nothing's open.
 void AutoIndex::close()
 {
-    index = 0;
+    if (index)
+    {
+        index = 0;
+#ifdef DEBUG_AUTOINDEX
+        printf("AutoIndex::close(%s)\n", getFilename().c_str());
+#endif
+        clearFilename();
+    }
 }
     
-class RTree *AutoIndex::addChannel(const stdString &channel,
-                                   stdString &directory)
+Index::Result *AutoIndex::addChannel(const stdString &channel)
 {
     throw GenericException(__FILE__, __LINE__,
                            "AutoIndex: Tried to add '%s'",
                            channel.c_str());
 }
 
-class RTree *AutoIndex::getTree(const stdString &channel,
-                                stdString &directory)
+Index::Result *AutoIndex::findChannel(const stdString &channel)
 {
-    return index->getTree(channel, directory);
+    return index->findChannel(channel);
 }
 
-bool AutoIndex::getFirstChannel(NameIterator &iter)
+Index::NameIterator *AutoIndex::iterator()
 {
-    return index->getFirstChannel(iter);
-}
-
-bool AutoIndex::getNextChannel(NameIterator &iter)
-{
-    return index->getNextChannel(iter);
+    return index->iterator();
 }
 

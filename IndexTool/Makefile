@@ -5,7 +5,9 @@ include $(TOP)/src/ChannelArchiver/make.cfg
 
 USR_CXXFLAGS += -I ../../Storage -I ../../rtree
 
-SRCS += main.cpp
+SRCS += IndexInfo.cpp
+SRCS += MasterIndex.cpp
+SRCS += IndexTool.cpp
 
 SCRIPTS_HOST += make_indexconfig.pl
 

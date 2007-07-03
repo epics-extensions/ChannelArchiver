@@ -53,10 +53,12 @@ public:
     /// @exception GenericException on error.
     bool attach(FILE *f, FileOffset reserved_space, bool init);
 
-    /// After attaching to a file, this returns the file
+    /** @return After attaching to a file, this returns the file. */
     FILE *getFile() const;
     
-    /// <B>Must be</B> called before destroying the FileAllocator and closing the file.
+    /** <B>Must be</B> called before destroying the FileAllocator
+     *  and closing the file.
+     */
     void detach();
 
     /// Allocate a block with given size, returning a file offset (for fseek).
@@ -65,6 +67,10 @@ public:
     /// @exception GenericException on error.
     FileOffset allocate(FileOffset num_bytes);
 
+    /** @return Total size of file in bytes. */
+    FileOffset size() const
+    {   return file_size; }
+    
     /// Release a file block (will be placed in free list).
     ///
     /// @param offset A file offset previously obtained from allocate()
@@ -103,18 +109,74 @@ public:
     /// @param filename When non-zero, it is used instead of stdout.
     ///
     /// Returns true for 'OK'.
-    bool dump(int level=1, FILE *f=stdout);
+    bool dump(int level=1, FILE *out=stdout);
     
 private:
     PROHIBIT_DEFAULT_COPY(FileAllocator);
 
-    // TODO: Refactor as class??
-    typedef struct
+    /** One node of the 'free' or 'allocated' list of disk blocks. */
+    class Node
     {
-        FileOffset bytes;
+    public:
+        Node();
+        
+        /** Size of the node itself on the disk, excluding the actual data. */
+        static FileOffset size()
+        {   return 12; }
+
+        /** @return File offset of next node. */
+        FileOffset getNext() const
+        {   return next; }
+
+        /** @return File offset of next node. */
+        void setNext(FileOffset new_next)
+        {   next = new_next; }
+
+        /** @return File offset of previous node. */
+        FileOffset getPrev() const
+        {   return prev; }
+
+        /** @return File offset of previous node. */
+        void setPrev(FileOffset new_prev)
+        {   prev = new_prev; }
+
+        /** @return Number of bytes in this node. */
+        FileOffset getBytes() const
+        {   return bytes; }
+
+        /** Set number of bytes in this node. */
+        void setBytes(FileOffset new_bytes)
+        {   bytes = new_bytes; }
+
+        /** Add to number of bytes in this node. */
+        void addBytes(int bytes_to_add);
+
+        /** Read node from file
+         *  @exception GenericException on error.
+         */
+        void read(FILE *f, FileOffset offset);
+        
+        /** Write node to file
+         *  @exception GenericException on error.
+         */
+        void write(FILE *f, FileOffset offset) const;
+        
+        /** Write node location where last read or written.
+         *  @exception GenericException on error.
+         */
+        void write() const;
+        
+        /** @return File offset where node was read or written. */
+        FileOffset getOffset() const
+        {   return offset; }
+
+    private:
+        mutable FILE *f;
+        mutable FileOffset offset;
         FileOffset prev;
         FileOffset next;
-    } list_node;
+        FileOffset bytes;
+    };
     
     FILE *f;
     FileOffset reserved_space; // Bytes we ignore in header
@@ -124,19 +186,13 @@ private:
     // 'next' = first entry, head of list!
     // ! These nodes are always a current copy
     //   of what's on the disk!
-    list_node allocated_head, free_head;
+    Node allocated_head, free_head;
     
-    // Read/write a list_node.
-    // @exception GenericException on read/write error.
-    void read_node(FileOffset offset, list_node *node);
-    void write_node(FileOffset offset, const list_node *node);
-
     // Unlink node from list, node itself remains unchanged
-    void remove_node(FileOffset head_offset, list_node *head,
-                     FileOffset node_offset, const list_node *node);
+    void remove_node(Node &head, const Node &node);
     // Insert node (sorted), node's prev/next get changed
-    void insert_node(FileOffset head_offset, list_node *head,
-                     FileOffset node_offset, list_node *node);
+    void insert_node(Node &head,
+                     FileOffset node_offset, Node &node);
 };
 
 ///

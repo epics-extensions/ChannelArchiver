@@ -58,18 +58,15 @@ void get_names_for_pattern(Index &index,
         AutoPtr<RegularExpression> regex;
         if (pattern.length() > 0)
             regex.assign(new RegularExpression(pattern.c_str()));
-        Index::NameIterator name_iter;
-        if (!index.getFirstChannel(name_iter))
-            return; // No names
+        AutoPtr<Index::NameIterator> name_iter(index.iterator());
         // Put all names in binary tree
         BinaryTree<stdString> channels;
-        do
-        {
-            if (regex && !regex->doesMatch(name_iter.getName()))
-                continue; // skip what doesn't match regex
-            channels.add(name_iter.getName());
+        while (name_iter  &&  name_iter->isValid())
+        {   // Add all or matching names
+            if (!regex  ||  regex->doesMatch(name_iter->getName()))
+                channels.add(name_iter->getName());
+            name_iter->next();
         }
-        while (index.getNextChannel(name_iter));
         // Sorted dump of names
         channels.traverse(add_name2vector, (void *)&names);
     }
@@ -84,23 +81,20 @@ void get_names_for_pattern(Index &index,
 // List channel names, maybe with start/end info.
 void list_channels(Index &index, stdVector<stdString> names, bool info)
 {
-    epicsTime start, end;
     stdString s, e;
-    AutoPtr<RTree> tree;
-    size_t i;
-    for (i=0; i<names.size(); ++i)
+    for (size_t i=0; i<names.size(); ++i)
     {
         if (info)
         {
-            stdString directory;
-            tree = index.getTree(names[i], directory);
-            if (!tree)
+            AutoPtr<Index::Result> info(index.findChannel(names[i]));
+            if (!info)
                 throw GenericException(__FILE__, __LINE__,
                                        "Cannot locate channel '%s'",
                                        names[i].c_str());
-            tree->getInterval(start, end);
+            Interval interval = info->getRTree()->getInterval();
             printf("%s\t%s\t%s\n", names[i].c_str(),
-                   epicsTimeTxt(start, s), epicsTimeTxt(end, e));
+                   epicsTimeTxt(interval.getStart(), s),
+                   epicsTimeTxt(interval.getEnd(), e));
         }
         else
             printf("%s\n", names[i].c_str());

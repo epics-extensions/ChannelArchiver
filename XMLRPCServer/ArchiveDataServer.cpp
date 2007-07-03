@@ -16,7 +16,7 @@
 #include <BinaryTree.h>
 // Storage
 #include <SpreadsheetReader.h>
-#include <LinearReader.h>
+#include <AverageReader.h>
 #include <PlotReader.h>
 // XMLRPCServer
 #include "ArchiveDataServer.h"
@@ -118,10 +118,21 @@ static double make_finite(double value)
 // Used by get_names to put info for channel into sorted tree & dump it
 class ChannelInfo
 {
-public:
     stdString name;
-    epicsTime start, end;
+    Interval interval;
 
+public:
+    ChannelInfo(const stdString &name, const Interval &interval)
+        : name(name), interval(interval)
+    {}
+
+    ChannelInfo(const stdString &name)
+        : name(name)
+    {}
+
+    ChannelInfo()
+    {}
+    
     // Required by BinaryTree for sorting. We sort by name.
     bool operator < (const ChannelInfo &rhs)   { return name < rhs.name; }
     bool operator == (const ChannelInfo &rhs)  { return name == rhs.name; }
@@ -138,8 +149,8 @@ public:
     {
         UserArg *user_arg = (UserArg *)arg;
         xmlrpc_int32 ss, sn, es, en;
-        epicsTime2pieces(info.start, ss, sn);
-        epicsTime2pieces(info.end, es, en);        
+        epicsTime2pieces(info.interval.getStart(), ss, sn);
+        epicsTime2pieces(info.interval.getEnd(), es, en);        
 
         LOG_MSG("Found name '%s'\n", info.name.c_str());
 
@@ -234,7 +245,10 @@ void encode_value(xmlrpc_env *env,
                   DbrType dbr_type, DbrCount dbr_count,
                   const epicsTime &time, const RawValue::Data *data,
                   xmlrpc_int32 xml_type, xmlrpc_int32 xml_count,
-                  xmlrpc_value *values)
+                  xmlrpc_value *values,
+                  bool with_min_max = false,
+                  double minimum = 0.0,
+                  double maximum = 0.0)
 {
     if (xml_count > dbr_count)
         xml_count = dbr_count;
@@ -314,13 +328,26 @@ void encode_value(xmlrpc_env *env,
     epicsTime2pieces(time, secs, nano);
     AutoXmlRpcValue value;
     if (data)
-        value.set(xmlrpc_build_value(
+    {
+        if (with_min_max)
+            value.set(xmlrpc_build_value(
+                      env, "{s:i,s:i,s:i,s:i,s:d,s:d,s:V}",
+                      "stat", (xmlrpc_int32)RawValue::getStat(data),
+                      "sevr", (xmlrpc_int32)RawValue::getSevr(data),
+                      "secs", secs,
+                      "nano", nano,
+                      "min", minimum,
+                      "max", maximum,
+                      "value", (xmlrpc_value *)val_array));
+        else        
+            value.set(xmlrpc_build_value(
                       env, "{s:i,s:i,s:i,s:i,s:V}",
                       "stat", (xmlrpc_int32)RawValue::getStat(data),
                       "sevr", (xmlrpc_int32)RawValue::getSevr(data),
                       "secs", secs,
                       "nano", nano,
                       "value", (xmlrpc_value *)val_array));
+    }
     else
         value.set(xmlrpc_build_value(
                       env, "{s:i,s:i,s:i,s:i,s:V}",
@@ -360,6 +387,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
         if (env->fault_occurred)
             return 0;
         long i, name_count = names.size();
+        // Encode values channel by channel
         for (i=0; i<name_count; ++i)
         {
 #ifdef LOGFILE
@@ -379,7 +407,7 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
                 xml_count = 1;
             }
             else
-            {
+            {   // Encode samples of current channel
                 // Fix meta/type/count based on first value
                 meta = encode_ctrl_info(env, &reader->getInfo());
                 dbr_type_to_xml_type(reader->getType(), reader->getCount(),
@@ -388,9 +416,20 @@ xmlrpc_value *get_channel_data(xmlrpc_env *env,
                        && data
                        && RawValue::getTime(data) < end)
                 {
-                    encode_value(env, reader->getType(), reader->getCount(),
-                                 RawValue::getTime(data), data,
-                                 xml_type, xml_count, values);
+                    if (ReaderFactory::Average == how)
+                    {
+                        const AverageReader *avg = (AverageReader *)reader.get();
+                        encode_value(env, reader->getType(), reader->getCount(),
+                                     RawValue::getTime(data), data,
+                                     xml_type, xml_count, values,
+                                     avg->isRaw() == false,
+                                     avg->getMinimum(),
+                                     avg->getMaximum());
+                    }
+                    else
+                        encode_value(env, reader->getType(), reader->getCount(),
+                                     RawValue::getTime(data), data,
+                                     xml_type, xml_count, values);
                     ++num_vals;
                     data = reader->next();
                 }
@@ -702,22 +741,18 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
         if (env->fault_occurred)
             return 0;
         // Put all names in binary tree
-        Index::NameIterator ni;
+        AutoPtr<Index::NameIterator> ni(index->iterator());
         BinaryTree<ChannelInfo> channels;
-        ChannelInfo info;
-        bool ok;
-        for (ok = index->getFirstChannel(ni);
-             ok; ok = index->getNextChannel(ni))
+        for (/**/;  ni && ni->isValid(); ni->next())
         {
-            if (regex && !regex->doesMatch(ni.getName()))
+            if (regex && !regex->doesMatch(ni->getName()))
                 continue; // skip what doesn't match regex
-            info.name = ni.getName();
-            AutoPtr<RTree> tree(index->getTree(info.name, directory));
-            if (tree)
-                tree->getInterval(info.start, info.end);
+            AutoPtr<Index::Result> result(index->findChannel(ni->getName()));
+            if (result)
+                channels.add(ChannelInfo(ni->getName(), 
+                                         result->getRTree()->getInterval()));
             else // Is this an error?
-                info.start = info.end = nullTime;
-            channels.add(info);
+                channels.add(ChannelInfo(ni->getName()));
         }
         index->close();
         // Sorted dump of names
@@ -741,6 +776,7 @@ xmlrpc_value *get_names(xmlrpc_env *env, xmlrpc_value *args, void *user)
     return result.release();
 }
 
+#define MAX_COUNT 10000
 // very_complex_array = archiver.values(key, names[], start, end, ...)
 xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
 {
@@ -763,8 +799,8 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
     if (count <= 1)
         count = 1;
     actual_count = count;
-    if (count > 10000) // Upper limit to avoid outrageous requests.
-        actual_count = 10000;
+    if (count > MAX_COUNT) // Upper limit to avoid outrageous requests.
+        actual_count = MAX_COUNT;
     // Build start/end
     epicsTime start, end;
     pieces2epicsTime(start_sec, start_nano, start);
@@ -809,9 +845,9 @@ xmlrpc_value *get_values(xmlrpc_env *env, xmlrpc_value *args, void *user)
                                   actual_count,
                                   ReaderFactory::Linear, (end-start)/count);
         case HOW_AVERAGE:
-            return get_sheet_data(env, key, name_vector, start, end,
-                                  actual_count,
-                                  ReaderFactory::Average, (double)count);
+            return get_channel_data(env, key, name_vector, start, end,
+                                    MAX_COUNT,
+                                    ReaderFactory::Average, (double)count);
     }
     xmlrpc_env_set_fault_formatted(env, ARCH_DAT_ARG_ERROR,
                                    "Invalid how=%d", how);

@@ -85,6 +85,9 @@ public:
 
     /// Extract sub-string from position <I>from</I>, up to n elements.
     stdString substr(size_type from = 0, size_type n = npos) const;
+    
+    /** Debug routine. */
+    void show() const;
 
 private:
     char    *_str;

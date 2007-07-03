@@ -1,3 +1,7 @@
+TODO:
+- Test and document 'shallow' index (RTree that lists sub-indices instead of data blocks)
+  
+Older:
 Unexplained Crash in CtrlInfo::write:
 
 This was an 'enum' channel from a BI record in the SNS MAG/ps engine.
@@ -6,8 +10,6 @@ The CtrlInfo was all zeros, and it crashed in
   
 PV looks like it is connected, has 1 or 2 values, but 'zeroed' CtrlInfo
 of >400 bytes in size looks odd.
-
-
 
 #0  0xb75f447a in do_lookup_versioned () from /lib/ld-linux.so.2
 #1  0xb75f35e6 in _dl_lookup_versioned_symbol_internal () from /lib/ld-linux.so.2
@@ -205,8 +207,6 @@ $33 = {
   }, 
   have_sample_after_connection = true
 }
-
-
 
 (gdb) print this->pv.ctrl_info._infobuf
 $37 = {

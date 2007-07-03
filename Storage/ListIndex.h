@@ -57,19 +57,15 @@ public:
      *                  support writing.
      * @exception GenericException On error, including readonly==false.
      */
-    virtual void open(const stdString &filename, bool readonly=true);
+    virtual void open(const stdString &filename, ReadWrite readwrite=ReadOnly);
 
     virtual void close();
     
-    virtual class RTree *addChannel(const stdString &channel,
-                                    stdString &directory);
+    virtual Result *addChannel(const stdString &channel);
 
-    virtual class RTree *getTree(const stdString &channel,
-                                 stdString &directory);
+    virtual Result *findChannel(const stdString &channel);
 
-    virtual bool getFirstChannel(NameIterator &iter);
-
-    virtual bool getNextChannel(NameIterator &iter);
+    virtual NameIterator *iterator();
 
 private:
     stdString filename;
@@ -88,15 +84,26 @@ private:
     {
     public:
         SubArchInfo(stdString name) : name(name), index(0) {}
+        
+        const stdString &getName() const
+        {   return name; }
+        
+        /** @return Index that has been opened for reading. */
+        Index *openIndex();
+        
+        /** In case the index was open, close it. */
+        void closeIndex();
+        
+    private:        
         stdString name;
         Index *index;
     };
     stdList<SubArchInfo> sub_archs;
     // List of all names w/ iterator
     stdList<stdString> names;
-    stdList<stdString>::const_iterator current_name;
     // helper for AVLTree::traverse
     static void name_traverser(const stdString &name, void *self);
+    void collectNames();
 };
 
 #endif

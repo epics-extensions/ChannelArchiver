@@ -212,23 +212,14 @@ interpolated.
 \NOTE Averaging and linear interpolation must be used with caution.
 Both methods can hide important details in the raw data, and it is up
 to the user to determine when to use them and with what bin size.
-If for example you want to compare several water tank temperatures
-and you know that the water temperature can only change slowly, linear
-interpolation for e.g.\ every 60 seconds might be a reasonable
-approach.
 
-On the other hand, consider a channel that monitors radiation counts
-per minute. The raw data will mostly reflect the fairly constant background
-radiation. Of interest are probably only temporary 'spikes' in the data,
-since they indicate radiation incidents that need to be correlated
-with e.g.\ beam loss.
-Interpolation of this type of data over 5 minutes will yield
-useless results. Most temporary increases in radiation within a bin are
-lost, you will only see values close to the background radiation as
-they were measured around the bin borders.
-Averaging will show a slight increase for those bins that contain a
-radiation incident, but the magnitude of those 'spikes' will not at
-all compare to the raw data.
+More recent versions of the averaging code return not only the average
+value but also the minumum and maximum value within a bin.
+In addition, it returns only the original value in case there was only
+a single value in a bin.
+In combination, this offers good data reduction for plotting,
+since you can display the variation (min...max) around the average,
+and finally get the raw data when zooming in far enough (small bin sizes).
 
 \subsection{Plot-Binning} \label{sec:plotbinning}
 \begin{figure}[htb]
@@ -239,10 +230,13 @@ all compare to the raw data.
 \caption{\label{fig:plotbin}Plot-Binning, see text.}
 \end{figure}
 
-This method is meant for plotting, providing data that --- when
+\NOTE This method was meant for plotting, but has been superseded by the
+most recent averaging mechanism.
+
+\noindent It provides data that --- when
 plotted --- looks very much if not exactly like the raw data, albeit
 significantly reducing the number of data points and hence speeding up
-the plot.  To accomplish this, the data is binned as follows:
+the plot. To accomplish this, the data is binned as follows:
 For each bin, the initial,  minimum, maximum, and final sample is
 determined. In case the bin contains 'info' samples like 'disconnected'
 or 'archive off', the last of them is also kept.

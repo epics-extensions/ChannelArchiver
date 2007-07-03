@@ -29,11 +29,11 @@ server.
 \end{lstlisting}
 
 \begin{description}
-\item[\sffamily ver:]  Version number. The first released software uses '1'.
+\item[\sffamily ver:]  Version number. Described in here is version '1'.
 \item[\sffamily desc:] Cute description that one can print.
 \item[\sffamily how:]  Array of strings with a description of the
                        request methods supported for 'how' in the
-		       archiver.values() call described further below in
+           		       archiver.values() call described further below in
                        section \ref{sec:archiver:values}.
 \item[\sffamily stat:] Array of strings with a description of the
                        ``status'' part of the values returned by
@@ -233,6 +233,8 @@ count.  For details on the methods mentioned in here refer to section
 \item[\sffamily how = 3 (plot binning):]
   Uses the plot-binning method based on 'count' bins
   (see \ref{sec:plotbinning}).
+  For new plot tools, the averaged method (how=5) should be considered,
+  since it automatically falls back to 'raw' data.
 \item[\sffamily how = 4 (linear):]
   Get linearly interpolated data from the archive, starting w/ 'start',
   up to either 'end' time or max. 'count' samples
@@ -244,7 +246,14 @@ count.  For details on the methods mentioned in here refer to section
   Get averaged data from the archive, starting w/ 'start',
   up to the 'end' time (see \ref{sec:lininterpol}).
   The data is averaged within bins whose size is determined by 
-  the 'count'. A value of 60 means: Provide an averaged value every 60 seconds.
+  the 'count'. A value of 60 means: Provide an averaged value every 60 seconds,
+  together with the minimum and maximum.
+  
+  If there is only a single value within an averaging window, or a value
+  that cannot be averaged because it is a string or a special info value,
+  that single value is returned.
+  The idea is that we get down to raw values when zooming in far enough to
+  get small bin sizes.
 \end{description}
 Refer to section \ref{sec:timestampcorr} for example results.
 
@@ -297,6 +306,17 @@ meta := { int32 type;
   values := { int32 stat,  int32 sevr,
               int32 secs,  int32 nano,
               <type> value[] } []
+  \end{lstlisting}
+  
+  If the request was for averaged data, raw samples that cannot be averaged
+  are returned as shown before, while truly averaged samples are returned with
+  a minimum and maximum, and the 'value' element contains the average
+  over the samples in the averaging bin:
+  \begin{lstlisting}[frame=none, keywordstyle=\sffamily]
+  values := { int32 stat,  int32 sevr,
+              int32 secs,  int32 nano,
+              double value[],
+              double min, double max } []
   \end{lstlisting}
 \end{description}
 

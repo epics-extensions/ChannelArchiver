@@ -22,6 +22,13 @@
 ///
 /// The averaged data from 01:30:05 to just before 01:30:15
 /// is then time-stamped 01:30:10.
+/// In addition, the minimum and maximum value for the bin
+/// is available.
+///
+/// On the other hand, if a bin only contains a single value,
+/// that original value is returned.
+/// And if the bin contains special values like "Archive Off",
+/// that special value is returned.
 class AverageReader : public DataReader
 {
 public:
@@ -32,21 +39,30 @@ public:
 
     const RawValue::Data *find(const stdString &channel_name,
                                const epicsTime *start);
-
+    const stdString &getName() const;
     const RawValue::Data *next();
-
     const RawValue::Data *get() const;
-
     DbrType getType() const;
-
     DbrCount getCount() const;
-
     const CtrlInfo &getInfo() const;
-
     bool changedType();
-
     bool changedInfo();
+    
+    /// @return true if the current value is a raw sample
+    ///         without min/max info
+    bool isRaw() const
+    {   return is_raw; }
+    
+    /// @return minimum value in the current bin (if isRaw).
+    /// @see #isRaw()
+    double getMinimum() const
+    {   return minimum; }
 
+    /// @return minimum value in the current bin (if isRaw).
+    /// @see #isRaw()
+    double getMaximum() const
+    {   return maximum; }
+    
 protected:
     RawDataReader reader;
     double delta;
@@ -62,6 +78,9 @@ protected:
     bool type_changed;
     bool ctrl_info_changed;
     RawValueAutoPtr data;
+    
+    bool is_raw;
+    double minimum, maximum;
 };
 
 /// @}

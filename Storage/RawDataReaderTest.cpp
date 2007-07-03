@@ -5,7 +5,13 @@
 #include <MsgLogger.h>
 // Storage
 #include "IndexFile.h"
+
+#define CHECK_AUTO_INDEX
+
+#ifdef CHECK_AUTO_INDEX
 #include "AutoIndex.h"
+#endif
+
 #include "DataFile.h"
 #include "RawDataReader.h"
 
@@ -38,6 +44,7 @@ static size_t read_test(const stdString &index_name, const stdString &channel_na
     return num;
 }
 
+#ifdef CHECK_AUTO_INDEX
 static size_t auto_read_test(const stdString &index_name, const stdString &channel_name,
                         const epicsTime *start = 0, const epicsTime *end = 0)
 {
@@ -66,7 +73,7 @@ static size_t auto_read_test(const stdString &index_name, const stdString &chann
     }
     return num;
 }
-
+#endif
 
 TEST_CASE RawDataReaderTest()
 {
@@ -75,15 +82,17 @@ TEST_CASE RawDataReaderTest()
     epicsTime start;
     TEST(string2epicsTime("03/23/2004 10:50:42.400561000", start));
     TEST(read_test("../DemoData/index", "fred", &start) == 10);
+#ifdef CHECK_AUTO_INDEX
     TEST(auto_read_test("../DemoData/index", "fred", &start) == 10);
     TEST(auto_read_test("list_index.xml", "fred", &start) == 10);
-
+#endif
     epicsTime end(start);
     end += 5;
     TEST(read_test("../DemoData/index", "fred", &start, &end) == 3);
+#ifdef CHECK_AUTO_INDEX
     TEST(auto_read_test("../DemoData/index", "fred", &start, &end) == 3);
     TEST(auto_read_test("list_index.xml", "fred", &start, &end) == 3);
-
+#endif
     TEST(DataFile::clear_cache() == 0);
     TEST_OK;
 }

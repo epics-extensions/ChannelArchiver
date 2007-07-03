@@ -2,6 +2,7 @@
 
 // Storage
 #include "ReaderFactory.h"
+#include "ShallowIndexRawDataReader.h"
 #include "PlotReader.h"
 #include "AverageReader.h"
 #include "LinearReader.h"
@@ -32,7 +33,7 @@ DataReader *ReaderFactory::create(Index &index, How how, double delta)
     try
     {
         if (how == Raw  ||  delta <= 0.0)
-            return new RawDataReader(index);
+            return new ShallowIndexRawDataReader(index);
         else if (how == Plotbin)
             return new PlotReader(index, delta);
         else if (how == Average)

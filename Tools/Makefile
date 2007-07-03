@@ -45,6 +45,7 @@ LIB_SRCS += BinIO.cpp
 LIB_SRCS += Bitset.cpp
 LIB_SRCS += CGIDemangler.cpp
 LIB_SRCS += ConcurrentList.cpp
+LIB_SRCS += Conversions.cpp
 LIB_SRCS += epicsTimeHelper.cpp
 LIB_SRCS += Filename.cpp
 LIB_SRCS += Guard.cpp

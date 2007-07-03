@@ -1,2 +1,4 @@
 O.*
 update*.dot
+cmp.sh
+.gdb_history

@@ -13,7 +13,6 @@ LinearReader::LinearReader(Index &index, double delta)
 const RawValue::Data *LinearReader::find(
     const stdString &channel_name, const epicsTime *start)
 {
-    this->channel_name = channel_name;
     reader_data = reader.find(channel_name, start);
     if (!reader_data)
         return 0;
@@ -24,6 +23,11 @@ const RawValue::Data *LinearReader::find(
             roundTimeUp(RawValue::getTime(reader_data), delta);
     return next();
 }
+
+const stdString &LinearReader::getName() const
+{
+    return reader.getName();
+}                                  
 
 const RawValue::Data *LinearReader::next()
 {

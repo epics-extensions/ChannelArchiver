@@ -367,7 +367,7 @@ size_t RawValue::formatDouble(double value, NumberFormat format, int prec,
     switch (format)
     {
         case DEFAULT:
-            return snprintf(buffer, max_len, "%.*g", prec, value);
+            return snprintf(buffer, max_len, "%g", value);
         case DECIMAL:
             return snprintf(buffer, max_len, "%.*f", prec, value);
         case ENGINEERING:
@@ -597,23 +597,11 @@ void RawValue::read(DbrType type, DbrCount count, size_t size, Data *value,
     
     SHORTFromDisk(value->status);
     SHORTFromDisk(value->severity);
-    epicsTimeStampFromDisk(value->stamp);
-    if (value->stamp.nsec >= 1000000000L)
-    {
-        size_t nsec = value->stamp.nsec;
-        value->stamp.nsec = 0;
-        epicsTime t = value->stamp;
-        stdString txt;
-        epicsTime2string(t, txt);
-        // Similar to RTree.cpp, it's probably best to live
-        // with the data as is and patch it, because otherwise
-        // the data is lost.
-        // Unfortunately, we can't show a channel name
-        // or more detail at this level:
-        LOG_MSG("RawValue::readRawValue::read patching "
-                "time stamp with invalid nsecs %zu: %s\n",
-                nsec, txt.c_str());
-    }
+    // Show error message which confuses XML-RPC,
+    // or throw an exception?
+    // Or just use the patched time stamp and run on so that
+    // we get some data?
+    safeEpicsTimeStampFromDisk(value->stamp);
 
     // nasty: cannot use inheritance in lightweight RawValue,
     // so we have to switch on the type here:

@@ -70,6 +70,12 @@ public:
         return ptr;
     }
 
+    /// Get the pointer.
+    T *get() const
+    {
+        return ptr;
+    }
+
     /// Allow access just like ordinary pointer.
     operator T * () const
     {

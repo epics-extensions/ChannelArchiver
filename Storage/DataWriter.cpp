@@ -39,14 +39,17 @@ DataWriter::DataWriter(Index &index,
         calc_next_buffer_size(num_samples);
 
         // Find or add appropriate data buffer
-        tree = index.addChannel(channel_name, directory);
-        RTree::Datablock block;
-        RTree::Node node(tree->getM(), true);
-        int idx;
-        if (tree->getLastDatablock(node, idx, block))        
+        index_result = index.addChannel(channel_name);
+        LOG_ASSERT(index_result);
+        
+        
+        AutoPtr<RTree::Datablock> block(
+            index_result->getRTree()->getLastDatablock()); 
+        if (block)       
         {   // - There is a data file and buffer
-            datafile = DataFile::reference(directory, block.data_filename, true);
-            header = datafile->getHeader(block.data_offset);
+            datafile = DataFile::reference(index_result->getDirectory(),
+                                           block->getDataFilename(), true);
+            header = datafile->getHeader(block->getDataOffset());
             datafile->release(); // now ref'ed by header
             datafile = 0;
             // See if anything has changed
@@ -73,7 +76,7 @@ DataWriter::DataWriter(Index &index,
     }
     catch (GenericException &e)
     {
-        tree = 0;
+        index_result = 0;
         if (datafile)
             datafile->release();
         throw GenericException(__FILE__, __LINE__,
@@ -90,18 +93,18 @@ DataWriter::~DataWriter()
         if (header)
         {   
             header->write();
-            if (tree)
+            if (index_result)
             {
-                if (!tree->updateLastDatablock(
-                        header->data.begin_time, header->data.end_time,
-                        header->offset, header->datafile->getBasename()))
+                if (!index_result->getRTree()->updateLastDatablock(
+                    Interval(header->data.begin_time, header->data.end_time),
+                    header->offset, header->datafile->getBasename()))
                 {
                     // LOG_MSG("~DataWriter: updateLastDatablock '%s' %s @ 0x%lX was a NOP\n",
                     //         channel_name.c_str(),
                     //         header->datafile->getBasename().c_str(),
                     //         (unsigned long)header->offset);
                 }
-                tree = 0;
+                index_result = 0;
             }
             header = 0;
         }
@@ -194,6 +197,7 @@ void DataWriter::makeDataFileName(int serial, stdString &name)
 // Create new DataFile that's below file_size_limit in size.
 DataFile *DataWriter::createNewDataFile(size_t headroom)
 {
+    LOG_ASSERT(index_result);
     DataFile *datafile = 0;
     int serial=0;
     stdString data_file_name;
@@ -204,7 +208,7 @@ DataFile *DataWriter::createNewDataFile(size_t headroom)
         while (true)
         {
             makeDataFileName(serial, data_file_name);
-            datafile = DataFile::reference(directory,
+            datafile = DataFile::reference(index_result->getDirectory(),
                                            data_file_name, true);
             FileOffset file_size = datafile->getSize();
             if (file_size+headroom < file_size_limit)
@@ -341,10 +345,10 @@ void DataWriter::addNewHeader(bool new_ctrl_info)
         new_header->set_prev(header->datafile->getBasename(),
                              header->offset);        
         // Update index entry for the old header.
-        if (tree) // Ignore result since block might already be in index
-            tree->updateLastDatablock(
-                    header->data.begin_time, header->data.end_time,
-                    header->offset, header->datafile->getBasename());
+        if (index_result) // Ignore result since block might already be in index
+            index_result->getRTree()->updateLastDatablock(
+                Interval(header->data.begin_time, header->data.end_time),
+                header->offset, header->datafile->getBasename());
     }
     // Switch to new_header (AutoPtr, might del. current header).
     header = new_header;

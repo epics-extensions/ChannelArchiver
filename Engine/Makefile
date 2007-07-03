@@ -9,6 +9,7 @@ LIB_SRCS += Named.cpp
 LIB_SRCS += CircularBuffer.cpp
 LIB_SRCS += ProcessVariableContext.cpp
 LIB_SRCS += ProcessVariable.cpp
+LIB_SRCS += ProcessVariableListener.cpp
 LIB_SRCS += ProcessVariableFilter.cpp
 LIB_SRCS += DemoProcessVariableListener.cpp
 LIB_SRCS += RepeatFilter.cpp
@@ -21,6 +22,7 @@ LIB_SRCS += SampleMechanismMonitored.cpp
 LIB_SRCS += SampleMechanismGet.cpp
 LIB_SRCS += SampleMechanismMonitoredGet.cpp
 LIB_SRCS += ArchiveChannel.cpp
+LIB_SRCS += ArchiveChannelStateListener.cpp
 LIB_SRCS += GroupInfo.cpp
 LIB_SRCS += EngineConfig.cpp
 LIB_SRCS += Engine.cpp
@@ -43,8 +45,8 @@ Tools_DIR      = $(INSTALL_LIB)
 
 # Only for benchmarking the read/write routines
 # or other CA tests
-#TESTPROD_HOST := bench hammer
-TESTPROD_HOST := LockTest
+TESTPROD_HOST := bench hammer
+#TESTPROD_HOST := LockTest
 
 # Install script to convert old request files.
 SCRIPTS += ConvertEngineConfig.pl

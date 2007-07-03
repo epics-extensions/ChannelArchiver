@@ -21,6 +21,9 @@ void epicsMutexGuard::check(const char *file, size_t line,
     throw GenericException(file, line, "Found a Guard for the wrong Mutex");
 }
 
+Guardable::~Guardable()
+{}
+
 void Guard::check(const char *file, size_t line,
                   const OrderedMutex &the_one_it_should_be)
 {

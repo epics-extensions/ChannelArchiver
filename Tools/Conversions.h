@@ -1,5 +1,6 @@
 // -*- c++ -*-
 #include "ToolsConfig.h"
+#include "epicsTimeHelper.h"
 
 #ifdef CONVERSION_REQUIRED
 // System
@@ -82,6 +83,19 @@ inline void epicsTimeStampToDisk(epicsTimeStamp &ts)
 #define LONGToDisk(i) {}
 
 #endif // CONVERSION_REQUIRED
+
+/** Convert the given raw time stamp from disk format
+ *  to local format, patching nanoseconds which overflow
+ *  into seconds.
+ *  <p>
+ *  In principle, that's an error, but since some systems
+ *  provide such garbage nsecs, the data would be lost.
+ *  This way, we still get some data back out.
+ *  <p>
+ *  @parm stamp TimeStamp to convert
+ *  @return true if the time stamp was patched.
+ */
+bool safeEpicsTimeStampFromDisk(epicsTimeStamp &stamp);
 
 #define FileOffsetFromDisk ULONGFromDisk
 #define FileOffsetToDisk ULONGToDisk

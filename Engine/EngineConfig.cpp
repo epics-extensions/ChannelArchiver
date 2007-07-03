@@ -27,6 +27,9 @@ void EngineConfig::addToFUX(FUX::Element *doc)
         new FUX::Element(doc, "disconnect");
 }
 
+EngineConfigListener::~EngineConfigListener()
+{}
+
 EngineConfigParser::EngineConfigParser()
     : listener(0)
 {

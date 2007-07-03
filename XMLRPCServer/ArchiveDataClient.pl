@@ -53,9 +53,9 @@ sub time2string($$)
 {
     my ($secs, $nano) = @ARG;
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
-	localtime($secs);
+    localtime($secs);
     return sprintf("%02d/%02d/%04d %02d:%02d:%02d.%09ld",
-		   $mon+1, $mday, $year + 1900, $hour, $min, $sec, $nano);
+           $mon+1, $mday, $year + 1900, $hour, $min, $sec, $nano);
 }
 
 # Parse (seconds, nanoseconds) from string, couterpart to time2string
@@ -107,18 +107,18 @@ sub show_meta($$)
     my ($pfx, $meta, $i, $num) = @ARG;
     if ($meta->{type} == 1)
     {
-	print($pfx, "Display : $meta->{disp_low} ... $meta->{disp_high}\n");
-	print($pfx, "Alarms  : $meta->{alarm_low} ... $meta->{alarm_high}\n");
-	print($pfx, "Warnings: $meta->{warn_low} ... $meta->{warn_high}\n");
-	print($pfx, "Units   : '$meta->{units}', Precision: $meta->{prec}\n");
+	    print($pfx, "Display : $meta->{disp_low} ... $meta->{disp_high}\n");
+	    print($pfx, "Alarms  : $meta->{alarm_low} ... $meta->{alarm_high}\n");
+	    print($pfx, "Warnings: $meta->{warn_low} ... $meta->{warn_high}\n");
+	    print($pfx, "Units   : '$meta->{units}', Precision: $meta->{prec}\n");
     }
     elsif ($meta->{type} == 0)
     { 
         $num = $#{$meta->{states}};
-	for ($i=0; $i<=$num; ++$i)
+	    for ($i=0; $i<=$num; ++$i)
         {
-	    print($pfx, "State $i: '$meta->{states}->[$i]'\n");
-	}
+	        print($pfx, "State $i: '$meta->{states}->[$i]'\n");
+	    }
     }
 }
     
@@ -126,18 +126,26 @@ sub show_meta($$)
 sub show_values($)
 {
     my ($results) = @ARG;
-    my (%meta, $result, $time, $stat, $value);
+    my (%meta, $result, $time, $stat, $value, $minmax);
     foreach $result ( @{$results} )
     {
-	print("Result for channel '$result->{name}':\n");
-	show_meta("", $result->{meta});
-	print("Type: $result->{type}, element count $result->{count}.\n");	
-	foreach $value ( @{$result->{values}} )
-	{
-	    $time = time2string($value->{secs}, $value->{nano});
-	    $stat = stat2string($value->{stat}, $value->{sevr});
-	    print("$time @{$value->{value}} $stat\n");
-	}
+	    print("Result for channel '$result->{name}':\n");
+	    show_meta("", $result->{meta});
+	    print("Type: $result->{type}, element count $result->{count}.\n");    
+	    foreach $value ( @{$result->{values}} )
+	    {
+	        $time = time2string($value->{secs}, $value->{nano});
+	        $stat = stat2string($value->{stat}, $value->{sevr});
+	        if (exists($value->{min}))
+	        {
+	            $minmax = " [average over $value->{min} .. $value->{max}]";
+	        }
+	        else
+	        {
+	            $minmax = "";
+	        }
+	        print("$time @{$value->{value}} $stat$minmax\n");
+	    }
     }
 }
 
@@ -153,43 +161,43 @@ sub show_values_as_sheet($)
     # Dumping the meta information as a spreadsheet comment
     foreach $result ( @{$results} )
     {
-	print("# Channel '$result->{name}':\n");
-	show_meta("# ", $result->{meta});
-	print("# Type: $result->{type}, element count $result->{count}.\n");
+	    print("# Channel '$result->{name}':\n");
+	    show_meta("# ", $result->{meta});
+	    print("# Type: $result->{type}, element count $result->{count}.\n");
     }
     # Header: "Time" & channel names
     print("# Time\t");
     for ($c=0; $c<$channels; ++$c)
     {
-	print("$results->[$c]->{name}\t");
-	print("[$results->[$c]->{meta}->{units}]")
-	    if ($results->[$c]->{meta}->{type} == 1);
-	print("\t");
+	    print("$results->[$c]->{name}\t");
+	    print("[$results->[$c]->{meta}->{units}]")
+	        if ($results->[$c]->{meta}->{type} == 1);
+	    print("\t");
     }
     print("\n");
     # Spreadsheet cells
     for ($v=0; $v<$vals; ++$v)
     {
-	for ($c=0; $c<$channels; ++$c)
-	{
-	    if ($c == 0)
-	    {
-		print(time2string($results->[$c]->{values}->[$v]->{secs},
-				  $results->[$c]->{values}->[$v]->{nano}),
-		      "\t");
-	    }
-	    $stat = stat2string($results->[$c]->{values}->[$v]->{stat},
-				$results->[$c]->{values}->[$v]->{sevr});
-	    print("@{$results->[$c]->{values}->[$v]->{value}}\t$stat");
-	    if ($c == $channels-1)
-	    {
-		print("\n");
-	    }
-	    else
-	    {
-		print("\t");
-	    }
-	}
+        for ($c=0; $c<$channels; ++$c)
+        {
+            if ($c == 0)
+            {
+                print(time2string($results->[$c]->{values}->[$v]->{secs},
+                          $results->[$c]->{values}->[$v]->{nano}),
+                      "\t");
+            }
+            $stat = stat2string($results->[$c]->{values}->[$v]->{stat},
+                    $results->[$c]->{values}->[$v]->{sevr});
+            print("@{$results->[$c]->{values}->[$v]->{value}}\t$stat");
+            if ($c == $channels-1)
+            {
+                print("\n");
+            }
+            else
+            {
+                print("\t");
+            }
+        }
     }
 }
 
@@ -227,23 +235,23 @@ if ($opt_i)
     printf("Supports requests with how = ...\n");
     for ($i=0; $i<=$#{$array}; ++$i)
     {
-	printf("%3d: '%s'\n", $i, $array->[$i]);
+  	 printf("%3d: '%s'\n", $i, $array->[$i]);
     }
     $array = $result->{'stat'};
     printf("Alarm Status Strings = ...\n");
     for ($i=0; $i<=$#{$array}; ++$i)
     {
-	printf("%3d: '%s'\n", $i, $array->[$i]);
+ 	  printf("%3d: '%s'\n", $i, $array->[$i]);
     }
     printf("Alarm Severity Strings = ...\n");
     printf("Num  Severity             Has Value?  Status Text?\n");
     foreach my $stat ( @{ $result->{'sevr'} } )
     {
-	printf("%4d %-20s %-5s       %-5s\n",
-	       $stat->{num},
-	       $stat->{sevr},
-	       $stat->{has_value}->value() ? "true" : "false",
-	       $stat->{txt_stat}->value()  ? "true" : "false");
+	    printf("%4d %-20s %-5s       %-5s\n",
+	           $stat->{num},
+	           $stat->{sevr},
+	           $stat->{has_value}->value() ? "true" : "false",
+	           $stat->{txt_stat}->value()  ? "true" : "false");
     }
 }
 elsif ($opt_a)
@@ -252,8 +260,8 @@ elsif ($opt_a)
     $results = $server->call('archiver.archives', "");
     foreach $result ( @{$results} )
     {
-	$key = $result->{key};
-	print("Key $key: '$result->{name}' in '$result->{path}'\n");
+	    $key = $result->{key};
+	    print("Key $key: '$result->{name}' in '$result->{path}'\n");
     }
 }
 elsif ($opt_l or $opt_m)
@@ -262,19 +270,19 @@ elsif ($opt_l or $opt_m)
     $results = $server->call('archiver.names', $opt_k, $opt_m);
     foreach $result ( @{$results} )
     {
-	my ($name) = $result->{name};
-	my ($start) = time2string($result->{start_sec}, $result->{start_nano});
-	my ($end)   = time2string($result->{end_sec},   $result->{end_nano});
-	print("Channel $name, $start - $end\n");
+	    my ($name) = $result->{name};
+	    my ($start) = time2string($result->{start_sec}, $result->{start_nano});
+	    my ($end)   = time2string($result->{end_sec},   $result->{end_nano});
+	    print("Channel $name, $start - $end\n");
     }
 }
 else
 {
     if (length($opt_s) < 10  or
-	length($opt_e) < 10)
+    length($opt_e) < 10)
     {
-	print("You need to specify a start and end time, options -s and -e\n");
-	exit(-1);
+	    print("You need to specify a start and end time, options -s and -e\n");
+	    exit(-1);
     }
     my ($start, $startnano) = string2time($opt_s);
     my ($end, $endnano)   = string2time($opt_e);
@@ -283,15 +291,15 @@ else
     # note: have to pass ref. to the 'names' array,
     # otherwise perl will turn it into a sequence of names:
     $results = $server->call('archiver.values', $opt_k, \@ARGV,
-			     $start, $startnano, $end, $endnano,
-			     $opt_c, $opt_h);
+                 $start, $startnano, $end, $endnano,
+                 $opt_c, $opt_h);
     if ($opt_h == 1)
     {
-	show_values_as_sheet($results);
+    	show_values_as_sheet($results);
     }
     else
     {
-	show_values($results);
+    	show_values($results);
     }
 }
 

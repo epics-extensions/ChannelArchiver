@@ -106,10 +106,12 @@ cd ChannelArchiver/ThirdParty
 tar vzxf xmlrpc-c-0.9.9.tar.gz
 cd xmlrpc-c-0.9.9
 ./configure
+# For 64 bit linux, try
+# configure --host=i386-linux-gnu
 # Patch for serialization and name spaces
 patch -p1 <../patch_xmlrpc-c-0.9.9
-# Fedora and Mandrake 10 patch for strstream
-# SKIP THIS PATCH ON REDHAT 9!
+# Patch for strstream
+# SKIP THIS ON REDHAT 9!
 patch -p1 <../patch_xmlrpc-c-0.9.9_strstream
 make
 su
@@ -136,6 +138,7 @@ mentioned above is included in a different tar file:
  make
  sudo make install
 \end{lstlisting}
+
 
 The XML-RPC library depends on other packages. \emph{The ``configure''
 step will report errors in case those are missing.} For RedHat, those

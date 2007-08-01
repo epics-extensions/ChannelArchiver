@@ -17,7 +17,7 @@
 #include "IndexFile.h"
 #endif
 
-#define DEBUG_LISTINDEX
+// #define DEBUG_LISTINDEX
 
 Index *ListIndex::SubArchInfo::openIndex()
 {

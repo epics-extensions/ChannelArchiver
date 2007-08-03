@@ -91,24 +91,30 @@ const RawValue::Data *AverageReader::next()
         // first element (no full waveform average)
         if (count == 1  &&  !RawValue::isInfo(data)  &&
             RawValue::getDouble(type, count, data, d))
-        {   // average over numeric scalar data
-            sum += d;
-            ++N;
-            if ((RawValue::getSevr(data) & ARCH_BASE_MASK) > sevr)
-            {   // Maximize stat/severity
-                sevr = RawValue::getSevr(data);
-                stat = RawValue::getStat(data);
+        {
+            const int severity = RawValue::getSevr(data);
+            if (severity != ARCH_REPEAT  &&
+                severity != ARCH_EST_REPEAT)
+            {   // Unless it's a 'repeat' of previous data,
+	        // average over numeric scalar data
+                sum += d;
+                ++N;
+                if ((severity & ARCH_BASE_MASK) > sevr)
+                {   // Maximize stat/severity
+                    sevr = severity;
+                    stat = RawValue::getStat(data);
+                }
+                // Update minimum/maximum
+                if (N==1)
+                    minimum = maximum = d;
+                else
+                {
+                    if (minimum > d)
+                        minimum = d;
+                    if (maximum < d)
+                        maximum = d;
+                }   
             }
-            // Update minimum/maximum
-            if (N==1)
-                minimum = maximum = d;
-            else
-            {
-                if (minimum > d)
-                    minimum = d;
-                if (maximum < d)
-                    maximum = d;
-            }   
             reader_data = reader.next();
         }
         else

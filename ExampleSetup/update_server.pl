@@ -56,6 +56,7 @@ my (%host_hacks) =
     'ics-srv-archive1' => 'arch1',
     'ics-srv-archive2' => 'arch2',
     'ics-srv-archive3' => 'arch3',
+    'diag-srv-blm1'    => 'arch4',
 );
 
 # Globals, Defaults

@@ -16,7 +16,6 @@
 use English;
 use strict;
 use Socket;
-use Cwd;
 use Sys::Hostname;
 use Time::Local qw(timelocal timelocal_nocheck);
 use File::Basename;
@@ -111,7 +110,9 @@ my ($daemonization) = 1;
 # 'connected'  => # of _connected_ channels (only valid if started)
 my ($config);
 
-my ($daemon_path) = cwd();
+# Get current path, NOT resolving soft links
+# as the Cwd module or /bin/pwd would do
+my ($daemon_path) = $ENV{PWD};
 
 my ($config_file) = "";
 

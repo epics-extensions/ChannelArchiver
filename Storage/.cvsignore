@@ -3,3 +3,4 @@ update*.dot
 cmp.sh
 .gdb_history
 step.sh
+show.sh

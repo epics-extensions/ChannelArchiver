@@ -331,7 +331,12 @@ bool Node::addToRecord(int i,
     while (block.getNextChainedBlock());
     // Block's now the last data block in the chain.
 
-    // Create new block
+    // Create new block, add to the end of the chain:
+    // An old block might contain the last sample & "off" event,
+    // while the new block can have that same last sample plus new
+    // samples.
+    // Adding to the end of the chain means: We will still see
+    // the "off" event upon retrieval!
     PrivateDatablock new_block(*this, i, data_filename, data_offset);
     FileOffset new_block_offset = fa.allocate(new_block.size());
     // Add new block to the end of the chain
@@ -365,6 +370,9 @@ bool Node::removeFromRecord(int i,
                 record[i].setChildOrID(following_block_offset);
                 write();
             }
+            // TODO don't free data block, because
+            //      that just takes too long in the end
+            //      when the file gets fragmented?
             fa.free(deleted_block_offset);
             return true; // found and removed
         }
@@ -889,12 +897,15 @@ bool RTree::updateLastDatablock(const Interval &range,
         }
     }
     
-    // Fallback: Last-block-update wahoo didn't work.
+    // Fallback: Last-block-update wahoo didn't work, probably because
+    // there has already been another data block been added after that.
     // In case this is an existing data block,
     // just adding it again can lead to adding pieces of it
-    // to many records.
-    // Better: Remove any references, condense the tree, add from scratch.
-    removeDatablock(range, data_offset, data_filename);
+    // to many records. First removing any references, then adding from scratch
+    // prevents that.
+    // But in the real world, that also takes a lot of time,
+    // while the few added data blocks don't hurt:
+    // removeDatablock(range, data_offset, data_filename);
     return insertDatablock(range, data_offset, data_filename);
 }
 

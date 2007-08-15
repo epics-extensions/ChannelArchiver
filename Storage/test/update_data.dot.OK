@@ -4,7 +4,7 @@
 digraph RTree
 {
 	node [shape = record, height=.1];
-	node4116 [ label="<f0>100-200|<f1>200-209|<f2>209-209|<f3>209-210|<f4>210-270|<f5>280-290|<f6>0-0|<f7>0-0|<f8>0-0|<f9>0-0"];
+	node4116 [ label="<f0>100-200|<f1>200-209|<f2>209-209|<f3>209-210|<f4>210-220|<f5>220-230|<f6>230-270|<f7>280-290|<f8>0-0|<f9>0-0"];
 	node4116:f0->id4361;
 	id4361 [ label="'old' \r@ 0x1 \r",style=filled ];
 	node4116:f1->id4386;
@@ -13,10 +13,14 @@ digraph RTree
 	id4436 [ label="'new' \r@ 0x3 \r",style=filled ];
 	node4116:f3->id4411;
 	id4411 [ label="'old' \r@ 0x2 \r",style=filled ];
-	id4411 -> id4486;
-	id4486 [ label="'new' \r@ 0x3 \r",style=filled ];
-	node4116:f4->id4461;
+	id4411 -> id4461;
 	id4461 [ label="'new' \r@ 0x3 \r",style=filled ];
+	node4116:f4->id4486;
+	id4486 [ label="'new' \r@ 0x3 \r",style=filled ];
 	node4116:f5->id4511;
-	id4511 [ label="'new2' \r@ 0x4 \r",style=filled ];
+	id4511 [ label="'new' \r@ 0x3 \r",style=filled ];
+	node4116:f6->id4536;
+	id4536 [ label="'new' \r@ 0x3 \r",style=filled ];
+	node4116:f7->id4561;
+	id4561 [ label="'new2' \r@ 0x4 \r",style=filled ];
 }

@@ -357,8 +357,8 @@ bool Node::removeFromRecord(int i,
         if (block.getDataOffset() == data_offset &&
             block.getDataFilename() == data_filename)
         {
-            FileOffset deleted_block_offset = block.getOffset();
-            FileOffset following_block_offset = block.getNext();
+            const FileOffset deleted_block_offset = block.getOffset();
+            const FileOffset following_block_offset = block.getNext();
             if (prev_block_offset)
             {   // unlink from the previous data block
                 block.read(prev_block_offset);
@@ -370,7 +370,7 @@ bool Node::removeFromRecord(int i,
                 record[i].setChildOrID(following_block_offset);
                 write();
             }
-            // TODO don't free data block, because
+            // TODO Don't free data block, because
             //      that just takes too long in the end
             //      when the file gets fragmented?
             fa.free(deleted_block_offset);

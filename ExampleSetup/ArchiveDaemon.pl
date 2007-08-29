@@ -1000,7 +1000,11 @@ sub start_engine($$)
                 $info = "new $host:$daemon_path/$engine/$datadir";
             }
             else
-            {   # On remote host: need source, target info for copy.
+            {
+# TODO if (some 'softlink' flag)
+#  $info = "updated $config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
+
+                # On remote host: need source, target info for copy.
                 $info = "copy $host:$daemon_path/$engine/$datadir "
                 . "$config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
             }

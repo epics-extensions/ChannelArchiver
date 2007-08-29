@@ -119,7 +119,9 @@ sub check_mailbox()
             my ($src_host, $src_dir) = split(/:/, $src);
             my ($dst_host, $dst_dir) = split(/:/, $dst);
             if ($info eq "new" and defined($src_host) and is_localhost($src_host))
-            {   # Data already here, we need to update
+# TODO          or ($info eq "updated"  and defined($dst_host) and is_localhost($dst_host)) )
+            {   # Data already here, we need to update indices
+# TODO remove the master index, so that it's rebuilt from scratch?
                 ++$updates;
                 $handled = 1;
             }

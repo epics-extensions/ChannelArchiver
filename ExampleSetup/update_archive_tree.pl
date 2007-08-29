@@ -165,8 +165,17 @@ sub create_daemon_files($)
 	    }
             if (exists($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host}))
             {
-	        printf("        <dataserver><host>%s</host></dataserver>\n",
-                       $config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host});
+                if (exists($config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{softlink}))
+                {
+                    printf("        <dataserver softlink='%s'><host>%s</host></dataserver>\n",
+                           $config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{softlink},
+                           $config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host});
+                }
+                else
+                {
+                    printf("        <dataserver><host>%s</host></dataserver>\n",
+                           $config->{daemon}{$d_dir}{engine}{$e_dir}{dataserver}{host});
+                }
             }
 	    printf("    </engine>\n");
 	    if (! is_localhost($config->{daemon}{$d_dir}{engine}{$e_dir}{run}))

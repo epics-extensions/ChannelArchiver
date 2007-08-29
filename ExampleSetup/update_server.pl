@@ -41,6 +41,7 @@ use strict;
 use vars qw($opt_d $opt_h $opt_c $opt_n $opt_t $opt_5);
 use Cwd;
 use File::Path;
+use File::Basename;
 use Getopt::Std;
 use Data::Dumper;
 use Sys::Hostname;
@@ -112,16 +113,29 @@ sub check_mailbox()
         rename($entry, "active/$entry") or die "Cannot move $entry to 'active' subdir: $!\n";
 	open(MB, "active/$entry") or die "Cannot open 'active/$entry'\n";
 	while (<MB>)
-        {   # Each file should contain 'new ... ' or 'copy ...' info.
+        {   # Each file should contain 'new ... ', 'softlink ...' or 'copy ...' info.
             chomp;
             print("$_\n") if ($opt_d);
             my ($info, $src, $dst) = split(/\s+/);
             my ($src_host, $src_dir) = split(/:/, $src);
             my ($dst_host, $dst_dir) = split(/:/, $dst);
             if ($info eq "new" and defined($src_host) and is_localhost($src_host))
-# TODO          or ($info eq "updated"  and defined($dst_host) and is_localhost($dst_host)) )
             {   # Data already here, we need to update indices
-# TODO remove the master index, so that it's rebuilt from scratch?
+                # TODO remove the master index, so that it's rebuilt from scratch?
+                ++$updates;
+                $handled = 1;
+            }
+            elsif ($info eq "softlink" and defined($dst_host) and is_localhost($dst_host))
+            {
+                # Create softlink, then update
+                # Assert that the parent (engine/year) directory exists
+                my ($dir) = dirname($dst_dir);
+                my ($cmd) = "mkdir -p $dir; ln -s $src_dir $dst_dir";
+                print("$cmd\n");
+                unless ($opt_n)
+                {
+                    die "Error while running command $cmd\n" if (system($cmd));
+                }
                 ++$updates;
                 $handled = 1;
             }
@@ -140,7 +154,7 @@ sub check_mailbox()
                 print("$cmd\n");
                 unless ($opt_n)
                 {
-                    die "Error while running command\n" if (system($cmd));
+                    die "Error while running command $cmd\n" if (system($cmd));
                 }
                 unless ($opt_5)
                 {
@@ -148,7 +162,7 @@ sub check_mailbox()
                     print("$cmd\n");
                     unless ($opt_n)
                     {
-                        die "Error while running command\n" if (system($cmd));
+                        die "Error while running command $cmd\n" if (system($cmd));
                     }
                 }
            
@@ -157,7 +171,7 @@ sub check_mailbox()
                 print("$cmd\n");
                 unless ($opt_n)
                 {
-                    die "Error while running command\n" if (system($cmd));
+                    die "Error while running command $cmd\n" if (system($cmd));
                 }
 
                 # Compare md5sum output...
@@ -167,7 +181,7 @@ sub check_mailbox()
                     print("$cmd\n");
                     unless ($opt_n)
                     {
-                        die "Error while running command\n" if (system($cmd));
+                        die "Error while running command $cmd\n" if (system($cmd));
                     }
                 }
 

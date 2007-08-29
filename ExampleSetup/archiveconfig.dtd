@@ -10,6 +10,7 @@
 <!ATTLIST daemon directory CDATA #REQUIRED>
 
 <!ELEMENT dataserver (current_index?, index?, host?)>
+<!ATTLIST dataserver softlink CDATA #IMPLIED>
 <!ELEMENT current_index (#PCDATA)>
 <!ATTLIST current_index key CDATA #REQUIRED>
 <!ELEMENT index (#PCDATA)>

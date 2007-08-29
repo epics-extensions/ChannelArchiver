@@ -23,5 +23,6 @@
   -->
 
 <!ELEMENT dataserver (host?)>
+<!ATTLIST dataserver softlink CDATA #IMPLIED>
 <!ELEMENT host (#PCDATA)>
 

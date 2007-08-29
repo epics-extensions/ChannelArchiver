@@ -33,7 +33,7 @@ use Getopt::Std;
 # ----------------------------------------------------------------
 
 # Compare: manual/changes.tex
-my ($version) = "2.12.0";
+my ($version) = "3.0.0";
 
 # Setting this to 1 disables(!) caching and might help with debugging.
 # Default: leave it commented-out.
@@ -120,7 +120,6 @@ my (@message_queue);
 my ($start_time_text);
 my ($last_check) = 0;
 
-# TODO: This looks bad.
 my (%weekdays, @weekdays);
 $weekdays{Su} = 0;
 $weekdays{Mo} = 1;
@@ -576,6 +575,7 @@ sub handle_HTTP_info($)
     print $client "<TABLE BORDER=0 CELLPADDING=5>\n";
 
     print $client "<TR><TD><B>Version:</B></TD><TD>$version</TD></TR>\n";
+    print $client "<TR><TD><B>Directory:</B></TD><TD>$daemon_path</TD></TR>\n";
     print $client "<TR><TD><B>Config File:</B></TD><TD>$config_file</TD></TR>\n";
     print $client "<TR><TD><B>Daemon start time:</B></TD><TD> $start_time_text</TD></TR>\n";
     print $client "<TR><TD><B>Check Period:</B></TD><TD> $engine_check_secper secs</TD></TR>\n";
@@ -1000,13 +1000,22 @@ sub start_engine($$)
                 $info = "new $host:$daemon_path/$engine/$datadir";
             }
             else
-            {
-# TODO if (some 'softlink' flag)
-#  $info = "updated $config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
-
-                # On remote host: need source, target info for copy.
-                $info = "copy $host:$daemon_path/$engine/$datadir "
-                . "$config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
+            {   # On remote host: need source, target info for softlink or copy.
+                if (exists($config->{engine}{$engine}{dataserver}{softlink}))
+                {
+                    # Determine the soft-linked path under which the data server
+                    # will see the data without need to copy
+                    my ($linked_path) = "$daemon_path";
+                    # TODO Here we hardcoded an archive root of '/arch'
+                    $linked_path =~ s/\A\/arch/$config->{engine}{$engine}{dataserver}{softlink}/;
+                    $info = "softlink $host:$linked_path/$engine/$datadir "
+                            . "$config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
+                }
+                else
+                {
+                    $info = "copy $host:$daemon_path/$engine/$datadir "
+                            . "$config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
+                }
             }
             if (exists($config->{mailbox}))
             {

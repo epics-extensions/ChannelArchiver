@@ -328,6 +328,10 @@ sub check_config($$)
                 {
                     print "            host='$engine->{dataserver}{host}' (not this host)\n" if ($opt_d);
                 }
+                if ($opt_d  and  exists $engine->{dataserver}{softlink})
+                {
+                    print "            Accessible via soft-link $engine->{dataserver}{softlink}\n";
+                }
                 my ($anything) = 0;
                 # current_index
                 if (exists $engine->{dataserver}{current_index})

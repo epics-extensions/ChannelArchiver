@@ -100,13 +100,19 @@ sub check_mailbox()
     mkpath("active");
     mkpath("done");
     # Loop over files in mailbox directory
-    my (@files) = <*>;
+    my (@all_files) = <*>;
+    my (@files);
+    foreach $entry ( @files )
+    {   # Only files, not directories like 'active' and 'done'
+        if (-f $entry)
+        {
+            push @files, $entry;
+        }
+    }
     my ($num_files) = $#files - 1;
     my ($current) = 0;
     foreach $entry ( @files )
     {
-        # Skip directories like 'active' and 'done'
-        next unless (-f $entry);
         ++$current;
 	print("** $entry ($current / $num_files):\n");
         my ($handled) = 0;

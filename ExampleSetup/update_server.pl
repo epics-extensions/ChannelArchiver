@@ -102,7 +102,7 @@ sub check_mailbox()
     # Loop over files in mailbox directory
     my (@all_files) = <*>;
     my (@files);
-    foreach $entry ( @files )
+    foreach $entry ( @all_files )
     {   # Only files, not directories like 'active' and 'done'
         if (-f $entry)
         {

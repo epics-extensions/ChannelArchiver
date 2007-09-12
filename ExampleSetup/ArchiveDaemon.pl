@@ -920,7 +920,7 @@ sub stop_engine($)
 {
     my ($port) = @ARG;
     my (@doc, $line);
-    print("Stopping engine $localhost:$port\n");
+    print(time_as_text(time), ": Stopping engine $localhost:$port\n");
     add_message("Stopping engine $localhost:$port");
     @doc = read_URL($localhost, $port, "/stop");
     foreach $line ( @doc )
@@ -1005,11 +1005,25 @@ sub start_engine($$)
                 {
                     # Determine the soft-linked path under which the data server
                     # will see the data without need to copy
-                    my ($linked_path) = "$daemon_path";
-                    # TODO Here we hardcoded an archive root of '/arch'
-                    $linked_path =~ s/\A\/arch/$config->{engine}{$engine}{dataserver}{softlink}/;
-                    $info = "softlink $host:$linked_path/$engine/$datadir "
-                            . "$config->{engine}{$engine}{dataserver}{host}:$daemon_path/$engine/$datadir";
+                    my ($softlink) = $config->{engine}{$engine}{dataserver}{softlink};
+                    # Parse "local=remote" from softlink
+                    my ($i) = index($softlink, "=");
+                    my ($local) = substr($softlink, 0, $i);
+                    my ($remote) = substr($softlink, $i+1);
+
+                    printf("Softlink local '%s' -> remote '%s'\n", $local, $remote);
+
+                    # Quote the '/' in path so that we can use it as a regular expression
+                    $local = quotemeta($local);
+
+                    # Convert the local path to the data into the remote link
+                    my ($path) = "$daemon_path/$engine/$datadir";
+                    my ($link) = $path;
+                    $link =~ s/$local/$remote/;
+                    printf("Soft-link '%s' -> '%s'\n", $path, $link);
+
+                    $info = "softlink $host:$path "
+                            . "$config->{engine}{$engine}{dataserver}{host}:$link";
                 }
                 else
                 {
@@ -1057,12 +1071,12 @@ sub start_engines($)
         next unless ($config->{engine}{$engine}{next_start} <= $now); # not due, yet.
         if ($config->{engine}{$engine}{stopped})
         {
-            print "Engine $config->{engine}{$engine}{desc} still quitting?\n";
+            print time_as_text(time) . ": Engine $config->{engine}{$engine}{desc} still quitting?\n";
             next;
         }
         if ($config->{engine}{$engine}{lockfile})
         {
-            print "Cannot start engine $config->{engine}{$engine}{desc}: locked\n";
+            print time_as_text(time) . ": Cannot start engine $config->{engine}{$engine}{desc}: locked\n";
             next;
         }
         start_engine($now, $engine);
@@ -1127,7 +1141,7 @@ while (1)
     $now = time;
     if (($now - $last_check) > $engine_check_secper)
     {
-    print("\n############## Main Loop Check ####\n") if ($opt_d);
+    print(time_as_text(time), " #### Main Loop Check ####\n") if ($opt_d);
     check_engines($now);
     update_schedule($now);
     start_engines($now);

@@ -10,6 +10,11 @@
 <!ATTLIST daemon directory CDATA #REQUIRED>
 
 <!ELEMENT dataserver (current_index?, index?, host?)>
+<!-- softlink: "/local/path=/remove/path
+     The data server host has access to the files via NFS,
+     and it will create a softlink by replacing the local
+     path with the remote path (which, to the server, is 'local').
+  -->
 <!ATTLIST dataserver softlink CDATA #IMPLIED>
 <!ELEMENT current_index (#PCDATA)>
 <!ATTLIST current_index key CDATA #REQUIRED>

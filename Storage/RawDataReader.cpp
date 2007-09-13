@@ -227,6 +227,9 @@ void RawDataReader::getHeader(const stdString &basename, FileOffset offset)
             else // Look relative to the index's directory
                 datafile = DataFile::reference(index_result->getDirectory(),
                                                basename, false);
+            // If we keep opening data files, we'll hit the max-open-files limit.
+            // Close files which are no longer referenced:
+            DataFile::clear_cache();
     
             try
             {

@@ -8,7 +8,7 @@
 #include "RawDataReader.h"
 #include "IndexFile.h"
 
-#define DEBUG_DATAREADER
+// #define DEBUG_DATAREADER
 
 ShallowIndexRawDataReader::ShallowIndexRawDataReader(Index &index)
         : top_index(index)

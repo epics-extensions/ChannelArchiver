@@ -1043,7 +1043,10 @@ sub start_engine($$)
                     print INFO_FILE "$info\n";
                     close INFO_FILE;
                 }
-                print"$info\n";
+                else
+                {
+                    print"Cannot write to $info_name: $info\n";
+                }
             }
             else
             {

@@ -1,7 +1,7 @@
 #include "ToolsConfig.h"
 #include "GenericException.h"
 
-const stdString::size_type stdString::npos = static_cast<size_type>(-1); 
+const stdString::size_type stdString::npos = static_cast<size_type>(-1);
 
 char stdString::operator [] (size_t index) const
 {
@@ -45,16 +45,16 @@ stdString & stdString::append(const char *s, size_type len)
     return *this;
 }
 
-int stdString::compare(const stdString &rhs) const
+int stdString::compare(const char *rhs) const
 {
     if (_str)
     {
-        if (rhs._str)
-            return strcmp(_str, rhs._str);
+        if (rhs)
+            return strcmp(_str, rhs);
         // _str > NULL
         return +1;
     }
-    if (rhs._str) // NULL < rhs
+    if (rhs) // NULL < rhs
         return -1;
     return 0;
 }
@@ -92,7 +92,7 @@ bool stdString::reserve(size_type len)
 stdString stdString::substr(size_type from, size_type n) const
 {
     stdString s;
-    
+
     if (from >= _len)
         return s;
     if (n == npos  ||  from+n > _len)
@@ -101,7 +101,7 @@ stdString stdString::substr(size_type from, size_type n) const
     s.assign(_str + from, n);
 
     return s;
-}         
+}
 
 void stdString::show() const
 {

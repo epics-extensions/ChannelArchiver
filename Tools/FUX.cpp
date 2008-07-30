@@ -17,7 +17,7 @@
 #include <xercesc/framework/URLInputSource.hpp>
 XERCES_CPP_NAMESPACE_USE
 #else
-#include <xmlparse.h>
+#include <expat.h>
 
 // Tools
 #include "AutoFilePtr.h"
@@ -57,20 +57,20 @@ FUX::Element::Element(Element *parent, const char *name,
     va_start(ap, format);
     vsnprintf(buf, sizeof(buf), format, ap);
     va_end(ap);
-    value = buf;    
+    value = buf;
     if (parent)
         parent->children.push_back(this);
 }
 
 FUX::Element::~Element()
-{    
+{
     stdList<Element *>::iterator c;
     for (c=children.begin(); c!=children.end(); ++c)
         delete *c;
 }
 
 FUX::Element *FUX::Element::find(const char *name)
-{    
+{
     stdList<Element *>::iterator c;
     for (c=children.begin(); c!=children.end(); ++c)
         if ((*c)->name == name)
@@ -181,7 +181,7 @@ void FUX::dump_element(FILE *f, Element *e, int depth)
             dump_element(f, *c, depth+1);
         indent(f, depth);
     }
-    fprintf(f, "</%s>\n", e->getName().c_str());    
+    fprintf(f, "</%s>\n", e->getName().c_str());
 }
 
 #ifdef FUX_XERCES
@@ -257,7 +257,7 @@ void FUXContentHandler::endElement(const XMLCh* const uri,
 class FUXErrorHandler : public DefaultHandler
 {
 public:
-    FUXErrorHandler(FUX *fux) : fux(fux) {}    
+    FUXErrorHandler(FUX *fux) : fux(fux) {}
     void warning(const SAXParseException&);
     void error(const SAXParseException&);
     void fatalError(const SAXParseException&);
@@ -383,7 +383,7 @@ FUX::Element *FUX::parse(const char *file_name)
     {
         clear();
         throw GenericException(__FILE__, __LINE__, "Unkown Xerces error");
-    }  
+    }
     return root;
 }
 // End of Xerces implementation --------------------------------------------
@@ -437,7 +437,7 @@ FUX::Element *FUX::parse(const char *file_name)
             throw GenericException(__FILE__, __LINE__, "FUX: Read error");
         done = feof(f);
         if (! XML_ParseBuffer(p, len, done))
-            throw GenericException(__FILE__, __LINE__, 
+            throw GenericException(__FILE__, __LINE__,
                                    "FUX: Error at line %d of '%s': %s\n",
                                    XML_GetCurrentLineNumber(p),
                                    file_name,

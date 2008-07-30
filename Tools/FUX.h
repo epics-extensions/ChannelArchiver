@@ -9,10 +9,7 @@
 #include <ToolsConfig.h>
 #include <NoCopy.h>
 
-// Define this one to use the Xerces XML library
-// When undefined, we default to the Expat library.
-// Also check ChannelArchiver/make.cfg for the required link commands
-#define FUX_XERCES
+// Check ChannelArchiver/make.cfg for FUX_XERCES and required link commands
 
 /** \ingroup Tools
  * FUX, the f.u. XML helper class.
@@ -60,15 +57,15 @@ public:
          *  When parent is given, this element is added to the parent.
          */
         Element(Element *parent, const stdString &name, const stdString &value);
-        
+
         /** Create Element, using printf-style format and args for value.
          *  <p>
          *  When parent is given, this element is added to the parent.
          */
         Element(Element *parent, const char *name, const char *format, ...)
                 __attribute__ ((format (printf, 4, 5)));
-        
-        /** Destructor. */   
+
+        /** Destructor. */
         ~Element();
 
         /** @return Returns the element name. */
@@ -82,18 +79,18 @@ public:
         /** @return Returns the parent element (may be 0). */
         Element *getParent()
         {   return parent; }
-        
+
         /** @return Returns the list of child elements. */
         stdList<Element *> &getChildren()
         {   return children; }
-        
+
         /** Append text to value. */
         void append(const char *text, size_t len)
         {   value.append(text, len); }
-        
+
         /** @return Returns the first child of given name or 0. */
         Element *find(const char *name);
-        
+
     private:
         PROHIBIT_DEFAULT_COPY(Element);
         Element *parent; ///< Parent element or 0.
@@ -121,7 +118,7 @@ public:
 
     /** Set the document. */
     void setDoc(Element *doc);
-    
+
     /** Add indentation to the file. */
     static void indent(FILE *f, int depth);
 
@@ -142,7 +139,7 @@ private:
     Element *root;
     Element *current;
     bool inside_tag;
-    
+
     static void start_tag(void *data, const char *el, const char **attr);
     static void text_handler(void *data, const char *s, int len);
     static void end_tag(void *data, const char *el);

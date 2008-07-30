@@ -53,8 +53,9 @@ public:
     /// compare >  0: this >  rhs<br>
     /// compare == 0: this == rhs
     int compare(const stdString &rhs) const;
-    bool operator == (const char *rhs) const;    
-    bool operator == (const stdString &rhs) const;    
+    int compare(const char *rhs) const;
+    bool operator == (const char *rhs) const;
+    bool operator == (const stdString &rhs) const;
     bool operator != (const char *rhs) const;
     bool operator != (const stdString &rhs) const;
     bool operator < (const stdString &rhs) const;
@@ -76,16 +77,16 @@ public:
     /// Get position [0 .. length()-1] of first/last ch.
     ///
     /// @return Returns npos if not found.
-    size_type find(char ch) const; 
-    size_type find(const stdString &s) const; 
-    size_type find(const char *) const; 
-    size_type find_last_of(char ch) const; 
+    size_type find(char ch) const;
+    size_type find(const stdString &s) const;
+    size_type find(const char *) const;
+    size_type find_last_of(char ch) const;
 
-    static const size_type npos; 
+    static const size_type npos;
 
     /// Extract sub-string from position <I>from</I>, up to n elements.
     stdString substr(size_type from = 0, size_type n = npos) const;
-    
+
     /** Debug routine. */
     void show() const;
 
@@ -100,7 +101,7 @@ private:
 // _str initially 0:                          Yes
 // _str can be "" (not deleted & reset to 0): Yes
 // Reference counting:                        No
-// 
+//
 
 inline const char *stdString::c_str() const
 {    return _str ? _str : "";    }
@@ -175,7 +176,7 @@ inline stdString operator + (const stdString &lhs, const stdString &rhs)
         result += rhs;
     }
     return result;
-}              
+}
 
 inline stdString::size_type stdString::length () const
 {    return _len;    }
@@ -183,14 +184,17 @@ inline stdString::size_type stdString::length () const
 inline bool stdString::empty() const
 {    return _len == 0; }
 
+inline int stdString::compare(const stdString &rhs) const
+{    return compare(rhs._str); }
+
 inline bool stdString::operator == (const char *rhs) const
-{    return strcmp(_str, rhs) == 0; }
+{    return compare(rhs) == 0; }
 
 inline bool stdString::operator == (const stdString &rhs) const
 {    return compare(rhs) == 0; }
 
 inline bool stdString::operator != (const char *rhs) const
-{    return strcmp(_str, rhs) != 0; }
+{    return compare(rhs) != 0; }
 
 inline bool stdString::operator != (const stdString &rhs) const
 {    return compare(rhs) != 0; }

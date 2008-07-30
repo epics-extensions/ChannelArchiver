@@ -37,23 +37,23 @@ static ThrottledMsgLogger client_IP_log_throttle("HTTP clients", 2*secsPerHour);
 //    a client request
 // c) there's a timeout: Nothing from the client for some time
 // Fine.
-// 
+//
 // The first idea was then: Client cleans itself up,
 // HTTPClientConnection::run() ends like this
 // - remove itself from server's list of clients
 // - delete this
 // - return
-// 
+//
 // Problem: That deletes the epicsThread before the
 // thread routine (run) exists, resulting in messages
 // "epicsThread::~epicsThread():
 //  blocking for thread "HTTPClientConnection" to exit
 //  Was epicsThread object destroyed before thread exit ?"
-// 
+//
 // Therefore HTTPClientConnection::run() marks itself
 // as "done" and returns, leaving it to the HTTPServer
 // to delete the HTTPClientConnection (See client_cleanup()).
-// 
+//
 // Similarly, HTTPServer cannot delete itself but
 // depends on the Engine class to delete the HTTPServer.
 
@@ -167,7 +167,7 @@ void HTTPServer::run()
             // Accept, give error, and then close their connections?
             size_t num_clients = client_cleanup();
             if (num_clients >= MAX_NUM_CLIENTS)
-            { 
+            {
                 if (! overloaded)
                 {
                     LOG_MSG("HTTPServer reached %zu concurrent clients.\n",
@@ -180,7 +180,7 @@ void HTTPServer::run()
                 continue;
             }
             overloaded = false;
-                
+
     #if     defined(HTTPD_DEBUG)  && HTTPD_DEBUG > 1
             {
                 stdString local_info, peer_info;
@@ -204,7 +204,7 @@ void HTTPServer::run()
     catch (std::exception &e)
     {
         LOG_MSG("HTTPServer thread fatal exception:\n%s\n", e.what());
-    }    
+    }
     catch (...)
     {
         LOG_MSG("HTTPServer thread: Unknown exception\n");
@@ -237,7 +237,7 @@ void HTTPServer::start_client(SOCKET peer)
         {
             LOG_MSG("HTTPServer::start_client fatal exception:\n%s\n",
                     e.what());
-        }    
+        }
         catch (...)
         {
             LOG_MSG("HTTPServer::start_client: Unknown exception\n");
@@ -293,14 +293,14 @@ void HTTPServer::reject(SOCKET socket)
         page.line("Too many clients");
     }
     shutdown(socket, 2);
-    epicsSocketDestroy(socket);    
+    epicsSocketDestroy(socket);
 }
 
 void HTTPServer::serverinfo(SOCKET socket)
 {
-    HTMLPage page(socket, "Server Info");    
+    HTMLPage page(socket, "Server Info");
     char line[100];
-    
+
     page.openTable(1, "Client Number", 1, "Status", 1, "Age [secs]", 0);
     char num[20], age[50];
     epicsTime now = epicsTime::getCurrent();
@@ -537,6 +537,11 @@ bool HTTPClientConnection::analyzeInput()
     stdString path = input_line[0].substr(4, pos-5);
     //stdString protocol = input_line[0].substr(pos+5);
 
+    if (path.empty())
+    {
+        // No output at all.
+        return true;
+    }
     // Linear search ?!
     // Hash or map lookup isn't straightforward
     // because path has to be cut for parameters first...

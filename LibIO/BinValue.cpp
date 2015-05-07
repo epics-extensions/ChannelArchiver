@@ -1,6 +1,7 @@
 // BinValue.cpp
 
 #include <stdlib.h>
+#include <climits>
 #include <math.h> // MSVisC has HUGE_VAL in here?!
 #include <MemoryBuffer.h>
 #include "ArchiveException.h"

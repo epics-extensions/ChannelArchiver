@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdio.h>
+
 // Tools
 #include "GenericException.h"
 

@@ -56,6 +56,7 @@
 
 // Support for standard C++ library
 #include <stdString.h>
+#include <cstdarg>
 
 // On RedHat9 and R3.14.4, there's a conflict
 // between /usr/include/assert.h and epicsAssert.h.

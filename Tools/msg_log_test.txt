@@ -38,3 +38,15 @@ not on the screen
 05/03/2006 15:09:01 Test went OK
 05/03/2006 15:09:01 You should see this message in the log file,
 not on the screen
+05/07/2015 17:01:16 Hi
+05/07/2015 17:01:16 Test went OK
+05/07/2015 17:01:16 You should see this message in the log file,
+not on the screen
+05/07/2015 17:01:46 Hi
+05/07/2015 17:01:46 Test went OK
+05/07/2015 17:01:46 You should see this message in the log file,
+not on the screen
+05/07/2015 17:06:23 Hi
+05/07/2015 17:06:23 Test went OK
+05/07/2015 17:06:23 You should see this message in the log file,
+not on the screen

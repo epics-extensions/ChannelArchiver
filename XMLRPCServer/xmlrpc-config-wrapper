@@ -3,7 +3,7 @@
 v=`xmlrpc-c-config --version`
 
 case $v in
-  1.0*) client="client"
+  1.*) client="client"
         ;;
   0.*)  client="libwww-client"
         ;;

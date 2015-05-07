@@ -2,6 +2,8 @@
 #ifndef __MEMORYBUFFER_H__
 #define __MEMORYBUFFER_H__
 
+#include <stdlib.h>
+
 // Tools
 #include <GenericException.h>
 #include <NoCopy.h>

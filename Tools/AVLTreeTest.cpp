@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "AVLTree.h"
 #include "UnitTest.h"

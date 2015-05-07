@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "ToolsConfig.h"
 #include "GenericException.h"
 

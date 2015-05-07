@@ -12,8 +12,9 @@
 #include <stdlib.h>
 #include <math.h>
 // Base
+#define epicsAlarmGLOBAL
 #include <alarm.h>
-#include <alarmString.h>
+#undef epicsAlarmGLOBAL
 // Tools
 #include "ArrayTools.h"
 #include "epicsTimeHelper.h"
@@ -122,12 +123,12 @@ void RawValue::getStatus(const Data *value, stdString &result)
         return;
     }
 
-    if (severity < (short)SIZEOF_ARRAY(alarmSeverityString)  &&
-        (short)value->status < (short)SIZEOF_ARRAY(alarmStatusString))
+    if (severity < (short)SIZEOF_ARRAY(epicsAlarmSeverityStrings)  &&
+        (short)value->status < (short)SIZEOF_ARRAY(epicsAlarmConditionStrings))
     {
-        result = alarmSeverityString[severity];
+        result = epicsAlarmSeverityStrings[severity];
         result += " ";
-        result += alarmStatusString[value->status];
+        result += epicsAlarmConditionStrings[value->status];
     }
     else
     {
@@ -196,17 +197,17 @@ bool RawValue::parseStatus(const stdString &text, short &stat, short &sevr)
         return true;
     }
     short i, j;
-    for (i=0; i<(short)SIZEOF_ARRAY(alarmSeverityString); ++i)
+    for (i=0; i<(short)SIZEOF_ARRAY(epicsAlarmSeverityStrings); ++i)
     {
-        if (!strncmp(text.c_str(), alarmSeverityString[i],
-                     strlen(alarmSeverityString[i])))
+        if (!strncmp(text.c_str(), epicsAlarmSeverityStrings[i],
+                     strlen(epicsAlarmSeverityStrings[i])))
         {
             sevr = i;
-            stdString status = text.substr(strlen(alarmSeverityString[i]));
+            stdString status = text.substr(strlen(epicsAlarmSeverityStrings[i]));
 
-            for (j=0; j<(short)SIZEOF_ARRAY(alarmStatusString); ++j)
+            for (j=0; j<(short)SIZEOF_ARRAY(epicsAlarmConditionStrings); ++j)
             {
-                if (status.find(alarmStatusString[j]) != stdString::npos)
+                if (status.find(epicsAlarmConditionStrings[j]) != stdString::npos)
                 {
                     stat = j;
                     return true;

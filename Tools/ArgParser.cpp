@@ -11,6 +11,7 @@
 #include"Filename.h"
 #include"ArgParser.h"
 #include<stdio.h>
+#include <stdlib.h>
 
 CmdArgParser::CmdArgParser(int argc, char const * const *argv)
 {

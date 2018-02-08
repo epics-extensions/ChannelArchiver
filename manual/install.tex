@@ -84,6 +84,16 @@ For C and C++, we use xmlrpc-c from
 The Makefiles in ChannelArchiver/XMLRPCServer assume this to be
 installed in the default location, that is under /usr/local.
 
+With RedHat~6.9, this should work:
+\begin{lstlisting}[keywordstyle=\sffamily]
+cd ChannelArchiver/ThirdParty
+tar vzxf xmlrpc-c-1.33.17.tgz
+cd xmlrpc-c-1.33.17
+./configure
+make
+sudo make install
+\end{lstlisting}
+
 With RedHat~6.2, xmlrpc-c compiled out of the box.  With everything else,
 it has been a varying pain in the eyebrow. Under RedHat~9.0
 and Mandrake~10, it ran into a compile-time error that could be fixed
@@ -173,6 +183,10 @@ make
 \subsection{Xerces XML Library}
 The \INDEX{Xerces} library is used to parse the XML configuration files of the
 ArchiveEngine, IndexTool, and the network data server.
+On some Linux distributions you can install this via
+\begin{lstlisting}[keywordstyle=\sffamily]
+sudo yum install xerces-c-devel
+\end{lstlisting}
 See ``Xerces C++'' under
 \begin{center}
 \href{http://xml.apache.org/index.html}{http://xml.apache.org/index.html}

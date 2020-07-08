@@ -1,7 +1,10 @@
 ChannelArchiver
 ===============
 
-See http://ics-web.sns.ornl.gov/kasemir/archiver
+See https://controlssoftware.sns.ornl.gov/chanarch
+
+Note that the binary data files created by the Channel Archiver can become hard to maintain as their number grows.
+For newer EPICS-related archive solutions, consider the RDB-based archiver included in CS-Studio or the EPICS Archiver Appliance.
 
 Manual
 ------
